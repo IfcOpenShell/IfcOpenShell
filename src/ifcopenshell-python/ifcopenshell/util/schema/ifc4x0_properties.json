@@ -9740,5 +9740,1237 @@
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/pset/pset_zonecommon.htm"
+    },
+    "Qto_ActuatorBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcbuildingcontrolsdomain/qset/qto_actuatorbasequantities.htm"
+    },
+    "Qto_AirTerminalBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            },
+            "Perimeter": {
+                "description": "Perimeter of the air terminal face plate."
+            },
+            "TotalSurfaceArea": {
+                "description": "Gross area of the air terminal face plate."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_airterminalbasequantities.htm"
+    },
+    "Qto_AirTerminalBoxTypeBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_airterminalboxtypebasequantities.htm"
+    },
+    "Qto_AirToAirHeatRecoveryBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_airtoairheatrecoverybasequantities.htm"
+    },
+    "Qto_AlarmBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcbuildingcontrolsdomain/qset/qto_alarmbasequantities.htm"
+    },
+    "Qto_AudioVisualApplianceBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_audiovisualappliancebasequantities.htm"
+    },
+    "Qto_BeamBaseQuantities": {
+        "properties": {
+            "CrossSectionArea": {
+                "description": "Total area of the cross section (or profile) of the beam."
+            },
+            "GrossSurfaceArea": {
+                "description": "Total area of the beam, normally generated as perimeter * length + 2 * cross section area. It is the sum of OuterSurfaceArea + (2 x CrossSectionArea) and shall only be given, if the OuterSurfaceArea and CrossSectionArea cannot be established separately."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the beam, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the beam without add-on parts, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Length": {
+                "description": "Total length of the beam, not taking into account any cut-out's or other processing features."
+            },
+            "NetSurfaceArea": {
+                "description": "Net surface area of the beam, normally generated as perimeter * length + 2 * cross section area taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the beam, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the beam without add-on parts, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the beam (not taking into account the end cap areas), normally generated as perimeter * length."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_beambasequantities.htm"
+    },
+    "Qto_BoilerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element, not including contained fluid."
+            },
+            "NetWeight": {
+                "description": "Weight of the element, including contained fluid as designed."
+            },
+            "TotalSurfaceArea": {
+                "description": "Total surface area of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_boilerbasequantities.htm"
+    },
+    "Qto_BuildingBaseQuantities": {
+        "properties": {
+            "EavesHeight": {
+                "description": "Standard net height of this storey, from the top surface of the construction floor, to the bottom surface of the construction floor or roof above. Only provided is there is a constant height."
+            },
+            "FootprintArea": {
+                "description": "Gross area of the site covered by the building(s)."
+            },
+            "GrossFloorArea": {
+                "description": "Sum of all gross areas of spaces within the building. It includes the area of construction elements within the building. May be provided in addition to the quantities of the spaces and the construction elements assigend to the building. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
+            },
+            "GrossVolume": {
+                "description": "Sum of all gross volumes of spaces enclosed by the building. It includes the volumes of construction elements within the building. May be provided in addition to the quantities of the spaces and the construction elements assigend to the building. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
+            },
+            "Height": {
+                "description": "Standard gross height of this building, from the top surface of the construction floor, to the top surface of the construction floor or roof above. Only provided is there is a constant height."
+            },
+            "NetFloorArea": {
+                "description": "Sum of all net areas of spaces within the building. It excludes the area of construction elements within the building. May be provided in addition to the quantities of the spaces assigend to the building. In case of inconsistencies, the individual quantities of spaces take precedence."
+            },
+            "NetVolume": {
+                "description": "Sum of all net volumes of spaces enclosed by the building. It iexcludes the volumes of construction elements within the building. May be provided in addition to the quantities of the spaces assigend to the building. In case of inconsistencies, the individual quantities of spaces take precedence."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/qset/qto_buildingbasequantities.htm"
+    },
+    "Qto_BuildingElementProxyQuantities": {
+        "properties": {
+            "NetSurfaceArea": {},
+            "NetVolume": {}
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_buildingelementproxyquantities.htm"
+    },
+    "Qto_BuildingStoreyBaseQuantities": {
+        "properties": {
+            "GrossFloorArea": {
+                "description": "Sum of all gross areas of spaces within the building storey. It includes the area of construction elements within the building storey. May be provided in addition to the quantities of the spaces and the construction elements assigend to the storey. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
+            },
+            "GrossHeight": {
+                "description": "Standard gross height of this storey, from the top surface of the construction floor, to the top surface of the construction floor or roof above. Only provided is there is a constant height."
+            },
+            "GrossPerimeter": {
+                "description": "Perimeter of the outer contour of the building story without taking interior slab openings into account."
+            },
+            "GrossVolume": {
+                "description": "Sum of all gross volumes of spaces enclosed by the building storey. It includes the volumes of construction elements within the building storey. May be provided in addition to the quantities of the spaces and the construction elements assigend to the storey. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
+            },
+            "NetFloorArea": {
+                "description": "Sum of all net areas of spaces within the building storey. It excludes the area of construction elements within the building storey. May be provided in addition to the quantities of the spaces assigend to the storey. In case of inconsistencies, the individual quantities of spaces take precedence."
+            },
+            "NetHeigtht": {
+                "description": "Standard net height of this storey, from the top surface of the construction floor, to the bottom surface of the construction floor or roof above. Only provided is there is a constant height."
+            },
+            "NetVolume": {
+                "description": "Sum of all net volumes of spaces enclosed by the building storey. It iexcludes the volumes of construction elements within the building storey. May be provided in addition to the quantities of the spaces assigend to the storey. In case of inconsistencies, the individual quantities of spaces take precedence."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/qset/qto_buildingstoreybasequantities.htm"
+    },
+    "Qto_BurnerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_burnerbasequantities.htm"
+    },
+    "Qto_CableCarrierFittingBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_cablecarrierfittingbasequantities.htm"
+    },
+    "Qto_CableCarrierSegmentBaseQuantities": {
+        "properties": {
+            "CrossSectionArea": {
+                "description": "Area of the cross section."
+            },
+            "GrossWeight": {
+                "description": "Weight of the element."
+            },
+            "Length": {
+                "description": "Length of the segment, calculated at midpoint of cross-section, equal to the distance between inlet and outlet ports."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total surface area."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_cablecarriersegmentbasequantities.htm"
+    },
+    "Qto_CableFittingBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_cablefittingbasequantities.htm"
+    },
+    "Qto_CableSegmentBaseQuantities": {
+        "properties": {
+            "CrossSectionArea": {
+                "description": "Area of the cross section."
+            },
+            "GrossWeight": {
+                "description": "Weight of the element."
+            },
+            "Length": {
+                "description": "Length of the segment, calculated at midpoint of cross-section, equal to the distance between inlet and outlet ports."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total surface area of the cable."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_cablesegmentbasequantities.htm"
+    },
+    "Qto_ChillerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_chillerbasequantities.htm"
+    },
+    "Qto_ChimneyBaseQuantities": {
+        "properties": {
+            "Length": {
+                "description": "Total length of the chimney from the foundation (or beginning) to the top not taking into account any cut-out's or other processing features."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_chimneybasequantities.htm"
+    },
+    "Qto_CoilBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_coilbasequantities.htm"
+    },
+    "Qto_ColumnBaseQuantities": {
+        "properties": {
+            "CrossSectionArea": {
+                "description": "Total area of the cross section (or profile) of the column."
+            },
+            "GrossSurfaceArea": {
+                "description": "Total area of the column, normally generated as perimeter * length + 2 * cross section area. It is the sum of OuterSurfaceArea + (2 x CrossSectionArea) and shall only be given, if the OuterSurfaceArea and CrossSectionArea cannot be established separately."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the column, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the column without add-on parts, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Length": {
+                "description": "Total length of the column not taking into account any cut-out's or other processing features."
+            },
+            "NetSurfaceArea": {
+                "description": "Net surface area of the column, normally generated as perimeter * length + 2 * cross section area taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the column, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the column without add-on parts, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the column (not taking into account the end cap areas), normally generated as perimeter * length."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_columnbasequantities.htm"
+    },
+    "Qto_CommunicationsApplianceBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_communicationsappliancebasequantities.htm"
+    },
+    "Qto_CompressorBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_compressorbasequantities.htm"
+    },
+    "Qto_CondenserBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_condenserbasequantities.htm"
+    },
+    "Qto_ConstructionEquipmentResourceBaseQuantities": {
+        "properties": {
+            "OperatingTime": {
+                "description": "Productive time using the equipment including operating time and excluding idle time."
+            },
+            "UsageTime": {
+                "description": "Total time using the equipment including operating time and idle time."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcconstructionmgmtdomain/qset/qto_constructionequipmentresourcebasequantities.htm"
+    },
+    "Qto_ConstructionMaterialResourceBaseQuantities": {
+        "properties": {
+            "GrossVolume": {
+                "description": "Total gross volume of the material, including material placed and wasted."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the material, including material placed and wasted."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the material, including material placed but excluding material wasted."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the material, including material placed but excluding material wasted."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcconstructionmgmtdomain/qset/qto_constructionmaterialresourcebasequantities.htm"
+    },
+    "Qto_ControllerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcbuildingcontrolsdomain/qset/qto_controllerbasequantities.htm"
+    },
+    "Qto_CooledBeamBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_cooledbeambasequantities.htm"
+    },
+    "Qto_CoolingTowerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_coolingtowerbasequantities.htm"
+    },
+    "Qto_CoveringBaseQuantities": {
+        "properties": {
+            "GrossArea": {
+                "description": "Sum of all gross areas of the covering facing the space. No opening that is included in the covering is subtracted."
+            },
+            "NetArea": {
+                "description": "Sum of all net areas  of the covering facing the space. All openings that is included in the covering are subtracted."
+            },
+            "Width": {
+                "description": "Nominal width (or thickness) of the plate. Only given, if the covering is prismatic (constant thickess)."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_coveringbasequantities.htm"
+    },
+    "Qto_CurtainWallQuantities": {
+        "properties": {
+            "GrossSideArea": {
+                "description": "Area of the curtain wall as viewed by an elevation view of the middle plane of the curtain wall.  It does not take into account any curtain wall modifications."
+            },
+            "Height": {
+                "description": "Total height of the curtain wall. It should only be provided, if it is constant along the curtain wall path."
+            },
+            "Length": {
+                "description": "Total length of the curtain wall along the cutain wall center line (even if different to the curtain wall path)."
+            },
+            "NetSideArea": {
+                "description": "Area of the curtain wall as viewed by an elevation view of the middle plane of the curtain wall. It does take into account all curtain wall modifications."
+            },
+            "Width": {
+                "description": "Thickness of the curtain wall. It should only be provided, if it is constant along the curtain wall path."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_curtainwallquantities.htm"
+    },
+    "Qto_DamperBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_damperbasequantities.htm"
+    },
+    "Qto_DistributionChamberElementBaseQuantities": {
+        "properties": {
+            "GrossSurfaceArea": {
+                "description": "Total gross area of the inner surface of the chamber, not taking into account openings such as for pipes, ducts, or cables."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the chamber, not taking into account any enclosed elements such as pipes, ducts, cables, or equipment."
+            },
+            "NetSurfaceArea": {
+                "description": "Total net area of the inner surface of the chamber, subtracting any openings such as for pipes, ducts, or cables."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the chamber, subtracting any enclosed elements such as pipes, ducts, cables, or equipment."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgserviceelements/qset/qto_distributionchamberelementbasequantities.htm"
+    },
+    "Qto_DoorBaseQuantities": {
+        "properties": {
+            "Area": {
+                "description": "Total area of the outer lining of the door."
+            },
+            "Height": {
+                "description": "Total outer heigth of the door lining. It should only be provided, if it is a rectangular door."
+            },
+            "Perimeter": {
+                "description": "Total perimeter of the outer lining of the door."
+            },
+            "Width": {
+                "description": "Total outer width of the door lining. It should only be provided, if it is a rectangular door."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_doorbasequantities.htm"
+    },
+    "Qto_DuctFittingBaseQuantities": {
+        "properties": {
+            "GrossCrossSectionArea": {
+                "description": "Area of the cross section at the inlet, including the duct fitting itself and the interior flow space."
+            },
+            "GrossWeight": {
+                "description": "Weight of the duct fitting."
+            },
+            "Length": {
+                "description": "Length of the fitting, calculated at midpoint of cross-section and equal to the distance along the flow path from the port inlet to the port outlet. For junction fittings, it indicates the length of the longest flow path."
+            },
+            "NetCrossSectionArea": {
+                "description": "Area of the cross section at the inlet, including the duct fitting and excluding the interior flow space."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the fitting (not taking into account the end cap areas)."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_ductfittingbasequantities.htm"
+    },
+    "Qto_DuctSegmentBaseQuantities": {
+        "properties": {
+            "GrossCrossSectionArea": {
+                "description": "Area of the cross section, including the duct itself and the interior flow space."
+            },
+            "GrossWeight": {
+                "description": "Weight of the duct segment."
+            },
+            "Length": {
+                "description": "Length of the segment, calculated at midpoint of cross-section, equal to the distance between inlet and outlet ports."
+            },
+            "NetCrossSectionArea": {
+                "description": "Area of the cross section of the duct, excluding the interior flow space."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the duct (not taking into account the end cap areas), normally generated as perimeter * length."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_ductsegmentbasequantities.htm"
+    },
+    "Qto_DuctSilencerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_ductsilencerbasequantities.htm"
+    },
+    "Qto_ElectricApplianceBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_electricappliancebasequantities.htm"
+    },
+    "Qto_ElectricDistributionBoardBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            },
+            "NumberOfCircuits": {
+                "description": "Number of circuits in the distribution board."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_electricdistributionboardbasequantities.htm"
+    },
+    "Qto_ElectricFlowStorageDeviceBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_electricflowstoragedevicebasequantities.htm"
+    },
+    "Qto_ElectricGeneratorBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_electricgeneratorbasequantities.htm"
+    },
+    "Qto_ElectricMotorBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_electricmotorbasequantities.htm"
+    },
+    "Qto_ElectricTimeControlBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_electrictimecontrolbasequantities.htm"
+    },
+    "Qto_EvaporativeCoolerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_evaporativecoolerbasequantities.htm"
+    },
+    "Qto_EvaporatorBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_evaporatorbasequantities.htm"
+    },
+    "Qto_FanBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_fanbasequantities.htm"
+    },
+    "Qto_FilterBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_filterbasequantities.htm"
+    },
+    "Qto_FireSuppressionTerminalBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcplumbingfireprotectiondomain/qset/qto_firesuppressionterminalbasequantities.htm"
+    },
+    "Qto_FlowInstrumentBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcbuildingcontrolsdomain/qset/qto_flowinstrumentbasequantities.htm"
+    },
+    "Qto_FlowMeterBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_flowmeterbasequantities.htm"
+    },
+    "Qto_FootingBaseQuantities": {
+        "properties": {
+            "CrossSectionArea": {
+                "description": "Total area of the cross section (or profile) of the footing."
+            },
+            "GrossSurfaceArea": {
+                "description": "Total area of the footing, normally generated as perimeter * length + 2 * cross section area. It is the sum of OuterSurfaceArea + (2 x CrossSectionArea) and shall only be given, if the OuterSurfaceArea and CrossSectionArea cannot be established separately."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the footing, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the footing without add-on parts, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Height": {
+                "description": "Total nominal height of the footing. It should only be provided, if it is constant."
+            },
+            "Length": {
+                "description": "Length of the footing, not taking into account any cut-out's or other processing features. For strip footings it is measured along the path, for other footings it is one of the horizontal dimensions. It should only be provided, if it is constant."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the footing, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the footing without add-on parts, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the footing (not taking into account the end cap areas), normally generated as perimeter * length."
+            },
+            "Width": {
+                "description": "Total nominal width (or thickness) of the footing. For strip footings it is measured perpendicular to the footing path (or longitudial axis). For other footings it is one of the horizontal dimensions. It should only be provided, if it is constant."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralelementsdomain/qset/qto_footingbasequantities.htm"
+    },
+    "Qto_HeatExchangerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_heatexchangerbasequantities.htm"
+    },
+    "Qto_HumidifierBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_humidifierbasequantities.htm"
+    },
+    "Qto_InterceptorBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcplumbingfireprotectiondomain/qset/qto_interceptorbasequantities.htm"
+    },
+    "Qto_JunctionBoxBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            },
+            "NumberOfGangs": {
+                "description": "Number of gangs in the junction box."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_junctionboxbasequantities.htm"
+    },
+    "Qto_LaborResourceBaseQuantities": {
+        "properties": {
+            "OvertimeWork": {
+                "description": "Work that is performed after exceeding a particular limit such as hours per day and/or hours per week, after which company or municipal policy requires a different rate to apply.  Note: Policies for when overtime takes effect are the responsibility of the user or application; they are not modelled in IFC."
+            },
+            "StandardWork": {
+                "description": "Work that is performed at regular times, up to a particular limit after which overtime rates may apply."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcconstructionmgmtdomain/qset/qto_laborresourcebasequantities.htm"
+    },
+    "Qto_LampBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_lampbasequantities.htm"
+    },
+    "Qto_LightFixtureBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_lightfixturebasequantities.htm"
+    },
+    "Qto_MemberBaseQuantities": {
+        "properties": {
+            "CrossSectionArea": {
+                "description": "Total area of the cross section (or profile) of the member."
+            },
+            "GrossSurfaceArea": {
+                "description": "Total area of the member, normally generated as perimeter * length + 2 * cross section area. It is the sum of OuterSurfaceArea + (2 x CrossSectionArea) and shall only be given, if the OuterSurfaceArea and CrossSectionArea cannot be established separately."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the member, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the member without add-on parts, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Length": {
+                "description": "Total nominal length of the member, not taking into account any cut-out's or other processing features."
+            },
+            "NetSurfaceArea": {
+                "description": "Net surface area of the member, normally generated as perimeter * length + 2 * cross section area taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the member, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the member without add-on parts, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the member (not taking into account the end cap areas), normally generated as perimeter * length."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_memberbasequantities.htm"
+    },
+    "Qto_MotorConnectionBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_motorconnectionbasequantities.htm"
+    },
+    "Qto_OpeningElementBaseQuantities": {
+        "properties": {
+            "Area": {
+                "description": "Area of the opening as viewed by an elevation view (for wall openings) or as viewed by a ground floor view (for slab openings)."
+            },
+            "Depth": {
+                "description": "Depth (or thickness) of the opening, in case of openings it shall be identical to the width (or thickness) of the voided element, in case of recesses it shall be less. Only provided, if the depth is constant."
+            },
+            "Height": {
+                "description": "Height of the opening, in case of wall openings it is the vertical dimension in case of slab openings it is one horizontal dimension. Only provided, if the area is rectangular."
+            },
+            "Volume": {
+                "description": "Volume of the opening. It is the subtraction volume of the opening from the voided element (e.g. wall or slab). In case that the geometric volume of the opening is bigger then the subtraction volume, only the subtraction volume should be used."
+            },
+            "Width": {
+                "description": "Width of the opening, in case of wall openings it is the horizontal dimension in case of slab openings it is one horizontal dimension. Only provided, if the area is rectangular."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/qset/qto_openingelementbasequantities.htm"
+    },
+    "Qto_OutletBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_outletbasequantities.htm"
+    },
+    "Qto_PileBaseQuantities": {
+        "properties": {
+            "CrossSectionArea": {
+                "description": "Total area of the cross section (or profile) of the pile."
+            },
+            "GrossSurfaceArea": {
+                "description": "Total area of the pile, normally generated as perimeter * length + 2 * cross section area. It is the sum of OuterSurfaceArea + (2 x CrossSectionArea) and shall only be given, if the OuterSurfaceArea and CrossSectionArea cannot be established separately."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the pile, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the pile without add-on parts, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Length": {
+                "description": "Total length of the pile not taking into account any cut-out's or other processing features."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the pile, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the pile without add-on parts, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the pile (not taking into account the end cap areas), normally generated as perimeter * length."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralelementsdomain/qset/qto_pilebasequantities.htm"
+    },
+    "Qto_PipeFittingBaseQuantities": {
+        "properties": {
+            "GrossCrossSectionArea": {
+                "description": "Area of the cross section at the inlet, including the pipe fitting itself and the interior flow space."
+            },
+            "GrossWeight": {
+                "description": "Weight of the pipe fitting itself, not including contained fluid."
+            },
+            "Length": {
+                "description": "Length of the fitting, calculated at midpoint of cross-section and equal to the distance along the flow path from the port inlet to the port outlet. For junction fittings, it indicates the length of the longest flow path."
+            },
+            "NetCrossSectionArea": {
+                "description": "Area of the cross section at the inlet, including the pipe fitting and excluding the interior flow space."
+            },
+            "NetWeight": {
+                "description": "Weight of the pipe fitting, including contained fluid as designed."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the fitting (not taking into account the end cap areas)."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_pipefittingbasequantities.htm"
+    },
+    "Qto_PipeSegmentBaseQuantities": {
+        "properties": {
+            "GrossCrossSectionArea": {
+                "description": "Area of the cross section, including the pipe itself and the interior flow space."
+            },
+            "GrossWeight": {
+                "description": "Weight of the pipe segment itself, not including contained fluid."
+            },
+            "Length": {
+                "description": "Length of the segment, calculated at midpoint of cross-section, equal to the distance between inlet and outlet ports."
+            },
+            "NetCrossSectionArea": {
+                "description": "Area of the cross section of the pipe, excluding the interior flow space."
+            },
+            "NetWeight": {
+                "description": "Weight of the pipe segment, including contained fluid as designed."
+            },
+            "OuterSurfaceArea": {
+                "description": "Total area of the extruded surfaces of the pipe (not taking into account the end cap areas), normally generated as perimeter * length."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_pipesegmentbasequantities.htm"
+    },
+    "Qto_PlateBaseQuantities": {
+        "properties": {
+            "GrossArea": {
+                "description": "Total area of the extruded area of the plate. Openings, recesses and projections are not taken into account. Only given, if the plate is prismatic."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the plate. Openings, recesses, and projections are not taken into account."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the plate without add-on parts, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "NetArea": {
+                "description": "Total area of the extruded area of the plate. Openings and recesses are taken into account by subtraction, projections by addition. Only given, if the plate is prismatic."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the plate. Openings and recesses are taken into account by subtraction, projections by addition."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the plate without add-on parts, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Perimeter": {
+                "description": "Perimeter measured along the outer boundaries of the plate. Only given, if the plate is prismatic (constant thickness)."
+            },
+            "Width": {
+                "description": "Nominal width (or thickness) of the plate. Only given, if the plate is prismatic (constant thickess)."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_platebasequantities.htm"
+    },
+    "Qto_ProjectionElementBaseQuantities": {
+        "properties": {
+            "Area": {
+                "description": "Area of the projection as viewed by an elevation view (for wall projections or as viewed by a ground floor view (for slab projections)."
+            },
+            "Volume": {
+                "description": "Volume of the opening. It is the addition volume of the project to the element (e.g. wall or slab)."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/qset/qto_projectionelementbasequantities.htm"
+    },
+    "Qto_ProtectiveDeviceBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_protectivedevicebasequantities.htm"
+    },
+    "Qto_ProtectiveDeviceTrippingUnitBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_protectivedevicetrippingunitbasequantities.htm"
+    },
+    "Qto_PumpBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_pumpbasequantities.htm"
+    },
+    "Qto_RailingBaseQuantities": {
+        "properties": {
+            "Length": {
+                "description": "Total nominal length of the railing, not taking into account any cut-out's or other processing features."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_railingbasequantities.htm"
+    },
+    "Qto_RampFlightBaseQuantities": {
+        "properties": {
+            "GrossArea": {
+                "description": "Total area of the ramp flight (not the projected area). Openings, recesses and projections are not taken into account. Only given, if the ramp flight is prismatic."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the ramp flight. Openings, recesses, and projections are not taken into account."
+            },
+            "Length": {
+                "description": "Total length of the ramp flight along the walking line."
+            },
+            "NetArea": {
+                "description": "Total area of the ramp flight (not the projected area). Openings and recesses are taken into account by subtraction, projections by addition. Only given, if the ramp flight is prismatic."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the ramp flight. Openings and recesses are taken into account by subtraction, projections by addition."
+            },
+            "Width": {
+                "description": "Thickness of the ramp flight. It should only be provided, if it is constant."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_rampflightbasequantities.htm"
+    },
+    "Qto_ReinforcingElementBaseQuantities": {
+        "properties": {
+            "Count": {
+                "description": "Total count of reinforcing items."
+            },
+            "Length": {
+                "description": "Total length of reinforcing."
+            },
+            "Weight": {
+                "description": "Total weight of reinforcing."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralelementsdomain/qset/qto_reinforcingelementbasequantities.htm"
+    },
+    "Qto_RoofBaseQuantities": {
+        "properties": {
+            "GrossArea": {
+                "description": "Total gross area of the outer surface of the roof. It is the sum of all roof slab gross areas. Roof openings, like sky windows and other openings and cut-outs are not taken into account."
+            },
+            "NetArea": {
+                "description": "Total net area of the outer surface of the roof. It is the suma of all roof slab net areas. Roof openings, like sky windows and other openings and cut-outs are taken into account."
+            },
+            "ProjectedArea": {
+                "description": "Total gross area of the outer surfaces of the roof, projected tp the ground. It is the sum of all projected roof slab gross areas. Roof openings, like sky windows and other openings and cut-outs are not taken into account."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_roofbasequantities.htm"
+    },
+    "Qto_SanitaryTerminalBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcplumbingfireprotectiondomain/qset/qto_sanitaryterminalbasequantities.htm"
+    },
+    "Qto_SensorBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcbuildingcontrolsdomain/qset/qto_sensorbasequantities.htm"
+    },
+    "Qto_SiteBaseQuantities": {
+        "properties": {
+            "GrossArea": {
+                "description": "Gross area for this site, measured in horizontal projections."
+            },
+            "GrossPerimeter": {
+                "description": "Perimeter of the site boundary, measured in horizontal projection."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/qset/qto_sitebasequantities.htm"
+    },
+    "Qto_SlabBaseQuantities": {
+        "properties": {
+            "Depth": {
+                "description": "Depth (one direction of the non-projected foot print area) of the slab. It shall only be provided, if the slab is rectangular."
+            },
+            "GrossArea": {
+                "description": "Total area of the extruded area of the slab. Openings, recesses and projections are not taken into account. Only given, if the slab is prismatic."
+            },
+            "GrossVolume": {
+                "description": "Total gross volume of the slab. Openings, recesses, and projections are not taken into account."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the slab without add-on parts, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Length": {
+                "description": "Length (one direction of the non-projected foot print area) of the slab. It shall only be provided, if the slab is rectangular."
+            },
+            "NetArea": {
+                "description": "Total area of the extruded area of the slab. Openings and recesses are taken into account by subtraction, projections by addition. Only given, if the slab is prismatic."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the slab. Openings and recesses are taken into account by subtraction, projections by addition."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the slab without add-on parts, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Perimeter": {
+                "description": "Perimeter measured along the outer boundaries of the slab. Only given, if the slab is prismatic (constant thickness)."
+            },
+            "Width": {
+                "description": "Nominal width (or thickness) of the slab. Only given, if the slab is prismatic (constant thickess)."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_slabbasequantities.htm"
+    },
+    "Qto_SolarDeviceBaseQuantities": {
+        "properties": {
+            "GrossArea": {
+                "description": "Area of the solar device including the outer frame."
+            },
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_solardevicebasequantities.htm"
+    },
+    "Qto_SpaceBaseQuantities": {
+        "properties": {
+            "FinishCeilingHeight": {
+                "description": "Height of the suspended ceiling (from top of flooring to the bottom of the suspended ceiling). To be provided only if the space has a suspended ceiling with constant height."
+            },
+            "FinishFloorHeight": {
+                "description": "Height of the flooring (from base slab without flooring to the flooring height). To be provided only if the space has a constant flooring height."
+            },
+            "GrossCeilingArea": {
+                "description": "Sum of all ceiling areas of the space. It includes the area covered by elementsinside the space (columns, inner walls, etc.). The ceiling area is the real (and not the projected) area (e.g. in case of sloped ceilings)."
+            },
+            "GrossFloorArea": {
+                "description": "Sum of all floor areas covered by the space. It includes the area covered by elementsinside the space (columns, inner walls, etc.) and excludes the area covered by wall claddings."
+            },
+            "GrossPerimeter": {
+                "description": "Gross perimeter at the floor level of this space. It all sides of the space, including those parts of the perimeter that are created by virtual boundaries and openings (like doors)."
+            },
+            "GrossVolume": {
+                "description": "Gross volume enclosed by the space, including the volume of construction elements inside the space."
+            },
+            "GrossWallArea": {
+                "description": "Sum of all wall (and other vertically bounding elements, like columns) areas bounded by the space. It includes the area covered by elements inside the wall area (doors, windows, other openings, etc.)."
+            },
+            "Height": {
+                "description": "Total height (from base slab without flooring to ceiling without suspended ceiling) for this space (measured from top of slab below to bottom of slab above). To be provided only if the space has a constant height."
+            },
+            "NetCeilingArea": {
+                "description": "Sum of all ceiling areas of the space. It excludes the area covered by elementsinside the space (columns, inner walls, etc.). The ceiling area is the real (and not the projected) area (e.g. in case of sloped ceilings)."
+            },
+            "NetFloorArea": {
+                "description": "Sum of all usable floor areas covered by the space. It excludes the area covered  by elements inside the space (columns, inner walls, built-in's etc.), slab openings, or other protruding elements. Varying heights are not taking into account (i.e. no reduction for areas under a minimum headroom)."
+            },
+            "NetPerimeter": {
+                "description": "Net perimeter at the floor level of this space. It excludes those parts of the perimeter that are created by by virtual boundaries and openings (like doors). It is the measurement used for skirting boards and may includes the perimeter of internal fixed objects like columns."
+            },
+            "NetVolume": {
+                "description": "Net volume enclosed by the space, excluding the volume of construction elements inside the space."
+            },
+            "NetWallArea": {
+                "description": "Sum of all wall (and other vertically bounding elements, like columns) areas bounded by the space. It excludes the area covered by elements inside the wall area (doors, windows, other openings, etc.)."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/qset/qto_spacebasequantities.htm"
+    },
+    "Qto_SpaceHeaterBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element itself, not including contained fluid."
+            },
+            "Length": {
+                "description": "Length of the water tube inside the component, if applicable."
+            },
+            "NetWeight": {
+                "description": "Weight of the element, including contained fluid as designed."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_spaceheaterbasequantities.htm"
+    },
+    "Qto_StackTerminalBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcplumbingfireprotectiondomain/qset/qto_stackterminalbasequantities.htm"
+    },
+    "Qto_StairFlightBaseQuantities": {
+        "properties": {
+            "GrossVolume": {
+                "description": "Total gross volume of the stair flight. Openings, recesses, and projections are not taken into account."
+            },
+            "Length": {
+                "description": "Total length of the stair flight along the walking line."
+            },
+            "NetVolume": {
+                "description": "Total net volume of the stair flight. Openings and recesses are taken into account by subtraction, projections by addition."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_stairflightbasequantities.htm"
+    },
+    "Qto_SwitchingDeviceBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_switchingdevicebasequantities.htm"
+    },
+    "Qto_TankBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element itself, not including contained fluid."
+            },
+            "NetWeight": {
+                "description": "Weight of the element, including contained fluid as designed."
+            },
+            "TotalSurfaceArea": {
+                "description": "Total surface area of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_tankbasequantities.htm"
+    },
+    "Qto_TransformerBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/qset/qto_transformerbasequantities.htm"
+    },
+    "Qto_TubeBundleBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element itself, not including contained fluid."
+            },
+            "NetWeight": {
+                "description": "Weight of the element, including contained fluid as designed."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_tubebundlebasequantities.htm"
+    },
+    "Qto_UnitaryControlElementBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcbuildingcontrolsdomain/qset/qto_unitarycontrolelementbasequantities.htm"
+    },
+    "Qto_UnitaryEquipmentBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_unitaryequipmentbasequantities.htm"
+    },
+    "Qto_ValveBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_valvebasequantities.htm"
+    },
+    "Qto_VibrationIsolatorBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/qset/qto_vibrationisolatorbasequantities.htm"
+    },
+    "Qto_WallBaseQuantities": {
+        "properties": {
+            "GrossFootprintArea": {
+                "description": "Area of the wall as viewed by a ground floor view, not taking any wall modifications (like recesses) into account. It is also referred to as the foot print of the wall."
+            },
+            "GrossSideArea": {
+                "description": "Area of the wall as viewed by an elevation view of the middle plane of the wall.  It does not take into account any wall modifications (such as openings)."
+            },
+            "GrossVolume": {
+                "description": "Volume of the wall, without taking into account the openings and the connection geometry."
+            },
+            "GrossWeight": {
+                "description": "Total gross weight of the wall, without add-on parts, not taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Height": {
+                "description": "Total nominal height of the wall. It should only be provided, if it is constant along the wall path."
+            },
+            "Length": {
+                "description": "Total nominal length of the wall along the wall center line (even if different to the wall path)."
+            },
+            "NetFootprintArea": {
+                "description": "Area of the wall as viewed by a ground floor view, taking all wall modifications (like recesses) into account. It is also referred to as the foot print of the wall."
+            },
+            "NetSideArea": {
+                "description": "Area of the wall as viewed by an elevation view of the middle plane. It does take into account all wall modifications (such as openings)."
+            },
+            "NetVolume": {
+                "description": "Volume of the wall, after subtracting the openings and after considering the connection geometry."
+            },
+            "NetWeight": {
+                "description": "Total net weight of the wall, without add-on parts, taking into account possible processing features (cut-out's, etc.) or openings and recesses."
+            },
+            "Width": {
+                "description": "Total nominal width (or thickness) of the wall measured perpendicular to the wall path. It should only be provided, if it is constant along the wall path."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_wallbasequantities.htm"
+    },
+    "Qto_WasteTerminalBaseQuantities": {
+        "properties": {
+            "GrossWeight": {
+                "description": "Weight of the element."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcplumbingfireprotectiondomain/qset/qto_wasteterminalbasequantities.htm"
+    },
+    "Qto_WindowBaseQuantities": {
+        "properties": {
+            "Area": {
+                "description": "Total area of the outer lining of the window."
+            },
+            "Height": {
+                "description": "Total outer heigth of the window lining. It should only be provided, if it is a rectangular window."
+            },
+            "Perimeter": {
+                "description": "Total perimeter of the outer lining of the window."
+            },
+            "Width": {
+                "description": "Total outer width of the window lining. It should only be provided, if it is a rectangular window."
+            }
+        },
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/qset/qto_windowbasequantities.htm"
     }
 }
