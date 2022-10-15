@@ -56,10 +56,6 @@ class CreateProject(bpy.types.Operator):
         props = context.scene.BIMProjectProperties
         template = None if props.template_file == "0" else props.template_file
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
-        # Load thumbnails for the first time
-        if tool.Ifc.get().by_type("IfcElementType"):
-            ifc_class = sorted(tool.Ifc.get().by_type("IfcElementType"), key=lambda e: e.is_a())[0].is_a()
-            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
 
     def rollback(self, data):
         IfcStore.file = None
@@ -596,10 +592,9 @@ class LoadProjectElements(bpy.types.Operator):
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         context.scene.BIMProjectProperties.is_loading = False
 
-        # Load thumbnails for the first time
-        if tool.Ifc.get().by_type("IfcElementType"):
-            ifc_class = sorted(tool.Ifc.get().by_type("IfcElementType"), key=lambda e: e.is_a())[0].is_a()
-            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
+        tool.Project.load_default_thumbnails()
+        tool.Project.set_default_context()
+        tool.Project.set_default_modeling_dimensions()
         return {"FINISHED"}
 
     def get_decomposition_elements(self):
