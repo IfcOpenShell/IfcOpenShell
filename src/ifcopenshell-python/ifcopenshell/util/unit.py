@@ -477,6 +477,8 @@ def calculate_unit_scale(file):
     :returns: The scale factor
     :rtype: float
     """
+    if not file.by_type("IfcUnitAssignment"):
+        return 1
     units = file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:

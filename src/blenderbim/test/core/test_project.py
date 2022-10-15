@@ -77,6 +77,10 @@ class TestCreateProject:
         project.set_context("body").should_be_called()
         project.set_active_spatial_element("storey").should_be_called()
 
+        project.load_default_thumbnails().should_be_called()
+        project.set_default_context().should_be_called()
+        project.set_default_modeling_dimensions().should_be_called()
+
         subject.create_project(ifc, project, schema="IFC4", template=None)
 
     def test_appending_project_template_types_if_specified(self, ifc, project):
@@ -131,6 +135,10 @@ class TestCreateProject:
         project.set_active_spatial_element("storey").should_be_called()
 
         project.append_all_types_from_template("template").should_be_called()
+
+        project.load_default_thumbnails().should_be_called()
+        project.set_default_context().should_be_called()
+        project.set_default_modeling_dimensions().should_be_called()
 
         subject.create_project(ifc, project, schema="IFC4", template="template")
 
@@ -191,5 +199,9 @@ class TestCreateProject:
 
         project.set_context("body").should_be_called()
         project.set_active_spatial_element("storey").should_be_called()
+
+        project.load_default_thumbnails().should_be_called()
+        project.set_default_context().should_be_called()
+        project.set_default_modeling_dimensions().should_be_called()
 
         subject.create_project(ifc, project, schema="IFC2X3", template=None)
