@@ -404,7 +404,7 @@ class DumbWallGenerator:
 
     def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
-        self.layers = get_material_layer_parameters(self.relating_type)
+        self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
             return
 
@@ -698,7 +698,7 @@ class DumbWallJoiner:
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATSTART")
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
 
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         axis = copy.deepcopy(axis1["reference"])
         body = copy.deepcopy(axis1["reference"])
         self.recreate_wall(element1, wall1, axis, body)
@@ -707,7 +707,7 @@ class DumbWallJoiner:
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         axis2 = copy.deepcopy(axis1)
         intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
         if connection < 0 or connection > 1 or tool.Cad.is_x(connection, (0, 1)):
@@ -738,7 +738,7 @@ class DumbWallJoiner:
             if rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatedConnectionType = "ATSTART" if rel.RelatedConnectionType == "ATEND" else "ATEND"
 
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         axis1["reference"][0], axis1["reference"][1] = axis1["reference"][1], axis1["reference"][0]
 
         flip_matrix = Matrix.Rotation(pi, 4, "Z")
@@ -751,8 +751,8 @@ class DumbWallJoiner:
     def merge(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
+        axis1 = tool.Model.get_wall_axis(wall1)
+        axis2 = tool.Model.get_wall_axis(wall2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
         if not tool.Cad.is_x(angle, 0, tolerance=0.001):
@@ -816,8 +816,8 @@ class DumbWallJoiner:
     def join_L(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
+        axis1 = tool.Model.get_wall_axis(wall1)
+        axis2 = tool.Model.get_wall_axis(wall2)
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
         if intersect:
             intersect, _ = intersect
@@ -844,7 +844,7 @@ class DumbWallJoiner:
         if not element1:
             return
 
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
         connection = "ATEND" if connection > 0.5 else "ATSTART"
 
@@ -864,7 +864,7 @@ class DumbWallJoiner:
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
 
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         axis = copy.deepcopy(axis1["reference"])
         body = copy.deepcopy(axis1["reference"])
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -877,8 +877,8 @@ class DumbWallJoiner:
     def join_T(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
+        axis1 = tool.Model.get_wall_axis(wall1)
+        axis2 = tool.Model.get_wall_axis(wall2)
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
         if intersect:
             intersect, _ = intersect
@@ -901,8 +901,8 @@ class DumbWallJoiner:
     def join_V(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
+        axis1 = tool.Model.get_wall_axis(wall1)
+        axis2 = tool.Model.get_wall_axis(wall2)
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
         if intersect:
             intersect, _ = intersect
@@ -926,12 +926,12 @@ class DumbWallJoiner:
 
     def recreate_wall(self, element, obj, axis=None, body=None):
         if axis is None or body is None:
-            axis = body = self.get_wall_axis(obj)["reference"]
+            axis = body = tool.Model.get_wall_axis(obj)["reference"]
         self.axis = copy.deepcopy(axis)
         self.body = copy.deepcopy(body)
         height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
         self.clippings = []
-        layers = get_material_layer_parameters(element)
+        layers = tool.Model.get_material_layer_parameters(element)
 
         for rel in element.ConnectedTo:
             connection = rel.RelatingConnectionType
@@ -1041,28 +1041,6 @@ class DumbWallJoiner:
             )
         )
 
-    def get_wall_axis(self, obj, layers=None):
-        x_values = [v[0] for v in obj.bound_box]
-        min_x = min(x_values)
-        max_x = max(x_values)
-        axes = {}
-        if layers:
-            axes = {
-                "base": [
-                    (obj.matrix_world @ Vector((min_x, layers["offset"], 0.0))).to_2d(),
-                    (obj.matrix_world @ Vector((max_x, layers["offset"], 0.0))).to_2d(),
-                ],
-                "side": [
-                    (obj.matrix_world @ Vector((min_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
-                    (obj.matrix_world @ Vector((max_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
-                ],
-            }
-        axes["reference"] = [
-            (obj.matrix_world @ Vector((min_x, 0.0, 0.0))).to_2d(),
-            (obj.matrix_world @ Vector((max_x, 0.0, 0.0))).to_2d(),
-        ]
-        return axes
-
     def get_height(self, representation):
         height = 3.0
         item = representation.Items[0]
@@ -1079,10 +1057,10 @@ class DumbWallJoiner:
     def join(self, wall1, wall2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        layers1 = get_material_layer_parameters(element1)
-        layers2 = get_material_layer_parameters(element2)
-        axis1 = self.get_wall_axis(wall1, layers1)
-        axis2 = self.get_wall_axis(wall2, layers2)
+        layers1 = tool.Model.get_material_layer_parameters(element1)
+        layers2 = tool.Model.get_material_layer_parameters(element2)
+        axis1 = tool.Model.get_wall_axis(wall1, layers1)
+        axis2 = tool.Model.get_wall_axis(wall2, layers2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=True, degrees=True)
         if tool.Cad.is_x(abs(angle), (0, 180), tolerance=0.001):
@@ -1271,17 +1249,3 @@ class DumbWallJoiner:
                             }
                         )
         return True
-
-
-def get_material_layer_parameters(element):
-    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    offset = 0.0
-    thickness = 0.0
-    material = ifcopenshell.util.element.get_material(element)
-    if material:
-        if material.is_a("IfcMaterialLayerSetUsage"):
-            offset = material.OffsetFromReferenceLine * unit_scale
-            material = material.ForLayerSet
-        if material.is_a("IfcMaterialLayerSet"):
-            thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
-    return {"thickness": thickness, "offset": offset}
