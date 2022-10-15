@@ -25,17 +25,17 @@ from bs4 import BeautifulSoup
 from pprint import pprint
 import requests
 
-DOCS_LOCATION = 'Ifc2.3.0.1'
-
+IFC2x3_DOCS_LOCATION = 'Ifc2.3.0.1'
 
 class DocExtractor:
+
     def extract_ifc2x3(self):
-        parse_data_location = Path(DOCS_LOCATION)
+        parse_data_location = Path(IFC2x3_DOCS_LOCATION)
         if not parse_data_location.is_dir():
             raise Exception(
                 f'Docs for IFC 2.3.0.1 expected to be in folder "{parse_data_location.resolve()}\\"\n'
                 'For doc extraction please either setup docs as described above \n'
-                'or change DOCS_LOCATION in doc.py accordingly.'
+                'or change IFC2x3_DOCS_LOCATION in doc.py accordingly.'
             )
 
         # need to parse actual domains from the website
@@ -67,7 +67,7 @@ class DocExtractor:
         entities_dict = dict()
 
         # search 
-        entities_paths = [filepath for filepath in glob.iglob(f'{DOCS_LOCATION}/Sections/**/Entities', recursive=True)]
+        entities_paths = [filepath for filepath in glob.iglob(f'{IFC2x3_DOCS_LOCATION}/Sections/**/Entities', recursive=True)]
         for parse_folder_path in entities_paths:
             for entity_path in glob.iglob(f'{parse_folder_path}/**/'):
                 entity_path = Path(entity_path)
@@ -82,24 +82,24 @@ class DocExtractor:
                 with open(md_path, 'r', encoding='utf-8-sig') as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
-                    description = BeautifulSoup(html, features="lxml").find('p').text
-                    description = description.replace('\n', ' ')
-                    description = description.replace('\u00a0', ' ')
+                    entity_description = BeautifulSoup(html, features="lxml").find('p').text
+                    entity_description = entity_description.replace('\n', ' ')
+                    entity_description = entity_description.replace('\u00a0', ' ')
 
                 with open(xml_path, 'r', encoding='utf-8') as fi:
                     bs_tree = BeautifulSoup(fi.read(), features='lxml')
                     entity_attrs = dict()
                     for html_attr in bs_tree.find_all('docattribute'):
 
-                        description = html_attr.text.strip()
-                        description = description.replace('\n', ' ')
-                        description = description.replace('\u00a0', ' ')
-                        entity_attrs[html_attr['name']] = description
+                        attr_description = html_attr.text.strip()
+                        attr_description = attr_description.replace('\n', ' ')
+                        attr_description = attr_description.replace('\u00a0', ' ')
+                        entity_attrs[html_attr['name']] = attr_description
 
                     if entity_attrs:
                         entities_dict[entity_name]['attributes'] = entity_attrs
 
-                entities_dict[entity_name]['description'] = description
+                entities_dict[entity_name]['description'] = entity_description
                 spec_url = 'https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/' \
                         f'{md_path.parents[2].name.lower()}/lexical/{entity_name.lower()}.htm'
                 entities_dict[entity_name]['spec_url'] = spec_url
@@ -118,7 +118,7 @@ class DocExtractor:
         property_sets_spec_urls = dict()
 
         # extract lists of properties and theirs references for each property set
-        parsed_paths = [filepath for filepath in glob.iglob(f'{DOCS_LOCATION}/Sections/**/PropertySets', recursive=True)]
+        parsed_paths = [filepath for filepath in glob.iglob(f'{IFC2x3_DOCS_LOCATION}/Sections/**/PropertySets', recursive=True)]
 
         # prepare property sets domains from the website we extracted earlier
         with open('schema/ifc2x3_property_sets_domains.json', 'r') as fi:
@@ -144,7 +144,7 @@ class DocExtractor:
 
         # setup references look up tables to convert property hrefs to actual data paths
         references_paths_lookup = dict()
-        glob_query = f'{DOCS_LOCATION}/Properties/*/*'
+        glob_query = f'{IFC2x3_DOCS_LOCATION}/Properties/*/*'
         for parsed_path in [filepath for filepath in glob.iglob(glob_query, recursive=False)]:
             parsed_path = Path(parsed_path)
             # all references omit "$" character, I've checked
