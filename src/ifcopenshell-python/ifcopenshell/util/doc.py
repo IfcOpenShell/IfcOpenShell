@@ -28,73 +28,81 @@ from bs4 import BeautifulSoup
 from bs4 import MarkupResemblesLocatorWarning
 import requests
 
-IFC2x3_DOCS_LOCATION = 'Ifc2.3.0.1'
-IFC4_DOCS_LOCATION = 'Ifc4.0.2.1'
 
+BASE_MODULE_PATH = Path(__file__).parent
+IFC2x3_DOCS_LOCATION = BASE_MODULE_PATH / 'Ifc2.3.0.1'
+IFC4_DOCS_LOCATION = BASE_MODULE_PATH / 'Ifc4.0.2.1'
 
 SCHEMA_FILES = {
     'IFC2X3': {
-        'entities': Path('schema/ifc2x3_entities.json'),
-        'properties': Path('schema/ifc2x3_properties.json')
+        'entities': BASE_MODULE_PATH / 'schema/ifc2x3_entities.json',
+        'properties': BASE_MODULE_PATH / 'schema/ifc2x3_properties.json'
     },
     'IFC4': {
-        'entities': Path('schema/ifc4_entities.json'),
-        'properties': Path('schema/ifc4_properties.json') 
+        'entities': BASE_MODULE_PATH / 'schema/ifc4_entities.json',
+        'properties': BASE_MODULE_PATH / 'schema/ifc4_properties.json' 
     }
 }
 
-class DocAPI:
-    def __init__(self):
-        self.doc_database = {ifc_version: dict() for ifc_version in SCHEMA_FILES}
-        files_missing = False
-        for ifc_version in SCHEMA_FILES:
-            for data_type in SCHEMA_FILES[ifc_version]:
-                schema_path = SCHEMA_FILES[ifc_version][data_type]
-                if not schema_path.is_file():
-                    print(f"Schema file {schema_path} wasn't found.")
-                    files_missing = True
-                    continue
-                
-                with open(schema_path, 'r') as fi:
-                    self.doc_database[ifc_version][data_type] = json.load(fi)
-        if files_missing:
-            raise Exception(
-                'Some schema files are missing - they contain neccessary data for DocAPI to work. \n'
-                'Make sure those files are present. To generate them you can run DocExtractor extract functions \n'
-                'but it will require corresponding Ifc docs to be in the same directory as the script.'
-            )
 
-    def check_version_name(self, version_name):
-        if version_name not in self.doc_database:
-            raise Exception(
-                f'Version: {version_name} is not supported. '
-                f'Supported version: {", ".join(self.doc_database.keys())}')
-        return version_name
+# singleton doc database
+# required so that database would be loaded only once
+class DocDatabase():
+    def __new__(cls):
+        if not hasattr(cls, 'db'):
+            db = {ifc_version: dict() for ifc_version in SCHEMA_FILES}
+            files_missing = False
+            for ifc_version in SCHEMA_FILES:
+                for data_type in SCHEMA_FILES[ifc_version]:
+                    schema_path = SCHEMA_FILES[ifc_version][data_type]
+                    if not schema_path.is_file():
+                        print(f"Schema file {schema_path} wasn't found.")
+                        files_missing = True
+                        continue
+                    
+                    with open(schema_path, 'r') as fi:
+                        db[ifc_version][data_type] = json.load(fi)
 
-    def get_entity_doc(self, version, entity):
-        version = self.check_version_name(version)
-        return self.doc_database[version]['entities'][entity]
+            if files_missing:
+                raise Exception(
+                    'Some schema files are missing - they contain neccessary data for DocAPI to work. \n'
+                    'Make sure those files are present. To generate them you can run DocExtractor extract functions \n'
+                    'but it will require corresponding Ifc docs to be in the same directory as the script.'
+                )
+            cls.db = db
+        return cls.db
 
-    def get_attribute_doc(self, version, entity, attribute):
-        version = self.check_version_name(version)
-        return self.doc_database[version]['entities'][entity]['attributes'][attribute]
 
-    def get_property_set_doc(self, version, pset):
-        version = self.check_version_name(version)
-        return self.doc_database[version]['properties'][pset]
+def check_version_name(version_name):
+    if version_name not in SCHEMA_FILES:
+        raise Exception(
+            f'Version: {version_name} is not supported. '
+            f'Supported version: {", ".join(SCHEMA_FILES.keys())}')
+    return version_name
 
-    def get_property_doc(self, version, pset, prop):
-        version = self.check_version_name(version)
-        return self.doc_database[version]['properties'][pset]['properties'][prop]
+def get_entity_doc(version, entity):
+    version = check_version_name(version)
+    return DocDatabase()[version]['entities'][entity]
+
+def get_attribute_doc(version, entity, attribute):
+    version = check_version_name(version)
+    return DocDatabase()[version]['entities'][entity]['attributes'][attribute]
+
+def get_property_set_doc(version, pset):
+    version = check_version_name(version)
+    return DocDatabase()[version]['properties'][pset]
+
+def get_property_doc(version, pset, prop):
+    version = check_version_name(version)
+    return DocDatabase()[version]['properties'][pset]['properties'][prop]
 
 
 class DocExtractor:
     def extract_ifc2x3(self):
         print('Parsing data for Ifc2.3.0.1')
-        parse_data_location = Path(IFC2x3_DOCS_LOCATION)
-        if not parse_data_location.is_dir():
+        if not IFC2x3_DOCS_LOCATION.is_dir():
             raise Exception(
-                f'Docs for IFC 2.3.0.1 expected to be in folder "{parse_data_location.resolve()}\\"\n'
+                f'Docs for IFC 2.3.0.1 expected to be in folder "{IFC2x3_DOCS_LOCATION.resolve()}\\"\n'
                 'For doc extraction please either setup docs as described above \n'
                 'or change IFC2x3_DOCS_LOCATION in doc.py accordingly. \n'
                 'You can download docs from the repository: \n'
@@ -119,7 +127,9 @@ class DocExtractor:
             property_sets_domains[pset] = domain
 
         # export property sets data
-        with open('schema/ifc2x3_property_sets_site_domains.json', 'w', encoding='utf-8') as fo:
+        with open(
+            BASE_MODULE_PATH / 'schema/ifc2x3_property_sets_site_domains.json', 
+            'w', encoding='utf-8') as fo:
             print(f'{len(property_sets_domains)} property sets domains were parsed from the website')
             json.dump(
                 property_sets_domains, fo,
@@ -141,7 +151,8 @@ class DocExtractor:
                 # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
                 md_path = entity_path / 'Documentation.md'
                 xml_path = entity_path / 'DocEntity.xml'
-                github_md_url = f'https://github.com/buildingSMART/IFC/blob/{urllib.parse.quote(str(md_path.as_posix()))}'
+                md_url_part = urllib.parse.quote(str(md_path.relative_to(Path(__file__).parent).as_posix()))
+                github_md_url = f'https://github.com/buildingSMART/IFC/blob/{md_url_part}'
 
                 with open(md_path, 'r', encoding='utf-8-sig') as fi:
                     # convert markdown to html for easier parsing
@@ -189,7 +200,7 @@ class DocExtractor:
                 entities_dict[entity_name]['spec_url'] = spec_url
 
         # export entities data
-        with open('schema/ifc2x3_entities.json', 'w', encoding='utf-8') as fo:
+        with open(BASE_MODULE_PATH / 'schema/ifc2x3_entities.json', 'w', encoding='utf-8') as fo:
             print(f'{len(entities_dict)} entities parsed')
             json.dump(
                 entities_dict, fo,
@@ -206,7 +217,7 @@ class DocExtractor:
             for filepath in glob.iglob(f'{IFC2x3_DOCS_LOCATION}/Sections/**/PropertySets', recursive=True)]
 
         # prepare property sets domains from the website we extracted earlier
-        with open('schema/ifc2x3_property_sets_site_domains.json', 'r') as fi:
+        with open(BASE_MODULE_PATH / 'schema/ifc2x3_property_sets_site_domains.json', 'r') as fi:
             property_sets_site_domains = json.load(fi)
 
         for parse_folder_path in parsed_paths:
@@ -244,8 +255,10 @@ class DocExtractor:
 
             md_path = property_path / 'Documentation.md'
             xml_path = property_path / 'DocProperty.xml'
-            github_md_url = f'https://github.com/buildingSMART/IFC/blob/{urllib.parse.quote(str(md_path.as_posix()))}'
-            github_xml_url = f'https://github.com/buildingSMART/IFC/blob/{urllib.parse.quote(str(xml_path.as_posix()))}'
+            md_url_part = urllib.parse.quote(str(md_path.relative_to(Path(__file__).parent).as_posix()))
+            xml_url_part = urllib.parse.quote(str(xml_path.relative_to(Path(__file__).parent).as_posix()))
+            github_md_url = f'https://github.com/buildingSMART/IFC/blob/{md_url_part}'
+            github_xml_url = f'https://github.com/buildingSMART/IFC/blob/{xml_url_part}'
 
             with open(xml_path, 'r', encoding='utf-8') as fi:
                 bs_tree = BeautifulSoup(fi.read(), features='lxml')
@@ -298,7 +311,7 @@ class DocExtractor:
 
 
         # export property sets data
-        with open('schema/ifc2x3_properties.json', 'w', encoding='utf-8') as fo:
+        with open(BASE_MODULE_PATH / 'schema/ifc2x3_properties.json', 'w', encoding='utf-8') as fo:
             print(f'{len(property_sets_dict)} property sets parsed')
             json.dump(
                 property_sets_dict, fo,
@@ -307,10 +320,9 @@ class DocExtractor:
 
     def extract_ifc4(self):
         print('Parsing data for Ifc4.0.2.1')
-        parse_data_location = Path(IFC4_DOCS_LOCATION)
-        if not parse_data_location.is_dir():
+        if not IFC4_DOCS_LOCATION.is_dir():
             raise Exception(
-                f'Docs for Ifc4.0.2.1 expected to be in folder "{parse_data_location.resolve()}\\"\n'
+                f'Docs for Ifc4.0.2.1 expected to be in folder "{IFC4_DOCS_LOCATION.resolve()}\\"\n'
                 'For doc extraction please either setup docs as described above \n'
                 'or change IFC4_DOCS_LOCATION in doc.py accordingly.'
                 'You can download docs from the repository: \n'
@@ -349,7 +361,7 @@ class DocExtractor:
                 property_sets_domains[pset] = domain
 
         # export property sets data
-        with open('schema/ifc4_property_sets_site_domains.json', 'w', encoding='utf-8') as fo:
+        with open(BASE_MODULE_PATH / 'schema/ifc4_property_sets_site_domains.json', 'w', encoding='utf-8') as fo:
             print(f'{len(property_sets_domains)} property sets domains were parsed from the website')
             json.dump(
                 property_sets_domains, fo,
@@ -360,7 +372,8 @@ class DocExtractor:
         entities_dict = dict()
 
         # search 
-        entities_paths = [filepath for filepath in glob.iglob(f'{IFC4_DOCS_LOCATION}/Sections/**/Entities', recursive=True)]
+        entities_paths = [filepath 
+            for filepath in glob.iglob(f'{IFC4_DOCS_LOCATION}/Sections/**/Entities', recursive=True)]
         for parse_folder_path in entities_paths:
             for entity_path in glob.iglob(f'{parse_folder_path}/**/'):
                 entity_path = Path(entity_path)
@@ -370,7 +383,8 @@ class DocExtractor:
                 # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
                 md_path = entity_path / 'Documentation.md'
                 xml_path = entity_path / 'DocEntity.xml'
-                github_md_url = f'https://github.com/buildingSMART/IFC/blob/{urllib.parse.quote(str(md_path.as_posix()))}'
+                md_url_part = urllib.parse.quote(str(md_path.relative_to(Path(__file__).parent).as_posix()))
+                github_md_url = f'https://github.com/buildingSMART/IFC/blob/{md_url_part}'
 
                 with open(md_path, 'r', encoding='utf-8-sig') as fi:
                     # convert markdown to html for easier parsing
@@ -418,7 +432,7 @@ class DocExtractor:
                 # entities_dict[entity_name]['github_url'] = github_md_url
 
         # export entities data
-        with open('schema/ifc4_entities.json', 'w', encoding='utf-8') as fo:
+        with open(BASE_MODULE_PATH / 'schema/ifc4_entities.json', 'w', encoding='utf-8') as fo:
             print(f'{len(entities_dict)} entities parsed')
             json.dump(
                 entities_dict, fo,
@@ -436,7 +450,7 @@ class DocExtractor:
         parsed_paths += [filepath for filepath in glob.iglob(f'{IFC4_DOCS_LOCATION}/Sections/**/QuantitySets', recursive=True)]
 
         # prepare property sets domains from the website we extracted earlier
-        with open('schema/ifc4_property_sets_site_domains.json', 'r') as fi:
+        with open(BASE_MODULE_PATH / 'schema/ifc4_property_sets_site_domains.json', 'r') as fi:
             property_sets_site_domains = json.load(fi)
 
         psets_test = set()
@@ -492,8 +506,10 @@ class DocExtractor:
 
             md_path = property_path / 'Documentation.md'
             xml_path = property_path / ('DocQuantity.xml' if property_quantity else 'DocProperty.xml')
-            github_md_url = f'https://github.com/buildingSMART/IFC/blob/{urllib.parse.quote(str(md_path.as_posix()))}'
-            github_xml_url = f'https://github.com/buildingSMART/IFC/blob/{urllib.parse.quote(str(xml_path.as_posix()))}'
+            md_url_part = urllib.parse.quote(str(md_path.relative_to(Path(__file__).parent).as_posix()))
+            github_md_url = f'https://github.com/buildingSMART/IFC/blob/{md_url_part}'
+            xml_url_part = urllib.parse.quote(str(xml_path.relative_to(Path(__file__).parent).as_posix()))
+            github_xml_url = f'https://github.com/buildingSMART/IFC/blob/{xml_url_part}'
 
             with open(xml_path, 'r', encoding='utf-8') as fi:
                 bs_tree = BeautifulSoup(fi.read(), features='lxml')
@@ -544,9 +560,8 @@ class DocExtractor:
                 spec_url = property_sets_spec_urls[property_set_name]
                 property_sets_dict[property_set_name]['spec_url'] = spec_url
 
-
         # export property sets data
-        with open('schema/ifc4_properties.json', 'w', encoding='utf-8') as fo:
+        with open(BASE_MODULE_PATH / 'schema/ifc4_properties.json', 'w', encoding='utf-8') as fo:
             print(f'{len(property_sets_dict)} property sets parsed')
             json.dump(
                 property_sets_dict, fo,
@@ -554,22 +569,21 @@ class DocExtractor:
             )
 
 def run_doc_api_examples():
-    query = DocAPI()
     print('Entities:')
-    print(query.get_entity_doc('IFC2X3', 'IfcActionRequest'))
-    print(query.get_entity_doc('IFC4', 'IfcActionRequest'))
+    print(get_entity_doc('IFC2X3', 'IfcActionRequest'))
+    print(get_entity_doc('IFC4', 'IfcActionRequest'))
 
     print('Entity attributes:')
-    print(query.get_attribute_doc('IFC2X3', 'IfcActionRequest', 'RequestID'))
-    print(query.get_attribute_doc('IFC4', 'IfcActionRequest', 'PredefinedType'))
+    print(get_attribute_doc('IFC2X3', 'IfcActionRequest', 'RequestID'))
+    print(get_attribute_doc('IFC4', 'IfcActionRequest', 'PredefinedType'))
 
     print('Propety sets:')
-    print(query.get_property_set_doc('IFC2X3', 'Pset_ZoneCommon'))
-    print(query.get_property_set_doc('IFC4', 'Pset_ZoneCommon'))
+    print(get_property_set_doc('IFC2X3', 'Pset_ZoneCommon'))
+    print(get_property_set_doc('IFC4', 'Pset_ZoneCommon'))
 
     print('Propety sets attributes:')
-    print(query.get_property_doc('IFC2X3', 'Pset_ZoneCommon', 'Category'))
-    print(query.get_property_doc('IFC4', 'Pset_ZoneCommon', 'NetPlannedArea'))
+    print(get_property_doc('IFC2X3', 'Pset_ZoneCommon', 'Category'))
+    print(get_property_doc('IFC4', 'Pset_ZoneCommon', 'NetPlannedArea'))
 
 
 if __name__ == '__main__':
@@ -578,6 +592,7 @@ if __name__ == '__main__':
     extractor.extract_ifc4()
 
     # run_doc_api_examples()
+
 
 
 
