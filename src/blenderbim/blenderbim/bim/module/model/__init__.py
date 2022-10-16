@@ -42,6 +42,7 @@ classes = (
     opening.AddPotentialHalfSpaceSolid,
     opening.AddPotentialOpening,
     opening.EditOpenings,
+    opening.FlipFill,
     opening.HideBooleans,
     opening.HideOpenings,
     opening.RecalculateFill,
