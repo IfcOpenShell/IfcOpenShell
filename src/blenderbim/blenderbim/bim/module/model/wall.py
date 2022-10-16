@@ -750,8 +750,9 @@ class DumbWallJoiner:
         wall1.matrix_world[0][3], wall1.matrix_world[1][3] = axis1["reference"][0]
         bpy.context.view_layer.update()
 
-        # The wall should flip, but all openings should stay where they are, but will shift to the opposite axis
+        # The wall should flip, but all openings and fills should stay and shift to the opposite axis
         opening_matrixes = {}
+        filling_matrixes = {}
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
             location = opening_matrix.col[3].to_3d()
@@ -767,6 +768,23 @@ class DumbWallJoiner:
                 opening_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
             opening_matrixes[opening] = opening_matrix
 
+            for filling in [r.RelatedBuildingElement for r in opening.HasFillings]:
+                filling_obj = tool.Ifc.get_object(filling)
+                filling_matrix = filling_obj.matrix_world.copy()
+
+                location = filling_matrix.col[3].to_3d()
+                location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
+                location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
+                if (location_on_base - location).length < (location_on_side - location).length:
+                    axis_offset = location_on_side - location_on_base
+                    offset_from_axis = location_on_base - location
+                    filling_matrix.col[3] = (location_on_base - axis_offset - offset_from_axis).to_4d()
+                else:
+                    axis_offset = location_on_side - location_on_base
+                    offset_from_axis = location_on_side - location
+                    filling_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
+                filling_matrixes[filling] = filling_matrix
+
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         DumbWallRecalculator().recalculate([wall1])
 
@@ -775,6 +793,13 @@ class DumbWallJoiner:
             ifcopenshell.api.run(
                 "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=opening_matrix
             )
+            for filling in [r.RelatedBuildingElement for r in opening.HasFillings]:
+                filling_matrix = filling_matrixes[filling]
+                filling_obj = tool.Ifc.get_object(filling)
+                filling_obj.matrix_world = filling_matrix
+
+        if filling_matrixes:
+            bpy.context.view_layer.update()
 
         body = ifcopenshell.util.representation.get_representation(element1, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.geometry.switch_representation(
