@@ -727,6 +727,9 @@ class DumbWallJoiner:
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
     def flip(self, wall1):
+        if tool.Ifc.is_moved(wall1):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
+
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
@@ -738,15 +741,51 @@ class DumbWallJoiner:
             if rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatedConnectionType = "ATSTART" if rel.RelatedConnectionType == "ATEND" else "ATEND"
 
-        axis1 = tool.Model.get_wall_axis(wall1)
+        layers1 = tool.Model.get_material_layer_parameters(element1)
+        axis1 = tool.Model.get_wall_axis(wall1, layers1)
         axis1["reference"][0], axis1["reference"][1] = axis1["reference"][1], axis1["reference"][0]
 
         flip_matrix = Matrix.Rotation(pi, 4, "Z")
         wall1.matrix_world = wall1.matrix_world @ flip_matrix
+        wall1.matrix_world[0][3], wall1.matrix_world[1][3] = axis1["reference"][0]
         bpy.context.view_layer.update()
+
+        # The wall should flip, but all openings should stay where they are, but will shift to the opposite axis
+        opening_matrixes = {}
+        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
+            opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            location = opening_matrix.col[3].to_3d()
+            location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
+            location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
+            if (location_on_base - location).length < (location_on_side - location).length:
+                axis_offset = location_on_side - location_on_base
+                offset_from_axis = location_on_base - location
+                opening_matrix.col[3] = (location_on_base - axis_offset - offset_from_axis).to_4d()
+            else:
+                axis_offset = location_on_side - location_on_base
+                offset_from_axis = location_on_side - location
+                opening_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
+            opening_matrixes[opening] = opening_matrix
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         DumbWallRecalculator().recalculate([wall1])
+
+        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
+            opening_matrix = opening_matrixes[opening]
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=opening_matrix
+            )
+
+        body = ifcopenshell.util.representation.get_representation(element1, "Model", "Body", "MODEL_VIEW")
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=wall1,
+            representation=body,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
     def merge(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
@@ -1000,19 +1039,19 @@ class DumbWallJoiner:
             )
 
         previous_matrix = obj.matrix_world.copy()
-        previous_origin = obj.location.copy()
-        obj.location[0], obj.location[1] = self.body[0]
+        previous_origin = previous_matrix.col[3].to_2d()
+        obj.matrix_world[0][3], obj.matrix_world[1][3] = self.body[0]
         bpy.context.view_layer.update()
         if tool.Ifc.is_moved(obj):
             # Openings should move with the host overall ...
             # ... except their position should stay the same along the local X axis of the wall
             for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
                 percent = tool.Cad.edge_percent(
-                    self.body[0], (previous_origin.to_2d(), (previous_matrix @ Vector((1, 0, 0))).to_2d())
+                    self.body[0], (previous_origin, (previous_matrix @ Vector((1, 0, 0))).to_2d())
                 )
                 is_x_offset_increased = True if percent < 0 else False
 
-                change_in_x = (self.body[0] - previous_origin.to_2d()).length / self.unit_scale
+                change_in_x = (self.body[0] - previous_origin).length / self.unit_scale
                 coordinates = list(opening.ObjectPlacement.RelativePlacement.Location.Coordinates)
                 if is_x_offset_increased:
                     coordinates[0] += change_in_x
@@ -1020,6 +1059,7 @@ class DumbWallJoiner:
                     coordinates[0] -= change_in_x
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,
             obj=obj,
