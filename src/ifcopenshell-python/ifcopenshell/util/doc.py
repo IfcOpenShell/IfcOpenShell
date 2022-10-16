@@ -21,9 +21,11 @@ from pathlib import Path
 import json
 from pprint import pprint
 import urllib.parse
+import warnings
 
 from markdown import markdown
 from bs4 import BeautifulSoup
+from bs4 import MarkupResemblesLocatorWarning
 import requests
 
 IFC2x3_DOCS_LOCATION = 'Ifc2.3.0.1'
@@ -92,12 +94,32 @@ class DocExtractor:
                 with open(xml_path, 'r', encoding='utf-8') as fi:
                     bs_tree = BeautifulSoup(fi.read(), features='lxml')
                     entity_attrs = dict()
-                    for html_attr in bs_tree.find_all('docattribute'):
+                    # temporarily disable MarkupResemblesLocatorWarning
+                    # because BeautifulSoup wrongly assume we confused 
+                    # html code for filepath and gives warnings
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore', category=MarkupResemblesLocatorWarning)
 
-                        attr_description = html_attr.text.strip()
-                        attr_description = attr_description.replace('\n', ' ')
-                        attr_description = attr_description.replace('\u00a0', ' ')
-                        entity_attrs[html_attr['name']] = attr_description
+                        for html_attr in bs_tree.find_all('docattribute'):
+                            html_description = BeautifulSoup(html_attr.text, features='lxml')
+                            attr_description = html_description.get_text()
+
+                            attr_description = attr_description.replace('\n', ' ')
+                            attr_description = attr_description.replace('\u00a0', ' ')
+                            attr_description = attr_description.replace('&npsp;', ' ')
+
+                            # discard part of the description with changelog
+                            # Example:
+                            # https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdefinitionresource/lexical/ifcannotationfillarea.htm
+                            attr_description = attr_description.split('IFC2x Edition 3 CHANGE', 1)[0]
+                            attr_description = attr_description.split('IFC2x Edition 2 Addendum 2 CHANGE', 1)[0]
+                            attr_description = attr_description.split('IFC2x2 Addendum 1 change', 1)[0]
+                            attr_description = attr_description.split('IFC2x PLATFORM CHANGE', 1)[0]
+                            attr_description = attr_description.split('IFC2x3 CHANGE', 1)[0]
+                            attr_description = attr_description.split('IFC2x Edition3 CHANGE', 1)[0]                      
+
+                            attr_description = attr_description.strip().rstrip('>').strip()
+                            entity_attrs[html_attr['name']] = attr_description
 
                     if entity_attrs:
                         entities_dict[entity_name]['attributes'] = entity_attrs
@@ -295,21 +317,35 @@ class DocExtractor:
                     entity_description = BeautifulSoup(html, features="lxml").find('p').text
                     entity_description = entity_description.replace('\n', ' ')
                     entity_description = entity_description.replace('\u00a0', ' ')
+                    entity_description = entity_description.replace('{ .extDef}', '')
+                    entity_description = entity_description.strip()
 
                 with open(xml_path, 'r', encoding='utf-8') as fi:
                     bs_tree = BeautifulSoup(fi.read(), features='lxml')
                     entity_attrs = dict()
-                    for html_attr in bs_tree.find_all('docattribute'):
+                    # temporarily disable MarkupResemblesLocatorWarning
+                    # because BeautifulSoup wrongly assume we confused 
+                    # html code for filepath and gives warnings
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore', category=MarkupResemblesLocatorWarning)
+                        for html_attr in bs_tree.find_all('docattribute'):
+                            html_description = BeautifulSoup(html_attr.text, features='lxml')
+                            attr_description = html_description.get_text()
+                            attr_description = attr_description.replace('\n', ' ')
+                            attr_description = attr_description.replace('\u00a0', ' ')
 
-                        attr_description = html_attr.text.strip()
-                        attr_description = attr_description.replace('\n', ' ')
-                        attr_description = attr_description.replace('\u00a0', ' ')
-
-                        # TODO: discard part of the description with changelog
-                        # we discard part of the description 
-                        # https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcrelconnectspathelements.htm
-                        # attr_description = attr_description.split('{ .change-ifc', 1)[0] 
-                        entity_attrs[html_attr['name']] = attr_description
+                            # discard part of the description with changelog, notes and examples etc.
+                            # Those notes actually can be useful but we'll need a way to reformat them
+                            # Example:
+                            # https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcrelconnectspathelements.htm
+                            attr_description = attr_description.split('{ .change-ifc', 1)[0]
+                            attr_description = attr_description.split('{ .note', 1)[0]
+                            attr_description = attr_description.split('{ .examples', 1)[0]
+                            attr_description = attr_description.split('{ .deprecated', 1)[0]
+                            attr_description = attr_description.split('{ .history', 1)[0]                            
+                            
+                            attr_description = attr_description.strip()
+                            entity_attrs[html_attr['name']] = attr_description
 
                     if entity_attrs:
                         entities_dict[entity_name]['attributes'] = entity_attrs
@@ -455,7 +491,6 @@ class DocExtractor:
                 property_sets_dict, fo,
                 sort_keys=True, indent=4
             )
-
 
 if __name__ == '__main__':
     extractor = DocExtractor()

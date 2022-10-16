@@ -90,16 +90,16 @@
     },
     "IfcAnnotationFillArea": {
         "attributes": {
-            "InnerBoundaries": "A set of inner curves that define the inner boundaries of the fill area. The areas defined by the inner boundaries are excluded from applying the fill area style. > <small><font color=\"#ff0000\">   IFC2x Edition 3 CHANGE&nbsp; The two new attributes <i>OuterBoundary</i> and <i>InnerBoundaries</i> replace the old single attribute Boundaries. </font></small>",
-            "OuterBoundary": "A closed curve that defines the outer boundary of the fill area. The areas defined by the outer boundary (minus potentially defined inner boundaries) is filled by the fill area style. > <small><font color=\"#ff0000\">   IFC2x Edition 3 CHANGE&nbsp; The two new attributes <i>OuterBoundary</i> and <i>InnerBoundaries</i> replace the old single attribute Boundaries. </font></small>"
+            "InnerBoundaries": "A set of inner curves that define the inner boundaries of the fill area. The areas defined by the inner boundaries are excluded from applying the fill area style.",
+            "OuterBoundary": "A closed curve that defines the outer boundary of the fill area. The areas defined by the outer boundary (minus potentially defined inner boundaries) is filled by the fill area style."
         },
         "description": "Definition from ISO/CD 10303-46:1992: An annotation fill area is a set of curves that may be filled with hatching, colour or tiling. The annotation fill are is described by boundaries which consist of non-intersecting, non-self-intersecting closed curves. These curves form the boundary of planar areas to be filled according to the style for the annotation fill area.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdefinitionresource/lexical/ifcannotationfillarea.htm"
     },
     "IfcAnnotationFillAreaOccurrence": {
         "attributes": {
-            "FillStyleTarget": "The point that specifies the starting location for the fill area style assigned to the annotation fill area occurrence. Depending on the attribute _GlobalOrLocal_ the point is either given within the world coordinate system of the project or within the object coordinate system of the element or annotation. If the _FillStyleTarget_ is not given, it defaults to 0.,0.    > <small><font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The attribute has been made OPTIONAL.   </font></small>",
-            "GlobalOrLocal": "The coordinate system in which the _FillStyleTarget_ point is given. Depending on the attribute _GlobalOrLocal_ the point is either given within the world coordinate system of the project or within the object coordinate system of the element or annotation. If not given, the hatch style is directly applied to the parameterization of the geometric representation item, e.g. to the surface coordinate sytem, defined by the surface normal.    > <small><font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The attribute has been added.   </font></small>"
+            "FillStyleTarget": "The point that specifies the starting location for the fill area style assigned to the annotation fill area occurrence. Depending on the attribute _GlobalOrLocal_ the point is either given within the world coordinate system of the project or within the object coordinate system of the element or annotation. If the _FillStyleTarget_ is not given, it defaults to 0.,0.",
+            "GlobalOrLocal": "The coordinate system in which the _FillStyleTarget_ point is given. Depending on the attribute _GlobalOrLocal_ the point is either given within the world coordinate system of the project or within the object coordinate system of the element or annotation. If not given, the hatch style is directly applied to the parameterization of the geometric representation item, e.g. to the surface coordinate sytem, defined by the surface normal."
         },
         "description": "Definition from ISO/CD 10303-46:1992: An annotation fill area occurrence is a fill area with a style assignment.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdefinitionresource/lexical/ifcannotationfillareaoccurrence.htm"
@@ -245,7 +245,7 @@
     },
     "IfcAsymmetricIShapeProfileDef": {
         "attributes": {
-            "CentreOfGravityInY": "Location of centre of gravity along the y axis measured from the center of the bounding box.     > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>CentreOfGravityInY</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </font></small>",
+            "CentreOfGravityInY": "Location of centre of gravity along the y axis measured from the center of the bounding box.",
             "TopFlangeFilletRadius": "The fillet between the web and the top flange of the I-shape. If given, the fillet between upper and the lower flanges and the web can be different. If not given, the value of the inherited FilletRadius attribute applies to both, the top and bottom fillet. If the inherited FilletRadius is not given either, no filler is applied.",
             "TopFlangeThickness": "Flange thickness of the top flange of the I-shape. If given, the upper and the lower flanges can have different thicknesses. If not given, the value of the inherited FlangeThickness attribute applies to both, the top and bottom flange thickness.",
             "TopFlangeWidth": "Extent of the top flange, defined parallel to the x axis of the position coordinate system."
@@ -465,7 +465,7 @@
     },
     "IfcCShapeProfileDef": {
         "attributes": {
-            "CentreOfGravityInX": "Location of centre of gravity along the x axis measured from the center of the bounding box.     > <small><color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>CentreOfGravityInX</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </color=\"#ff0000\"></small>",
+            "CentreOfGravityInX": "Location of centre of gravity along the x axis measured from the center of the bounding box.",
             "Depth": "Profile depth, see illustration above (= h).",
             "Girth": "Lengths of girth, see illustration above (= c).",
             "InternalFilletRadius": "Internal fillet radius according the above illustration (= r1). If it is not given, zero is assumed.",
@@ -665,16 +665,16 @@
     },
     "IfcColourRgb": {
         "attributes": {
-            "Blue": "The intensity of the blue colour component. > <small> NOTE&npsp; The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual. </small>",
-            "Green": "The intensity of the green colour component. > <small> NOTE&npsp; The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual. </small>",
-            "Red": "The intensity of the red colour component. > <small> NOTE&npsp; The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual. </small>"
+            "Blue": "The intensity of the blue colour component. >  NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.",
+            "Green": "The intensity of the green colour component. >  NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.",
+            "Red": "The intensity of the red colour component. >  NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual."
         },
         "description": "Definition from ISO/CD 10303-46:1992: A colour rgb as a subtype of colour specifications is defined by three colour component values for red, green, and blue in the RGB colour model.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifccolourrgb.htm"
     },
     "IfcColourSpecification": {
         "attributes": {
-            "Name": "Optional name given to a particular colour specification in addition to the colour components (like the RGB values). > <small>   NOTE&nbsp; Examples are the names of a industry colour classification, such as RAL.<br> <font color=\"#FF0000\">IFC2x Edition 3 CHANGE&nbsp; Attribute added. </font></small>"
+            "Name": "Optional name given to a particular colour specification in addition to the colour components (like the RGB values). >    NOTE  Examples are the names of a industry colour classification, such as RAL."
         },
         "description": "Definition from ISO/CD 10303-46:1992: The colour specification entity contains a direct colour definition. Colour component values refer directly to a specific colour space.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifccolourspecification.htm"
@@ -693,7 +693,7 @@
     "IfcComplexProperty": {
         "attributes": {
             "HasProperties": "Set of properties that can be used within this complex property (may include other complex properties).",
-            "UsageName": "Usage description of the _IfcComplexProperty_ within the property set which references the _IfcComplexProperty_. > <font size=\"-1\">NOTE: Consider a complex property for glazing properties. The <i>Name</i> attribute of the <i>IfcComplexProperty</i> could be <i>Pset_GlazingProperties</i>, and the UsageName attribute could be <i>OuterGlazingPane</i>.</font>"
+            "UsageName": "Usage description of the _IfcComplexProperty_ within the property set which references the _IfcComplexProperty_. > NOTE: Consider a complex property for glazing properties. The Name attribute of the IfcComplexProperty could be Pset_GlazingProperties, and the UsageName attribute could be OuterGlazingPane."
         },
         "description": "This IfcComplexProperty is used to define complex properties to be handled completely within a property set. The included list may be a mixed or consistent collection of IfcProperty subtypes. This enables the definition of a list of properties to be included as a single 'property' entry in a property set. The definition of such a list can be reused in many different property sets, but the instantiation of such a complex property shall only be used within a single property set.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpropertyresource/lexical/ifccomplexproperty.htm"
@@ -934,7 +934,7 @@
         "attributes": {
             "HourOffset": "The number of hours by which local time is offset from coordinated universal time.",
             "MinuteOffset": "The number of minutes by which local time is offset from coordinated universal time.",
-            "Sense": "The direction of the offset.   > <font size=\"-1\">Note: The data type of the Sense is an enumeration - AHEAD means positive offset;  BEHIND means negative offset.  </font>"
+            "Sense": "The direction of the offset.   > Note: The data type of the Sense is an enumeration - AHEAD means positive offset;  BEHIND means negative offset."
         },
         "description": "Definition from ISO/CD 10303-41:1992: Relates a time to coordinated universal time by an offset (specified in hours and minutes) and direction.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifccoordinateduniversaltimeoffset.htm"
@@ -988,7 +988,7 @@
             "BaseDepth3": "Depth of the base where thickness changes, see illustration above (= s3).",
             "BaseWidth2": "Total extent of the width of the base, defined parallel to the x axis of the position coordinate system. See illustration above (= b2).",
             "BaseWidth4": "Width of the base where thickness changes, defined parallel to the x axis of the position coordinate system. See illustration above (= b4).",
-            "CentreOfGravityInY": "Location of centre of gravity along the y axis measured from the center of the bounding box.     > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>CentreOfGravityInY</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </font></small>",
+            "CentreOfGravityInY": "Location of centre of gravity along the y axis measured from the center of the bounding box.",
             "HeadDepth2": "Head depth of the A shape crane rail, see illustration above (= h2).",
             "HeadDepth3": "Head depth of the A shape crane rail, see illustration above (= h3).",
             "HeadWidth": "Total extent of the width of the head, defined parallel to the x axis of the position coordinate system. See illustration above (= b1).",
@@ -1003,7 +1003,7 @@
         "attributes": {
             "BaseDepth1": "Base depth of the F shape crane rail, see illustration above (= s1).",
             "BaseDepth2": "Base depth of the F shape crane rail, see illustration above (= s2).",
-            "CentreOfGravityInY": "Location of centre of gravity along the y axis measured from the center of the bounding box.     > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>CentreOfGravityInY</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </font></small>",
+            "CentreOfGravityInY": "Location of centre of gravity along the y axis measured from the center of the bounding box.",
             "HeadDepth2": "Head depth of the F shape crane rail, see illustration above (= h2).",
             "HeadDepth3": "Head depth of the F shape crane rail, see illustration above (= h3).",
             "HeadWidth": "Total extent of the width of the head, defined parallel to the x axis of the position coordinate system. See illustration above (= k)",
@@ -1101,7 +1101,7 @@
     "IfcCurveStyleFontPattern": {
         "attributes": {
             "InvisibleSegmentLength": "The length of the invisible segment in the pattern definition.",
-            "VisibleSegmentLength": "The length of the visible segment in the pattern definition. > <small>   NOTE&nbsp; For a visible segment representing a point, the value 0. should be assigned.<br> <font color=\"#FF0000\">   IFC2x Edition 3 CHANGE&nbsp; The datatype has been changed to IfcLengthMeasure with upward compatibility for file-based exchange. </font></small>"
+            "VisibleSegmentLength": "The length of the visible segment in the pattern definition. >    NOTE  For a visible segment representing a point, the value 0. should be assigned."
         },
         "description": "Definition from ISO/CD 10303-46:1992: A curve style font pattern is a pair of visible and invisible curve segment length measures in presentation area units.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifccurvestylefontpattern.htm"
@@ -1316,8 +1316,8 @@
     },
     "IfcDoor": {
         "attributes": {
-            "OverallHeight": "Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the ~~body of the~~ door opening. If omitted, the _OverallHeight_ should be taken from the geometric representation of the _IfcOpening_ in which the door is inserted.     > <small> NOTE&nbsp; The body of the door might be taller then the door opening (e.g. in cases where the door lining includes a casing). In these cases the <i>OverallHeight</i> shall still be given as the door opening height, and not as the total height of the door lining.</small>",
-            "OverallWidth": "Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the ~~body of the~~ door opening. If omitted, the _OverallWidth_ should be taken from the geometric representation of the _IfcOpening_ in which the door is inserted.     > <small> NOTE&nbsp; The body of the door might be wider then the door opening (e.g. in cases where the door lining includes a casing). In these cases the <i>OverallWidth</i> shall still be given as the door opening width, and not as the total width of the door lining.</small>"
+            "OverallHeight": "Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the ~~body of the~~ door opening. If omitted, the _OverallHeight_ should be taken from the geometric representation of the _IfcOpening_ in which the door is inserted.     >  NOTE  The body of the door might be taller then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallHeight shall still be given as the door opening height, and not as the total height of the door lining.",
+            "OverallWidth": "Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the ~~body of the~~ door opening. If omitted, the _OverallWidth_ should be taken from the geometric representation of the _IfcOpening_ in which the door is inserted.     >  NOTE  The body of the door might be wider then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallWidth shall still be given as the door opening width, and not as the total width of the door lining."
         },
         "description": "Definition from ISO 6707-1:1989: Construction for closing an opening, intended primarily for access with hinged, pivoted or sliding operation.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcdoor.htm"
@@ -1528,7 +1528,7 @@
             "HasStructuralMember": "",
             "IsConnectionRealization": "Reference to the connection relationship with realizing element. The relationship then refers to the realizing element which provides the physical manifestation of the connection relationship.",
             "ProvidesBoundaries": "Reference to Space Boundaries by virtue of the objectified relationship IfcRelSeparatesSpaces. It defines the concept of an Building Element bounding Spaces.",
-            "ReferencedInStructures": "Reference relationship to the spatial structure element, to which the element is additionally associated. > <font color=\"#ff0000\"><small> IFC2x Edition 3 CHANGE&nbsp; The inverse attribute has been added with upward compatibility for file based exchange. <small></small></small></font>",
+            "ReferencedInStructures": "Reference relationship to the spatial structure element, to which the element is additionally associated.",
             "Tag": "The tag (or label) identifier at the particular instance of a product, e.g. the serial number, or the position number. It is the identifier at the occurrence level."
         },
         "description": "Generalization of all components that make up an AEC product. Those elements can be logically contained by a spatial structure element that constitutes a certain level within a project structure hierarchy (e.g., site, building, storey or space). This is done by using the IfcRelContainedInSpatialStructure relationship.",
@@ -1552,7 +1552,7 @@
     },
     "IfcElementQuantity": {
         "attributes": {
-            "MethodOfMeasurement": "Name of the method of measurement used to calculate the element quantity. The method of measurement attribute has to be made recognizable by further agreements.  > <font color=\"#FF0000\" size=\"-1\">IFC2x2 Addendum 1 change: The attribute has been changed to be optional </font>",
+            "MethodOfMeasurement": "Name of the method of measurement used to calculate the element quantity. The method of measurement attribute has to be made recognizable by further agreements.",
             "Quantities": "The individual quantities for the element, can be a set of length, area, volume, weight or count based quantities."
         },
         "description": "An IfcElementQuantity defines a set of derived measures of an element's physical property. Elements could be spatial structure elements (like buildings, storeys, or spaces) or building elements (like walls, slabs, finishes). The IfcElementQuantity gets assigned to the element by using the IfcRelDefinesByProperties relationship.",
@@ -1780,9 +1780,9 @@
         "attributes": {
             "HatchLineAngle": "A plane angle measure determining the direction of the parallel hatching lines.",
             "HatchLineAppearance": "The curve style of the hatching lines. Any curve style pattern shall start at the origin of each hatch line.",
-            "PatternStart": "A distance along the reference hatch line which is the start point for the curve style font pattern of the reference hatch line.   If not given, the start point of the curve style font pattern is at the (virtual) hatching coordinate system.    > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>PatternStart</i> has been made OPTIONAL.</font></small>",
-            "PointOfReferenceHatchLine": "A Cartesian point which defines the offset of the reference hatch line from the origin of the (virtual) hatching coordinate system. The origin is used for mapping the fill area style hatching onto an annotation fill area or surface. The reference hatch line would then appear with this offset from the fill style target point.   If not given the reference hatch lines goes through the origin of the (virtual) hatching coordinate system.    > <small><font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The usage of the attribute <i>PointOfReferenceHatchLine</i> has changed to not provide the Cartesian point which is the origin for mapping, but to provide an offset to the origin for the mapping. The attribute has been made OPTIONAL.   </font></small>",
-            "StartOfNextHatchLine": "A repetition factor that determines the distance between adjacent hatch lines.    > <small><color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The attribute type of <i>StartOfNextHatchLine</i> has changed to a SELECT of <i>IfcPositiveLengthMeasure</i> (new) and <i>IfcOneDirectionRepeatFactor</i>.</color=\"#ff0000\"></small>"
+            "PatternStart": "A distance along the reference hatch line which is the start point for the curve style font pattern of the reference hatch line.   If not given, the start point of the curve style font pattern is at the (virtual) hatching coordinate system.",
+            "PointOfReferenceHatchLine": "A Cartesian point which defines the offset of the reference hatch line from the origin of the (virtual) hatching coordinate system. The origin is used for mapping the fill area style hatching onto an annotation fill area or surface. The reference hatch line would then appear with this offset from the fill style target point.   If not given the reference hatch lines goes through the origin of the (virtual) hatching coordinate system.",
+            "StartOfNextHatchLine": "A repetition factor that determines the distance between adjacent hatch lines."
         },
         "description": "Definition from ISO/CD 10303-46:1992: The fill area style hatching defines a styled pattern of curves for hatching an annotation fill area or a surface.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcfillareastylehatching.htm"
@@ -1978,10 +1978,10 @@
     "IfcGeometricRepresentationContext": {
         "attributes": {
             "CoordinateSpaceDimension": "The integer dimension count of the coordinate space modeled in a geometric representation context.",
-            "HasSubContexts": "The set of _IfcGeometricRepresentationSubContexts_ that refer to this _IfcGeometricRepresentationContext_. > <small>   <font color=\"#FF0000\">IFC2x Edition 3 CHANGE&nbsp; New inverse attribute.</font> </small>",
+            "HasSubContexts": "The set of _IfcGeometricRepresentationSubContexts_ that refer to this _IfcGeometricRepresentationContext_.",
             "Precision": "Value of the model precision for geometric models. It is a double value (REAL), typically in 1E-5 to 1E-8 range, that indicates the tolerance under which two given points are still assumed to be identical. The value can be used e.g. to sets the maximum distance from an edge curve to the underlying face surface in brep models.",
             "TrueNorth": "Direction of the true north relative to the underlying coordinate system as established by the attribute _WorldCoordinateSystem_. It is given by a direction within the xy-plane of the underlying coordinate system. If not given, it defaults to the positive direction of the y-axis of the _WorldCoordinateSystem_.",
-            "WorldCoordinateSystem": "Establishment of the engineering coordinate system (often referred to as the world coordinate system in CAD) for all representation contexts used by the project.  > <small>  Note&nbsp; it can be used to provide better numeric stability if the placement of the building(s) is far away from the origin. In most cases however it would be set to origin: (0.,0.,0.) and directions x(1.,0.,0.), y(0.,1.,0.), z(0.,0.,1.). </small>"
+            "WorldCoordinateSystem": "Establishment of the engineering coordinate system (often referred to as the world coordinate system in CAD) for all representation contexts used by the project.  >   Note  it can be used to provide better numeric stability if the placement of the building(s) is far away from the origin. In most cases however it would be set to origin: (0.,0.,0.) and directions x(1.,0.,0.), y(0.,1.,0.), z(0.,0.,1.)."
         },
         "description": "Definition from ISO/CD 10303-42:1992: A geometric representation context is a representation context in which the geometric representation items are geometrically founded. A geometric representation context is a distinct coordinate space, spatially unrelated to other coordinate spaces.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcrepresentationresource/lexical/ifcgeometricrepresentationcontext.htm"
@@ -1995,7 +1995,7 @@
             "CoordinateSpaceDimension": "ParentContext.CoordinateSpaceDimension",
             "ParentContext": "Parent context from which the sub context derives its world coordinate system, precision, space coordinate dimension and true north.",
             "Precision": "NVL(ParentContext.Precision,1.E-5)",
-            "TargetScale": "The target <font color=\"#ff0000\">plot</font> scale of the representation  to which this representation context applies. > <font size=\"-1\"> Scale indicates the target plot scale for the representation sub context, all annotation styles are given in plot dimensions according to this target plot scale.<br> If multiple instances of <i>IfcGeometricRepresentationSubContext</i> are given having the same <i>TargetView</i> value, the target plot scale  applies up to the next smaller scale, or up to unlimited small scale.   <br>   <br> Note: Scale 1:100 (given as 0.01 within <i>TargetScale</i>) is bigger then 1:200 (given as 0.005 within <i>TargetScale</i>).   </font>",
+            "TargetScale": "The target plot scale of the representation  to which this representation context applies. >  Scale indicates the target plot scale for the representation sub context, all annotation styles are given in plot dimensions according to this target plot scale. If multiple instances of IfcGeometricRepresentationSubContext are given having the same TargetView value, the target plot scale  applies up to the next smaller scale, or up to unlimited small scale.     Note: Scale 1:100 (given as 0.01 within TargetScale) is bigger then 1:200 (given as 0.005 within TargetScale).",
             "TargetView": "Target view of the representation to which this representation context applies.",
             "TrueNorth": "NVL(ParentContext.TrueNorth,SELF.WorldCoordinateSystem.P[2])",
             "UserDefinedTargetView": "User defined target view, this attribute value shall be given, if the TargetView attribute is set to USERDEFINED.",
@@ -2014,7 +2014,7 @@
     },
     "IfcGrid": {
         "attributes": {
-            "ContainedInStructure": "Relationship to a spatial structure element, to which the grid is primarily associated. > <small><font color=\"#FF0000\">IFC2x PLATFORM CHANGE&nbsp; The inverse relationship has been added to <i>IfcGrid</i> with upward compatibility</font> </small>",
+            "ContainedInStructure": "Relationship to a spatial structure element, to which the grid is primarily associated.",
             "UAxes": "List of grid axes defining the first row of grid lines.",
             "VAxes": "List of grid axes defining the second row of grid lines.",
             "WAxes": "List of grid axes defining the third row of grid lines. It may be given in the case of a triangular grid."
@@ -2026,10 +2026,10 @@
         "attributes": {
             "AxisCurve": "Underlying curve which provides the geometry for this grid axis.",
             "AxisTag": "The tag or name for this grid axis.",
-            "HasIntersections": "The reference to a set of <IfcVirtualGridIntersection's, that connect other grid axes to this grid axis. > <small>   <font color=\"#FF0000\">IFC2x3 CHANGE&nbsp; New inverse attribute.</font> </small>",
-            "PartOfU": "If provided, the _IfcGridAxis_ is part of the _UAxes_ of _IfcGrid_. > <small>   <font color=\"#FF0000\">IFC2x Edition 3 CHANGE&nbsp; New inverse attribute.</font> </small>",
-            "PartOfV": "If provided, the _IfcGridAxis_ is part of the _VAxes_ of _IfcGrid_. > <small>   <font color=\"#FF0000\">IFC2x Edition 3 CHANGE&nbsp; New inverse attribute.</font> </small>",
-            "PartOfW": "If provided, the _IfcGridAxis_ is part of the _WAxes_ of _IfcGrid_. > <small>   <font color=\"#FF0000\">IFC2x Edition 3 CHANGE&nbsp; New inverse attribute.</font> </small>",
+            "HasIntersections": "The reference to a set of",
+            "PartOfU": "If provided, the _IfcGridAxis_ is part of the _UAxes_ of _IfcGrid_.",
+            "PartOfV": "If provided, the _IfcGridAxis_ is part of the _VAxes_ of _IfcGrid_.",
+            "PartOfW": "If provided, the _IfcGridAxis_ is part of the _WAxes_ of _IfcGrid_.",
             "SameSense": "Defines whether the original sense of curve is used or whether it is reversed in the context of the grid axis."
         },
         "description": "An individual axis, the IfcGridAxis, is defined in the context of a design grid. The axis definition is based on a curve of dimensionality 2. The grid axis is positioned within the XY plane of the position coordinate system defined by the IfcDesignGrid.",
@@ -2138,8 +2138,8 @@
     },
     "IfcLShapeProfileDef": {
         "attributes": {
-            "CentreOfGravityInX": "Location of centre of gravity along the x axis measured from the center of the bounding box.     > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>CentreOfGravityInX</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </font></small>",
-            "CentreOfGravityInY": "Location of centre of gravity along the Y axis measured from the center of the bounding box.     > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>CentreOfGravityInY</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </font></small>",
+            "CentreOfGravityInX": "Location of centre of gravity along the x axis measured from the center of the bounding box.",
+            "CentreOfGravityInY": "Location of centre of gravity along the Y axis measured from the center of the bounding box.",
             "Depth": "Leg length, see illustration above (= h).",
             "EdgeRadius": "Edge radius according the above illustration (= r2). If it is not given, zero is assumed.",
             "FilletRadius": "Fillet radius according the above illustration (= r1). If it is not given, zero is assumed.",
@@ -2186,7 +2186,7 @@
         "attributes": {
             "LuminousIntensity": "The luminous intensity distribution measure for this pair of main and secondary plane angles according to the light distribution curve chosen.",
             "MainPlaneAngle": "The main plane angle (A, B or C angles, according to the light distribution curve chosen).",
-            "SecondaryPlaneAngle": "The list of secondary plane angles (the &#945;, &#946; or &#947; angles) according to the light distribution curve chosen.  > NOTE: The _SecondaryPlaneAngle_ and _LuminousIntensity_ lists are corresponding lists."
+            "SecondaryPlaneAngle": "The list of secondary plane angles (the \u03b1, \u03b2 or \u03b3 angles) according to the light distribution curve chosen.  > NOTE: The _SecondaryPlaneAngle_ and _LuminousIntensity_ lists are corresponding lists."
         },
         "description": "The IfcLightDistributionData defines the luminous intensity of a light source given at a particular main plane angle. It is based on some standardized light distribution curves, the MainPlaneAngle is either the",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationorganizationresource/lexical/ifclightdistributiondata.htm"
@@ -2200,7 +2200,7 @@
     },
     "IfcLightIntensityDistribution": {
         "attributes": {
-            "DistributionData": "Light distribution data applied to the light source. It is defined by a list of main plane angles (B or C according to the light distribution curve chosen) that includes (for each B or C angle) a second list of secondary plane angles (the &#946; or &#947; angles) and the according luminous intensity distribution measures.",
+            "DistributionData": "Light distribution data applied to the light source. It is defined by a list of main plane angles (B or C according to the light distribution curve chosen) that includes (for each B or C angle) a second list of secondary plane angles (the \u03b2 or \u03b3 angles) and the according luminous intensity distribution measures.",
             "LightDistributionCurve": "Standardized  light distribution curve used to define the luminous intensity of the light in all directions."
         },
         "description": "The IfcLightIntensityDistribution defines the the luminous intensity of a light source that changes according to the direction of the ray. It is based on some standardized light distribution curves, which are defined by the LightDistributionCurve attribute.",
@@ -2313,7 +2313,7 @@
     "IfcMaterial": {
         "attributes": {
             "ClassifiedAs": "Reference to the relationship pointing to the classification(s) of the material.",
-            "HasRepresentation": "Reference to the _IfcMaterialDefinitionRepresentation_ that provides presentation information to a representation common to this material in style definitions.    > <small><font color=\"#ff0000\">IFC2x Edition 3 CHANGE&nbsp; The inverse attribute <i>HasRepresentation</i> has been added.</font></small>",
+            "HasRepresentation": "Reference to the _IfcMaterialDefinitionRepresentation_ that provides presentation information to a representation common to this material in style definitions.",
             "Name": "Name of the material."
         },
         "description": "A homogeneous substance that can be used to form elements.",
@@ -2357,7 +2357,7 @@
         "attributes": {
             "DirectionSense": "Denotion whether the layer set is oriented in positive or negative sense relative to the material layer set base. The meaning of \"positive\" and \"negative\" needs to be established in the geometry use definitions. See examples at _IfcMaterialLayerSetUsage_ for a guideline as well.",
             "ForLayerSet": "The _IfcMaterialLayerSet_ set to which the usage is applied.",
-            "LayerSetDirection": "Orientation of the layer set relative to element reference geometry. The meaning of the value of this attribute shall be specified in the geometry use section for each element. For extruded shape representation, direction can be given along the extrusion path (e.g. for slabs) or perpendicular to it (e.g. for walls). > <small>NOTE&nbsp; the <i>LayerSetDirection</i> for <i>IfcWallStandardCase</i> shall be AXIS2 (i.e. the y-axis) and for standard <i>IfcSlab</i> it shall be AXIS3 (i.e. the z-axis). </small>",
+            "LayerSetDirection": "Orientation of the layer set relative to element reference geometry. The meaning of the value of this attribute shall be specified in the geometry use section for each element. For extruded shape representation, direction can be given along the extrusion path (e.g. for slabs) or perpendicular to it (e.g. for walls). > NOTE  the LayerSetDirection for IfcWallStandardCase shall be AXIS2 (i.e. the y-axis) and for standard IfcSlab it shall be AXIS3 (i.e. the z-axis).",
             "OffsetFromReferenceLine": "Offset of the material layer set base line (MlsBase) from reference geometry (line or plane). The offset can be positive or negative, unless restricted for a particular building element type in its use definition or by implementer agreement. The reference geometry for each relevant subtype of _IfcElement_ is defined in use definition for the element. Examples are given in the use definition of _IfcMaterialLayerSetUsage_."
         },
         "description": "Definition from IAI: Determines the usage of IfcMaterialLayerSet in terms of its location and orientation relative to the associated element geometry. The location of material layer set shall be compatible with the building element geometry (i.e. material layers shall fit inside the element geometry). The rules to ensure the compatibility depend on the type of the building element.",
@@ -2504,7 +2504,7 @@
     },
     "IfcObjectPlacement": {
         "attributes": {
-            "PlacesObject": "The _IfcObjectPlacement_ shall be used to provide a placement and an object coordinate system for a single instance of _IfcProduct_. > <small>   <font color=\"#FF0000\">IFC2x Edition 3 CHANGE&nbsp; New inverse attribute.</font> </small>",
+            "PlacesObject": "The _IfcObjectPlacement_ shall be used to provide a placement and an object coordinate system for a single instance of _IfcProduct_.",
             "ReferencedByPlacements": "Placements that are given relative to this placement of an object."
         },
         "description": "Abstract supertype for the special types defining the object coordinate system. The IfcObjectPlacement has to be provided for each product that has a shape representation.",
@@ -2588,7 +2588,7 @@
     },
     "IfcOrganization": {
         "attributes": {
-            "Addresses": "Postal and telecom addresses of an organization. > <font size=\"-1\">NOTE: There may be several addresses related to an organization. </font>",
+            "Addresses": "Postal and telecom addresses of an organization. > NOTE: There may be several addresses related to an organization.",
             "Description": "Text that relates the nature of the organization.",
             "Engages": "Inverse relationship to IfcPersonAndOrganization relationships in which IfcOrganization is engaged.",
             "Id": "Identification of the organization.",
@@ -2682,12 +2682,12 @@
     },
     "IfcPerson": {
         "attributes": {
-            "Addresses": "Postal and telecommunication addresses of a person. > <font size=\"-1\">NOTE - A person may have several addresses. </font>",
+            "Addresses": "Postal and telecommunication addresses of a person. > NOTE - A person may have several addresses.",
             "EngagedIn": "The inverse relationship to IfcPersonAndOrganization relationships in which IfcPerson is engaged.",
-            "FamilyName": "The name by which the family identity of the person may be recognized. > <font size=\"-1\">NOTE: Depending on geographical location and culture, family name may appear either as the first or last component of a name.</font>",
-            "GivenName": "The name by which a person is known within a family and by which he or she may be familiarly recognized. > <font size=\"-1\">NOTE: Depending on geographical location and culture, given name may appear either as the first or last component of a name. </font>",
+            "FamilyName": "The name by which the family identity of the person may be recognized. > NOTE: Depending on geographical location and culture, family name may appear either as the first or last component of a name.",
+            "GivenName": "The name by which a person is known within a family and by which he or she may be familiarly recognized. > NOTE: Depending on geographical location and culture, given name may appear either as the first or last component of a name.",
             "Id": "Identification of the person.",
-            "MiddleNames": "Additional names given to a person that enable their identification apart from others who may have the same or similar family and given names. > <font size=\"-1\">NOTE: Middle names are not normally used in familiar communication but may be asserted to provide additional  identification of a particular person if necessary. They may be particularly useful in situations where the person concerned has a  family name that occurs commonly in the geographical region. </font>",
+            "MiddleNames": "Additional names given to a person that enable their identification apart from others who may have the same or similar family and given names. > NOTE: Middle names are not normally used in familiar communication but may be asserted to provide additional  identification of a particular person if necessary. They may be particularly useful in situations where the person concerned has a  family name that occurs commonly in the geographical region.",
             "PrefixTitles": "The word, or group of words, which specify the person's social and/or professional standing and appear before his/her names.",
             "Roles": "Roles played by the person.",
             "SuffixTitles": "The word, or group of words, which specify the person's social and/or professional standing and appear after his/her names."
@@ -2756,7 +2756,7 @@
         "attributes": {
             "ColourComponents": "Indication whether the pixel values contain a 1, 2, 3, or 4 colour component.",
             "Height": "The number of pixels in height (T) direction.",
-            "Pixel": "Flat list of hexadecimal values, each describing one pixel by 1, 2, 3, or 4 components. > <small><font color\"#ff0000\"=\"\"> IFC2x Edition 3 CHANGE&nbsp; The data type has been changed from STRING to BINARY. </font></small>",
+            "Pixel": "Flat list of hexadecimal values, each describing one pixel by 1, 2, 3, or 4 components.",
             "Width": "The number of pixels in width (S) direction."
         },
         "description": "Definition from IAI: An IfcPixelTexture provides a 2D image-based texture map as an explicit array of pixel values (image field). In contrary to the IfcImageTexture the IfcPixelTexture holds a 2 dimensional list of pixel color (and opacity) directly, instead of referencing to an URL.",
@@ -2772,7 +2772,7 @@
     },
     "IfcPlanarBox": {
         "attributes": {
-            "Placement": "The _IfcAxis2Placement_ positions a local coordinate system for the definition of the rectangle. The origin of this local coordinate system serves as the lower left corner of the rectangular box.    > <small>NOTE&nbsp; In case of a 3D placement by <i>IfcAxisPlacement3D the <i>IfcPlanarBox</i> is defined within the xy plane of the definition coordinate system.</i></small>"
+            "Placement": "The _IfcAxis2Placement_ positions a local coordinate system for the definition of the rectangle. The origin of this local coordinate system serves as the lower left corner of the rectangular box.    > NOTE  In case of a 3D placement by IfcAxisPlacement3D the IfcPlanarBox is defined within the xy plane of the definition coordinate system."
         },
         "description": "Definition from ISO/CD 10303-46:1992: A planar box specifies an arbitrary rectangular box and its location in a two dimensional Cartesian coordinate system.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifcplanarbox.htm"
@@ -2832,7 +2832,7 @@
     },
     "IfcPolygonalBoundedHalfSpace": {
         "attributes": {
-            "PolygonalBoundary": "Two-dimensional ~~polyline~~ bounded curve, defined in the xy plane of the position coordinate system. > <small><font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The attribute type has been changed from <i>IfcPolyline</i> to its supertype <i>IfcBoundedCurve</i> with upward compatibility for file based exchange. </font></small>",
+            "PolygonalBoundary": "Two-dimensional ~~polyline~~ bounded curve, defined in the xy plane of the position coordinate system.",
             "Position": "Definition of the position coordinate system for the bounding polyline ~~and the base surface~~."
         },
         "description": "The polygonal bounded half space is a special subtype of a half space solid, where the material of the half space used in Boolean expressions is bounded by a polygonal boundary. The base surface of the half space is positioned by its normal relativeto the object coordinate system (as defined at the supertype IfcHalfSpaceSolid), and its polygonal (with or without arc segments) boundary is defined in the XY plane of the position coordinate system established by the Position attribute, the subtraction body is extruded perpendicular to the XY plane of the position coordinate system, i.e. into the direction of the positive Z axis defined by the Position attribute.",
@@ -2856,12 +2856,12 @@
     },
     "IfcPostalAddress": {
         "attributes": {
-            "AddressLines": "The postal address. > <font size=\"-1\">NOTE: A postal address may occupy several lines (or elements) when recorded.  It is expected that normal usage will incorporate relevant elements of the following address concepts:  A location within a building (e.g. 3rd Floor) Building name (e.g. Interoperability House) Street number  (e.g. 6400) Street name (e.g. Alliance Boulevard). Typical content of address lines may vary in different  countries. </font>",
+            "AddressLines": "The postal address. > NOTE: A postal address may occupy several lines (or elements) when recorded.  It is expected that normal usage will incorporate relevant elements of the following address concepts:  A location within a building (e.g. 3rd Floor) Building name (e.g. Interoperability House) Street number  (e.g. 6400) Street name (e.g. Alliance Boulevard). Typical content of address lines may vary in different  countries.",
             "Country": "The name of a country.",
             "InternalLocation": "An organization defined address for internal mail delivery.",
             "PostalBox": "An address that is implied by an identifiable mail drop.",
             "PostalCode": "The code that is used by the country's postal service.",
-            "Region": "The name of a region. > <font size=\"-1\">NOTE: The counties of the United Kingdom and the states of North America are examples of regions. </font>",
+            "Region": "The name of a region. > NOTE: The counties of the United Kingdom and the states of North America are examples of regions.",
             "Town": "The name of a town."
         },
         "description": "The address for delivery of paper based mail.",
@@ -2917,7 +2917,7 @@
             "LayerBlocked": "A logical setting, TRUE indicates that the layer is set to 'Blocked', FALSE that the layer is set to 'Not blocked', UNKNOWN that such information is not available.",
             "LayerFrozen": "A logical setting, TRUE indicates that the layer is set to 'Frozen', FALSE that the layer is set to 'Not frozen', UNKNOWN that such information is not available.",
             "LayerOn": "A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.",
-            "LayerStyles": "Assignment of presentation styles to the layer to provide a default style for representation items. > <small> NOTE&nbsp; In most cases the assignment of styles to a layer is restricted to an <i>IfcCurveStyle</i> representing the layer curve colour, layer curve thickness, and layer curve type. </small>"
+            "LayerStyles": "Assignment of presentation styles to the layer to provide a default style for representation items. >  NOTE  In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type."
         },
         "description": "An IfcPresentationLayerAssignmentWithStyle extends the presentation layer assignment with capabilities to define visibility control, access control and common style information.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationorganizationresource/lexical/ifcpresentationlayerwithstyle.htm"
@@ -2966,7 +2966,7 @@
     "IfcProductDefinitionShape": {
         "attributes": {
             "HasShapeAspects": "Reference to the shape aspect that represents part of the shape or its feature distinctively.",
-            "ShapeOfProduct": "The _IfcProductDefinitionShape_ shall be used to provide a representation for a single instance of _IfcProduct_. > <small>   <font color=\"#FF0000\">IFC2x Edition 3 CHANGE&nbsp; New inverse attribute.</font> </small>"
+            "ShapeOfProduct": "The _IfcProductDefinitionShape_ shall be used to provide a representation for a single instance of _IfcProduct_."
         },
         "description": "Definition from ISO/CD 10303-42:1992: A product definition shape identifies a product\u2019s shape as the conceptual idea of the form of a product.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcrepresentationresource/lexical/ifcproductdefinitionshape.htm"
@@ -3139,7 +3139,7 @@
     },
     "IfcPropertySingleValue": {
         "attributes": {
-            "NominalValue": "Value and measure type of this property.  > <small> NOTE&nbsp; By virtue of the defined data type, that is selected from the SELECT <i>IfcValue</i>, the appropriate unit can be found within the <i>IfcUnitAssignment</i>, defined for the project if no value for the unit attribute is given.<br> <font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The attribute has been made optional with upward compatibility for file based exchange. </font> </small>",
+            "NominalValue": "Value and measure type of this property.  >  NOTE  By virtue of the defined data type, that is selected from the SELECT IfcValue, the appropriate unit can be found within the IfcUnitAssignment, defined for the project if no value for the unit attribute is given.",
             "Unit": "Unit for the nominal value, if not given, the default value for the measure type (given by the TYPE of nominal value) is used as defined by the global unit assignment at IfcProject."
         },
         "description": "A property with a single value (IfcPropertySingleValue) defines a property object which has a single (numeric or descriptive) value assigned. It defines a property - single value combination for which the property name, the value with measure type (and optionally the unit) is given.",
@@ -3226,7 +3226,7 @@
     },
     "IfcRailing": {
         "attributes": {
-            "PredefinedType": "Predefined generic types for a railing that are specified in an enumeration. There may be a property set given for the predefined types. > <font size=\"-1\">NOTE: The use of the predefined type directly at the occurrence object level of <i>IfcRailing</i> is only permitted, if no type object <i>IfcRailingType</i> is assigned.</font>  > <font color=\"#FF0000\" size=\"-1\">IFC2x PLATFORM CHANGE: The attribute has been changed into an OPTIONAL attribute. </font>"
+            "PredefinedType": "Predefined generic types for a railing that are specified in an enumeration. There may be a property set given for the predefined types. > NOTE: The use of the predefined type directly at the occurrence object level of IfcRailing is only permitted, if no type object IfcRailingType is assigned."
         },
         "description": "Definition of IAI: The railing is a frame assembly adjacent to human circulation spaces and at some space boundaries where it is used in lieu of walls or to complement walls. Designed to aid humans, either as an optional physical support, or to prevent injury by falling. A list of references to accessory/mounting hardware for this railing might be given by including these assessories (IfcDiscreteAssessory) through the objectified relationship IfcRelAggregates.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcrailing.htm"
@@ -3500,7 +3500,7 @@
     },
     "IfcRelAssociatesProfileProperties": {
         "attributes": {
-            "ProfileOrientation": "The provision of an plane angle or a direction as the measure to orient the profile definition within the elements coordinate system. * For _IfcStructuralCurveMember_ the _IfcPlaneAngleMeasure_ defines the &beta; angle, for columns the derivation from the structural x axis and for beams the derivation from the structural z axis. The _IfcDirection_ precisely defines the orientation of the profile's structural z axis within the structural coordinate system of the analysis model.  > <small><font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The attribute <i>ProfileOrientation</i> is a new attribute.   </font></small>",
+            "ProfileOrientation": "The provision of an plane angle or a direction as the measure to orient the profile definition within the elements coordinate system. * For _IfcStructuralCurveMember_ the _IfcPlaneAngleMeasure_ defines the \u03b2 angle, for columns the derivation from the structural x axis and for beams the derivation from the structural z axis. The _IfcDirection_ precisely defines the orientation of the profile's structural z axis within the structural coordinate system of the analysis model.",
             "ProfileSectionLocation": "Reference to a shape aspect with a single member of the ShapeRepresentations list. This member holds the location at which the profile properties apply.",
             "RelatingProfileProperties": "Profile property definition assigned to the instances."
         },
@@ -3566,7 +3566,7 @@
     "IfcRelConnectsStructuralMember": {
         "attributes": {
             "AdditionalConditions": "Reference to instances describing additional connection properties.",
-            "AppliedCondition": "Reference to an instance of _IfcBoundaryCondition_ which is used to define the connections properties.    > <font size=\"-1\"> NOTE&nbsp; The boundary condition applied to a member-connection-relationship is also called \"release\"</font>",
+            "AppliedCondition": "Reference to an instance of _IfcBoundaryCondition_ which is used to define the connections properties.    >  NOTE  The boundary condition applied to a member-connection-relationship is also called \"release\"",
             "ConditionCoordinateSystem": "Defines a new coordinate system used for the description of the connection properties. The usage of this coordinate system is described more detailed in the definition of the subtypes of this entity definition.",
             "RelatedStructuralConnection": "Reference to an instance of IfcStructuralConnection (or its subclasses) which is connected to the specified structural member.",
             "RelatingStructuralMember": "Reference to an instance of IfcStructuralMember (or its subclasses) which is connected to the specified structural connection.",
@@ -3592,7 +3592,7 @@
     },
     "IfcRelContainedInSpatialStructure": {
         "attributes": {
-            "RelatedElements": "Set of ~~elements~~ products, which are contained within this level of the spatial structure hierarchy. > <font color=\"#ff0000\"><small> IFC2x PLATFORM CHANGE&nbsp; The data type has been changed from <i>IfcElement</i> to <i>IfcProduct</i> with upward compatibility <small></small></small></font>",
+            "RelatedElements": "Set of ~~elements~~ products, which are contained within this level of the spatial structure hierarchy.",
             "RelatingStructure": "Spatial structure element, within which the element is contained. Any element can only be contained within one element of the project spatial structure."
         },
         "description": "This objectified relationship, IfcRelContainedInSpatialStructure, is used to assign elements to a certain level of the spatial project structure. Any element can only be assigned once to a certain level of the spatial structure. The question, which level is relevant for which type of element, can only be answered within the context of a particular project and might vary within the various regions.",
@@ -3645,7 +3645,7 @@
     },
     "IfcRelFillsElement": {
         "attributes": {
-            "RelatedBuildingElement": "Reference to ~~building~~ element that occupies fully or partially the associated opening. > <small><font color=\"#ff0000\"> IFC2x PLATFORM CHANGE: The data type has been changed from <i>IfcBuildingElement</i> to <i>IfcElement</i> with upward compatibility for file based exchange. </font><small></small></small>",
+            "RelatedBuildingElement": "Reference to ~~building~~ element that occupies fully or partially the associated opening.",
             "RelatingOpeningElement": "Opening Element being filled by virtue of this relationship."
         },
         "description": "Objectified relationship between an opening element and an ~~building~~ element that fills (or partially fills) the opening element. It is an one-to-one relationship.",
@@ -3695,7 +3695,7 @@
     },
     "IfcRelReferencedInSpatialStructure": {
         "attributes": {
-            "RelatedElements": "Set of products, which are referenced within this level of the spatial structure hierarchy. > <small>NOTE&nbsp; Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.</small>",
+            "RelatedElements": "Set of products, which are referenced within this level of the spatial structure hierarchy. > NOTE  Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.",
             "RelatingStructure": "Spatial structure element, within which the element is referenced. Any element can be contained within zero, one or many elements of the project spatial structure."
         },
         "description": "This objectified relationship, IfcRelReferencedInSpatialStructure, is used to assign elements in addition to those levels of the project spatial structure, in which they are referenced, but not primarily contained.",
@@ -3717,7 +3717,7 @@
     },
     "IfcRelServicesBuildings": {
         "attributes": {
-            "RelatedBuildings": "Spatial structure elements (including site, building, storeys) that are serviced by the system. > <small><font color=\"#FF0000\"> IFC2x PLATFORM CHANGE&nbsp; The data type has been changed from <i>IfcBuilding</i> to <i>IfcSpatialStructureElement</i> with upward compatibility for file based exchange. </font></small>",
+            "RelatedBuildings": "Spatial structure elements (including site, building, storeys) that are serviced by the system.",
             "RelatingSystem": "System that services the Buildings."
         },
         "description": "An objectified relationship that defines the relationship between a system and the sites, buildings, storeys or spaces, it serves. Examples of systems are:",
@@ -3725,10 +3725,10 @@
     },
     "IfcRelSpaceBoundary": {
         "attributes": {
-            "ConnectionGeometry": "Physical representation of the space boundary. Provided as a **curve or** surface given within the LCS of the space. > <small><font color=\"#ff0000\"> IFC2x PLATFORM CHANGE&nbsp; The data type has been changed from <i>IfcConnectionSurfaceGeometry</i> to <i>IfcConnectionGeometry</i> with upward compatibility for file based exchange. </font></small>",
+            "ConnectionGeometry": "Physical representation of the space boundary. Provided as a **curve or** surface given within the LCS of the space.",
             "InternalOrExternalBoundary": "Defines, whether the Space Boundary is internal (Internal), or external, i.e. adjacent to open space (that can be an partially enclosed space, such as terrace (External).",
             "PhysicalOrVirtualBoundary": "Defines, whether the Space Boundary is physical (Physical) or virtual (Virtual).",
-            "RelatedBuildingElement": "Reference to ~~Building~~ Element, that defines the Space Boundaries. > <small><font color=\"#ff0000\"> IFC2x PLATFORM CHANGE: The data type has been changed from <i>IfcBuildingElement</i> to <i>IfcElement</i> with upward compatibility for file based exchange. </font></small>",
+            "RelatedBuildingElement": "Reference to ~~Building~~ Element, that defines the Space Boundaries.",
             "RelatingSpace": "Reference to one spaces that is delimited by this boundary."
         },
         "description": "The space boundary (IfcRelSpaceBoundary) defines the physical or virtual delimiter of a space as its relationship to the surrounding elements.",
@@ -3736,8 +3736,8 @@
     },
     "IfcRelVoidsElement": {
         "attributes": {
-            "RelatedOpeningElement": "Reference to the ~~opening~~ feature subtraction element which defines a void in the associated ~~opening~~ element. > <small><font color=\"#ff0000\"> IFC2x PLATFORM CHANGE&nbsp; The data type has been changed from <i>IfcOpeningElement</i> to <i>IfcFeatureElementSubtraction</i> with upward compatibility for file based exchange. </font></small>",
-            "RelatingBuildingElement": "Reference to ~~building~~ element in which a void is created by associated ~~opening~~ feature subtraction element. > <small><font color=\"#ff0000\"> IFC2x PLATFORM CHANGE: The data type has been changed from <i>IfcBuildingElement</i> to <i>IfcElement</i> with upward compatibility for file based exchange. </font></small>"
+            "RelatedOpeningElement": "Reference to the ~~opening~~ feature subtraction element which defines a void in the associated ~~opening~~ element.",
+            "RelatingBuildingElement": "Reference to ~~building~~ element in which a void is created by associated ~~opening~~ feature subtraction element."
         },
         "description": "Objectified relationship between an ~~building~~ element and one opening element that creates a void in the element. It is a one-to-one relationship. This relationship implies a Boolean operation of subtraction between the geometric bodies of the element and the opening.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcrelvoidselement.htm"
@@ -3758,10 +3758,10 @@
         "attributes": {
             "ContextOfItems": "Definition of the representation context for which the different subtypes of representation are valid.",
             "Items": "Set of geometric representation items that are defined for this representation.",
-            "LayerAssignments": "Assignment of the whole representation to a single or multiple layer(s). The _LayerAssigments_ can be overridden by _LayerAssigments_ of the _IfcRepresentationItem_'s within the list of _Items_. > <small>NOTE&nbsp; Implementation agreements can restrict the maximum number of layer assignments to 1.</small>   > <small><font color=\"#ff0000\">IFC2x Edition 3 CHANGE&nbsp; The inverse attribute <i>LayerAssignments</i> has been added. </font></small>",
+            "LayerAssignments": "Assignment of the whole representation to a single or multiple layer(s). The _LayerAssigments_ can be overridden by _LayerAssigments_ of the _IfcRepresentationItem_'s within the list of _Items_. > NOTE  Implementation agreements can restrict the maximum number of layer assignments to 1.",
             "OfProductRepresentation": "Reference to the product shape, for which it is the shape representation.",
             "RepresentationIdentifier": "The optional identifier of the representation as used within a project.",
-            "RepresentationMap": "Use of the representation within an _IfcRepresentationMap_. If used, this _IfcRepresentation_ may be assigned to many representations as one of its _Items_ using an _IfcMappedItem_. Using _IfcRepresentationMap_ is the way to share one representation (often of type _IfcShapeRepresentation_) by many products.   > <small><font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The inverse attribute <i>LayerAssignments</i> has been added. </font></small>",
+            "RepresentationMap": "Use of the representation within an _IfcRepresentationMap_. If used, this _IfcRepresentation_ may be assigned to many representations as one of its _Items_ using an _IfcMappedItem_. Using _IfcRepresentationMap_ is the way to share one representation (often of type _IfcShapeRepresentation_) by many products.",
             "RepresentationType": "The description of the type of a representation context. The representation type defines the type of geometry or topology used for representing the product representation. More information is given at the subtypes _IfcShapeRepresentation_ and _IfcTopologyRepresentation_.   The supported values for context type are to be specified by implementers agreements."
         },
         "description": "Definition from ISO/CD 10303-43:1992: A representation is one or more representation items that are related in a specified representation context as the representation of some concept.",
@@ -3778,8 +3778,8 @@
     },
     "IfcRepresentationItem": {
         "attributes": {
-            "LayerAssignments": "Assignment of the representation item to a single or multiple layer(s). The _LayerAssignments_ can override a _LayerAssignments_ of the _IfcRepresentation_ it is used  within the list of _Items_. > <small>NOTE&nbsp; Implementation agreements can restrict the maximum number of layer assignments to 1.</small>   > <small><font color=\"#ff0000\">IFC2x Edition 3 CHANGE&nbsp; The inverse attribute <i>LayerAssignments</i> has been added.</font></small>",
-            "StyledByItem": "Reference to the _IfcStyledItem_ that provides presentation information to the representation, e.g. a curve style, including colour and thickness to a geometric curve.    > <small><font color=\"#ff0000\">IFC2x Edition 3 CHANGE&nbsp; The inverse attribute <i>StyledByItem</i> has been added.</font></small>"
+            "LayerAssignments": "Assignment of the representation item to a single or multiple layer(s). The _LayerAssignments_ can override a _LayerAssignments_ of the _IfcRepresentation_ it is used  within the list of _Items_. > NOTE  Implementation agreements can restrict the maximum number of layer assignments to 1.",
+            "StyledByItem": "Reference to the _IfcStyledItem_ that provides presentation information to the representation, e.g. a curve style, including colour and thickness to a geometric curve."
         },
         "description": "Definition from ISO/CD 10303-43:1992: A representation item is an element of product data that participates in one or more representations or contributes to the definition of another representation item. A representation item contributes to the definition of another representation item when it is referenced by that representation item.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifcrepresentationitem.htm"
@@ -3970,7 +3970,7 @@
             "Name": "The word or group of words by which the shape aspect is known. It is a tag to indicate the particular semantic of a component within the product definition shape, used to provide meaning. Example: use the tag \"Glazing\" to define which component of a window shape defines the glazing area.",
             "PartOfProductDefinitionShape": "Reference to the product definition shape of which this class is an aspect.",
             "ProductDefinitional": "An indication that the shape aspect is on the physical boundary of the product definition shape. If the value of this attribute is TRUE, it shall be asserted that the shape aspect being identified is on such a boundary. If the value is FALSE, it shall be asserted that the shape aspect being identified is not on such a boundary. If the value is UNKNOWN, it shall be asserted that it is not known whether or not the shape aspect being identified is on such a boundary.  --- EXAMPLE: Would be FALSE for a center line, identified as shape aspect; would be TRUE for a cantilever. ---",
-            "ShapeRepresentations": "List of ~~shape~~ representations. Each member defines a valid representation of a particular type within a particular representation context as being an aspect (or part) of a product definition. > <small><font color=\"#FF0000\">IFC2x Edition 3 CHANGE&nbsp; The data type has been changed from <i>IfcShapeRepresentation</i> to <i>IfcShapeModel</i> with upward compatibility </font></small>"
+            "ShapeRepresentations": "List of ~~shape~~ representations. Each member defines a valid representation of a particular type within a particular representation context as being an aspect (or part) of a product definition."
         },
         "description": "Definition from ISO/CD 10303-41:1992: The shape aspect is an identifiable element of the shape of a product.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcrepresentationresource/lexical/ifcshapeaspect.htm"
@@ -4002,8 +4002,8 @@
         "attributes": {
             "LandTitleNumber": "The land title number (designation of the site within a regional system).",
             "RefElevation": "Datum elevation relative to sea level.",
-            "RefLatitude": "World Latitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84. > <font size=\"-1\">Latitudes are measured relative to the geodetic equator, north of the equator by positive values - from 0 till +90,   south of the equator by negative values - from 0 till  -90.</font>",
-            "RefLongitude": "World Longitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84. > <font size=\"-1\">Longitudes are measured relative to the geodetic zero meridian, nominally the same as the Greenwich prime meridian: longitudes west of the zero meridian have positive values - from 0 till +180, longitudes east of the zero meridian have negative values - from 0 till -180.</font>",
+            "RefLatitude": "World Latitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84. > Latitudes are measured relative to the geodetic equator, north of the equator by positive values - from 0 till +90,   south of the equator by negative values - from 0 till  -90.",
+            "RefLongitude": "World Longitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84. > Longitudes are measured relative to the geodetic zero meridian, nominally the same as the Greenwich prime meridian: longitudes west of the zero meridian have positive values - from 0 till +180, longitudes east of the zero meridian have negative values - from 0 till -180.",
             "SiteAddress": "Address given to the site for postal purposes."
         },
         "description": "Definition from ISO 6707-1:1989: Area where construction works are undertaken.",
@@ -4011,7 +4011,7 @@
     },
     "IfcSlab": {
         "attributes": {
-            "PredefinedType": "Predefined generic types for a slab that are specified in an enumeration. There may be a property set given for the predefined types. > <font size=\"-1\">NOTE: The use of the predefined type directly at the occurrence object level of <i>IfcSlab</i> is only permitted, if no type object <i>IfcSlabType</i> is assigned.</font>  > <font color=\"#FF0000\" size=\"-1\">IFC2x PLATFORM CHANGE: The attribute has been changed into an OPTIONAL attribute. </font>"
+            "PredefinedType": "Predefined generic types for a slab that are specified in an enumeration. There may be a property set given for the predefined types. > NOTE: The use of the predefined type directly at the occurrence object level of IfcSlab is only permitted, if no type object IfcSlabType is assigned."
         },
         "description": "A slab is a component of the construction that normally encloses a space vertically. The slab may provide the lower support (floor) or upper construction (roof slab) in any space in a building. It shall be noted, that only the core or constructional part of this construction is considered to be a slab. The upper finish (flooring, roofing) and the lower finish (ceiling, suspended ceiling) are considered to be coverings. A special type of slab is the landing, described as a floor section to which one or more stair flights or ramp flights connect. May or may not be adjacent to a building storey floor.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcslab.htm"
@@ -4061,7 +4061,7 @@
         "attributes": {
             "BoundedBy": "Reference to Set of Space Boundaries that defines the physical or virtual delimitation of that Space.",
             "ElevationWithFlooring": "Level of flooring of this space; the average shall be taken, if the space ground surface is sloping or if there are level differences within this space.",
-            "HasCoverings": "Reference to _IfcCovering_ by virtue of the objectified relationship _IfcRelCoversSpaces_. It defines the concept of a space having coverings assigned. Those coverings may represent different flooring, or tiling areas. > <small> NOTE&nbsp; Coverings are often managed by the space, and not by the building element, which they cover.<br> <font color=\"#ff0000\">IFC2x Edition3 CHANGE&nbsp; New inverse relationship. Upward compatibility for file based exchange is guaranteed.</font> </small>",
+            "HasCoverings": "Reference to _IfcCovering_ by virtue of the objectified relationship _IfcRelCoversSpaces_. It defines the concept of a space having coverings assigned. Those coverings may represent different flooring, or tiling areas. >  NOTE  Coverings are often managed by the space, and not by the building element, which they cover.",
             "InteriorOrExteriorSpace": "Defines, whether the Space is interior (Internal), or exterior (External), i.e. part of the outer space."
         },
         "description": "A space represents an area or volume bounded actually or theoretically. Spaces are areas or volumes that provide for certain functions within a building.",
@@ -4113,9 +4113,9 @@
     "IfcSpatialStructureElement": {
         "attributes": {
             "CompositionType": "Denotes, whether the predefined spatial structure element represents itself, or an aggregate (complex) or a part (part). The interpretation is given separately for each subtype of spatial structure element.",
-            "ContainsElements": "Set of spatial containment relationships, that holds those elements, which are contained within this element of the project spatial structure. > <small> NOTE&nbsp; The spatial containment relationship, established by <i>IfcRelContainedInSpatialStructure</i>, is required to be an hierarchical relationship, i.e. each element can only be assigned to 0 or 1 spatial structure element. </small>",
+            "ContainsElements": "Set of spatial containment relationships, that holds those elements, which are contained within this element of the project spatial structure. >  NOTE  The spatial containment relationship, established by IfcRelContainedInSpatialStructure, is required to be an hierarchical relationship, i.e. each element can only be assigned to 0 or 1 spatial structure element.",
             "LongName": "Long name for a spatial structure element, used for informal purposes. Maybe used in conjunction with the inherited Name attribute.",
-            "ReferencesElements": "Set of spatial reference relationships, that holds those elements, which are referenced, but not contained, within this element of the project spatial structure. > <small> NOTE&nbsp; The spatial reference relationship, established by <i>IfcRelReferencedInSpatialStructure</i>, is not required to be an hierarchical relationship, i.e. each element can be assigned to 0, 1 or many spatial structure elements.<br> EXAMPLE&nbsp; A curtain wall maybe contained in the ground floor, but maybe referenced in all floors, it reaches.<br><br> <font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The inverse attribute has been added with upward compatibility for file based exchange. </font> </small>",
+            "ReferencesElements": "Set of spatial reference relationships, that holds those elements, which are referenced, but not contained, within this element of the project spatial structure. >  NOTE  The spatial reference relationship, established by IfcRelReferencedInSpatialStructure, is not required to be an hierarchical relationship, i.e. each element can be assigned to 0, 1 or many spatial structure elements. EXAMPLE  A curtain wall maybe contained in the ground floor, but maybe referenced in all floors, it reaches.",
             "ServicedBySystems": "Set of relationships to Systems, that provides a certain service to the Building. The relationship is handled by the objectified relationship IfcRelServicesBuildings."
         },
         "description": "A spatial structure element (IfcSpatialStructureElement) is the generalization of all spatial elements that might be used to define a spatial structure. That spatial structure is often used to provide a project structure to organize a building project.",
@@ -4373,8 +4373,8 @@
     },
     "IfcStructuralProfileProperties": {
         "attributes": {
-            "CentreOfGravityInX": "Location of the profile's centre of gravity in the geometric X direction. The _CentreOfGravityInX_ is measured in the global length unit as defined at _IfcProject.UnitsInContext_.    > <small><font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The attribute <i>CentreOfGravityInX</i> is a new attribute.   </font></small>",
-            "CentreOfGravityInY": "Location of the profile's centre of gravity in the geometric Y direction. The _CentreOfGravityInY_ is measured in the global length unit as defined at _IfcProject.UnitsInContext_.    > <small><font color=\"#ff0000\"> IFC2x Edition 3 CHANGE&nbsp; The attribute <i>CentreOfGravityInY</i> is a new attribute.   </font></small>",
+            "CentreOfGravityInX": "Location of the profile's centre of gravity in the geometric X direction. The _CentreOfGravityInX_ is measured in the global length unit as defined at _IfcProject.UnitsInContext_.",
+            "CentreOfGravityInY": "Location of the profile's centre of gravity in the geometric Y direction. The _CentreOfGravityInY_ is measured in the global length unit as defined at _IfcProject.UnitsInContext_.",
             "MaximumSectionModulusY": "Bending resistance about Y-axis of profile coordinate system at maximum Z-ordinate. Usually measured in [mm3].",
             "MaximumSectionModulusZ": "Bending resistance about Z-axis of profile coordinate system at maximum Y-ordinate. Usually measured in [mm3].",
             "MinimumSectionModulusY": "Bending resistance about Y-axis of profile coordinate system at minimum Z-ordinate. Usually measured in [mm3].",
@@ -4451,7 +4451,7 @@
     },
     "IfcStyledItem": {
         "attributes": {
-            "Item": "A geometric representation item to which the style is assigned.    > <font size=\"-1\" color=\"#0000ff\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>Item</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </font>",
+            "Item": "A geometric representation item to which the style is assigned.",
             "Name": "The word, or group of words, by which the styled item is referred to.",
             "Styles": "Representation style assignments which are assigned to an item. NOTE: In current IFC release only one presentation style assignment shall be assigned."
         },
@@ -4518,10 +4518,10 @@
     },
     "IfcSurfaceStyleLighting": {
         "attributes": {
-            "DiffuseReflectionColour": "The degree of diffusion of the reflected light. In the case of specular surfaces there is no diffusion. The greater the diffusing power of the reflecting surface, the smaller the specular component of the reflected light, up to the point where only diffuse light is produced. A value of 1 means totally diffuse for that colour part of the light.  > <small>The factor can be measured physically and has three ratios for the red, green and blue part of the light. </small>",
-            "DiffuseTransmissionColour": "The degree of diffusion of the transmitted light. In the case of completely transparent materials there is no diffusion. The greater the diffusing power, the smaller the direct component of the transmitted light, up to the point where only diffuse light is produced.A value of 1 means totally diffuse for that colour part of the light. > <small>The factor can be measured physically and has three ratios for the red, green and blue part of the light. </small>",
-            "ReflectanceColour": "A coefficient that determines the extent that the light falling onto a surface is fully or partially reflected.  > <small>The factor can be measured physically and has three ratios for the red, green and blue part of the light. </small>",
-            "TransmissionColour": "Describes how the light falling on a body is totally or partially transmitted.  > <small>The factor can be measured physically and has three ratios for the red, green and blue part of the light. </small>"
+            "DiffuseReflectionColour": "The degree of diffusion of the reflected light. In the case of specular surfaces there is no diffusion. The greater the diffusing power of the reflecting surface, the smaller the specular component of the reflected light, up to the point where only diffuse light is produced. A value of 1 means totally diffuse for that colour part of the light.  > The factor can be measured physically and has three ratios for the red, green and blue part of the light.",
+            "DiffuseTransmissionColour": "The degree of diffusion of the transmitted light. In the case of completely transparent materials there is no diffusion. The greater the diffusing power, the smaller the direct component of the transmitted light, up to the point where only diffuse light is produced.A value of 1 means totally diffuse for that colour part of the light. > The factor can be measured physically and has three ratios for the red, green and blue part of the light.",
+            "ReflectanceColour": "A coefficient that determines the extent that the light falling onto a surface is fully or partially reflected.  > The factor can be measured physically and has three ratios for the red, green and blue part of the light.",
+            "TransmissionColour": "Describes how the light falling on a body is totally or partially transmitted.  > The factor can be measured physically and has three ratios for the red, green and blue part of the light."
         },
         "description": "IfcSurfaceStyleLighting is a container class for properties for calculation of physically exact illuminance related to a particular surface style.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcsurfacestylelighting.htm"
@@ -4627,7 +4627,7 @@
     },
     "IfcTShapeProfileDef": {
         "attributes": {
-            "CentreOfGravityInY": "Location of centre of gravity along the x axis measured from the center of the bounding box.     > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>CentreOfGravityInX</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </font></small>",
+            "CentreOfGravityInY": "Location of centre of gravity along the x axis measured from the center of the bounding box.",
             "Depth": "Web lengths, see illustration above (= h).",
             "FilletRadius": "Fillet radius according the above illustration (= r1). If it is not given, zero is assumed.",
             "FlangeEdgeRadius": "Edge radius according the above illustration (= r2). If it is not given, zero is assumed.",
@@ -4685,7 +4685,7 @@
             "FacsimileNumbers": "The list of fax numbers at which fax messages may be received.",
             "PagerNumber": "The pager number at which paging messages may be received.",
             "TelephoneNumbers": "The list of telephone numbers at which telephone messages may be received.",
-            "WWWHomePageURL": "The world wide web address at which the preliminary page of information for the person or organization can be located. > <font size=\"-1\">NOTE: Information on the world wide web for a person or organization may be separated  into a number of pages and across a number of host sites, all of which may be linked together. It is assumed that  all such information may be referenced from a single page that is termed the home page for that person or organization. </font>"
+            "WWWHomePageURL": "The world wide web address at which the preliminary page of information for the person or organization can be located. > NOTE: Information on the world wide web for a person or organization may be separated  into a number of pages and across a number of host sites, all of which may be linked together. It is assumed that  all such information may be referenced from a single page that is termed the home page for that person or organization."
         },
         "description": "Address to which telephone, electronic mail and other forms of telecommunications should be addressed.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcactorresource/lexical/ifctelecomaddress.htm"
@@ -4719,7 +4719,7 @@
         "attributes": {
             "Literal": "The text literal to be presented.",
             "Path": "The writing direction of the text literal.",
-            "Placement": "An _IfcAxis2Placement_ that determines the placement and orientation of the presented string. > <small>When used with a text style based on <i>IfcTextStyleWithBoxCharacteristics</i> then the y-axis is taken as the reference direction for the box rotation angle and the box slant angle. </small>"
+            "Placement": "An _IfcAxis2Placement_ that determines the placement and orientation of the presented string. > When used with a text style based on IfcTextStyleWithBoxCharacteristics then the y-axis is taken as the reference direction for the box rotation angle and the box slant angle."
         },
         "description": "Definition from IAI: The text literal is a geometric representation item which describes a text string using a string literal and additional position, and path information.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdefinitionresource/lexical/ifctextliteral.htm"
@@ -4735,8 +4735,8 @@
     "IfcTextStyle": {
         "attributes": {
             "TextCharacterAppearance": "A character style to be used for presented text.",
-            "TextFontStyle": "The style applied to the text font for its visual appearance.   It defines the font family, font style, weight and size.    > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>TextFontStyle</i> is a new attribute attached to <i>IfcTextStyle</i>.   </font></small>",
-            "TextStyle": "The style applied to the text block for its visual appearance.   It defines the text block characteristics, either for vector based or monospace text fonts (see select item _IfcTextStyleWithBoxCharacteristics_), or for true type text fonts (see select item _IfcTextStyleTextModel_.    > <small><font color=\"#0000ff\"> IFC2x Edition 3 CHANGE&nbsp; The <i>attribute <i>TextBlockStyle</i> has been changed from SET[1:?] to a non-aggregated optional, it has been renamed from TextStyles.   </i></font></small>"
+            "TextFontStyle": "The style applied to the text font for its visual appearance.   It defines the font family, font style, weight and size.",
+            "TextStyle": "The style applied to the text block for its visual appearance.   It defines the text block characteristics, either for vector based or monospace text fonts (see select item _IfcTextStyleWithBoxCharacteristics_), or for true type text fonts (see select item _IfcTextStyleTextModel_."
         },
         "description": "Definition from ISO/CD 10303-46:1992: The text style is a presentation style for annotation text..",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifctextstyle.htm"
@@ -4744,10 +4744,10 @@
     "IfcTextStyleFontModel": {
         "attributes": {
             "FontFamily": "The value is a prioritized list of font family names and/or generic family names. The first list entry has the highest priority, if this font fails, the next list item shall be used. The last list item should (if possible) be a generic family.",
-            "FontSize": "The font size provides the size or height of the text font.    > <small>NOTE&nbsp; The following values are allowed, <<i>IfcLengthMeasure<i>, with positive values, the length unit is globally defined at <i>IfcUnitAssignment</i>.</i></i></small>",
+            "FontSize": "The font size provides the size or height of the text font.    > NOTE  The following values are allowed, <IfcLengthMeasure, with positive values, the length unit is globally defined at IfcUnitAssignment.",
             "FontStyle": "The font style property selects between normal (sometimes referred to as \"roman\" or \"upright\"), italic and oblique faces within a font family.",
-            "FontVariant": "The font variant property selects between normal and small-caps.    > <small>NOTE&nbsp; It has been introduced for later compliance to full CSS1 support.</small>",
-            "FontWeight": "The font weight property selects the weight of the font.    > <small>NOTE&nbsp; Values other then 'normal' and 'bold' have been introduced for later compliance to full CSS1 support.</small>"
+            "FontVariant": "The font variant property selects between normal and small-caps.    > NOTE  It has been introduced for later compliance to full CSS1 support.",
+            "FontWeight": "The font weight property selects the weight of the font.    > NOTE  Values other then 'normal' and 'bold' have been introduced for later compliance to full CSS1 support."
         },
         "description": "Definition from CSS1 (W3C Recommendation): Setting font properties will be among the most common uses of style sheets. Unfortunately, there exists no well-defined and universally accepted taxonomy for classifying fonts, and terms that apply to one font family may not be appropriate for others. E.g. 'italic' is commonly used to label slanted text, but slanted text may also be labeled as being Oblique, Slanted, Incline, Cursive or Kursiv. Therefore it is not a simple problem to map typical font selection properties to a specific font.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifctextstylefontmodel.htm"
@@ -4762,13 +4762,13 @@
     },
     "IfcTextStyleTextModel": {
         "attributes": {
-            "LetterSpacing": "The length unit indicates an addition to the default space between characters. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The letter spacing may also be influenced by justification (which is a value of the 'align' property).    > <small>NOTE&nbsp; The following values are allowed, <i>IfcDescriptiveMeasure</i> with value='normal', or <i>IfcLengthMeasure<i>, the length unit is globally defined at <i>IfcUnitAssignment</i>.</i></i></small>",
-            "LineHeight": "The property sets the distance between two adjacent lines' baselines.   When a ratio value is specified, the line height is given by the font size of the current element multiplied with the numerical value. A value of 'normal' sets the line height to a reasonable value for the element's font. It is suggested that user agents set the 'normal' value to be a ratio number in the range of 1.0 to 1.2.    > <small>NOTE&nbsp; The following values are allowed:<br> <i>IfcDescriptiveMeasure</i> with value='normal', or <br> <i>IfcLengthMeasure<i>, with non-negative values, the length unit is globally defined at <i>IfcUnitAssignment</i>, or <br><i>IfcRatioMeasure</i>.</i></i></small>",
+            "LetterSpacing": "The length unit indicates an addition to the default space between characters. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The letter spacing may also be influenced by justification (which is a value of the 'align' property).    > NOTE  The following values are allowed, IfcDescriptiveMeasure with value='normal', or IfcLengthMeasure, the length unit is globally defined at IfcUnitAssignment.",
+            "LineHeight": "The property sets the distance between two adjacent lines' baselines.   When a ratio value is specified, the line height is given by the font size of the current element multiplied with the numerical value. A value of 'normal' sets the line height to a reasonable value for the element's font. It is suggested that user agents set the 'normal' value to be a ratio number in the range of 1.0 to 1.2.    > NOTE  The following values are allowed: IfcDescriptiveMeasure with value='normal', or  IfcLengthMeasure, with non-negative values, the length unit is globally defined at IfcUnitAssignment, or IfcRatioMeasure.",
             "TextAlign": "This property describes how text is aligned horizontally within the element. The actual justification algorithm used is dependent on the rendering algorithm.",
             "TextDecoration": "This property describes decorations that are added to the text of an element.",
-            "TextIndent": "The property specifies the indentation that appears before the first formatted line.    > <small>NOTE&nbsp; It has been introduced for later compliance to full CSS1 support.</small>",
-            "TextTransform": "This property describes how text characters may transform to upper case, lower case, or capitalized case, independent of the character case used in the text literal.    > <small>NOTE&nbsp; It has been introduced for later compliance to full CSS1 support.</small>",
-            "WordSpacing": "The length unit indicates an addition to the default space between words. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The word spacing may also be influenced by justification (which is a value of the 'text-align' property).    > <small>NOTE&nbsp; It has been introduced for later compliance to full CSS1 support.</small>"
+            "TextIndent": "The property specifies the indentation that appears before the first formatted line.    > NOTE  It has been introduced for later compliance to full CSS1 support.",
+            "TextTransform": "This property describes how text characters may transform to upper case, lower case, or capitalized case, independent of the character case used in the text literal.    > NOTE  It has been introduced for later compliance to full CSS1 support.",
+            "WordSpacing": "The length unit indicates an addition to the default space between words. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The word spacing may also be influenced by justification (which is a value of the 'text-align' property).    > NOTE  It has been introduced for later compliance to full CSS1 support."
         },
         "description": "Definition from CSS1 (W3C Recommendation): The properties defined in the text model affect the visual presentation of characters, spaces, words, and paragraphs.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifctextstyletextmodel.htm"
@@ -4848,7 +4848,7 @@
     },
     "IfcTimeSeriesSchedule": {
         "attributes": {
-            "ApplicableDates": "Defines an ordered list of the dates for which the time-series data are applicable. For example, the definition of all public holiday dates for a given year allows the formulation of a \"holiday\" occupancy schedule from overall occupancy data. Local time can be used if the dates are not bound to a particular year.  > <font color=\"#FF0000\" size=\"-1\">IFC2x2 Addendum 1 change: The attribute has been changed to be optional </font>",
+            "ApplicableDates": "Defines an ordered list of the dates for which the time-series data are applicable. For example, the definition of all public holiday dates for a given year allows the formulation of a \"holiday\" occupancy schedule from overall occupancy data. Local time can be used if the dates are not bound to a particular year.",
             "TimeSeries": "The time series is used to represent the values at discrete points in time that define the schedule. For example, a 24-hour occupancy schedule would be a regular time series with a start time at midnight, end time at (the following) midnight, and with 24 values indicating the occupancy load for each hour of the 24-hour period.",
             "TimeSeriesScheduleType": "Defines the type of schedule, such as daily, weekly, monthly or annually."
         },
@@ -4931,7 +4931,7 @@
     "IfcTypeObject": {
         "attributes": {
             "ApplicableOccurrence": "The attribute optionally defines the data type of the occurrence object, to which the assigned type object can relate. If not present, no instruction is given to which occurrence object the type object is applicable.",
-            "HasPropertySets": "Set ~~list~~ of unique property sets, that are associated with the object type and are common to all object occurrences referring to this object type. > <small><font color=\"#ff0000\">   IFC2x Edition 3 CHANGE&nbsp; The attribute aggregate type has been changed from LIST to SET. </font></small>",
+            "HasPropertySets": "Set ~~list~~ of unique property sets, that are associated with the object type and are common to all object occurrences referring to this object type.",
             "ObjectTypeOf": "Reference to the relationship IfcRelDefinedByType and thus to those occurrence objects, which are defined by this type."
         },
         "description": "The object type (IfcTypeObject) defines the specific information about a type. It refers to the specific level of the well recognized generic - specific - occurrence modeling paradigm.",
@@ -4947,7 +4947,7 @@
     },
     "IfcUShapeProfileDef": {
         "attributes": {
-            "CentreOfGravityInX": "Location of centre of gravity along the x axis measured from the center of the bounding box.     > <small><font color=\"#ff0000\"> IFC2x Edition 2 Addendum 2 CHANGE The attribute <i>CentreOfGravityInX</i> has been made optional. Upward compatibility for file based exchange is guaranteed.   </font></small>",
+            "CentreOfGravityInX": "Location of centre of gravity along the x axis measured from the center of the bounding box.",
             "Depth": "Web lengths, see illustration above (= h).",
             "EdgeRadius": "Edge radius according the above illustration (= r2). If it is not given, zero is assumed.",
             "FilletRadius": "Fillet radius according the above illustration (= r1). If it is not given, zero is assumed.",
@@ -5071,8 +5071,8 @@
     },
     "IfcWindow": {
         "attributes": {
-            "OverallHeight": "Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the ~~body of the~~ window opening. If omitted, the _OverallHeight_ should be taken from the geometric representation of the _IfcOpening_ in which the window is inserted.     > <small> NOTE&nbsp; The body of the window might be taller then the window opening (e.g. in cases where the window lining includes a casing). In these cases the <i>OverallHeight</i> shall still be given as the window opening height, and not as the total height of the window lining.</small>",
-            "OverallWidth": "Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the ~~body of the~~ window opening. If omitted, the _OverallWidth_ should be taken from the geometric representation of the _IfcOpening_ in which the window is inserted.     > <small> NOTE&nbsp; The body of the window might be wider then the window opening (e.g. in cases where the window lining includes a casing). In these cases the <i>OverallWidth</i> shall still be given as the window opening width, and not as the total width of the window lining.</small>"
+            "OverallHeight": "Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the ~~body of the~~ window opening. If omitted, the _OverallHeight_ should be taken from the geometric representation of the _IfcOpening_ in which the window is inserted.     >  NOTE  The body of the window might be taller then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallHeight shall still be given as the window opening height, and not as the total height of the window lining.",
+            "OverallWidth": "Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the ~~body of the~~ window opening. If omitted, the _OverallWidth_ should be taken from the geometric representation of the _IfcOpening_ in which the window is inserted.     >  NOTE  The body of the window might be wider then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallWidth shall still be given as the window opening width, and not as the total width of the window lining."
         },
         "description": "Definition form ISO 6707-1:1989: Construction for closing a vertical or near vertical opening in a wall or pitched roof that will admit light and may admit fresh air.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcwindow.htm"
