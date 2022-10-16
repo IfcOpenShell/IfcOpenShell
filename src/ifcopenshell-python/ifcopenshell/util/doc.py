@@ -20,6 +20,7 @@ import glob
 from pathlib import Path
 import json
 from pprint import pprint
+from re import L
 import urllib.parse
 import warnings
 
@@ -31,6 +32,63 @@ import requests
 IFC2x3_DOCS_LOCATION = 'Ifc2.3.0.1'
 IFC4x0_DOCS_LOCATION = 'Ifc4.0.2.1'
 
+
+SCHEMA_FILES = {
+    'IFC2X3': {
+        'entities': Path('schema/ifc2x3_entities.json'),
+        'properties': Path('schema/ifc2x3_properties.json')
+    },
+    'IFC4': {
+        'entities': Path('schema/ifc4x0_entities.json'),
+        'properties': Path('schema/ifc4x0_properties.json') 
+    }
+}
+
+class DocAPI:
+    def __init__(self):
+        self.doc_database = {ifc_version: dict() for ifc_version in SCHEMA_FILES}
+        files_missing = False
+        for ifc_version in SCHEMA_FILES:
+            for data_type in SCHEMA_FILES[ifc_version]:
+                schema_path = SCHEMA_FILES[ifc_version][data_type]
+                if not schema_path.is_file():
+                    print(f"Schema file {schema_path} wasn't found.")
+                    files_missing = True
+                    continue
+                
+                with open(schema_path, 'r') as fi:
+                    self.doc_database[ifc_version][data_type] = json.load(fi)
+        if files_missing:
+            raise Exception(
+                'Some schema files are missing - they contain neccessary data for DocAPI to work. \n'
+                'Make sure those files are present. To generate them you can run DocExtractor extract functions \n'
+                'but it will require corresponding Ifc docs to be in the same directory as the script.'
+            )
+
+    def check_version_name(self, version_name):
+        if version_name not in self.doc_database:
+            raise Exception(
+                f'Version: {version_name} is not supported. '
+                f'Supported version: {", ".join(self.doc_database.keys())}')
+        return version_name
+
+    def get_entity_doc(self, version, entity):
+        version = self.check_version_name(version)
+        return self.doc_database[version]['entities'][entity]
+
+    def get_attribute_doc(self, version, entity, attribute):
+        version = self.check_version_name(version)
+        return self.doc_database[version]['entities'][entity]['attributes'][attribute]
+
+    def get_property_set_doc(self, version, pset):
+        version = self.check_version_name(version)
+        return self.doc_database[version]['properties'][pset]
+
+    def get_property_doc(self, version, pset, prop):
+        version = self.check_version_name(version)
+        return self.doc_database[version]['properties'][pset]['properties'][prop]
+
+
 class DocExtractor:
     def extract_ifc2x3(self):
         print('Parsing data for Ifc2.3.0.1')
@@ -39,7 +97,9 @@ class DocExtractor:
             raise Exception(
                 f'Docs for IFC 2.3.0.1 expected to be in folder "{parse_data_location.resolve()}\\"\n'
                 'For doc extraction please either setup docs as described above \n'
-                'or change IFC2x3_DOCS_LOCATION in doc.py accordingly.'
+                'or change IFC2x3_DOCS_LOCATION in doc.py accordingly. \n'
+                'You can download docs from the repository: \n'
+                'https://github.com/buildingSMART/IFC/tree/Ifc2.3.0.1'
             )
 
         # need to parse actual domains from the website
@@ -253,7 +313,9 @@ class DocExtractor:
             raise Exception(
                 f'Docs for Ifc4.0.2.1 expected to be in folder "{parse_data_location.resolve()}\\"\n'
                 'For doc extraction please either setup docs as described above \n'
-                'or change IFC2x3_DOCS_LOCATION in doc.py accordingly.'
+                'or change IFC4x0_DOCS_LOCATION in doc.py accordingly.'
+                'You can download docs from the repository: \n'
+                'https://github.com/buildingSMART/IFC/tree/Ifc4.0.2.1'
             )
 
         # actually domains in Ifc 4.0 are consistent between website and docs
@@ -492,9 +554,32 @@ class DocExtractor:
                 sort_keys=True, indent=4
             )
 
+def run_doc_api_examples():
+    query = DocAPI()
+    print('Entities:')
+    print(query.get_entity_doc('IFC2X3', 'IfcActionRequest'))
+    print(query.get_entity_doc('IFC4', 'IfcActionRequest'))
+
+    print('Entity attributes:')
+    print(query.get_attribute_doc('IFC2X3', 'IfcActionRequest', 'RequestID'))
+    print(query.get_attribute_doc('IFC4', 'IfcActionRequest', 'PredefinedType'))
+
+    print('Propety sets:')
+    print(query.get_property_set_doc('IFC2X3', 'Pset_ZoneCommon'))
+    print(query.get_property_set_doc('IFC4', 'Pset_ZoneCommon'))
+
+    print('Propety sets attributes:')
+    print(query.get_property_doc('IFC2X3', 'Pset_ZoneCommon', 'Category'))
+    print(query.get_property_doc('IFC4', 'Pset_ZoneCommon', 'NetPlannedArea'))
+
+
 if __name__ == '__main__':
     extractor = DocExtractor()
     extractor.extract_ifc2x3()
     extractor.extract_ifc4x0()
+
+    # run_doc_api_examples()
+
+
 
 
