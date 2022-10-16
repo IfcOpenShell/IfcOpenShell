@@ -188,7 +188,7 @@ class Selector:
             elif token_type == "NULL":
                 value = None
         for element in elements:
-            element_value = cls.get_element_value(element, key)
+            element_value = cls.get_element_value(element, key, value)
             if element_value is None and value is not None and "not" not in comparison:
                 continue
             if comparison and cls.filter_element(element, element_value, comparison, value):
@@ -198,7 +198,7 @@ class Selector:
         return results
 
     @classmethod
-    def get_element_value(cls, element, key):
+    def get_element_value(cls, element, key, value):
         if "." in key and key.split(".")[0] == "type":
             try:
                 element = ifcopenshell.util.element.get_type(element)
@@ -209,12 +209,37 @@ class Selector:
             key = ".".join(key.split(".")[1:])
         elif "." in key and key.split(".")[0] == "material":
             try:
-                element = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-                if not element:
+                material_definition = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+                key = ".".join(key.split(".")[1:])
+                if material_definition.is_a("IfcMaterialList"):
+                    for material in material_definition.Materials:
+                        info = material.get_info()
+                        if key in info and info[key] == value:
+                            element = material
+                elif material_definition.is_a("IfcMaterialConstituentSet"):
+                    for material_constituent in material_definition.MaterialConstituents:
+                        material = material_constituent.Material
+                        info = material.get_info()
+                        if key in info and info[key] == value:
+                            element = material
+                elif material_definition.is_a("IfcMaterialProfileSet"):
+                    for profile in material_definition.MaterialProfiles:
+                        material = profile.Material
+                        info = material.get_info()
+                        if key in info and info[key] == value:
+                            element = material
+                elif material_definition.is_a("IfcMaterialLayerSet"):
+                    for layer in material_definition.MaterialLayers:
+                        material = layer.Material
+                        info = material.get_info()
+                        if key in info and info[key] == value:
+                            element = material  
+                elif material_definition.is_a("IfcMaterial"):
+                    element = material_definition
+                if not material_definition:
                     return None
             except:
                 return
-            key = ".".join(key.split(".")[1:])
         elif "." in key and key.split(".")[0] == "container":
             try:
                 element = ifcopenshell.util.element.get_container(element)
