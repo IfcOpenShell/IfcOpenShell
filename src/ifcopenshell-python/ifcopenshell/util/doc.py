@@ -20,7 +20,6 @@ import glob
 from pathlib import Path
 import json
 from pprint import pprint
-from re import L
 import urllib.parse
 import warnings
 
