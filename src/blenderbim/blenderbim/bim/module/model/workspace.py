@@ -213,6 +213,11 @@ class BimToolUI:
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
             row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
         elif AuthoringData.data["active_class"] in (
             "IfcCableCarrierSegmentType",
             "IfcCableSegmentType",
@@ -399,6 +404,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_F(self):
         if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.flip_wall()
+        elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
+            bpy.ops.bim.flip_fill()
 
     def hotkey_S_G(self):
         if self.active_class in ("IfcWall", "IfcWallStandardCase"):

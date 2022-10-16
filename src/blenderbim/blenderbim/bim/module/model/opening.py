@@ -218,6 +218,36 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.flip_fill"
+    bl_label = "Flip Fill"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.FillsVoids:
+                continue
+
+            flip_matrix = Matrix.Rotation(pi, 4, "Z")
+
+            bottom_left = obj.matrix_world @ Vector(obj.bound_box[0])
+            top_right = obj.matrix_world @ Vector(obj.bound_box[6])
+            center = obj.matrix_world.col[3].to_3d().copy()
+            center_offset = center - bottom_left
+            flipped_center = top_right - center_offset
+
+            obj.matrix_world = obj.matrix_world @ flip_matrix
+            obj.matrix_world.col[3][0] = flipped_center[0]
+            obj.matrix_world.col[3][1] = flipped_center[1]
+            bpy.context.view_layer.update()
+        return {"FINISHED"}
+
+
 class AddPotentialOpening(Operator, AddObjectHelper):
     bl_idname = "bim.add_potential_opening"
     bl_label = "Add Potential Opening"
