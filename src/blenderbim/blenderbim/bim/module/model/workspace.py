@@ -101,6 +101,9 @@ class BimToolUI:
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="length", text="Length")
+
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="x_angle", text="X Angle")
         elif cls.props.ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
@@ -124,6 +127,11 @@ class BimToolUI:
             row.prop(data=cls.props, property="length", text="Length")
             op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
             op.length = cls.props.length
+
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="x_angle", text="X Angle")
+            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
+            op.x_angle = cls.props.x_angle
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")

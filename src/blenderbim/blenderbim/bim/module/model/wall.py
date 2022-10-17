@@ -34,7 +34,7 @@ import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from ifcopenshell.api.material.data import Data as MaterialData
-from math import pi, degrees
+from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
 
 
@@ -243,6 +243,37 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.change_extrusion_x_angle"
+    bl_label = "Change Extrusion X Angle"
+    bl_options = {"REGISTER", "UNDO"}
+    x_angle: bpy.props.FloatProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        wall_objs = []
+        x_angle = radians(self.x_angle)
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                return
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return
+            extrusion = tool.Model.get_extrusion(representation)
+            if not extrusion:
+                return
+            extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
+            if element.is_a("IfcWall"):
+                wall_objs.append(obj)
+        if wall_objs:
+            DumbWallRecalculator().recalculate(wall_objs)
+        return {"FINISHED"}
+
+
 class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_layer_length"
     bl_label = "Change Layer Length"
@@ -419,6 +450,7 @@ class DumbWallGenerator:
         self.length = props.length * self.unit_scale
         self.rotation = 0.0
         self.location = Vector((0, 0, 0))
+        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
 
         if self.has_sketch():
             return  # For now
@@ -571,6 +603,7 @@ class DumbWallGenerator:
             offset=self.layers["offset"],
             length=self.length,
             height=self.height,
+            x_angle=self.x_angle,
         )
         ifcopenshell.api.run(
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -993,7 +1026,9 @@ class DumbWallJoiner:
             axis = body = tool.Model.get_wall_axis(obj)["reference"]
         self.axis = copy.deepcopy(axis)
         self.body = copy.deepcopy(body)
-        height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
+        extrusion_data = self.get_extrusion_data(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
+        height = extrusion_data["height"]
+        x_angle = extrusion_data["x_angle"]
         self.clippings = []
         layers = tool.Model.get_material_layer_parameters(element)
 
@@ -1045,6 +1080,7 @@ class DumbWallJoiner:
             context=self.body_context,
             length=length,
             height=height,
+            x_angle=x_angle,
             offset=layers["offset"],
             thickness=layers["thickness"],
             clippings=self.clippings,
@@ -1106,18 +1142,21 @@ class DumbWallJoiner:
             )
         )
 
-    def get_height(self, representation):
-        height = 3.0
+    def get_extrusion_data(self, representation):
+        results = {"height": 3.0, "x_angle": 0}
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
-                height = item.Depth * self.unit_scale
+                results["height"] = item.Depth * self.unit_scale
+                x, y, z = item.ExtrudedDirection.DirectionRatios
+                if not tool.Cad.is_x(x, 0) or not tool.Cad.is_x(y, 0) or not tool.Cad.is_x(z, 1):
+                    results["x_angle"] = Vector((0, 1)).angle(Vector((y, z)))
                 break
             elif item.is_a("IfcBooleanClippingResult"):
                 item = item.FirstOperand
             else:
                 break
-        return height
+        return results
 
     def join(self, wall1, wall2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(wall1)

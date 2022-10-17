@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import sin, cos
 import ifcopenshell.util.unit
 
 
@@ -28,10 +29,12 @@ class Usecase:
             "height": 3.0,
             "offset": 0.0,
             "thickness": 0.2,
+            # Sloped walls along the wall's X axis, provided in radians
+            "x_angle": 0,
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
             # [{"type": "IfcBooleanClippingResult", "operand_type": "IfcHalfSpaceSolid", "matrix": [...]}, {...}]
             "clippings": [],  # A list of planes that define clipping half space solids
-            "booleans": [], # Any existing IfcBooleanResults
+            "booleans": [],  # Any existing IfcBooleanResults
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -59,6 +62,12 @@ class Usecase:
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
             curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points), None, False)
+        if self.settings["x_angle"]:
+            extrusion_direction = self.file.createIfcDirection(
+                (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
+            )
+        else:
+            extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             self.file.createIfcAxis2Placement3D(
@@ -66,7 +75,7 @@ class Usecase:
                 self.file.createIfcDirection((0.0, 0.0, 1.0)),
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),
-            self.file.createIfcDirection((0.0, 0.0, 1.0)),
+            extrusion_direction,
             self.convert_si_to_unit(self.settings["height"]),
         )
         if self.settings["booleans"]:
