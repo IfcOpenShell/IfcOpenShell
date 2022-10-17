@@ -31,6 +31,7 @@ classes = (
     workspace.Hotkey,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,
+    wall.ChangeExtrusionXAngle,
     wall.ChangeLayerLength,
     wall.FlipWall,
     wall.JoinWall,
