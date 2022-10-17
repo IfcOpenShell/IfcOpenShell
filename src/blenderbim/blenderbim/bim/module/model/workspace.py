@@ -151,6 +151,10 @@ class BimToolUI:
             row.operator("bim.hotkey", text="Split").hotkey = "S_S"
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_R")
+            row.operator("bim.hotkey", text="Rotate 90").hotkey = "S_R"
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
             row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
