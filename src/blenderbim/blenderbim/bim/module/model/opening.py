@@ -79,7 +79,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
-        opening_obj = self.generate_opening_from_filling(filling_obj, voided_obj)
+        opening_obj = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
 
         # Still prototyping, for now duplicating code from bpy.ops.bim.add_opening
         if tool.Ifc.is_moved(voided_obj):
@@ -121,7 +121,48 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             bpy.data.objects.remove(opening_obj)
         return {"FINISHED"}
 
-    def generate_opening_from_filling(self, filling_obj, voided_obj):
+    def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
+        profile = ifcopenshell.util.representation.get_representation(filling, "Model", "Profile", "ELEVATION_VIEW")
+        if profile:
+            return self.generate_opening_from_filling_profile(filling_obj, voided_obj, profile)
+        return self.generate_opening_from_filling_box(filling_obj, voided_obj)
+
+    def generate_opening_from_filling_profile(self, filling_obj, voided_obj, profile):
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.INCLUDE_CURVES, True)
+        shape = ifcopenshell.geom.create_shape(settings, profile)
+        verts = shape.verts
+        edges = shape.edges
+        grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+        grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+
+        bm = bmesh.new()
+        bm.verts.index_update()
+        bm.edges.index_update()
+        new_verts = [bm.verts.new(v) for v in grouped_verts]
+        new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in grouped_edges]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.triangle_fill(bm, edges=bm.edges)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi, verts=bm.verts, edges=bm.edges)
+
+        bmesh.ops.translate(bm, vec=[0., -0.1, 0.], verts=bm.verts)
+        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
+        bmesh.ops.translate(bm, vec=[0., voided_obj.dimensions[1] + 0.1 + 0.1, 0.], verts=extruded_verts)
+
+        mesh = bpy.data.meshes.new(name="Opening")
+        bm.to_mesh(mesh)
+        bm.free()
+
+        obj = bpy.data.objects.new("Opening", mesh)
+        obj.matrix_world = filling_obj.matrix_world
+        return obj
+
+    def generate_opening_from_filling_box(self, filling_obj, voided_obj):
         x, y, z = filling_obj.dimensions
         dimension = min(voided_obj.dimensions)
         if dimension == voided_obj.dimensions[0]:
