@@ -211,31 +211,11 @@ class Selector:
             try:
                 material_definition = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
                 key = ".".join(key.split(".")[1:])
-                if material_definition.is_a("IfcMaterialList"):
-                    for material in material_definition.Materials:
-                        info = material.get_info()
-                        if key in info and info[key] == value:
-                            element = material
-                elif material_definition.is_a("IfcMaterialConstituentSet"):
-                    for material_constituent in material_definition.MaterialConstituents:
-                        material = material_constituent.Material
-                        info = material.get_info()
-                        if key in info and info[key] == value:
-                            element = material
-                elif material_definition.is_a("IfcMaterialProfileSet"):
-                    for profile in material_definition.MaterialProfiles:
-                        material = profile.Material
-                        info = material.get_info()
-                        if key in info and info[key] == value:
-                            element = material
-                elif material_definition.is_a("IfcMaterialLayerSet"):
-                    for layer in material_definition.MaterialLayers:
-                        material = layer.Material
-                        info = material.get_info()
-                        if key in info and info[key] == value:
-                            element = material  
-                elif material_definition.is_a("IfcMaterial"):
-                    element = material_definition
+                materials = [inst for inst in cls.file.traverse(material_definition) if inst.is_a('IfcMaterial')]
+                for material in materials:
+                    info = material.get_info()
+                    if key in info and info[key] == value:
+                        element = material
                 if not material_definition:
                     return None
             except:
