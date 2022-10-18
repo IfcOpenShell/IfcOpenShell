@@ -23,9 +23,11 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
+from ifcopenshell.util.doc import get_entity_doc, get_attribute_doc, get_property_set_doc, get_property_doc
 from mathutils import geometry
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 
 
 def draw_attributes(props, layout, copy_operator=None):
@@ -123,6 +125,25 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     row.prop(data, prop_name, **kwargs)
     op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
     op.prop_name = prop_name
+
+    if bpy.context.preferences.addons["blenderbim"].preferences.info_mode:
+        schema = tool.Ifc.schema()
+        if schema is not None:
+            schema = str(schema)
+            schema = next(identifier for identifier in IfcStore.schema_identifiers if identifier in schema)
+            docs = {}
+            entity = getattr(data, prop_name)
+            if entity:
+                try:
+                    docs = get_entity_doc(schema, entity)
+                except KeyError:
+                    # TODO : support attributes, pset, etc.
+                    pass
+            op_row = row.row(align=True)
+            url = docs.get("spec_url", "")
+            url_op = op_row.operator("bim.open_webbrowser", icon="URL", text="")
+            url_op.url = url
+            op_row.enabled = bool(url)
 
 
 def get_enum_items(data, prop_name, context):

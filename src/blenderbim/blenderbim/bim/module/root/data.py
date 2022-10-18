@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_descriptions
 
 
 def refresh():
@@ -42,6 +43,7 @@ class IfcClassData:
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
         cls.data["ifc_class"] = cls.ifc_class()
+        cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
 
     @classmethod
     def ifc_products(cls):
@@ -65,7 +67,7 @@ class IfcClassData:
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             ]
-        return [(e, e, "") for e in products]
+        return [(e, e, get_ifc_entity_description(e)) for e in products]
 
     @classmethod
     def ifc_classes(cls):
@@ -75,7 +77,21 @@ class IfcClassData:
         names = [d.name() for d in declarations]
         if ifc_product == "IfcElementType":
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-        return [(c, c, "") for c in sorted(names)]
+        
+        return [(c, c, get_ifc_entity_description(c)) for c in sorted(names)]
+
+    @classmethod
+    def ifc_predefined_types(cls):
+        types_enum = []
+        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
+        for attribute in declaration.attributes():
+            if attribute.name() == "PredefinedType":
+                declared_type = attribute.type_of_attribute().declared_type()
+                descriptions = get_predefined_type_descriptions(declared_type.name())
+                types_enum.extend([(e, e, descriptions.get(e, "")) for e in declared_type.enumeration_items()])
+                break
+        return types_enum
 
     @classmethod
     def ifc_classes_suggestions(cls):
