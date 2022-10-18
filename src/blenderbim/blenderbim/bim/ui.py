@@ -115,6 +115,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
     lock_grids_on_import: BoolProperty(name="Will lock grids upon import", default=True)
+    info_mode: BoolProperty(
+        default=True, name="Info Mode", description="Display additional helpful tooltips and information"
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -174,6 +177,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
         row = layout.row()
         row.operator("bim.configure_visibility")
+        layout.row().prop(self, "info_mode")
 
 
 def ifc_units(self, context):
