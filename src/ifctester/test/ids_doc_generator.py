@@ -111,10 +111,14 @@ class IdsDocGenerator:
     def __init__(self):
         self.testcases = []
 
-    def __call__(self, name, ids, ifc, expected, applicable_entities=[], failed_entities=[]):
+    def __call__(self, name, ids, ifc, expected, applicable_entities=None, failed_entities=None):
         ids.validate(ifc)
         all_applicable = set()
         all_failures = set()
+        if not applicable_entities:
+            applicable_entities = []
+        if not failed_entities:
+            failed_entities = []
         for spec in ids.specifications:
             assert spec.status is expected
             all_applicable.update(spec.applicable_entities)
