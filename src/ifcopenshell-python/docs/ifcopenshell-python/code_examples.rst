@@ -166,6 +166,26 @@ Get the distribution system of an element
         # For example, it might be part of a Chilled Water system
         print("This pipe is part of the system", system.Name)
 
+Copy an entity
+-----------------------------------------
+
+Copy an entity is possible in different ways, depending on the task. 
+
+.. code-block:: python
+    root.copy_class
+
+This is high level and makes sensible assumptions about copying things like properties, quantities, openings, and other relationships.
+
+.. code-block:: python
+    util.element.copy
+
+This is for shallow copies.
+
+.. code-block:: python
+    util.element.copy_deep
+
+This is for deep graph copy.
+
 Create a simple model from scratch
 ----------------------------------
 

@@ -268,6 +268,14 @@ As in most viewer applications, IfcOpeningElement geometry is subtracted from th
 
     Disabling this settings will reduce processing time and improve robustness as it involves 3D Boolean operations.
 
+For example, if you want to set this setting in a python script you can use the following:
+
+.. code-block:: python
+    
+    settings = ifcopenshell.geom.settings()
+    settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+
+
 DISABLE_TRIANGULATION
 ---------------------
 
