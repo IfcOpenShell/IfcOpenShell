@@ -24,6 +24,17 @@ from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.root.data import IfcClassData
 
 
+class BIM_UL_ifc_classes(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ifc_icons = IfcClassData.data["ifc_icons"]
+        icon_id = ifc_icons[item.name].icon_id if item.name in ifc_icons else 0
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.label(text=item.name, icon_value=icon_id)
+        elif self.layout_type == 'GRID':
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon_id)
+
+
 class BIM_PT_class(Panel):
     bl_label = "IFC Class"
     bl_idname = "BIM_PT_class"
@@ -80,7 +91,16 @@ class BIM_PT_class(Panel):
         layout = self.layout
         if not is_reassigning_class:
             prop_with_search(layout, props, "ifc_product")
-        prop_with_search(layout, props, "ifc_class")
+
+        row = layout.row()
+        split = row.split(factor=0.23)
+        col = split.column()
+        col.label(text="IFC Class:")
+        col = split.column()
+        row = col.row()
+        row.label(text=props.ifc_class)
+        row.operator("bim.show_ifc_classes_list", text="", icon="COLLAPSEMENU")
+        # prop_with_search(layout, props, "ifc_class")
         if ifc_predefined_types:
             prop_with_search(layout, props, "ifc_predefined_type")
             if props.ifc_predefined_type == "USERDEFINED":
@@ -88,3 +108,19 @@ class BIM_PT_class(Panel):
                 row.prop(props, "ifc_userdefined_type")
         if not is_reassigning_class:
             prop_with_search(layout, props, "contexts")
+
+
+class BIM_UL_ifc_classes_show(bpy.types.Operator):
+    bl_idname = "bim.show_ifc_classes_list"
+    bl_label = "Show IFC classes list"
+    bl_options = {"REGISTER"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=700)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        props = context.scene.BIMRootProperties
+        self.layout.template_list("BIM_UL_ifc_classes", "", props, "ifc_icons", props, "ifc_icons_index")

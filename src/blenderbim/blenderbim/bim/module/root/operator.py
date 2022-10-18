@@ -190,3 +190,18 @@ class CopyClass(bpy.types.Operator, Operator):
         for obj in objects:
             core.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         blenderbim.bim.handler.purge_module_data()
+
+
+class PopulateIfcIconNames(bpy.types.Operator):
+    bl_idname = "bim.populate_ifc_icon_names"
+    bl_label = "Populate IFC icon names"
+    bl_options = {"REGISTER"}
+
+    def invoke(self, context, event):
+        props = context.scene.BIMRootProperties
+        if not props.ifc_icons:
+            # https://blender.stackexchange.com/a/269715
+            ifc_classes = props.__annotations__.get("ifc_class").keywords.get("items")(props, context)
+            for ifc_class, _, _ in ifc_classes:
+                props.ifc_icons.add().name = ifc_class
+        return {"FINISHED"}
