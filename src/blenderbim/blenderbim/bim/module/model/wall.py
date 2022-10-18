@@ -34,7 +34,7 @@ import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from ifcopenshell.api.material.data import Data as MaterialData
-from math import pi, degrees
+from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
 
 
@@ -243,6 +243,37 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.change_extrusion_x_angle"
+    bl_label = "Change Extrusion X Angle"
+    bl_options = {"REGISTER", "UNDO"}
+    x_angle: bpy.props.FloatProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        wall_objs = []
+        x_angle = radians(self.x_angle)
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                return
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return
+            extrusion = tool.Model.get_extrusion(representation)
+            if not extrusion:
+                return
+            extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
+            if element.is_a("IfcWall"):
+                wall_objs.append(obj)
+        if wall_objs:
+            DumbWallRecalculator().recalculate(wall_objs)
+        return {"FINISHED"}
+
+
 class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_layer_length"
     bl_label = "Change Layer Length"
@@ -400,23 +431,26 @@ class DumbWallRecalculator:
 class DumbWallGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
-        self.layers = get_material_layer_parameters(self.relating_type)
+        self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
             return
 
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
+        props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
         self.width = self.layers["thickness"]
-        self.height = 3.0
-        self.length = 1.0
+        self.height = props.extrusion_depth * self.unit_scale
+        self.length = props.length * self.unit_scale
         self.rotation = 0.0
         self.location = Vector((0, 0, 0))
+        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
 
         if self.has_sketch():
             return  # For now
@@ -569,6 +603,7 @@ class DumbWallGenerator:
             offset=self.layers["offset"],
             length=self.length,
             height=self.height,
+            x_angle=self.x_angle,
         )
         ifcopenshell.api.run(
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -696,7 +731,7 @@ class DumbWallJoiner:
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATSTART")
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
 
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         axis = copy.deepcopy(axis1["reference"])
         body = copy.deepcopy(axis1["reference"])
         self.recreate_wall(element1, wall1, axis, body)
@@ -705,7 +740,7 @@ class DumbWallJoiner:
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         axis2 = copy.deepcopy(axis1)
         intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
         if connection < 0 or connection > 1 or tool.Cad.is_x(connection, (0, 1)):
@@ -725,6 +760,9 @@ class DumbWallJoiner:
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
     def flip(self, wall1):
+        if tool.Ifc.is_moved(wall1):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
+
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
@@ -736,21 +774,82 @@ class DumbWallJoiner:
             if rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatedConnectionType = "ATSTART" if rel.RelatedConnectionType == "ATEND" else "ATEND"
 
-        axis1 = self.get_wall_axis(wall1)
+        layers1 = tool.Model.get_material_layer_parameters(element1)
+        axis1 = tool.Model.get_wall_axis(wall1, layers1)
         axis1["reference"][0], axis1["reference"][1] = axis1["reference"][1], axis1["reference"][0]
 
         flip_matrix = Matrix.Rotation(pi, 4, "Z")
         wall1.matrix_world = wall1.matrix_world @ flip_matrix
+        wall1.matrix_world[0][3], wall1.matrix_world[1][3] = axis1["reference"][0]
         bpy.context.view_layer.update()
+
+        # The wall should flip, but all openings and fills should stay and shift to the opposite axis
+        opening_matrixes = {}
+        filling_matrixes = {}
+        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
+            opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            location = opening_matrix.col[3].to_3d()
+            location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
+            location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
+            if (location_on_base - location).length < (location_on_side - location).length:
+                axis_offset = location_on_side - location_on_base
+                offset_from_axis = location_on_base - location
+                opening_matrix.col[3] = (location_on_base - axis_offset - offset_from_axis).to_4d()
+            else:
+                axis_offset = location_on_side - location_on_base
+                offset_from_axis = location_on_side - location
+                opening_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
+            opening_matrixes[opening] = opening_matrix
+
+            for filling in [r.RelatedBuildingElement for r in opening.HasFillings]:
+                filling_obj = tool.Ifc.get_object(filling)
+                filling_matrix = filling_obj.matrix_world.copy()
+
+                location = filling_matrix.col[3].to_3d()
+                location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
+                location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
+                if (location_on_base - location).length < (location_on_side - location).length:
+                    axis_offset = location_on_side - location_on_base
+                    offset_from_axis = location_on_base - location
+                    filling_matrix.col[3] = (location_on_base - axis_offset - offset_from_axis).to_4d()
+                else:
+                    axis_offset = location_on_side - location_on_base
+                    offset_from_axis = location_on_side - location
+                    filling_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
+                filling_matrixes[filling] = filling_matrix
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         DumbWallRecalculator().recalculate([wall1])
 
+        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
+            opening_matrix = opening_matrixes[opening]
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=opening_matrix
+            )
+            for filling in [r.RelatedBuildingElement for r in opening.HasFillings]:
+                filling_matrix = filling_matrixes[filling]
+                filling_obj = tool.Ifc.get_object(filling)
+                filling_obj.matrix_world = filling_matrix
+
+        if filling_matrixes:
+            bpy.context.view_layer.update()
+
+        body = ifcopenshell.util.representation.get_representation(element1, "Model", "Body", "MODEL_VIEW")
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=wall1,
+            representation=body,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
     def merge(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
+        axis1 = tool.Model.get_wall_axis(wall1)
+        axis2 = tool.Model.get_wall_axis(wall2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
         if not tool.Cad.is_x(angle, 0, tolerance=0.001):
@@ -814,8 +913,8 @@ class DumbWallJoiner:
     def join_L(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
+        axis1 = tool.Model.get_wall_axis(wall1)
+        axis2 = tool.Model.get_wall_axis(wall2)
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
         if intersect:
             intersect, _ = intersect
@@ -842,7 +941,7 @@ class DumbWallJoiner:
         if not element1:
             return
 
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
         connection = "ATEND" if connection > 0.5 else "ATSTART"
 
@@ -862,7 +961,7 @@ class DumbWallJoiner:
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
 
-        axis1 = self.get_wall_axis(wall1)
+        axis1 = tool.Model.get_wall_axis(wall1)
         axis = copy.deepcopy(axis1["reference"])
         body = copy.deepcopy(axis1["reference"])
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -875,8 +974,8 @@ class DumbWallJoiner:
     def join_T(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
+        axis1 = tool.Model.get_wall_axis(wall1)
+        axis2 = tool.Model.get_wall_axis(wall2)
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
         if intersect:
             intersect, _ = intersect
@@ -899,8 +998,8 @@ class DumbWallJoiner:
     def join_V(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
+        axis1 = tool.Model.get_wall_axis(wall1)
+        axis2 = tool.Model.get_wall_axis(wall2)
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
         if intersect:
             intersect, _ = intersect
@@ -924,12 +1023,14 @@ class DumbWallJoiner:
 
     def recreate_wall(self, element, obj, axis=None, body=None):
         if axis is None or body is None:
-            axis = body = self.get_wall_axis(obj)["reference"]
+            axis = body = tool.Model.get_wall_axis(obj)["reference"]
         self.axis = copy.deepcopy(axis)
         self.body = copy.deepcopy(body)
-        height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
+        extrusion_data = self.get_extrusion_data(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
+        height = extrusion_data["height"]
+        x_angle = extrusion_data["x_angle"]
         self.clippings = []
-        layers = get_material_layer_parameters(element)
+        layers = tool.Model.get_material_layer_parameters(element)
 
         for rel in element.ConnectedTo:
             connection = rel.RelatingConnectionType
@@ -979,6 +1080,7 @@ class DumbWallJoiner:
             context=self.body_context,
             length=length,
             height=height,
+            x_angle=x_angle,
             offset=layers["offset"],
             thickness=layers["thickness"],
             clippings=self.clippings,
@@ -998,19 +1100,19 @@ class DumbWallJoiner:
             )
 
         previous_matrix = obj.matrix_world.copy()
-        previous_origin = obj.location.copy()
-        obj.location[0], obj.location[1] = self.body[0]
+        previous_origin = previous_matrix.col[3].to_2d()
+        obj.matrix_world[0][3], obj.matrix_world[1][3] = self.body[0]
         bpy.context.view_layer.update()
         if tool.Ifc.is_moved(obj):
             # Openings should move with the host overall ...
             # ... except their position should stay the same along the local X axis of the wall
             for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
                 percent = tool.Cad.edge_percent(
-                    self.body[0], (previous_origin.to_2d(), (previous_matrix @ Vector((1, 0, 0))).to_2d())
+                    self.body[0], (previous_origin, (previous_matrix @ Vector((1, 0, 0))).to_2d())
                 )
                 is_x_offset_increased = True if percent < 0 else False
 
-                change_in_x = (self.body[0] - previous_origin.to_2d()).length / self.unit_scale
+                change_in_x = (self.body[0] - previous_origin).length / self.unit_scale
                 coordinates = list(opening.ObjectPlacement.RelativePlacement.Location.Coordinates)
                 if is_x_offset_increased:
                     coordinates[0] += change_in_x
@@ -1018,6 +1120,7 @@ class DumbWallJoiner:
                     coordinates[0] -= change_in_x
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,
             obj=obj,
@@ -1039,48 +1142,29 @@ class DumbWallJoiner:
             )
         )
 
-    def get_wall_axis(self, obj, layers=None):
-        x_values = [v[0] for v in obj.bound_box]
-        min_x = min(x_values)
-        max_x = max(x_values)
-        axes = {}
-        if layers:
-            axes = {
-                "base": [
-                    (obj.matrix_world @ Vector((min_x, layers["offset"], 0.0))).to_2d(),
-                    (obj.matrix_world @ Vector((max_x, layers["offset"], 0.0))).to_2d(),
-                ],
-                "side": [
-                    (obj.matrix_world @ Vector((min_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
-                    (obj.matrix_world @ Vector((max_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
-                ],
-            }
-        axes["reference"] = [
-            (obj.matrix_world @ Vector((min_x, 0.0, 0.0))).to_2d(),
-            (obj.matrix_world @ Vector((max_x, 0.0, 0.0))).to_2d(),
-        ]
-        return axes
-
-    def get_height(self, representation):
-        height = 3.0
+    def get_extrusion_data(self, representation):
+        results = {"height": 3.0, "x_angle": 0}
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
-                height = item.Depth * self.unit_scale
+                results["height"] = item.Depth * self.unit_scale
+                x, y, z = item.ExtrudedDirection.DirectionRatios
+                if not tool.Cad.is_x(x, 0) or not tool.Cad.is_x(y, 0) or not tool.Cad.is_x(z, 1):
+                    results["x_angle"] = Vector((0, 1)).angle(Vector((y, z)))
                 break
             elif item.is_a("IfcBooleanClippingResult"):
                 item = item.FirstOperand
             else:
                 break
-        return height
+        return results
 
     def join(self, wall1, wall2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        layers1 = get_material_layer_parameters(element1)
-        layers2 = get_material_layer_parameters(element2)
-        axis1 = self.get_wall_axis(wall1, layers1)
-        axis2 = self.get_wall_axis(wall2, layers2)
+        layers1 = tool.Model.get_material_layer_parameters(element1)
+        layers2 = tool.Model.get_material_layer_parameters(element2)
+        axis1 = tool.Model.get_wall_axis(wall1, layers1)
+        axis2 = tool.Model.get_wall_axis(wall2, layers2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=True, degrees=True)
         if tool.Cad.is_x(abs(angle), (0, 180), tolerance=0.001):
@@ -1269,17 +1353,3 @@ class DumbWallJoiner:
                             }
                         )
         return True
-
-
-def get_material_layer_parameters(element):
-    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    offset = 0.0
-    thickness = 0.0
-    material = ifcopenshell.util.element.get_material(element)
-    if material:
-        if material.is_a("IfcMaterialLayerSetUsage"):
-            offset = material.OffsetFromReferenceLine * unit_scale
-            material = material.ForLayerSet
-        if material.is_a("IfcMaterialLayerSet"):
-            thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
-    return {"thickness": thickness, "offset": offset}

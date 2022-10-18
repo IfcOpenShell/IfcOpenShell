@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -39,6 +39,7 @@ class BimTool(WorkSpaceTool):
     bl_keymap = (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
+        #("bim.sync_modeling", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
@@ -56,12 +57,18 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
     )
 
-    def draw_settings(context, layout, something):
-        props = context.scene.BIMModelProperties
-        is_tool_header = context.region.type == "TOOL_HEADER"
-        is_sidebar = context.region.type == "UI"
+    def draw_settings(context, layout, ws_tool):
+        # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
+        BimToolUI.draw(context, layout)
 
-        row = layout.row(align=True)
+
+class BimToolUI:
+    @classmethod
+    def draw(cls, context, layout):
+        cls.layout = layout
+        cls.props = context.scene.BIMModelProperties
+
+        row = cls.layout.row(align=True)
         if not tool.Ifc.get():
             row.label(text="No IFC Project", icon="ERROR")
             return
@@ -69,121 +76,99 @@ class BimTool(WorkSpaceTool):
         if not AuthoringData.is_loaded:
             AuthoringData.load()
 
-        ifc_classes = AuthoringData.data["ifc_classes"] if "ifc_classes" in AuthoringData.data else False
-        relating_types_ids = (
-            AuthoringData.data["relating_types_ids"] if "relating_types_ids" in AuthoringData.data else False
-        )
-
-        #if ifc_classes and relating_types_ids and not props.icon_id and not is_tool_header:
+        #if ifc_classes and relating_types_ids and not cls.props.icon_id and not is_tool_header:
         #    # hack Dion won't like to show a preview also on the first time the sidebar is shown
-        #    bpy.app.timers.register(lambda: prop.update_ifc_class(props, "lost_context"))
-        #    bpy.app.timers.register(lambda: prop.update_relating_type(props, "lost_context"))
+        #    bpy.app.timers.register(lambda: prop.update_ifc_class(cls.props, "lost_context"))
+        #    bpy.app.timers.register(lambda: prop.update_relating_type(cls.props, "lost_context"))
 
-        ifc_class = props.ifc_class
-        relating_type_id = props.relating_type_id
+        if context.region.type == "TOOL_HEADER":
+            cls.draw_header_interface()
+        elif context.region.type == "UI":
+            cls.draw_sidebar_interface()
 
-        if is_tool_header:
-            row = layout.row(align=True)
-            if ifc_classes:
-                row.label(text="", icon="FILE_VOLUME")
-                row.prop(data=props, property="ifc_class", text="")
-            else:
-                row.label(text="No Construction Class", icon="FILE_VOLUME")
-            row = layout.row(align=True)
-            if relating_types_ids:
-                row.label(text="", icon="FILE_3D")
-                prop_with_search(row, props, "relating_type_id", text="")
-                row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
-            else:
-                row.label(text="No Construction Type", icon="FILE_3D")
-            if ifc_classes:
-                #row = layout.row()
-                #row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
+        if context.active_object and context.selected_objects:
+            cls.draw_edit_object_interface(context)
+        elif not context.selected_objects:
+            cls.draw_create_object_interface()
 
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_A")
-                op = row.operator("bim.add_constr_type_instance", text="Add")
-                op.from_invoke = True
-                op.ifc_class = ifc_class
-                if relating_type_id.isnumeric():
-                    op.relating_type_id = int(relating_type_id)
-        elif is_sidebar:
-            row = layout.row(align=True)
-            if ifc_classes:
-                row.label(text="", icon="FILE_VOLUME")
-                prop_with_search(row, props, "ifc_class", text="")
-            else:
-                row.label(text="No Construction Class", icon="FILE_VOLUME")
-            row = layout.row(align=True)
-            if relating_types_ids:
-                row.label(text="", icon="FILE_3D")
-                prop_with_search(row, props, "relating_type_id", text="")
-            else:
-                row.label(text="No Construction Type", icon="FILE_3D")
+    @classmethod
+    def draw_create_object_interface(cls):
+        if not AuthoringData.data["relating_types_ids"]:
+            return
+        if cls.props.ifc_class == "IfcWallType":
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="extrusion_depth", text="Height")
 
-            box = layout.box()
-            if AuthoringData.data["type_thumbnail"]:
-                box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
-            else:
-                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                op.ifc_class = props.ifc_class
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="length", text="Length")
 
-            if ifc_classes:
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_A")
-                op = row.operator("bim.add_constr_type_instance", text="Add")
-                op.from_invoke = True
-                op.ifc_class = ifc_class
-                if relating_type_id.isnumeric():
-                    op.relating_type_id = int(relating_type_id)
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="x_angle", text="X Angle")
+        elif cls.props.ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="cardinal_point", text="Axis")
 
+            row = cls.layout.row(align=True)
+            label = "Height" if cls.props.ifc_class == "IfcColumn" else "Length"
+            row.prop(data=cls.props, property="extrusion_depth", text=label)
+        elif cls.props.ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcDoorType", "IfcDoorStyle"):
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="rl", text="RL")
+
+    @classmethod
+    def draw_edit_object_interface(cls, context):
         if AuthoringData.data["active_class"] in ("IfcWall", "IfcWallStandardCase"):
-            row = layout.row(align=True)
-            row.prop(data=props, property="extrusion_depth", text="Height")
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="extrusion_depth", text="Height")
             op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
-            op.depth = props.extrusion_depth
+            op.depth = cls.props.extrusion_depth
 
-            row = layout.row(align=True)
-            row.prop(data=props, property="length", text="Length")
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="length", text="Length")
             op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
-            op.length = props.length
+            op.length = cls.props.length
 
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="x_angle", text="X Angle")
+            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
+            op.x_angle = cls.props.x_angle
+
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
             row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_T")
             row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_Y")
             row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_M")
             row.operator("bim.hotkey", text="Merge").hotkey = "S_M"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
             row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_S")
             row.operator("bim.hotkey", text="Split").hotkey = "S_S"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_R")
+            row.operator("bim.hotkey", text="Rotate 90").hotkey = "S_R"
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
             row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
         elif AuthoringData.data["active_class"] in ("IfcSlab", "IfcSlabStandardCase"):
-            if not context.active_object:
-                pass
-            elif context.active_object.mode == "OBJECT":
-                row = layout.row(align=True)
+            if context.active_object.mode == "OBJECT":
+                row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
                 row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
@@ -195,34 +180,34 @@ class BimTool(WorkSpaceTool):
             "IfcMember",
             "IfcMemberStandardCase",
         ):
-            row = layout.row(align=True)
-            row.prop(data=props, property="cardinal_point", text="Axis")
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="cardinal_point", text="Axis")
             op = row.operator("bim.change_cardinal_point", icon="FILE_REFRESH", text="")
-            op.cardinal_point = int(props.cardinal_point)
+            op.cardinal_point = int(cls.props.cardinal_point)
 
-            row = layout.row(align=True)
-            label = "Height" if ifc_class == "IfcColumnType" else "Length"
-            row.prop(data=props, property="extrusion_depth", text=label)
+            row = cls.layout.row(align=True)
+            label = "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
+            row.prop(data=cls.props, property="extrusion_depth", text=label)
             op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
-            op.depth = props.extrusion_depth
+            op.depth = cls.props.extrusion_depth
 
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
             row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_T")
             row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_Y")
             row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_R")
             row.operator("bim.hotkey", text="Rotate 90").hotkey = "S_R"
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
             row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
@@ -233,25 +218,29 @@ class BimTool(WorkSpaceTool):
             "IfcDoor",
             "IfcDoorStandardCase",
         ):
-            row = layout.row(align=True)
-            row.prop(data=props, property="rl", text="RL")
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="rl", text="RL")
 
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
             row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
 
-        if props.ifc_class in (
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
+        elif AuthoringData.data["active_class"] in (
             "IfcCableCarrierSegmentType",
             "IfcCableSegmentType",
             "IfcDuctSegmentType",
             "IfcPipeSegmentType",
         ):
-            row = layout.row(align=True)
+            row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Extend", icon="EVENT_E")
 
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_O")
         if len(context.selected_objects) == 2:
@@ -265,29 +254,89 @@ class BimTool(WorkSpaceTool):
             else:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
         row.label(text="Align")
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Align Exterior", icon="EVENT_X")
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Align Centerline", icon="EVENT_C")
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Align Interior", icon="EVENT_V")
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
 
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
         row.label(text="Mode")
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="", icon="EVENT_O")
         row.operator("bim.hotkey", text="Void").hotkey = "A_O"
-        row = layout.row(align=True)
+        row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="", icon="EVENT_D")
         row.operator("bim.hotkey", text="Decomposition").hotkey = "A_D"
+
+    @classmethod
+    def draw_header_interface(cls):
+        row = cls.layout.row(align=True)
+        if AuthoringData.data["ifc_classes"]:
+            row.label(text="", icon="FILE_VOLUME")
+            row.prop(data=cls.props, property="ifc_class", text="")
+        else:
+            row.label(text="No Construction Class", icon="FILE_VOLUME")
+        row = cls.layout.row(align=True)
+        if AuthoringData.data["relating_types_ids"]:
+            row.label(text="", icon="FILE_3D")
+            prop_with_search(row, cls.props, "relating_type_id", text="")
+            row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
+        else:
+            row.label(text="No Construction Type", icon="FILE_3D")
+        if AuthoringData.data["ifc_classes"]:
+            #row = cls.layout.row()
+            #row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
+
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_A")
+            op = row.operator("bim.add_constr_type_instance", text="Add")
+            op.from_invoke = True
+            op.ifc_class = cls.props.ifc_class
+            if cls.props.relating_type_id.isnumeric():
+                op.relating_type_id = int(cls.props.relating_type_id)
+
+    @classmethod
+    def draw_sidebar_interface(cls):
+        row = cls.layout.row(align=True)
+        if AuthoringData.data["ifc_classes"]:
+            row.label(text="", icon="FILE_VOLUME")
+            prop_with_search(row, cls.props, "ifc_class", text="")
+        else:
+            row.label(text="No Construction Class", icon="FILE_VOLUME")
+        row = cls.layout.row(align=True)
+        if AuthoringData.data["relating_types_ids"]:
+            row.label(text="", icon="FILE_3D")
+            prop_with_search(row, cls.props, "relating_type_id", text="")
+        else:
+            row.label(text="No Construction Type", icon="FILE_3D")
+
+        box = cls.layout.box()
+        if AuthoringData.data["type_thumbnail"]:
+            box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
+        else:
+            op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
+            op.ifc_class = cls.props.ifc_class
+
+        if AuthoringData.data["ifc_classes"]:
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_A")
+            op = row.operator("bim.add_constr_type_instance", text="Add")
+            op.from_invoke = True
+            op.ifc_class = cls.props.ifc_class
+            if cls.props.relating_type_id.isnumeric():
+                op.relating_type_id = int(cls.props.relating_type_id)
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
@@ -367,6 +416,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_F(self):
         if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.flip_wall()
+        elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
+            bpy.ops.bim.flip_fill()
 
     def hotkey_S_G(self):
         if self.active_class in ("IfcWall", "IfcWallStandardCase"):

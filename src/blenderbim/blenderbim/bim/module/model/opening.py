@@ -64,9 +64,10 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             if not raycast[0]:
                 return {"FINISHED"}
 
-        axis = [voided_obj.matrix_world @ Vector((0, 0, 0)), voided_obj.matrix_world @ Vector((1, 0, 0))]
-
         # In this prototype, we assume openings are only added to axis-based elements
+        layers = tool.Model.get_material_layer_parameters(element)
+        axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+
         new_matrix = voided_obj.matrix_world.copy()
         new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
         if not filling.is_a("IfcDoor"):
@@ -78,7 +79,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
-        opening_obj = self.generate_opening_from_filling(filling_obj, voided_obj)
+        opening_obj = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
 
         # Still prototyping, for now duplicating code from bpy.ops.bim.add_opening
         if tool.Ifc.is_moved(voided_obj):
@@ -120,7 +121,48 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             bpy.data.objects.remove(opening_obj)
         return {"FINISHED"}
 
-    def generate_opening_from_filling(self, filling_obj, voided_obj):
+    def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
+        profile = ifcopenshell.util.representation.get_representation(filling, "Model", "Profile", "ELEVATION_VIEW")
+        if profile:
+            return self.generate_opening_from_filling_profile(filling_obj, voided_obj, profile)
+        return self.generate_opening_from_filling_box(filling_obj, voided_obj)
+
+    def generate_opening_from_filling_profile(self, filling_obj, voided_obj, profile):
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.INCLUDE_CURVES, True)
+        shape = ifcopenshell.geom.create_shape(settings, profile)
+        verts = shape.verts
+        edges = shape.edges
+        grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+        grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+
+        bm = bmesh.new()
+        bm.verts.index_update()
+        bm.edges.index_update()
+        new_verts = [bm.verts.new(v) for v in grouped_verts]
+        new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in grouped_edges]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.triangle_fill(bm, edges=bm.edges)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi, verts=bm.verts, edges=bm.edges)
+
+        bmesh.ops.translate(bm, vec=[0., -0.1, 0.], verts=bm.verts)
+        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
+        bmesh.ops.translate(bm, vec=[0., voided_obj.dimensions[1] + 0.1 + 0.1, 0.], verts=extruded_verts)
+
+        mesh = bpy.data.meshes.new(name="Opening")
+        bm.to_mesh(mesh)
+        bm.free()
+
+        obj = bpy.data.objects.new("Opening", mesh)
+        obj.matrix_world = filling_obj.matrix_world
+        return obj
+
+    def generate_opening_from_filling_box(self, filling_obj, voided_obj):
         x, y, z = filling_obj.dimensions
         dimension = min(voided_obj.dimensions)
         if dimension == voided_obj.dimensions[0]:
@@ -214,6 +256,36 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                         is_global=True,
                         should_sync_changes_first=False,
                     )
+        return {"FINISHED"}
+
+
+class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.flip_fill"
+    bl_label = "Flip Fill"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.FillsVoids:
+                continue
+
+            flip_matrix = Matrix.Rotation(pi, 4, "Z")
+
+            bottom_left = obj.matrix_world @ Vector(obj.bound_box[0])
+            top_right = obj.matrix_world @ Vector(obj.bound_box[6])
+            center = obj.matrix_world.col[3].to_3d().copy()
+            center_offset = center - bottom_left
+            flipped_center = top_right - center_offset
+
+            obj.matrix_world = obj.matrix_world @ flip_matrix
+            obj.matrix_world.col[3][0] = flipped_center[0]
+            obj.matrix_world.col[3][1] = flipped_center[1]
+            bpy.context.view_layer.update()
         return {"FINISHED"}
 
 
