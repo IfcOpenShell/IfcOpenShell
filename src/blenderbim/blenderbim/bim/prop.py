@@ -206,14 +206,6 @@ def updateAttributeValue(self, context):
             self.is_null = False
 
 
-class AttributeDocumentation(PropertyGroup):
-    ifc_class: StringProperty(name="IFC class", default="IFCElement")
-    ifc_id: IntProperty(name="ID")
-    doc_url: StringProperty(name="URL")
-    use_case: CollectionProperty(name="Use Case", type=StrProperty)
-    description: StringProperty(name="Description")
-
-
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")
     data_type: StringProperty(name="Data Type")
@@ -227,7 +219,6 @@ class Attribute(PropertyGroup):
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
-    doc: PointerProperty(type=AttributeDocumentation)
 
     def get_value(self):
         if self.is_null:

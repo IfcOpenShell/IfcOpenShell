@@ -98,7 +98,6 @@ classes = [
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
-    prop.AttributeDocumentation,
     prop.Attribute,
     prop.ModuleVisibility,
     prop.BIMProperties,

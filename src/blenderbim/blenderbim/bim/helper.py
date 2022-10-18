@@ -27,6 +27,7 @@ from ifcopenshell.util.doc import get_entity_doc, get_attribute_doc, get_propert
 from mathutils import geometry
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 
 
 def draw_attributes(props, layout, copy_operator=None):
@@ -104,78 +105,6 @@ def import_attribute(attribute, props, data, callback=None):
         new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
         if data[attribute.name()]:
             new.enum_value = data[attribute.name()]
-    new.doc.ifc_id = data["id"]
-    new.doc.ifc_class = data["type"]
-    new.doc.doc_url = get_ifc_class_doc_url(new.doc.ifc_class)
-    new.doc.description = get_ifc_description(attribute.name())
-    for line in get_ifc_class_usecase(new.doc.ifc_class):
-        new_usecase_line = new.doc.use_case.add()
-        new_usecase_line.name = line
-
-
-# TODO: Store in a json file :
-info_index = {
-    "HeaderSchema": {
-        "description": "The IFC specification includes terms, and data specification items that originate from use within disciplines, trades, and professions of the construction and facility management industry sector.\nTerms and concepts uses the plain English words, the data items within the data specification follow a naming convention",
-        "use_case": {
-            "IFC2X3": "IFC 2x3\n Official standard from 2008 to 2013",
-            "IFC4": "IFC 4\n Official standard since 2013",
-        },
-        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
-    },
-    "HeaderUnitSystem": {
-        "description": "Global unit System in use in the file",
-        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
-    },
-    "HeaderUnitLength": {
-        "description": "Global Length unit in use in the file",
-        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
-    },
-    "HeaderUnitArea": {
-        "description": "Global Area unit in use in the file",
-        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
-    },
-    "HeaderUnitVolume": {
-        "description": "Global Volume unit in use in the file",
-        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
-    },
-}
-
-
-class InfoIndexValue:
-    def __init__(self, index_key, instance_value=None) -> None:
-        print(index_key)
-        index_value = info_index.get(index_key)
-        if index_value is None:
-            self.description = self.use_case = self.doc_url = None
-            return
-        self.description = index_value.get("description")
-        self.use_case = index_value.get("use_case")
-        if self.use_case is not None:
-            if instance_value is not None:
-                self.use_case = self.use_case.get(instance_value)
-            if self.use_case is not None and "\n" in self.use_case:
-                self.use_case = self.use_case.split("\n")
-            else:
-                self.use_case = [self.use_case]
-        self.doc_url = index_value.get("doc_url")
-
-
-def get_ifc_description(property_name):
-    # TODO : Implement fetching descriptipn from property name
-    return "This describes what this fields means"
-
-
-def get_ifc_class_doc_url(class_name):
-    # TODO : Implement fetching doc url
-    return "https://github.com/IfcOpenShell/IfcOpenShell"
-
-
-def get_ifc_class_usecase(class_name):
-    # TODO : Implement fetching class usecase
-    yield "This is a usecase"
-    yield "You are supposed to use this class in this situation"
-    yield "Or that situation"
 
 
 def export_attributes(props, callback=None):
@@ -198,20 +127,23 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     op.prop_name = prop_name
 
     if bpy.context.preferences.addons["blenderbim"].preferences.info_mode:
-        schema = IfcStore.schema
+        schema = tool.Ifc.schema()
         if schema is not None:
             schema = str(schema)
             schema = next(identifier for identifier in IfcStore.schema_identifiers if identifier in schema)
-            docs = None
+            docs = {}
             entity = getattr(data, prop_name)
             if entity:
                 try:
                     docs = get_entity_doc(schema, entity)
-                except KeyError:  # This will throw error for attributes, pset etc. Silently pass for now
-                    docs = {}
-            url = docs.get("spec_url", "https://standards.buildingsmart.org/")
-            url_op = row.operator("bim.open_webbrowser", icon="URL", text="")
+                except KeyError:
+                    # TODO : support attributes, pset, etc.
+                    pass
+            op_row = row.row(align=True)
+            url = docs.get("spec_url", "")
+            url_op = op_row.operator("bim.open_webbrowser", icon="URL", text="")
             url_op.url = url
+            op_row.enabled = bool(url)
 
 
 def get_enum_items(data, prop_name, context):
