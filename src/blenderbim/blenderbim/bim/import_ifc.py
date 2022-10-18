@@ -402,7 +402,7 @@ class IfcImporter:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
                 return True
-            elif (
+            elif len(items) and ( # See #2508 why we accommodate for invalid IFCs here
                 items[0].is_a("IfcSweptDiskSolid")
                 and len({i.is_a() for i in items}) == 1
                 and len({i.Radius for i in items}) == 1
