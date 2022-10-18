@@ -27,6 +27,7 @@ from ifcopenshell.util.doc import get_entity_doc, get_attribute_doc, get_propert
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -104,7 +105,7 @@ def cache_string(s):
 cache_string.data = {}
 
 def get_ifc_entity_description(ifc_entity):
-    schema = IfcStore.schema
+    schema = tool.Ifc.get_schema()
     if schema is not None:
         schema = str(schema)
         schema = next(identifier for identifier in IfcStore.schema_identifiers if identifier in schema)
