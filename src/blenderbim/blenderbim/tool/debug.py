@@ -40,3 +40,11 @@ class Debug(blenderbim.core.tool.Debug):
         filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
         for f in filelist:
             os.remove(os.path.join(cache_dir, f))
+
+    @classmethod
+    def debug_geometry(cls, verts=[], edges=[], name="Debug"):
+        mesh = bpy.data.meshes.new("Debug")
+        mesh.from_pydata(verts, edges, [])
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return obj
