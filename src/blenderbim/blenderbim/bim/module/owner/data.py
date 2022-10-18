@@ -24,6 +24,8 @@ def refresh():
     PeopleData.is_loaded = False
     OrganisationsData.is_loaded = False
     OwnerData.is_loaded = False
+    ActorData.is_loaded = False
+    ObjectActorData.is_loaded = False
 
 
 class RolesAddressesData:
@@ -92,15 +94,17 @@ class PeopleData(RolesAddressesData):
     def get_people(cls):
         people = []
         for person in tool.Ifc.get().by_type("IfcPerson"):
+            roles = cls.get_roles(person)
             people.append(
                 {
                     "id": person.id(),
                     "props": bpy.context.scene.BIMOwnerProperties.person_attributes,
                     "name": cls.get_person_name(person),
+                    "roles_label": ", ".join([r["label"] for r in roles]),
                     "is_editing": cls.get_person_is_editing(person),
                     "is_engaged": bool(person.EngagedIn),
                     "list_attributes": cls.get_person_list_attributes(person),
-                    "roles": cls.get_roles(person),
+                    "roles": roles,
                     "addresses": cls.get_addresses(person),
                 }
             )
@@ -150,14 +154,16 @@ class OrganisationsData(RolesAddressesData):
     def get_organisations(cls):
         organisations = []
         for organisation in tool.Ifc.get().by_type("IfcOrganization"):
+            roles = cls.get_roles(organisation)
             organisations.append(
                 {
                     "id": organisation.id(),
                     "props": bpy.context.scene.BIMOwnerProperties.organisation_attributes,
                     "name": organisation.Name,
+                    "roles_label": ", ".join([r["label"] for r in roles]),
                     "is_editing": bpy.context.scene.BIMOwnerProperties.active_organisation_id == organisation.id(),
                     "is_engaged": bool(organisation.Engages),
-                    "roles": cls.get_roles(organisation),
+                    "roles": roles,
                     "addresses": cls.get_addresses(organisation),
                 }
             )
@@ -202,3 +208,79 @@ class OwnerData:
                 }
             )
         return results
+
+
+class ActorData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "the_actor": cls.the_actor(),
+            "actors": cls.actors(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def the_actor(cls):
+        ifc_class = bpy.context.scene.BIMOwnerProperties.actor_type
+        return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type(ifc_class)]
+
+    @classmethod
+    def actors(cls):
+        actors = []
+        props = bpy.context.scene.BIMOwnerProperties
+        for actor in tool.Ifc.get().by_type(props.actor_class, include_subtypes=False):
+            is_editing = props.active_actor_id == actor.id()
+            if actor.TheActor.is_a("IfcPerson"):
+                the_actor = actor.TheActor.Identification or "N/A"
+            elif actor.TheActor.is_a("IfcOrganization"):
+                the_actor = actor.TheActor.Identification or "N/A"
+            elif actor.TheActor.is_a("IfcPersonAndOrganization"):
+                the_actor = actor.TheActor.ThePerson.Identification or "N/A"
+                the_actor += "-" + actor.TheActor.TheOrganization.Identification or "N/A"
+            actors.append(
+                {"id": actor.id(), "name": actor.Name or "Unnamed", "the_actor": the_actor, "is_editing": is_editing}
+            )
+        return actors
+
+
+class ObjectActorData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"actor": cls.actor(), "actors": cls.actors()}
+
+    @classmethod
+    def actor(cls):
+        return [(str(p.id()), p.Name or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcActor")]
+
+    @classmethod
+    def actors(cls):
+        results = []
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element:
+            return results
+        for rel in getattr(element, "HasAssignments", []):
+            if rel.is_a("IfcRelAssignsToActor"):
+                actor = rel.RelatingActor
+                if actor.TheActor.is_a("IfcPerson"):
+                    roles = cls.get_roles(actor.TheActor)
+                elif actor.TheActor.is_a("IfcOrganization"):
+                    roles = cls.get_roles(actor.TheActor)
+                elif actor.TheActor.is_a("IfcPersonAndOrganization"):
+                    roles = cls.get_roles(actor.TheActor.ThePerson)
+                    roles.extend(cls.get_roles(actor.TheActor.TheOrganization))
+                role = ", ".join(roles)
+                results.append(
+                    {"id": actor.id(), "name": actor.Name or "Unnamed", "role": role, "ifc_class": actor.is_a()}
+                )
+        return results
+
+    @classmethod
+    def get_roles(cls, parent):
+        return [r.UserDefinedRole or r.Role for r in parent.Roles or []]

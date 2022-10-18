@@ -2,37 +2,51 @@
 #define ITERATOR_KERNEL_H
 
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeomIteratorSettings.h"
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../ifcgeom_schema_agnostic/IfcRepresentationShapeItem.h"
 
-#ifdef HAS_SCHEMA_2x3
-#include "../ifcparse/Ifc2x3.h"
-#endif
-#ifdef HAS_SCHEMA_4
-#include "../ifcparse/Ifc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x1
-#include "../ifcparse/Ifc4x1.h"
-#endif
-#ifdef HAS_SCHEMA_4x2
-#include "../ifcparse/Ifc4x2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-#include "../ifcparse/Ifc4x3_rc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-#include "../ifcparse/Ifc4x3_rc2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-#include "../ifcparse/Ifc4x3_rc3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-#include "../ifcparse/Ifc4x3_rc4.h"
-#endif
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/size.hpp>
+#include <boost/preprocessor/seq/pop_back.hpp>
+#include <boost/preprocessor/comparison/greater.hpp> 
+#include <boost/preprocessor/selection/min.hpp>
+
+
+// @tfk A macro cannot define an include (I think), so here we can't
+// loop over the sequence of schema identifiers, but rather we have
+// unroll the loop with at least the amount of schemas we'd like support
+// for and then overflow into an existing empty include file.
+
+#define INCLUDE_SCHEMA(n) \
+	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "empty.h")
+
+#include INCLUDE_SCHEMA(0)
+#include INCLUDE_SCHEMA(1)
+#include INCLUDE_SCHEMA(2)
+#include INCLUDE_SCHEMA(3)
+#include INCLUDE_SCHEMA(4)
+#include INCLUDE_SCHEMA(5)
+#include INCLUDE_SCHEMA(6)
+#include INCLUDE_SCHEMA(7)
+#include INCLUDE_SCHEMA(8)
+#include INCLUDE_SCHEMA(9)
 
 #include <boost/function.hpp>
 
 #include <TopExp_Explorer.hxx>
+#include <gp_Ax2.hxx>
+#include <gp_Ax3.hxx>
+#include <gp_Trsf2d.hxx>
+#include <gp_GTrsf2d.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_GTrsf.hxx>
+
+static const double ALMOST_ZERO = 1.e-9;
+
+template <typename T>
+inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance = ALMOST_ZERO) {
+	return fabs(a - b) < tolerance;
+}
 
 namespace IfcGeom {
 
@@ -41,6 +55,9 @@ namespace IfcGeom {
 	class Kernel {
 	private:
 		Kernel* implementation_;
+
+	protected:
+		Kernel() {};
 
 	public:
 		// Tolerances and settings for various geometrical operations:
@@ -80,7 +97,7 @@ namespace IfcGeom {
 			GV_BOOLEAN_ATTEMPT_2D
 		};
 
-		Kernel(IfcParse::IfcFile* file_ = 0);
+		IFC_PARSE_API Kernel(IfcParse::IfcFile* file_);
 		
 		virtual ~Kernel() {}
 
@@ -107,12 +124,38 @@ namespace IfcGeom {
 			return implementation_->convert_placement(item, trsf);
 		}
 
-		static int count(const TopoDS_Shape&, TopAbs_ShapeEnum, bool unique=false);
-		static int surface_genus(const TopoDS_Shape&);
+		IFC_PARSE_API static int count(const TopoDS_Shape&, TopAbs_ShapeEnum, bool unique = false);
+		IFC_PARSE_API static int surface_genus(const TopoDS_Shape&);
 
-		static bool is_manifold(const TopoDS_Shape& a);
-		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings=true);
-		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
+		IFC_PARSE_API static bool is_manifold(const TopoDS_Shape& a);
+		IFC_PARSE_API static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings = true);
+		IFC_PARSE_API static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
+
+		// For axis placements detect equality early in order for the
+		// relatively computionaly expensive gp_Trsf calculation to be skipped
+		IFC_PARSE_API static bool axis_equal(const gp_Ax3& a, const gp_Ax3& b, double tolerance) {
+			if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
+			// Note that the tolerance below is angular, above is linear. Since architectural
+			// objects are about 1m'ish in scale, it should be somewhat equivalent. Besides,
+			// this is mostly a filter for NULL or default values in the placements.
+			if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
+			if (!a.XDirection().IsEqual(b.XDirection(), tolerance)) return false;
+			if (!a.YDirection().IsEqual(b.YDirection(), tolerance)) return false;
+			return true;
+		}
+
+		IFC_PARSE_API static bool axis_equal(const gp_Ax2d& a, const gp_Ax2d& b, double tolerance) {
+			if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
+			if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
+			return true;
+		}
+
+		IFC_PARSE_API static bool is_identity(const gp_Trsf2d& t, double tolerance);
+		IFC_PARSE_API static bool is_identity(const gp_GTrsf2d& t, double tolerance);
+		IFC_PARSE_API static bool is_identity(const gp_Trsf& t, double tolerance);
+		IFC_PARSE_API static bool is_identity(const gp_GTrsf& t, double tolerance);
+
+		IFC_PARSE_API static gp_Trsf combine_offset_and_rotation(const gp_Vec &offset, const gp_Quaternion& rotation);
 	};
 
 	namespace impl {
@@ -127,6 +170,28 @@ namespace IfcGeom {
 
 		KernelFactoryImplementation& kernel_implementations();
 	}
+
+	namespace util {
+		bool is_nested_compound_of_solid(const TopoDS_Shape& s, int depth = 0);
+	}
+
+	class IFC_GEOM_API geometry_exception : public std::exception {
+	protected:
+		std::string message;
+	public:
+		geometry_exception(const std::string& m)
+			: message(m) {}
+		virtual ~geometry_exception() throw () {}
+		virtual const char* what() const throw() {
+			return message.c_str();
+		}
+	};
+
+	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
+	public:
+		too_many_faces_exception()
+			: geometry_exception("Too many faces for operation") {}
+	};
 }
 
 #endif

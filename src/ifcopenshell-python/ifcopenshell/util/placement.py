@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as np
 
 
@@ -10,9 +28,18 @@ def a2p(o, z, x):
 
 
 def get_axis2placement(plc):
-    z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
-    x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
-    o = plc.Location.Coordinates
+    if plc.is_a("IfcAxis2Placement3D"):
+        z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
+        x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
+        o = plc.Location.Coordinates
+    elif plc.is_a("IfcAxis2Placement2D"):
+        z = np.array((0, 0, 1))
+        if plc.RefDirection:
+            x = np.array(plc.RefDirection.DirectionRatios)
+            x.resize(3)
+        else:
+            x = np.array((1, 0, 0))
+        o = (*plc.Location.Coordinates, 0.0)
     return a2p(o, z, x)
 
 

@@ -23,7 +23,7 @@
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
 # Prerequisites for this script to function correctly:                        #
-#     * cmake * git * bzip2 * tar * c(++) compilers * yacc * autoconf         #
+#     * cmake * git * bzip2 * tar * c(++) compilers * autoconf                #
 #                                                                             #
 #   if building with USE_OCCT additionally:                                   #
 #     * freetype * glx.h                                                      #
@@ -72,7 +72,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
+PYTHON_VERSIONS = ["3.6.14", "3.7.13", "3.8.13", "3.9.11", "3.10.3"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.5.3"
@@ -83,8 +83,8 @@ SWIG_VERSION = "4.0.2"
 OPENCOLLADA_VERSION = "v1.6.68"
 HDF5_VERSION = "1.12.1"
 
-GMP_VERSION = "6.1.2"
-MPFR_VERSION = "3.1.5" # latest is 4.1.0
+GMP_VERSION = "6.2.1"
+MPFR_VERSION = "3.1.6" # latest is 4.1.0
 CGAL_VERSION = "5.3"
 
 # binaries
@@ -97,7 +97,6 @@ cc = "cc"
 cplusplus = "c++"
 autoconf = "autoconf"
 automake = "automake"
-yacc = "yacc"
 make = "make"
 date = "date"
 curl = "curl"
@@ -220,7 +219,7 @@ print("Building:", *sorted(targets, key=lambda t: len(list(v(t)))))
 
 # Check that required tools are in PATH
 
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "patch", "cmake"]:
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake"]:
     if which(cmd) is None:
         raise ValueError(f"Required tool '{cmd}' not installed or not added to PATH")
 
@@ -262,6 +261,11 @@ def run(cmds, cwd=None):
         raise RuntimeError(f"Command `{' '.join(cmds)}` returned exit code {proc.returncode}")
 
     return stdout.strip()
+
+if platform.system() == "Darwin":
+    if run(["sw_vers", "-productVersion"]) >= "11.":
+        # Apparently not supported
+        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
 
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
@@ -508,7 +512,7 @@ if USE_OCCT and "occ" in targets:
             "-DBUILD_MODULE_Draw=0",
             "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off"
         ],
-        download_url = "https://git.dev.opencascade.org/repos/occt.git",
+        download_url = "https://github.com/Open-Cascade-SAS/OCCT",
         download_name = "occt",
         download_tool=download_tool_git,
         patch=None if OCCT_VERSION >= "7.4" else "./patches/occt/enable-exception-handling.patch",
@@ -577,7 +581,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION:
     # with the system python because of some threading initialization
     PYTHON_CONFIGURE_ARGS = []
     if platform.system() == "Darwin":
-        PYTHON_CONFIGURE_ARGS = ["--disable-static", "--enable-shared"]
+        PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
         try:
@@ -630,7 +634,7 @@ if "cgal" in targets:
     build_dependency(
         name=f"gmp-{GMP_VERSION}",
         mode="autoconf",
-        build_tool_args=["--disable-shared", "--with-pic"],
+        build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, "--with-pic"],
         download_url="https://ftp.gnu.org/gnu/gmp/",
         download_name=f"gmp-{GMP_VERSION}.tar.bz2"
     )
@@ -638,7 +642,7 @@ if "cgal" in targets:
     build_dependency(
         name=f"mpfr-{MPFR_VERSION}",
         mode="autoconf",
-        build_tool_args=["--disable-shared", f"--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}"],
+        build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, f"--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}"],
         download_url=f"http://www.mpfr.org/mpfr-{MPFR_VERSION}/",
         download_name=f"mpfr-{MPFR_VERSION}.tar.bz2"
     )
@@ -647,9 +651,9 @@ if "cgal" in targets:
         name=f"cgal-{CGAL_VERSION}",
         mode="cmake",
         build_tool_args=[
-            f"-DGMP_LIBRARIES={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib/libgmp.a",
+            f"-DGMP_LIBRARIES={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib/libgmp.{LIBRARY_EXT}",
             f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-            f"-DMPFR_LIBRARIES={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib/libmpfr.a" ,
+            f"-DMPFR_LIBRARIES={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib/libmpfr.{LIBRARY_EXT}" ,
             f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
             f"-DBoost_INCLUDE_DIR={DEPS_DIR}/install/boost-{BOOST_VERSION}",
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/cgal-{CGAL_VERSION}/",

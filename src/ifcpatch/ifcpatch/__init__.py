@@ -18,8 +18,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-# This can be packaged into one executable with ./make.py
-
 import ifcopenshell
 import logging
 import os
@@ -29,39 +27,36 @@ import collections
 import importlib
 
 
-def execute(args, is_library=None):
-    logging.basicConfig(filename=args["log"], filemode="a", level=logging.DEBUG)
+def execute(args):
+    if "log" in args:
+        logging.basicConfig(filename=args["log"], filemode="a", level=logging.DEBUG)
     logger = logging.getLogger("IFCPatch")
-    print("# Loading IFC file ...")
-    ifc_file = ifcopenshell.open(args["input"])
-    print("# Loading patch recipe ...")
+    ifc_file = args["input"]
     recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
     recipe = getattr(recipes, args["recipe"])
     if recipe.Patcher.__init__.__doc__ is not None:
         patcher = recipe.Patcher(args["input"], ifc_file, logger, *args["arguments"])
     else:
         patcher = recipe.Patcher(args["input"], ifc_file, logger, args["arguments"])
-    print("# Patching ...")
     patcher.patch()
-    ifc_file = getattr(patcher, "file_patched", patcher.file)
-    if is_library is True:
-        return ifc_file
-    print("# Writing patched file ...")
-    if not args["output"]:
-        args["output"] = args["input"]
-    if isinstance(ifc_file, str):
+    output = getattr(patcher, "file_patched", patcher.file)
+    if isinstance(output, str):
         with open(args["output"], "w") as text_file:
-            text_file.write(ifc_file)
+            text_file.write(output)
+    return output
+
+
+def write(output, filepath):
+    if isinstance(output, str):
+        with open(filepath, "w") as text_file:
+            text_file.write(output)
     else:
-        ifc_file.write(args["output"])
-    print("# All tasks are complete :-)")
+        output.write(filepath)
 
 
 def extract_docs(
-    submodule_name: str,
-    cls_name: str,
-    method_name: str="__init__",
-    boilerplate_args : typing.Iterable[str]=None):
+    submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: typing.Iterable[str] = None
+):
     """Extract class docstrings and method arguments
 
     :param submodule_name: Submodule from which to extract the class
@@ -70,8 +65,8 @@ def extract_docs(
     :param boilerplate_args: String iterable containing arguments that shall not be parsed
     """
     spec = importlib.util.spec_from_file_location(
-        submodule_name, 
-        f"{os.path.dirname(inspect.getabsfile(inspect.currentframe()))}/recipes/{submodule_name}.py")
+        submodule_name, f"{os.path.dirname(inspect.getabsfile(inspect.currentframe()))}/recipes/{submodule_name}.py"
+    )
     submodule = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(submodule)
@@ -101,7 +96,7 @@ def _extract_docs(cls, method_name, boilerplate_args):
     type_hints = typing.get_type_hints(method)
     for input_name in inputs.keys():
         type_hint = type_hints.get(input_name, None)
-        if type_hint is None: # The argument is not type-hinted. (Or hinted to None ??)
+        if type_hint is None:  # The argument is not type-hinted. (Or hinted to None ??)
             continue
         if isinstance(type_hint, typing._UnionGenericAlias):
             inputs[input_name]["type"] = [t.__name__ for t in typing.get_args(type_hint)]
@@ -125,7 +120,7 @@ def _extract_docs(cls, method_name, boilerplate_args):
                 description += line
             elif i > 2:
                 description += "\n" + line
-            
+
         docs["description"] = description.strip()
     docs["inputs"] = inputs
     return docs

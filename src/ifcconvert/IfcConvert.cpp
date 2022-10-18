@@ -19,10 +19,10 @@
 
 /********************************************************************************
  *                                                                              *
- * This started as a brief example of how IfcOpenShell can be interfaced from   * 
+ * This started as a brief example of how IfcOpenShell can be interfaced from   *
  * within a C++ context, it has since then evolved into a fullfledged command   *
  * line application that is able to convert geometry in an IFC files into       *
- * several tesselated and topological output formats.                           *
+ * several tessellated and topological output formats.                          *
  *                                                                              *
  ********************************************************************************/
 
@@ -421,12 +421,12 @@ int main(int argc, char** argv) {
 		("section-height-from-storeys", "Derives section height from storey elevation. Use --section-height to override default offset of 1.2")
 		("use-element-names",
             "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. "
-            "Applicable for OBJ, DAE, and SVG output.")
+            "Applicable for OBJ, DAE, STP, and SVG output.")
         ("use-element-guids",
             "Use entity instance IfcRoot.GlobalId instead of unique IDs for naming elements upon serialization. "
-            "Applicable for OBJ, DAE, and SVG output.")
+            "Applicable for OBJ, DAE, STP, and SVG output.")
 		("use-element-numeric-ids", "Use the numeric step identifier (entity instance name) for naming elements upon serialization. "
-			"Applicable for OBJ, DAE, and SVG output.")
+			"Applicable for OBJ, DAE, STP, and SVG output.")
         ("use-material-names",
             "Use material names instead of unique IDs for naming materials upon serialization. "
             "Applicable for OBJ and DAE output.")
@@ -438,7 +438,7 @@ int main(int argc, char** argv) {
 			"Applicable for DAE output.")
 		("site-local-placement",
 			"Place elements locally in the IfcSite coordinate system, instead of placing "
-			"them in the IFC global coords. Applicable for OBJ and DAE output.")
+			"them in the IFC global coords. Applicable for OBJ, DAE, and STP output.")
 		("y-up", "Change the 'up' axis to positive Y, default is Z UP, Applicable for OBJ output.")
 		("building-local-placement",
 			"Similar to --site-local-placement, but placing elements in locally in the parent IfcBuilding coord system")

@@ -19,7 +19,7 @@ Scenario: Add representation
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     Then the object "IfcWall/Cube" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    When the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
+    When the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.TargetView == 'PLAN_VIEW'][0].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     Then the object "IfcWall/Cube" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
@@ -31,16 +31,16 @@ Scenario: Add representation - add a new representation to a typed instance
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_type_instance"
-    And I press "bim.add_type_instance"
-    Then the object "IfcWall/Instance" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    And the object "IfcWall/Instance.001" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    When the object "IfcWall/Instance" is selected
-    And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
+    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_constr_type_instance"
+    Then the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+    And the object "IfcWall/Wall.001" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+    When the object "IfcWall/Wall" is selected
+    And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.TargetView == 'PLAN_VIEW'][0].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
-    Then the object "IfcWall/Instance" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
-    And the object "IfcWall/Instance.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
+    Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
+    And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
 Scenario: Add representation - add a representation with a scale factor applied
     Given an empty IFC project
@@ -79,14 +79,14 @@ Scenario: Switch representation - current edited representation is updated prior
     And the object "Cube" is selected
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
+    And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.ContextIdentifier=='Annotation'][0].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     When the object "IfcWall/Cube" is scaled to "2"
-    And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
-    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
-    And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[-1].id()"
-    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
+    And the variable "representation" is "[r for r in {ifc}.by_type('IfcShapeRepresentation') if r.RepresentationType=='Tessellation'][0].id()"
+    And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
+    And the variable "representation" is "[r for r in {ifc}.by_type('IfcShapeRepresentation') if r.RepresentationType=='Annotation2D'][0].id()"
+    And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
     When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "4,4,0"
 
@@ -146,15 +146,15 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I press "bim.assign_class"
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
-    And I press "bim.add_type_instance"
-    And I press "bim.add_type_instance"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
+    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_constr_type_instance"
     And the object "IfcWallType/Cube" is selected
     When the variable "representation" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[1].MappedRepresentation.id()"
     And I press "bim.remove_representation(representation_id={representation})"
     Then the object "IfcWallType/Cube" has no data
-    Then the object "IfcWall/Instance" has no data
-    Then the object "IfcWall/Instance.001" has no data
+    Then the object "IfcWall/Wall" has no data
+    Then the object "IfcWall/Wall.001" has no data
 
 Scenario: Remove representation - remove an instanced representation from an active instance object
     Given an empty IFC project
@@ -165,15 +165,15 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I press "bim.assign_class"
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
-    And I press "bim.add_type_instance"
-    And I press "bim.add_type_instance"
-    And the object "IfcWall/Instance" is selected
+    And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
+    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_constr_type_instance"
+    And the object "IfcWall/Wall" is selected
     When the variable "representation" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[1].id()"
     And I press "bim.remove_representation(representation_id={representation})"
     Then the object "IfcWallType/Cube" has no data
-    Then the object "IfcWall/Instance" has no data
-    Then the object "IfcWall/Instance.001" has no data
+    Then the object "IfcWall/Wall" has no data
+    Then the object "IfcWall/Wall.001" has no data
 
 Scenario: Update representation - updating a tessellation
     Given an empty IFC project
@@ -195,7 +195,7 @@ Scenario: Update representation - updating a layered extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_default_material"
+    And I press "bim.add_material(obj='')"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -222,7 +222,7 @@ Scenario: Update representation - updating a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_default_material"
+    And I press "bim.add_material(obj='')"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -339,12 +339,12 @@ Scenario: Override duplicate move - copying a type instance with a representatio
     And I press "bim.assign_class"
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
-    And I press "bim.add_type_instance"
-    And the object "IfcWall/Instance" is selected
+    And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
+    And I press "bim.add_constr_type_instance"
+    And the object "IfcWall/Wall" is selected
     When I press "object.duplicate_move"
-    Then the object "IfcWall/Instance.001" exists
-    And the object "IfcWall/Instance.001" has a "MappedRepresentation" representation of "Model/Body/MODEL_VIEW"
+    Then the object "IfcWall/Wall.001" exists
+    And the object "IfcWall/Wall.001" has a "MappedRepresentation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Override duplicate move - copying a layered extrusion
     Given an empty IFC project
@@ -357,7 +357,7 @@ Scenario: Override duplicate move - copying a layered extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_default_material"
+    And I press "bim.add_material(obj='')"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -386,7 +386,7 @@ Scenario: Override duplicate move - copying a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_default_material"
+    And I press "bim.add_material(obj='')"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"

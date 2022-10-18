@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddActor,
     operator.AddAddress,
     operator.AddAddressAttribute,
     operator.AddOrganisation,
@@ -27,19 +28,24 @@ classes = (
     operator.AddPersonAndOrganisation,
     operator.AddPersonAttribute,
     operator.AddRole,
+    operator.AssignActor,
     operator.ClearUser,
+    operator.DisableEditingActor,
     operator.DisableEditingAddress,
     operator.DisableEditingOrganisation,
     operator.DisableEditingPerson,
     operator.DisableEditingRole,
+    operator.EditActor,
     operator.EditAddress,
     operator.EditOrganisation,
     operator.EditPerson,
     operator.EditRole,
+    operator.EnableEditingActor,
     operator.EnableEditingAddress,
     operator.EnableEditingOrganisation,
     operator.EnableEditingPerson,
     operator.EnableEditingRole,
+    operator.RemoveActor,
     operator.RemoveAddress,
     operator.RemoveAddressAttribute,
     operator.RemoveOrganisation,
@@ -48,10 +54,13 @@ classes = (
     operator.RemovePersonAttribute,
     operator.RemoveRole,
     operator.SetUser,
+    operator.UnassignActor,
     prop.BIMOwnerProperties,
     ui.BIM_PT_people,
     ui.BIM_PT_organisations,
     ui.BIM_PT_owner,
+    ui.BIM_PT_actor,
+    ui.BIM_PT_object_actor,
 )
 
 

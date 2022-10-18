@@ -19,6 +19,7 @@
 import bpy
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.module.style.data import StylesData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -30,6 +31,25 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def get_style_types(self, context):
+    if not StylesData.is_loaded:
+        StylesData.load()
+    return StylesData.data["style_types"]
+
+
+class Style(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    total_elements: IntProperty(name="Total Elements")
+
+
+class BIMStylesProperties(PropertyGroup):
+    is_editing: BoolProperty(name="Is Editing")
+    style_type: EnumProperty(items=get_style_types, name="Style Type")
+    styles: CollectionProperty(name="Styles", type=Style)
+    active_style_index: IntProperty(name="Active Style Index")
 
 
 class BIMStyleProperties(PropertyGroup):

@@ -59,25 +59,16 @@ class Geometry(blenderbim.core.tool.Geometry):
                 obj.scale = Vector((1.0, 1.0, 1.0))
 
     @classmethod
-    def create_dynamic_voids(cls, obj):
-        element = tool.Ifc.get_entity(obj)
-        for rel in element.HasOpenings:
-            opening_obj = tool.Ifc.get_object(rel.RelatedOpeningElement)
-            if not opening_obj:
-                continue
-            modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-            modifier.operation = "DIFFERENCE"
-            modifier.object = opening_obj
-            modifier.solver = "EXACT"
-            modifier.use_self = True
-
-    @classmethod
     def delete_data(cls, data):
         bpy.data.meshes.remove(data)
 
     @classmethod
-    def does_object_have_mesh_with_faces(cls, obj):
-        return bool(isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons))
+    def does_representation_id_exist(cls, representation_id):
+        try:
+            tool.Ifc.get().by_id(representation_id)
+            return True
+        except:
+            return False
 
     @classmethod
     def duplicate_object_data(cls, obj):
@@ -150,6 +141,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         return bpy.data.meshes.get(cls.get_representation_name(representation))
 
     @classmethod
+    def get_representation_id(cls, representation):
+        return representation.id()
+
+    @classmethod
     def get_representation_name(cls, representation):
         return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
@@ -172,7 +167,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return data.users != 0
 
     @classmethod
-    def import_representation(cls, obj, representation, enable_dynamic_voids=False):
+    def import_representation(cls, obj, representation):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
@@ -180,7 +175,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         settings.set(settings.WELD_VERTICES, True)
 
         if representation.ContextOfItems.ContextIdentifier == "Body":
-            if element.is_a("IfcTypeProduct") or enable_dynamic_voids:
+            if element.is_a("IfcTypeProduct"):
                 shape = ifcopenshell.geom.create_shape(settings, representation)
             else:
                 shape = ifcopenshell.geom.create_shape(settings, element)
@@ -190,9 +185,16 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
-        mesh = ifc_importer.create_mesh(element, shape)
-        ifc_importer.material_creator.load_existing_materials()
-        ifc_importer.material_creator.create(element, obj, mesh)
+
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            mesh = ifc_importer.create_camera(element, shape)
+        if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
+            mesh = ifc_importer.create_curve(element, shape)
+        elif shape:
+            mesh = ifc_importer.create_mesh(element, shape)
+            ifc_importer.material_creator.load_existing_materials()
+            ifc_importer.material_creator.create(element, obj, mesh)
+
         return mesh
 
     @classmethod
@@ -247,6 +249,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
     @classmethod
+    def remove_connection(cls, connection):
+        tool.Ifc.get().remove(connection)
+
+    @classmethod
     def rename_object(cls, obj, name):
         obj.name = name
 
@@ -279,12 +285,34 @@ class Geometry(blenderbim.core.tool.Geometry):
         return blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=obj)
 
     @classmethod
+    def select_connection(cls, connection):
+        obj = tool.Ifc.get_object(connection.RelatingElement)
+        if obj:
+            obj.select_set(True)
+        obj = tool.Ifc.get_object(connection.RelatedElement)
+        if obj:
+            obj.select_set(True)
+
+    @classmethod
     def should_force_faceted_brep(cls):
         return bpy.context.scene.BIMGeometryProperties.should_force_faceted_brep
 
     @classmethod
     def should_force_triangulation(cls):
         return bpy.context.scene.BIMGeometryProperties.should_force_triangulation
+
+    @classmethod
+    def should_generate_uvs(cls, obj):
+        if tool.Ifc.get().schema == "IFC2X3":
+            return False
+        for slot in obj.material_slots:
+            if slot.material and slot.material.use_nodes:
+                for node in slot.material.node_tree.nodes:
+                    if node.type == "TEX_COORD" and node.outputs["UV"].links:
+                        return True
+                    elif node.type == "UVMAP" and node.outputs["UV"].links and node.uv_map:
+                        return True
+        return False
 
     @classmethod
     def should_use_presentation_style_assignment(cls):

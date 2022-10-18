@@ -56,7 +56,7 @@ class TestAssign(NewFile):
         assert len(wall_obj.users_collection) == 1
         assert "IfcProject" in wall_obj.users_collection[0].name
 
-    def test_in_decomposition_mode_spatial_elements_are_placed_in_a_collection_of_the_same_name(self):
+    def test_in_decomposition_mode_spatial_structure_elements_are_placed_in_a_collection_of_the_same_name(self):
         bpy.ops.bim.create_project()
         space_obj = bpy.data.objects.new("IfcSpace/Name", None)
         space_element = tool.Ifc.get().createIfcSpace()
@@ -71,6 +71,22 @@ class TestAssign(NewFile):
         subject.assign(space_obj)
         assert len(space_obj.users_collection) == 1
         assert space_obj.users_collection[0].name == space_obj.name
+
+    def test_in_decomposition_mode_spatial_zone_elements_are_not_placed_in_a_collection_of_the_same_name(self):
+        bpy.ops.bim.create_project()
+        space_obj = bpy.data.objects.new("IfcSpaceZone/Name", None)
+        space_element = tool.Ifc.get().createIfcSpatialZone()
+        tool.Ifc.link(space_element, space_obj)
+        bpy.context.scene.collection.objects.link(space_obj)
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            tool.Ifc.get(),
+            relating_object=tool.Ifc.get().by_type("IfcSite")[0],
+            product=space_element,
+        )
+        subject.assign(space_obj)
+        assert len(space_obj.users_collection) == 1
+        assert space_obj.users_collection[0].name != space_obj.name
 
     def test_in_decomposition_mode_aggregates_are_placed_in_a_collection_of_the_same_name(self):
         bpy.ops.bim.create_project()
@@ -215,8 +231,62 @@ class TestAssign(NewFile):
         assert axis_obj.users_collection[0].name == "UAxes"
         assert bpy.data.collections.get("IfcGrid/Name").children.get("UAxes")
 
+    def test_in_decomposition_mode_drawings_are_placed_in_a_group_in_a_views_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcAnnotation/Name", None)
+        element = tool.Ifc.get().createIfcAnnotation(ObjectType="DRAWING")
+        tool.Ifc.link(element, element_obj)
+        group = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
+        group.ObjectType = "DRAWING"
+        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=group)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "IfcGroup/Unnamed"
+        assert bpy.data.collections.get("Views").children.get("IfcGroup/Unnamed")
+        assert bpy.data.collections.get("IfcProject/My Project").children.get("Views")
+
+    def test_in_decomposition_mode_annotations_are_placed_in_a_group_in_a_views_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcAnnotation/Name", None)
+        element = tool.Ifc.get().createIfcAnnotation()
+        tool.Ifc.link(element, element_obj)
+        group = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
+        group.ObjectType = "DRAWING"
+        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=group)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "IfcGroup/Unnamed"
+        assert bpy.data.collections.get("Views").children.get("IfcGroup/Unnamed")
+        assert bpy.data.collections.get("IfcProject/My Project").children.get("Views")
+
+    def test_in_decomposition_mode_structural_members_are_placed_in_a_members_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcStructuralCurveMember/Name", None)
+        element = tool.Ifc.get().createIfcStructuralCurveMember()
+        tool.Ifc.link(element, element_obj)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "Members"
+        assert bpy.data.collections.get("StructuralItems").children.get("Members")
+        assert bpy.data.collections.get("IfcProject/My Project").children.get("StructuralItems")
+
+    def test_in_decomposition_mode_structural_connections_are_placed_in_a_connections_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcStructuralCurveConnection/Name", None)
+        element = tool.Ifc.get().createIfcStructuralCurveConnection()
+        tool.Ifc.link(element, element_obj)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "Connections"
+        assert bpy.data.collections.get("StructuralItems").children.get("Connections")
+        assert bpy.data.collections.get("IfcProject/My Project").children.get("StructuralItems")
+
 
 class TestSync(NewFile):
+    def test_doing_nothing_if_the_object_has_no_collection(self):
+        bpy.ops.bim.create_project()
+        wall_obj = bpy.data.objects.new("Object", None)
+        wall_element = tool.Ifc.get().createIfcWall()
+        tool.Ifc.link(wall_element, wall_obj)
+        subject.sync(wall_obj)
+        assert not wall_obj.users_collection
+
     def test_in_decomposition_mode_elements_can_be_in_spatial_containers(self):
         bpy.ops.bim.create_project()
         wall_obj = bpy.data.objects.new("Object", None)
@@ -236,3 +306,12 @@ class TestSync(NewFile):
         col.objects.link(obj)
         subject.sync(obj)
         assert ifcopenshell.util.element.get_aggregate(element).is_a("IfcBuilding")
+
+    def test_openings_are_never_contained(self):
+        bpy.ops.bim.create_project()
+        obj = bpy.data.objects.new("Object", None)
+        element = tool.Ifc.get().createIfcOpeningElement()
+        tool.Ifc.link(element, obj)
+        bpy.data.collections.get("IfcSite/My Site").objects.link(obj)
+        subject.sync(obj)
+        assert ifcopenshell.util.element.get_container(element) is None

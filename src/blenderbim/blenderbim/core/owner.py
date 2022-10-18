@@ -143,3 +143,33 @@ def get_user(owner):
 
 def clear_user(owner):
     owner.clear_user()
+
+
+def add_actor(ifc, ifc_class=None, actor=None):
+    return ifc.run("owner.add_actor", ifc_class=ifc_class, actor=actor)
+
+
+def remove_actor(ifc, actor=None):
+    ifc.run("owner.remove_actor", actor=actor)
+
+
+def enable_editing_actor(owner, actor=None):
+    owner.set_actor(actor)
+    owner.import_actor_attributes(actor)
+
+
+def disable_editing_actor(owner):
+    owner.clear_actor()
+
+
+def edit_actor(ifc, owner):
+    ifc.run("owner.edit_actor", actor=owner.get_actor(), attributes=owner.export_actor_attributes())
+    disable_editing_actor(owner)
+
+
+def assign_actor(ifc, actor=None, element=None):
+    ifc.run("owner.assign_actor", relating_actor=actor, related_object=element)
+
+
+def unassign_actor(ifc, actor=None, element=None):
+    ifc.run("owner.unassign_actor", relating_actor=actor, related_object=element)

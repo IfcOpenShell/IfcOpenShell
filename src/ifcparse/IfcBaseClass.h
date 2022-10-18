@@ -41,26 +41,44 @@ namespace IfcUtil {
 			return !not_this;
 		}
 
+		template<typename T>
+		std::enable_if_t<!std::is_same<IfcBaseClass, T>::value && !std::is_same<IfcBaseEntity, T>::value && !std::is_same<IfcBaseType, T>::value> raise_error_on_concrete_class() const {
+			throw IfcParse::IfcException("Instance of type " + this->declaration().name() + " cannot be cast to " + T::Class().name());
+		}
+
+		template<typename T>
+		std::enable_if_t<std::is_same<IfcBaseClass, T>::value || std::is_same<IfcBaseEntity, T>::value || std::is_same<IfcBaseType, T>::value> raise_error_on_concrete_class() const {
+			throw IfcParse::IfcException("Instance of type " + this->declaration().name() + " cannot be cast to base class");
+		}
+
 	public:
 		virtual const IfcEntityInstanceData& data() const = 0;
 		virtual IfcEntityInstanceData& data() = 0;
 		virtual const IfcParse::declaration& declaration() const = 0;
 
 		template <class T>
-		T* as() {
+		T* as(bool do_throw = false) {
 			// @todo: do not allow this to be null in the first place
 			if (is_null(this)) {
 				return static_cast<T*>(0);
 			}
-			return dynamic_cast<T*>(this);
+			auto t = dynamic_cast<T*>(this);
+			if (do_throw && !t) {
+				raise_error_on_concrete_class<T>();
+			}
+			return t;
 		}
 
 		template <class T>
-		const T* as() const {
+		const T* as(bool do_throw = false) const {
 			if (is_null(this)) {
 				return static_cast<const T*>(0);
 			}
-			return dynamic_cast<const T*>(this);
+			auto t = dynamic_cast<const T*>(this);
+			if (do_throw && !t) {
+				raise_error_on_concrete_class<T>();
+			}
+			return t;
 		}
 	};
 

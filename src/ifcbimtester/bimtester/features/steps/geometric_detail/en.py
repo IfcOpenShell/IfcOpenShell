@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 from behave import step
 
 from bimtester import util
@@ -32,21 +50,12 @@ def step_impl(context, number):
 
 @step('All "{ifc_class}" elements have an "{representation_class}" representation')
 def step_impl(context, ifc_class, representation_class):
-    eleclass_has_geometric_representation_of_specific_class(
-        context,
-        ifc_class,
-        representation_class
-    )
+    eleclass_has_geometric_representation_of_specific_class(context, ifc_class, representation_class)
 
 
 # ************************************************************************************************
 # helper
-def eleclass_has_geometric_representation_of_specific_class(
-    context,
-    ifc_class,
-    representation_class
-):
-
+def eleclass_has_geometric_representation_of_specific_class(context, ifc_class, representation_class):
     def is_item_a_representation(item, representation):
         if "/" in representation:
             for cls in representation.split("/"):
@@ -90,7 +99,9 @@ def eleclass_has_geometric_representation_of_specific_class(
         context.falsecount,
         context.falseelems,
         message_all_falseelems=_("All {elemcount} {ifc_class} elements are not a {parameter} representation."),
-        message_some_falseelems=_("The following {falsecount} of {elemcount} {ifc_class} elements are not a {parameter} representation: {falseelems}"),
+        message_some_falseelems=_(
+            "The following {falsecount} of {elemcount} {ifc_class} elements are not a {parameter} representation: {falseelems}"
+        ),
         message_no_elems=_("There are no {ifc_class} elements in the IFC file."),
-        parameter=representation_class
+        parameter=representation_class,
     )

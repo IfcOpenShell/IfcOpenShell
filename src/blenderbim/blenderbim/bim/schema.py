@@ -44,17 +44,22 @@ class IfcSchema:
             "IfcAnnotation",
         ]
         self.elements = {}
+        self.classification_files = {}
+        self.classifications = {}
+        self.load_pset_templates()
+        self.load()
 
-        self.property_files = []
+    def load_pset_templates(self):
         property_paths = self.data_dir.joinpath("pset").glob("*.ifc")
         # TODO: add IFC2X3 PsetQto template support
         self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+        # Keep only the first template, which is the official buildingSMART one
+        self.psetqto.templates = self.psetqto.templates[0:1]
+        self.psetqto.get_applicable.cache_clear()
+        self.psetqto.get_applicable_names.cache_clear()
+        self.psetqto.get_by_name.cache_clear()
         for path in property_paths:
             self.psetqto.templates.append(ifcopenshell.open(path))
-
-        self.classification_files = {}
-        self.classifications = {}
-        self.load()
 
     def load(self):
         for product in self.products:

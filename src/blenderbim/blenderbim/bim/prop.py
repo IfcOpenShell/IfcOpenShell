@@ -150,6 +150,17 @@ def getMaterialPsetNames(self, context):
     return materialpsetnames_enum
 
 
+def update_section_color(self, context):
+    section_node_group = bpy.data.node_groups.get("Section Override")
+    if section_node_group is None:
+        return
+    try:
+        emission_node = next(n for n in section_node_group.nodes if isinstance(n, bpy.types.ShaderNodeEmission))
+        emission_node.inputs[0].default_value = list(self.section_plane_colour) + [1]
+    except StopIteration:
+        pass
+
+
 class StrProperty(PropertyGroup):
     pass
 
@@ -187,10 +198,12 @@ class Attribute(PropertyGroup):
     bool_value: BoolProperty(name="Value", update=updateAttributeValue)
     int_value: IntProperty(name="Value", update=updateAttributeValue)
     float_value: FloatProperty(name="Value", update=updateAttributeValue)
-    is_null: BoolProperty(name="Is Null")
-    is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
+    is_null: BoolProperty(name="Is Null")
+    is_optional: BoolProperty(name="Is Optional")
+    is_uri: BoolProperty(name="Is Uri", default=False)
+    is_selected: BoolProperty(name="Is Selected", default=False)
     doc: PointerProperty(type=AttributeDocumentation)
 
     def get_value(self):
@@ -260,7 +273,12 @@ class BIMProperties(PropertyGroup):
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
-        name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
+        name="Temporary Section Cutaway Colour",
+        subtype="COLOR",
+        default=(1, 0, 0),
+        min=0.0,
+        max=1.0,
+        update=update_section_color,
     )
     area_unit: EnumProperty(
         default="SQUARE_METRE",
@@ -358,9 +376,12 @@ class BIMMaterialProperties(PropertyGroup):
 
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    ifc_boolean_id: IntProperty(name="IFC Boolean ID")
+    obj: bpy.props.PointerProperty(type=bpy.types.Object)
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)
+    is_profile: BoolProperty(name="Is Profile", default=False)
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")

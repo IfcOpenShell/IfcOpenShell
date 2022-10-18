@@ -35,9 +35,25 @@ class Spatial(blenderbim.core.tool.Spatial):
             if not structure.is_a("IfcSpatialStructureElement"):
                 return False
         else:
-            if not structure.is_a("IfcSpatialElement"):
+            if not structure.is_a("IfcSpatialStructureElement") and not structure.is_a(
+                "IfcExternalSpatialStructureElement"
+            ):
                 return False
         if not hasattr(element, "ContainedInStructure"):
+            return False
+        return True
+
+    @classmethod
+    def can_reference(cls, structure, element):
+        if not structure or not element:
+            return False
+        if tool.Ifc.get_schema() == "IFC2X3":
+            if not structure.is_a("IfcSpatialStructureElement"):
+                return False
+        else:
+            if not structure.is_a("IfcSpatialElement"):
+                return False
+        if not hasattr(element, "ReferencedInStructures"):
             return False
         return True
 
@@ -112,7 +128,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def set_active_object(cls, obj):
         bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
+        cls.select_object(obj)
 
     @classmethod
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix):

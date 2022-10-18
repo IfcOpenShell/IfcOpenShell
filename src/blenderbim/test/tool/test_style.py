@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import ifcopenshell
 import blenderbim.core.tool
@@ -29,12 +30,31 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Style)
 
 
+class TestCanSupportRenderingStyle(NewFile):
+    def test_anything_with_nodes_can_support_a_rendering_style(self):
+        obj = bpy.data.materials.new("Material")
+        obj.use_nodes = True
+        assert subject.can_support_rendering_style(obj) is True
+
+    def test_without_nodes_we_do_not_support_rendering(self):
+        obj = bpy.data.materials.new("Material")
+        obj.use_nodes = False
+        assert subject.can_support_rendering_style(obj) is False
+
+
 class TestDisableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.materials.new("Material")
         obj.BIMStyleProperties.is_editing = True
         subject.disable_editing(obj)
         assert obj.BIMStyleProperties.is_editing is False
+
+
+class TestDisableEditingStyles(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMStylesProperties.is_editing = True
+        subject.disable_editing_styles()
+        assert bpy.context.scene.BIMStylesProperties.is_editing is False
 
 
 class TestEnableEditing(NewFile):
@@ -44,6 +64,13 @@ class TestEnableEditing(NewFile):
         assert obj.BIMStyleProperties.is_editing is True
 
 
+class TestEnableEditingStyles(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMStylesProperties.is_editing = False
+        subject.enable_editing_styles()
+        assert bpy.context.scene.BIMStylesProperties.is_editing is True
+
+
 class TestExportSurfaceAttributes(NewFile):
     def test_run(self):
         TestImportSurfaceAttributes().test_run()
@@ -51,11 +78,35 @@ class TestExportSurfaceAttributes(NewFile):
         assert subject.export_surface_attributes(obj) == {"Name": "Name", "Side": "BOTH"}
 
 
+class TestGetActiveStyleType(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        bpy.context.scene.BIMStylesProperties.style_type = "IfcSurfaceStyle"
+        assert subject.get_active_style_type() == "IfcSurfaceStyle"
+        bpy.context.scene.BIMStylesProperties.style_type = "IfcCurveStyle"
+        assert subject.get_active_style_type() == "IfcCurveStyle"
+
+
 class TestGetContext(NewFile):
     def test_run(self):
         bpy.ops.bim.create_project()
         context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         assert subject.get_context("obj") == context
+
+
+class TestGetElementsByStyle(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        style = ifc.createIfcSurfaceStyle()
+        item = ifc.createIfcExtrudedAreaSolid()
+        ifc.createIfcStyledItem(Item=item, Styles=[style])
+        element.Representation = ifc.createIfcProductDefinitionShape(
+            Representations=[ifc.createIfcShapeRepresentation(Items=[item])]
+        )
+        assert subject.get_elements_by_style(style) == {element}
 
 
 class TestGetName(NewFile):
@@ -81,32 +132,14 @@ class TestGetStyle(NewFile):
 
 
 class TestGetSurfaceRenderingAttributes(NewFile):
-    def test_get_colours_from_a_basic_material(self):
-        obj = bpy.data.materials.new("Material")
-        obj.diffuse_color = [1, 1, 1, 1]
-        assert subject.get_surface_rendering_attributes(obj) == {
-            "SurfaceColour": {
-                "Name": None,
-                "Red": 1,
-                "Green": 1,
-                "Blue": 1,
-            },
-            "Transparency": 0,
-            "DiffuseColour": {
-                "Name": None,
-                "Red": 1,
-                "Green": 1,
-                "Blue": 1,
-            },
-        }
-
-    def test_get_different_surface_and_diffuse_colours_from_a_node_based_material(self):
+    def test_get_different_surface_and_diffuse_colours_from_a_principled_bsdf(self):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
         node = obj.node_tree.nodes["Principled BSDF"]
         node.inputs["Alpha"].default_value = 0.8
         node.inputs["Base Color"].default_value = [0.5, 0.5, 0.5, 0.5]
+        node.inputs["Roughness"].default_value = 0.2
         assert subject.get_surface_rendering_attributes(obj) == {
             "SurfaceColour": {
                 "Name": None,
@@ -121,6 +154,142 @@ class TestGetSurfaceRenderingAttributes(NewFile):
                 "Green": 0.5,
                 "Blue": 0.5,
             },
+            "SpecularColour": 0.0,
+            "SpecularHighlight": {"IfcSpecularRoughness": 0.2},
+            "ReflectanceMethod": "NOTDEFINED",
+        }
+
+    def test_get_rendering_styles_from_a_glossy_bsdf(self):
+        obj = bpy.data.materials.new("Material")
+        obj.diffuse_color = [1, 1, 1, 1]
+        obj.use_nodes = True
+        node = obj.node_tree.nodes["Principled BSDF"]
+        obj.node_tree.nodes.remove(node)
+        node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlossy")
+        node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
+        node.inputs["Roughness"].default_value = 0.2
+        assert subject.get_surface_rendering_attributes(obj) == {
+            "SurfaceColour": {
+                "Name": None,
+                "Red": 1,
+                "Green": 1,
+                "Blue": 1,
+            },
+            "Transparency": 0,
+            "DiffuseColour": {
+                "Name": None,
+                "Red": 0.5,
+                "Green": 0.5,
+                "Blue": 0.5,
+            },
+            "SpecularHighlight": {"IfcSpecularRoughness": 0.2},
+            "ReflectanceMethod": "METAL",
+        }
+
+    def test_get_rendering_styles_from_a_diffuse_bsdf(self):
+        obj = bpy.data.materials.new("Material")
+        obj.diffuse_color = [1, 1, 1, 1]
+        obj.use_nodes = True
+        node = obj.node_tree.nodes["Principled BSDF"]
+        obj.node_tree.nodes.remove(node)
+        node = obj.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
+        node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
+        node.inputs["Roughness"].default_value = 0.2
+        assert subject.get_surface_rendering_attributes(obj) == {
+            "SurfaceColour": {
+                "Name": None,
+                "Red": 1,
+                "Green": 1,
+                "Blue": 1,
+            },
+            "Transparency": 0,
+            "DiffuseColour": {
+                "Name": None,
+                "Red": 0.5,
+                "Green": 0.5,
+                "Blue": 0.5,
+            },
+            "SpecularHighlight": {"IfcSpecularRoughness": 0.2},
+            "ReflectanceMethod": "MATT",
+        }
+
+    def test_get_rendering_styles_from_a_glass_bsdf(self):
+        obj = bpy.data.materials.new("Material")
+        obj.diffuse_color = [1, 1, 1, 1]
+        obj.use_nodes = True
+        node = obj.node_tree.nodes["Principled BSDF"]
+        obj.node_tree.nodes.remove(node)
+        node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlass")
+        node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
+        node.inputs["Roughness"].default_value = 0.2
+        assert subject.get_surface_rendering_attributes(obj) == {
+            "SurfaceColour": {
+                "Name": None,
+                "Red": 1,
+                "Green": 1,
+                "Blue": 1,
+            },
+            "Transparency": 0,
+            "DiffuseColour": {
+                "Name": None,
+                "Red": 0.5,
+                "Green": 0.5,
+                "Blue": 0.5,
+            },
+            "SpecularHighlight": {"IfcSpecularRoughness": 0.2},
+            "ReflectanceMethod": "GLASS",
+        }
+
+    def test_get_rendering_styles_from_a_emission_bsdf(self):
+        obj = bpy.data.materials.new("Material")
+        obj.diffuse_color = [1, 1, 1, 1]
+        obj.use_nodes = True
+        node = obj.node_tree.nodes["Principled BSDF"]
+        obj.node_tree.nodes.remove(node)
+        node = obj.node_tree.nodes.new(type="ShaderNodeEmission")
+        node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
+        assert subject.get_surface_rendering_attributes(obj) == {
+            "SurfaceColour": {
+                "Name": None,
+                "Red": 1,
+                "Green": 1,
+                "Blue": 1,
+            },
+            "Transparency": 0,
+            "DiffuseColour": {
+                "Name": None,
+                "Red": 0.5,
+                "Green": 0.5,
+                "Blue": 0.5,
+            },
+            "SpecularHighlight": None,
+            "ReflectanceMethod": "FLAT",
+        }
+
+    def test_other_unsupported_bsdfs_copy_the_rendering_style_from_the_shading_colours_as_a_fallback(self):
+        obj = bpy.data.materials.new("Material")
+        obj.diffuse_color = [1, 1, 1, 1]
+        obj.use_nodes = True
+        node = obj.node_tree.nodes["Principled BSDF"]
+        obj.node_tree.nodes.remove(node)
+        node = obj.node_tree.nodes.new(type="ShaderNodeVolumePrincipled")
+        node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
+        assert subject.get_surface_rendering_attributes(obj) == {
+            "SurfaceColour": {
+                "Name": None,
+                "Red": 1,
+                "Green": 1,
+                "Blue": 1,
+            },
+            "Transparency": 0,
+            "DiffuseColour": {
+                "Name": None,
+                "Red": 1,
+                "Green": 1,
+                "Blue": 1,
+            },
+            "SpecularHighlight": None,
+            "ReflectanceMethod": "NOTDEFINED",
         }
 
 
@@ -172,6 +341,33 @@ class TestGetSurfaceShadingStyle(NewFile):
         obj.BIMMaterialProperties.ifc_style_id = style.id()
         assert subject.get_surface_shading_style(obj) == style_item
 
+    def test_do_not_get_rendering_styles(self):
+        tool.Ifc.set(ifcopenshell.file())
+        style_item = tool.Ifc.get().createIfcSurfaceStyleRendering()
+        style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
+        obj = bpy.data.materials.new("Material")
+        obj.BIMMaterialProperties.ifc_style_id = style.id()
+        assert subject.get_surface_shading_style(obj) is None
+
+
+class TestGetSurfaceTextureStyle(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifcopenshell.file())
+        style_item = tool.Ifc.get().createIfcSurfaceStyleWithTextures()
+        style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
+        obj = bpy.data.materials.new("Material")
+        obj.BIMMaterialProperties.ifc_style_id = style.id()
+        assert subject.get_surface_texture_style(obj) == style_item
+
+
+class TestGetUVMaps(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        item = ifc.createIfcTriangulatedFaceSet()
+        uv_map = ifc.createIfcIndexedTriangleTextureMap(MappedTo=item)
+        representation = ifc.createIfcShapeRepresentation(Items=[item])
+        assert subject.get_uv_maps(representation) == [uv_map]
+
 
 class TestImportSurfaceAttributes(NewFile):
     def test_run(self):
@@ -194,3 +390,65 @@ class TestImportSurfaceAttributes(NewFile):
         assert len(obj.BIMStyleProperties.attributes) == 2
         assert obj.BIMStyleProperties.attributes.get("Name").string_value == "Name"
         assert obj.BIMStyleProperties.attributes.get("Side").enum_value == "BOTH"
+
+
+class TestImportPresentationStyles(NewFile):
+    def test_import_curve_styles(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcCurveStyle(Name="Name")
+        subject.import_presentation_styles("IfcCurveStyle")
+        props = bpy.context.scene.BIMStylesProperties
+        assert props.styles[0].ifc_definition_id == style.id()
+        assert props.styles[0].name == "Name"
+        assert props.styles[0].total_elements == 0
+
+    def test_import_fillarea_styles(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcFillAreaStyle(Name="Name")
+        subject.import_presentation_styles("IfcFillAreaStyle")
+        props = bpy.context.scene.BIMStylesProperties
+        assert props.styles[0].ifc_definition_id == style.id()
+        assert props.styles[0].name == "Name"
+        assert props.styles[0].total_elements == 0
+
+    def test_import_surface_styles(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcSurfaceStyle(Name="Name")
+        subject.import_presentation_styles("IfcSurfaceStyle")
+        props = bpy.context.scene.BIMStylesProperties
+        assert props.styles[0].ifc_definition_id == style.id()
+        assert props.styles[0].name == "Name"
+        assert props.styles[0].total_elements == 0
+
+    def test_import_text_styles(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcTextStyle(Name="Name")
+        subject.import_presentation_styles("IfcTextStyle")
+        props = bpy.context.scene.BIMStylesProperties
+        assert props.styles[0].ifc_definition_id == style.id()
+        assert props.styles[0].name == "Name"
+        assert props.styles[0].total_elements == 0
+
+
+class TestIsEditingStyles(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMStylesProperties.is_editing = False
+        subject.is_editing_styles() is False
+        bpy.context.scene.BIMStylesProperties.is_editing = True
+        subject.is_editing_styles() is True
+
+
+class TestSelectElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(element, obj)
+        subject.select_elements([element])
+        assert obj in bpy.context.selected_objects

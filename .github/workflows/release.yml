@@ -18,14 +18,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          lfs: true
-      - 
-        name: Update ubuntu
+          submodules: recursive
+      - name: Install C++ dependencies
         run: |
           sudo apt update
-          sudo apt-get install git cmake gcc g++ libboost1.67-all-dev python3-all-dev swig libpcre3-dev libxml2-dev
-          sudo apt-get install libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
-          libhdf5-dev
+          sudo apt-get install --no-install-recommends \
+          git cmake gcc g++ \
+          libboost-date-time-dev \
+          libboost-filesystem-dev \
+          libboost-iostreams-dev \
+          libboost-program-options-dev \
+          libboost-regex-dev \
+          libboost-system-dev \
+          libboost-thread-dev \
+          python3-all-dev python3-pip \
+          swig libpcre3-dev libxml2-dev \
+          libtbb-dev nlohmann-json3-dev \
+          libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
+          libhdf5-dev libcgal-dev opencollada-dev
           
       - name: Build
         env:
@@ -44,10 +54,18 @@ jobs:
            -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
            -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
            -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
-           -DCOLLADA_SUPPORT=Off \
            -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
            -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so \
+           -DGLTF_SUPPORT=On \
+           -DJSON_INCLUDE_DIR=/usr/include \
+           -DCGAL_INCLUDE_DIR=/usr/include \
+           -DGMP_INCLUDE_DIR=/usr/include \
+           -DMPFR_INCLUDE_DIR=/usr/include \
+           -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+           -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
+           -DOPENCOLLADA_INCLUDE_DIR=/usr/include/opencollada \
+           -DOPENCOLLADA_LIBRARY_DIR=/usr/lib/opencollada/ \
            ../cmake
           make -j $(nproc)
           make install

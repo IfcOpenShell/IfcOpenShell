@@ -27,6 +27,7 @@ modules = {
     "root": None,
     "unit": None,
     "model": None,
+    "cad": None,
     "georeference": None,
     "context": None,
     "drawing": None,
@@ -61,6 +62,7 @@ modules = {
     "clash": None,
     "lca": None,
     "csv": None,
+    "tester": None,
     "bimtester": None,
     "diff": None,
     "patch": None,
@@ -68,6 +70,9 @@ modules = {
     "covetool": None,
     "augin": None,
     "debug": None,
+    # Uncomment this line to enable loading of the demo module. Happy hacking!
+    # The name "demo" must correlate to a folder name in `bim/module/`.
+    # "demo": None,
 }
 
 
@@ -76,20 +81,23 @@ for name in modules.keys():
 
 
 classes = [
-    operator.OpenUri,
-    operator.SelectDataDir,
-    operator.SelectSchemaDir,
-    operator.SelectIfcFile,
-    operator.OpenUpstream,
-    operator.AddSectionPlane,
-    operator.RemoveSectionPlane,
-    operator.ReloadIfcFile,
     operator.AddIfcFile,
-    operator.RemoveIfcFile,
+    operator.BIM_OT_add_section_plane,
+    operator.BIM_OT_remove_section_plane,
     operator.ConfigureVisibility,
+    operator.OpenUpstream,
+    operator.OpenUri,
+    operator.ReloadIfcFile,
+    operator.RemoveIfcFile,
+    operator.SelectDataDir,
+    operator.SelectIfcFile,
+    operator.SelectSchemaDir,
+    operator.SelectURIAttribute,
+    operator.EditBlenderCollection,
     operator.BIM_OT_show_ifc_documentation,
     operator.BIM_OT_open_webbrowser,
     prop.StrProperty,
+    operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
     prop.AttributeDocumentation,
     prop.Attribute,
@@ -105,17 +113,17 @@ classes = [
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
-    # scene panel groups -->
+    # Scene panel groups
+    ui.BIM_PT_project_info,
     ui.BIM_PT_project_setup,
-    ui.BIM_PT_utilities,
     ui.BIM_PT_collaboration,
     ui.BIM_PT_geometry,
-    ui.BIM_PT_4D5D,
-    ui.BIM_PT_structural,
     ui.BIM_PT_services,
-    ui.BIM_PT_misc,
+    ui.BIM_PT_structural,
+    ui.BIM_PT_4D5D,
     ui.BIM_PT_quality_control,
-    # object panel groups -->
+    ui.BIM_PT_integrations,
+    # Object panel groups
     ui.BIM_PT_object_metadata,
     ui.BIM_PT_geometry_object,
     ui.BIM_PT_services_object,
@@ -129,7 +137,8 @@ for mod in modules.values():
 
 def on_register(scene):
     handler.setDefaultProperties(scene)
-    bpy.app.handlers.depsgraph_update_post.remove(on_register)
+    if not bpy.app.background:
+        bpy.app.handlers.depsgraph_update_post.remove(on_register)
 
 
 def register():

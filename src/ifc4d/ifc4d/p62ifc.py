@@ -1,6 +1,5 @@
-
 # Ifc4D - IFC scheduling utility
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of Ifc4D.
 #
@@ -24,6 +23,7 @@ import ifcopenshell.api
 import ifcopenshell.util.date
 import xml.etree.ElementTree as ET
 from .common import ScheduleIfcGenerator
+
 
 class P62Ifc:
     def __init__(self):
@@ -53,10 +53,12 @@ class P62Ifc:
             "Finish to Start": "FINISH_START",
             "Finish to Finish": "FINISH_FINISH",
         }
-        self.RESOURCE_TYPES_MAPPING = {
-            'Labor': "LABOR",
-            'Mat': "MATERIAL",
-            'Equip': "EQUIPMENT"
+        self.resource_type_map = {
+            "Labor": "LABOR",
+            "Mat": "MATERIAL",
+            "Equip": "EQUIPMENT",
+            # https://www.primaverascheduling.com/category/primavera-resources/
+            "Nonlabor": "EQUIPMENT",
         }
 
     def execute(self):
@@ -66,18 +68,18 @@ class P62Ifc:
         print("Started")
         self.parse_xml()
         settings = {
-            "work_plan":self.work_plan, 
+            "work_plan": self.work_plan,
             "project": self.project,
             "calendars": self.calendars,
             "wbs": self.wbs,
             "root_activities": self.root_activites,
             "activities": self.activities,
             "relationships": self.relationships,
-            "resources": self.resources
+            "resources": self.resources,
         }
         ifcCreator = ScheduleIfcGenerator(self.file, self.output, settings)
         end = time.time()
-        
+
         ifcCreator.create_ifc()
         end2 = time.time()
         print("Parsing time is", end - start)
@@ -89,7 +91,7 @@ class P62Ifc:
         root = tree.getroot()
         self.ns = {"pr": root.tag[1:].partition("}")[0]}
         project = root.find("pr:Project", self.ns)
-        self.project["Name"] = project.find("pr:Name", self.ns).text
+        self.project["Name"] = project.findtext("pr:Name") or "Unnamed"
         self.parse_calendar_xml(root)
         self.parse_calendar_xml(project)
         self.parse_wbs_xml(project)
@@ -201,8 +203,7 @@ class P62Ifc:
 
     def get_wbs(self, wbs):
         return {"Name": wbs.find("pr:Name", self.ns).text, "subtasks": []}
-    
-    
+
     def parse_resources_xml(self, project):
         resources = project.findall("pr:Resource", self.ns)
         for resource in resources:
@@ -211,9 +212,8 @@ class P62Ifc:
                 "Name": resource.find("pr:Name", self.ns).text,
                 "Code": resource.find("pr:Id", self.ns).text,
                 "ParentObjectId": resource.find("pr:ParentObjectId", self.ns).text,
-                "Type": self.RESOURCE_TYPES_MAPPING[resource.find("pr:ResourceType", self.ns).text],
+                "Type": self.resource_type_map[resource.find("pr:ResourceType", self.ns).text],
                 "ifc": None,
                 "rel": None,
             }
         print("Resource found", self.resources)
-            

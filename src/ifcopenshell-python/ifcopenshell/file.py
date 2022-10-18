@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
 from __future__ import division
@@ -180,14 +180,12 @@ class file(object):
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
-        print(products[0].id(), products[0].GlobalId)
-        >>> 122 2XQ$n5SLP5MBLyL442paFx
-        # Subscripting
-        print(products[0] == ifc_file[122] == ifc_file['2XQ$n5SLP5MBLyL442paFx'])
-        >>> True
+        print(products[0].id(), products[0].GlobalId) # 122 2XQ$n5SLP5MBLyL442paFx
+        print(products[0] == ifc_file[122] == ifc_file["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
 
     def __init__(self, f=None, schema=None):
+        """Create a new file object"""
         if f is not None:
             self.wrapped_data = f
         else:
@@ -205,7 +203,8 @@ class file(object):
             self.history.pop(0)
 
     def begin_transaction(self):
-        self.transaction = Transaction(self)
+        if self.history_size:
+            self.transaction = Transaction(self)
 
     def end_transaction(self):
         if self.transaction:
@@ -247,12 +246,12 @@ class file(object):
         Example::
 
             f = ifcopenshell.file()
-            f.create_entity('IfcPerson')
-            >>> #1=IfcPerson($,$,$,$,$,$,$,$)
-            f.create_entity('IfcPerson', 'Foobar')
-            >>> #2=IfcPerson('Foobar',$,$,$,$,$,$,$)
-            f.create_entity('IfcPerson', Identification='Foobar')
-            >>> #3=IfcPerson('Foobar',$,$,$,$,$,$,$)
+            f.create_entity("IfcPerson")
+            # >>> #1=IfcPerson($,$,$,$,$,$,$,$)
+            f.create_entity("IfcPerson", "Foobar")
+            # >>> #2=IfcPerson('Foobar',$,$,$,$,$,$,$)
+            f.create_entity("IfcPerson", Identification="Foobar")
+            # >>> #3=IfcPerson('Foobar',$,$,$,$,$,$,$)
         """
         eid = kwargs.pop("id", -1)
 

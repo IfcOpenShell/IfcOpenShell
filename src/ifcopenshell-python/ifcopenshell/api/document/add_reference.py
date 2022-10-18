@@ -1,13 +1,30 @@
-import ifcopenshell
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {}
+        self.settings = {"information": None}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        id_attribute = "ItemReference" if self.file.schema == "IFC2X3" else "Identification"
-        return self.file.create_entity("IfcDocumentReference", **{id_attribute: ifcopenshell.guid.new()})
+        if self.file.schema == "IFC2X3":
+            return self.file.create_entity("IfcDocumentReference")
+        return self.file.create_entity("IfcDocumentReference", ReferencedDocument=self.settings["information"])

@@ -17,11 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.sequence.data import Data
 from ifcopenshell.api.resource.data import Data as ResourceData
+from blenderbim.bim.module.sequence.data import SequenceData
+import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from dateutil import parser
 from bpy.types import PropertyGroup
@@ -77,17 +79,18 @@ def getTaskTimeColumns(self, context):
 
 
 def getWorkSchedules(self, context):
-    return [(str(k), v["Name"], "") for k, v in Data.work_schedules.items()]
+    return [(str(k), v["Name"], "") for k, v in SequenceData.data["work_schedules"].items()]
 
 
 def getWorkCalendars(self, context):
-    return [(str(k), v["Name"], "") for k, v in Data.work_calendars.items()]
+    return [(str(k), v["Name"], "") for k, v in SequenceData.data["work_calendars"].items()]
 
 
 def update_active_task_index(self, context):
     bpy.ops.bim.load_task_inputs()
     bpy.ops.bim.load_task_resources()
     bpy.ops.bim.load_task_outputs()
+    blenderbim.bim.module.pset.data.refresh()
 
 
 def updateTaskName(self, context):
@@ -100,7 +103,7 @@ def updateTaskName(self, context):
         self.file,
         **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
     )
-    Data.load(IfcStore.get_file())
+    SequenceData.load()
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_attributes.get("Name")
         attribute.string_value = self.name
@@ -116,7 +119,7 @@ def updateTaskIdentification(self, context):
         self.file,
         **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
     )
-    Data.load(self.file)
+    SequenceData.load()
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_attributes.get("Identification")
         attribute.string_value = self.identification
@@ -162,10 +165,10 @@ def updateTaskTimeDateTime(self, context, startfinish):
         task_time = task.TaskTime
     else:
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        Data.load(IfcStore.get_file())
+        SequenceData.load()
 
     startfinish_key = "Schedule" + startfinish.capitalize()
-    if Data.task_times[task_time.id()][startfinish_key] == startfinish_datetime:
+    if SequenceData.data["task_times"][task_time.id()][startfinish_key] == startfinish_datetime:
         canonical_startfinish_value = canonicalise_time(startfinish_datetime)
         if startfinish_value != canonical_startfinish_value:
             setattr(self, startfinish, canonical_startfinish_value)
@@ -176,7 +179,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
         self.file,
         **{"task_time": task_time, "attributes": {startfinish_key: startfinish_datetime}},
     )
-    Data.load(IfcStore.get_file())
+    SequenceData.load()
     bpy.ops.bim.load_task_properties()
 
 
@@ -184,19 +187,29 @@ def updateTaskDuration(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled:
         return
+
+    if self.duration == "-":
+        return
+
+    try:
+        isodate.parse_duration(self.duration),
+    except:
+        self.duration = "-"
+        return
+
     self.file = IfcStore.get_file()
     task = self.file.by_id(self.ifc_definition_id)
     if task.TaskTime:
         task_time = task.TaskTime
     else:
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        Data.load(IfcStore.get_file())
+        SequenceData.load()
     ifcopenshell.api.run(
         "sequence.edit_task_time",
         self.file,
         **{"task_time": task_time, "attributes": {"ScheduleDuration": self.duration}},
     )
-    Data.load(IfcStore.get_file())
+    SequenceData.load()
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_time_attributes.get("Duration")
         if attribute:
@@ -315,7 +328,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     editing_sequence_type: StringProperty(name="Editing Sequence Type")
     active_sequence_id: IntProperty(name="Active Sequence Id")
     sequence_attributes: CollectionProperty(name="Sequence Attributes", type=Attribute)
-    time_lag_attributes: CollectionProperty(name="Time Lag Attributes", type=Attribute)
+    lag_time_attributes: CollectionProperty(name="Time Lag Attributes", type=Attribute)
     visualisation_start: StringProperty(name="Visualisation Start", update=update_visualisation_start)
     visualisation_finish: StringProperty(name="Visualisation Finish", update=update_visualisation_finish)
     speed_multiplier: FloatProperty(name="Speed Multiplier", default=10000)
@@ -337,6 +350,12 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_input_index: IntProperty(name="Active Task Input Index")
     task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
     active_task_output_index: IntProperty(name="Active Task Output Index")
+
+
+class BIMDuration(PropertyGroup):
+    duration_days: IntProperty(name="Days ")
+    duration_hours: IntProperty(name="Hours")
+    duration_minutes: IntProperty(name="Minutes")
 
 
 class BIMTaskTreeProperties(PropertyGroup):

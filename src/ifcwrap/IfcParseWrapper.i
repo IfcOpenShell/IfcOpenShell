@@ -250,6 +250,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return $self->data().toString();
 	}
 
+	std::string to_string(bool valid_spf) const {
+		return $self->data().toString(valid_spf);
+	}
+
 	// Just something to have a somewhat sensible value to hash
 	size_t file_pointer() const {
 		return reinterpret_cast<size_t>($self->data().file);
@@ -718,6 +722,14 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		Logger::SetOutput(0, &ifcopenshell_log_stream);
 		Logger::Verbosity(Logger::LOG_WARNING);
 	}
+	void set_log_format_json() {
+		ifcopenshell_log_stream.str("");
+		Logger::OutputFormat(Logger::FMT_JSON);
+	}
+	void set_log_format_text() {
+		ifcopenshell_log_stream.str("");
+		Logger::OutputFormat(Logger::FMT_PLAIN);
+	}
 %}
 
 %{
@@ -735,6 +747,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 			break; }
 			case IfcUtil::Argument_BOOL: {
 				bool v = arg;
+				return pythonize(v);
+			break; }
+			case IfcUtil::Argument_LOGICAL: {
+				boost::logic::tribool v = arg;
 				return pythonize(v);
 			break; }
 			case IfcUtil::Argument_DOUBLE: {

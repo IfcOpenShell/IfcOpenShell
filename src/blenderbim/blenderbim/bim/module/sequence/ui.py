@@ -21,10 +21,8 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from ifcopenshell.api.sequence.data import Data
+from blenderbim.bim.module.sequence.data import SequenceData
 from ifcopenshell.api.resource.data import Data as ResourceData
-import blenderbim.bim.module.sequence.helper as helper
-from datetime import datetime
 
 
 class BIM_PT_work_plans(Panel):
@@ -42,14 +40,20 @@ class BIM_PT_work_plans(Panel):
         return file and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not SequenceData.is_loaded:
+            SequenceData.load()
         self.props = context.scene.BIMWorkPlanProperties
 
         row = self.layout.row()
-        row.operator("bim.add_work_plan", icon="ADD")
-
-        for work_plan_id, work_plan in Data.work_plans.items():
+        if SequenceData.data["has_work_plans"]:
+            row.label(
+                text="{} Work Plans Found".format(SequenceData.data["number_of_work_plans_loaded"]),
+                icon="TEXT",
+            )
+        else:
+            row.label(text="No Work Plans found.", icon="TEXT")
+        row.operator("bim.add_work_plan", icon="ADD", text="")
+        for work_plan_id, work_plan in SequenceData.data["work_plans"].items():
             self.draw_work_plan_ui(work_plan_id, work_plan)
 
     def draw_work_plan_ui(self, work_plan_id, work_plan):
@@ -57,7 +61,8 @@ class BIM_PT_work_plans(Panel):
         row.label(text=work_plan["Name"] or "Unnamed", icon="TEXT")
 
         if self.props.active_work_plan_id == work_plan_id:
-            row.operator("bim.edit_work_plan", text="", icon="CHECKMARK")
+            if self.props.editing_type == "ATTRIBUTES":
+                row.operator("bim.edit_work_plan", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_work_plan", text="", icon="CANCEL")
         elif self.props.active_work_plan_id:
             row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan_id
@@ -78,19 +83,25 @@ class BIM_PT_work_plans(Panel):
         draw_attributes(self.props.work_plan_attributes, self.layout)
 
     def draw_work_schedule_ui(self):
-        row = self.layout.row(align=True)
-        row.prop(self.props, "work_schedules", text="")
-        op = row.operator("bim.assign_work_schedule", text="", icon="ADD")
-        op.work_plan = self.props.active_work_plan_id
-        op.work_schedule = int(self.props.work_schedules)
+        if not SequenceData.is_loaded:
+            SequenceData.load()
 
-        for work_schedule_id in Data.work_plans[self.props.active_work_plan_id]["IsDecomposedBy"]:
-            work_schedule = Data.work_schedules[work_schedule_id]
+        if SequenceData.data["has_work_schedules"]:
             row = self.layout.row(align=True)
-            row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
-            op = row.operator("bim.unassign_work_schedule", text="", icon="X")
+            row.prop(self.props, "work_schedules", text="")
+            op = row.operator("bim.assign_work_schedule", text="", icon="ADD")
             op.work_plan = self.props.active_work_plan_id
             op.work_schedule = int(self.props.work_schedules)
+            for work_schedule_id in SequenceData.data["work_plans"][self.props.active_work_plan_id]["IsDecomposedBy"]:
+                work_schedule = SequenceData.data["work_schedules"][work_schedule_id]
+                row = self.layout.row(align=True)
+                row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
+                op = row.operator("bim.unassign_work_schedule", text="", icon="X")
+                op.work_plan = self.props.active_work_plan_id
+                op.work_schedule = int(self.props.work_schedules)
+        else:
+            row = self.layout.row()
+            row.label(text="No schedules found. See Work Schedule Panel", icon="INFO")
 
 
 class BIM_PT_work_schedules(Panel):
@@ -108,23 +119,29 @@ class BIM_PT_work_schedules(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
+        if not SequenceData.is_loaded:
+            SequenceData.load()
         self.props = context.scene.BIMWorkScheduleProperties
         self.tprops = context.scene.BIMTaskTreeProperties
 
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-
         row = self.layout.row()
-        row.operator("bim.add_work_schedule", icon="ADD")
+        if SequenceData.data["has_work_schedules"]:
+            row.label(
+                text="{} Work Schedules Found".format(SequenceData.data["number_of_work_schedules_loaded"]),
+                icon="TEXT",
+            )
+        else:
+            row.label(text="No Work Schedules found.", icon="TEXT")
+        row.operator("bim.add_work_schedule", text="", icon="ADD")
 
-        for work_schedule_id, work_schedule in Data.work_schedules.items():
+        for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
             self.draw_work_schedule_ui(work_schedule_id, work_schedule)
 
     def draw_work_schedule_ui(self, work_schedule_id, work_schedule):
         row = self.layout.row(align=True)
         row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
 
-        if self.props.active_work_schedule_id and self.props.active_work_schedule_id == work_schedule_id:
+        if self.props.active_work_schedule_id == work_schedule_id:
             if self.props.editing_type == "WORK_SCHEDULE":
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
             elif self.props.editing_type == "TASKS":
@@ -134,23 +151,23 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.recalculate_schedule", text="", icon="FILE_REFRESH").work_schedule = work_schedule_id
                 row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
             row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
-        elif self.props.active_work_schedule_id:
-            row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
         else:
-            row.operator("bim.enable_editing_tasks", text="", icon="ACTION").work_schedule = work_schedule_id
+            row.operator(
+                "bim.enable_editing_work_schedule_tasks", text="", icon="ACTION"
+            ).work_schedule = work_schedule_id
             row.operator(
                 "bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL"
             ).work_schedule = work_schedule_id
             row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
         if self.props.active_work_schedule_id == work_schedule_id:
-            if self.props.should_show_column_ui:
-                self.draw_column_ui()
-            if self.props.should_show_visualisation_ui:
-                self.draw_visualisation_ui()
             if self.props.editing_type == "WORK_SCHEDULE":
                 self.draw_editable_work_schedule_ui()
             elif self.props.editing_type == "TASKS":
+                if self.props.should_show_column_ui:
+                    self.draw_column_ui()
+                if self.props.should_show_visualisation_ui:
+                    self.draw_visualisation_ui()
                 self.draw_editable_task_ui(work_schedule_id)
 
     def draw_task_operators(self):
@@ -235,6 +252,9 @@ class BIM_PT_work_schedules(Panel):
             self.props,
             "active_task_index",
         )
+        row = self.layout.row()
+        row.operator("bim.expand_all_tasks", text="Expand All Tasks")
+        row.operator("bim.contract_all_tasks", text="Contract All Tasks")
         if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
             self.draw_editable_task_attributes_ui()
         elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
@@ -245,68 +265,70 @@ class BIM_PT_work_schedules(Panel):
             self.draw_editable_task_time_attributes_ui()
 
     def draw_editable_task_sequence_ui(self):
-        task = Data.tasks[self.props.active_task_id]
+        task = SequenceData.data["tasks"][self.props.active_task_id]
         row = self.layout.row()
         row.label(text="{} Predecessors".format(len(task["IsSuccessorFrom"])), icon="BACK")
         for sequence_id in task["IsSuccessorFrom"]:
-            self.draw_editable_sequence_ui(Data.sequences[sequence_id], "RelatingProcess")
+            self.draw_editable_sequence_ui(SequenceData.data["sequences"][sequence_id], "RelatingProcess")
 
         row = self.layout.row()
         row.label(text="{} Successors".format(len(task["IsPredecessorTo"])), icon="FORWARD")
         for sequence_id in task["IsPredecessorTo"]:
-            self.draw_editable_sequence_ui(Data.sequences[sequence_id], "RelatedProcess")
+            self.draw_editable_sequence_ui(SequenceData.data["sequences"][sequence_id], "RelatedProcess")
 
     def draw_editable_sequence_ui(self, sequence, process_type):
-        task = Data.tasks[sequence[process_type]]
+        task = SequenceData.data["tasks"][sequence[process_type]]
         row = self.layout.row(align=True)
         row.label(text=task["Identification"] or "XXX")
         row.label(text=task["Name"] or "Unnamed")
         row.label(text=sequence["SequenceType"] or "N/A")
         if sequence["TimeLag"]:
             row.operator("bim.unassign_lag_time", text="", icon="X").sequence = sequence["id"]
-            row.label(text=isodate.duration_isoformat(Data.lag_times[sequence["TimeLag"]]["LagValue"]))
+            row.label(text=isodate.duration_isoformat(SequenceData.data["lag_times"][sequence["TimeLag"]]["LagValue"]))
         else:
-            row.operator("bim.assign_lag_time", text="", icon="ADD").sequence = sequence["id"]
-            row.label(text="N/A")
+            row.operator("bim.assign_lag_time", text="Add Time Lag", icon="ADD").sequence = sequence["id"]
         if self.props.active_sequence_id == sequence["id"]:
             if self.props.editing_sequence_type == "ATTRIBUTES":
                 row.operator("bim.edit_sequence_attributes", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_sequence", text="", icon="CANCEL")
                 self.draw_editable_sequence_attributes_ui()
-            elif self.props.editing_sequence_type == "TIME_LAG":
-                op = row.operator("bim.edit_sequence_time_lag", text="", icon="CHECKMARK")
+            elif self.props.editing_sequence_type == "LAG_TIME":
+                op = row.operator("bim.edit_sequence_lag_time", text="", icon="CHECKMARK")
                 op.lag_time = sequence["TimeLag"]
                 row.operator("bim.disable_editing_sequence", text="", icon="CANCEL")
-                self.draw_editable_sequence_time_lag_ui()
+                self.draw_editable_sequence_lag_time_ui()
         else:
             if sequence["TimeLag"]:
-                op = row.operator("bim.enable_editing_sequence_time_lag", text="", icon="CON_LOCKTRACK")
+                op = row.operator("bim.enable_editing_sequence_lag_time", text="Edit Time Lag", icon="CON_LOCKTRACK")
                 op.sequence = sequence["id"]
                 op.lag_time = sequence["TimeLag"]
-            op = row.operator("bim.enable_editing_sequence_attributes", text="", icon="GREASEPENCIL")
+            op = row.operator("bim.enable_editing_sequence_attributes", text="Edit Sequence", icon="GREASEPENCIL")
             op.sequence = sequence["id"]
 
     def draw_editable_sequence_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.sequence_attributes, self.layout)
 
-    def draw_editable_sequence_time_lag_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.time_lag_attributes, self.layout)
+    def draw_editable_sequence_lag_time_ui(self):
+        blenderbim.bim.helper.draw_attributes(self.props.lag_time_attributes, self.layout)
 
     def draw_editable_task_calendar_ui(self):
-        task = Data.tasks[self.props.active_task_id]
+        task = SequenceData.data["tasks"][self.props.active_task_id]
         if task["HasAssignmentsWorkCalendar"]:
             row = self.layout.row(align=True)
-            calendar = Data.work_calendars[task["HasAssignmentsWorkCalendar"][0]]
+            calendar = SequenceData.data["work_calendars"][task["HasAssignmentsWorkCalendar"][0]]
             row.label(text=calendar["Name"] or "Unnamed")
             op = row.operator("bim.remove_task_calendar", text="", icon="X")
             op.work_calendar = task["HasAssignmentsWorkCalendar"][0]
             op.task = self.props.active_task_id
-        else:
+        elif SequenceData.data["has_work_calendars"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "work_calendars", text="")
             op = row.operator("bim.edit_task_calendar", text="", icon="ADD")
             op.work_calendar = int(self.props.work_calendars)
             op.task = self.props.active_task_id
+        else:
+            row = self.layout.row(align=True)
+            row.label(text="Must Create a Calendar First. See Work Calendar Panel", icon="INFO")
 
     def draw_editable_task_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(
@@ -348,16 +370,22 @@ class BIM_PT_task_icom(Panel):
 
         row2 = col.row(align=True)
         row2.label(text="Inputs")
+        total_task_inputs = len(self.props.task_inputs)
 
         if context.selected_objects:
             op = row2.operator("bim.assign_process", icon="ADD", text="")
             op.task = task.ifc_definition_id
             op.related_object_type = "PRODUCT"
-            op.related_object = ""
+        if total_task_inputs:
             op = row2.operator("bim.unassign_process", icon="REMOVE", text="")
             op.task = task.ifc_definition_id
             op.related_object_type = "PRODUCT"
-            op.related_object = ""
+            if not context.selected_objects and self.props.active_task_input_index < total_task_inputs:
+                input_id = self.props.task_inputs[self.props.active_task_input_index].ifc_definition_id
+                op.related_object = input_id
+
+        op = row2.operator("bim.select_task_related_inputs", icon="RESTRICT_SELECT_OFF", text="")
+        op.task = task.ifc_definition_id
 
         row2 = col.row()
         row2.template_list("BIM_UL_task_inputs", "", self.props, "task_inputs", self.props, "active_task_input_index")
@@ -371,14 +399,17 @@ class BIM_PT_task_icom(Panel):
         op = row2.operator("bim.calculate_task_duration", text="", icon="TEMP")
         op.task = task.ifc_definition_id
 
-        total_resources = len(context.scene.BIMResourceTreeProperties.resources)
+        resource_props = context.scene.BIMResourceProperties
+        resource_tprops = context.scene.BIMResourceTreeProperties
+        total_resources = len(resource_tprops.resources)
         if total_resources and context.scene.BIMResourceProperties.active_resource_index < total_resources:
-            op = row2.operator("bim.assign_process", icon="ADD", text="")
-            op.task = task.ifc_definition_id
-            op.related_object_type = "RESOURCE"
-            op.resource = context.scene.BIMResourceTreeProperties.resources[
-                context.scene.BIMResourceProperties.active_resource_index
-            ].ifc_definition_id
+            resource_id = resource_tprops.resources[resource_props.active_resource_index].ifc_definition_id
+            ResourceData.load(IfcStore.get_file())
+            resource = ResourceData.resources[resource_id]
+            if resource["type"] != "IfcCrewResource":
+                op = row2.operator("bim.assign_process", icon="ADD", text="")
+                op.task = task.ifc_definition_id
+                op.related_object_type = "RESOURCE"
 
         total_task_resources = len(self.props.task_resources)
         if total_task_resources and self.props.active_task_resource_index < total_task_resources:
@@ -397,14 +428,17 @@ class BIM_PT_task_icom(Panel):
 
         row2 = col.row(align=True)
         row2.label(text="Outputs")
+        total_task_outputs = len(self.props.task_outputs)
 
         if context.selected_objects:
             op = row2.operator("bim.assign_product", icon="ADD", text="")
             op.task = task.ifc_definition_id
-            op.relating_product = ""
+        if total_task_outputs:
             op = row2.operator("bim.unassign_product", icon="REMOVE", text="")
             op.task = task.ifc_definition_id
-            op.relating_product = ""
+            if not context.selected_objects and self.props.active_task_output_index < total_task_outputs:
+                output_id = self.props.task_outputs[self.props.active_task_output_index].ifc_definition_id
+                op.relating_product = output_id
 
         op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="")
         op.task = task.ifc_definition_id
@@ -553,14 +587,20 @@ class BIM_PT_work_calendars(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not SequenceData.is_loaded:
+            SequenceData.load()
+
         self.props = context.scene.BIMWorkCalendarProperties
-
         row = self.layout.row()
-        row.operator("bim.add_work_calendar", icon="ADD")
-
-        for work_calendar_id, work_calendar in Data.work_calendars.items():
+        if SequenceData.data["has_work_calendars"]:
+            row.label(
+                text="{} Work Calendars Found".format(SequenceData.data["number_of_work_calendars_loaded"]),
+                icon="TEXT",
+            )
+        else:
+            row.label(text="No Work Calendars found.", icon="TEXT")
+        row.operator("bim.add_work_calendar", icon="ADD", text="")
+        for work_calendar_id, work_calendar in SequenceData.data["work_calendars"].items():
             self.draw_work_calendar_ui(work_calendar_id, work_calendar)
 
     def draw_work_calendar_ui(self, work_calendar_id, work_calendar):
@@ -595,10 +635,10 @@ class BIM_PT_work_calendars(Panel):
         op.time_type = "ExceptionTimes"
 
         for work_time_id in work_calendar["WorkingTimes"]:
-            self.draw_work_time_ui(Data.work_times[work_time_id], time_type="WorkingTimes")
+            self.draw_work_time_ui(SequenceData.data["work_times"][work_time_id], time_type="WorkingTimes")
 
         for work_time_id in work_calendar["ExceptionTimes"]:
-            self.draw_work_time_ui(Data.work_times[work_time_id], time_type="ExceptionTimes")
+            self.draw_work_time_ui(SequenceData.data["work_times"][work_time_id], time_type="ExceptionTimes")
 
     def draw_work_time_ui(self, work_time, time_type):
         row = self.layout.row(align=True)
@@ -623,7 +663,9 @@ class BIM_PT_work_calendars(Panel):
     def draw_editable_work_time_ui(self, work_time):
         draw_attributes(self.props.work_time_attributes, self.layout)
         if work_time["RecurrencePattern"]:
-            self.draw_editable_recurrence_pattern_ui(Data.recurrence_patterns[work_time["RecurrencePattern"]])
+            self.draw_editable_recurrence_pattern_ui(
+                SequenceData.data["recurrence_patterns"][work_time["RecurrencePattern"]]
+            )
         else:
             row = self.layout.row(align=True)
             row.prop(self.props, "recurrence_types", icon="RECOVER_LAST", text="")
@@ -645,7 +687,7 @@ class BIM_PT_work_calendars(Panel):
         op.recurrence_pattern = recurrence_pattern["id"]
 
         for time_period_id in recurrence_pattern["TimePeriods"]:
-            time_period = Data.time_periods[time_period_id]
+            time_period = SequenceData.data["time_periods"][time_period_id]
             row = box.row(align=True)
             row.label(text="{} - {}".format(time_period["StartTime"], time_period["EndTime"]), icon="TIME")
             op = row.operator("bim.remove_time_period", text="", icon="X")
@@ -690,3 +732,21 @@ class BIM_PT_work_calendars(Panel):
 
     def draw_editable_ui(self):
         draw_attributes(self.props.work_calendar_attributes, self.layout)
+
+
+class BIM_PT_SequenceToolKit(Panel):
+    bl_label = "Sequence Toolkit"
+    bl_idname = "BIM_PT_Sequence_toolkit"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Sequence Toolkit"
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.operator(
+            "bim.highlight_product_related_task", text="Go to Input-related Task ", icon="STYLUS_PRESSURE"
+        ).product_type = "Input"
+        row = self.layout.row()
+        row.operator(
+            "bim.highlight_product_related_task", text="Go to Output-related Task ", icon="STYLUS_PRESSURE"
+        ).product_type = "Output"

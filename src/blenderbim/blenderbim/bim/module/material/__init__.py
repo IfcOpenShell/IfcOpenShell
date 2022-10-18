@@ -21,37 +21,49 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddConstituent,
-    operator.AddDefaultMaterial,
     operator.AddLayer,
     operator.AddListItem,
     operator.AddMaterial,
+    operator.AddMaterialSet,
     operator.AddProfile,
     operator.AssignMaterial,
     operator.AssignParameterizedProfile,
+    operator.ContractMaterialCategory,
     operator.CopyMaterial,
     operator.DisableEditingAssignedMaterial,
     operator.DisableEditingMaterialSetItem,
+    operator.DisableEditingMaterials,
     operator.EditAssignedMaterial,
     operator.EditMaterialSetItem,
     operator.EnableEditingAssignedMaterial,
     operator.EnableEditingMaterialSetItem,
+    operator.ExpandMaterialCategory,
+    operator.LoadMaterials,
     operator.RemoveConstituent,
     operator.RemoveLayer,
     operator.RemoveListItem,
     operator.RemoveMaterial,
+    operator.RemoveMaterialSet,
     operator.RemoveProfile,
     operator.ReorderMaterialSetItem,
+    operator.SelectByMaterial,
     operator.UnassignMaterial,
     operator.UnlinkMaterial,
+    prop.Material,
+    prop.BIMMaterialProperties,
     prop.BIMObjectMaterialProperties,
+    ui.BIM_PT_materials,
     ui.BIM_PT_material,
     ui.BIM_PT_object_material,
+    ui.BIM_UL_materials,
 )
 
 
 def register():
+    bpy.types.Scene.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
     bpy.types.Object.BIMObjectMaterialProperties = bpy.props.PointerProperty(type=prop.BIMObjectMaterialProperties)
 
 
 def unregister():
+    del bpy.types.Scene.BIMMaterialProperties
     del bpy.types.Object.BIMObjectMaterialProperties

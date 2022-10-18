@@ -67,7 +67,7 @@ class TypeData:
         if not relating_type_class and relating_type_classes:
             relating_type_class = relating_type_classes[0][0]
         elements = tool.Ifc.get().by_type(relating_type_class)
-        elements = [(str(e.id()), e.Name, "") for e in elements]
+        elements = [(str(e.id()), e.Name or "Unnamed", "") for e in elements]
         results.extend(sorted(elements, key=lambda s: s[1]))
         return results
 

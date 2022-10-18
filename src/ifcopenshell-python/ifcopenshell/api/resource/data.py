@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.util.date
 from ifcopenshell.api.cost.data import CostValueTrait
@@ -41,7 +59,11 @@ class Data(CostValueTrait):
             data["ResourceOf"] = []
             for rel in resource.ResourceOf:
                 [data["ResourceOf"].append(o.id()) for o in rel.RelatedObjects]
-            data["HasContext"] = resource.HasContext[0].RelatingContext.id() if resource.HasContext else None
+            data["HasContext"] = (
+                resource.HasContext[0].RelatingContext.id()
+                if resource.HasContext
+                else None
+            )
             if resource.Usage:
                 data["Usage"] = data["Usage"].id()
             data["TotalCostQuantity"] = cls.get_total_quantity(resource)

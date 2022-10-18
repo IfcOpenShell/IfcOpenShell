@@ -27,14 +27,41 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.spatial.data import SpatialData
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
+class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reference_structure"
+    bl_label = "Reference Structure"
+    bl_options = {"REGISTER", "UNDO"}
+    structure: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        sprops = context.scene.BIMSpatialProperties
+        containers = [tool.Ifc.get().by_id(c.ifc_definition_id) for c in sprops.containers if c.is_selected]
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            for container in containers:
+                core.reference_structure(tool.Ifc, tool.Spatial, structure=container, element=element)
 
 
-class AssignContainer(bpy.types.Operator, Operator):
+class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.dereference_structure"
+    bl_label = "Dereference Structure"
+    bl_options = {"REGISTER", "UNDO"}
+    structure: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        sprops = context.scene.BIMSpatialProperties
+        containers = [tool.Ifc.get().by_id(c.ifc_definition_id) for c in sprops.containers if c.is_selected]
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            for container in containers:
+                core.dereference_structure(tool.Ifc, tool.Spatial, structure=container, element=element)
+
+
+class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -48,7 +75,7 @@ class AssignContainer(bpy.types.Operator, Operator):
             )
 
 
-class EnableEditingContainer(bpy.types.Operator, Operator):
+class EnableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_container"
     bl_label = "Enable Editing Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -57,7 +84,7 @@ class EnableEditingContainer(bpy.types.Operator, Operator):
         core.enable_editing_container(tool.Spatial, obj=context.active_object)
 
 
-class ChangeSpatialLevel(bpy.types.Operator, Operator):
+class ChangeSpatialLevel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_spatial_level"
     bl_label = "Change Spatial Level"
     bl_options = {"REGISTER", "UNDO"}
@@ -67,7 +94,7 @@ class ChangeSpatialLevel(bpy.types.Operator, Operator):
         core.change_spatial_level(tool.Spatial, parent=tool.Ifc.get().by_id(self.parent))
 
 
-class DisableEditingContainer(bpy.types.Operator, Operator):
+class DisableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_container"
     bl_label = "Disable Editing Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -76,7 +103,7 @@ class DisableEditingContainer(bpy.types.Operator, Operator):
         core.disable_editing_container(tool.Spatial, obj=context.active_object)
 
 
-class RemoveContainer(bpy.types.Operator, Operator):
+class RemoveContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_container"
     bl_label = "Remove Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -86,11 +113,16 @@ class RemoveContainer(bpy.types.Operator, Operator):
             core.remove_container(tool.Ifc, tool.Collector, obj=obj)
 
 
-class CopyToContainer(bpy.types.Operator, Operator):
+class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
     """
-    Copies selected objects to selected containers
-    Check the mark next to a container in the container list to select it
-    Several containers can be selected at a time
+    Copies selected 3D elements in the viewport to checkmarked spatial containers
+
+    Example: bulk copy a wall to multiple storeys
+
+    1. Select one or more 3D elements in the viewport
+    2. Enable the checkmark next to one or more containers in the container list below to select it
+    3. Press this button
+    4. The copied elements will have a new position relative to the destination containers
     """
 
     bl_idname = "bim.copy_to_container"
@@ -105,7 +137,7 @@ class CopyToContainer(bpy.types.Operator, Operator):
         blenderbim.bim.handler.purge_module_data()
 
 
-class SelectContainer(bpy.types.Operator, Operator):
+class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_container"
     bl_label = "Select Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -114,7 +146,7 @@ class SelectContainer(bpy.types.Operator, Operator):
         core.select_container(tool.Ifc, tool.Spatial, obj=context.active_object)
 
 
-class SelectSimilarContainer(bpy.types.Operator, Operator):
+class SelectSimilarContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
     bl_options = {"REGISTER", "UNDO"}

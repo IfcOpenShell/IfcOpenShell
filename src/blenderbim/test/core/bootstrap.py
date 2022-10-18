@@ -71,6 +71,20 @@ def debug():
 
 
 @pytest.fixture
+def demo():
+    prophet = Prophecy(blenderbim.core.tool.Demo)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def document():
+    prophet = Prophecy(blenderbim.core.tool.Document)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def drawing():
     prophet = Prophecy(blenderbim.core.tool.Drawing)
     yield prophet
@@ -80,6 +94,13 @@ def drawing():
 @pytest.fixture
 def geometry():
     prophet = Prophecy(blenderbim.core.tool.Geometry)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def georeference():
+    prophet = Prophecy(blenderbim.core.tool.Georeference)
     yield prophet
     prophet.verify()
 
@@ -120,6 +141,13 @@ def patch():
 
 
 @pytest.fixture
+def project():
+    prophet = Prophecy(blenderbim.core.tool.Project)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def pset():
     prophet = Prophecy(blenderbim.core.tool.Pset)
     yield prophet
@@ -148,6 +176,13 @@ def selector():
 
 
 @pytest.fixture
+def sequence():
+    prophet = Prophecy(blenderbim.core.tool.Sequence)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def spatial():
     prophet = Prophecy(blenderbim.core.tool.Spatial)
     yield prophet
@@ -164,6 +199,13 @@ def style():
 @pytest.fixture
 def surveyor():
     prophet = Prophecy(blenderbim.core.tool.Surveyor)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def system():
+    prophet = Prophecy(blenderbim.core.tool.System)
     yield prophet
     prophet.verify()
 

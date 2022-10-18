@@ -1,0 +1,64 @@
+name: ci-ifcopenshell-conda-daily
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types:
+      - completed
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+      - name: Set env
+        run: echo ok go
+
+  test:
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
+    needs: activate
+    runs-on: ${{ matrix.platform.distver }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: [
+          { name: py39, distver: '3.9' },
+          { name: py310, distver: '3.10'}
+        ]
+        platform: [
+          { name: Windows, distver: windows-2022, upload: 'false' },
+          { name: Windows, distver: windows-2019, upload: 'true' },
+          { name: Linux, distver: ubuntu-20.04,  upload: 'false' },
+          { name: Linux, distver: ubuntu-18.04,  upload: 'true' },
+          { name: macOS, distver: macos-11, upload: 'true' },
+          { name: macOS, distver: macos-10.15, upload: 'false' }
+        ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Download MacOSX SDK
+        if: ${{ matrix.platform.name == 'macOS' }}
+        run: |
+          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz && \
+          tar xf MacOSX10.13.sdk.tar.xz && \
+          sudo mv -v MacOSX10.13.sdk /opt/ && \
+          ls /opt/
+      - uses: seanmiddleditch/gha-setup-ninja@master
+      - uses: conda-incubator/setup-miniconda@v2  # https://github.com/conda-incubator/setup-miniconda
+        with:
+          activate-environment: conda-build
+          python-version: ${{ matrix.pyver.distver }}
+          environment-file: conda/environment.yml
+      - name: build, test and upload ifcopenshell
+        if: ${{ matrix.platform.upload == 'true' }}
+        run: |
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell --no-remove-work-dir
+      - name: build & test ifcopenshell
+        if: ${{ matrix.platform.upload == 'false' }}
+        run: |
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --no-remove-work-dir

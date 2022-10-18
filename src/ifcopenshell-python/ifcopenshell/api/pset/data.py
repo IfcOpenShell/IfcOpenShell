@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.pset
@@ -76,13 +94,15 @@ class Data:
         elif hasattr(pset, "Properties"):
             props = pset.Properties or []
         # TODO: support more than single values
-        data["Properties"] = [p.id() for p in props if p.is_a("IfcPropertySingleValue")]
+        data["Properties"] = [p.id() for p in props if p.is_a("IfcPropertyEnumeratedValue") or p.is_a("IfcPropertySingleValue")]
         cls.psets[pset.id()] = data
         cls.products[product_id]["psets"].add(pset.id())
         for prop in props:
             # TODO: support more than single values
             if prop.is_a("IfcPropertySingleValue"):
                 cls.load_prop(prop)
+            elif prop.is_a("IfcPropertyEnumeratedValue"):
+                cls.load_prop_enum(prop)
 
     @classmethod
     def load_prop(cls, prop):
@@ -98,7 +118,14 @@ class Data:
             # For convenience, which trumps correctness in this case
             data["NominalValue"] = prop[3]
         cls.properties[prop.id()] = data
-
+        
+    @classmethod
+    def load_prop_enum(cls, prop):
+        data = prop.get_info()
+        enumerations = [enum.wrappedValue for enum in data["EnumerationValues"]]
+        data["NominalValue"] = str(enumerations)
+        cls.properties[prop.id()] = data
+        
     @classmethod
     def add_qto(cls, qto, product_id):
         data = qto.get_info()

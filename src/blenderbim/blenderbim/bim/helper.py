@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+# from datetime import date
 import bpy
 import json
 import math
+import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
 from mathutils import geometry
@@ -38,16 +40,27 @@ def draw_attribute(attribute, layout, copy_operator=None, info_mode=False):
     if not value_name:
         layout.label(text=attribute.name)
         return
-    layout.prop(
-        attribute,
-        value_name,
-        text=attribute.name,
-    )
+    if value_name == "enum_value":
+        prop_with_search(layout, attribute, "enum_value", text=attribute.name)
+    else:
+        layout.prop(
+            attribute,
+            value_name,
+            text=attribute.name,
+        )
+    if "ScheduleDuration" in attribute.name:
+        layout.prop(bpy.context.scene.BIMDuration, "duration_days", text="D")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_hours", text="H")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_minutes", text="M")
+
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
+    if attribute.is_uri:
+        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+        op.data_path = attribute.path_from_id("string_value")
     if info_mode:
         info_op = layout.operator("bim.show_ifc_documentation", icon="INFO", text="")
         info_op.path = f"{attribute.path_from_id()}"
@@ -75,12 +88,15 @@ def import_attribute(attribute, props, data, callback=None):
     new.is_optional = attribute.optional()
     new.data_type = data_type if isinstance(data_type, str) else ""
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
+
     if is_handled_by_callback:
         pass  # Our job is done
     elif is_handled_by_callback is False:
         props.remove(len(props) - 1)
     elif data_type == "string":
         new.string_value = "" if new.is_null else data[attribute.name()]
+        if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
+            new.is_uri = True
     elif data_type == "boolean":
         new.bool_value = False if new.is_null else data[attribute.name()]
     elif data_type == "integer":
@@ -175,35 +191,101 @@ def export_attributes(props, callback=None):
     return attributes
 
 
-class IFCHeaderSpecs:
+def prop_with_search(layout, data, prop_name, **kwargs):
+    # kwargs are layout.prop arguments (text, icon, etc.)
+    row = layout.row(align=True)
+    # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
+    row.context_pointer_set(name="data", data=data)
+    row.prop(data, prop_name, **kwargs)
+    op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+    op.prop_name = prop_name
+
+
+def get_enum_items(data, prop_name, context):
+    # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
+    # Or throws an error in the console when the items callback returns an empty list
+    # See https://blender.stackexchange.com/q/215781/86891
+    prop = data.__annotations__[prop_name]
+    items = prop.keywords.get("items")
+    if items is None:
+        return
+    if not isinstance(items, (list, tuple)):
+        # items are retrieved through a callback, not a static list :
+        items = items(data, context)
+    return items
+
+
+def get_obj_ifc_definition_id(context, obj, obj_type):
+    if obj_type == "Object":
+        return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Material":
+        return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Task":
+        return context.scene.BIMTaskTreeProperties.tasks[
+            context.scene.BIMWorkScheduleProperties.active_task_index
+        ].ifc_definition_id
+    elif obj_type == "Cost":
+        return context.scene.BIMCostProperties.cost_items[
+            context.scene.BIMCostProperties.active_cost_item_index
+        ].ifc_definition_id
+    elif obj_type == "Resource":
+        return context.scene.BIMResourceTreeProperties.resources[
+            context.scene.BIMResourceProperties.active_resource_index
+        ].ifc_definition_id
+    elif obj_type == "Profile":
+        return context.scene.BIMProfileProperties.profiles[
+            context.scene.BIMProfileProperties.active_profile_index
+        ].ifc_definition_id
+    elif obj_type == "WorkSchedule":
+        return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+
+
+# hack to close popup
+# https://blender.stackexchange.com/a/202576/130742
+def close_operator_panel(event):
+    x, y = event.mouse_x, event.mouse_y
+    bpy.context.window.cursor_warp(10, 10)
+    move_back = lambda: bpy.context.window.cursor_warp(x, y)
+    bpy.app.timers.register(move_back, first_interval=0.01)
+
+
+class IfcHeaderExtractor:
     def __init__(self, filepath: str):
-        # According to https://www.steptools.com/stds/step/IS_final_p21e3.html#clause-8
-        self.description = ""
-        self.implementation_level = ""
-        self.name = ""
-        self.time_stamp = ""
-        self.author = ""
-        self.organization = ""
-        self.preprocessor_version = ""
-        self.originating_system = ""
-        self.authorization = ""
-        self.schema_name = ""
-        with open(filepath) as ifc_file:
-            max_lines_to_parse = 50
-            for _ in range(max_lines_to_parse):
-                line = next(ifc_file)
-                if line.startswith("FILE_DESCRIPTION"):
-                    for i, part in enumerate(line.split("'")):
-                        if i == 1:
-                            self.description = part
-                        elif i == 3:
-                            self.implementation_level = part
-                elif line.startswith("FILE_NAME"):
-                    for i, part in enumerate(line.split("'")):
-                        if i == 1:
-                            self.name = part
-                        elif i == 3:
-                            self.time_stamp = part
-                elif line.startswith("FILE_SCHEMA"):
-                    self.schema_name = line.split("'")[1]
-                    break
+        self.filepath = filepath
+
+    def extract(self):
+        extension = self.filepath.split(".")[-1]
+        if extension.lower() == "ifc":
+            with open(self.filepath) as ifc_file:
+                return self.extract_ifc_spf(ifc_file)
+        elif extension.lower() == "ifczip":
+            return self.extract_ifc_zip()
+
+    def extract_ifc_spf(self, ifc_file):
+        # https://www.steptools.com/stds/step/IS_final_p21e3.html#clause-8
+        data = {}
+        max_lines_to_parse = 50
+        for _ in range(max_lines_to_parse):
+            line = next(ifc_file)
+            if isinstance(line, bytes):
+                line = line.decode("utf-8")
+            if line.startswith("FILE_DESCRIPTION"):
+                for i, part in enumerate(line.split("'")):
+                    if i == 1:
+                        data["description"] = part
+                    elif i == 3:
+                        data["implementation_level"] = part
+            elif line.startswith("FILE_NAME"):
+                for i, part in enumerate(line.split("'")):
+                    if i == 1:
+                        data["name"] = part
+                    elif i == 3:
+                        data["time_stamp"] = part
+            elif line.startswith("FILE_SCHEMA"):
+                data["schema_name"] = line.split("'")[1]
+                break
+        return data
+
+    def extract_ifc_zip(self):
+        archive = zipfile.ZipFile(self.filepath, "r")
+        return self.extract_ifc_spf(archive.open(archive.filelist[0]))

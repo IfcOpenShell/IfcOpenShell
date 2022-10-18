@@ -22,7 +22,7 @@ from pathlib import Path
 from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
-from blenderbim.bim.helper import IFCHeaderSpecs
+from blenderbim.bim.helper import IfcHeaderExtractor
 import blenderbim.tool as tool
 
 
@@ -41,19 +41,19 @@ class IFCFileSelector:
         if self.is_existing_ifc_file(filepath):
             box = self.layout.box()
             box.label(text="IFC Header Specifications", icon="INFO")
-            ifc_specs = IFCHeaderSpecs(filepath)
-            for attr_name, attr_value in ifc_specs.__dict__.items():
-                if attr_value != "":
+            header_data = IfcHeaderExtractor(filepath).extract()
+            for key, value in header_data.items():
+                if value != "":
                     split = box.split()
-                    split.label(text=attr_name.title().replace("_", " "))
-                    split.label(text=str(attr_value))
+                    split.label(text=key.title().replace("_", " "))
+                    split.label(text=str(value))
                     if (
-                        attr_name.lower() == "schema_name"
-                        and str(attr_value).lower() == "ifc2x3"
+                        key.lower() == "schema_name"
+                        and str(value).lower() == "ifc2x3"
                         and filepath[-4:].lower() == ".ifc"
                     ):
                         row = box.row()
-                        op = row.operator("bim.run_migrate_patch")
+                        op = row.operator("bim.run_migrate_patch", text="Upgrade to IFC4")
                         op.infile = filepath
                         op.outfile = filepath[0:-4] + "-IFC4.ifc"
                         op.schema = "IFC4"
@@ -106,15 +106,17 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="SVG to DXF Command",
         description="E.g. [['inkscape', svg, '-o', eps], ['pstoedit', '-dt', '-f', 'dxf:-polyaslines -mm', eps, dxf, '-psarg', '-dNOSAFER']]",
     )
-    svg_command: StringProperty(name="SVG Command", description="E.g. [['firefox-bin', path]]")
-    pdf_command: StringProperty(name="PDF Command", description="E.g. [['firefox-bin', path]]")
+    svg_command: StringProperty(name="SVG Command", description="E.g. [['firefox', path]]")
+    pdf_command: StringProperty(name="PDF Command", description="E.g. [['firefox', path]]")
+    spreadsheet_command: StringProperty(name="Spreadsheet Command", description="E.g. [['libreoffice', path]]")
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
+    lock_grids_on_import: BoolProperty(name="Will lock grids upon import", default=True)
     info_mode: BoolProperty(
-        default=True, name="Info Mode", description="Check to display additional helpful tooltips and information"
+        default=True, name="Info Mode", description="Display additional helpful tooltips and information"
     )
 
     def draw(self, context):
@@ -144,11 +146,35 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "pdf_command")
         row = layout.row()
+        row.prop(self, "spreadsheet_command")
+        row = layout.row()
         row.prop(self, "openlca_port")
         row = layout.row()
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
+        row = layout.row()
+        row.prop(self, "lock_grids_on_import")
+
+        row = layout.row()
+        row.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")
+
+        row = layout.row()
+        row.prop(context.scene.BIMModelProperties, "occurrence_name_style")
+        row = layout.row()
+        row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
+
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "decorations_colour")
+
+        row = self.layout.row(align=True)
+        row.prop(context.scene.BIMProperties, "schema_dir")
+        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
+
+        row = self.layout.row(align=True)
+        row.prop(context.scene.BIMProperties, "data_dir")
+        row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
+
         row = layout.row()
         row.operator("bim.configure_visibility")
         layout.row().prop(self, "info_mode")
@@ -171,9 +197,9 @@ def ifc_units(self, context):
         row.prop(props, "metric_precision")
 
 
-# Scene Panel Groups -->
-class BIM_PT_project_setup(Panel):
-    bl_label = "IFC Project Setup"
+# Scene panel groups
+class BIM_PT_project_info(Panel):
+    bl_label = "IFC Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -182,16 +208,12 @@ class BIM_PT_project_setup(Panel):
         pass
 
 
-class BIM_PT_utilities(Panel):
-    bl_label = "IFC Utilities"
+class BIM_PT_project_setup(Panel):
+    bl_label = "IFC Project Setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -224,7 +246,7 @@ class BIM_PT_geometry(Panel):
 
 
 class BIM_PT_4D5D(Panel):
-    bl_label = "IFC 4D/5D"
+    bl_label = "IFC Costing and Scheduling"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -268,21 +290,6 @@ class BIM_PT_services(Panel):
         pass
 
 
-class BIM_PT_misc(Panel):
-    bl_label = "IFC Misc."
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
 class BIM_PT_quality_control(Panel):
     bl_label = "IFC Quality Control"
     bl_space_type = "PROPERTIES"
@@ -294,7 +301,18 @@ class BIM_PT_quality_control(Panel):
         pass
 
 
-# Object Panel Groups -->
+class BIM_PT_integrations(Panel):
+    bl_label = "BIM Integrations"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+
+
+# Object panel groups
 class BIM_PT_object_metadata(Panel):
     bl_label = "IFC Object Metadata"
     bl_space_type = "PROPERTIES"

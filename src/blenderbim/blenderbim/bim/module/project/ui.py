@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.ui import draw_info_button_for_index
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
@@ -29,7 +30,7 @@ class BIM_PT_project(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_project_info"
 
     def draw(self, context):
         if not ProjectData.is_loaded:
@@ -49,11 +50,13 @@ class BIM_PT_project(Panel):
 
     def draw_load_ui(self, context):
         pprops = context.scene.BIMProjectProperties
-        row = self.layout.row()
-        row.prop(pprops, "collection_mode")
-        row = self.layout.row()
-        row.prop(pprops, "filter_mode")
-        if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS"]:
+        prop_with_search(self.layout, pprops, "collection_mode")
+        prop_with_search(self.layout, pprops, "filter_mode")
+        if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS", "IFC_TYPE"]:
+            row = self.layout.row(align=True)
+            row.label(text=f"Total: {pprops.total_elements}")
+            row.operator("bim.toggle_filter_categories", text="", icon="CHECKBOX_HLT").should_select = True
+            row.operator("bim.toggle_filter_categories", text="", icon="CHECKBOX_DEHLT").should_select = False
             self.layout.template_list(
                 "BIM_UL_filter_categories",
                 "",
@@ -71,21 +74,31 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "should_use_cpu_multiprocessing")
         row = self.layout.row()
-        row.prop(pprops, "should_merge_by_class")
+        row.prop(pprops, "should_clean_mesh")
         row = self.layout.row()
-        row.prop(pprops, "should_merge_by_material")
+        row.prop(pprops, "should_cache")
+        row = self.layout.row()
+        row.prop(pprops, "should_use_native_meshes")
         row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")
         row = self.layout.row()
-        row.prop(pprops, "should_clean_mesh")
+        row.prop(pprops, "is_coordinating")
+        if pprops.is_coordinating:
+            prop_with_search(self.layout, pprops, "merge_mode")
         row = self.layout.row()
         row.prop(pprops, "deflection_tolerance")
         row = self.layout.row()
         row.prop(pprops, "angular_tolerance")
         row = self.layout.row()
-        row.prop(pprops, "should_offset_model")
+        row.prop(pprops, "distance_limit")
         row = self.layout.row()
-        row.prop(pprops, "model_offset_coordinates")
+        row.prop(pprops, "false_origin")
+
+        row = self.layout.row()
+        row.label(text="Element Range")
+        row = self.layout.row(align=True)
+        row.prop(pprops, "element_offset", text="")
+        row.prop(pprops, "element_limit", text="")
 
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
@@ -95,8 +108,7 @@ class BIM_PT_project(Panel):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
         row = self.layout.row(align=True)
-        row.label(text="IFC Filename", icon="FILE")
-        row.label(text=os.path.basename(props.ifc_file) or "No File Found")
+        row.label(text=os.path.basename(props.ifc_file) or "No File Found", icon="FILE")
 
         if IfcStore.get_file():
             row.prop(pprops, "is_authoring", icon="MODIFIER", text="")
@@ -137,42 +149,39 @@ class BIM_PT_project(Panel):
             row = self.layout.row(align=True)
             row.label(text="File Not Loaded", icon="ERROR")
 
+        if props.ifc_file:
+            row = self.layout.row(align=True)
+            row.label(text="Saved", icon="EXPORT")
+            row.label(text=ProjectData.data["last_saved"])
+
+            row = self.layout.row(align=True)
+            row.prop(props, "ifc_file", text="")
+            row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
+            row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
+
         row = self.layout.row(align=True)
-        row.prop(props, "ifc_file", text="")
-        row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
-        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="")
+        op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+        op.should_save_as = False
+        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="Save As")
         op.should_save_as = True
-        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "schema_dir")
-        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "data_dir")
-        row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
+        row.operator("bim.unload_project", text="", icon="X")
 
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
         info_mode = context.preferences.addons["blenderbim"].preferences.info_mode
-        layout = self.layout
-        row = layout.row()
-        row.prop(pprops, "export_schema")
-        draw_info_button_for_index(info_mode, row, "HeaderSchema", pprops.export_schema)
-        row = layout.row()
+        prop_with_search(self.layout, pprops, "export_schema")
+        row = self.layout.row()
         row.prop(context.scene.unit_settings, "system")
-        draw_info_button_for_index(info_mode, row, "HeaderUnitSystem", context.scene.unit_settings.system)
-        row = layout.row()
+        row = self.layout.row()
         row.prop(context.scene.unit_settings, "length_unit")
-        draw_info_button_for_index(info_mode, row, "HeaderUnitLength", context.scene.unit_settings.length_unit)
-        row = layout.row()
+        row = self.layout.row()
         row.prop(props, "area_unit", text="Area Unit")
-        draw_info_button_for_index(info_mode, row, "HeaderUnitArea", props.area_unit)
-        row = layout.row()
+        row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
-        draw_info_button_for_index(info_mode, row, "HeaderUnitVolume", props.volume_unit)
-        row = layout.row(align=True)
+        prop_with_search(self.layout, pprops, "template_file", text="Template")
+
+        row = self.layout.row(align=True)
         row.operator("bim.create_project")
         row.operator("bim.load_project")
 
@@ -289,11 +298,28 @@ class BIM_UL_links(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
             if item.is_loaded:
+                row.label(text=item.name)
+                op = row.operator(
+                    "bim.toggle_link_visibility",
+                    text="",
+                    icon="CUBE" if item.is_wireframe else "MESH_CUBE",
+                    emboss=False,
+                )
+                op.link = item.name
+                op.mode = "WIREFRAME"
+                op = row.operator(
+                    "bim.toggle_link_visibility",
+                    text="",
+                    icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
+                    emboss=False,
+                )
+                op.link = item.name
+                op.mode = "VISIBLE"
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
                 op.filepath = item.name
             else:
+                row.prop(item, "name", text="")
                 op = row.operator("bim.load_link", text="", icon="LINKED")
                 op.filepath = item.name
                 op = row.operator("bim.unlink_ifc", text="", icon="X")

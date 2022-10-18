@@ -168,6 +168,7 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 		eof = len == 0;
 		ptr = 0;
 		fclose(stream);
+		stream = nullptr;
 #ifdef USE_MMAP	
 	}
 #endif
@@ -212,6 +213,9 @@ void IfcSpfStream::Close() {
 	}
 #endif
 	delete[] buffer;
+	if (stream) {
+		fclose(stream);
+	}
 }
 
 //
@@ -691,7 +695,19 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	std::vector<Argument*>* vector = 0;
 	vector_or_array<Argument*> filler(attributes, num_attributes);
 	if (attributes == 0) {
-		vector = new std::vector<Argument*>();
+		if (num_attributes != 0) {
+			// If num_attributes is zero we know this is a top-level entity instance (or header entity) being parsed.
+			// There can only be parsed one of these at a time, so we can reuse the vector we have defined at the file
+			// scope.
+			if (entity) {
+				vector = &internal_attribute_vector_;
+			} else {
+				vector = &internal_attribute_vector_simple_type_;
+			}
+			vector->clear();
+		} else {
+			vector = new std::vector<Argument*>;
+		}
 		filler = vector_or_array<Argument*>(vector);
 	}
 
@@ -732,14 +748,27 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	}
 
 	if (vector) {
-		attributes = new Argument*[vector->size()];
-		return_value = vector->size();
-		for (size_t i = 0; i < vector->size(); ++i) {
-			attributes[i] = vector->at(i);
-		}
-	}
+		// Obviously don't try and create a 0-length array.
+		if (num_attributes || vector->size()) {
+			// @todo figure out whether all this logic is still necessary, since we know the
+			// expected amount of attributes and shouldn't be able to access more than allowed
+			// by the schema.
+			attributes = new Argument*[(std::max)(num_attributes, vector->size())]{ nullptr };
 
-	delete vector;
+			// @todo this appears unnecessary, we increment this in the loop already,
+			// which is more accurate as the filler can't go above it's size in case
+			// it uses the pre-allocated c-array.
+			// -> return_value = vector->size();
+
+			for (size_t i = 0; i < vector->size(); ++i) {
+				attributes[i] = vector->at(i);
+			}
+		}
+
+		if ((vector != &internal_attribute_vector_) && (vector != &internal_attribute_vector_simple_type_)) {
+			delete vector;
+		}
+	}	
 
 	return return_value;
 }
@@ -1053,13 +1082,19 @@ std::string IfcEntityInstanceData::toString(bool upper) const {
 	return ss.str();
 }
 
-IfcEntityInstanceData::~IfcEntityInstanceData() {
+void IfcEntityInstanceData::clearArguments()
+{
 	if (attributes_ != NULL) {
 		for (size_t i = 0; i < getArgumentCount(); ++i) {
 			delete attributes_[i];
 		}
 		delete[] attributes_;
+		attributes_ = NULL;
 	}
+}
+
+IfcEntityInstanceData::~IfcEntityInstanceData() {
+	clearArguments();
 }
 
 unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
@@ -1084,11 +1119,7 @@ void IfcEntityInstanceData::load() const {
 	static std::recursive_mutex m;
 	std::lock_guard<std::recursive_mutex> lk(m);
 
-	// type_ is 0 for header entities which have their size predetermined in code
 	Argument** tmp_data = nullptr;
-	if (type_ != 0) {
-		tmp_data = new Argument*[getArgumentCount()]{};
-	}
 	
 	if (file->parsing_complete()) {
 		// only when parsing is fully complete we need to seek to the instance, otherwise
@@ -1099,13 +1130,23 @@ void IfcEntityInstanceData::load() const {
 		file->tokens->Next();
 	}
 
-	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, tmp_data, getArgumentCount());
+	// type_ is 0 for header entities which have their size predetermined in code
+	// in that we have attributes_ pre-constructed to the correct size in the constructor
+	// in the other case load() will use a vector internally to grow to the size found in the file
+	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, type_ ? tmp_data : attributes_, getArgumentCount());
 	if (n != getArgumentCount()) {
-		Logger::Error("Wrong number of attributes on instance with id #" + boost::lexical_cast<std::string>(id_));
+		Logger::Error("Wrong number of attributes on instance with id #" + std::to_string(id_) + 
+			" at offset " + std::to_string(this->offset_in_file()) + 
+			" expected " + std::to_string(getArgumentCount()) + 
+			" got " + std::to_string(n));
 	}
+
 	file->try_read_semicolon();
+	
 	// @todo does this need to be atomic somehow?
-	attributes_ = tmp_data;
+	if (tmp_data) {
+		attributes_ = tmp_data;
+	}
 }
 
 namespace {
@@ -1144,7 +1185,7 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 
 	for (unsigned int i = 0; i < count; ++i) {
 		attributes_[i] = 0;
-		this->setArgument(i, e.getArgument(i), get_argument_type(e.type(), i));
+		this->setArgument(i, e.getArgument(i), get_argument_type(e.type(), i), true);
 	}
 }
 
@@ -1261,136 +1302,155 @@ public:
 
 };
 
-void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type) {
+void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type, bool make_copy) {
 	if (attributes_ == 0) {
 		load();
 	}
-
-	if (attr_type == IfcUtil::Argument_UNKNOWN) {
-		attr_type = a->type();
-	} else if (a->isNull()) {
-		attr_type = IfcUtil::Argument_NULL;
-	}
-
-	IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-
-	switch (attr_type) {
-	case IfcUtil::Argument_NULL:
-		copy->set(boost::blank());
-		break;
-	case IfcUtil::Argument_DERIVED:
-		copy->set(IfcWrite::IfcWriteArgument::Derived());
-		break;
-	case IfcUtil::Argument_INT:
-		copy->set(static_cast<int>(*a));
-		break;
-	case IfcUtil::Argument_BOOL:
-		copy->set(static_cast<bool>(*a));
-		break;
-	case IfcUtil::Argument_LOGICAL: {
-		boost::logic::tribool tb = *a;
-		copy->set(tb);
-		break;
-	}
-	case IfcUtil::Argument_DOUBLE:
-		copy->set(static_cast<double>(*a));
-		break;
-	case IfcUtil::Argument_STRING:
-		copy->set(static_cast<std::string>(*a));
-		break;
-	case IfcUtil::Argument_BINARY: {
-		boost::dynamic_bitset<> attr_value = *a;
-		copy->set(attr_value);
-		break; }
-	case IfcUtil::Argument_AGGREGATE_OF_INT: {
-		std::vector<int> attr_value = *a;
-		copy->set(attr_value);
-		break;  }
-	case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
-		std::vector<double> attr_value = *a;
-		copy->set(attr_value);
-		break; }
-	case IfcUtil::Argument_AGGREGATE_OF_STRING: {
-		std::vector<std::string> attr_value = *a;
-		copy->set(attr_value);
-		break; }
-	case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
-		std::vector< boost::dynamic_bitset<> > attr_value = *a;
-		copy->set(attr_value);
-		break; }
-	case IfcUtil::Argument_ENUMERATION: {
-		std::string enum_literal = a->toString();
-		// Remove leading and trailing '.'
-		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
-		
-		const IfcParse::enumeration_type* enum_type = type()->as_enumeration_type()
-			? type()->as_enumeration_type()
-			: type()->as_entity()->attribute_by_index(i)->type_of_attribute()->
-			as_named_type()->declared_type()->as_enumeration_type();
-		
-		std::vector<std::string>::const_iterator it = std::find(
-			enum_type->enumeration_items().begin(), 
-			enum_type->enumeration_items().end(), 
-			enum_literal);
-		
-		if (it == enum_type->enumeration_items().end()) {
-			throw IfcParse::IfcException(enum_literal + " does not name a valid item for " + enum_type->name());
+	Argument* new_attribute = a;
+	if (make_copy) {
+		if (attr_type == IfcUtil::Argument_UNKNOWN) {
+			attr_type = a->type();
+		} else if (a->isNull()) {
+			attr_type = IfcUtil::Argument_NULL;
 		}
 
-		copy->set(IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
-		break; }
-	case IfcUtil::Argument_ENTITY_INSTANCE: {
-		copy->set(static_cast<IfcUtil::IfcBaseClass*>(*a));
-		break; }
-	case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-		aggregate_of_instance::ptr instances = *a;
-		aggregate_of_instance::ptr mapped_instances(new aggregate_of_instance);
-		// @todo mapped_instances are not actually mapped to the file using add().
-		for (aggregate_of_instance::it it = instances->begin(); it != instances->end(); ++it) {
-			mapped_instances->push(*it);
+		IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
+
+		switch (attr_type) {
+		case IfcUtil::Argument_NULL:
+			copy->set(boost::blank());
+			break;
+		case IfcUtil::Argument_DERIVED:
+			copy->set(IfcWrite::IfcWriteArgument::Derived());
+			break;
+		case IfcUtil::Argument_INT:
+			copy->set(static_cast<int>(*a));
+			break;
+		case IfcUtil::Argument_BOOL:
+			copy->set(static_cast<bool>(*a));
+			break;
+		case IfcUtil::Argument_LOGICAL: {
+			boost::logic::tribool tb = *a;
+			copy->set(tb);
+			break;
 		}
-		copy->set(mapped_instances);
-		break; }
-	case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
-		std::vector< std::vector<int> > attr_value = *a;
-		copy->set(attr_value);
-		break; }
-	case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
-		std::vector< std::vector<double> > attr_value = *a;
-		copy->set(attr_value);
-		break; }
-	case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-		aggregate_of_aggregate_of_instance::ptr instances = *a;
-		aggregate_of_aggregate_of_instance::ptr mapped_instances(new aggregate_of_aggregate_of_instance);
-		for (aggregate_of_aggregate_of_instance::outer_it it = instances->begin(); it != instances->end(); ++it) {
-			std::vector<IfcUtil::IfcBaseClass*> inner;
-			for (aggregate_of_aggregate_of_instance::inner_it jt = it->begin(); jt != it->end(); ++jt) {
-				inner.push_back(*jt);
+		case IfcUtil::Argument_DOUBLE:
+			copy->set(static_cast<double>(*a));
+			break;
+		case IfcUtil::Argument_STRING:
+			copy->set(static_cast<std::string>(*a));
+			break;
+		case IfcUtil::Argument_BINARY: {
+			boost::dynamic_bitset<> attr_value = *a;
+			copy->set(attr_value);
+			break; }
+		case IfcUtil::Argument_AGGREGATE_OF_INT: {
+			std::vector<int> attr_value = *a;
+			copy->set(attr_value);
+			break;  }
+		case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
+			std::vector<double> attr_value = *a;
+			copy->set(attr_value);
+			break; }
+		case IfcUtil::Argument_AGGREGATE_OF_STRING: {
+			std::vector<std::string> attr_value = *a;
+			copy->set(attr_value);
+			break; }
+		case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
+			std::vector< boost::dynamic_bitset<> > attr_value = *a;
+			copy->set(attr_value);
+			break; }
+		case IfcUtil::Argument_ENUMERATION: {
+			std::string enum_literal = a->toString();
+			// Remove leading and trailing '.'
+			enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
+			
+			const IfcParse::enumeration_type* enum_type = type()->as_enumeration_type()
+				? type()->as_enumeration_type()
+				: type()->as_entity()->attribute_by_index(i)->type_of_attribute()->
+				as_named_type()->declared_type()->as_enumeration_type();
+			
+			std::vector<std::string>::const_iterator it = std::find(
+				enum_type->enumeration_items().begin(), 
+				enum_type->enumeration_items().end(), 
+				enum_literal);
+			
+			if (it == enum_type->enumeration_items().end()) {
+				throw IfcParse::IfcException(enum_literal + " does not name a valid item for " + enum_type->name());
 			}
-			mapped_instances->push(inner);
-		}
-		copy->set(mapped_instances);
-		break; }
-	case IfcUtil::Argument_EMPTY_AGGREGATE:
-	case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE: {
-		IfcUtil::ArgumentType t2 = IfcUtil::from_parameter_type(type()->as_entity()->attribute_by_index(i)->type_of_attribute());
-		delete copy;
-		copy = 0;
-		setArgument(i, a, t2);
-		break; }
-	default:
-	case IfcUtil::Argument_UNKNOWN:
-		throw IfcParse::IfcException(std::string("Unknown attribute encountered: '") + a->toString() + "' at index '" + boost::lexical_cast<std::string>(i) + "'");
-		break;
-	}
 
-	if (!copy) {
-		return;
+			copy->set(IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
+			break; }
+		case IfcUtil::Argument_ENTITY_INSTANCE: {
+			copy->set(static_cast<IfcUtil::IfcBaseClass*>(*a));
+			break; }
+		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
+			aggregate_of_instance::ptr instances = *a;
+			aggregate_of_instance::ptr mapped_instances(new aggregate_of_instance);
+			// @todo mapped_instances are not actually mapped to the file using add().
+			for (aggregate_of_instance::it it = instances->begin(); it != instances->end(); ++it) {
+				mapped_instances->push(*it);
+			}
+			copy->set(mapped_instances);
+			break; }
+		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
+			std::vector< std::vector<int> > attr_value = *a;
+			copy->set(attr_value);
+			break; }
+		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
+			std::vector< std::vector<double> > attr_value = *a;
+			copy->set(attr_value);
+			break; }
+		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
+			aggregate_of_aggregate_of_instance::ptr instances = *a;
+			aggregate_of_aggregate_of_instance::ptr mapped_instances(new aggregate_of_aggregate_of_instance);
+			for (aggregate_of_aggregate_of_instance::outer_it it = instances->begin(); it != instances->end(); ++it) {
+				std::vector<IfcUtil::IfcBaseClass*> inner;
+				for (aggregate_of_aggregate_of_instance::inner_it jt = it->begin(); jt != it->end(); ++jt) {
+					inner.push_back(*jt);
+				}
+				mapped_instances->push(inner);
+			}
+			copy->set(mapped_instances);
+			break; }
+		case IfcUtil::Argument_EMPTY_AGGREGATE:
+		case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE: {
+			IfcUtil::ArgumentType t2 = IfcUtil::from_parameter_type(type()->as_entity()->attribute_by_index(i)->type_of_attribute());
+			delete copy;
+			copy = 0;
+			setArgument(i, a, t2, make_copy);
+			break; }
+		default:
+		case IfcUtil::Argument_UNKNOWN:
+			throw IfcParse::IfcException(std::string("Unknown attribute encountered: '") + a->toString() + "' at index '" + boost::lexical_cast<std::string>(i) + "'");
+			break;
+		}
+
+		if (!copy) {
+			return;
+		}
+
+		new_attribute = copy;
 	}
 
 	if (attributes_[i] != 0) {
 		Argument* current_attribute = attributes_[i];
 		if (this->file) {
+
+			// Deregister old attribute guid in file guid map.
+			if (i == 0 && this->type() && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+				try {
+					auto guid = (std::string) *current_attribute;
+					auto it = this->file->internal_guid_map().find(guid);
+					if (it != this->file->internal_guid_map().end() && &it->second->data() == this) {
+						this->file->internal_guid_map().erase(it);
+					}
+				} catch (IfcParse::IfcException& e) {
+					Logger::Error(e);
+				}
+			}
+
+			// Deregister inverse indices in file
 			unregister_inverse_visitor visitor(*this->file, *this);
 			apply_individual_instance_visitor(current_attribute, i).apply(visitor);
 		}
@@ -1398,11 +1458,28 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	}
 
 	if (this->file) {
+		// Register inverse indices in file
 		register_inverse_visitor visitor(*this->file, *this);
-		apply_individual_instance_visitor(copy, i).apply(visitor);
+		apply_individual_instance_visitor(new_attribute, i).apply(visitor);
 	}
 
-	attributes_[i] = copy;
+	attributes_[i] = new_attribute;
+
+	// Register new attribute guid in guid map
+	if (this->file) {
+		if (i == 0 && this->type() && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+			try {
+				auto guid = (std::string) *new_attribute;
+				auto it = this->file->internal_guid_map().find(guid);
+				if (it != this->file->internal_guid_map().end()) {
+					Logger::Warning("Duplicate guid " + guid);
+				}
+				this->file->internal_guid_map()[guid] = this->file->instance_by_id(this->id());
+			} catch (IfcParse::IfcException& e) {
+				Logger::Error(e);
+			}
+		}
+	}
 }
 
 //
@@ -1446,6 +1523,10 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	// Initialize a "C" locale for locale-independent
 	// number parsing. See comment above on line 41.
 	init_locale();
+
+	// prevent heap allocations during parse
+	internal_attribute_vector_.reserve(64);
+	internal_attribute_vector_simple_type_.reserve(16);
 
 	parsing_complete_ = false;
 	MaxId = 0;
@@ -1518,7 +1599,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 			try {
 				entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream[2]));
 			} catch (const IfcException& ex) {
-				Logger::Message(Logger::LOG_ERROR, ex.what());
+				Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream[2].startPos));
 				goto advance;
 			}
 				
@@ -1844,8 +1925,12 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 				we->setArgument(i, copy);
 			} else if (decl && decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
 				if (boost::math::isnan(conversion_factor)) {
-					const std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = getUnit("LENGTHUNIT");
-					const std::pair<IfcUtil::IfcBaseClass*, double> other_file_unit = other_file->getUnit("LENGTHUNIT");
+					std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = { nullptr, 1.0 };
+					std::pair<IfcUtil::IfcBaseClass*, double> other_file_unit = { nullptr, 1.0 };
+					try {
+						this_file_unit = getUnit("LENGTHUNIT");
+						other_file_unit = other_file->getUnit("LENGTHUNIT");
+					} catch (IfcParse::IfcException&) {}
 					if (this_file_unit.first && other_file_unit.first) {
 						conversion_factor = other_file_unit.second / this_file_unit.second;
 					} else {
@@ -1971,6 +2056,11 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 
 		// The mapping by entity instance name is updated.
 		byid[new_id] = new_entity;
+	} else if (!new_entity->data().file) {
+		// For non-entity instances, no mappings are updated, but the file
+		// pointer has to be set, so that actual copies are created in subsequent
+		// times.
+		new_entity->data().file = this;
 	}
 
 	if (parsing_complete_ && ty->as_entity()) {
@@ -2256,8 +2346,15 @@ IfcUtil::IfcBaseClass* IfcFile::instance_by_guid(const std::string& guid) {
 
 // FIXME: Test destructor to delete entity and arg allocations
 IfcFile::~IfcFile() {
-	for( entity_by_id_t::const_iterator it = byid.begin(); it != byid.end(); ++ it ) {
-		delete it->second;
+	std::set<IfcUtil::IfcBaseClass*> entities_to_delete;
+	for (const auto& pair : byid) {
+		entities_to_delete.insert(pair.second);
+	}
+	for (const auto& pair : entity_file_map) {
+		entities_to_delete.insert(pair.second);
+	}
+	for (auto entity : entities_to_delete) {
+		delete entity;
 	}
 	delete stream;
 	delete tokens;

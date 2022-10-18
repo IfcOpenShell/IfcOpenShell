@@ -20,10 +20,11 @@
 #ifndef ITERATOR_IMPLEMENTATION_H
 #define ITERATOR_IMPLEMENTATION_H
 
+#include "../ifcparse/IfcFile.h"
+
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
-#include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeomIteratorSettings.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
 
 #include <gp_XYZ.hxx>
 
@@ -49,7 +50,7 @@ public:
 	IfcGeom::IteratorImplementation* construct(const std::string& schema_name, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int);
 };
 
-IteratorFactoryImplementation& iterator_implementations();
+IFC_GEOM_API IteratorFactoryImplementation& iterator_implementations();
 
 namespace IfcGeom {
 

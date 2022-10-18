@@ -24,9 +24,12 @@ import json
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
+import blenderbim.tool as tool
 from . import schema
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
+from blenderbim.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
@@ -39,6 +42,43 @@ class OpenUri(bpy.types.Operator):
     def execute(self, context):
         webbrowser.open(self.uri)
         return {"FINISHED"}
+
+
+class SelectURIAttribute(bpy.types.Operator):
+    bl_idname = "bim.select_uri_attribute"
+    bl_label = "Select URI Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select a local file"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    data_path: bpy.props.StringProperty(name="Data Path")
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+
+    def execute(self, context):
+        # data_path contains the latter half of the path to the string_value property
+        # I have no idea how to find out the former half, so let's just use brute force.
+        data_path = self.data_path.replace(".string_value", "")
+        attribute = None
+        try:
+            attribute = eval(f"bpy.context.scene.{data_path}")
+        except:
+            try:
+                attribute = eval(f"bpy.context.active_object.{data_path}")
+            except:
+                try:
+                    attribute = eval(f"bpy.context.active_object.active_material.{data_path}")
+                except:
+                    # Do you know a better way?
+                    pass
+        if attribute:
+            filepath = self.filepath
+            if self.use_relative_path:
+                filepath = os.path.relpath(filepath, os.path.dirname(tool.Ifc.get_path()))
+            attribute.string_value = filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
@@ -108,7 +148,9 @@ class OpenUpstream(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddSectionPlane(bpy.types.Operator):
+class BIM_OT_add_section_plane(bpy.types.Operator):
+    """Add a temporary empty object as a section cutaway. Cull all geometry rendering below the empty's local Z axis"""
+
     bl_idname = "bim.add_section_plane"
     bl_label = "Add Temporary Section Cutaway"
     bl_options = {"REGISTER", "UNDO"}
@@ -153,79 +195,100 @@ class AddSectionPlane(bpy.types.Operator):
     def create_section_compare_node(self):
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
         group_input = group.nodes.new(type="NodeGroupInput")
+        group_input.location = 0, 50
+
+        separate_xyz = group.nodes.new(type="ShaderNodeSeparateXYZ")
+        separate_xyz.location = 200, 0
+
+        greater = group.nodes.new(type="ShaderNodeMath")
+        greater.operation = "GREATER_THAN"
+        greater.inputs[1].default_value = 0
+        greater.location = 400, 0
+
+        multiply = group.nodes.new(type="ShaderNodeMath")
+        multiply.operation = "MULTIPLY"
+        multiply.inputs[0].default_value = 1
+        multiply.location = 600, 150
+
         group_output = group.nodes.new(type="NodeGroupOutput")
-        separate_xyz_a = group.nodes.new(type="ShaderNodeSeparateXYZ")
-        separate_xyz_b = group.nodes.new(type="ShaderNodeSeparateXYZ")
-        gt_a = group.nodes.new(type="ShaderNodeMath")
-        gt_a.operation = "GREATER_THAN"
-        gt_a.inputs[1].default_value = 0
-        gt_b = group.nodes.new(type="ShaderNodeMath")
-        gt_b.operation = "GREATER_THAN"
-        gt_b.inputs[1].default_value = 0
-        add = group.nodes.new(type="ShaderNodeMath")
-        compare = group.nodes.new(type="ShaderNodeMath")
-        compare.operation = "COMPARE"
-        compare.inputs[1].default_value = 2
-        group.links.new(group_input.outputs[""], separate_xyz_a.inputs[0])
-        group.links.new(group_input.outputs[""], separate_xyz_b.inputs[0])
-        group.links.new(separate_xyz_a.outputs[2], gt_a.inputs[0])
-        group.links.new(separate_xyz_b.outputs[2], gt_b.inputs[0])
-        group.links.new(gt_a.outputs[0], add.inputs[0])
-        group.links.new(gt_b.outputs[0], add.inputs[1])
-        group.links.new(add.outputs[0], compare.inputs[0])
-        group.links.new(compare.outputs[0], group_output.inputs[""])
+        group_output.location = 800, 0
+
+        group.links.new(group_input.outputs[""], multiply.inputs[0])
+        group.links.new(group_input.outputs[""], separate_xyz.inputs[0])
+        group.links.new(separate_xyz.outputs[2], greater.inputs[0])
+        group.links.new(greater.outputs[0], multiply.inputs[1])
+        group.links.new(multiply.outputs[0], group_output.inputs[""])
 
     def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
+        links = group.links
+        nodes = group.nodes
 
-        group_input = group.nodes.new(type="NodeGroupInput")
-        group_output = group.nodes.new(type="NodeGroupOutput")
+        group_input = nodes.new(type="NodeGroupInput")
+        group_output = nodes.new(type="NodeGroupOutput")
+        group_output.location = 600, 250
 
-        backfacing = group.nodes.new(type="ShaderNodeNewGeometry")
-        backfacing_mix = group.nodes.new(type="ShaderNodeMixShader")
-        emission = group.nodes.new(type="ShaderNodeEmission")
+        backfacing_mix = nodes.new(type="ShaderNodeMixShader")
+        backfacing_mix.location = group_output.location - Vector((400, 350))
+
+        backfacing = nodes.new(type="ShaderNodeNewGeometry")
+        backfacing.location = backfacing_mix.location + Vector((-200, 200))
+        group_input.location = backfacing_mix.location - Vector((200, 50))
+
+        emission = nodes.new(type="ShaderNodeEmission")
         emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
+        emission.location = backfacing_mix.location - Vector((200, 150))
 
-        group.links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
-        group.links.new(group_input.outputs[""], backfacing_mix.inputs[1])
-        group.links.new(emission.outputs["Emission"], backfacing_mix.inputs[2])
+        transparent = nodes.new(type="ShaderNodeBsdfTransparent")
+        transparent.location = group_output.location - Vector((400, 100))
 
-        transparent = group.nodes.new(type="ShaderNodeBsdfTransparent")
         section_mix = group.nodes.new(type="ShaderNodeMixShader")
         section_mix.name = "Section Mix"
+        section_mix.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
+        section_mix.location = group_output.location - Vector((200, 0))
 
-        group.links.new(transparent.outputs["BSDF"], section_mix.inputs[1])
-        group.links.new(backfacing_mix.outputs["Shader"], section_mix.inputs[2])
-
-        group.links.new(section_mix.outputs["Shader"], group_output.inputs[""])
-
-        cut_obj = group.nodes.new(type="ShaderNodeTexCoord")
+        cut_obj = nodes.new(type="ShaderNodeTexCoord")
         cut_obj.object = obj
-        section_compare = group.nodes.new(type="ShaderNodeGroup")
+        cut_obj.location = group_output.location - Vector((800, 150))
+
+        section_compare = nodes.new(type="ShaderNodeGroup")
         section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
         section_compare.name = "Last Section Compare"
-        value = group.nodes.new(type="ShaderNodeValue")
-        value.name = "Mock Section"
-        group.links.new(cut_obj.outputs["Object"], section_compare.inputs[0])
-        group.links.new(value.outputs[0], section_compare.inputs[1])
-        group.links.new(section_compare.outputs[0], section_mix.inputs[0])
+        section_compare.location = group_output.location - Vector((600, 0))
+
+        links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
+        links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
+        links.new(group_input.outputs[""], backfacing_mix.inputs[1])
+        links.new(emission.outputs["Emission"], backfacing_mix.inputs[2])
+        links.new(section_compare.outputs[0], section_mix.inputs[0])
+        links.new(transparent.outputs["BSDF"], section_mix.inputs[1])
+        links.new(backfacing_mix.outputs["Shader"], section_mix.inputs[2])
+        links.new(section_mix.outputs["Shader"], group_output.inputs[""])
 
     def append_obj_to_section_override_node(self, obj):
         group = bpy.data.node_groups.get("Section Override")
-        cut_obj = group.nodes.new(type="ShaderNodeTexCoord")
-        cut_obj.object = obj
+        try:
+            last_section_node = next(
+                n
+                for n in group.nodes
+                if isinstance(n, bpy.types.ShaderNodeGroup)
+                and n.node_tree.name == "Section Compare"
+                and not n.inputs[0].links
+            )
+            offset = Vector((0, 0))
+        except StopIteration:
+            last_section_node = group.nodes.get("Section Mix")
+            offset = Vector((200, 0))
         section_compare = group.nodes.new(type="ShaderNodeGroup")
         section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
+        section_compare.location = last_section_node.location - Vector((200, 0)) - offset
 
-        last_compare = group.nodes.get("Last Section Compare")
-        last_compare.name = "Section Compare"
-        mock_section = group.nodes.get("Mock Section")
-        section_mix = group.nodes.get("Section Mix")
+        cut_obj = group.nodes.new(type="ShaderNodeTexCoord")
+        cut_obj.object = obj
+        cut_obj.location = last_section_node.location - Vector((400, 150)) - offset
 
-        group.links.new(last_compare.outputs[0], section_compare.inputs[0])
-        group.links.new(mock_section.outputs[0], section_compare.inputs[1])
-        group.links.new(cut_obj.outputs["Object"], last_compare.inputs[1])
-        group.links.new(section_compare.outputs[0], section_mix.inputs[0])
+        group.links.new(section_compare.outputs[0], last_section_node.inputs[0])
+        group.links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
 
         section_compare.name = "Last Section Compare"
 
@@ -276,7 +339,9 @@ class AddSectionPlane(bpy.types.Operator):
                 return node
 
 
-class RemoveSectionPlane(bpy.types.Operator):
+class BIM_OT_remove_section_plane(bpy.types.Operator):
+    """Remove selected section plane. No effect if executed on a regular object"""
+
     bl_idname = "bim.remove_section_plane"
     bl_label = "Remove Temporary Section Cutaway"
     bl_options = {"REGISTER", "UNDO"}
@@ -288,33 +353,34 @@ class RemoveSectionPlane(bpy.types.Operator):
     def execute(self, context):
         name = context.active_object.name
         section_override = bpy.data.node_groups.get("Section Override")
-        for node in section_override.nodes:
-            if node.type != "TEX_COORD" or node.object.name != name:
-                continue
-            section_compare = node.outputs["Object"].links[0].to_node
-            # If the tex coord links to section_compare.inputs[1], it is called 'Input_3'
-            if node.outputs["Object"].links[0].to_socket.identifier == "Input_3":
-                section_override.links.new(
-                    section_compare.inputs[0].links[0].from_socket, section_compare.outputs[0].links[0].to_socket
-                )
-            else:  # If it links to section_compare.inputs[0]
-                if section_compare.inputs[1].links[0].from_node.name == "Mock Section":
-                    # Then it is the very last section. Purge everything.
-                    self.purge_all_section_data(context)
-                    return {"FINISHED"}
-                section_override.links.new(
-                    section_compare.inputs[1].links[0].from_socket, section_compare.outputs[0].links[0].to_socket
-                )
+        tex_coords = next(
+            (
+                n
+                for n in section_override.nodes
+                if isinstance(n, bpy.types.ShaderNodeTexCoord) and n.object.name == name
+            ),
+            None,
+        )
+        if tex_coords is not None:
+            section_compare = tex_coords.outputs["Object"].links[0].to_node
+            if section_compare.inputs[0].links:
+                previous_section_compare = section_compare.inputs[0].links[0].from_node
+                next_section_compare = section_compare.outputs[0].links[0].to_node
+                section_override.links.new(previous_section_compare.outputs[0], next_section_compare.inputs[0])
+                self.offset_previous_nodes(section_compare, offset_x=200)
             section_override.nodes.remove(section_compare)
-            section_override.nodes.remove(node)
+            section_override.nodes.remove(tex_coords)
+            bpy.data.objects.remove(context.active_object)
 
-            old_last_compare = section_override.nodes.get("Last Section Compare")
-            old_last_compare.name = "Section Compare"
-            section_mix = section_override.nodes.get("Section Mix")
-            new_last_compare = section_mix.inputs[0].links[0].from_node
-            new_last_compare.name = "Last Section Compare"
-        bpy.ops.object.delete({"selected_objects": [context.active_object]})
         return {"FINISHED"}
+
+    def offset_previous_nodes(self, section_compare, offset_x=0, offset_y=0):
+        if section_compare.inputs[0].links:
+            previous_section_compare = section_compare.inputs[0].links[0].from_node
+            previous_section_compare.location += Vector((offset_x, offset_y))
+            if previous_section_compare.inputs[1].links:
+                previous_section_compare.inputs[1].links[0].from_node.location += Vector((offset_x, offset_y))
+            self.offset_previous_nodes(previous_section_compare, offset_x, offset_y)
 
     def purge_all_section_data(self, context):
         bpy.data.materials.remove(bpy.data.materials.get("Section Override"))
@@ -557,4 +623,84 @@ class ConfigureVisibility(bpy.types.Operator):
             col.prop(module, "is_visible", text="")
 
     def execute(self, context):
+        return {"FINISHED"}
+
+
+def update_enum_property_search_prop(self, context):
+    for i, prop in enumerate(self.collection_names):
+        if prop.name == self.dummy_name:
+            setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
+            break
+
+
+class BIM_OT_enum_property_search(bpy.types.Operator):
+    bl_idname = "bim.enum_property_search"
+    bl_label = "Search For Property"
+    bl_options = {"REGISTER", "UNDO"}
+    dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
+    collection_names: bpy.props.CollectionProperty(type=StrProperty)
+    collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
+    prop_name: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        self.clear_collections()
+        self.data = context.data
+        items = get_enum_items(self.data, self.prop_name, context)
+        if items is None:
+            return {"FINISHED"}
+        self.add_items_regular(items)
+        self.add_items_suggestions()
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        # Mandatory to access context.data in update :
+        self.layout.context_pointer_set(name="data", data=self.data)
+        self.layout.prop_search(self, "dummy_name", self, "collection_names")
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def clear_collections(self):
+        self.collection_names.clear()
+        self.collection_identifiers.clear()
+
+    def add_item(self, identifier: str, name: str):
+        self.collection_identifiers.add().name = identifier
+        self.collection_names.add().name = name
+
+    def add_items_regular(self, items):
+        self.identifiers = []
+        for item in items:
+            self.identifiers.append(item[0])
+            self.add_item(identifier=item[0], name=item[1])
+            if item[0] == getattr(self.data, self.prop_name):
+                self.dummy_name = item[1]  # We found the current enum name
+
+    def add_items_suggestions(self):
+        getter_suggestions = getattr(self.data, "getter_enum_suggestions", None)
+        if getter_suggestions is not None:
+            mapping = getter_suggestions.get(self.prop_name)
+            if mapping is None:
+                return
+            for key, values in mapping().items():
+                if key in self.identifiers:
+                    if not isinstance(values, (tuple, list)):
+                        values = [values]
+                    for value in values:
+                        self.add_item(identifier=key, name=key + " (" + value + ")")
+
+
+class EditBlenderCollection(bpy.types.Operator):
+    bl_idname = "bim.edit_blender_collection"
+    bl_label = "Add or Remove blender collection item"
+    bl_options = {"REGISTER", "UNDO"}
+    option: bpy.props.StringProperty(description="add or remove item from collection")
+    collection: bpy.props.StringProperty(description="collection to be edited")
+    index: bpy.props.IntProperty(description="index of item to be removed")
+
+    def execute(self, context):
+        if self.option == "add":
+            getattr(context.bim_prop_group, self.collection).add()
+        else:
+            getattr(context.bim_prop_group, self.collection).remove(self.index)
         return {"FINISHED"}

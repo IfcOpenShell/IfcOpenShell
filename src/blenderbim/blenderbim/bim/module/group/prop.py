@@ -18,7 +18,10 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.helper import import_attributes
+from ifcopenshell.api.group.data import Data
 from bpy.types import PropertyGroup
+import json
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -31,9 +34,17 @@ from bpy.props import (
 )
 
 
+class ExpandedGroups(StrProperty):
+    json_string: StringProperty(name="JSON String", default="{}")
+
+
 class Group(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    selection_query: StringProperty(name="Selection Query")
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
+    has_children: BoolProperty(name="Has Children", default=False)
+    tree_depth: IntProperty(name="Tree Depth")
 
 
 class BIMGroupProperties(PropertyGroup):

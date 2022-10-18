@@ -19,6 +19,7 @@
 import os
 import bpy
 import json
+import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.core.patch as core
 import blenderbim.bim.handler
@@ -79,15 +80,15 @@ class ExecuteIfcPatch(bpy.types.Operator):
         else:
             arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
 
-        ifcpatch.execute(
+        output = ifcpatch.execute(
             {
-                "input": props.ifc_patch_input,
-                "output": props.ifc_patch_output,
+                "input": ifcopenshell.open(props.ifc_patch_input),
                 "recipe": props.ifc_patch_recipes,
                 "arguments": arguments,
                 "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
             }
         )
+        ifcpatch.write(output, props.ifc_patch_output)
         return {"FINISHED"}
 
 
@@ -121,13 +122,16 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
 
 class RunMigratePatch(bpy.types.Operator):
     bl_idname = "bim.run_migrate_patch"
-    bl_label = "Execute IFCPatch"
+    bl_label = "Run Migrate Patch"
     infile: bpy.props.StringProperty()
     outfile: bpy.props.StringProperty()
     schema: bpy.props.StringProperty()
 
     def execute(self, context):
         core.run_migrate_patch(tool.Patch, infile=self.infile, outfile=self.outfile, schema=self.schema)
-        bpy.ops.file.refresh()
+        try:
+            bpy.ops.file.refresh()
+        except:
+            pass  # Probably running in headless mode
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}

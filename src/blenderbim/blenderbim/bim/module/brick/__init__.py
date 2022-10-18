@@ -29,6 +29,7 @@ classes = (
     operator.LoadBrickProject,
     operator.NewBrickFile,
     operator.RefreshBrickViewer,
+    operator.RemoveBrick,
     operator.RewindBrickClass,
     operator.ViewBrickClass,
     operator.ViewBrickItem,

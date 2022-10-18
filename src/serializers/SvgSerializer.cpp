@@ -36,7 +36,6 @@
 #include <TopoDS_Edge.hxx>
 #include <TopExp_Explorer.hxx>
 #include <BRep_Tool.hxx>
-#include <BRepAlgo_Section.hxx>
 #include <BRepTools.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <ShapeAnalysis_FreeBounds.hxx>
@@ -809,7 +808,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					const std::string& ty_entity_name = ty->declaration().name();
 					// Damn you, IFC
 					if (ty_entity_name == "IfcDoorStyle" || ty_entity_name == "IfcDoorType") {
-						operation_type = *((IfcUtil::IfcBaseEntity*)ty)->get("OperationType");
+						operation_type = (std::string)*((IfcUtil::IfcBaseEntity*)ty)->get("OperationType");
 					}
 				}
 			}
@@ -1073,7 +1072,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 
 				TopoDS_Compound profile_edges;
-				if (profile_threshold_ != -1) {
+				if (profile_threshold_ != -1 && !(data.product->declaration().is("IfcWall") || data.product->declaration().is("IfcSlab"))) {
 					TopTools_IndexedDataMapOfShapeListOfShape map;
 					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, map);
 					if (map.Extent() > profile_threshold_) {
@@ -1155,16 +1154,20 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 				}
 
-				if (is_floor_plan_ && storey) {
-					if (storey_hlr.find(storey) == storey_hlr.end()) {
-						if (use_hlr_poly_) {
-							storey_hlr[storey] = new HLRBRep_PolyAlgo;
-						} else {
-							storey_hlr[storey] = new HLRBRep_Algo;
+				if (is_floor_plan_) {
+					if (storey) {
+						if (storey_hlr.find(storey) == storey_hlr.end()) {
+							if (use_hlr_poly_) {
+								storey_hlr[storey] = new HLRBRep_PolyAlgo;
+							} else {
+								storey_hlr[storey] = new HLRBRep_Algo;
+							}
 						}
+						hlr_writer vis(*compound_to_hlr);
+						boost::apply_visitor(vis, storey_hlr[storey]);
+					} else {
+						Logger::Warning("Unable to invoke HLR due to absence of storey containment", data.product);
 					}
-					hlr_writer vis(*compound_to_hlr);
-					boost::apply_visitor(vis, storey_hlr[storey]);
 				}
 				else {
 					hlr_writer vis(*compound_to_hlr);
@@ -2211,10 +2214,15 @@ void SvgSerializer::doWriteHeader() {
 		svg_file.stream <<
 			"    <style type=\"text/css\" >\n"
 			"    <![CDATA[\n"
-			"        path {\n"
+			"        .cut path {\n"
 			"            stroke: #222222;\n"
 			"            fill: #444444;\n"
 			"            fill-rule: evenodd;\n"
+			"        }\n"
+			"        .projection path {\n"
+			"            stroke: #222222;\n"
+			"            fill: none;\n"
+			"            stroke-opacity: 0.6;\n"
 			"        }\n"
 			"        .IfcDoor path,\n"
 			"        .Symbol path {\n"

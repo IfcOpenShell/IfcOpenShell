@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -37,13 +36,13 @@ class Patcher:
         if self.file.schema == "IFC2X3":
             user = self.file_patched.add(self.file.by_type("IfcProject")[0].OwnerHistory.OwningUser)
             old_get_user = ifcopenshell.api.owner.settings.get_user
-            ifcopenshell.api.owner.settings.get_user = lambda ifc : user
+            ifcopenshell.api.owner.settings.get_user = lambda ifc: user
         project = ifcopenshell.api.run("root.create_entity", self.file_patched, ifc_class="IfcProject")
         unit_assignment = ifcopenshell.api.run("unit.assign_unit", self.file_patched, **{"length": unit})
 
         # Is there a better way?
         for element in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
-            element.Precision = 1E-8
+            element.Precision = 1e-8
 
         # If we don't add openings first, they don't get converted
         for element in self.file.by_type("IfcOpeningElement"):

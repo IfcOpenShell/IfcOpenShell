@@ -25,6 +25,7 @@ from mathutils import Vector
 def refresh():
     DerivedPlacementsData.is_loaded = False
     RepresentationsData.is_loaded = False
+    ConnectionsData.is_loaded = False
 
 
 class RepresentationsData:
@@ -61,6 +62,40 @@ class RepresentationsData:
                 data["ContextIdentifier"] = representation.ContextOfItems.ContextIdentifier or ""
                 data["TargetView"] = representation.ContextOfItems.TargetView or ""
             results.append(data)
+        return results
+
+
+class ConnectionsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"connections": cls.connections()}
+        cls.is_loaded = True
+
+    @classmethod
+    def connections(cls):
+        results = []
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        for rel in getattr(element, "ConnectedTo", []):
+            results.append(
+                {
+                    "id": rel.id(),
+                    "is_relating": True,
+                    "Name": rel.RelatedElement.Name or "Unnamed",
+                    "ConnectionType": rel.RelatingConnectionType,
+                }
+            )
+        for rel in getattr(element, "ConnectedFrom", []):
+            results.append(
+                {
+                    "id": rel.id(),
+                    "is_relating": False,
+                    "Name": rel.RelatingElement.Name or "Unnamed",
+                    "ConnectionType": rel.RelatedConnectionType,
+                }
+            )
         return results
 
 

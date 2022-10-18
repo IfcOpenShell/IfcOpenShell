@@ -21,11 +21,12 @@ import blenderbim.core.style
 
 def edit_object_placement(ifc, geometry, surveyor, obj=None):
     element = ifc.get_entity(obj)
-    if element:
-        geometry.clear_cache(element)
-        geometry.clear_scale(obj)
-        ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
-        geometry.record_object_position(obj)
+    if not element:
+        return
+    geometry.clear_cache(element)
+    geometry.clear_scale(obj)
+    ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
+    geometry.record_object_position(obj)
 
 
 def add_representation(
@@ -50,11 +51,12 @@ def add_representation(
         total_items=geometry.get_total_representation_items(obj),
         should_force_faceted_brep=geometry.should_force_faceted_brep(),
         should_force_triangulation=geometry.should_force_triangulation(),
+        should_generate_uvs=geometry.should_generate_uvs(obj),
         ifc_representation_class=ifc_representation_class,
         profile_set_usage=profile_set_usage,
     )
 
-    if geometry.does_object_have_mesh_with_faces(obj):
+    if geometry.is_body_representation(representation):
         [geometry.run_style_add_style(obj=mat) for mat in geometry.get_object_materials_without_styles(obj)]
         ifc.run(
             "style.assign_representation_styles",
@@ -86,13 +88,16 @@ def switch_representation(
     should_sync_changes_first=False,
 ):
     if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
+        representation_id = geometry.get_representation_id(representation)
         geometry.run_geometry_update_representation(obj=obj)
+        if not geometry.does_representation_id_exist(representation_id):
+            return
 
     representation = geometry.resolve_mapped_representation(representation)
     existing_data = geometry.get_representation_data(representation)
 
     if should_reload or not existing_data:
-        data = geometry.import_representation(obj, representation, enable_dynamic_voids=enable_dynamic_voids)
+        data = geometry.import_representation(obj, representation)
         geometry.rename_object(data, geometry.get_representation_name(representation))
         geometry.link(representation, data)
     else:
@@ -105,9 +110,6 @@ def switch_representation(
 
     geometry.clear_modifiers(obj)
 
-    if enable_dynamic_voids and geometry.is_body_representation(representation):
-        geometry.create_dynamic_voids(obj)
-
 
 def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_first=False):
     geometry.import_representation_parameters(geometry.get_object_data(obj))
@@ -115,8 +117,8 @@ def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_fi
 
 def remove_representation(ifc, geometry, obj=None, representation=None):
     element = ifc.get_entity(obj)
-    if geometry.is_mapped_representation(representation) or geometry.is_type_product(element):
-        type = geometry.get_element_type(element)
+    type = geometry.get_element_type(element)
+    if type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
         if data and geometry.has_data_users(data):
@@ -135,3 +137,11 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
             geometry.replace_object_with_empty(obj)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
         ifc.run("geometry.remove_representation", representation=representation)
+
+
+def select_connection(geometry, connection=None):
+    geometry.select_connection(connection)
+
+
+def remove_connection(geometry, connection=None):
+    geometry.remove_connection(connection)

@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 header = """
 #ifndef %(schema_name_upper)s_H
@@ -36,7 +36,9 @@ header = """
 
 struct %(schema_name)s {
 
-static const IfcParse::schema_definition& get_schema();
+IFC_PARSE_API static const IfcParse::schema_definition& get_schema();
+
+IFC_PARSE_API static void clear_schema();
 
 static const char* const Identifier;
 
@@ -137,7 +139,10 @@ simpletype_impl_cast_templated = (
 simpletype_impl_declaration = "return *%(schema_name_upper)s_%(class_name)s_type;"
 
 select = """%(documentation)s
-class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 """
 
 enumeration = """class IFC_PARSE_API %(name)s : public IfcUtil::IfcBaseType {
@@ -165,6 +170,10 @@ public:
     %(name)s (%(constructor_arguments)s);
     typedef aggregate_of< %(name)s > list;
 };
+"""
+
+select_function = """
+const IfcParse::select_type& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
 """
 
 enumeration_function = """
@@ -243,24 +252,20 @@ optional_attr_stmt = "return !data_->getArgument(%(index)d)->isNull();"
 
 get_attr_stmt = "%(null_check)s %(non_optional_type)s v = *data_->getArgument(%(index)d); return v;"
 get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(*data_->getArgument(%(index)d));"
-get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)))->as<%(non_optional_type_no_pointer)s>();"
-get_attr_stmt_array = (
-    "%(null_check)s aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
-)
-get_attr_stmt_nested_array = (
-    "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
-)
+get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)))->as<%(non_optional_type_no_pointer)s>(true);"
+get_attr_stmt_array = "%(null_check)s aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
+get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 
 get_inverse = "return data_->getInverse(%(schema_name_upper)s_%(type)s_type, %(index)d)->as<%(type)s>();"
 
 set_attr_stmt = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(%(star_if_optional)sv"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(%(star_if_optional)sv"
+    + ");%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 )
-set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));data_->setArgument(%(index)d,attr);}"
+set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 set_attr_stmt_array = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((%(star_if_optional)sv)->generalize()"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set((%(star_if_optional)sv)->generalize()"
+    + ");%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 )
 
 constructor_stmt = (

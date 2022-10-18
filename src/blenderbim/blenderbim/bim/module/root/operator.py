@@ -31,7 +31,7 @@ import blenderbim.core.root as core
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.root.prop import get_contexts
+from blenderbim.bim.helper import get_enum_items
 
 
 class Operator:
@@ -113,7 +113,7 @@ class ReassignClass(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AssignClass(bpy.types.Operator):
+class AssignClass(bpy.types.Operator, Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
@@ -126,178 +126,30 @@ class AssignClass(bpy.types.Operator):
     should_add_representation: bpy.props.BoolProperty(default=True)
     ifc_representation_class: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
+        props = context.scene.BIMRootProperties
         objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        self.file = IfcStore.get_file()
-        if not self.ifc_class:
-            self.ifc_class = context.scene.BIMRootProperties.ifc_class
-        self.declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
-        if self.predefined_type == "USERDEFINED":
-            self.predefined_type = self.userdefined_type
+        ifc_class = self.ifc_class or props.ifc_class
+        predefined_type = self.userdefined_type if self.predefined_type == "USERDEFINED" else self.predefined_type
+        ifc_context = self.context_id
+        if not ifc_context and get_enum_items(props, "contexts", context):
+            ifc_context = int(props.contexts or "0") or None
+        if ifc_context:
+            ifc_context = tool.Ifc.get().by_id(ifc_context)
+        active_object = context.active_object
         for obj in objects:
-            self.assign_class(context, obj)
-        return {"FINISHED"}
-
-    def assign_class(self, context, obj):
-        if obj.BIMObjectProperties.ifc_definition_id:
-            return
-        product = ifcopenshell.api.run(
-            "root.create_entity",
-            self.file,
-            **{
-                "ifc_class": self.ifc_class,
-                "predefined_type": self.predefined_type or None,
-                "name": obj.name,
-            },
-        )
-        obj.name = "{}/{}".format(product.is_a(), obj.name)
-        IfcStore.link_element(product, obj)
-
-        if self.should_add_representation:
-            ifc_context = self.context_id
-            if not ifc_context and get_contexts(self, context):
-                ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
-            if ifc_context:
-                ifc_context = tool.Ifc.get().by_id(ifc_context)
-            blenderbim.core.geometry.add_representation(
+            core.assign_class(
                 tool.Ifc,
-                tool.Geometry,
-                tool.Style,
-                tool.Surveyor,
+                tool.Collector,
+                tool.Root,
                 obj=obj,
+                ifc_class=ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=self.should_add_representation,
                 context=ifc_context,
                 ifc_representation_class=self.ifc_representation_class,
-                profile_set_usage=None,
             )
-
-        if product.is_a("IfcElementType"):
-            tool.Collector.assign(obj)
-        elif product.is_a("IfcOpeningElement"):
-            obj.display_type = "WIRE"
-            tool.Collector.assign(obj)
-        elif (
-            product.is_a("IfcSpatialElement")
-            or product.is_a("IfcSpatialStructureElement")
-            or product.is_a("IfcProject")
-            or product.is_a("IfcContext")
-        ):
-            self.place_in_spatial_collection(obj, context)
-        elif product.is_a("IfcStructuralItem"):
-            if product.is_a("IfcStructuralMember"):
-                self.place_in_structural_items_collection(obj, context, structural_collection="Members")
-            elif product.is_a("IfcStructuralConnection"):
-                self.place_in_structural_items_collection(obj, context, structural_collection="Connections")
-        else:
-            self.assign_potential_spatial_container(obj)
-        context.view_layer.objects.active = obj
-
-    def place_in_spatial_collection(self, obj, context):
-        for collection in obj.users_collection:
-            if collection.name == obj.name:
-                return
-        parent_collection = None
-        for collection in obj.users_collection:
-            collection.objects.unlink(obj)
-            if "Ifc" in collection.name:
-                parent_collection = collection
-        collection = bpy.data.collections.new(obj.name)
-        collection.objects.link(obj)
-        if parent_collection:
-            parent_collection.children.link(collection)
-            blenderbim.core.aggregate.assign_object(
-                tool.Ifc,
-                tool.Aggregate,
-                tool.Collector,
-                relating_obj=bpy.data.objects.get(parent_collection.name),
-                related_obj=obj,
-            )
-        else:
-            context.scene.collection.children.link(collection)
-
-    def place_in_structural_items_collection(self, obj, context, structural_collection):
-        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            if not [c for c in project.children if "StructuralItems" in c.name]:
-                members = bpy.data.collections.new("Members")
-                connections = bpy.data.collections.new("Connections")
-                items = bpy.data.collections.new("StructuralItems")
-                items.children.link(members)
-                items.children.link(connections)
-                project.collection.children.link(items)
-
-            for coll in [c for c in project.children if "StructuralItems" in c.name]:
-                for collection in [c for c in coll.children if structural_collection in c.name]:
-                    for user_collection in obj.users_collection:
-                        user_collection.objects.unlink(obj)
-                    collection.collection.objects.link(obj)
-                    break
-                break
-            break
-
-    def assign_potential_spatial_container(self, obj):
-        for collection in obj.users_collection:
-            if "Ifc" not in collection.name or collection.name == obj.name:
-                continue
-            spatial_obj = bpy.data.objects.get(collection.name)
-            if spatial_obj and spatial_obj.BIMObjectProperties.ifc_definition_id:
-                element = self.file.by_id(spatial_obj.BIMObjectProperties.ifc_definition_id)
-                if self.file.schema != "IFC2X3" and not element.is_a("IfcSpatialElement"):
-                    continue
-                elif self.file.schema == "IFC2X3" and not element.is_a("IfcSpatialStructureElement"):
-                    continue
-                blenderbim.core.spatial.assign_container(
-                    tool.Ifc,
-                    tool.Collector,
-                    tool.Spatial,
-                    structure_obj=spatial_obj,
-                    element_obj=obj,
-                )
-                break
-
-
-class UnassignClass(bpy.types.Operator):
-    bl_idname = "bim.unassign_class"
-    bl_label = "Unassign IFC Class"
-    bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
-        else:
-            objects = context.selected_objects
-        for obj in objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            self.remove_voids(product, obj)
-            IfcStore.unlink_element(product, obj)
-            if product.is_a("IfcGridAxis"):
-                ifcopenshell.api.run("grid.remove_grid_axis", self.file, **{"axis": product})
-            elif product.is_a("IfcGrid"):
-                grid_collection = bpy.data.collections.get(obj.name)
-                for axis_collection in grid_collection.children:
-                    for axis_obj in axis_collection.objects:
-                        bpy.ops.bim.unassign_class(obj=axis_obj.name)
-            else:
-                ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
-            if "/" in obj.name and obj.name[0:3] == "Ifc":
-                obj.name = "/".join(obj.name.split("/")[1:])
-            if obj.data and obj.data.name == "Void":
-                bpy.data.objects.remove(obj)
-        return {"FINISHED"}
-
-    def remove_voids(self, product, obj):
-        if product.id() not in VoidData.products:
-            VoidData.load(self.file, product.id())
-        for opening_id in VoidData.products[product.id()]:
-            bpy.ops.bim.remove_opening(opening_id=opening_id, obj=obj.name)
+        context.view_layer.objects.active = active_object
 
 
 class UnlinkObject(bpy.types.Operator):

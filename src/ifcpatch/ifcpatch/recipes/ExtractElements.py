@@ -1,6 +1,5 @@
-
 # IfcPatch - IFC patching utiliy
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcPatch.
 #
@@ -18,6 +17,7 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.selector
 
 
@@ -42,6 +42,7 @@ class Patcher:
         for owner_history in self.file.by_type("IfcOwnerHistory"):
             self.owner_history = self.new.add(owner_history)
             break
+        self.add_element(self.file.by_type("IfcProject")[0])
         selector = ifcopenshell.util.selector.Selector()
         for element in selector.parse(self.file, self.query):
             self.add_element(element)
@@ -49,24 +50,31 @@ class Patcher:
         self.file = self.new
 
     def add_element(self, element):
-        new_element = self.new.add(element)
-        for rel in element.ContainedInStructure:
+        new_element = self.append_asset(element)
+        if not new_element:
+            return
+        for rel in getattr(element, "ContainedInStructure", []):
             spatial_element = rel.RelatingStructure
-            new_spatial_element = self.new.add(spatial_element)
+            new_spatial_element = self.append_asset(spatial_element)
             self.contained_ins.setdefault(spatial_element.GlobalId, set()).add(new_element)
-            self.add_spatial_tree(spatial_element, new_spatial_element)
-        for rel in element.Decomposes:
-            self.new.add(rel.RelatingObject)
-            self.aggregates.setdefault(rel.RelatingObject.GlobalId, set()).add(new_element)
-        for opening in element.HasOpenings:
-            self.new.add(opening)
-            self.new.add(opening.RelatedOpeningElement)
+            self.add_decomposition_parents(spatial_element, new_spatial_element)
+        self.add_decomposition_parents(element, new_element)
 
-    def add_spatial_tree(self, spatial_element, new_spatial_element):
-        for rel in spatial_element.Decomposes:
-            new = self.new.add(rel.RelatingObject)
-            self.aggregates.setdefault(rel.RelatingObject.GlobalId, set()).add(new_spatial_element)
-            self.add_spatial_tree(rel.RelatingObject, new)
+    def append_asset(self, element):
+        try:
+            return self.new.by_guid(element.GlobalId)
+        except:
+            pass
+        if element.is_a("IfcProject"):
+            return self.new.add(element)
+        return ifcopenshell.api.run("project.append_asset", self.new, library=self.file, element=element)
+
+    def add_decomposition_parents(self, element, new_element):
+        for rel in element.Decomposes:
+            parent = rel.RelatingObject
+            new_parent = self.append_asset(parent)
+            self.aggregates.setdefault(parent.GlobalId, set()).add(new_element)
+            self.add_decomposition_parents(parent, new_parent)
 
     def create_spatial_tree(self):
         for relating_structure, related_elements in self.contained_ins.items():

@@ -40,7 +40,7 @@ class BaseDecorator:
 
     DEF_GLSL = """
         #define PI 3.141592653589793
-        #define MAX_POINTS 32
+        #define MAX_POINTS 64
         #define CIRCLE_SEGS 12
     """
 
@@ -170,12 +170,32 @@ class BaseDecorator:
         returns: iterable of blender objects
         """
         results = []
+        decoration_presets = (
+            "DIMENSION",
+            "TEXT_LEADER",
+            "STAIR_ARROW",
+            "HIDDEN_LINE",
+            "PLAN_LEVEL",
+            "SECTION_LEVEL",
+            "BREAKLINE",
+            "GRID",
+            "ELEVATION",
+            "SECTION",
+            "TEXT",
+        )
         for obj in collection.all_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if element.is_a("IfcAnnotation") and element.ObjectType == self.objecttype:
-                results.append(obj)
+            if element.is_a("IfcAnnotation"):
+                if element.ObjectType == self.objecttype:
+                    results.append(obj)
+                elif (
+                    self.objecttype == "MISC"
+                    and element.ObjectType not in decoration_presets
+                    and isinstance(obj.data, bpy.types.Mesh)
+                ):
+                    results.append(obj)
         return results
 
     def get_path_geom(self, obj, topo=True):
@@ -247,7 +267,7 @@ class BaseDecorator:
         """perform actual drawing stuff"""
         raise NotImplementedError()
 
-    def draw_lines(self, context, obj, vertices, indices, topology=None):
+    def draw_lines(self, context, obj, vertices, indices, topology=None, is_scale_dependant=True):
         region = context.region
         region3d = context.region_data
         color = context.scene.DocProperties.decorations_colour
@@ -277,14 +297,15 @@ class BaseDecorator:
         self.shader.uniform_float("winsize", (region.width, region.height))
         self.shader.uniform_float("color", color)
 
-        # Horrific prototype code
-        factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
-        camera_width_px = factor * context.region.width
-        mm_to_px = camera_width_px / self.camera_width_mm
-        # 0.00025 is a magic constant number I visually discovered to get the right number.
-        # It probably should be dynamically calculated using system.dpi or something.
-        viewport_drawing_scale = 0.00025 * mm_to_px
-        self.shader.uniform_float("viewportDrawingScale", viewport_drawing_scale)
+        if is_scale_dependant:
+            # Horrific prototype code
+            factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
+            camera_width_px = factor * context.region.width
+            mm_to_px = camera_width_px / self.camera_width_mm
+            # 0.00025 is a magic constant number I visually discovered to get the right number.
+            # It probably should be dynamically calculated using system.dpi or something.
+            viewport_drawing_scale = 0.00025 * mm_to_px
+            self.shader.uniform_float("viewportDrawingScale", viewport_drawing_scale)
 
         batch.draw(self.shader)
 
@@ -357,11 +378,11 @@ class BaseDecorator:
             elif "/" in precision:
                 precision = int(precision.split("/")[1])
         elif unit_system == "METRIC":
-            precision = 3
+            precision = 4
         else:
             return
 
-        return bpy.utils.units.to_string(unit_system, "LENGTH", value, precision=precision, split_unit=True)
+        return bpy.utils.units.to_string(unit_system, "LENGTH", value, precision=precision)
 
 
 class DimensionDecorator(BaseDecorator):
@@ -459,27 +480,8 @@ class DimensionDecorator(BaseDecorator):
             self.draw_label(context, text, p0 + (dir) * 0.5, dir)
 
 
-class EqualityDecorator(DimensionDecorator):
-    """Decorator for equality objects
-    - outlines each segment
-    - augments with arrows on both sides
-    - puts 'EQ' label
-    """
-
-    objecttype = "EQUAL_DIMENSION"
-
-    def draw_labels(self, context, obj, vertices, indices):
-        region = context.region
-        region3d = context.region_data
-        for i0, i1 in indices:
-            v0 = Vector(vertices[i0])
-            v1 = Vector(vertices[i1])
-            p0 = location_3d_to_region_2d(region, region3d, v0)
-            p1 = location_3d_to_region_2d(region, region3d, v1)
-            dir = p1 - p0
-            if dir.length < 1:
-                continue
-            self.draw_label(context, "EQ", p0 + (dir) * 0.5, dir)
+class DiameterDecorator(DimensionDecorator):
+    objecttype = "DIAMETER"
 
 
 class LeaderDecorator(BaseDecorator):
@@ -566,6 +568,98 @@ class LeaderDecorator(BaseDecorator):
         dir = Vector((1, 0))
         pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
         self.draw_label(context, obj.BIMTextProperties.value, pos, dir, gap=0, center=False, vcenter=False)
+
+
+class RadiusDecorator(BaseDecorator):
+    """Decorating text with arrows
+    - head point with arrow
+    """
+
+    objecttype = "RADIUS"
+
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+    """
+    )
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap1 = vec4(0);
+
+        vec4 p;
+
+        // end edge arrow for last segment
+        if (t1 == 2u) {
+            vec4 head[3];
+            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
+
+            gl_Position = p1;
+            EmitVertex();
+            p = p1w - head[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w - head[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            gl_Position = p1;
+            EmitVertex();
+            EndPrimitive();
+
+            gap1 = dir * viewportDrawingScale * ARROW_SIZE;
+        }
+
+        // stem, adjusted for and arrow
+        gl_Position = p0;
+        EmitVertex();
+        p = p1w - gap1;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def get_spline_end(self, obj):
+        spline = obj.data.splines[0]
+        spline_points = spline.bezier_points if spline.bezier_points else spline.points
+        if not spline_points:
+            return Vector((0, 0, 0))
+        return obj.matrix_world @ spline_points[0].co
+
+    def decorate(self, context, obj):
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(context, obj, verts, idxs, topo)
+        self.draw_labels(context, obj)
+
+    def draw_labels(self, context, obj):
+        region = context.region
+        region3d = context.region_data
+        dir = Vector((1, 0))
+        pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
+
+        spline = obj.data.splines[0]
+        spline_points = spline.bezier_points if spline.bezier_points else spline.points
+        if spline_points:
+            length = (spline_points[-1].co - spline_points[-2].co).length
+            text = self.format_value(context, length)
+            self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
 
 
 class StairDecorator(BaseDecorator):
@@ -671,6 +765,7 @@ class HiddenDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -725,10 +820,61 @@ class HiddenDecorator(BaseDecorator):
         self.draw_lines(context, obj, verts, idxs)
 
 
-class MiscDecorator(HiddenDecorator):
+class MiscDecorator(BaseDecorator):
     objecttype = "MISC"
 
-    FRAG_GLSL = BaseDecorator.FRAG_GLSL
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    out float dist; // distance from starging point along segment
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 1;
+
+        vec4 p;
+
+        // NB: something should be used to affect position, otherwise compiler eliminates winsize
+
+        dist = 0;
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        dist = length(edge);
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    FRAG_GLSL = """
+    uniform vec4 color;
+    in vec2 gl_FragCoord;
+    in float dist;
+    out vec4 fragColor;
+
+    void main() {
+        fragColor = color;
+    }
+    """
+
+    def decorate(self, context, obj):
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
+        self.draw_lines(context, obj, verts, idxs, is_scale_dependant=False)
 
 
 class LevelDecorator(BaseDecorator):
@@ -923,7 +1069,7 @@ class SectionLevelDecorator(LevelDecorator):
 
 
 class BreakDecorator(BaseDecorator):
-    """Decorator for dimension objects
+    """Decorator for breakline objects
     - first edge of a mesh with zigzag thingy in the middle
 
     Uses first two vertices in verts list.
@@ -990,21 +1136,10 @@ class BreakDecorator(BaseDecorator):
 
     def decorate(self, context, obj):
         if obj.data.is_editmode:
-            verts = self.get_editmesh_geom(obj)
+            verts, idxs = self.get_editmesh_geom(obj)
         else:
-            verts = self.get_mesh_geom(obj)
-        self.draw_lines(context, obj, verts, [(0, 1)])
-
-    def get_mesh_geom(self, obj):
-        # first vertices only
-        vertices = [obj.matrix_world @ obj.data.vertices[i].co for i in (0, 1)]
-        return vertices
-
-    def get_editmesh_geom(self, obj):
-        # first vertices only
-        mesh = bmesh.from_edit_mesh(obj.data)
-        vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
-        return vertices
+            verts, idxs = self.get_mesh_geom(obj)
+        self.draw_lines(context, obj, verts, idxs)
 
 
 class GridDecorator(BaseDecorator):
@@ -1125,15 +1260,15 @@ class GridDecorator(BaseDecorator):
         self.draw_label(context, text, p1, dir, vcenter=True, gap=0)
 
 
-class SectionViewDecorator(LevelDecorator):
-    objecttype = "SECTION"
+class ElevationDecorator(LevelDecorator):
+    objecttype = "ELEVATION"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
         + """
         #define CIRCLE_SIZE 8.0
-        #define TRIANGLE_L 32.0
-        #define TRIANGLE_W 16.0
+        #define TRIANGLE_L 22.63
+        #define TRIANGLE_W 11.31
     """
     )
 
@@ -1144,12 +1279,14 @@ class SectionViewDecorator(LevelDecorator):
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
 
-    void triangle_head(in vec4 dir, in vec4 side, in float length, in float width, out vec4 head[3]) {
-        vec4 nose = dir * length;
-        vec4 ear = side * width;
-        head[0] = vec4(0);
-        head[1] = nose * .5 + ear;
-        head[2] = nose;
+    void triangle_head(in vec4 side, in vec4 dir, in float length, in float width, in float radius, out vec4 head[5]) {
+        vec4 nose = side * length;
+        vec4 ear = dir * width;
+        head[0] = side * -radius;
+        head[1] = nose * -.5;
+        head[2] = vec4(0) + ear;
+        head[3] = nose * .5;
+        head[4] = side * radius;
     }
 
     void main() {
@@ -1160,75 +1297,205 @@ class SectionViewDecorator(LevelDecorator):
 
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
         vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * viewportDrawingScale * TRIANGLE_L * .5;
         vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
         vec4 p;
 
         vec4 head[CIRCLE_SEGS];
         circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
 
-        vec4 head3[3];
+        vec4 head5[5];
 
         // start edge circle
         for(int i=0; i<CIRCLE_SEGS; i++) {
-            p = p0w + gap + head[i];
+            p = p0w + head[i];
             gl_Position = WIN2CLIP(p);
             EmitVertex();
         }
-        p = p0w + gap + head[0];
+        p = p0w + head[0];
         gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
 
-        // start edge triangle
-        triangle_head(dir, -side, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, head3);
-        p = p0w + head3[0];
+        // edge triangle
+        triangle_head(side, dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
+        p = p0w + head5[0];
         gl_Position = WIN2CLIP(p);
         EmitVertex();
-        p = p0w + head3[1];
+        p = p0w + head5[1];
         gl_Position = WIN2CLIP(p);
         EmitVertex();
-        p = p0w + head3[2];
+        p = p0w + head5[2];
         gl_Position = WIN2CLIP(p);
         EmitVertex();
-        EndPrimitive();
-
-        // end edge circle
-        for(int i=0; i<CIRCLE_SEGS; i++) {
-            p = p1w - gap + head[i];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-        }
-        p = p1w - gap + head[0];
+        p = p0w + head5[3];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head5[4];
         gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
 
-        // end edge triangle
-        triangle_head(-dir, -side, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, head3);
-        p = p1w + head3[0];
+        // reference divider
+        p = p0w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
         gl_Position = WIN2CLIP(p);
         EmitVertex();
-        p = p1w + head3[1];
+        p = p0w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
         gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w + head3[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
-
-        // stem
-        gl_Position = p0;
-        EmitVertex();
-        gl_Position = p1;
         EmitVertex();
         EndPrimitive();
     }
     """
 
     def decorate(self, context, obj):
-        verts, _, _ = self.get_path_geom(obj, topo=False)
-        self.draw_lines(context, obj, verts, [(0, 1)])
+        center = obj.matrix_world.translation
+        v1 = obj.matrix_world @ Vector((0, 0, 0))
+        v2 = obj.matrix_world @ Vector((0, 0, -1))
+        self.draw_lines(context, obj, [v1, v2], [(0, 1)])
+
+
+class SectionDecorator(LevelDecorator):
+    objecttype = "SECTION"
+
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
+        #define CIRCLE_SIZE 8.0
+        #define TRIANGLE_L 22.63
+        #define TRIANGLE_W 11.31
+    """
+    )
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void triangle_head(in vec4 side, in vec4 dir, in float length, in float width, in float radius, out vec4 head[5]) {
+        vec4 nose = side * length;
+        vec4 ear = dir * width;
+        head[0] = side * -radius;
+        head[1] = nose * -.5;
+        head[2] = vec4(0) + ear;
+        head[3] = nose * .5;
+        head[4] = side * radius;
+    }
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, side = normalize(edge);
+        vec4 gap = side * viewportDrawingScale * CIRCLE_SIZE;
+        vec4 dir = vec4(cross(vec3(side.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
+        vec4 p;
+
+        vec4 head[CIRCLE_SEGS];
+        circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
+
+        vec4 head5[5];
+
+        // start edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p0w + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p0w + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // start edge triangle
+        triangle_head(side, dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
+        p = p0w + head5[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head5[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head5[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head5[3];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head5[4];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // start reference divider
+        p = p0w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p1w - head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p1w - head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge triangle
+        triangle_head(side, dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
+        p = p1w + head5[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + head5[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + head5[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + head5[3];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + head5[4];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end reference divider
+        p = p1w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // stem
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, context, obj):
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
+        vert_map = {v.freeze(): (obj.matrix_world.inverted() @ v).x for v in verts}
+        verts = sorted(verts, key=lambda v: vert_map[v], reverse=True)
+        self.draw_lines(context, obj, verts, idxs)
 
 
 class TextDecorator(BaseDecorator):
@@ -1318,16 +1585,18 @@ class TextDecorator(BaseDecorator):
 class DecorationsHandler:
     decorators_classes = [
         DimensionDecorator,
-        EqualityDecorator,
         GridDecorator,
         HiddenDecorator,
         LeaderDecorator,
+        RadiusDecorator,
+        DiameterDecorator,
         MiscDecorator,
         PlanLevelDecorator,
         SectionLevelDecorator,
         StairDecorator,
         BreakDecorator,
-        SectionViewDecorator,
+        SectionDecorator,
+        ElevationDecorator,
         TextDecorator,
     ]
 

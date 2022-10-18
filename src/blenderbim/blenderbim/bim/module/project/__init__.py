@@ -20,27 +20,30 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.CreateProject,
-    operator.LoadProject,
-    operator.UnloadProject,
-    operator.LoadProjectElements,
-    operator.LinkIfc,
-    operator.UnlinkIfc,
-    operator.UnloadLink,
-    operator.LoadLink,
-    operator.SelectLibraryFile,
-    operator.ChangeLibraryElement,
-    operator.RefreshLibrary,
-    operator.RewindLibrary,
-    operator.AssignLibraryDeclaration,
-    operator.UnassignLibraryDeclaration,
-    operator.SaveLibraryFile,
     operator.AppendLibraryElement,
-    operator.EnableEditingHeader,
+    operator.AssignLibraryDeclaration,
+    operator.ChangeLibraryElement,
+    operator.CreateProject,
     operator.DisableEditingHeader,
     operator.EditHeader,
+    operator.EnableEditingHeader,
     operator.ExportIFC,
     operator.ImportIFC,
+    operator.LinkIfc,
+    operator.LoadLink,
+    operator.LoadProject,
+    operator.LoadProjectElements,
+    operator.RefreshLibrary,
+    operator.RewindLibrary,
+    operator.SaveLibraryFile,
+    operator.AppendEntireLibrary,
+    operator.SelectLibraryFile,
+    operator.ToggleFilterCategories,
+    operator.ToggleLinkVisibility,
+    operator.UnassignLibraryDeclaration,
+    operator.UnlinkIfc,
+    operator.UnloadLink,
+    operator.UnloadProject,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,
@@ -56,7 +59,7 @@ classes = (
 
 def menu_func_export(self, context):
     op = self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
-    op.should_save_as = False
+    op.should_save_as = True
 
 
 def menu_func_import(self, context):

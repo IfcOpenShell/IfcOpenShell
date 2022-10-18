@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import datetime
 import ifcopenshell.util.date
 from functools import lru_cache
@@ -20,18 +38,34 @@ def count_working_days(start, finish, calendar):
     current_date = datetime.date(start.year, start.month, start.day)
     finish_date = datetime.date(finish.year, finish.month, finish.day)
     while current_date < finish_date:
-        if is_working_day(current_date, calendar):
+        if calendar and calendar.WorkingTimes and is_working_day(current_date, calendar):
+            result += 1
+        elif not calendar:
             result += 1
         current_date += datetime.timedelta(days=1)
     return result
 
 
-def get_finish_date(start, duration, duration_type, calendar):
-    current_date = datetime.date(start.year, start.month, start.day)
+def get_start_or_finish_date(start, duration, duration_type, calendar, date_type="FINISH"):
+    if not duration.days:
+        # Typically a milestone will have zero duration, so the start == finish
+        return start
+    # We minus 1 because the start day itself is counted as a day
+    duration = datetime.timedelta(days=duration.days - 1)
+    if date_type == "START":
+        duration = -duration
+    result = offset_date(start, duration, duration_type, calendar)
+    if date_type == "START":
+        return datetime.datetime.combine(result, datetime.time(9))
+    return datetime.datetime.combine(result, datetime.time(17))
+
+
+def offset_date(start, duration, duration_type, calendar):
+    current_date = start
     abs_duration = abs(duration.days)
     date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
     while abs_duration > 0:
-        if duration_type == "ELAPSEDTIME" or not calendar:
+        if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
             abs_duration -= 1
         elif ifcopenshell.util.sequence.is_working_day(current_date, calendar):
             abs_duration -= 1
@@ -45,7 +79,7 @@ def get_finish_date(start, duration, duration_type, calendar):
 
 
 def get_soonest_working_day(start, duration_type, calendar):
-    if duration_type == "ELAPSEDTIME" or not calendar:
+    if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
         return start
     while not is_working_day(start, calendar):
         start += datetime.timedelta(days=1)
@@ -53,7 +87,7 @@ def get_soonest_working_day(start, duration_type, calendar):
 
 
 def get_recent_working_day(start, duration_type, calendar):
-    if duration_type == "ELAPSEDTIME" or not calendar:
+    if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
         return start
     while not is_working_day(start, calendar):
         start -= datetime.timedelta(days=1)

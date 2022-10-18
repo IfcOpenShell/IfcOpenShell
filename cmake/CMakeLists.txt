@@ -38,7 +38,7 @@ MESSAGE(STATUS "Autodesk 3ds Max SDK found at ${max_sdk}")
 set(HAS_MAX TRUE)
 endif()
 endforeach()
-
+OPTION(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
@@ -53,6 +53,7 @@ OPTION(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
+OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
@@ -62,8 +63,16 @@ endif()
 OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
 
-# TODO QtViewer is deprecated ATM as it uses the 0.4 API
-# OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
+IF(NOT CMAKE_BUILD_TYPE)
+	SET(CMAKE_BUILD_TYPE "Release")
+ENDIF()
+
+if(MSVC AND MSVC_PARALLEL_BUILD)
+	add_definitions("/MP")
+endif()
+
+# QtViewer requires Qt5
+OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
 include(GNUInstallDirs)
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND (NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
@@ -117,6 +126,7 @@ ENDMACRO()
 
 UNIFY_ENVVARS_AND_CACHE(OCC_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OCC_LIBRARY_DIR)
+if (NOT MINIMAL_BUILD)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(LIBXML2_INCLUDE_DIR)
@@ -126,17 +136,20 @@ UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
+endif()
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
 UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
 
+if (NOT MINIMAL_BUILD)
 UNIFY_ENVVARS_AND_CACHE(CGAL_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(CGAL_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
+endif()
 
-if (GLTF_SUPPORT AND BUILD_CONVERT)
+if (NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
 FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
 IF(json_hpp)
@@ -197,10 +210,12 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+if (NOT MINIMAL_BUILD)
 # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
-find_package(LibXml2 REQUIRED)
+  find_package(LibXml2 REQUIRED)
+endif()
 
-if (IFCXML_SUPPORT)
+if (NOT MINIMAL_BUILD AND IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
 	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
@@ -342,7 +357,7 @@ endif()
 
 endif(BUILD_IFCGEOM)
 
-IF(COLLADA_SUPPORT)
+IF(NOT MINIMAL_BUILD AND COLLADA_SUPPORT)
 	# Find OpenCOLLADA
 	IF("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No OpenCOLLADA include directory specified")
@@ -422,7 +437,7 @@ IF(COLLADA_SUPPORT)
 	ENDIF()
 ENDIF()
 
-if(HDF5_SUPPORT)
+if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
     IF("${HDF5_INCLUDE_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No HDF5 include directory specified")
 	ElSE()
@@ -437,26 +452,60 @@ if(HDF5_SUPPORT)
 
     if (HDF5_LIBRARY_DIR)
     	# result of the HDF5 ctest package
-    	
-        if (WIN32)
-        	set(zlib_post lib)
-        	set(lib_ext lib)
-        else()
-        	set(lib_ext a)
+        # Find zlib using cmake find_library. How should this be implemented?
+        # FIND_LIBRARY(NAMES z libz libz_debug PATHS ... NO_DEFAULT_PATH)
+
+
+        if ("$ENV{CONDA_BUILD}" STREQUAL "")
+            # result of the HDF5 ctest package
+
+            if (WIN32)
+                set(zlib_post lib)
+                set(lib_ext lib)
+            else()
+                set(lib_ext a)
+            endif()
+
+            if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+                set(debug_postfix "_debug")
+            endif()
+
+            SET(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libz${zlib_post}${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
+                    )
+
+        ELSE()
+            MESSAGE(STATUS "Packaging hdf5 and zlib for conda distribution")
+            if (WIN32)
+                # Windows
+                set(zlib_post zlib)
+                set(lib_ext lib)
+            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                # macOS
+                set(zlib_post libz)
+                set(lib_ext dylib)
+            else()
+                # linux
+                set(zlib_post libz)
+                set(lib_ext so)
+            endif()
+
+            SET(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
+                    )
         endif()
-        
-        SET(HDF5_LIBRARIES 
-            "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libz${zlib_post}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libsz.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libaec.${lib_ext}"
-        )
+
     endif()
-    
+
     if (NOT HDF5_LIBRARIES)
     	# debian default
-    	
+
         SET(HDF5_LIBRARIES
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
@@ -469,10 +518,6 @@ if(HDF5_SUPPORT)
     add_definitions(-DWITH_HDF5)
 	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
 endif()
-
-IF(NOT CMAKE_BUILD_TYPE)
-	SET(CMAKE_BUILD_TYPE "Release")
-ENDIF()
 
 if(ENABLE_BUILD_OPTIMIZATIONS)
 	if(MSVC)
@@ -575,12 +620,15 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
 endfunction()
 
 if(NOT SCHEMA_VERSIONS)
-    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4")
+    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3")
 endif()
 
 foreach(s ${SCHEMA_VERSIONS})
 	add_definitions(-DHAS_SCHEMA_${s})
 endforeach()
+
+string(REPLACE ";" ")(" schema_version_seq "(${SCHEMA_VERSIONS})")
+ADD_DEFINITIONS(-DSCHEMA_SEQ=${schema_version_seq})
 
 if(COMPILE_SCHEMA)
 	# @todo, this appears to be untested at the moment
@@ -651,7 +699,7 @@ if (BUILD_IFCGEOM)
 	endforeach()
 	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
-if (BUILD_CONVERT)
+if (BUILD_CONVERT OR BUILD_IFCPYTHON)
 	foreach(s ${SCHEMA_VERSIONS})
 		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${s})
 	endforeach()
@@ -724,7 +772,7 @@ TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREA
 
 endif(BUILD_IFCGEOM)
 
-if (BUILD_CONVERT)
+if (BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 # Serializers
 file(GLOB SERIALIZERS_H_FILES ../src/serializers/*.h)
@@ -744,6 +792,10 @@ add_library(Serializers ${SERIALIZERS_FILES})
 set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}" VERSION "0.6.0" SOVERSION "0.6")
 
 TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
+
+endif(BUILD_CONVERT or BUILD_IFCPYTHON)
+
+if (BUILD_CONVERT)
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
@@ -770,7 +822,7 @@ INSTALL(TARGETS IfcConvert
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
-if(BUILD_GEOMSERVER)
+if(NOT MINIMAL_BUILD AND BUILD_GEOMSERVER)
 
 file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
 file(GLOB H_FILES ../src/ifcgeomserver/*.h)
@@ -801,7 +853,8 @@ if (GIT_FOUND)
 	)
 	string(REPLACE "\n" ";" git_branch_list "${git_branches}")
 	foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-		string(STRIP "${git_branch_candidate}" git_branch_candidate_2)
+		string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
+		string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
 		if (NOT git_branch_candidate_2 MATCHES "^HEAD$")
 			set(git_branch ${git_branch_candidate_2})
 		endif()
@@ -824,7 +877,7 @@ IF(BUILD_DOCUMENTATION)
 	ADD_SUBDIRECTORY(../docs docs)
 ENDIF()
 
-IF(BUILD_IFCPYTHON)
+IF(NOT MINIMAL_BUILD AND BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
 ENDIF()
 
@@ -832,11 +885,12 @@ IF(BUILD_EXAMPLES)
 	ADD_SUBDIRECTORY(../src/examples examples)
 ENDIF()
 
-IF(BUILD_IFCMAX)
+IF(NOT MINIMAL_BUILD AND BUILD_IFCMAX)
 	ADD_SUBDIRECTORY(../src/ifcmax ifcmax)
 ENDIF()
-
+if (NOT MINIMAL_BUILD)
 ADD_SUBDIRECTORY(../src/svgfill svgfill)
+endif()
 
 # CMake installation targets
 INSTALL(FILES ${IFCPARSE_H_FILES}
@@ -881,6 +935,9 @@ INSTALL(FILES  ${SERIALIZERS_S_FILES}
 )
 endif()
 
+IF(BUILD_QTVIEWER)
+    ADD_SUBDIRECTORY(../src/qtviewer qtviewer)
+endif()
 
 list(APPEND CPACK_SOURCE_IGNORE_FILES
   .git
@@ -905,12 +962,12 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 
 FOREACH(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
     string(REPLACE "_" "-" COMP ${COMPONENT})
-    set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}1.67.0")
+    set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}-dev")
 endforeach(COMPONENT)
 
 set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, liboce-foundation11, liboce-modeling11, liboce-ocaf11, liboce-visualization11, liboce-ocaf-lite11, libpython3.8 ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3.8 ${BOOST_DEPS}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")

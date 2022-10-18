@@ -31,7 +31,7 @@ class TestImplementsTool(NewFile):
 
 
 class TestCanContain(NewFile):
-    def test_a_spatial_element_can_contain_an_element(self):
+    def test_a_spatial_structure_element_can_contain_an_element(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         structure = ifc.createIfcSite()
@@ -42,7 +42,7 @@ class TestCanContain(NewFile):
         tool.Ifc.link(element, element_obj)
         assert subject.can_contain(structure_obj, element_obj) is True
 
-    def test_a_spatial_element_can_contain_an_element_ifc2x3(self):
+    def test_a_spatial_structure_element_can_contain_an_element_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
         structure = ifc.createIfcSite()
@@ -52,6 +52,17 @@ class TestCanContain(NewFile):
         element_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, element_obj)
         assert subject.can_contain(structure_obj, element_obj) is True
+
+    def test_a_spatial_zone_element_cannot_contain_an_element(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        structure = ifc.createIfcSpatialZone()
+        structure_obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(structure, structure_obj)
+        element = ifc.createIfcWall()
+        element_obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(element, element_obj)
+        assert subject.can_contain(structure_obj, element_obj) is False
 
     def test_unlinked_elements_cannot_contain_anything(self):
         structure_obj = bpy.data.objects.new("Object", None)
@@ -90,6 +101,25 @@ class TestCanContain(NewFile):
         element_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, element_obj)
         assert subject.can_contain(structure_obj, element_obj) is True
+
+
+class TestCanReference(NewFile):
+    def test_an_element_can_reference_a_spatial_element(self):
+        ifc = ifcopenshell.file()
+        assert subject.can_reference(ifc.createIfcSite(), ifc.createIfcWall()) is True
+
+    def test_an_element_can_reference_a_spatial_element_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        assert subject.can_reference(ifc.createIfcSite(), ifc.createIfcWall()) is True
+
+    def test_a_non_spatial_element_cannot_reference_anything(self):
+        ifc = ifcopenshell.file()
+        assert subject.can_reference(ifc.createIfcWall(), ifc.createIfcWall()) is False
+
+    def test_a_non_element_cannot_reference_anything(self):
+        ifc = ifcopenshell.file()
+        assert subject.can_reference(ifc.createIfcSite(), ifc.createIfcTask()) is False
 
 
 class TestDisableEditing(NewFile):

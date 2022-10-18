@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.util.pset
 
@@ -28,11 +46,40 @@ class Usecase:
             self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
             self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
+    #TODO - Add support for changing property types?
+    #   For example - IfcPropertyEnumeratedValue to 
+    # IfcPropertySingleValue.  Or maybe the user should
+    # just delete the property first? - vulevukusej
     def update_existing_properties(self):
         for prop in self.get_properties():
-            self.update_existing_property(prop)
+            if prop.is_a("IfcPropertyEnumeratedValue"):
+                self.update_existing_enum(prop)
+            else:
+                self.update_existing_property(prop)
+    
+    def update_existing_enum(self, prop):
+        if prop.Name not in self.settings["properties"]:
+            return
+        value = self.settings["properties"][prop.Name]
+        if isinstance(value, list):
+            sel_vals = []
+            for val in value:
+                primary_measure_type = prop.EnumerationReference.EnumerationValues[0].is_a() #Only need the first enum type since all enums are of the same type
+                ifc_val = self.file.create_entity(primary_measure_type, val)
+                sel_vals.append(ifc_val)
+            prop.EnumerationValues = tuple(sel_vals)
 
-    def update_existing_property(self, prop):
+        else:
+            if value.EnumerationReference.EnumerationValues == ():
+                prop.EnumerationReference.EnumerationValues = ()
+                prop.EnumerationValues = ()
+                
+            elif isinstance(value, ifcopenshell.entity_instance):
+                prop.EnumerationReference.EnumerationValues = value.EnumerationReference.EnumerationValues
+                prop.EnumerationValues = value.EnumerationValues
+        del self.settings["properties"][prop.Name]
+    
+    def update_existing_property(self, prop): 
         if prop.Name not in self.settings["properties"]:
             return
         value = self.settings["properties"][prop.Name]
@@ -54,17 +101,45 @@ class Usecase:
             if value is None:
                 continue
             if isinstance(value, ifcopenshell.entity_instance):
-                nominal_value = value
+                if value.is_a(True) == "IFC4.IfcPropertyEnumeratedValue":
+                    properties.append(value)
+                    continue               
+                else:
+                    properties.append(
+                        self.file.create_entity(
+                            "IfcPropertySingleValue",
+                            **{"Name": name, "NominalValue": value},
+                        )
+                    )
+            #TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
+            elif isinstance(value, list):
+                for pset_template in self.settings["pset_template"].HasPropertyTemplates:
+                    if pset_template.Name == name:
+                        prop_enum = self.file.create_entity(
+                            "IFCPROPERTYENUMERATION",
+                            Name=name,
+                            EnumerationValues=pset_template.Enumerators.EnumerationValues
+                        )
+                        prop_enum_value = self.file.create_entity(
+                            "IFCPROPERTYENUMERATEDVALUE",
+                            Name=name,
+                            EnumerationValues=tuple(self.file.create_entity(
+                            pset_template.PrimaryMeasureType, v) for v in value),
+                            EnumerationReference=prop_enum
+                        )
+                        properties.append(prop_enum_value)
+                        continue
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
                 value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
                 nominal_value = self.file.create_entity(primary_measure_type, value)
-            properties.append(
-                self.file.create_entity(
-                    "IfcPropertySingleValue",
-                    **{"Name": name, "NominalValue": nominal_value},
+            
+                properties.append(
+                    self.file.create_entity(
+                        "IfcPropertySingleValue",
+                        **{"Name": name, "NominalValue": nominal_value},
+                    )
                 )
-            )
         return properties
 
     def extend_pset_with_new_properties(self, new_properties):

@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.api
 
@@ -10,7 +28,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if self.settings["product"].is_a("IfcObject"):
+        if self.settings["product"].is_a("IfcObject") or self.settings["product"].is_a("IfcContext"):
             for rel in self.settings["product"].IsDefinedBy or []:
                 if (
                     rel.is_a("IfcRelDefinesByProperties")
@@ -18,14 +36,7 @@ class Usecase:
                 ):
                     return rel.RelatingPropertyDefinition
 
-            qto = self.file.create_entity(
-                "IfcElementQuantity",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "Name": self.settings["name"],
-                }
-            )
+            qto = self.create_qto()
             self.file.create_entity(
                 "IfcRelDefinesByProperties",
                 **{
@@ -36,3 +47,20 @@ class Usecase:
                 }
             )
             return qto
+        elif self.settings["product"].is_a("IfcTypeObject"):
+            for definition in self.settings["product"].HasPropertySets or []:
+                if definition.Name == self.settings["name"]:
+                    return definition
+            qto = self.create_qto()
+            has_property_sets = list(self.settings["product"].HasPropertySets or [])
+            has_property_sets.append(qto)
+            self.settings["product"].HasPropertySets = has_property_sets
+            return qto
+
+    def create_qto(self):
+        return self.file.create_entity(
+            "IfcElementQuantity",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            Name=self.settings["name"],
+        )

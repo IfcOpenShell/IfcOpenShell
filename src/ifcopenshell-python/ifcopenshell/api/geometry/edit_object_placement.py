@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as np
 import ifcopenshell.api
 import ifcopenshell.util.unit
@@ -26,7 +44,7 @@ class Usecase:
 
         placement_rel_to = self.get_placement_rel_to()
         relative_placement = self.get_relative_placement(placement_rel_to)
-        new_placement = self.file.createIfcLocalPlacement(placement_rel_to, relative_placement)
+        new_placement = self.file.createIfcLocalPlacement(RelativePlacement=relative_placement)
 
         old_placement = self.settings["product"].ObjectPlacement
 
@@ -41,6 +59,7 @@ class Usecase:
                     if inverse.is_a("IfcLocalPlacement"):
                         ifcopenshell.util.element.replace_attribute(inverse, old_placement, new_placement)
 
+        new_placement.PlacementRelTo = placement_rel_to
         self.settings["product"].ObjectPlacement = new_placement
 
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
@@ -62,6 +81,12 @@ class Usecase:
         elif getattr(self.settings["product"], "Decomposes", None):
             relating_object = self.settings["product"].Decomposes[0].RelatingObject
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        elif getattr(self.settings["product"], "Nests", None):
+            relating_object = self.settings["product"].Nests[0].RelatingObject
+            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        elif getattr(self.settings["product"], "ContainedIn", None):
+            related_element = self.settings["product"].ContainedIn[0].RelatedElement
+            return related_element.ObjectPlacement if hasattr(related_element, "ObjectPlacement") else None
         elif getattr(self.settings["product"], "VoidsElements", None):
             relating_object = self.settings["product"].VoidsElements[0].RelatingBuildingElement
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
@@ -79,6 +104,14 @@ class Usecase:
         for referenced_placement in placement.ReferencedByPlacements:
             matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
             for obj in referenced_placement.PlacesObject:
+                if obj.is_a("IfcDistributionPort"):
+                    # Although a port is technically a nested child, it is generally
+                    # more intuitive that the ports always move with the parent.
+                    continue
+                elif obj.is_a("IfcFeatureElement"):
+                    # Feature elements affect the geometry of their parent, and
+                    # so logically should always move with the parent.
+                    continue
                 results.append({"product": obj, "matrix": matrix, "is_si": False, "should_transform_children": False})
             results.extend(self.get_children_settings(referenced_placement))
         return results

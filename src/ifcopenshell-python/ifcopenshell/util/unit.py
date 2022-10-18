@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 from math import pi
 
 prefixes = {
@@ -319,6 +337,33 @@ def get_property_unit(prop, ifc_file):
         measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
     elif prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
         measure_class = prop.NominalValue.is_a()
+    elif prop.is_a("IfcPropertyEnumeratedValue") and prop.EnumerationValues:
+        measure_class = prop.EnumerationValues[0].is_a()
+    elif prop.is_a("IfcPropertyListValue") and prop.ListValues:
+        measure_class = prop.ListValues[0].is_a()
+    elif prop.is_a("IfcPropertyBoundedValue"):
+        if prop.UpperBoundValue:
+            measure_class = prop.UpperBoundValue.is_a()
+        elif prop.LowerBoundValue:
+            measure_class = prop.LowerBoundValue.is_a()
+        elif prop.SetPointValue:
+            measure_class = prop.SetPointValue.is_a()
+    elif prop.is_a("IfcPropertyTableValue"):
+        table_units = {}
+        for attribute in ["Defining", "Defined"]:
+            if getattr(prop, f"{attribute}Unit"):
+                table_units[f"{attribute}Unit"] = getattr(prop, f"{attribute}Unit")
+            elif getattr(prop, f"{attribute}Values"):
+                measure_class = getattr(prop, f"{attribute}Values")[0].is_a()
+                unit_type = get_measure_unit_type(measure_class)
+                units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
+                if units:
+                    table_units[f"{attribute}Unit"] = units[0]
+                else:
+                    table_units[f"{attribute}Unit"] = None
+            else:
+                table_units[f"{attribute}Unit"] = None
+        return table_units
     unit_type = get_measure_unit_type(measure_class)
     units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
     if units:
@@ -432,6 +477,8 @@ def calculate_unit_scale(file):
     :returns: The scale factor
     :rtype: float
     """
+    if not file.by_type("IfcUnitAssignment"):
+        return 1
     units = file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:

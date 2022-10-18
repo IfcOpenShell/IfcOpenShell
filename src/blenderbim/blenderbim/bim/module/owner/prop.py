@@ -18,7 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.owner.data import OwnerData
+from blenderbim.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -44,6 +44,26 @@ def get_user_organisation(self, context):
     return OwnerData.data["user_organisation"]
 
 
+def get_the_actor(self, context):
+    if not ActorData.is_loaded:
+        ActorData.load()
+    return ActorData.data["the_actor"]
+
+
+def get_actor(self, context):
+    if not ObjectActorData.is_loaded:
+        ObjectActorData.load()
+    return ObjectActorData.data["actor"]
+
+
+def update_actor_type(self, context):
+    ActorData.data["the_actor"] = ActorData.the_actor()
+
+
+def update_actor_class(self, context):
+    ActorData.data["actors"] = ActorData.actors()
+
+
 class BIMOwnerProperties(PropertyGroup):
     active_person_id: IntProperty(name="Active Person Id")
     person_attributes: CollectionProperty(name="Person Attributes", type=Attribute)
@@ -64,3 +84,21 @@ class BIMOwnerProperties(PropertyGroup):
     user_person: EnumProperty(items=get_user_person, name="Person")
     user_organisation: EnumProperty(items=get_user_organisation, name="Organisation")
     active_user_id: IntProperty(name="Active User Id")
+    active_actor_id: IntProperty(name="Active Actor Id")
+    actor_attributes: CollectionProperty(name="Actor Attributes", type=Attribute)
+    actor_class: EnumProperty(
+        items=(("IfcActor", "Actor", ""), ("IfcOccupant", "Occupant", "")),
+        name="Actor Type",
+        update=update_actor_class,
+    )
+    actor_type: EnumProperty(
+        items=(
+            ("IfcPerson", "Person", ""),
+            ("IfcOrganization", "Organisation", ""),
+            ("IfcPersonAndOrganization", "User", ""),
+        ),
+        name="Actor Type",
+        update=update_actor_type,
+    )
+    the_actor: EnumProperty(items=get_the_actor, name="Actor")
+    actor: EnumProperty(items=get_actor, name="Actor")

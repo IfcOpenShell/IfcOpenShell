@@ -1,16 +1,46 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, relating_object=None):
+        """Assigns an object as an aggregate to a product
+
+        :param product: The part of the aggregate
+        :param relating_object: The whole of the aggregate
+        :return: entity: The aggregate relationship
+
+        Example::
+
+            element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
+            subelement = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+            ifcopenshell.api.run("aggregate.assign_object", model, product=subelement, relating_object=element)
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "relating_object": None,
+            "product": product,
+            "relating_object": relating_object,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         decomposes = None

@@ -49,7 +49,7 @@ Scenario: Add aggregate
     When I press "bim.add_aggregate"
     Then the object "IfcWall/Cube" is in the collection "IfcElementAssembly/Assembly"
     And the object "IfcElementAssembly/Assembly" is in the collection "IfcElementAssembly/Assembly"
-    And the collection "IfcElementAssembly/Assembly" is in the collection "IfcProject/My Project"
+    And the collection "IfcElementAssembly/Assembly" is in the collection "IfcBuildingStorey/My Storey"
 
 Scenario: Add aggregate - with the aggregate inheriting the existing spatial collection
     Given an empty IFC project

@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.api
 
@@ -32,14 +50,46 @@ class Usecase:
                         element.ObjectType = self.settings["predefined_type"]
                     elif hasattr(element, "ElementType"):
                         element.ElementType = self.settings["predefined_type"]
+                    elif hasattr(element, "ProcessType"):
+                        element.ProcessType = self.settings["predefined_type"]
             elif hasattr(element, "ObjectType"):
                 element.ObjectType = self.settings["predefined_type"]
         if self.file.schema == "IFC2X3":
             self.handle_2x3_defaults(element)
+        elif self.file.schema == "IFC4":
+            self.handle_4_defaults(element)
         return element
 
     def handle_2x3_defaults(self, element):
+        if element.is_a("IfcElement") or element.is_a("IfcElementType"):
+            if not element.PredefinedType:
+                element.PredefinedType = "NOTDEFINED"
+
         if element.is_a("IfcSpatialStructureElement"):
             element.CompositionType = "ELEMENT"
         elif element.is_a("IfcRoof"):
             element.ShapeType = "NOTDEFINED"
+        elif element.is_a("IfcFurnitureType"):
+            element.AssemblyPlace = "NOTDEFINED"
+        elif element.is_a("IfcDoorStyle") or element.is_a("IfcWindowStyle"):
+            element.OperationType = "NOTDEFINED"
+            element.ConstructionType = "NOTDEFINED"
+            element.ParameterTakesPrecedence = False
+            element.Sizeable = False
+
+    def handle_4_defaults(self, element):
+        if element.is_a("IfcElement") or element.is_a("IfcElementType"):
+            if not element.PredefinedType:
+                element.PredefinedType = "NOTDEFINED"
+
+        if element.is_a("IfcDoorStyle") or element.is_a("IfcWindowStyle"):
+            element.OperationType = "NOTDEFINED"
+            element.ConstructionType = "NOTDEFINED"
+            element.ParameterTakesPrecedence = False
+            element.Sizeable = False
+        elif element.is_a("IfcDoorType"):
+            element.OperationType = "NOTDEFINED"
+        elif element.is_a("IfcWindowType"):
+            element.PartitioningType = "NOTDEFINED"
+        elif element.is_a("IfcFurnitureType"):
+            element.AssemblyPlace = "NOTDEFINED"

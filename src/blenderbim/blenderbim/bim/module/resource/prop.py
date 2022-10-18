@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.resource.data import Data
+import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -70,6 +71,10 @@ def get_quantity_types(self, context):
     return quantitytypes_enum
 
 
+def update_active_resource_index(self, context):
+    blenderbim.bim.module.pset.data.refresh()
+
+
 class Resource(PropertyGroup):
     name: StringProperty(name="Name", update=updateResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -85,7 +90,7 @@ class BIMResourceTreeProperties(PropertyGroup):
 class BIMResourceProperties(PropertyGroup):
     resource_attributes: CollectionProperty(name="Resource Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing")
-    active_resource_index: IntProperty(name="Active Resource Index")
+    active_resource_index: IntProperty(name="Active Resource Index", update=update_active_resource_index)
     active_resource_id: IntProperty(name="Active Resource Id")
     contracted_resources: StringProperty(name="Contracted Resources", default="[]")
     is_resource_update_enabled: BoolProperty(name="Is Resource Update Enabled", default=True)

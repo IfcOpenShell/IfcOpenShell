@@ -42,7 +42,9 @@
 
 struct Ifc2x3 {
 
-static const IfcParse::schema_definition& get_schema();
+IFC_PARSE_API static const IfcParse::schema_definition& get_schema();
+
+IFC_PARSE_API static void clear_schema();
 
 static const char* const Identifier;
 
@@ -60,7 +62,10 @@ class Ifc2DCompositeCurve; class IfcActionRequest; class IfcActor; class IfcActo
 /// IfcOrganization An organization. 
 /// IfcPerson A person. 
 /// IfcPersonAndOrganization A person related to an organization.
-class IFC_PARSE_API IfcActorSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcActorSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcAppliedValueSelect defines the selection of whether a value (expressed as a ratio) or an amount should be used as the value for an IfcAppliedValue. 
 /// 
 /// Select from:  
@@ -75,13 +80,19 @@ class IFC_PARSE_API IfcActorSelect : public virtual IfcUtil::IfcBaseInterface {}
 /// Selecting IfcMeasureWithUnit allows the specification of both the actual figure for the value together with the currency in which the value is represented. 
 /// Selecting IfcMonetaryMeasure allows the specification only of the value, the currency being as set by the global context 
 /// Selecting IfcRatioMeasure assumes that the amount is a percentage or other REAL number. Note that if the amount is normally specified as -20%, then this figure will need to be converted to a multiplier of 0.8
-class IFC_PARSE_API IfcAppliedValueSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcAppliedValueSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-42:1992: This select type collects together both versions of the placement as used in two dimensional or in three dimensional Cartesian space. This enables entities requiring this information to reference them without specifying the space dimensionality.  
 /// 
 /// NOTE: Corresponding STEP type: axis2_placement, please refer to ISO/IS 10303-42:1994, p. 19 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC Release 1.5
-class IFC_PARSE_API IfcAxis2Placement : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcAxis2Placement : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-42:1992: This select type identifies
 ///   all those types of entities which may participate in a Boolean operation to
 ///   form a CSG solid.  
@@ -98,7 +109,10 @@ class IFC_PARSE_API IfcAxis2Placement : public virtual IfcUtil::IfcBaseInterface
 ///   (IfcSolidModel) are defined for being valid Boolean operands.
 /// 
 /// HISTORY: New Type in IFC Release 1.5.1
-class IFC_PARSE_API IfcBooleanOperand : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcBooleanOperand : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// The character style select allows for a selection of character styles for text. Currently only text color and background color is selectable.
 /// 
 /// NOTE  Corresponding ISO 10303 name: character_style_select. Please refer to ISO/IS
@@ -107,34 +121,55 @@ class IFC_PARSE_API IfcBooleanOperand : public virtual IfcUtil::IfcBaseInterface
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The SELECT item IfcTextStyleForDefinedFont replaces the old IfcColour.
-class IFC_PARSE_API IfcCharacterStyleSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcCharacterStyleSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 
-class IFC_PARSE_API IfcClassificationNotationSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcClassificationNotationSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-46:1992: The colour entity defines a basic appearance of elements which shall be visualized in a picture.
 /// 
 /// NOTE  Corresponding STEP name: colour. It has been made into a SELECT type in IFC to avoid multiple inheritance for pre defined colour. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcColour : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcColour : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// The IfcColourOrFactor enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcColourOrFactor : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcColourOrFactor : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 
-class IFC_PARSE_API IfcConditionCriterionSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcConditionCriterionSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-42:1992: This type identifies the types of entity which may be selected as the root of a CSG tree including a single CSG primitive as a special case.
 /// Definition from IAI: The IfcBooleanResult, and subtypes of IfcCsgPrimitive3D are defined as potential root tree expression (at IfcCsgSolid). A subtype of IfcCsgPrimitive3D marks the special case of a CSG solid solely expressed by a single primitive.
 /// 
 /// NOTE Corresponding ISO 10303-42 type: csg_select, please refer to ISO/IS 10303-42:1994, p.168 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcCsgSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcCsgSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-46:1992: The curve font or scaled curve font select is a selection of either a curve font style select (being either a predefined curve font or an explicitly defined curve font) or a curve style font and scaling. 
 /// 
 /// NOTE Corresponding ISO 10303 name: curve_font_or_scaled_curve_font_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcCurveFontOrScaledCurveFontSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcCurveFontOrScaledCurveFontSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcCurveOrEdgeCurve provides the option to either select a geometric curve (IfcCurve
 /// and subtypes) within a geometric model, or a curve with associated geometry and coordinates (IfcEdgeCurve) within a topological model.
 /// SELECT 
@@ -143,21 +178,33 @@ class IFC_PARSE_API IfcCurveFontOrScaledCurveFontSelect : public virtual IfcUtil
 ///   IfcEdgeCurve
 /// 
 /// HISTORY  New select type in IFC2x Edition 3.
-class IFC_PARSE_API IfcCurveOrEdgeCurve : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcCurveOrEdgeCurve : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-46:1992: The curve style font select is a selection of a curve style font or a predefined curve style font. 
 /// 
 /// NOTE Corresponding ISO 10303 name: curve_style_font_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcCurveStyleFontSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcCurveStyleFontSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 
-class IFC_PARSE_API IfcDateTimeSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcDateTimeSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// The defined symbol select is a selection between a predefined symbol and an externally defined symbol. 
 /// 
 /// NOTE Corresponding ISO 10303 name: defined_symbol_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcDefinedSymbolSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcDefinedSymbolSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcDerivedMeasureValue is a select type for selecting between derived measure types.
 /// 
 /// SELECT 
@@ -232,7 +279,10 @@ class IFC_PARSE_API IfcDefinedSymbolSelect : public virtual IfcUtil::IfcBaseInte
 /// HISTORY New type in IFC Release 2x.
 /// 
 /// IFC2x4 change: added IfcTemperatureRateOfChangeMeasure.
-class IFC_PARSE_API IfcDerivedMeasureValue : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcDerivedMeasureValue : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcDocumentSelect enables selection of whether document information is to be contained within an IFC model or is to be referenced from an external source. 
 /// 
 /// HISTORY: New Select Type in IFC 2x
@@ -241,9 +291,15 @@ class IFC_PARSE_API IfcDerivedMeasureValue : public virtual IfcUtil::IfcBaseInte
 /// 
 /// IfcDocumentInformation (for "metadata" of an external document)  
 /// IfcDocumentReference (for reference within a document)
-class IFC_PARSE_API IfcDocumentSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcDocumentSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 
-class IFC_PARSE_API IfcDraughtingCalloutElement : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcDraughtingCalloutElement : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// The fill area style tile shape select is used to make a selection for the style of the fill area style tile.
 /// 
 /// NOTE: The IfcFillAreaStyleTileShapeSelect is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#151;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
@@ -251,24 +307,36 @@ class IFC_PARSE_API IfcDraughtingCalloutElement : public virtual IfcUtil::IfcBas
 /// NOTE Corresponding ISO 10303 name: fill_area_style_tile_shape_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcFillAreaStyleTileShapeSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcFillAreaStyleTileShapeSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-46:1992: The fill style select is a selection between different fill area styles.
 /// 
 /// NOTE Corresponding ISO 10303 name: fill_style_select. Please refer to ISO/IS 10303-46:1994 for
 /// the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcFillStyleSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcFillStyleSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the types of entities which can occur in a geometric set. 
 /// 
 /// NOTE: Corresponding ISO 10303 type: geometric_set_select. Please refer to ISO/IS 10303-42:1994, p. 169 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC Release 2x.
-class IFC_PARSE_API IfcGeometricSetSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcGeometricSetSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_PARSE_API IfcHatchLineDistanceSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcHatchLineDistanceSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-46:1992: The layered things type selects those things, which can be grouped in layers. 
 /// 
 /// It is the collection of all those items, that are assigned to a single layer. These items are representation items or complete representations (IfcRepresentationItem, IfcRepresentation). If an IfcRepresentation is referenced, all IfcRepresentationItem within its set of Items are assigned to the same layer. 
@@ -276,7 +344,10 @@ class IFC_PARSE_API IfcHatchLineDistanceSelect : public virtual IfcUtil::IfcBase
 /// NOTE: Corresponding ISO 10303 name: layered_item. It was called layered_things in the ISO/CD version and had been renamed to layered_item in the ISO/IS final version. Please refer to ISO/IS 10303-46:1994, p. 13 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcLayeredItem : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcLayeredItem : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcLibrarySelect enables selection of whether library information is to be contained within an IFC model or is to be referenced from an external source. 
 /// 
 /// HISTORY: New Select Type in IFC2x
@@ -287,7 +358,10 @@ class IFC_PARSE_API IfcLayeredItem : public virtual IfcUtil::IfcBaseInterface {}
 /// IfcLibraryReference (for reference into a library of information by location)  
 /// 
 /// Generally, it is expected that selection will be IfcLibraryReference and only rarely IfcLibraryInformation. IfcLibraryInformation should only be selected in circumstances where there could be a need to indicate the libraries that will be used without making individual references. This may occur for higher level objects such as a project or building.
-class IFC_PARSE_API IfcLibrarySelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcLibrarySelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// A goniometric light gets its intensity distribution function (how much light goes in any one direction) from one of two sources: (i) an industry-standard file, (ii) from distribution data passed directly via the IfcLightIntensityDistribution. 
 /// 
 /// The light distribution provides the luminous intensity distribution according to some standardized light distribution curves. 
@@ -310,7 +384,10 @@ class IFC_PARSE_API IfcLibrarySelect : public virtual IfcUtil::IfcBaseInterface 
 ///   directions covers all cases.  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcLightDistributionDataSourceSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcLightDistributionDataSourceSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcMaterialSelect provides selection of either a material
 /// definition or a material usage definition that can be assigned to
 /// an element, a resource or another entity within IFC.
@@ -337,7 +414,10 @@ class IFC_PARSE_API IfcLightDistributionDataSourceSelect : public virtual IfcUti
 /// 
 /// IFC2x4 CHANGE The select now includes two new abstract entities IfcMaterialDefinition
 /// and IfcMaterialUsageDefinition with upward compatibility.  The use of IfcMaterialList is deprecated from IFC2x4 onwards.
-class IFC_PARSE_API IfcMaterialSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcMaterialSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-41:1992: A measure value is a value as defined in ISO 31-0 (clause 2).
 /// 
 /// NOTE IfcMeasureValue is a select data type for most basic measure types coming from ISO 10303-41.  Select item IfcNonNegativeLengthMeasure is in addition to ISO 10303-41.
@@ -347,7 +427,10 @@ class IFC_PARSE_API IfcMaterialSelect : public virtual IfcUtil::IfcBaseInterface
 /// HISTORY New type in IFC Release 1.5.1.
 /// 
 /// IFC 2x4 change: added IfcNonNegativeLengthMeasure
-class IFC_PARSE_API IfcMeasureValue : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcMeasureValue : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric. 
 /// 
 /// HISTORY: New type in IFC Release 2.0
@@ -360,13 +443,22 @@ class IFC_PARSE_API IfcMeasureValue : public virtual IfcUtil::IfcBaseInterface {
 ///   IfcTable 
 ///   IfcText 
 ///   IfcTimeSeries
-class IFC_PARSE_API IfcMetricValueSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcMetricValueSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcObjectReferenceSelect is a select type, that holds a list of resource level entities that can be used as properties within a property set. 
 /// 
 /// HISTORY  New select type in IFC Release 2.0.
-class IFC_PARSE_API IfcObjectReferenceSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcObjectReferenceSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 
-class IFC_PARSE_API IfcOrientationSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcOrientationSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcPointOrVertexPoint provides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.
 /// SELECT 
 /// 
@@ -374,7 +466,10 @@ class IFC_PARSE_API IfcOrientationSelect : public virtual IfcUtil::IfcBaseInterf
 ///   IfcVertexPoint
 /// 
 /// HISTORY  New select type in IFC2x Edition 3.
-class IFC_PARSE_API IfcPointOrVertexPoint : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcPointOrVertexPoint : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-46:1992: The presentation style select is a selection of one of many kinds of styles, a different one for each kind of geometric representation item to be styled.
 /// 
 /// NOTE Corresponding ISO 10303 name: presentation_style_Select. Please refer to ISO/IS
@@ -383,7 +478,10 @@ class IFC_PARSE_API IfcPointOrVertexPoint : public virtual IfcUtil::IfcBaseInter
 /// HISTORY New type in IFC2x2.
 /// 
 /// IFC2x4 CHANGE The select type has been deprecated.
-class IFC_PARSE_API IfcPresentationStyleSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcPresentationStyleSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 £ X < ¥.  
 /// 
 /// A shell of dimensionality 0 is represented by a graph consisting of a single vertex. The vertex shall not have any associated edges. 
@@ -395,7 +493,10 @@ class IFC_PARSE_API IfcPresentationStyleSelect : public virtual IfcUtil::IfcBase
 /// NOTE  Corresponding ISO 10303 type: shell. Please refer to ISO/IS 10303-42:1994, p. 127 for the final definition of the formal standard. Only the select items closed_shell (IfcClosedShell) and open_shell (IfcOpenShell) have been incorporated in the current IFC release. 
 /// 
 /// HISTORY  New type in IFC2x.
-class IFC_PARSE_API IfcShell : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcShell : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcSimpleValue is a select type for selecting between simple value types.
 /// 
 /// SELECT 
@@ -415,7 +516,10 @@ class IFC_PARSE_API IfcShell : public virtual IfcUtil::IfcBaseInterface {};
 /// HISTORY New type in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE Items IfcDateTime, IfcDate, IfcTime, IfcDuration added.
-class IFC_PARSE_API IfcSimpleValue : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcSimpleValue : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-46:1992: The size select is a selection of a specific positive length measure.
 /// 
 /// Definition from ISO: The size (or width) measure value is given in the global drawing length units.
@@ -428,7 +532,10 @@ class IFC_PARSE_API IfcSimpleValue : public virtual IfcUtil::IfcBaseInterface {}
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The SELECT item IfcMeasureWithUnit has been removed from the IfcSizeSelect, the IfcRatioMeasure and IfcDescriptiveMeasure has been added.
-class IFC_PARSE_API IfcSizeSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcSizeSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// The IfcSpecularHighlightSelect defines the selectable types of value for specular highlight sharpness. 
 /// 
 /// NOTE: The two select types relate to the different ways to specifiy the sharpness (or shininess) of the specular part of the reflectance equation. It relates to the attributes: 
@@ -439,7 +546,10 @@ class IFC_PARSE_API IfcSizeSelect : public virtual IfcUtil::IfcBaseInterface {};
 /// For each surface side style only one of the two methods is needed for calculating the specular part of the equation.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcSpecularHighlightSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcSpecularHighlightSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from IAI: This type definition shall be used to
 ///   distinguish between a reference to an instance either of
 ///   IfcStructuralItem or IfcBuildingElement. The
@@ -449,7 +559,10 @@ class IFC_PARSE_API IfcSpecularHighlightSelect : public virtual IfcUtil::IfcBase
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_PARSE_API IfcStructuralActivityAssignmentSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcStructuralActivityAssignmentSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcSurfaceOrFaceSurface provides the option to either select a geometric surface (IfcSurface
 /// and subtypes) within a geometric model, or a face with associated surface geometry and coordinates (IfcFaceSurface) within a topological model.
 /// SELECT 
@@ -459,7 +572,10 @@ class IFC_PARSE_API IfcStructuralActivityAssignmentSelect : public virtual IfcUt
 ///   IfcFaceBasedSurfaceModel (a connected face set, representing a faceted surface as an approximation of a non planar, non rectangular bounded surface)
 /// 
 /// HISTORY  New select type in IFC2x3.
-class IFC_PARSE_API IfcSurfaceOrFaceSurface : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcSurfaceOrFaceSurface : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-46:1992: The surface style element select is a selection of the different surface styles to use in the presentation of the side of a surface. 
 /// 
 /// The select type only includes the IfcSurfaceStyleRendering (which is the equivalent to surface_style_rendering) from the select type surface_style_element_select. In addition it has the IfcSurfaceStyleLighting, which holds the exact physically based lighting properties for lighting based calculation algorithms (as the opposite to the rendering based calculation), the IfcSurfaceStyleRefraction (for more advanced refraction indices) and IfcSurfaceStyleWithTextures (to allow for image textures applied to surfaces). In addition an IfcExternallyDefinedSurfaceStyle can be selected that points into an external material library. 
@@ -469,7 +585,10 @@ class IFC_PARSE_API IfcSurfaceOrFaceSurface : public virtual IfcUtil::IfcBaseInt
 /// NOTE: Corresponding ISO 10303 type: surface_style_element_select. Please refer to ISO/IS 10303-46:1994, p. 85 for the final definition of the formal standard.
 /// 
 /// HISTORY: New Select type in IFC2x2.
-class IFC_PARSE_API IfcSurfaceStyleElementSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcSurfaceStyleElementSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// The symbol style select allows for the selection of styles to be assigned to an annotated symbol.
 /// 
 /// NOTE: The selection is restricted to colour within the current release of IFC
@@ -477,7 +596,10 @@ class IFC_PARSE_API IfcSurfaceStyleElementSelect : public virtual IfcUtil::IfcBa
 /// NOTE Corresponding ISO 10303 name: symbol_style_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcSymbolStyleSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcSymbolStyleSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcTextFontSelect allows for either a predefined text font, a text font model or an externally defined text font to be used to describe the font of a text literal. The definition of the text font model is based on W3C TR Cascading Style Sheet Version 1, whereas the definition of predefined text font is based on ISO 10303.
 /// 
 /// NOTE  IfcTextFontSelect is an entity that had been adopted from ISO 10303, Industrial automation systems and integration—Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. Corresponding ISO 10303 name: font_select. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
@@ -485,7 +607,10 @@ class IFC_PARSE_API IfcSymbolStyleSelect : public virtual IfcUtil::IfcBaseInterf
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The select type has been renamed from IfcFontSelect.
-class IFC_PARSE_API IfcTextFontSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcTextFontSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// The text style select allows for the selection of styles to be assigned to an annotated text. The text style determines the text model that affect the visual presentation of characters, spaces, words, and paragraphs. There are two choices:
 /// 
 /// IfcTextStyleWithBoxCharacteristics for definitions from ISO/IS 10303-46:1994 for (old) vector based and monospace text.
@@ -495,13 +620,19 @@ class IFC_PARSE_API IfcTextFontSelect : public virtual IfcUtil::IfcBaseInterface
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The items within the IfcTextStyleSelect have changed to IfcTextStyleWithBoxCharacteristics and IfcTextStyleTextModel.
-class IFC_PARSE_API IfcTextStyleSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcTextStyleSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the two possible ways of trimming a parametric curve; by a Cartesian point on the curve, or by a REAL number defining a parameter value within the parametric range of the curve. 
 /// 
 /// NOTE Corresponding ISO 10303 type: trimming_select, please refer to ISO/IS 10303-42:1994, p. 20 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.0
-class IFC_PARSE_API IfcTrimmingSelect : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcTrimmingSelect : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-41:1992: A unit is a physical quantity, with a value of one, which is used as a standard in terms of which other quantities are expressed.
 /// 
 /// NOTE: Select item IfcMonetaryUnit is an addition to ISO 10303-41.
@@ -515,7 +646,10 @@ class IFC_PARSE_API IfcTrimmingSelect : public virtual IfcUtil::IfcBaseInterface
 /// IfcMonetaryUnit: A unit for defining currencies. 
 /// 
 /// HISTORY: New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcUnit : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcUnit : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// IfcValue is a select type for selecting between more specialised select types IfcSimpleValue,
 /// IfcMeasureValue and IfcDerivedMeasureValue.
 /// 
@@ -526,7 +660,10 @@ class IFC_PARSE_API IfcUnit : public virtual IfcUtil::IfcBaseInterface {};
 ///   IfcDerivedMeasureValue A select type for derived measure types.
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcValue : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcValue : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 /// Definition from ISO/CD 10303-42:1992: This type is used to
 ///   identify the types of entity which can participate in vector computations. 
 /// 
@@ -535,7 +672,10 @@ class IFC_PARSE_API IfcValue : public virtual IfcUtil::IfcBaseInterface {};
 ///   definition of the formal standard.  
 ///   HISTORY New Type in IFC Release
 ///   1.5
-class IFC_PARSE_API IfcVectorOrDirection : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API IfcVectorOrDirection : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 class IFC_PARSE_API IfcActionSourceTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI:This enumeration type contains possible
 ///   action sources. 

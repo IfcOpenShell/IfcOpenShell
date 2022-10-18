@@ -26,9 +26,7 @@ from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
-from ifcopenshell.api.attribute.data import Data as AttributeData
 from ifcopenshell.api.material.data import Data as MaterialData
-from ifcopenshell.api.style.data import Data as StyleData
 from ifcopenshell.api.type.data import Data as TypeData
 
 
@@ -68,11 +66,10 @@ def name_callback(obj, data):
     if isinstance(obj, bpy.types.Material):
         if obj.BIMObjectProperties.ifc_definition_id:
             IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).Name = obj.name
-            AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
             MaterialData.load_materials()
         if obj.BIMMaterialProperties.ifc_style_id:
             IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id).Name = obj.name
-            StyleData.load(IfcStore.get_file(), obj.BIMMaterialProperties.ifc_style_id)
+        refresh_ui_data()
         return
 
     if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
@@ -96,7 +93,7 @@ def name_callback(obj, data):
     if element.is_a("IfcTypeProduct"):
         TypeData.purge()
     element.Name = "/".join(obj.name.split("/")[1:])
-    AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+    refresh_ui_data()
 
 
 def color_callback(obj, data):
@@ -160,12 +157,12 @@ def loadIfcStore(scene):
     if not IfcStore.get_file():
         return
     IfcStore.get_schema()
-    IfcStore.reload_linked_elements()
+    IfcStore.relink_all_objects()
 
 
 @persistent
 def undo_pre(scene):
-    IfcStore.update_undo_redo_stack_objects()
+    IfcStore.track_undo_redo_stack_object_map()
 
 
 @persistent
@@ -174,13 +171,13 @@ def undo_post(scene):
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.undo()
         purge_module_data()
-    IfcStore.update_undo_redo_stack_objects()
-    IfcStore.reload_linked_elements(objects=[bpy.data.objects.get(o) for o in IfcStore.undo_redo_stack_objects])
+    IfcStore.track_undo_redo_stack_selected_objects()
+    IfcStore.reload_undo_redo_stack_objects()
 
 
 @persistent
 def redo_pre(scene):
-    IfcStore.update_undo_redo_stack_objects()
+    IfcStore.track_undo_redo_stack_object_map()
 
 
 @persistent
@@ -189,8 +186,8 @@ def redo_post(scene):
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.redo()
         purge_module_data()
-    IfcStore.update_undo_redo_stack_objects()
-    IfcStore.reload_linked_elements(objects=[bpy.data.objects.get(o) for o in IfcStore.undo_redo_stack_objects])
+    IfcStore.track_undo_redo_stack_selected_objects()
+    IfcStore.reload_undo_redo_stack_objects()
 
 
 @persistent

@@ -4,7 +4,14 @@
 #include <map>
 
 bool IfcParse::declaration::is(const std::string& name) const {
-	if (name_lower_ == boost::to_lower_copy(name)) return true;
+	const std::string* name_ptr = &name;
+	if (std::any_of(name.begin(), name.end(), [](char c) { return std::islower(c); })) {
+		temp_string_() = name;
+		boost::to_upper(temp_string_());
+		name_ptr = &temp_string_();
+	}
+
+	if (name_upper_ == *name_ptr) return true;
 
 	if (this->as_entity()) {
 		return this->as_entity()->is(name);
@@ -37,6 +44,14 @@ bool IfcParse::named_type::is(const IfcParse::declaration& decl) const {
 	return declared_type()->is(decl);
 }
 
+IfcParse::entity::~entity() {
+	for (auto attribute : attributes_) {
+		delete attribute;
+	}
+	for (auto inverse_attribute : inverse_attributes_) {
+		delete inverse_attribute;
+	}
+}
 static std::map<std::string, const IfcParse::schema_definition*> schemas;
 
 IfcParse::schema_definition::schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory)
@@ -57,10 +72,10 @@ IfcParse::schema_definition::schema_definition(const std::string& name, const st
 }
 
 IfcParse::schema_definition::~schema_definition() {
-	schemas.erase(name_);
 	for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
 		delete *it;
 	}
+	delete factory_;
 }
 
 IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(IfcEntityInstanceData * data) const {
@@ -100,6 +115,9 @@ void IfcParse::register_schema(schema_definition* s) {
 #ifdef HAS_SCHEMA_4x3_rc4
 #include "../ifcparse/Ifc4x3_rc4.h"
 #endif
+#ifdef HAS_SCHEMA_4x3
+#include "../ifcparse/Ifc4x3.h"
+#endif
 
 const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& name) {
 	// TODO: initialize automatically somehow
@@ -127,6 +145,9 @@ const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& n
 #ifdef HAS_SCHEMA_4x3_rc4
    Ifc4x3_rc4::get_schema();
 #endif
+#ifdef HAS_SCHEMA_4x3
+   Ifc4x3::get_schema();
+#endif
 
 	std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(boost::to_upper_copy(name));
 	if (it == schemas.end()) {
@@ -148,4 +169,40 @@ std::vector<std::string> IfcParse::schema_names() {
 	}
 
 	return return_value;
+}
+
+void IfcParse::clear_schemas() {
+#ifdef HAS_SCHEMA_2x3
+	Ifc2x3::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4
+	Ifc4::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x1
+	Ifc4x1::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x2
+	Ifc4x2::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
+	Ifc4x3_rc1::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
+	Ifc4x3_rc2::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_rc3
+	Ifc4x3_rc3::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+	Ifc4x3_rc4::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3
+	Ifc4x3::clear_schema();
+#endif
+
+	// clear any remaining registered schemas
+	// we pop schemas until map is empty, because map iteration is invalidated after each erasure
+	while (!schemas.empty()) {
+		delete schemas.begin()->second;
+	}
 }
