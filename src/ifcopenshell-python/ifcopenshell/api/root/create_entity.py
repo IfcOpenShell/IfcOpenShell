@@ -62,7 +62,7 @@ class Usecase:
 
     def handle_2x3_defaults(self, element):
         if element.is_a("IfcElement") or element.is_a("IfcElementType"):
-            if not element.PredefinedType:
+            if hasattr(element, "PredefinedType") and not element.PredefinedType:
                 element.PredefinedType = "NOTDEFINED"
 
         if element.is_a("IfcSpatialStructureElement"):
@@ -79,7 +79,7 @@ class Usecase:
 
     def handle_4_defaults(self, element):
         if element.is_a("IfcElement") or element.is_a("IfcElementType"):
-            if not element.PredefinedType:
+            if hasattr(element, "PredefinedType") and not element.PredefinedType:
                 element.PredefinedType = "NOTDEFINED"
 
         if element.is_a("IfcDoorStyle") or element.is_a("IfcWindowStyle"):
