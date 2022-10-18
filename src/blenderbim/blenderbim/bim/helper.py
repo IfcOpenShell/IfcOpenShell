@@ -23,19 +23,19 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
+from ifcopenshell.util.doc import get_entity_doc, get_attribute_doc, get_property_set_doc, get_property_doc
 from mathutils import geometry
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
 
 
 def draw_attributes(props, layout, copy_operator=None):
-    prefs = bpy.context.preferences.addons["blenderbim"].preferences
-    for i, attribute in enumerate(props):
+    for attribute in props:
         row = layout.row(align=True)
-        draw_attribute(attribute, row, copy_operator, prefs.info_mode)
+        draw_attribute(attribute, row, copy_operator)
 
 
-def draw_attribute(attribute, layout, copy_operator=None, info_mode=False):
+def draw_attribute(attribute, layout, copy_operator=None):
     value_name = attribute.get_value_name()
     if not value_name:
         layout.label(text=attribute.name)
@@ -61,9 +61,6 @@ def draw_attribute(attribute, layout, copy_operator=None, info_mode=False):
     if attribute.is_uri:
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.data_path = attribute.path_from_id("string_value")
-    if info_mode:
-        info_op = layout.operator("bim.show_ifc_documentation", icon="INFO", text="")
-        info_op.path = f"{attribute.path_from_id()}"
 
 
 def import_attributes(ifc_class, props, data, callback=None):
@@ -199,6 +196,22 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     row.prop(data, prop_name, **kwargs)
     op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
     op.prop_name = prop_name
+
+    if bpy.context.preferences.addons["blenderbim"].preferences.info_mode:
+        schema = IfcStore.schema
+        if schema is not None:
+            schema = str(schema)
+            schema = next(identifier for identifier in IfcStore.schema_identifiers if identifier in schema)
+            docs = None
+            entity = getattr(data, prop_name)
+            if entity:
+                try:
+                    docs = get_entity_doc(schema, entity)
+                except KeyError:  # This will throw error for attributes, pset etc. Silently pass for now
+                    docs = {}
+            url = docs.get("spec_url", "https://standards.buildingsmart.org/")
+            url_op = row.operator("bim.open_webbrowser", icon="URL", text="")
+            url_op.url = url
 
 
 def get_enum_items(data, prop_name, context):

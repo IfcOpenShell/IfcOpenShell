@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.util.schema
 from blenderbim.bim.module.root.data import IfcClassData
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import get_predefined_type_descriptions
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -51,9 +52,9 @@ def getIfcPredefinedTypes(self, context):
         declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
-                types_enum.extend(
-                    [(e, e, "") for e in attribute.type_of_attribute().declared_type().enumeration_items()]
-                )
+                declared_type = attribute.type_of_attribute().declared_type()
+                descriptions = get_predefined_type_descriptions(declared_type.name())
+                types_enum.extend([(e, e, descriptions.get(e, "")) for e in declared_type.enumeration_items()])
                 break
     return types_enum
 

@@ -17,8 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from blenderbim.bim.helper import InfoIndexValue, get_ifc_class_doc_url, get_ifc_class_usecase, get_ifc_description
-from textwrap import TextWrapper
 import bpy
 import json
 import webbrowser
@@ -433,7 +431,8 @@ class RemoveIfcFile(bpy.types.Operator):
 
 class BIM_OT_open_webbrowser(bpy.types.Operator):
     bl_idname = "bim.open_webbrowser"
-    bl_label = ""
+    bl_description = "Open the URL in your Web Browser"
+    bl_label = "Open URL"
 
     url: bpy.props.StringProperty()
 
@@ -442,90 +441,6 @@ class BIM_OT_open_webbrowser(bpy.types.Operator):
 
         webbrowser.open(self.url)
         return {"FINISHED"}
-
-
-class BIM_OT_show_ifc_documentation(bpy.types.Operator):
-    bl_idname = "bim.show_ifc_documentation"
-    bl_label = ""
-    draw_panel_split = 0.15
-
-    path: bpy.props.StringProperty()
-    class_name: bpy.props.StringProperty()
-    index_key: bpy.props.StringProperty()
-    instance_value: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=500)
-
-    def draw(self, context):
-        # We never use layout.prop because all data is read-only
-        if self.path:
-            prop = context.scene.path_resolve(self.path)
-            doc = getattr(prop, "doc", None)
-            if doc is not None:
-                self.draw_from_attr(doc)
-        elif self.class_name:
-            self.draw_from_class(self.class_name)
-        elif self.index_key:
-            self.draw_from_index(self.index_key, self.instance_value)
-
-    def draw_from_index(self, index_key, instance_value=None):
-        values = InfoIndexValue(index_key, instance_value)
-        self.draw_doc(
-            class_name=index_key, description=values.description, use_case=values.use_case, doc_url=values.doc_url
-        )
-
-    def draw_from_class(self, class_name):
-        self.draw_doc(
-            class_name=class_name,
-            description=get_ifc_description(class_name),
-            use_case=get_ifc_class_usecase(class_name),
-            doc_url=get_ifc_class_doc_url(class_name),
-        )
-
-    def draw_doc(self, class_name: str = None, description: str = None, use_case=None, doc_url: str = None):
-        layout = self.layout
-        wrapper = TextWrapper(width=80)  # 50 = maximum length
-        if class_name:
-            split = layout.split(factor=self.draw_panel_split)
-            split.label(text="IFC Class")
-            split.label(text=class_name)
-        if description:
-            split = layout.split(factor=self.draw_panel_split)
-            split.label(text="Description")
-            box = split.box()
-            for description_line in description.split("\n"):
-                description_wrapped = wrapper.wrap(text=description_line)
-                for line in description_wrapped:
-                    box.label(text=line)
-        if use_case:
-            split = layout.split(factor=self.draw_panel_split)
-            split.label(text="Use Case")
-            box = split.box()
-            for paragraph in use_case:
-                for use_case_line in paragraph.split("\n"):
-                    use_case_line_wrapped = wrapper.wrap(text=use_case_line)
-                    for line in use_case_line_wrapped:
-                        box.label(text=line)
-        if doc_url:
-            split = layout.split(factor=self.draw_panel_split)
-            split.label(text="Docs")
-            split.operator("bim.open_webbrowser", text="Open In Browser", icon="URL").url = doc_url
-
-    def draw_from_attr(self, doc):
-        layout = self.layout
-        split = layout.split(factor=self.draw_panel_split)
-        split.label(text="Element ID")
-        split.label(text=str(doc.ifc_id))
-        self.draw_doc(
-            class_name=str(doc.ifc_class),
-            description=str(doc.description),
-            use_case=[l.name for l in doc.use_case],
-            doc_url=str(doc.doc_url),
-        )
 
 
 class SelectExternalMaterialDir(bpy.types.Operator):

@@ -18,7 +18,6 @@
 
 import os
 from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.ui import draw_info_button_for_index
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.project.data import ProjectData
@@ -169,7 +168,6 @@ class BIM_PT_project(Panel):
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
-        info_mode = context.preferences.addons["blenderbim"].preferences.info_mode
         prop_with_search(self.layout, pprops, "export_schema")
         row = self.layout.row()
         row.prop(context.scene.unit_settings, "system")

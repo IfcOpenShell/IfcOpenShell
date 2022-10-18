@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import get_ifc_entity_description
 
 
 def refresh():
@@ -65,7 +66,7 @@ class IfcClassData:
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             ]
-        return [(e, e, "") for e in products]
+        return [(e, e, get_ifc_entity_description(e)) for e in products]
 
     @classmethod
     def ifc_classes(cls):
@@ -75,7 +76,8 @@ class IfcClassData:
         names = [d.name() for d in declarations]
         if ifc_product == "IfcElementType":
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-        return [(c, c, "") for c in sorted(names)]
+        
+        return [(c, c, get_ifc_entity_description(c)) for c in sorted(names)]
 
     @classmethod
     def ifc_classes_suggestions(cls):
