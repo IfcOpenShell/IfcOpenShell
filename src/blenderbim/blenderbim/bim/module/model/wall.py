@@ -1143,14 +1143,16 @@ class DumbWallJoiner:
         )
 
     def get_extrusion_data(self, representation):
-        results = {"height": 3.0, "x_angle": 0}
+        results = {"height": 3.0, "x_angle": 0, "is_sloped": False, "direction": Vector((0, 0, 1))}
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
                 results["height"] = item.Depth * self.unit_scale
                 x, y, z = item.ExtrudedDirection.DirectionRatios
                 if not tool.Cad.is_x(x, 0) or not tool.Cad.is_x(y, 0) or not tool.Cad.is_x(z, 1):
-                    results["x_angle"] = Vector((0, 1)).angle(Vector((y, z)))
+                    results["direction"] = Vector(item.ExtrudedDirection.DirectionRatios)
+                    results["x_angle"] = Vector((0, 1)).angle_signed(Vector((y, z)))
+                    results["is_sloped"] = True
                 break
             elif item.is_a("IfcBooleanClippingResult"):
                 item = item.FirstOperand
@@ -1165,6 +1167,18 @@ class DumbWallJoiner:
         layers2 = tool.Model.get_material_layer_parameters(element2)
         axis1 = tool.Model.get_wall_axis(wall1, layers1)
         axis2 = tool.Model.get_wall_axis(wall2, layers2)
+        body1 = ifcopenshell.util.representation.get_representation(element1, "Model", "Body", "MODEL_VIEW")
+        body2 = ifcopenshell.util.representation.get_representation(element2, "Model", "Body", "MODEL_VIEW")
+        extrusion1 = self.get_extrusion_data(body1)
+        extrusion2 = self.get_extrusion_data(body2)
+        direction1 = (wall1.matrix_world.to_quaternion() @ extrusion1["direction"]).normalized()
+        direction2 = (wall2.matrix_world.to_quaternion() @ extrusion2["direction"]).normalized()
+        height1 = extrusion1["height"] * self.unit_scale
+        height2 = extrusion2["height"] * self.unit_scale
+        depth1 = direction1 * height1
+        depth2 = direction2 * height2
+        normal1 = (axis1["base"][1] - axis1["base"][0]).to_3d().normalized().cross(direction1)
+        normal2 = (axis2["base"][1] - axis2["base"][0]).to_3d().normalized().cross(direction2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=True, degrees=True)
         if tool.Cad.is_x(abs(angle), (0, 180), tolerance=0.001):
@@ -1185,171 +1199,131 @@ class DumbWallJoiner:
 
         self.axis[1 if connection1 == "ATEND" else 0] = intersect
 
-        # Work out body extents
-        intersect1, _ = tool.Cad.intersect_edges(axis1["base"], axis2["base"])
-        intersect2, _ = tool.Cad.intersect_edges(axis1["base"], axis2["side"])
-        intersect3, _ = tool.Cad.intersect_edges(axis1["side"], axis2["base"])
-        intersect4, _ = tool.Cad.intersect_edges(axis1["side"], axis2["side"])
+        # Work out body
+
+        # Bottom and top plane point
+        bp1 = wall1.matrix_world @ Vector(wall1.bound_box[0])
+        bp2 = wall2.matrix_world @ Vector(wall2.bound_box[0])
+        tp1 = wall1.matrix_world @ Vector(wall1.bound_box[1])
+
+        # Axis lines on bottom, for base and side axes
+        bba1 = (Vector((*axis1["base"][0], bp1[2])), Vector((*axis1["base"][1], bp1[2])))
+        bsa1 = (Vector((*axis1["side"][0], bp1[2])), Vector((*axis1["side"][1], bp1[2])))
+        bba2 = (Vector((*axis2["base"][0], bp2[2])), Vector((*axis2["base"][1], bp2[2])))
+        bsa2 = (Vector((*axis2["side"][0], bp2[2])), Vector((*axis2["side"][1], bp2[2])))
+
+        # Intersecting the walls sides defined by planes gives 4 lines of intersection
+        # Line point, and line direction
+        lp1, ld1 = mathutils.geometry.intersect_plane_plane(bba1[0], normal1, bba2[0], normal2)
+        lp2, ld2 = mathutils.geometry.intersect_plane_plane(bba1[0], normal1, bsa2[0], normal2)
+        lp3, ld3 = mathutils.geometry.intersect_plane_plane(bsa1[0], normal1, bba2[0], normal2)
+        lp4, ld4 = mathutils.geometry.intersect_plane_plane(bsa1[0], normal1, bsa2[0], normal2)
+
+        # Intersecting the 4 lines gives the 8 possible verts of intersection
+        # 4 on bottom, and 4 on top. 4 on our base line, 4 on our side line.
+        bb1 = mathutils.geometry.intersect_line_plane(lp1, lp1 + ld1, bp1, Vector((0, 0, 1)))
+        bb2 = mathutils.geometry.intersect_line_plane(lp2, lp2 + ld2, bp1, Vector((0, 0, 1)))
+        bs1 = mathutils.geometry.intersect_line_plane(lp3, lp3 + ld3, bp1, Vector((0, 0, 1)))
+        bs2 = mathutils.geometry.intersect_line_plane(lp4, lp4 + ld4, bp1, Vector((0, 0, 1)))
+        tb1 = mathutils.geometry.intersect_line_plane(lp1, lp1 + ld1, tp1, Vector((0, 0, 1)))
+        tb2 = mathutils.geometry.intersect_line_plane(lp2, lp2 + ld2, tp1, Vector((0, 0, 1)))
+        ts1 = mathutils.geometry.intersect_line_plane(lp3, lp3 + ld3, tp1, Vector((0, 0, 1)))
+        ts2 = mathutils.geometry.intersect_line_plane(lp4, lp4 + ld4, tp1, Vector((0, 0, 1)))
+
+        # Let's distinguish the 8 points by whether they are nearer or further away from the other end
+        # These 8 points will be used to find the final body position and clippings.
+        i = 0 if connection1 == "ATEND" else 1
+        j = 1 if connection1 == "ATEND" else 0
+        bbn = tool.Cad.closest_vector(axis1["base"][i].to_3d(), (bb1, bb2))
+        bbf = bb2 if bbn == bb1 else bb1
+        bsn = tool.Cad.closest_vector(axis1["side"][i].to_3d(), (bs1, bs2))
+        bsf = bs2 if bsn == bs1 else bs1
+        tbn = tool.Cad.closest_vector(axis1["base"][i].to_3d(), (tb1, tb2))
+        tbf = tb2 if tbn == tb1 else tb1
+        tsn = tool.Cad.closest_vector(axis1["side"][i].to_3d(), (ts1, ts2))
+        tsf = ts2 if tsn == ts1 else ts1
 
         if description == "MITRE":
             # Mitre joints are an unofficial convention
-            if connection1 == "ATEND":
-                base_target = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
-                if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
-                    self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                else:
-                    side_target = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
-                    base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
-                    side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
-                    if base_percent > side_percent:
-                        self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                    else:
-                        self.body[1] = tool.Cad.point_on_edge(side_target, axis1["reference"])
+            bsf_ = tool.Cad.point_on_edge(bsf, bba1)
+            tbf_ = tool.Cad.point_on_edge(tbf, bba1)
+            tsf_ = tool.Cad.point_on_edge(tsf, bba1)
+            new_body = tool.Cad.furthest_vector(bba1[i], (bbf, bsf_)).copy()
+            new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tbf_)).copy()
+            new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tsf_)).copy()
+            self.body[j] = new_body.to_2d()
 
-                # Mitre clip
-                if connection1 == connection2:
-                    if angle < 0:
-                        clip1 = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
-                        clip2 = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
-                    else:
-                        clip1 = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
-                        clip2 = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
+            if connection1 == connection2:
+                if (connection1 == "ATEND" and angle > 0) or (connection1 != "ATEND" and angle < 0):
+                    pt = bbf.to_2d().to_3d()
+                    x_axis = bsn - bbf
+                    y_axis = tbf - bbf
                 else:
-                    if angle < 0:
-                        clip1 = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
-                        clip2 = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
-                    else:
-                        clip1 = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
-                        clip2 = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
-                y_axis = Vector((0, 0, -1))
-                x_axis = (clip1 - clip2).normalized().to_3d()
-                z_axis = x_axis.cross(y_axis)
-                self.clippings.append(
-                    {
-                        "type": "IfcBooleanClippingResult",
-                        "operand_type": "IfcHalfSpaceSolid",
-                        "matrix": self.create_matrix(clip1.to_3d(), x_axis, y_axis, z_axis),
-                    }
-                )
+                    pt = bbn.to_2d().to_3d()
+                    x_axis = bsf - bbn
+                    y_axis = tbn - bbn
             else:
-                base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
-                if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
-                    self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                if (connection1 == "ATEND" and angle < 0) or (connection1 != "ATEND" and angle > 0):
+                    pt = bbf.to_2d().to_3d()
+                    x_axis = bsn - bbf
+                    y_axis = tbf - bbf
                 else:
-                    side_target = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
-                    base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
-                    side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
-                    if base_percent < side_percent:
-                        self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                    else:
-                        self.body[0] = tool.Cad.point_on_edge(side_target, axis1["reference"])
+                    pt = bbn.to_2d().to_3d()
+                    x_axis = bsf - bbn
+                    y_axis = tbn - bbn
 
-                # Mitre clip
-                if connection1 == connection2:
-                    if angle < 0:
-                        clip1 = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
-                        clip2 = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
-                    else:
-                        clip1 = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
-                        clip2 = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
-                    y_axis = Vector((0, 0, 1))
-                else:
-                    if angle < 0:
-                        clip1 = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
-                        clip2 = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
-                    else:
-                        clip1 = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
-                        clip2 = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
-                    y_axis = Vector((0, 0, 1))
-                x_axis = (clip1 - clip2).normalized().to_3d()
-                z_axis = x_axis.cross(y_axis)
-                self.clippings.append(
-                    {
-                        "type": "IfcBooleanClippingResult",
-                        "operand_type": "IfcHalfSpaceSolid",
-                        "matrix": self.create_matrix(clip1.to_3d(), x_axis, y_axis, z_axis),
-                    }
-                )
+            if connection1 != "ATEND":
+                y_axis *= -1
+            z_axis = x_axis.cross(y_axis)
+            y_axis = z_axis.cross(x_axis)
+
+            self.clippings.append(
+                {
+                    "type": "IfcBooleanClippingResult",
+                    "operand_type": "IfcHalfSpaceSolid",
+                    "matrix": self.create_matrix(pt, x_axis, y_axis, z_axis),
+                }
+            )
         else:
             # This is the standard L and T joints described by IFC
-            if connection1 == "ATEND":
+            if (
+                tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001)
+                and not extrusion1["is_sloped"]
+                and not extrusion2["is_sloped"]
+            ):
                 if is_relating:
-                    base_target = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
+                    self.body[j] = bbf.to_2d()
                 else:
-                    base_target = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
-                if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
-                    self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                else:
-                    if is_relating:
-                        side_target = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
-                    else:
-                        side_target = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
-                    base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
-                    side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
-                    if base_percent > side_percent:
-                        self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                        clip = side_target.to_3d()
-                        x_axis = (side_target - base_target).normalized().to_3d()
-                        y_axis = Vector((0, 0, 1))
-                        z_axis = x_axis.cross(y_axis)
-                        self.clippings.append(
-                            {
-                                "type": "IfcBooleanClippingResult",
-                                "operand_type": "IfcHalfSpaceSolid",
-                                "matrix": self.create_matrix(clip, x_axis, y_axis, z_axis),
-                            }
-                        )
-                    else:
-                        self.body[1] = tool.Cad.point_on_edge(side_target, axis1["reference"])
-                        clip = base_target.to_3d()
-                        x_axis = (side_target - base_target).normalized().to_3d()
-                        y_axis = Vector((0, 0, 1))
-                        z_axis = x_axis.cross(y_axis)
-                        self.clippings.append(
-                            {
-                                "type": "IfcBooleanClippingResult",
-                                "operand_type": "IfcHalfSpaceSolid",
-                                "matrix": self.create_matrix(clip, x_axis, y_axis, z_axis),
-                            }
-                        )
+                    self.body[j] = bbn.to_2d()
+                return True
+
+            bsf_ = tool.Cad.point_on_edge(bsf, bba1)
+            tbf_ = tool.Cad.point_on_edge(tbf, bba1)
+            tsf_ = tool.Cad.point_on_edge(tsf, bba1)
+            new_body = tool.Cad.furthest_vector(bba1[i], (bbf, bsf_)).copy()
+            new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tbf_)).copy()
+            new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tsf_)).copy()
+            self.body[j] = new_body.to_2d()
+
+            if is_relating:
+                pt = bbf.to_2d().to_3d()
+                x_axis = bsf - bbf
+                y_axis = tbf - bbf
             else:
-                if is_relating:
-                    base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
-                else:
-                    base_target = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
-                if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
-                    self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                else:
-                    if is_relating:
-                        side_target = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
-                    else:
-                        side_target = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
-                    base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
-                    side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
-                    if base_percent < side_percent:
-                        self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                        clip = side_target.to_3d()
-                        x_axis = (side_target - base_target).normalized().to_3d()
-                        y_axis = Vector((0, 0, 1))
-                        z_axis = y_axis.cross(x_axis)
-                        self.clippings.append(
-                            {
-                                "type": "IfcBooleanClippingResult",
-                                "operand_type": "IfcHalfSpaceSolid",
-                                "matrix": self.create_matrix(clip, x_axis, y_axis, z_axis),
-                            }
-                        )
-                    else:
-                        self.body[0] = tool.Cad.point_on_edge(side_target, axis1["reference"])
-                        clip = base_target.to_3d()
-                        x_axis = (side_target - base_target).normalized().to_3d()
-                        y_axis = Vector((0, 0, 1))
-                        z_axis = y_axis.cross(x_axis)
-                        self.clippings.append(
-                            {
-                                "type": "IfcBooleanClippingResult",
-                                "operand_type": "IfcHalfSpaceSolid",
-                                "matrix": self.create_matrix(clip, x_axis, y_axis, z_axis),
-                            }
-                        )
+                pt = bbn.to_2d().to_3d()
+                x_axis = bsn - bbn
+                y_axis = tbn - bbn
+            if connection1 != "ATEND":
+                y_axis *= -1
+            z_axis = x_axis.cross(y_axis)
+            y_axis = z_axis.cross(x_axis)
+
+            self.clippings.append(
+                {
+                    "type": "IfcBooleanClippingResult",
+                    "operand_type": "IfcHalfSpaceSolid",
+                    "matrix": self.create_matrix(pt, x_axis, y_axis, z_axis),
+                }
+            )
+
         return True
