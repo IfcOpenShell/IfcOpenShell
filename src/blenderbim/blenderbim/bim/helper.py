@@ -139,11 +139,12 @@ def prop_with_search(layout, data, prop_name, **kwargs):
                 except KeyError:
                     # TODO : support attributes, pset, etc.
                     pass
-            op_row = row.row(align=True)
             url = docs.get("spec_url", "")
-            url_op = op_row.operator("bim.open_webbrowser", icon="URL", text="")
-            url_op.url = url
-            op_row.enabled = bool(url)
+            if url:
+                op_row = row.row(align=True)
+                url_op = op_row.operator("bim.open_webbrowser", icon="INFO", text="")
+                url_op.url = url
+                op_row.enabled = bool(url)
 
 
 def get_enum_items(data, prop_name, context):
