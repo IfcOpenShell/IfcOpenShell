@@ -47,6 +47,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         voided_obj = bpy.data.objects.get(self.voided_obj)
         filling_obj = bpy.data.objects.get(self.filling_obj)
@@ -75,7 +76,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             if container:
                 container_obj = tool.Ifc.get_object(container)
                 if container_obj:
-                    new_matrix[2][3] = container_obj.matrix_world[2][3] + props.rl2
+                    new_matrix[2][3] = container_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
