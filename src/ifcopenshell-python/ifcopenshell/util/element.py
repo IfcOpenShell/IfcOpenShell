@@ -368,9 +368,6 @@ def get_decomposition(element):
         for rel in getattr(element, "IsDecomposedBy", []):
             queue.extend(rel.RelatedObjects)
             results.extend(rel.RelatedObjects)
-        for rel in getattr(element, "IsGroupedBy", []):
-            queue.extend(rel.RelatedObjects)
-            results.extend(rel.RelatedObjects)
         for rel in getattr(element, "HasOpenings", []):
             queue.append(rel.RelatedOpeningElement)
             results.append(rel.RelatedOpeningElement)
@@ -379,7 +376,27 @@ def get_decomposition(element):
             results.append(rel.RelatedBuildingElement)
     return results
 
+def get_group(element):
+    """
+    Retrieves all subelements of an element based on the group.
 
+    :param element: The IFC element
+    :return: All subelements of the group
+
+    Example::
+
+        element = file.by_type("IfcGroup")[0]
+        subelements = ifcopenshell.util.element.get_group(element)
+    """
+    queue = [element]
+    results = []
+    while queue:
+        element = queue.pop()
+        for rel in getattr(element, "IsGroupedBy", []):
+            queue.extend(rel.RelatedObjects)
+            results.extend(rel.RelatedObjects)
+    return results
+    
 def get_aggregate(element):
     """
     Retrieves the aggregate of an element.
