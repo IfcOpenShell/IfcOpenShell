@@ -368,6 +368,9 @@ def get_decomposition(element):
         for rel in getattr(element, "IsDecomposedBy", []):
             queue.extend(rel.RelatedObjects)
             results.extend(rel.RelatedObjects)
+        for rel in getattr(element, "IsGroupedBy", []):
+            queue.extend(rel.RelatedObjects)
+            results.extend(rel.RelatedObjects)
         for rel in getattr(element, "HasOpenings", []):
             queue.append(rel.RelatedOpeningElement)
             results.append(rel.RelatedOpeningElement)
