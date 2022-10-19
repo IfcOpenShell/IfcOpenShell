@@ -84,21 +84,28 @@ class ObjectDocumentData:
                     continue
 
                 name = rel.RelatingDocument.Name
-                if not name and rel.RelatingDocument.ReferencedDocument:
-                    name = rel.RelatingDocument.ReferencedDocument.Name
 
                 if tool.Ifc.get_schema() == "IFC2X3":
+                    if not name and rel.RelatingDocument.ReferenceToDocument:
+                        name = rel.RelatingDocument.ReferenceToDocument[0].Name
+
                     identification = rel.RelatingDocument.ItemReference
-                    if not identification and rel.RelatingDocument.ReferencedDocument:
-                        identification = rel.RelatingDocument.ReferencedDocument.DocumentId
+                    if not identification and rel.RelatingDocument.ReferenceToDocument:
+                        identification = rel.RelatingDocument.ReferenceToDocument[0].DocumentId
+
+                    location = rel.RelatingDocument.Location
                 else:
+                    if not name and rel.RelatingDocument.ReferencedDocument:
+                        name = rel.RelatingDocument.ReferencedDocument.Name
+
                     identification = rel.RelatingDocument.Identification
                     if not identification and rel.RelatingDocument.ReferencedDocument:
                         identification = rel.RelatingDocument.ReferencedDocument.Identification
 
-                location = rel.RelatingDocument.Location
-                if location is None and rel.RelatingDocument.ReferencedDocument:
-                    location = rel.RelatingDocument.ReferencedDocument.Location
+                    location = rel.RelatingDocument.Location
+                    if location is None and rel.RelatingDocument.ReferencedDocument:
+                        location = rel.RelatingDocument.ReferencedDocument.Location
+
                 if location:
                     if not "://" in location:
                         if not os.path.isabs(location):
