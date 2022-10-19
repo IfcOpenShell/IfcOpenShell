@@ -18,6 +18,8 @@
 
 import os
 import bpy
+import ifcopenshell
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
@@ -493,7 +495,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if len(bpy.context.selected_objects) == 2:
             bpy.ops.bim.add_opening()
         else:
-            bpy.ops.bim.add_potential_opening(x=self.x, y=self.y, z=self.z)
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            bpy.ops.bim.add_potential_opening(x=self.x * unit_scale, y=self.y * unit_scale, z=self.z * unit_scale)
             self.props.x = self.x
             self.props.y = self.y
             self.props.z = self.z
