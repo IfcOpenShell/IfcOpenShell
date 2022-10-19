@@ -23,7 +23,7 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
-from ifcopenshell.util.doc import get_entity_doc, get_attribute_doc, get_property_set_doc, get_property_doc
+from blenderbim.bim.prop import get_ifc_entity_doc_url
 from mathutils import geometry
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
@@ -126,25 +126,20 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
     op.prop_name = prop_name
 
-    if bpy.context.preferences.addons["blenderbim"].preferences.info_mode:
-        schema = tool.Ifc.schema()
-        if schema is not None:
-            schema = str(schema)
-            schema = next(identifier for identifier in IfcStore.schema_identifiers if identifier in schema)
-            docs = {}
-            entity = getattr(data, prop_name)
-            if entity:
-                try:
-                    docs = get_entity_doc(schema, entity)
-                except KeyError:
-                    # TODO : support attributes, pset, etc.
-                    pass
-            url = docs.get("spec_url", "")
+    add_entity_url_button(row, getattr(data, prop_name))
+
+
+def add_entity_url_button(layout, entity):
+    if entity:
+        try:
+            url = get_ifc_entity_doc_url(entity)
+        except KeyError:
+            # TODO : support attributes, pset, etc.
+            pass
+        else:
             if url:
-                op_row = row.row(align=True)
-                url_op = op_row.operator("bim.open_webbrowser", icon="INFO", text="")
+                url_op = layout.operator("bim.open_webbrowser", icon="INFO", text="")
                 url_op.url = url
-                op_row.enabled = bool(url)
 
 
 def get_enum_items(data, prop_name, context):
