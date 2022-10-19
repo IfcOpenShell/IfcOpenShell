@@ -136,7 +136,6 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
                 obj=obj,
                 representation=representation,
                 should_reload=self.should_reload,
-                enable_dynamic_voids=self.disable_opening_subtractions,
                 is_global=self.should_switch_all_meshes,
                 should_sync_changes_first=True,
             )
@@ -293,7 +292,6 @@ class UpdateParametricRepresentation(bpy.types.Operator):
             obj=obj,
             representation=tool.Ifc.get().by_id(props.ifc_definition_id),
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )

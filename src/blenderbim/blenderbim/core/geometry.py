@@ -83,7 +83,6 @@ def switch_representation(
     obj=None,
     representation=None,
     should_reload=True,
-    enable_dynamic_voids=True,
     is_global=True,
     should_sync_changes_first=False,
 ):

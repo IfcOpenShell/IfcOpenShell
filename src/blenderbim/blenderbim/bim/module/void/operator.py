@@ -84,7 +84,6 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             obj=obj1,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -120,7 +119,6 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
             obj=obj,
             representation=tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id),
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )

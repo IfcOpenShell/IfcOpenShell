@@ -75,13 +75,6 @@ class Type(blenderbim.core.tool.Type):
         return representation.ContextOfItems
 
     @classmethod
-    def has_dynamic_voids(cls, obj):
-        for modifier in obj.modifiers:
-            if modifier.name == "IfcOpeningElement" and modifier.type == "BOOLEAN":
-                return True
-        return False
-
-    @classmethod
     def has_material_usage(cls, element):
         material = ifcopenshell.util.element.get_material(element)
         if material:
@@ -105,14 +98,13 @@ class Type(blenderbim.core.tool.Type):
 
     @classmethod
     def run_geometry_switch_representation(
-        cls, obj=None, representation=None, should_reload=None, enable_dynamic_voids=None, is_global=None
+        cls, obj=None, representation=None, should_reload=None, is_global=None
     ):
         return blenderbim.core.geometry.switch_representation(
             tool.Geometry,
             obj=obj,
             representation=representation,
             should_reload=should_reload,
-            enable_dynamic_voids=enable_dynamic_voids,
             is_global=is_global,
             should_sync_changes_first=False,
         )

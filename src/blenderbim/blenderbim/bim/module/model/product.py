@@ -311,45 +311,6 @@ class AlignProduct(bpy.types.Operator):
         return results
 
 
-class DynamicallyVoidProduct(bpy.types.Operator):
-    bl_idname = "bim.dynamically_void_product"
-    bl_label = "Dynamically Void Product"
-    bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
-
-    def execute(self, context):
-        obj = bpy.data.objects.get(self.obj)
-        if obj is None:
-            return {"FINISHED"}
-        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if not product.HasOpenings:
-            return {"FINISHED"}
-        if [m for m in obj.modifiers if m.type == "BOOLEAN"]:
-            return {"FINISHED"}
-        representation = ifcopenshell.util.representation.get_representation(product, "Model", "Body", "MODEL_VIEW")
-        if not representation:
-            return {"FINISHED"}
-        was_edit_mode = obj.mode == "EDIT"
-        if was_edit_mode:
-            bpy.ops.object.mode_set(mode="OBJECT")
-        blenderbim.core.geometry.switch_representation(
-            tool.Geometry,
-            obj=obj,
-            representation=representation,
-            should_reload=True,
-            enable_dynamic_voids=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-        if was_edit_mode:
-            bpy.ops.object.mode_set(mode="EDIT")
-        return {"FINISHED"}
-
-
 class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_type_thumbnails"
     bl_label = "Load Type Thumbnails"
@@ -517,7 +478,6 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 obj=obj,
                 representation=representation,
                 should_reload=True,
-                enable_dynamic_voids=True,
                 is_global=True,
                 should_sync_changes_first=False,
             )

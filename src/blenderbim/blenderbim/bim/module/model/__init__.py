@@ -25,7 +25,6 @@ classes = (
     product.AlignProduct,
     product.ChangeTypePage,
     product.DisplayConstrTypes,
-    product.DynamicallyVoidProduct,
     product.LoadTypeThumbnails,
     product.ReinvokeOperator,
     workspace.Hotkey,
