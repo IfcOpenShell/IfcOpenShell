@@ -25,6 +25,7 @@ import ifcopenshell
 import ifctester
 import test_facet
 import test_ids
+import numpy as np
 from xml.dom.minidom import parseString
 from ifctester import ids
 from ifcopenshell import validate
@@ -282,9 +283,62 @@ spec.requirements.append(
     ifctester.ids.Property(
         propertySet="Pset_WallCommon",
         name="FireRating",
+        measure="IfcLabel",
         value=restriction,
         instructions="Fire rating is specified using the Fire Resistance Level as defined in the Australian National Construction Code (NCC) 2019. Valid examples include -/-/-, -/120/120, and 60/60/60",
     )
 )
 
 specs.to_xml(os.path.join(outdir, "library", "sample.ids"))
+
+# Create sample model
+model = ifcopenshell.file()
+
+project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="My Project")
+project.Name = "TEST"
+ifcopenshell.api.run("unit.assign_unit", model)
+
+context = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+body = ifcopenshell.api.run(
+    "context.add_context",
+    model,
+    context_type="Model",
+    context_identifier="Body",
+    target_view="MODEL_VIEW",
+    parent=context,
+)
+
+site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite", name="My Site")
+building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding", name="Building A")
+storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
+
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, product=site)
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, product=building)
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, product=storey)
+
+wall_types = []
+for i in range(0, 4):
+    wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name=f"DEMO{i + 1}")
+    wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall", name=f"WALL {i + 1}")
+    ifcopenshell.api.run("type.assign_type", model, related_object=wall, relating_type=wall_type)
+    representation = ifcopenshell.api.run(
+        "geometry.add_wall_representation", model, context=body, length=5, height=3, thickness=(i + 1) * 0.05
+    )
+    if i == 0:
+        pass
+    elif i == 1:
+        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "-/-/-"})
+    elif i == 2:
+        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "120/120/120"})
+    elif i == 3:
+        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "FOOBAR"})
+    ifcopenshell.api.run("geometry.assign_representation", model, product=wall, representation=representation)
+    location = np.eye(4)
+    location[1][3] += i * 1
+    ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall, matrix=location)
+    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, product=wall)
+
+model.write(os.path.join(outdir, "library", "sample.ifc"))
