@@ -139,17 +139,6 @@ class TestGetRepresentationContext(NewFile):
         assert subject.get_representation_context(representation) == context
 
 
-class TestHasDynamicVoids(NewFile):
-    def test_run(self):
-        obj = bpy.data.objects.new("Object", None)
-        assert subject.has_dynamic_voids(obj) is False
-
-    def test_checking_modifiers(self):
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-        assert subject.has_dynamic_voids(obj) is True
-
-
 class TestHasMaterialUsage(NewFile):
     def test_getting_a_profile_set_usage(self):
         ifc = ifcopenshell.file()

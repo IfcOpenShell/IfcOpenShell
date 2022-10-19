@@ -56,7 +56,6 @@ def mode_callback(obj, data):
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
             return
         if obj.mode == "EDIT":
-            bpy.ops.bim.dynamically_void_product(obj=obj.name)
             IfcStore.edited_objs.add(obj)
             bm = bmesh.from_edit_mesh(obj.data)
             bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
@@ -613,7 +612,6 @@ class DumbWallGenerator:
             obj=obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -840,7 +838,6 @@ class DumbWallJoiner:
             obj=wall1,
             representation=body,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -1126,7 +1123,6 @@ class DumbWallJoiner:
             obj=obj,
             representation=new_body,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )

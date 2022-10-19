@@ -198,7 +198,7 @@ class Selector:
         return results
 
     @classmethod
-    def get_element_value(cls, element, key, value):
+    def get_element_value(cls, element, key, value=None):
         if "." in key and key.split(".")[0] == "type":
             try:
                 element = ifcopenshell.util.element.get_type(element)

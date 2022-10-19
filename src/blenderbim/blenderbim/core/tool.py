@@ -638,10 +638,9 @@ class Type:
     def get_object_data(cls, obj): pass
     def get_profile_set_usage(cls, element): pass
     def get_representation_context(cls, representation): pass
-    def has_dynamic_voids(cls, obj): pass
     def has_material_usage(cls, element): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
-    def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, enable_dynamic_voids=None, is_global=None): pass
+    def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, is_global=None): pass
 
 
 @interface

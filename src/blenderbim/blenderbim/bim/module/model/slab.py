@@ -199,7 +199,6 @@ class DumbSlabGenerator:
             obj=obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -291,7 +290,6 @@ class DumbSlabPlaner:
                             obj=obj,
                             representation=new_rep,
                             should_reload=True,
-                            enable_dynamic_voids=False,
                             is_global=True,
                             should_sync_changes_first=False,
                         )
@@ -310,7 +308,6 @@ class DumbSlabPlaner:
             obj=obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -517,7 +514,6 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             obj=obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -570,7 +566,6 @@ class DisableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             obj=obj,
             representation=body,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -786,7 +781,6 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             obj=obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )

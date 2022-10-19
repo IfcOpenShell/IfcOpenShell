@@ -109,7 +109,6 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             obj=voided_obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -252,7 +251,6 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                         obj=building_obj,
                         representation=body,
                         should_reload=True,
-                        enable_dynamic_voids=False,
                         is_global=True,
                         should_sync_changes_first=False,
                     )
@@ -421,7 +419,6 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             obj=obj1,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -549,7 +546,6 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                         obj=upstream_obj,
                         representation=body,
                         should_reload=True,
-                        enable_dynamic_voids=False,
                         is_global=True,
                         should_sync_changes_first=False,
                     )
@@ -632,7 +628,6 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 obj=obj,
                 representation=body,
                 should_reload=True,
-                enable_dynamic_voids=False,
                 is_global=True,
                 should_sync_changes_first=False,
             )

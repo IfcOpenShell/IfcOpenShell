@@ -184,7 +184,6 @@ class DumbProfileGenerator:
             obj=obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -506,7 +505,6 @@ class DumbProfileJoiner:
             obj=obj,
             representation=new_body,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
