@@ -376,7 +376,7 @@ def get_decomposition(element):
             results.append(rel.RelatedBuildingElement)
     return results
 
-def get_group(element):
+def get_grouped_by(element):
     """
     Retrieves all subelements of an element based on the group.
 
