@@ -99,6 +99,9 @@ class BimToolUI:
             return
         if cls.props.ifc_class == "IfcWallType":
             row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="rl1", text="RL")
+
+            row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="extrusion_depth", text="Height")
 
             row = cls.layout.row(align=True)
@@ -113,9 +116,12 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             label = "Height" if cls.props.ifc_class == "IfcColumn" else "Length"
             row.prop(data=cls.props, property="extrusion_depth", text=label)
+        elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="rl1", text="RL")
         elif cls.props.ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcDoorType", "IfcDoorStyle"):
             row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="rl", text="RL")
+            row.prop(data=cls.props, property="rl2", text="RL")
 
     @classmethod
     def draw_edit_object_interface(cls, context):

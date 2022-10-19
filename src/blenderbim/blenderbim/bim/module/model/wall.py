@@ -561,6 +561,7 @@ class DumbWallGenerator:
         return self.create_wall(link_to_scene)
 
     def create_wall(self, link_to_scene):
+        props = bpy.context.scene.BIMModelProperties
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
@@ -568,7 +569,7 @@ class DumbWallGenerator:
             matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
             matrix_world.col[3] = self.location.to_4d()
             if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-                matrix_world[2][3] = self.collection_obj.location[2]
+                matrix_world[2][3] = self.collection_obj.location[2] + props.rl1
             obj.matrix_world = matrix_world
             bpy.context.view_layer.update()
             self.collection.objects.link(obj)
