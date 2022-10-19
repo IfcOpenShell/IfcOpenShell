@@ -424,6 +424,7 @@ class BIM_PT_annotation_utilities(Panel):
 
         row = layout.row(align=True)
         row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
+        row.enabled = context.scene.camera is not None
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
