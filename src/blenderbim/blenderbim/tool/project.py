@@ -135,7 +135,8 @@ class Project(blenderbim.core.tool.Project):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props.extrusion_depth = 3 / unit_scale
         props.length = 1 / unit_scale
-        props.rl = 1 / unit_scale
+        props.rl1 = 0
+        props.rl2 = 1 / unit_scale
         props.x = 0.5 / unit_scale
         props.y = 0.5 / unit_scale
         props.z = 0.5 / unit_scale

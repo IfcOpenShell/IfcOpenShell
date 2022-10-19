@@ -75,7 +75,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             if container:
                 container_obj = tool.Ifc.get_object(container)
                 if container_obj:
-                    new_matrix[2][3] = container_obj.matrix_world[2][3] + props.rl
+                    new_matrix[2][3] = container_obj.matrix_world[2][3] + props.rl2
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
