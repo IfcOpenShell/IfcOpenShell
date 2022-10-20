@@ -254,6 +254,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         wall_objs = []
+        other_objs = []
         x_angle = radians(self.x_angle)
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -268,6 +269,15 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
             if element.is_a("IfcWall"):
                 wall_objs.append(obj)
+            else:
+                blenderbim.core.geometry.switch_representation(
+                    tool.Geometry,
+                    obj=obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
         if wall_objs:
             DumbWallRecalculator().recalculate(wall_objs)
         return {"FINISHED"}

@@ -143,6 +143,7 @@ class DumbSlabGenerator:
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
         )
 
+        props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
         self.depth = sum(thicknesses) * unit_scale
@@ -150,6 +151,7 @@ class DumbSlabGenerator:
         self.length = 3
         self.rotation = 0
         self.location = Vector((0, 0, 0))
+        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
         return self.derive_from_cursor(link_to_scene=link_to_scene)
 
     def derive_from_cursor(self, link_to_scene):
@@ -188,7 +190,11 @@ class DumbSlabGenerator:
 
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         representation = ifcopenshell.api.run(
-            "geometry.add_slab_representation", tool.Ifc.get(), context=self.body_context, depth=self.depth
+            "geometry.add_slab_representation",
+            tool.Ifc.get(),
+            context=self.body_context,
+            depth=self.depth,
+            x_angle=self.x_angle,
         )
         ifcopenshell.api.run(
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -280,24 +286,38 @@ class DumbSlabPlaner:
             if extrusion:
                 extrusion.Depth = thickness
             else:
+                props = bpy.context.scene.BIMModelProperties
+                x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
                 new_rep = ifcopenshell.api.run(
-                    "geometry.add_slab_representation", tool.Ifc.get(), context=body_context, depth=thickness
+                    "geometry.add_slab_representation",
+                    tool.Ifc.get(),
+                    context=body_context,
+                    depth=thickness,
+                    x_angle=x_angle,
                 )
                 for inverse in tool.Ifc.get().get_inverse(representation):
                     ifcopenshell.util.element.replace_attribute(inverse, representation, new_rep)
                 blenderbim.core.geometry.switch_representation(
-                            tool.Geometry,
-                            obj=obj,
-                            representation=new_rep,
-                            should_reload=True,
-                            is_global=True,
-                            should_sync_changes_first=False,
-                        )
-                blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+                    tool.Geometry,
+                    obj=obj,
+                    representation=new_rep,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
+                blenderbim.core.geometry.remove_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=representation
+                )
                 return
         else:
+            props = bpy.context.scene.BIMModelProperties
+            x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
             representation = ifcopenshell.api.run(
-                "geometry.add_slab_representation", tool.Ifc.get(), context=body_context, depth=thickness
+                "geometry.add_slab_representation",
+                tool.Ifc.get(),
+                context=body_context,
+                depth=thickness,
+                x_angle=x_angle,
             )
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
