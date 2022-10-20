@@ -166,25 +166,34 @@ Get the distribution system of an element
         # For example, it might be part of a Chilled Water system
         print("This pipe is part of the system", system.Name)
 
-Copy an entity
+Copy an entity instance
 -----------------------------------------
 
-Copy an entity is possible in different ways, depending on the task. 
+Copy an entity instance is possible in different ways, depending on the task. 
 
 .. code-block:: python
-    root.copy_class
+    ifcopenshell.api.run("root.copy_class", ifc_file, product = entity_instance_to_copy)
 
 This is high level and makes sensible assumptions about copying things like properties, quantities, openings, and other relationships.
 
 .. code-block:: python
-    util.element.copy
+    ifcopenshell.util.element.copy(ifc_file, element)
 
 This is for shallow copies.
 
 .. code-block:: python
-    util.element.copy_deep
+    ifcopenshell.util.element.copy_deep(ifc_file, element, exclude = None)
 
 This is for deep graph copy.
+
+It is also possible to copy an entity instance from two different file, like the following example:
+
+.. code-block:: python
+    f = ifcopenshell.open(...)
+    g = ifcopenshell.file(schema=f.schema)
+    g.add(f.by_type(...)[0])
+
+Note that, in this case, it does copy over recursively, factor in length unit conversion if both files f and g have project length unit defined, but it does not make any other attempts at resulting in a valid file.
 
 Create a simple model from scratch
 ----------------------------------
