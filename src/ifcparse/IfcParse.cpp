@@ -2428,6 +2428,47 @@ std::string IfcFile::createTimestamp() const {
 	return result;
 }
 
+std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
+	std::vector<int> return_value;
+	
+	auto lower = byref.lower_bound({ instance_id, -1, -1 });
+	auto upper = byref.upper_bound({ instance_id, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+
+	// Mapping of instance id to attribute offset.
+	std::map<int, std::vector<int>> mapping;
+	
+	for (auto it = lower; it != upper; ++it) {
+		for (auto& i : it->second) {
+			// We only take the tuple for the type that id=i actually is, in order not
+			// to count double. Because byref contains mappings for every supertype of id=i.
+			if (instance_by_id(i)->declaration().index_in_schema() == std::get<1>(it->first)) {
+				mapping[i].push_back(std::get<2>(it->first));
+			}
+		}
+	}
+
+	auto refs = instances_by_reference(instance_id);
+
+	for (auto& r : *refs) {
+		auto it = mapping.find(r->data().id());
+		if (it == mapping.end() || it->second.empty()) {
+			throw IfcException("Internal error");
+		}
+		return_value.push_back(it->second.front());
+		it->second.erase(it->second.begin());
+		if (it->second.empty()) {
+			mapping.erase(it);
+		}
+	}
+
+	// Test whether all mappings where indeed used.
+	if (!mapping.empty()) {
+		throw IfcException("Internal error");
+	}
+
+	return return_value;
+}
+
 aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index) {
 	if (type == nullptr && attribute_index == -1) {
 		return instances_by_reference(instance_id);
