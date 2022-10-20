@@ -735,7 +735,9 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 			
 			if (TokenFunc::isKeyword(next)) {
 				try {
-					filler.push_back(new EntityArgument(next));
+					auto ea = new EntityArgument(next);
+					addEntity(((IfcUtil::IfcBaseClass*) *ea));
+					filler.push_back(ea);
 				} catch (IfcException& e) {
 					Logger::Message(Logger::LOG_ERROR, e.what());
 				}
@@ -957,15 +959,30 @@ IfcUtil::ArgumentType EntityArgument::type() const {
 //
 // Functions for casting the EntityArgument to other types
 //
-EntityArgument::operator IfcUtil::IfcBaseClass*() const { return entity; }
-unsigned int EntityArgument::size() const { return 1; }
-Argument* EntityArgument::operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of arguments"); }
-std::string EntityArgument::toString(bool upper) const { 
+EntityArgument::operator IfcUtil::IfcBaseClass*() const {
+	return entity; 
+}
+
+unsigned int EntityArgument::size() const {
+	return 1;
+}
+
+Argument* EntityArgument::operator [] (unsigned int /*i*/) const { 
+	throw IfcException("Argument is not a list of arguments"); 
+}
+
+std::string EntityArgument::toString(bool upper) const {
 	return entity->data().toString(upper);
 }
-//return entity->entity->toString(); }
+
 bool EntityArgument::isNull() const { return false; }
-EntityArgument::~EntityArgument() { delete entity;}
+EntityArgument::~EntityArgument() {
+	// We don't delete it here, rather it will be freed as part of the entity_file_map.
+	// For that purpose when parsed, the simple type instance is explicitly added to the
+	// file. The reason is we want parsed simply types to behave the same as constructed
+	// simple types.
+	// delete entity;
+}
 
 //
 // Reads an Entity from the list of Tokens at the specified offset in the file
