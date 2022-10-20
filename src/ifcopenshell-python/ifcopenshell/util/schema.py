@@ -66,6 +66,44 @@ def reassign_class(ifc_file, element, new_class):
     return new_element
 
 
+class BatchReassignClass:
+    def __init__(self, file):
+        self.file = file
+        self.purge()
+
+    def reassign(self, element, new_class):
+        try:
+            new_element = self.file.create_entity(new_class)
+        except:
+            print(f"Class of {element} could not be changed to {new_class}")
+            return element
+        new_attributes = [new_element.attribute_name(i) for i, attribute in enumerate(new_element)]
+        for i, attribute in enumerate(element):
+            try:
+                new_element[new_attributes.index(element.attribute_name(i))] = attribute
+            except:
+                continue
+        for inverse in self.file.get_inverse(element):
+            self.replacements.setdefault(inverse, {})[element] = new_element
+        self.to_delete.add(element)
+        return new_element
+
+    def unbatch(self):
+        for element, replacements in self.replacements.items():
+            for i, attribute in enumerate(element):
+                new = element.walk(lambda v: v in replacements.keys(), lambda v: replacements[v], attribute)
+                if attribute != new:
+                    element[i] = new
+
+        for element in self.to_delete:
+            self.file.remove(element)
+        self.purge()
+
+    def purge(self):
+        self.replacements = {}
+        self.to_delete = set()
+
+
 class Migrator:
     def __init__(self):
         self.migrated_ids = {}
