@@ -1,0 +1,12 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2020-04-23T18:09:38',(),(),'IfcOpenShell 0.6.0b0','IfcOpenShell 0.6.0b0','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECTLIBRARY($,$,'Uniclass 2015',$,$,$,$,$,$);
+#2=IFCCLASSIFICATION('RIBA Enterprises Ltd','January 2020','2020-02-07','Uniclass 2015','Uniclass 2015 is a unified classification for the UK industry covering all construction sectors.','https://toolkit.thenbs.com/articles/classification',('_'));
+#3=IFCRELASSOCIATESCLASSIFICATION('1P2XR4Nm9C_xuJOdxBr7V0',$,$,$,(#1),#2);
+ENDSEC;
+END-ISO-10303-21;

@@ -1,11 +1,10 @@
-import gc
-import sys
+import os
 import pytest
-import pprint
 import weakref
 import itertools
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.template
 
 
 @pytest.mark.parametrize(
@@ -75,6 +74,48 @@ def test_file_gc(args):
 
     # With both deleted we should have no longer access to the file.
     assert r() is None
+
+
+def test_bug_2517():
+    fixtures = os.path.join(os.path.dirname(__file__), 'fixtures')
+    model = ifcopenshell.open(f'{fixtures}/bug_2517_test2.ifc')
+    library = ifcopenshell.open(f"{fixtures}/bug_2517_lib.ifc")
+    result = model.add(library.by_type("IfcClassification")[0])
+    model.create_entity(
+        "IfcRelAssociatesClassification",
+        GlobalId=ifcopenshell.guid.new(),
+        RelatedObjects=[model.by_type("IfcProject")[0]],
+        RelatingClassification=result,
+    )
+
+
+def test_bug_2486_a():
+    run = ifcopenshell.api.run
+
+    file = run("project.create_file")
+
+    mymaterial = run("material.add_material", file)
+    pset = run("pset.add_pset", file, product=mymaterial)
+    run(
+        "pset.edit_pset",
+        file,
+        pset=pset,
+        properties={"foo": "bar"},
+    )
+
+    another_file = run("project.create_file")
+
+    run(
+        "project.append_asset",
+        another_file,
+        library=file,
+        element=mymaterial,
+    )
+
+
+def test_bug_2486_b():
+    file = ifcopenshell.template.create()
+    file.wrapped_data.header.file_name.name = "myfile.ifc"
 
 
 if __name__ == "__main__":
