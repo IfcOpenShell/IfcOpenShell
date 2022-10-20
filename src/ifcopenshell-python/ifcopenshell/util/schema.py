@@ -70,6 +70,7 @@ class Migrator:
     def __init__(self):
         self.migrated_ids = {}
         self.class_4_to_2x3 = json.load(open(os.path.join(cwd, "class_4_to_2x3.json"), "r"))
+        self.class_2x3_to_4 = json.load(open(os.path.join(cwd, "class_2x3_to_4.json"), "r"))
 
         # IFC4 classes, and their IFC4 attribute : IFC2X3 attributes
         self.attribute_4_to_2x3 = json.load(open(os.path.join(cwd, "attribute_4_to_2x3.json"), "r"))
@@ -151,8 +152,7 @@ class Migrator:
             if new_file.schema == "IFC2X3":
                 new_element = new_file.create_entity(self.class_4_to_2x3[element.is_a()])
             elif new_file.schema == "IFC4":
-                print("Class migration to IFC4 not yet supported for", element)
-                pass
+                new_element = new_file.create_entity(self.class_2x3_to_4[element.is_a()])
         return new_element
 
     def migrate_attributes(self, element, new_file, new_element, new_element_schema):
