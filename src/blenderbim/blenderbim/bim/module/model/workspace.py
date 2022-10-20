@@ -109,6 +109,9 @@ class BimToolUI:
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="X Angle")
+        elif cls.props.ifc_class == "IfcSlabType":
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="x_angle", text="X Angle")
         elif cls.props.ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
@@ -180,6 +183,11 @@ class BimToolUI:
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
                 row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
+
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="x_angle", text="X Angle")
+            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
+            op.x_angle = cls.props.x_angle
         elif AuthoringData.data["active_class"] in (
             "IfcColumn",
             "IfcColumnStandardCase",
