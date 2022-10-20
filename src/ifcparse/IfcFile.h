@@ -252,7 +252,12 @@ public:
 	/// breadth-first search
 	aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
+	/// Get the attribute indices corresponding to the list of entity instances
+	/// returned by getInverse().
+	std::vector<int> get_inverse_indices(int instance_id);
+
 	aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
+	
 	int getTotalInverses(int instance_id);
 
 	template <class T>
