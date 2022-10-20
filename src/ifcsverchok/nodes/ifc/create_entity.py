@@ -50,14 +50,24 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         self.outputs.new("SvStringsSocket", "file")  # only for testing
         self.node_dict[hash(self)] = {}
 
+    def draw_buttons(self, context, layout):
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Create IFC Entity. Takes one or multiple inputs. \nIf 'Representation(s)' is given, that determines number of output entities. Otherwise, 'Names' is used."
+        
+        row = layout.row(align=True)
+        row.prop(self, 'is_interactive', icon='SCENE_DATA', icon_only=True)
+        row.prop(self, 'refresh_local', icon='FILE_REFRESH')
+
+
+
+
     def process(self):
         print("#"*20, "\n running create_entity3 PROCESS()... \n", "#"*20,)
         print("#"*20, "\n hash(self):", hash(self), "\n", "#"*20,)
 
-        self.names = self.inputs["Names"].sv_get()
-        self.descriptions = self.inputs["Descriptions"].sv_get()
+        self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
+        self.descriptions = flatten_data(self.inputs["Descriptions"].sv_get(), target_level=1)
         self.ifc_class = self.inputs["IfcClass"].sv_get()[0][0]
-        self.representations = self.inputs["Representations"].sv_get()
+        self.representations = flatten_data(self.inputs["Representations"].sv_get(), target_level=1)
         self.properties = self.inputs["Properties"].sv_get()
     
 
@@ -84,78 +94,99 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         if self.refresh_local:
             edit = True
 
+        print("\nrepresentations before convert: ", self.representations)
+        
+        self.file = SvIfcStore.get_file()
+        if self.representations[0]:
+            self.representations = [self.file.by_id(step_id) for step_id in self.representations]
+            self.names = self.repeat_input_unique(self.names, len(self.representations))
+            self.descriptions = self.repeat_input_unique(self.descriptions, len(self.representations))
+        elif not self.representations[0]:
+            self.descriptions = self.repeat_input_unique(self.descriptions, len(self.names))
 
-        self.names = repeat_last_for_length(self.names, len(self.representations), deepcopy=False)
-        self.descriptions = repeat_last_for_length(self.descriptions, len(self.representations), deepcopy=False)
         # print("REPRESENTATION: ", self.representations)
         # print("IfcClass: ",self.ifc_class)
         print("Names: ",self.names)
         print("Descriptions: ",self.descriptions)
-        
-
-
-        self.file = SvIfcStore.get_file()
+        # print("\nrepresentations after convert: ", self.representations)
 
         if self.node_id not in SvIfcStore.id_map:
-            enities = self.create()
+            entities = self.create()
         else:
             if edit is True:
-                enities = self.edit()
+                entities = self.edit()
             else:
-                enities = self.get_existing_element()
+                # entities = self.get_existing_element()
+                entities = SvIfcStore.id_map[self.node_id]
         
-        print("Entities: ", enities)
+        print("Entities: ", entities)
         print("SvIfcStore.id_map: ", SvIfcStore.id_map)
 
-        self.outputs["Entities"].sv_set(enities)
+        self.outputs["Entities"].sv_set(entities)
         self.outputs["file"].sv_set([[self.file]])
 
-    def create(self):
-        # print("#"*20, "\n running create entity CREATE()... \n")
-        results = []
-        for i, name in enumerate(self.names):
-            print(type(self.names[i][0]))
+    def create(self, index=None):
+        entities_ids = []
+        iterator = range(len(self.names))
+        if index is not None:
+            iterator = [index]
+        for i in iterator:
             try:
-                self.entity = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=self.ifc_class, name=self.names[i][0], description=self.descriptions[i][0])
+                entity = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=self.ifc_class, name=self.names[i], description=self.descriptions[i])
                 try:
-                    ifcopenshell.api.run("geometry.assign_representation", self.file, product=self.entity, representation=self.representations[i][0])
+                    ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
                 except IndexError:
                     pass
-                results.append([self.entity])
-                SvIfcStore.id_map.setdefault(self.node_id, []).append(self.entity.id())
-            except: 
-                raise Exception("Something went wrong. Cannot create entity.")
-        return results
+                entities_ids.append(entity.id())
+                SvIfcStore.id_map.setdefault(self.node_id, []).append(entity.id())
+            except Exception as e: 
+                raise Exception("Something went wrong. Cannot create entity.", e)
+        return entities_ids
 
     def edit(self):
-        results = []
+        entities_ids = []
         id_map_copy = SvIfcStore.id_map[self.node_id].copy()
-        for i, step_id in enumerate(id_map_copy):
-            self.entity = self.file.by_id(step_id)
-            self.entity.Name = self.names[i][0]
-            self.entity.Description = self.descriptions[i][0]
+        for i, _ in enumerate(self.names):
+            try:
+                step_id = id_map_copy[i]
+            except IndexError:
+                id = self.create(index=i)
+                entities_ids.append(id[0])
+                continue
+            entity = self.file.by_id(step_id)
+            entity.Name = self.names[i]
+            entity.Description = self.descriptions[i]
 
-            if self.representations[i][0] and not self.file.by_type("IFCPRODUCTDEFINITIONSHAPE"):
-                ifcopenshell.api.run("geometry.assign_representation", self.file, product=self.entity, representation=self.representations[i][0])
-            elif self.representations[i][0]:
-                self.entity.Representation = self.representations[i][0]
-            else:
+            try:
+                if self.representations[i] and not self.file.by_type("IFCPRODUCTDEFINITIONSHAPE"):
+                    ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
+                elif self.representations[i]:
+                    entity.Representation = self.representations[i]
+            except IndexError:
                 pass
             
-            if self.entity.is_a() != self.ifc_class:
+            if entity.is_a() != self.ifc_class:
                 SvIfcStore.id_map[self.node_id].remove(step_id)
-                self.entity = ifcopenshell.util.schema.reassign_class(self.file, self.entity, self.ifc_class)
-                SvIfcStore.id_map.setdefault(self.node_id, []).append(self.entity.id())
-            results.append([self.entity])
+                entity = ifcopenshell.util.schema.reassign_class(self.file, entity, self.ifc_class)
+                SvIfcStore.id_map.setdefault(self.node_id, []).append(entity.id())
+            entities_ids.append(entity.id())
 
-        return results
+        if id_map_copy>entities_ids:
+            SvIfcStore.id_map[self.node_id] = entities_ids
+        return entities_ids
+
+    def repeat_input_unique(self, input, count):
+        input = repeat_last_for_length(input, count, deepcopy=False)
+        if input[0]:
+            input = [a if not (s:=sum(j == a for j in input[:i])) else f'{a}-{s+1}' for i, a in enumerate(input)]  # add number to duplicates
+        return input
+
 
     def get_existing_element(self):
-        # print("#"*20, "\n running create entity get_existing_element()... \n", "#"*20,)
         results = []
         for i, step_id in enumerate(SvIfcStore.id_map[self.node_id]):
-            self.entity = self.file.by_id(step_id)
-            results.append([self.entity])
+            entity = self.file.by_id(step_id)
+            results.append([entity])
         return results
 
     
