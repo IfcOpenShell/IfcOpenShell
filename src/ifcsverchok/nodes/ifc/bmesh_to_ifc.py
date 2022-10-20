@@ -88,7 +88,6 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         self.inputs.new("SvStringsSocket", "target_view").prop_name = "target_view"
         self.inputs.new("SvStringsSocket", "paradigm").prop_name = "paradigm"
         self.inputs.new("SvObjectSocket", "blender_objects").prop_name = "blender_objects" #no prop for now
-        self.outputs.new("SvVerticesSocket", "file")
         self.outputs.new("SvVerticesSocket", "Representations")
         self.width = 210
         self.node_dict[hash(self)] = {}
@@ -102,8 +101,8 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         row.prop(self, 'refresh_local', icon='FILE_REFRESH')
 
     def process(self):
-        print("#"*20, "\n running bmesh_to_ifc3 PROCESS()... \n", "#"*20,)
-        print("#"*20, "\n hash(self):", hash(self), "\n", "#"*20,)
+        # print("#"*20, "\n running bmesh_to_ifc3 PROCESS()... \n", "#"*20,)
+        # print("#"*20, "\n hash(self):", hash(self), "\n", "#"*20,)
         
         self.sv_input_names = [i.name for i in self.inputs]
 
@@ -112,7 +111,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
         
-        print("node_dict: ", self.node_dict)
+        # print("node_dict: ", self.node_dict)
         if not self.inputs["blender_objects"].sv_get()[0]:
             return
         edit = False
@@ -138,6 +137,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         # print("blender_objects: ", blender_objects)
 
         self.file = SvIfcStore.get_file()
+        print(self.file)
 
         self.context = self.get_context()
         if self.node_id not in SvIfcStore.id_map:
@@ -147,23 +147,23 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                 self.edit()
                 representations = self.create(blender_objects)
             else:
-                representations = self.get_existing_element()
+                # representations = self.get_existing_element()
+                representations = SvIfcStore.id_map[self.node_id]["Representations"]
         
         print("representations: ", representations)
         print("SvIfcStore.id_map: ", SvIfcStore.id_map)
 
         self.outputs["Representations"].sv_set(representations)
-        self.outputs["file"].sv_set([[self.file]])
 
     def create(self, blender_objects):
-        results = []
+        representations_ids = []
         for blender_object in blender_objects:
             representation = ifcopenshell.api.run("geometry.add_representation", self.file, should_run_listeners=False,blender_object = blender_object, geometry=blender_object.data, context = self.context)
             if not representation:
                 raise Exception("Couldn't create representation. Possibly wrong context.")
-            results.append([representation])
+            representations_ids.append(representation.id())
             SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(representation.id())
-        return results
+        return representations_ids
 
     def edit(self):
         # results = self.get_existing_element()
@@ -171,15 +171,14 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             return
         for step_id in SvIfcStore.id_map[self.node_id]["Representations"]:
             #if self.file.by_id(step_id).is_a('IfcShapeRepresentation'):
-            print("step_id: ", step_id)
             ifcopenshell.api.run("geometry.remove_representation", self.file, representation=self.file.by_id(step_id))
         del SvIfcStore.id_map[self.node_id]["Representations"]
-        return 
+        return
 
     def get_existing_element(self):
         results = []
         for step_id in SvIfcStore.id_map[self.node_id]["Representations"]:
-            results.append([self.file.by_id(step_id)])
+            results.append(self.file.by_id(step_id))
         return results
 
     def get_context(self):
