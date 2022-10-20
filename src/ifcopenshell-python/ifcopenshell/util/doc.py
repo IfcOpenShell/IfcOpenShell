@@ -46,61 +46,52 @@ SCHEMA_FILES = {
     },
 }
 
-
-# singleton doc database
-# required so that database would be loaded only once
-class DocDatabase:
-    def __new__(cls):
-        if not hasattr(cls, "db"):
-            db = {ifc_version: dict() for ifc_version in SCHEMA_FILES}
-            files_missing = False
-            for ifc_version in SCHEMA_FILES:
-                for data_type in SCHEMA_FILES[ifc_version]:
-                    schema_path = SCHEMA_FILES[ifc_version][data_type]
-                    if not schema_path.is_file():
-                        print(f"Schema file {schema_path} wasn't found.")
-                        files_missing = True
-                        continue
-
-                    with open(schema_path, "r") as fi:
-                        db[ifc_version][data_type] = json.load(fi)
-
-            if files_missing:
-                raise Exception(
-                    "Some schema files are missing - they contain neccessary data for DocAPI to work. \n"
-                    "Make sure those files are present. To generate them you can run DocExtractor extract functions \n"
-                    "but it will require corresponding Ifc docs to be in the same directory as the script."
-                )
-            cls.db = db
-        return cls.db
+db = None
 
 
-def check_version_name(version_name):
-    if version_name not in SCHEMA_FILES:
-        raise Exception(
-            f"Version: {version_name} is not supported. " f'Supported version: {", ".join(SCHEMA_FILES.keys())}'
-        )
-    return version_name
+def get_db(version):
+    global db
+    if not db:
+        db = {ifc_version: dict() for ifc_version in SCHEMA_FILES}
+        for ifc_version in SCHEMA_FILES:
+            for data_type in SCHEMA_FILES[ifc_version]:
+                schema_path = SCHEMA_FILES[ifc_version][data_type]
+                if not schema_path.is_file():
+                    print(f"Schema file {schema_path} wasn't found.")
+                    files_missing = True
+                    continue
+
+                with open(schema_path, "r") as fi:
+                    db[ifc_version][data_type] = json.load(fi)
+    return db.get(version)
 
 
 def get_entity_doc(version, entity):
-    version = check_version_name(version)
-    return DocDatabase()[version]["entities"][entity]
+    db = get_db(version)
+    if db:
+        return db["entities"].get(entity)
 
 
 def get_attribute_doc(version, entity, attribute):
-    version = check_version_name(version)
-    return DocDatabase()[version]["entities"][entity]["attributes"][attribute]
+    db = get_db(version)
+    if db:
+        entity = db["entities"].get(entity)
+        if entity:
+            return entity["attributes"].get(attribute)
 
 
 def get_property_set_doc(version, pset):
-    version = check_version_name(version)
-    return DocDatabase()[version]["properties"][pset]
+    db = get_db(version)
+    if db:
+        return db["properties"].get(pset)
 
 
 def get_property_doc(version, pset, prop):
-    version = check_version_name(version)
-    return DocDatabase()[version]["properties"][pset]["properties"][prop]
+    db = get_db(version)
+    if db:
+        pset = db["properties"].get(pset)
+        if pset:
+            return pset["properties"].get(prop)
 
 
 class DocExtractor:
