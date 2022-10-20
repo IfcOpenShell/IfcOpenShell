@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from math import sin, cos
 
 
 class Usecase:
@@ -25,6 +26,7 @@ class Usecase:
         self.settings = {
             "context": None,  # IfcGeometricRepresentationContext
             "depth": 0.2,
+            "x_angle": 0, # Radians
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
             "clippings": [],  # A list of planes that define clipping half space solids
         }
@@ -47,10 +49,16 @@ class Usecase:
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
             curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points))
+        if self.settings["x_angle"]:
+            extrusion_direction = self.file.createIfcDirection(
+                (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
+            )
+        else:
+            extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             None,
-            self.file.createIfcDirection((0.0, 0.0, 1.0)),
+            extrusion_direction,
             self.convert_si_to_unit(self.settings["depth"]),
         )
         if self.settings["clippings"]:
