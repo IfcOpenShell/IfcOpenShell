@@ -29,6 +29,22 @@ class TestRemovePset(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelDefinesByProperties")) == 0
         assert len(self.file.by_type("IfcPropertySet")) == 0
 
+    def test_removing_material_psets(self):
+        element = self.file.createIfcMaterial()
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        assert len(element.HasProperties) == 1
+        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        assert len(element.HasProperties) == 0
+        assert len(self.file.by_type("IfcMaterialProperties")) == 0
+
+    def test_removing_profile_psets(self):
+        element = self.file.createIfcProfileDef()
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        assert len(element.HasProperties) == 1
+        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        assert len(element.HasProperties) == 0
+        assert len(self.file.by_type("IfcMaterialProperties")) == 0
+
     def test_only_unassigning_if_pset_is_used_by_other_elements(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")

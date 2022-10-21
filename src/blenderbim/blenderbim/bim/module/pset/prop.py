@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.bim.schema
-from blenderbim.bim.prop import Attribute
+from blenderbim.bim.prop import Attribute, StrProperty
 import ifcopenshell
 from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData
@@ -47,7 +47,7 @@ def purge():
     qtonames = {}
 
 
-def getPsetNames(self, context):
+def get_pset_names(self, context):
     global psetnames
     obj = context.active_object
     if not obj.BIMObjectProperties.ifc_definition_id:
@@ -122,7 +122,7 @@ def getWorkSchedulePsetNames(self, context):
     return psetnames[ifc_class]
 
 
-def getQtoNames(self, context):
+def get_qto_names(self, context):
     global qtonames
     if "/" in context.active_object.name:
         ifc_class = context.active_object.name.split("/")[0]
@@ -139,32 +139,44 @@ def get_primary_measure_type(self, context):
     return AddEditCustomPropertiesData.data["primary_measure_type"]
 
 
+class IfcPropertyEnumeratedValue(PropertyGroup):
+    enumerated_values: CollectionProperty(type=Attribute)
+
+
+class IfcProperty(PropertyGroup):
+    metadata: PointerProperty(type=Attribute)
+    value_type: EnumProperty(
+        items=[(v, v, v) for v in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue")], name="Value Type"
+    )
+    enumerated_value: PointerProperty(type=IfcPropertyEnumeratedValue)
+
+
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
-    pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
-    qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
+    pset_name: EnumProperty(items=get_pset_names, name="Pset Name")
+    qto_name: EnumProperty(items=get_qto_names, name="Qto Name")
 
 
 class MaterialPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")
 
 
 class TaskPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     qto_name: EnumProperty(items=getTaskQtoNames, name="Qto Name")
 
 
 class ResourcePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=getResourcePsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getResourceQtoNames, name="Qto Name")
 
@@ -172,14 +184,14 @@ class ResourcePsetProperties(PropertyGroup):
 class ProfilePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=getProfilePsetNames, name="Pset Name")
 
 
 class WorkSchedulePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=getWorkSchedulePsetNames, name="Pset Name")
 
 
@@ -197,6 +209,14 @@ class AddEditProperties(PropertyGroup):
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
+    template_type: EnumProperty(
+        items=[
+            ("IfcPropertySingleValue", "IfcPropertySingleValue", "IfcPropertySingleValue"),
+            ("IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue"),
+        ],
+        name="Template Type",
+    )
+    enum_values: CollectionProperty(name="Enum Values", type=Attribute)
 
     def get_value_name(self):
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)

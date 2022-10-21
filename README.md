@@ -9,9 +9,15 @@ For more information, see
 * [http://ifcopenshell.org](http://ifcopenshell.org)  
 * [http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
 
-[![Build Status](https://travis-ci.com/IfcOpenShell/IfcOpenShell.svg?branch=v0.6.0)](https://travis-ci.com/IfcOpenShell/IfcOpenShell)
-
-[![Financial Contributors](https://opencollective.com/opensourcebim/tiers/badge.svg)](https://opencollective.com/opensourcebim/)
+| Service                                         | Status                                                                                                                                       |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Anaconda Daily Build                            | [![Anaconda-Server Badge](https://img.shields.io/conda/vn/ifcopenshell/ifcopenshell)](https://anaconda.org/ifcopenshell/ifcopenshell)        |
+| Anaconda v0.7.0 Stable                          | [![Anaconda-Server Badge](https://img.shields.io/conda/vn/conda-forge/ifcopenshell)](https://anaconda.org/conda-forge/ifcopenshell)          |
+| PyPi Daily Build                                | [![PyPi Badge](https://img.shields.io/pypi/v/ifcopenshell)](https://pypi.org/project/ifcopenshell/)                                          |
+| ArchLinux AUR Package                           | [![AUR Badge](https://img.shields.io/aur/version/ifcopenshell-git)](https://aur.archlinux.org/packages/ifcopenshell-git)                     |
+| BlenderBIM Add-on Chocolatey (under moderation) | [![Chocolatey Badge](https://img.shields.io/chocolatey/v/blenderbim-nightly)](https://community.chocolatey.org/packages/blenderbim-nightly/) |
+| Sponsor development on OpenCollective           | [![Financial Contributors](https://opencollective.com/opensourcebim/tiers/badge.svg)](https://opencollective.com/opensourcebim/)             |
+| Docker hub                                      | [![Docker Pulls](https://img.shields.io/docker/pulls/aecgeeks/ifcopenshell)](https://hub.docker.com/r/aecgeeks/ifcopenshell)                 |
 
 Prerequisites
 -------------
@@ -25,7 +31,7 @@ Dependencies
 * [Boost](http://www.boost.org/)
 * [Open Cascade](https://dev.opencascade.org/) - *optional*, but required for building IfcGeom
   ([official](https://dev.opencascade.org/release), "OCCT", or [community edition](https://github.com/tpaviot/oce), "OCE")  
-  For converting IFC representation items into BRep solids and tesselated meshes
+  For converting IFC representation items into BRep solids and tessellated meshes
 * [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) - *optional*  
   For IfcConvert to be able to write tessellated Collada (.dae) files
 * [SWIG](http://www.swig.org/) and [Python](https://www.python.org/) - *optional*  
@@ -89,7 +95,7 @@ The following instructions are for Ubuntu, modify as required for other operatin
 can be experimented with and studied for pointers for other operating systems, but note that this script is not currently
 meant to be used for a typical IfcOpenShell workspace setup.
 
-Note 1: It is recommeded to use OCCT for IfcOpenShell. You could use OCE as well, but sometimes it may lag behind OCCT and 
+Note 1: It is recommended to use OCCT for IfcOpenShell. You could use OCE as well, but sometimes it may lag behind OCCT and 
 therefore not compile with the latest IfcOpenShell.
 
 Note 2: where `make -j` is written, add a number roughly equal to the amount of CPU cores + 1.
@@ -163,28 +169,40 @@ If all worked out correctly you can now use IfcOpenShell. See the examples below
 **1)** Install all dependencies using [Homebrew](https://brew.sh/)
 
 ```{shell}
-$ brew install boost swig cmake ftgl cgal gmp libaec opencascade
+$ brew install boost cmake python3 cgal ftgl gmp libaec opencascade swig hdf5 zlib
+# homebrew automatically links most libraries, except some keg-only ones
+$ brew link zlib --force
 ```
 
 **2)** Clone the git repo and its submodules
 ```{shell}
 $ git clone --recurse-submodules https://github.com/IfcOpenShell/IfcOpenShell.git 
 ```
-**3)** Build IfcOpenShell with flags for Homebrew dependencies (```/usr/local/```)
+**3)** Build IfcOpenShell with flags for Homebrew dependencies: (``/usr/local/``) for Intel machines with x84_64 architecture,
+(``/opt/homebrew/``) for Apple Silicon processors with arm64 architecture.
 ```{shell}
 $ cd /path/to/IfcOpenShell
 $ mkdir build && cd build
-$ cmake ../cmake -DOCC_LIBRARY_DIR=/usr/local/lib/ \
-      -DOCC_INCLUDE_DIR=/usr/local/include/opencascade/ \
-      -DCOLLADA_SUPPORT=0 \
-      -DCGAL_INCLUDE_DIR=/usr/local/include/ \
-      -DGMP_LIBRARY_DIR=/usr/local/lib/ \
-      -DMPFR_LIBRARY_DIR=/usr/local/lib/
-      
-$ make -j -lboost_options
+# set library flags
+$ export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
+$ cmake ../cmake
+    -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.10 \
+    -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/lib/libpython3.10.dylib \
+    -DPYTHON_INCLUDE_DIR=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/include/python3.10/ \
+    -DOCC_LIBRARY_DIR=/opt/homebrew/lib/ \
+    -DOCC_INCLUDE_DIR=/opt/homebrew/include/opencascade/ \
+    -DCGAL_INCLUDE_DIR=/opt/homebrew/include/ \
+    -DGMP_LIBRARY_DIR=/opt/homebrew/lib/ \
+    -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/ \
+    -DHDF5_LIBRARY_DIR=/opt/homebrew/lib/ \
+    -DHDF5_INCLUDE_DIR=/opt/homebrew/include/ \
+    -DCOLLADA_SUPPORT=0
+# `sysctl -n hw.ncpu` returns the number of cpu cores on macOS
+$ make -j$(sysctl -n hw.ncpu)
 ```
 
-Note: Make sure to compile using XCode, rather than a ```brew``` installed C/C++ compiler.
+Note: Make sure to compile using the XCode provided Apple Clang compiler, installed with `xcode-select --install
+`, rather than a ```brew``` installed C/C++ compiler.
 
 Installing IfcOpenShell with Conda
 ----------------------------------
@@ -273,35 +291,35 @@ Also available are a series of utilities that are based on or related to IfcOpen
 
 Those marked with an asterisk are part of IfcOpenShell.
 
-Name | License
---- | ---
-bcf | LGPL-3.0-or-later
-blenderbim | GPL-3.0-or-later
-bsdd | LGPL-3.0-or-later
-ifc2ca | LGPL-3.0-or-later
-ifc4d | LGPL-3.0-or-later
-ifc5d | LGPL-3.0-or-later
-ifcbimtester | LGPL-3.0-or-later
-ifcblender | LGPL-3.0-or-later\*
-ifccityjson | LGPL-3.0-or-later
-ifcclash | LGPL-3.0-or-later
-ifccobie | LGPL-3.0-or-later
-ifcconvert | LGPL-3.0-or-later\*
-ifccsv | LGPL-3.0-or-later
-ifcdiff | LGPL-3.0-or-later
-ifcfm | LGPL-3.0-or-later
-ifcgeom | LGPL-3.0-or-later\*
-ifcgeom\_schema\_agnostic | LGPL-3.0-or-later\*
-ifcgeomserver | LGPL-3.0-or-later\*
-ifcjni | LGPL-3.0-or-later\*
-ifcmax | LGPL-3.0-or-later\*
-ifcopenshell-python | LGPL-3.0-or-later\*
-ifcparse | LGPL-3.0-or-later\*
-ifcpatch | LGPL-3.0-or-later
-ifcsverchok | GPL-3.0-or-later
-ifcwrap | LGPL-3.0-or-later\*
-qtviewer | LGPL-3.0-or-later\*
-serializers | LGPL-3.0-or-later\*
+| Name                      | License             |
+| ------------------------- | ------------------- |
+| bcf                       | LGPL-3.0-or-later   |
+| blenderbim                | GPL-3.0-or-later    |
+| bsdd                      | LGPL-3.0-or-later   |
+| ifc2ca                    | LGPL-3.0-or-later   |
+| ifc4d                     | LGPL-3.0-or-later   |
+| ifc5d                     | LGPL-3.0-or-later   |
+| ifcbimtester              | LGPL-3.0-or-later   |
+| ifcblender                | LGPL-3.0-or-later\* |
+| ifccityjson               | LGPL-3.0-or-later   |
+| ifcclash                  | LGPL-3.0-or-later   |
+| ifccobie                  | LGPL-3.0-or-later   |
+| ifcconvert                | LGPL-3.0-or-later\* |
+| ifccsv                    | LGPL-3.0-or-later   |
+| ifcdiff                   | LGPL-3.0-or-later   |
+| ifcfm                     | LGPL-3.0-or-later   |
+| ifcgeom                   | LGPL-3.0-or-later\* |
+| ifcgeom\_schema\_agnostic | LGPL-3.0-or-later\* |
+| ifcgeomserver             | LGPL-3.0-or-later\* |
+| ifcjni                    | LGPL-3.0-or-later\* |
+| ifcmax                    | LGPL-3.0-or-later\* |
+| ifcopenshell-python       | LGPL-3.0-or-later\* |
+| ifcparse                  | LGPL-3.0-or-later\* |
+| ifcpatch                  | LGPL-3.0-or-later   |
+| ifcsverchok               | GPL-3.0-or-later    |
+| ifcwrap                   | LGPL-3.0-or-later\* |
+| qtviewer                  | LGPL-3.0-or-later\* |
+| serializers               | LGPL-3.0-or-later\* |
 
 [LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING.LESSER "LGPL-3.0-or-later"
 [IFC]: https://technical.buildingsmart.org/standards/ifc/ "IFC"

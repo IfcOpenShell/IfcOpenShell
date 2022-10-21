@@ -375,15 +375,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def open_spreadsheet(cls, uri):
-        cls.open_with_user_command(
-            bpy.context.preferences.addons["blenderbim"].preferences.spreadsheet_command, uri
-        )
+        cls.open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.spreadsheet_command, uri)
 
     @classmethod
     def open_svg(cls, uri):
-        cls.open_with_user_command(
-            bpy.context.preferences.addons["blenderbim"].preferences.svg_command, uri
-        )
+        cls.open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.svg_command, uri)
 
     @classmethod
     def run_root_assign_class(
@@ -426,7 +422,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             selector = ifcopenshell.util.selector.Selector()
             variables = {}
             for variable in re.findall("{{.*?}}", value):
-                value = value.replace(variable, selector.get_element_value(product, variable[2:-2]) or "")
+                value = value.replace(variable, str(selector.get_element_value(product, variable[2:-2]) or ""))
         obj.BIMTextProperties.value = value
 
     # TODO below this point is highly experimental prototype code with no tests

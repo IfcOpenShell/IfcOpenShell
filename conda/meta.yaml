@@ -1,42 +1,62 @@
+{% set name = "ifcopenshell" %}
+{% set version = "0.7.0" %}
+{% set occt_version = "7.6.2" %}
+{% set cgal_cpp_version = "5.3" %}
+{% set hdf5_version = "1.12.1" %}
+
 package:
-  name: ifcopenshell
-  version: "0.6.0a1"
+  name: {{ name }}
+  version: {{ version }}
 
 source:
-  git_rev: "v0.6.0a1"
-  git_url: https://github.com/IfcOpenShell/IfcOpenShell
+  path: ..
 
 build:
-  number: 0
-  features:
-    - vc9     # [win and py27]
-    - vc10    # [win and py34]
-    - vc14    # [win and py35]
-    - vc14    # [win and py36]
+  binary_relocation: false [osx]
 
 requirements:
   build:
-    - gcc     # [osx]
-    - make
-    - python
-    - oce ==0.18.3
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - ninja >=1.10.2
     - cmake
-    - swig >=3.0.9
-    - libboost
-    - icu
-    - xmlschema
-    - lxml
-    - numpy
-  run:
-    - libgcc  # [osx]
+    - swig >=4.0.2
+
+  host:
     - python
-    - oce ==0.18.3
-    - libboost
-    - icu
-    - xmlschema
-    - lxml
-    - numpy
-    
+    - boost-cpp <=1.74.0
+    - occt
+    - libxml2
+    - cgal-cpp
+    - hdf5
+    - mpfr
+    - gmp  # [unix]
+    - mpir  # [win]
+    - nlohmann_json
+
+  run:
+    - python
+    - boost-cpp <=1.74.0
+    - occt
+    - libxml2
+    - cgal-cpp
+    - hdf5
+    - mpfr
+    - gmp  # [unix]
+    - mpir  # [win]
+    - nlohmann_json
+
+test:
+  imports:
+    - ifcopenshell
+
 about:
   home: http://ifcopenshell.org
-  license: LGPL
+  license: LGPL-3.0-or-later
+  license_file: COPYING
+  summary: 'IfcOpenShell is a library to support the IFC file format'
+  description: |
+    IfcOpenShell is an open source (LGPL) software library for 
+    working with the Industry Foundation Classes (IFC) file format.
+  doc_url: http://ifcopenshell.org/
+  dev_url: https://github.com/IfcOpenShell/IfcOpenShell

@@ -29,7 +29,7 @@ class Collector(blenderbim.core.tool.Collector):
         # This is the reverse of assign. It reads the Blender collection and figures out its IFC hierarchy
         element = tool.Ifc.get_entity(obj)
 
-        if element.is_a("IfcProject") or element.is_a("IfcGridAxis"):
+        if element.is_a("IfcProject") or element.is_a("IfcGridAxis") or element.is_a("IfcOpeningElement"):
             return
 
         if not obj.users_collection:
@@ -82,7 +82,8 @@ class Collector(blenderbim.core.tool.Collector):
         if obj.users_collection != (object_collection,):
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
-            object_collection.objects.link(obj)
+            if object_collection is not None:
+                object_collection.objects.link(obj)
 
         if collection_collection and collection_collection.children.find(object_collection.name) == -1:
             if bpy.context.scene.collection.children.find(object_collection.name) != -1:
@@ -101,7 +102,7 @@ class Collector(blenderbim.core.tool.Collector):
             if element.is_a("IfcSpatialStructureElement"):
                 return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
         else:
-            if element.is_a("IfcSpatialElement"):
+            if element.is_a("IfcSpatialStructureElement") or element.is_a("IfcExternalSpatialStructureElement"):
                 return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
         if element.is_a("IfcGrid"):

@@ -48,13 +48,17 @@ class Usecase:
             related_objects = list(operates_on.RelatedObjects)
             related_objects.append(self.settings["related_object"])
             operates_on.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": operates_on})
+            ifcopenshell.api.run(
+                "owner.update_owner_history", self.file, **{"element": operates_on}
+            )
         else:
             operates_on = self.file.create_entity(
                 "IfcRelAssignsToProcess",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "OwnerHistory": ifcopenshell.api.run(
+                        "owner.create_owner_history", self.file
+                    ),
                     "RelatedObjects": [self.settings["related_object"]],
                     "RelatingProcess": self.settings["relating_process"],
                 }

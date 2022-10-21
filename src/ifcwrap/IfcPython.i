@@ -80,7 +80,7 @@
 %{
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
-	#include "../ifcgeom/IfcGeomTree.h"
+	#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
@@ -110,6 +110,9 @@
 #ifdef HAS_SCHEMA_4x3_rc4
 #include "../ifcparse/Ifc4x3_rc4.h"
 #endif
+#ifdef HAS_SCHEMA_4x3
+#include "../ifcparse/Ifc4x3.h"
+#endif
 
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
@@ -133,7 +136,7 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
-	#include "../ifcgeom/IfcGeomTree.h"
+	#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
@@ -158,6 +161,15 @@
 #endif
 #ifdef HAS_SCHEMA_4x3_rc2
 	#include "../ifcparse/Ifc4x3_rc2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc3
+	#include "../ifcparse/Ifc4x3_rc3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+	#include "../ifcparse/Ifc4x3_rc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x3
+	#include "../ifcparse/Ifc4x3.h"
 #endif
 
 	#include "../ifcparse/IfcBaseClass.h"

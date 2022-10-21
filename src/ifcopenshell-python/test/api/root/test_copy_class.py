@@ -105,6 +105,25 @@ class TestCopyClass(test.bootstrap.IFC4):
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
         assert new.RepresentationMaps is None
 
+    def test_copying_an_element_with_an_opening(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.run("void.add_opening", self.file, opening=opening, element=wall)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=wall)
+        assert wall.HasOpenings[0] != new.HasOpenings[0]
+        assert wall.HasOpenings[0].RelatedOpeningElement == opening
+        assert new.HasOpenings[0].RelatedOpeningElement != opening
+        assert new.HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
+
+    def test_copying_an_element_with_a_filled_opening_should_not_copy_the_opening_nor_fill(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        window = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.run("void.add_opening", self.file, opening=opening, element=wall)
+        ifcopenshell.api.run("void.add_filling", self.file, opening=opening, element=window)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=wall)
+        assert not new.HasOpenings
+
     def test_copying_an_opening_voiding_an_element(self):
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
@@ -161,3 +180,21 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert port not in new_ports
         assert new_ports[0].is_a("IfcDistributionPort")
         assert ifcopenshell.util.system.get_ports(element) == [port]
+
+    def test_not_copying_path_connections(self):
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            self.file,
+            relating_element=element1,
+            related_element=element2,
+            relating_connection="ATSTART",
+            related_connection="ATEND",
+        )
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element1)
+        assert len(self.file.by_type("IfcRelConnectsPathElements")) == 1
+        assert element1.ConnectedTo
+        assert element2.ConnectedFrom
+        assert not new.ConnectedTo
+        assert not new.ConnectedFrom

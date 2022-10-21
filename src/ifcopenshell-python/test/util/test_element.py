@@ -538,6 +538,18 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         assert subject.get_container(subelement, should_get_direct=True) is None
 
 
+class TestGetReferencedStructures(test.bootstrap.IFC4):
+    def test_getting_references_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        assert subject.get_referenced_structures(element) == []
+        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.run("spatial.reference_structure", self.file, product=element, relating_structure=building)
+        assert subject.get_referenced_structures(element) == [building]
+        building2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.run("spatial.reference_structure", self.file, product=element, relating_structure=building2)
+        assert subject.get_referenced_structures(element) == [building, building2]
+
+
 class TestGetDecompositionIFC4(test.bootstrap.IFC4):
     def test_getting_decomposed_subelements_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
@@ -548,6 +560,16 @@ class TestGetDecompositionIFC4(test.bootstrap.IFC4):
         results = subject.get_decomposition(building)
         assert element in results
         assert subelement in results
+
+    def test_getting_openings_and_fills_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        subsubelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.run("void.add_opening", self.file, element=element, opening=subelement)
+        ifcopenshell.api.run("void.add_filling", self.file, element=subsubelement, opening=subelement)
+        results = subject.get_decomposition(element)
+        assert subelement in results
+        assert subsubelement in results
 
 
 class TestGetAggregateIFC4(test.bootstrap.IFC4):
@@ -646,6 +668,7 @@ class TestCopyDeepIFC4(test.bootstrap.IFC4):
         element = self.file.createIfcWall(GlobalId="id", Name="name", OwnerHistory=owner)
         element2 = subject.copy_deep(self.file, element)
         assert element.OwnerHistory != element2.OwnerHistory
+        assert element.GlobalId != element2.GlobalId
         assert element.OwnerHistory.State == element2.OwnerHistory.State
 
     def test_copying_an_element_recursively_even_if_references_are_aggregated(self):
@@ -655,3 +678,17 @@ class TestCopyDeepIFC4(test.bootstrap.IFC4):
         rel2 = subject.copy_deep(self.file, rel)
         assert rel.RelatedObjects != rel2.RelatedObjects
         assert rel.RelatedObjects[0].Name == rel2.RelatedObjects[0].Name
+
+    def test_copying_an_element_recursively_with_an_exclude_filter(self):
+        owner = self.file.createIfcOwnerHistory()
+        owner.State = "READWRITE"
+        element = self.file.createIfcWall(GlobalId="id", Name="name", OwnerHistory=owner)
+        element2 = subject.copy_deep(self.file, element, exclude=["IfcOwnerHistory"])
+        assert element.OwnerHistory == element2.OwnerHistory
+
+    def test_copying_an_element_recursively_with_aggregates_with_an_exclude_filter(self):
+        element = self.file.createIfcWall(Name="name")
+        rel = self.file.createIfcRelAggregates()
+        rel.RelatedObjects = [element]
+        rel2 = subject.copy_deep(self.file, rel, exclude=["IfcWall"])
+        assert rel.RelatedObjects == rel2.RelatedObjects

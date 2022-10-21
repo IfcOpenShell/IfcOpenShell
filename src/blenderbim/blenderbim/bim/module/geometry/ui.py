@@ -19,7 +19,8 @@
 import bpy
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.geometry.data import RepresentationsData, DerivedPlacementsData
+from blenderbim.bim.helper import prop_with_search
+from blenderbim.bim.module.geometry.data import RepresentationsData, ConnectionsData, DerivedPlacementsData
 
 
 class BIM_PT_representations(Panel):
@@ -50,7 +51,7 @@ class BIM_PT_representations(Panel):
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
-        row.prop(context.scene.BIMRootProperties, "contexts", text="")
+        prop_with_search(row, context.scene.BIMRootProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         for representation in RepresentationsData.data["representations"]:
@@ -65,6 +66,43 @@ class BIM_PT_representations(Panel):
             op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
+
+
+class BIM_PT_connections(Panel):
+    bl_label = "IFC Connections"
+    bl_idname = "BIM_PT_connections"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_geometry_object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+            return False
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not ConnectionsData.is_loaded:
+            ConnectionsData.load()
+
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
+
+        if not ConnectionsData.data["connections"]:
+            layout.label(text="No connections found")
+
+        for connection in ConnectionsData.data["connections"]:
+            row = self.layout.row(align=True)
+            row.label(text=connection["Name"], icon="SNAP_ON" if connection["is_relating"] else "SNAP_OFF")
+            row.label(text=connection["ConnectionType"])
+            op = row.operator("bim.select_connection", icon="RESTRICT_SELECT_OFF", text="")
+            op.connection = connection["id"]
+            op = row.operator("bim.remove_connection", icon="X", text="")
+            op.connection = connection["id"]
 
 
 class BIM_PT_mesh(Panel):
@@ -88,18 +126,6 @@ class BIM_PT_mesh(Panel):
             return
         layout = self.layout
         props = context.active_object.data.BIMMeshProperties
-
-        row = layout.row(align=True)
-        op = row.operator("bim.switch_representation", text="Bake Voids", icon="SELECT_SUBTRACT")
-        op.should_switch_all_meshes = True
-        op.should_reload = True
-        op.ifc_definition_id = props.ifc_definition_id
-        op.disable_opening_subtractions = False
-        op = row.operator("bim.switch_representation", text="Dynamic Voids", icon="SELECT_INTERSECT")
-        op.should_switch_all_meshes = True
-        op.should_reload = True
-        op.ifc_definition_id = props.ifc_definition_id
-        op.disable_opening_subtractions = True
 
         row = layout.row()
         row.operator("bim.copy_representation")

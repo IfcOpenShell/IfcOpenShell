@@ -30,23 +30,31 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.productivity = ifcopenshell.util.element.get_psets(self.settings["resource"]).get(
-            "EPset_Productivity", None
-        )
+        self.productivity = ifcopenshell.util.element.get_psets(
+            self.settings["resource"]
+        ).get("EPset_Productivity", None)
         if not self.productivity:
             return
         unit_consumed = self.get_unit_consumed()
-        self.unit_produced_name = self.productivity.get("BaseQuantityProducedName", None)
+        self.unit_produced_name = self.productivity.get(
+            "BaseQuantityProducedName", None
+        )
         unit_produced = self.productivity.get("BaseQuantityProducedValue", None)
         total_produced = self.get_total_produced()
         if not unit_consumed or not unit_produced or not total_produced:
             return
         if not self.settings["resource"].Usage:
-            ifcopenshell.api.run("resource.add_resource_time", self.file, resource=self.settings["resource"])
+            ifcopenshell.api.run(
+                "resource.add_resource_time",
+                self.file,
+                resource=self.settings["resource"],
+            )
         if "T" in self.productivity.get("BaseQuantityConsumed", None):
             seconds = (unit_consumed.days * 24 * 60 * 60) + unit_consumed.seconds
             amount_worked = total_produced / unit_produced * seconds
-            self.settings["resource"].Usage.ScheduleWork = f"PT{amount_worked / 60 / 60}H"
+            self.settings[
+                "resource"
+            ].Usage.ScheduleWork = f"PT{amount_worked / 60 / 60}H"
         else:
             days = unit_consumed.days + (unit_consumed.seconds / (24 * 60 * 60))
             amount_worked = total_produced / unit_produced * days

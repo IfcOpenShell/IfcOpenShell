@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.pset
 
 
 class Usecase:
@@ -27,6 +28,10 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.qto_idx = 5
+        if self.settings["qto"].is_a("IfcPhysicalComplexQuantity"):
+            self.qto_idx = 2
+
         self.update_qto_name()
         self.load_qto_template()
         self.update_existing_properties()
@@ -43,7 +48,7 @@ class Usecase:
         self.qto_template = self.psetqto.get_by_name(self.settings["qto"].Name)
 
     def update_existing_properties(self):
-        for prop in self.settings["qto"].Quantities or []:
+        for prop in self.settings["qto"][self.qto_idx] or []:
             self.update_existing_property(prop)
 
     def update_existing_property(self, prop):
@@ -54,6 +59,7 @@ class Usecase:
         if value is None:
             self.file.remove(prop)
         elif prop.is_a("IfcPhysicalSimpleQuantity"):
+            value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
             prop[3] = float(value)
         del self.settings["properties"][name]
 
@@ -62,7 +68,8 @@ class Usecase:
         for name, value in self.settings["properties"].items():
             if value is None:
                 continue
-            property_type = self.get_canonical_property_type(name)
+            property_type = self.get_canonical_property_type(name, value)
+            value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
             properties.append(
                 self.file.create_entity(
                     "IfcQuantity{}".format(property_type),
@@ -72,17 +79,24 @@ class Usecase:
         return properties
 
     def extend_qto_with_new_properties(self, new_properties):
-        props = list(self.settings["qto"].Quantities) if self.settings["qto"].Quantities else []
+        props = list(self.settings["qto"][self.qto_idx]) if self.settings["qto"][self.qto_idx] else []
         props.extend(new_properties)
-        self.settings["qto"].Quantities = props
+        self.settings["qto"][self.qto_idx] = props
 
-    def get_canonical_property_type(self, name):
-        if not self.qto_template:
-            return "Length"
-        for prop_template in self.qto_template.HasPropertyTemplates:
-            if prop_template.Name != name:
-                continue
-            return prop_template.TemplateType[2:].lower().capitalize()
+    def get_canonical_property_type(self, name, value):
+        if isinstance(value, ifcopenshell.entity_instance):
+            result = value.is_a().replace("Ifc", "").replace("Measure", "")
+            # Sigh, IFC inconsistencies
+            if result == "Numeric":
+                result = "Number"
+            elif result == "Mass":
+                result = "Weight"
+            return result
+        if self.qto_template:
+            for prop_template in self.qto_template.HasPropertyTemplates:
+                if prop_template.Name != name:
+                    continue
+                return prop_template.TemplateType[2:].lower().capitalize()
         return "Length"
 
     def get_primary_measure_type(self, name, previous_value=None):

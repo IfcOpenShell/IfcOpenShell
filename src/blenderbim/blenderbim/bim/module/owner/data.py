@@ -253,10 +253,7 @@ class ObjectActorData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {
-            "actor": cls.actor(),
-            "actors": cls.actors()
-        }
+        cls.data = {"actor": cls.actor(), "actors": cls.actors()}
 
     @classmethod
     def actor(cls):
@@ -279,9 +276,9 @@ class ObjectActorData:
                     roles = cls.get_roles(actor.TheActor.ThePerson)
                     roles.extend(cls.get_roles(actor.TheActor.TheOrganization))
                 role = ", ".join(roles)
-                results.append({
-                    "id": actor.id(), "name": actor.Name or "Unnamed", "role": role, "ifc_class": actor.is_a()
-                })
+                results.append(
+                    {"id": actor.id(), "name": actor.Name or "Unnamed", "role": role, "ifc_class": actor.is_a()}
+                )
         return results
 
     @classmethod

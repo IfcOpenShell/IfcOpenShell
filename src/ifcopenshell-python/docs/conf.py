@@ -60,7 +60,7 @@ extensions = ["autoapi.extension"]
 autoapi_type = 'python'
 
 # autoapi works by reading source code instead of importing modules
-autoapi_dirs = ['../ifcopenshell']
+autoapi_dirs = ['../ifcopenshell', '../../ifcdiff']
 
 # autoapi_options doesn't have show-module-summary, as it tends to create one
 # page per function which contradicts the presentation of showing all functions

@@ -42,6 +42,11 @@ class TestCreateEmpty(NewFile):
         assert not bpy.data.objects.get("Foobar").data
 
 
+class TestLoadDefaultThumbnails(NewFile):
+    def test_nothing(self):
+        pass # Not possible to test this headlessly
+
+
 class TestRunAggregateAssignObject(NewFile):
     def test_nothing(self):
         pass
@@ -101,3 +106,31 @@ class TestSetContext(NewFile):
         context = ifc.createIfcGeometricRepresentationContext()
         subject.set_context(context)
         assert bpy.context.scene.BIMRootProperties.contexts == str(context.id())
+
+
+class TestSetDefaultContext(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcProject()
+        model = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
+        body = ifcopenshell.api.run("context.add_context", ifc, parent=model, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW")
+        subject.set_default_context()
+        assert bpy.context.scene.BIMRootProperties.contexts == str(body.id())
+
+
+class TestSetDefaultModelingDimensions(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcProject()
+        ifcopenshell.api.run("unit.assign_unit", ifc)
+        subject.set_default_modeling_dimensions()
+        props = bpy.context.scene.BIMModelProperties
+        assert props.extrusion_depth == 3000
+        assert props.length == 1000
+        assert props.rl1 == 0
+        assert props.rl2 == 1000
+        assert props.x == 500
+        assert props.y == 500
+        assert props.z == 500

@@ -3,8 +3,18 @@ name: Publish-blenderbim-multiplatform
 on:
   push:
     paths:
-      - 'src/blenderbim/**'
       - '.github/workflows/ci-blenderbim-matrix.yml'
+      - 'src/blenderbim/**'
+      - 'src/ifcopenshell-python/ifcopenshell/**'
+      - 'src/bcf/src/bcf/**'
+      - 'src/ifcclash/ifcclash/**'
+      - 'src/ifccobie/**'
+      - 'src/ifcdiff/**'
+      - 'src/ifccsv/**'
+      - 'src/ifcpatch/ifcpatch/**'
+      - 'src/ifc4d/ifc4d/**'
+      - 'src/ifc5d/ifc5d/**'
+      - 'src/ifccityjson/**'
     branches:
       - v0.7.0
 
@@ -42,6 +52,10 @@ jobs:
           - {
             name: "MacOS Build",
             short_name: macos
+          }
+          - {
+            name: "MacOS ARM Build",
+            short_name: macosm1
           }
     steps:
       - uses: actions/checkout@v2

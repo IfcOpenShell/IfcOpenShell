@@ -81,11 +81,11 @@
 #include "../ifcparse/IfcFile.h"
 
 #include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom/IfcGeomElement.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom/IfcGeomIteratorSettings.h"
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
 
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../ifcgeom_schema_agnostic/IfcRepresentationShapeItem.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
 

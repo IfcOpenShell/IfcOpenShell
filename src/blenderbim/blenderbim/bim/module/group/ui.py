@@ -40,9 +40,9 @@ class BIM_PT_groups(Panel):
         self.props = context.scene.BIMGroupProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Groups Found".format(len(Data.groups)), icon="OUTLINER")
+        row.label(text=f"{len(Data.groups)} Groups Found", icon="OUTLINER")
         if self.props.is_editing:
-            row.operator("bim.add_group", text="", icon="ADD")
+            row.operator("bim.add_group", text="", icon="ADD").group = 0
             row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_groups", text="", icon="GREASEPENCIL")
@@ -115,10 +115,22 @@ class BIM_PT_object_groups(Panel):
 
 
 class BIM_UL_groups(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            for i in range(0, item.tree_depth):
+                row.label(text="", icon="BLANK1")
+            if item.has_children:
+                op = row.operator(
+                    "bim.toggle_group", icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", text="", emboss=False
+                )
+                op.ifc_definition_id = item.ifc_definition_id
+                op.index = index
+                op.option = "Collapse" if item.is_expanded else "Expand"
+            else:
+                row.label(text="", icon="BLANK1")
+
+            row.label(text=f"*{item.name}") if item.selection_query != "" else row.label(text=item.name)
             group_id = item.ifc_definition_id
             if context.scene.BIMGroupProperties.active_group_id == group_id:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
@@ -128,21 +140,46 @@ class BIM_UL_groups(UIList):
             elif context.scene.BIMGroupProperties.active_group_id:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.group = group_id
+                op = row.operator("bim.add_group", text="", icon="ADD")
+                op.group = group_id
                 op = row.operator("bim.remove_group", text="", icon="X")
                 op.group = group_id
+                if item.selection_query != "":
+                    op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
+                    op.group_id = item.ifc_definition_id
+                    op.query = item.selection_query
             else:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.group = group_id
                 op = row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL")
                 op.group = group_id
+                op = row.operator("bim.add_group", text="", icon="ADD")
+                op.group = group_id
                 op = row.operator("bim.remove_group", text="", icon="X")
                 op.group = group_id
+                if item.selection_query != "":
+                    op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
+                    op.group_id = item.ifc_definition_id
+                    op.query = item.selection_query
 
 
 class BIM_UL_object_groups(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
             row = layout.row(align=True)
+            for i in range(0, item.tree_depth):
+                row.label(text="", icon="BLANK1")
+            if item.has_children:
+                op = row.operator(
+                    "bim.toggle_group", icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", text="", emboss=False
+                )
+                op.ifc_definition_id = item.ifc_definition_id
+                op.index = index
+                op.option = "Collapse" if item.is_expanded else "Expand"
+            else:
+                row.label(text="", icon="BLANK1")
             row.label(text=item.name)
+            op = row.operator("bim.remove_group", text="", icon="X")
+            op.group = item.ifc_definition_id
             op = row.operator("bim.assign_group", text="", icon="ADD")
             op.group = item.ifc_definition_id

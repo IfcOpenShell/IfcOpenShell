@@ -16,15 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+# from datetime import date
 import bpy
 import json
 import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
+from blenderbim.bim.prop import get_ifc_entity_doc_url
 from mathutils import geometry
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 
 
 def draw_attributes(props, layout, copy_operator=None):
@@ -38,11 +41,19 @@ def draw_attribute(attribute, layout, copy_operator=None):
     if not value_name:
         layout.label(text=attribute.name)
         return
-    layout.prop(
-        attribute,
-        value_name,
-        text=attribute.name,
-    )
+    if value_name == "enum_value":
+        prop_with_search(layout, attribute, "enum_value", text=attribute.name)
+    else:
+        layout.prop(
+            attribute,
+            value_name,
+            text=attribute.name,
+        )
+    if "ScheduleDuration" in attribute.name:
+        layout.prop(bpy.context.scene.BIMDuration, "duration_days", text="D")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_hours", text="H")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_minutes", text="M")
+
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
@@ -75,6 +86,7 @@ def import_attribute(attribute, props, data, callback=None):
     new.is_optional = attribute.optional()
     new.data_type = data_type if isinstance(data_type, str) else ""
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
+
     if is_handled_by_callback:
         pass  # Our job is done
     elif is_handled_by_callback is False:
@@ -103,6 +115,79 @@ def export_attributes(props, callback=None):
             continue  # Our job is done
         attributes[prop.name] = prop.get_value()
     return attributes
+
+
+def prop_with_search(layout, data, prop_name, **kwargs):
+    # kwargs are layout.prop arguments (text, icon, etc.)
+    row = layout.row(align=True)
+    # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
+    row.context_pointer_set(name="data", data=data)
+    row.prop(data, prop_name, **kwargs)
+    op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+    op.prop_name = prop_name
+
+    add_entity_url_button(row, getattr(data, prop_name))
+
+
+def add_entity_url_button(layout, entity):
+    if entity:
+        try:
+            url = get_ifc_entity_doc_url(entity)
+        except KeyError:
+            # TODO : support attributes, pset, etc.
+            pass
+        else:
+            if url:
+                url_op = layout.operator("bim.open_webbrowser", icon="INFO", text="")
+                url_op.url = url
+
+
+def get_enum_items(data, prop_name, context):
+    # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
+    # Or throws an error in the console when the items callback returns an empty list
+    # See https://blender.stackexchange.com/q/215781/86891
+    prop = data.__annotations__[prop_name]
+    items = prop.keywords.get("items")
+    if items is None:
+        return
+    if not isinstance(items, (list, tuple)):
+        # items are retrieved through a callback, not a static list :
+        items = items(data, context)
+    return items
+
+
+def get_obj_ifc_definition_id(context, obj, obj_type):
+    if obj_type == "Object":
+        return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Material":
+        return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Task":
+        return context.scene.BIMTaskTreeProperties.tasks[
+            context.scene.BIMWorkScheduleProperties.active_task_index
+        ].ifc_definition_id
+    elif obj_type == "Cost":
+        return context.scene.BIMCostProperties.cost_items[
+            context.scene.BIMCostProperties.active_cost_item_index
+        ].ifc_definition_id
+    elif obj_type == "Resource":
+        return context.scene.BIMResourceTreeProperties.resources[
+            context.scene.BIMResourceProperties.active_resource_index
+        ].ifc_definition_id
+    elif obj_type == "Profile":
+        return context.scene.BIMProfileProperties.profiles[
+            context.scene.BIMProfileProperties.active_profile_index
+        ].ifc_definition_id
+    elif obj_type == "WorkSchedule":
+        return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+
+
+# hack to close popup
+# https://blender.stackexchange.com/a/202576/130742
+def close_operator_panel(event):
+    x, y = event.mouse_x, event.mouse_y
+    bpy.context.window.cursor_warp(10, 10)
+    move_back = lambda: bpy.context.window.cursor_warp(x, y)
+    bpy.app.timers.register(move_back, first_interval=0.01)
 
 
 class IfcHeaderExtractor:

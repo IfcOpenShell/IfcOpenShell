@@ -27,7 +27,6 @@ class Selector:
     def parse(cls, ifc_file, query, elements=None):
         cls.file = ifc_file
         cls.elements = elements
-
         l = lark.Lark(
             """start: query (lfunction query)*
                     query: selector | group
@@ -38,12 +37,13 @@ class Selector:
                     filter: "[" filter_key (comparison filter_value)? "]"
                     filter_key: WORD | pset_or_qto
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
-                    pset_or_qto: /[A-Za-z0-9_]+/ "." /[A-Za-z0-9_]+/
+                    pset_or_qto: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
                     lfunction: and | or
-                    inverse_relationship: types | decomposed_by | bounded_by
+                    inverse_relationship: types | decomposed_by | bounded_by | grouped_by
                     types: "*"
                     decomposed_by: "@"
                     bounded_by: "@@"
+                    grouped_by: "@@@"
                     and: "&"
                     or: "|"
                     not: "!"
@@ -144,6 +144,8 @@ class Selector:
                     results.extend(element.ObjectTypeOf[0].RelatedObjects)
             elif inverse_relationship == "decomposed_by":
                 results.extend(ifcopenshell.util.element.get_decomposition(element))
+            elif inverse_relationship == "grouped_by":
+                results.extend(ifcopenshell.util.element.get_grouped_by(element))
             elif inverse_relationship == "bounded_by" and hasattr(element, "BoundedBy"):
                 for relationship in element.BoundedBy:
                     results.append(relationship.RelatedBuildingElement)
@@ -185,12 +187,12 @@ class Selector:
             elif token_type == "SIGNED_FLOAT":
                 value = float(filter_rule.children[2].children[0])
             elif token_type == "BOOLEAN":
-                value = filter_rule.children[2].children[0].lower() == 'true'
+                value = filter_rule.children[2].children[0].lower() == "true"
             elif token_type == "NULL":
                 value = None
         for element in elements:
-            element_value = cls.get_element_value(element, key)
-            if element_value is None and value is not None:
+            element_value = cls.get_element_value(element, key, value)
+            if element_value is None and value is not None and "not" not in comparison:
                 continue
             if comparison and cls.filter_element(element, element_value, comparison, value):
                 results.append(element)
@@ -199,7 +201,7 @@ class Selector:
         return results
 
     @classmethod
-    def get_element_value(cls, element, key):
+    def get_element_value(cls, element, key, value=None):
         if "." in key and key.split(".")[0] == "type":
             try:
                 element = ifcopenshell.util.element.get_type(element)
@@ -210,12 +212,17 @@ class Selector:
             key = ".".join(key.split(".")[1:])
         elif "." in key and key.split(".")[0] == "material":
             try:
-                element = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-                if not element:
+                material_definition = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+                key = ".".join(key.split(".")[1:])
+                materials = [inst for inst in cls.file.traverse(material_definition) if inst.is_a('IfcMaterial')]
+                for material in materials:
+                    info = material.get_info()
+                    if key in info and info[key] == value:
+                        element = material
+                if not material_definition:
                     return None
             except:
                 return
-            key = ".".join(key.split(".")[1:])
         elif "." in key and key.split(".")[0] == "container":
             try:
                 element = ifcopenshell.util.element.get_container(element)
@@ -239,8 +246,12 @@ class Selector:
     def filter_element(cls, element, element_value, comparison, value):
         if comparison.startswith("not"):
             return not cls.filter_element(element, element_value, comparison[3:], value)
+        elif comparison == "equal" and isinstance(element_value, list):
+            return value in element_value
         elif comparison == "equal":
             return element_value == value
+        elif comparison == "contains" and isinstance(element_value, list):
+            return bool([ev for ev in element_value if value in str(ev)])
         elif comparison == "contains":
             return value in str(element_value)
         elif comparison == "morethan":

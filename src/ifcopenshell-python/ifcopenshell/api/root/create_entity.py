@@ -50,14 +50,46 @@ class Usecase:
                         element.ObjectType = self.settings["predefined_type"]
                     elif hasattr(element, "ElementType"):
                         element.ElementType = self.settings["predefined_type"]
+                    elif hasattr(element, "ProcessType"):
+                        element.ProcessType = self.settings["predefined_type"]
             elif hasattr(element, "ObjectType"):
                 element.ObjectType = self.settings["predefined_type"]
         if self.file.schema == "IFC2X3":
             self.handle_2x3_defaults(element)
+        elif self.file.schema == "IFC4":
+            self.handle_4_defaults(element)
         return element
 
     def handle_2x3_defaults(self, element):
+        if element.is_a("IfcElement") or element.is_a("IfcElementType"):
+            if hasattr(element, "PredefinedType") and not element.PredefinedType:
+                element.PredefinedType = "NOTDEFINED"
+
         if element.is_a("IfcSpatialStructureElement"):
             element.CompositionType = "ELEMENT"
         elif element.is_a("IfcRoof"):
             element.ShapeType = "NOTDEFINED"
+        elif element.is_a("IfcFurnitureType"):
+            element.AssemblyPlace = "NOTDEFINED"
+        elif element.is_a("IfcDoorStyle") or element.is_a("IfcWindowStyle"):
+            element.OperationType = "NOTDEFINED"
+            element.ConstructionType = "NOTDEFINED"
+            element.ParameterTakesPrecedence = False
+            element.Sizeable = False
+
+    def handle_4_defaults(self, element):
+        if element.is_a("IfcElement") or element.is_a("IfcElementType"):
+            if hasattr(element, "PredefinedType") and not element.PredefinedType:
+                element.PredefinedType = "NOTDEFINED"
+
+        if element.is_a("IfcDoorStyle") or element.is_a("IfcWindowStyle"):
+            element.OperationType = "NOTDEFINED"
+            element.ConstructionType = "NOTDEFINED"
+            element.ParameterTakesPrecedence = False
+            element.Sizeable = False
+        elif element.is_a("IfcDoorType"):
+            element.OperationType = "NOTDEFINED"
+        elif element.is_a("IfcWindowType"):
+            element.PartitioningType = "NOTDEFINED"
+        elif element.is_a("IfcFurnitureType"):
+            element.AssemblyPlace = "NOTDEFINED"

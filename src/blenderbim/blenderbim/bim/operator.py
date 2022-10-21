@@ -25,7 +25,9 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 from . import schema
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
+from blenderbim.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
@@ -427,6 +429,20 @@ class RemoveIfcFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BIM_OT_open_webbrowser(bpy.types.Operator):
+    bl_idname = "bim.open_webbrowser"
+    bl_description = "Open the URL in your Web Browser"
+    bl_label = "Open URL"
+
+    url: bpy.props.StringProperty()
+
+    def execute(self, context):
+        import webbrowser
+
+        webbrowser.open(self.url)
+        return {"FINISHED"}
+
+
 class SelectExternalMaterialDir(bpy.types.Operator):
     bl_idname = "bim.select_external_material_dir"
     bl_label = "Select Material File"
@@ -522,4 +538,84 @@ class ConfigureVisibility(bpy.types.Operator):
             col.prop(module, "is_visible", text="")
 
     def execute(self, context):
+        return {"FINISHED"}
+
+
+def update_enum_property_search_prop(self, context):
+    for i, prop in enumerate(self.collection_names):
+        if prop.name == self.dummy_name:
+            setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
+            break
+
+
+class BIM_OT_enum_property_search(bpy.types.Operator):
+    bl_idname = "bim.enum_property_search"
+    bl_label = "Search For Property"
+    bl_options = {"REGISTER", "UNDO"}
+    dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
+    collection_names: bpy.props.CollectionProperty(type=StrProperty)
+    collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
+    prop_name: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        self.clear_collections()
+        self.data = context.data
+        items = get_enum_items(self.data, self.prop_name, context)
+        if items is None:
+            return {"FINISHED"}
+        self.add_items_regular(items)
+        self.add_items_suggestions()
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        # Mandatory to access context.data in update :
+        self.layout.context_pointer_set(name="data", data=self.data)
+        self.layout.prop_search(self, "dummy_name", self, "collection_names")
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def clear_collections(self):
+        self.collection_names.clear()
+        self.collection_identifiers.clear()
+
+    def add_item(self, identifier: str, name: str):
+        self.collection_identifiers.add().name = identifier
+        self.collection_names.add().name = name
+
+    def add_items_regular(self, items):
+        self.identifiers = []
+        for item in items:
+            self.identifiers.append(item[0])
+            self.add_item(identifier=item[0], name=item[1])
+            if item[0] == getattr(self.data, self.prop_name):
+                self.dummy_name = item[1]  # We found the current enum name
+
+    def add_items_suggestions(self):
+        getter_suggestions = getattr(self.data, "getter_enum_suggestions", None)
+        if getter_suggestions is not None:
+            mapping = getter_suggestions.get(self.prop_name)
+            if mapping is None:
+                return
+            for key, values in mapping().items():
+                if key in self.identifiers:
+                    if not isinstance(values, (tuple, list)):
+                        values = [values]
+                    for value in values:
+                        self.add_item(identifier=key, name=key + " (" + value + ")")
+
+
+class EditBlenderCollection(bpy.types.Operator):
+    bl_idname = "bim.edit_blender_collection"
+    bl_label = "Add or Remove blender collection item"
+    bl_options = {"REGISTER", "UNDO"}
+    option: bpy.props.StringProperty(description="add or remove item from collection")
+    collection: bpy.props.StringProperty(description="collection to be edited")
+    index: bpy.props.IntProperty(description="index of item to be removed")
+
+    def execute(self, context):
+        if self.option == "add":
+            getattr(context.bim_prop_group, self.collection).add()
+        else:
+            getattr(context.bim_prop_group, self.collection).remove(self.index)
         return {"FINISHED"}

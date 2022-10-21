@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
 import datetime
 import test.bootstrap
 import ifcopenshell.api
@@ -52,6 +53,14 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         # We assert that these start finish times have not cascaded
         assert task3.TaskTime.ScheduleStart == "2000-01-02T09:00:00"
         assert task3.TaskTime.ScheduleFinish == "2000-01-04T17:00:00"
+
+    def test_catching_cyclic_relationships(self):
+        task = self._create_task("P1D")
+        task2 = self._create_task("P2D")
+        self._create_sequence(task, task2, "FINISH_START")
+        with pytest.raises(RecursionError):
+            self._create_sequence(task2, task, "FINISH_START")
+            ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
 
     def test_cascading_finish_to_start(self):
         task = self._create_task("P1D")

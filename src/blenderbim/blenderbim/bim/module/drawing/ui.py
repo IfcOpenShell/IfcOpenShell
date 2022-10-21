@@ -170,13 +170,16 @@ class BIM_PT_drawings(Panel):
             if self.props.active_drawing_index < len(self.props.drawings):
                 active_drawing = self.props.drawings[self.props.active_drawing_index]
                 row = self.layout.row(align=True)
-                row.alignment = "RIGHT"
+                col = row.column()
+                col.alignment = 'LEFT'
+                col.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
+                col = row.column()
+                col.alignment = 'RIGHT'
                 op = row.operator("bim.open_view", icon="URL", text="")
                 op.view = active_drawing.name
                 op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
                 op.drawing = active_drawing.ifc_definition_id
                 row.operator("bim.create_drawing", text="", icon="OUTPUT")
-                row.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
@@ -421,6 +424,7 @@ class BIM_PT_annotation_utilities(Panel):
 
         row = layout.row(align=True)
         row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
+        row.enabled = context.scene.camera is not None
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):

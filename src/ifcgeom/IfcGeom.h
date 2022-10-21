@@ -23,13 +23,6 @@
 #include <cmath>
 #include <array>
 
-static const double ALMOST_ZERO = 1.e-9;
-
-template <typename T>
-inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMOST_ZERO) {
-	return fabs(a-b) < tolerance; 
-}
-
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Mat.hxx>
@@ -54,14 +47,12 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcBaseClass.h"
 
-#include "../ifcgeom/IfcGeomElement.h" 
-#include "../ifcgeom/IfcGeomRepresentation.h" 
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
-#include "../ifcgeom/IfcGeomShapeType.h"
-
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h" 
+#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h" 
+#include "../ifcgeom_schema_agnostic/IfcRepresentationShapeItem.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomShapeType.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
-
-#include "ifc_geom_api.h"
+#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
 
 // Define this in case you want to conserve memory usage at all cost. This has been
 // benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
@@ -87,24 +78,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include INCLUDE_PARENT_DIR(IfcSchema)
 
 namespace IfcGeom {
-	class IFC_GEOM_API geometry_exception : public std::exception {
-	protected:
-		std::string message;
-	public:
-		geometry_exception(const std::string& m)
-			: message(m) {}
-		virtual ~geometry_exception() throw () {}
-		virtual const char* what() const throw() {
-			return message.c_str();
-		}
-	};
-
-	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
-	public:
-		too_many_faces_exception()
-			: geometry_exception("Too many faces for operation") {}
-	};
-
+	
 class IFC_GEOM_API MAKE_TYPE_NAME(Cache) {
 public:
 #include "mapping_cache.i"
@@ -145,28 +119,8 @@ private:
 		const std::vector<std::vector<double>>* points_ = nullptr;
 		double eps_;
 		bool non_manifold_;
-
-		template <typename Fn>
-		void loop_(const LP& lp, const Fn& callback) {
-			auto ps = get_idxs(lp);
-
-			if (ps.size() < 3) {
-				return;
-			}
-
-			auto A = ps.back();
-			for (auto& B : ps) {
-				auto C = vertex_mapping_[A], D = vertex_mapping_[B];
-				bool fwd = C < D;
-				if (!fwd) {
-					std::swap(C, D);
-				}
-				if (C != D) {
-					callback(C, D, fwd);
-					A = B;
-				}
-			}
-		}
+		
+		void loop_(const LP& lp, const std::function<void(int, int, bool)>& callback);
 
 		bool construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l);
 		bool construct(const std::vector<double>& cp, gp_Pnt* l);
@@ -179,32 +133,9 @@ private:
 			return &cp;
 		}
 
-		std::vector<const void*> get_idxs(const IfcSchema::IfcPolyLoop* lp) {
-			auto poly = lp->Polygon();
-			std::vector<const void*> idxs;
-			std::transform(poly->begin(), poly->end(), std::back_inserter(idxs), [this](const IfcSchema::IfcCartesianPoint* p) {return get_idx(p); });
-			return idxs;
-		}
-
-		std::vector<const void*> get_idxs(const std::vector<int>& it) {
-			std::vector<const void*> idxs;
-			std::transform(it.begin(), it.end(), std::back_inserter(idxs), [this](int i) { return get_idx((*points_)[i - 1]); });
-			return idxs;
-		}
-
-		/*
-		std::vector<uintptr_t> get_idxs(std::vector<std::vector<int>>::const_iterator it) {
-			std::vector<uintptr_t> idxs;
-			std::transform(it->begin(), it->end(), std::back_inserter(idxs), [this](int i) {return get_idx(i); });
-			return idxs;
-		}
-		*/
-
+		std::vector<const void*> get_idxs(const IfcSchema::IfcPolyLoop* lp);
+		std::vector<const void*> get_idxs(const std::vector<int>& it);
 	public:
-		/*
-		faceset_helper(MAKE_TYPE_NAME(Kernel)* kernel, const IfcSchema::IfcConnectedFaceSet* l);
-		*/
-
 		faceset_helper(
 			MAKE_TYPE_NAME(Kernel)* kernel, 
 			const std::vector<CP>& points,
@@ -215,64 +146,12 @@ private:
 
 		bool non_manifold() const { return non_manifold_; }
 		bool& non_manifold() { return non_manifold_; }
+		double epsilon() const { return eps_; }
+		
+		bool edge(int A, int B, TopoDS_Edge& e);
 
-		/*
-		bool edge(CP a, CP b, TopoDS_Edge& e) {
-			int A = vertex_mapping_[get_idx(a)];
-			int B = vertex_mapping_[get_idx(b)];
-			if (A == B) {
-				return false;
-			}
-
-			return edge(A, B, e);
-		}
-		*/
-
-		bool edge(int A, int B, TopoDS_Edge& e) {
-			auto it = edges_.find({A, B});
-			if (it == edges_.end()) {
-				return false;
-			}
-			e = it->second;
-			return true;
-		}
-
-		bool wire(const LP& loop, TopoDS_Wire& wire) {
-			if (duplicates_.find(util::conditional_address_of(loop)) != duplicates_.end()) {
-				return false;
-			}
-			BRep_Builder builder;
-			builder.MakeWire(wire);
-			int count = 0;
-			loop_(loop, [this, &builder, &wire, &count](int A, int B, bool fwd) {
-				TopoDS_Edge e;
-				if (edge(A, B, e)) {
-					if (!fwd) {
-						e.Reverse();
-					}
-					builder.Add(wire, e);
-					count += 1;
-				}
-			});
-			if (count >= 3) {
-				wire.Closed(true);
-
-				TopTools_ListOfShape results;
-				if (kernel_->wire_intersections(wire, results)) {
-					Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
-					kernel_->select_largest(results, wire);
-					non_manifold_ = true;
-				}
-
-				return true;
-			} else {
-				return false;
-			}
-		}
-
-		double epsilon() const {
-			return eps_;
-		}
+		bool wire(const LP& loop, TopoDS_Wire& wire);
+		bool wires(const LP& loop, TopTools_ListOfShape& wires);
 	};
 
 	double deflection_tolerance;
@@ -381,6 +260,7 @@ public:
 
 	void set_offset(const std::array<double, 3>& offset);
 	void set_rotation(const std::array<double, 4>& rotation);
+	double get_wire_intersection_tolerance(const TopoDS_Wire&) const;
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_wire_to_faces(const TopoDS_Wire& wire, TopoDS_Compound& face);
@@ -445,12 +325,6 @@ public:
 	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 	bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
-	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&, double eps=-1.);
-	bool flatten_wire(TopoDS_Wire&);
-	/// Triangulate the set of wires. The firstmost wire is assumed to be the outer wire.
-	bool triangulate_wire(const std::vector<TopoDS_Wire>&, TopTools_ListOfShape&);
-	bool wire_intersections(const TopoDS_Wire & wire, TopTools_ListOfShape & wires);
-	void select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest);
 
 	static double shape_volume(const TopoDS_Shape& s);
 	static double face_area(const TopoDS_Face& f);

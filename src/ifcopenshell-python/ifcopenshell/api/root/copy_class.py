@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.system
 import ifcopenshell.util.element
 
 
@@ -69,7 +70,23 @@ class Usecase:
                 continue
             elif inverse.is_a("IfcRelDefinesByType") and inverse.RelatingType == from_element:
                 continue
+            elif inverse.is_a("IfcRelVoidsElement") and inverse.RelatingBuildingElement == from_element:
+                opening = inverse.RelatedOpeningElement
+                # We don't copy filled openings, since there is no guarantee the filling is also copied
+                if not opening.HasFillings:
+                    new_opening = ifcopenshell.api.run("root.copy_class", self.file, product=opening)
+                    new_opening.VoidsElements[0].RelatingBuildingElement = to_element
+                    if new_opening.ObjectPlacement and new_opening.ObjectPlacement.is_a("IfcLocalPlacement"):
+                        if to_element.ObjectPlacement:
+                            new_opening.ObjectPlacement.PlacementRelTo = to_element.ObjectPlacement
+                    # For now, we do copy opening representations
+                    if opening.Representation:
+                        new_opening.Representation = ifcopenshell.util.element.copy_deep(
+                            self.file, opening.Representation, exclude=["IfcGeometricRepresentationContext"]
+                        )
             elif inverse.is_a("IfcRelFillsElement"):
+                continue
+            elif inverse.is_a("IfcRelConnectsPathElements"):
                 continue
             elif inverse.is_a("IfcRelAssociatesMaterial") and "Usage" in inverse.RelatingMaterial.is_a():
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)

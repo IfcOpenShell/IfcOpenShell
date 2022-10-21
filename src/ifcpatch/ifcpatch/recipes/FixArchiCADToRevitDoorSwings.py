@@ -45,7 +45,7 @@ class Patcher:
         #
         # See bug https://github.com/Autodesk/revit-ifc/issues/187
 
-        #for context in self.file.by_type("IfcGeometricRepresentationSubContext"):
+        # for context in self.file.by_type("IfcGeometricRepresentationSubContext"):
         #    if context.ContextIdentifier == "FootPrint":
         #        context.ContextIdentifier = None
         #        context.ContextType = "Annotation"
@@ -71,7 +71,7 @@ class Patcher:
 
         # Purge axis representations from walls. Revit will draw the axis (a
         # line through the wall) but doesn't give you control over its
-        # visibilty, resulting in very ugly walls and lines typically cutting
+        # visibility, resulting in very ugly walls and lines typically cutting
         # across door openings.
         #
         # See bug https://github.com/Autodesk/revit-ifc/issues/360
@@ -89,7 +89,7 @@ class Patcher:
         #
         # 1. 3D IfcDoors with IfcDoorType import as Revit doors
         # 2. 2D IfcBuildingElementProxy with no type import as Revit generic model
-        # 3. The Revit user turns off the visibilty of the door category.
+        # 3. The Revit user turns off the visibility of the door category.
         # 4. The user is shocked to see that generic models are now invisible,
         #    even though it is clearly a separate category to doors.
         #

@@ -181,7 +181,6 @@ class IfcImporter:
         self.elements = set()
         self.type_collection = None
         self.type_products = {}
-        self.openings = {}
         self.meshes = {}
         self.mesh_shapes = {}
         self.time = 0
@@ -189,6 +188,7 @@ class IfcImporter:
         self.added_data = {}
         self.native_elements = set()
         self.native_data = {}
+        self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
 
@@ -206,7 +206,6 @@ class IfcImporter:
 
     def execute(self):
         bpy.context.window_manager.progress_begin(0, 100)
-        self.progress = 0
         self.profile_code("Starting import process")
         self.load_file()
         self.profile_code("Loading file")
@@ -224,8 +223,6 @@ class IfcImporter:
         self.profile_code("Process context filter")
         self.create_collections()
         self.profile_code("Create collections")
-        self.create_openings_collection()
-        self.profile_code("Create opening collection")
         self.create_materials()
         self.profile_code("Create materials")
         self.create_styles()
@@ -245,8 +242,8 @@ class IfcImporter:
         self.create_structural_items()
         self.profile_code("Create structural items")
         if not self.ifc_import_settings.is_coordinating:
-            self.create_type_products()
-            self.profile_code("Create type products")
+            self.create_element_types()
+            self.profile_code("Create element types")
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
         self.add_project_to_scene()
@@ -322,10 +319,20 @@ class IfcImporter:
             self.elements = self.file.by_type("IfcElement")
             self.annotations = set(self.file.by_type("IfcAnnotation"))
 
+        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
         if self.ifc_import_settings.is_coordinating:
-            self.elements = [e for e in self.elements if e.Representation and not e.is_a("IfcFeatureElement")]
+            self.elements = [e for e in self.elements if e.Representation]
 
         self.elements = set(self.elements[offset:offset_limit])
+
+        if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
+            self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+        else:
+            self.element_types = set(
+                self.file.by_type("IfcElementType")
+                + self.file.by_type("IfcDoorStyle")
+                + self.file.by_type("IfcWindowStyle")
+            )
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
@@ -394,6 +401,12 @@ class IfcImporter:
         for representation in representations:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
+                return True
+            elif len(items) and ( # See #2508 why we accommodate for invalid IFCs here
+                items[0].is_a("IfcSweptDiskSolid")
+                and len({i.is_a() for i in items}) == 1
+                and len({i.Radius for i in items}) == 1
+            ):
                 return True
         return False
 
@@ -551,8 +564,9 @@ class IfcImporter:
             if grid.Representation:
                 shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
             grid_obj = self.create_product(grid, shape)
-            grid_obj.lock_location = (True, True, True)
-            grid_obj.lock_rotation = (True, True, True)
+            if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
+                grid_obj.lock_location = (True, True, True)
+                grid_obj.lock_rotation = (True, True, True)
             collection = bpy.data.collections.new(self.get_name(grid))
             u_axes = bpy.data.collections.new("UAxes")
             collection.children.link(u_axes)
@@ -570,25 +584,20 @@ class IfcImporter:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
-            obj.lock_location = (True, True, True)
-            obj.lock_rotation = (True, True, True)
+            if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
+                obj.lock_location = (True, True, True)
+                obj.lock_rotation = (True, True, True)
             self.link_element(axis, obj)
             self.set_matrix_world(obj, grid_obj.matrix_world)
             grid_collection.objects.link(obj)
 
-    def create_type_products(self):
-        # TODO allow filtering of spatial elements too
-        if self.ifc_import_settings.has_filter:
-            type_products = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
-        else:
-            type_products = self.file.by_type("IfcTypeProduct")
-
-        for type_product in type_products:
-            if not type_product:
+    def create_element_types(self):
+        for element_type in self.element_types:
+            if not element_type:
                 continue
-            self.create_type_product(type_product)
+            self.create_element_type(element_type)
 
-    def create_type_product(self, element):
+    def create_element_type(self, element):
         self.ifc_import_settings.logger.info("Creating object %s", element)
         representation_map = self.get_type_product_body_representation_map(element)
         mesh = None
@@ -717,12 +726,12 @@ class IfcImporter:
                 self.incrementally_merge_objects()
             shape = iterator.get()
             if shape:
-                product = self.file.by_id(shape.guid)
+                product = self.file.by_id(shape.id)
                 if self.body_contexts:
                     self.create_product(product, shape)
                     results.add(product)
                 else:
-                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
+                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.id):
                         # We only load a single context, and we prioritise the Body context. See #1290.
                         pass
                     else:
@@ -872,7 +881,7 @@ class IfcImporter:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                product = self.file.by_id(shape.guid)
+                product = self.file.by_id(shape.id)
                 self.create_product(product, shape)
                 results.add(product)
             if not iterator.next():
@@ -891,7 +900,7 @@ class IfcImporter:
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             mesh = self.create_camera(element, shape)
             self.link_mesh(shape, mesh)
-        elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element):
+        elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element) and shape:
             mesh = self.create_curve(element, shape)
             self.link_mesh(shape, mesh)
         elif shape:
@@ -921,10 +930,6 @@ class IfcImporter:
         elif hasattr(element, "ObjectPlacement"):
             self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element)))
 
-        self.add_opening_relation(element, obj)
-
-        if element.is_a("IfcOpeningElement"):
-            obj.display_type = "WIRE"
         return obj
 
     def get_representation_item_material_name(self, item):
@@ -1108,6 +1113,7 @@ class IfcImporter:
                     polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v2)
 
         curve.bevel_depth = self.unit_scale * item.Radius
+        curve.use_fill_caps = True
         return curve
 
     def create_native_annotation(self, element, mesh_name):
@@ -1239,7 +1245,6 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        project_collection.children[self.opening_collection.name].hide_viewport = True
         project_collection.children[self.type_collection.name].hide_viewport = True
 
     def clean_mesh(self):
@@ -1261,11 +1266,6 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
         IfcStore.edited_objs.clear()
-
-    def add_opening_relation(self, element, obj):
-        if not element.is_a("IfcOpeningElement"):
-            return
-        self.openings[element.GlobalId] = obj
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
@@ -1397,10 +1397,6 @@ class IfcImporter:
             if parent:
                 self.collections[parent.GlobalId].children.link(aggregate["collection"])
 
-    def create_openings_collection(self):
-        self.opening_collection = bpy.data.collections.new("IfcOpeningElements")
-        self.project["blender"].children.link(self.opening_collection)
-
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
             self.create_material(material)
@@ -1477,13 +1473,21 @@ class IfcImporter:
         if surface_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
             blender_material.use_nodes = True
             bsdf = blender_material.node_tree.nodes["Principled BSDF"]
-            if surface_style.DiffuseColour and surface_style.DiffuseColour.is_a("IfcColourRgb"):
-                bsdf.inputs["Base Color"].default_value = (
-                    surface_style.DiffuseColour.Red,
-                    surface_style.DiffuseColour.Green,
-                    surface_style.DiffuseColour.Blue,
-                    1,
-                )
+            if surface_style.DiffuseColour:
+                if surface_style.DiffuseColour.is_a("IfcColourRgb"):
+                    bsdf.inputs["Base Color"].default_value = (
+                        surface_style.DiffuseColour.Red,
+                        surface_style.DiffuseColour.Green,
+                        surface_style.DiffuseColour.Blue,
+                        1,
+                    )
+                elif surface_style.DiffuseColour.is_a("IfcNormalisedRatioMeasure"):
+                    bsdf.inputs["Base Color"].default_value = (
+                        surface_style.SurfaceColour.Red * surface_style.DiffuseColour.wrappedValue,
+                        surface_style.SurfaceColour.Green * surface_style.DiffuseColour.wrappedValue,
+                        surface_style.SurfaceColour.Blue * surface_style.DiffuseColour.wrappedValue,
+                        1,
+                    )
             if surface_style.SpecularColour and surface_style.SpecularColour.is_a("IfcNormalisedRatioMeasure"):
                 bsdf.inputs["Metallic"].default_value = surface_style.SpecularColour.wrappedValue
             if surface_style.SpecularHighlight and surface_style.SpecularHighlight.is_a("IfcSpecularRoughness"):
@@ -1645,8 +1649,6 @@ class IfcImporter:
             return self.collections[element.GlobalId].objects.link(obj)
         elif element.is_a("IfcTypeObject"):
             return self.type_collection.objects.link(obj)
-        elif element.is_a("IfcOpeningElement"):
-            return self.opening_collection.objects.link(obj)
         elif element.is_a("IfcStructuralMember"):
             return self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
@@ -1957,7 +1959,7 @@ class IfcImporter:
     def set_default_context(self):
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
-                bpy.context.scene.BIMProperties.contexts = str(subcontext.id())
+                bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
                 break
 
     def link_element(self, element, obj):

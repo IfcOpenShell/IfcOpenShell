@@ -45,11 +45,17 @@ class TestCreateProject:
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent="model"
         ).should_be_called().will_return("body")
         project.run_context_add_context(
+            context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
             context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent="model"
         ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="", target_view="", parent=0
         ).should_be_called().will_return("plan")
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent="plan"
+        ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
@@ -70,6 +76,10 @@ class TestCreateProject:
 
         project.set_context("body").should_be_called()
         project.set_active_spatial_element("storey").should_be_called()
+
+        project.load_default_thumbnails().should_be_called()
+        project.set_default_context().should_be_called()
+        project.set_default_modeling_dimensions().should_be_called()
 
         subject.create_project(ifc, project, schema="IFC4", template=None)
 
@@ -92,11 +102,17 @@ class TestCreateProject:
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent="model"
         ).should_be_called().will_return("body")
         project.run_context_add_context(
+            context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
             context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent="model"
         ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="", target_view="", parent=0
         ).should_be_called().will_return("plan")
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent="plan"
+        ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
@@ -119,6 +135,10 @@ class TestCreateProject:
         project.set_active_spatial_element("storey").should_be_called()
 
         project.append_all_types_from_template("template").should_be_called()
+
+        project.load_default_thumbnails().should_be_called()
+        project.set_default_context().should_be_called()
+        project.set_default_modeling_dimensions().should_be_called()
 
         subject.create_project(ifc, project, schema="IFC4", template="template")
 
@@ -148,11 +168,17 @@ class TestCreateProject:
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent="model"
         ).should_be_called().will_return("body")
         project.run_context_add_context(
+            context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
             context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent="model"
         ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="", target_view="", parent=0
         ).should_be_called().will_return("plan")
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent="plan"
+        ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
@@ -173,5 +199,9 @@ class TestCreateProject:
 
         project.set_context("body").should_be_called()
         project.set_active_spatial_element("storey").should_be_called()
+
+        project.load_default_thumbnails().should_be_called()
+        project.set_default_context().should_be_called()
+        project.set_default_modeling_dimensions().should_be_called()
 
         subject.create_project(ifc, project, schema="IFC2X3", template=None)
