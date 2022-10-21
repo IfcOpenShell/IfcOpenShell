@@ -172,23 +172,27 @@ Copy an entity instance
 Copy an entity instance is possible in different ways, depending on the task. 
 
 .. code-block:: python
+
     ifcopenshell.api.run("root.copy_class", ifc_file, product = entity_instance_to_copy)
 
 This is high level and makes sensible assumptions about copying things like properties, quantities, openings, and other relationships.
 
 .. code-block:: python
+
     ifcopenshell.util.element.copy(ifc_file, element)
 
 This is for shallow copies.
 
 .. code-block:: python
+
     ifcopenshell.util.element.copy_deep(ifc_file, element, exclude = None)
 
 This is for deep graph copy.
 
-It is also possible to copy an entity instance from two different file, like the following example:
+Also note that ifcopenshell.file.add() can be used to copy instances from one file to the other.
 
 .. code-block:: python
+
     f = ifcopenshell.open(...)
     g = ifcopenshell.file(schema=f.schema)
     g.add(f.by_type(...)[0])
