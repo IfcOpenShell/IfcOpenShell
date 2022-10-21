@@ -40,7 +40,6 @@ class SvIfcById(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCo
 
     def process(self):
         self.ids = self.inputs["id"].sv_get()
-        print(self.ids)
         self.file = SvIfcStore.get_file()
         self.entities = [self.file.by_id(step_id) for step_id in self.ids]
         self.outputs["Entities"].sv_set(self.entities)

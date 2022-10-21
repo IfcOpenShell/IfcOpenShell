@@ -69,6 +69,7 @@ def nodes_index():
                 ("ifc.api", "SvIfcApi"),
                 ("ifc.api_WIP", "SvIfcApiWIP"),
                 ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcGeo"),
+                ("ifc.sverchok_to_ifc", "SvIfcSverchokToIfc"),
                 ("ifc.create_project", "SvIfcCreateProject"),
                 ("ifc.quick_project_setup", "SvIfcQuickProjectSetup")
 
