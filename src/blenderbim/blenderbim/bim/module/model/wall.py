@@ -278,6 +278,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     is_global=True,
                     should_sync_changes_first=False,
                 )
+                obj.rotation_euler[0] = x_angle
         if wall_objs:
             DumbWallRecalculator().recalculate(wall_objs)
         return {"FINISHED"}
