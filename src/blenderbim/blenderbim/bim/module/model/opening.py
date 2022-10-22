@@ -47,6 +47,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         voided_obj = bpy.data.objects.get(self.voided_obj)
         filling_obj = bpy.data.objects.get(self.filling_obj)
@@ -75,7 +76,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             if container:
                 container_obj = tool.Ifc.get_object(container)
                 if container_obj:
-                    new_matrix[2][3] = container_obj.matrix_world[2][3] + props.rl
+                    new_matrix[2][3] = container_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
@@ -109,7 +110,6 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             obj=voided_obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -252,7 +252,6 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                         obj=building_obj,
                         representation=body,
                         should_reload=True,
-                        enable_dynamic_voids=False,
                         is_global=True,
                         should_sync_changes_first=False,
                     )
@@ -421,7 +420,6 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             obj=obj1,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -549,7 +547,6 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                         obj=upstream_obj,
                         representation=body,
                         should_reload=True,
-                        enable_dynamic_voids=False,
                         is_global=True,
                         should_sync_changes_first=False,
                     )
@@ -632,7 +629,6 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 obj=obj,
                 representation=body,
                 should_reload=True,
-                enable_dynamic_voids=False,
                 is_global=True,
                 should_sync_changes_first=False,
             )

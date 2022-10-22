@@ -1541,6 +1541,7 @@ class TestPartOf:
         facet = PartOf(relation="IfcRelNests", entity="IFCFURNITURE")
         run("The nest entity must match exactly 2/2", facet=facet, inst=subelement, expected=True)
 
+        element.PredefinedType = "USERDEFINED"
         element.ObjectType = "WATERBOTTLE"
         facet = PartOf(relation="IfcRelNests", entity="IFCFURNITURE", predefinedType="LITTERBOX")
         run("The nest predefined type must match exactly 1/2", facet=facet, inst=subelement, expected=False)

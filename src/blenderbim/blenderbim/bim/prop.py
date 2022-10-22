@@ -16,15 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
 import os
 import bpy
 import json
 import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
+from ifcopenshell.util.doc import get_entity_doc, get_attribute_doc, get_property_set_doc, get_property_doc
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -39,6 +42,11 @@ from bpy.props import (
 )
 
 cwd = os.path.dirname(os.path.realpath(__file__))
+
+BASE_MODULE_PATH = Path(__file__).parent
+DESCRIPTION_FILES = {
+    "PredefinedType": BASE_MODULE_PATH / "schema" / "enum_descriptions.json",
+}
 
 materialpsetnames_enum = []
 
@@ -95,6 +103,28 @@ def cache_string(s):
 
 
 cache_string.data = {}
+
+
+def get_ifc_entity_docs(ifc_entity):
+    schema = tool.Ifc.get_schema()
+    if schema is not None:
+        return get_entity_doc(schema, ifc_entity)
+
+
+def get_ifc_entity_description(ifc_entity):
+    docs = get_ifc_entity_docs(ifc_entity)
+    return docs.get("description", "") if docs is not None else ""
+
+
+def get_ifc_entity_doc_url(ifc_entity):
+    docs = get_ifc_entity_docs(ifc_entity)
+    return docs.get("spec_url", "") if docs is not None else ""
+
+
+def get_predefined_type_descriptions(ifc_class_enum):
+    with open(DESCRIPTION_FILES["PredefinedType"], "r") as fi:
+        docs = json.load(fi)
+    return docs.get(ifc_class_enum, None) or {}
 
 
 def getAttributeEnumValues(prop, context):

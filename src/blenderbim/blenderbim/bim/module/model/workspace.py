@@ -18,6 +18,8 @@
 
 import os
 import bpy
+import ifcopenshell
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
@@ -97,11 +99,17 @@ class BimToolUI:
             return
         if cls.props.ifc_class == "IfcWallType":
             row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="rl1", text="RL")
+
+            row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="extrusion_depth", text="Height")
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="length", text="Length")
 
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="x_angle", text="X Angle")
+        elif cls.props.ifc_class in ("IfcSlabType", "IfcRampType", "IfcRoofType"):
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="X Angle")
         elif cls.props.ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
@@ -111,9 +119,12 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             label = "Height" if cls.props.ifc_class == "IfcColumn" else "Length"
             row.prop(data=cls.props, property="extrusion_depth", text=label)
+        elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="rl1", text="RL")
         elif cls.props.ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcDoorType", "IfcDoorStyle"):
             row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="rl", text="RL")
+            row.prop(data=cls.props, property="rl2", text="RL")
 
     @classmethod
     def draw_edit_object_interface(cls, context):
@@ -166,12 +177,17 @@ class BimToolUI:
             row.label(text="", icon="EVENT_G")
             row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
-        elif AuthoringData.data["active_class"] in ("IfcSlab", "IfcSlabStandardCase"):
+        elif AuthoringData.data["active_class"] in ("IfcSlab", "IfcSlabStandardCase", "IfcRamp", "IfcRoof"):
             if context.active_object.mode == "OBJECT":
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
                 row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
+
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="x_angle", text="X Angle")
+            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
+            op.x_angle = cls.props.x_angle
         elif AuthoringData.data["active_class"] in (
             "IfcColumn",
             "IfcColumnStandardCase",
@@ -398,7 +414,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_E(self):
         if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.join_wall(join_type="T")
-        elif self.active_class in ("IfcSlab", "IfcSlabStandardCase"):
+        elif self.active_class in ("IfcSlab", "IfcSlabStandardCase", "IfcRamp", "IfcRoof"):
             if not bpy.context.active_object:
                 pass
             elif bpy.context.active_object.mode == "OBJECT":
@@ -493,7 +509,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if len(bpy.context.selected_objects) == 2:
             bpy.ops.bim.add_opening()
         else:
-            bpy.ops.bim.add_potential_opening(x=self.x, y=self.y, z=self.z)
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            bpy.ops.bim.add_potential_opening(x=self.x * unit_scale, y=self.y * unit_scale, z=self.z * unit_scale)
             self.props.x = self.x
             self.props.y = self.y
             self.props.z = self.z

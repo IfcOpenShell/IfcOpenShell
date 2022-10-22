@@ -94,6 +94,7 @@ classes = [
     operator.SelectSchemaDir,
     operator.SelectURIAttribute,
     operator.EditBlenderCollection,
+    operator.BIM_OT_open_webbrowser,
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,

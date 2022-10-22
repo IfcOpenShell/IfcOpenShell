@@ -129,7 +129,8 @@ class TestSetDefaultModelingDimensions(NewFile):
         props = bpy.context.scene.BIMModelProperties
         assert props.extrusion_depth == 3000
         assert props.length == 1000
-        assert props.rl == 1000
+        assert props.rl1 == 0
+        assert props.rl2 == 1000
         assert props.x == 500
         assert props.y == 500
         assert props.z == 500

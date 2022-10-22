@@ -402,7 +402,7 @@ class IfcImporter:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
                 return True
-            elif (
+            elif len(items) and ( # See #2508 why we accommodate for invalid IFCs here
                 items[0].is_a("IfcSweptDiskSolid")
                 and len({i.is_a() for i in items}) == 1
                 and len({i.Radius for i in items}) == 1
@@ -1473,13 +1473,21 @@ class IfcImporter:
         if surface_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
             blender_material.use_nodes = True
             bsdf = blender_material.node_tree.nodes["Principled BSDF"]
-            if surface_style.DiffuseColour and surface_style.DiffuseColour.is_a("IfcColourRgb"):
-                bsdf.inputs["Base Color"].default_value = (
-                    surface_style.DiffuseColour.Red,
-                    surface_style.DiffuseColour.Green,
-                    surface_style.DiffuseColour.Blue,
-                    1,
-                )
+            if surface_style.DiffuseColour:
+                if surface_style.DiffuseColour.is_a("IfcColourRgb"):
+                    bsdf.inputs["Base Color"].default_value = (
+                        surface_style.DiffuseColour.Red,
+                        surface_style.DiffuseColour.Green,
+                        surface_style.DiffuseColour.Blue,
+                        1,
+                    )
+                elif surface_style.DiffuseColour.is_a("IfcNormalisedRatioMeasure"):
+                    bsdf.inputs["Base Color"].default_value = (
+                        surface_style.SurfaceColour.Red * surface_style.DiffuseColour.wrappedValue,
+                        surface_style.SurfaceColour.Green * surface_style.DiffuseColour.wrappedValue,
+                        surface_style.SurfaceColour.Blue * surface_style.DiffuseColour.wrappedValue,
+                        1,
+                    )
             if surface_style.SpecularColour and surface_style.SpecularColour.is_a("IfcNormalisedRatioMeasure"):
                 bsdf.inputs["Metallic"].default_value = surface_style.SpecularColour.wrappedValue
             if surface_style.SpecularHighlight and surface_style.SpecularHighlight.is_a("IfcSpecularRoughness"):

@@ -735,7 +735,9 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 			
 			if (TokenFunc::isKeyword(next)) {
 				try {
-					filler.push_back(new EntityArgument(next));
+					auto ea = new EntityArgument(next);
+					addEntity(((IfcUtil::IfcBaseClass*) *ea));
+					filler.push_back(ea);
 				} catch (IfcException& e) {
 					Logger::Message(Logger::LOG_ERROR, e.what());
 				}
@@ -957,15 +959,30 @@ IfcUtil::ArgumentType EntityArgument::type() const {
 //
 // Functions for casting the EntityArgument to other types
 //
-EntityArgument::operator IfcUtil::IfcBaseClass*() const { return entity; }
-unsigned int EntityArgument::size() const { return 1; }
-Argument* EntityArgument::operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of arguments"); }
-std::string EntityArgument::toString(bool upper) const { 
+EntityArgument::operator IfcUtil::IfcBaseClass*() const {
+	return entity; 
+}
+
+unsigned int EntityArgument::size() const {
+	return 1;
+}
+
+Argument* EntityArgument::operator [] (unsigned int /*i*/) const { 
+	throw IfcException("Argument is not a list of arguments"); 
+}
+
+std::string EntityArgument::toString(bool upper) const {
 	return entity->data().toString(upper);
 }
-//return entity->entity->toString(); }
+
 bool EntityArgument::isNull() const { return false; }
-EntityArgument::~EntityArgument() { delete entity;}
+EntityArgument::~EntityArgument() {
+	// We don't delete it here, rather it will be freed as part of the entity_file_map.
+	// For that purpose when parsed, the simple type instance is explicitly added to the
+	// file. The reason is we want parsed simply types to behave the same as constructed
+	// simple types.
+	// delete entity;
+}
 
 //
 // Reads an Entity from the list of Tokens at the specified offset in the file
@@ -2426,6 +2443,47 @@ std::string IfcFile::createTimestamp() const {
 	}
 
 	return result;
+}
+
+std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
+	std::vector<int> return_value;
+	
+	auto lower = byref.lower_bound({ instance_id, -1, -1 });
+	auto upper = byref.upper_bound({ instance_id, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+
+	// Mapping of instance id to attribute offset.
+	std::map<int, std::vector<int>> mapping;
+	
+	for (auto it = lower; it != upper; ++it) {
+		for (auto& i : it->second) {
+			// We only take the tuple for the type that id=i actually is, in order not
+			// to count double. Because byref contains mappings for every supertype of id=i.
+			if (instance_by_id(i)->declaration().index_in_schema() == std::get<1>(it->first)) {
+				mapping[i].push_back(std::get<2>(it->first));
+			}
+		}
+	}
+
+	auto refs = instances_by_reference(instance_id);
+
+	for (auto& r : *refs) {
+		auto it = mapping.find(r->data().id());
+		if (it == mapping.end() || it->second.empty()) {
+			throw IfcException("Internal error");
+		}
+		return_value.push_back(it->second.front());
+		it->second.erase(it->second.begin());
+		if (it->second.empty()) {
+			mapping.erase(it);
+		}
+	}
+
+	// Test whether all mappings where indeed used.
+	if (!mapping.empty()) {
+		throw IfcException("Internal error");
+	}
+
+	return return_value;
 }
 
 aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index) {

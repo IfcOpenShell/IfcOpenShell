@@ -39,10 +39,11 @@ class Selector:
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
                     pset_or_qto: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
                     lfunction: and | or
-                    inverse_relationship: types | decomposed_by | bounded_by
+                    inverse_relationship: types | decomposed_by | bounded_by | grouped_by
                     types: "*"
                     decomposed_by: "@"
                     bounded_by: "@@"
+                    grouped_by: "@@@"
                     and: "&"
                     or: "|"
                     not: "!"
@@ -143,6 +144,8 @@ class Selector:
                     results.extend(element.ObjectTypeOf[0].RelatedObjects)
             elif inverse_relationship == "decomposed_by":
                 results.extend(ifcopenshell.util.element.get_decomposition(element))
+            elif inverse_relationship == "grouped_by":
+                results.extend(ifcopenshell.util.element.get_grouped_by(element))
             elif inverse_relationship == "bounded_by" and hasattr(element, "BoundedBy"):
                 for relationship in element.BoundedBy:
                     results.append(relationship.RelatedBuildingElement)
@@ -198,7 +201,7 @@ class Selector:
         return results
 
     @classmethod
-    def get_element_value(cls, element, key, value):
+    def get_element_value(cls, element, key, value=None):
         if "." in key and key.split(".")[0] == "type":
             try:
                 element = ifcopenshell.util.element.get_type(element)

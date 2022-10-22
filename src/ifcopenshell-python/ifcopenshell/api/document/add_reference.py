@@ -26,5 +26,10 @@ class Usecase:
 
     def execute(self):
         if self.file.schema == "IFC2X3":
-            return self.file.create_entity("IfcDocumentReference")
+            reference = self.file.create_entity("IfcDocumentReference")
+            if self.settings["information"]:
+                references = list(self.settings["information"].DocumentReferences or [])
+                references.append(reference)
+                self.settings["information"].DocumentReferences = references
+            return reference
         return self.file.create_entity("IfcDocumentReference", ReferencedDocument=self.settings["information"])

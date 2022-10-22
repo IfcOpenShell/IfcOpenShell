@@ -757,9 +757,9 @@ class Restriction:
             if key == "@base":
                 continue
             if isinstance(value, dict):
-                self.options[key[3:]] = value["@value"]
+                self.options[key.split(":")[-1]] = value["@value"]
             else:
-                self.options[key[3:]] = [v["@value"] for v in value]
+                self.options[key.split(":")[-1]] = [v["@value"] for v in value]
         return self
 
     def asdict(self):

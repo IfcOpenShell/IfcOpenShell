@@ -184,7 +184,6 @@ class DumbProfileGenerator:
             obj=obj,
             representation=representation,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -506,7 +505,6 @@ class DumbProfileJoiner:
             obj=obj,
             representation=new_body,
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -519,7 +517,7 @@ class DumbProfileJoiner:
         axis2 = self.get_profile_axis(profile2)
 
         angle = tool.Cad.angle_edges(axis1, axis2, signed=False, degrees=True)
-        if tool.Cad.is_x(angle, (0, 180)):
+        if tool.Cad.is_x(angle, (0, 180), tolerance=0.001):
             return False
 
         intersect, _ = tool.Cad.intersect_edges(axis1, axis2)
@@ -527,7 +525,7 @@ class DumbProfileJoiner:
         proposed_axis = [self.axis[0], intersect] if connection1 == "ATEND" else [intersect, self.axis[1]]
 
         if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180):
-            # The user has moved the wall into an invalid position that cannot connect at the desired end
+            # The user has moved the element into an invalid position that cannot connect at the desired end
             return False
 
         self.axis[1 if connection1 == "ATEND" else 0] = intersect
