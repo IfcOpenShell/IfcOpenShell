@@ -57,7 +57,7 @@ class LaunchTypeManager(bpy.types.Operator):
         row.alignment = "CENTER"
         row.prop(props, "type_predefined_type", text="")
         row.prop(props, "type_template", text="")
-        op = row.operator("bim.change_type_page", icon="ADD", text="")
+        row.operator("bim.add_type", icon="ADD", text="")
 
         row = columns.row(align=True)
         row.alignment = "RIGHT"
@@ -99,6 +99,8 @@ class LaunchTypeManager(bpy.types.Operator):
             op.ifc_class = relating_type["ifc_class"]
             op.relating_type_id = relating_type["id"]
 
+            op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
+            op.relating_type = relating_type["id"]
             op = row.operator("bim.duplicate_type", icon="COPYDOWN", text="")
             op.element = relating_type["id"]
             op = row.operator("bim.remove_type", icon="X", text="")
