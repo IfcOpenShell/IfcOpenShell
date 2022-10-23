@@ -40,7 +40,7 @@ class TypeData:
             {
                 "is_product": cls.is_product(),
                 "total_instances": cls.total_instances(),
-                "type_name": cls.type_name(),
+                "relating_type": cls.relating_type(),
             }
         )
 
@@ -82,8 +82,11 @@ class TypeData:
         return str(len(ifcopenshell.util.element.get_types(element)))
 
     @classmethod
-    def type_name(cls):
+    def relating_type(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        type = ifcopenshell.util.element.get_type(element)
-        if type:
-            return f"{type.is_a()}/{type.Name or 'Unnamed'}"
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            return {
+                "id": element_type.id(),
+                "name":f"{element_type.is_a()}/{element_type.Name or 'Unnamed'}"
+            }

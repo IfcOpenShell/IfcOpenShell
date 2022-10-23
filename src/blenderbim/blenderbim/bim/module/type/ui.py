@@ -76,9 +76,10 @@ class BIM_PT_type(Panel):
             row.operator("bim.disable_editing_type", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
-            if TypeData.data["type_name"]:
-                row.label(text=TypeData.data["type_name"])
-                row.operator("bim.select_type", icon="TRACKER", text="")
+            if TypeData.data["relating_type"]:
+                row.label(text=TypeData.data["relating_type"]["name"])
+                op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
+                op.relating_type = TypeData.data["relating_type"]["id"]
                 row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_type", icon="X", text="")

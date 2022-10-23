@@ -113,15 +113,12 @@ class SelectType(bpy.types.Operator):
     bl_idname = "bim.select_type"
     bl_label = "Select Type"
     bl_options = {"REGISTER", "UNDO"}
-    related_object: bpy.props.StringProperty()
+    relating_type: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
-        related_object = bpy.data.objects.get(self.related_object, context.active_object)
-        oprops = related_object.BIMObjectProperties
-        element_type = ifcopenshell.util.element.get_type(self.file.by_id(oprops.ifc_definition_id))
-        if element_type is not None:
-            obj = IfcStore.get_element(element_type.GlobalId)
+        element = tool.Ifc.get().by_id(self.relating_type)
+        obj = tool.Ifc.get_object(element)
+        if obj:
             context.view_layer.objects.active = obj
             obj.select_set(True)
         return {"FINISHED"}
@@ -166,6 +163,27 @@ class SelectTypeObjects(bpy.types.Operator):
             obj = tool.Ifc.get_object(element)
             if obj:
                 obj.select_set(True)
+        return {"FINISHED"}
+
+
+class AddType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_type"
+    bl_label = "Add Type"
+    bl_options = {"REGISTER"}
+
+    def _execute(self, context):
+        props = context.scene.BIMModelProperties
+        ifc_class = props.type_class
+        predefined_type = props.type_predefined_type
+        template = props.type_template
+        if template == "EMPTY":
+            obj = bpy.data.objects.new("TYPEX", None)
+            element = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class=ifc_class, predefined_type=predefined_type, name="TYPEX")
+            tool.Ifc.link(element, obj)
+            collection = bpy.data.collections.get("Types")
+            if collection:
+                collection.objects.link(obj)
+        bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         return {"FINISHED"}
 
 

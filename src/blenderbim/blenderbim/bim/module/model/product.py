@@ -398,7 +398,7 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
 
                     x_offset = (size / 2) - (width / 2)
                     y_offset = (size / 2) - (height / 2)
-                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=2)
+                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
                     current_thickness = 0
                     del thicknesses[-1]
                     for thickness in thicknesses:
@@ -410,8 +410,18 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
                             x = (current_thickness / total_thickness) * width
                             line = [x_offset + x, y_offset, x_offset + x, y_offset + height]
                         draw.line(line, fill="white", width=2)
+                elif False:
+                    # TODO: things like parametric duct segments
+                    pass
+                elif not element.RepresentationMaps:
+                    # Empties are represented by a generic thumbnail
+                    width = height = 100
+                    x_offset = (size / 2) - (width / 2)
+                    y_offset = (size / 2) - (height / 2)
+                    draw.line([x_offset, y_offset, width + x_offset, height + y_offset], fill="white", width=2)
+                    draw.line([x_offset, y_offset + height, width + x_offset, y_offset], fill="white", width=2)
+                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
                 else:
-                    # For things like parametric duct segments
                     draw.line([0, 0, size, size], fill="red", width=2)
                     draw.line([0, size, size, 0], fill="red", width=2)
 

@@ -234,14 +234,14 @@ class BIMModelProperties(PropertyGroup):
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_template: bpy.props.EnumProperty(
         items=(
-            ("1", "Custom Mesh", ""),
-            ("2", "Vertical Layers", ""),
-            ("2", "Horizontal Layers", ""),
-            ("3", "Extruded Profile", ""),
-            ("4", "Non-Geometric Type", ""),
+            ("MESH", "Custom Mesh", ""),
+            ("LAYERSET_AXIS2", "Vertical Layers", ""),
+            ("LAYERSET_AXIS3", "Horizontal Layers", ""),
+            ("PROFILESET", "Extruded Profile", ""),
+            ("EMPTY", "Non-Geometric Type", ""),
         ),
         name="Type Template",
-        default="1",
+        default="MESH",
     )
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
