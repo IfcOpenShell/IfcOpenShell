@@ -208,6 +208,42 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 context=body,
                 ifc_representation_class=None,
             )
+        elif template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            obj = bpy.data.objects.new("TYPEX", None)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=True,
+                context=body,
+                ifc_representation_class=None,
+            )
+            materials = tool.Ifc.get().by_type("IfcMaterial")
+            if materials:
+                material = materials[0]  # Arbitrarily pick a material
+            else:
+                material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
+                blender_material = bpy.data.materials.new(material.Name)
+                tool.Ifc.link(material, blender_material)
+                blender_material.use_fake_user = True
+            rel = ifcopenshell.api.run(
+                "material.assign_material", tool.Ifc.get(), product=element, type="IfcMaterialLayerSet"
+            )
+            layer_set = rel.RelatingMaterial
+            layer = ifcopenshell.api.run("material.add_layer", tool.Ifc.get(), layer_set=layer_set, material=material)
+            thickness = 0.1  # Arbitrary metric thickness for now
+            layer.LayerThickness = thickness / unit_scale
+
+            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Parametric")
+            if template == "LAYERSET_AXIS2":
+                axis = "AXIS2"
+            elif template == "LAYERSET_AXIS3":
+                axis = "AXIS3"
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"LayerSetDirection": axis})
         elif template == "EMPTY":
             obj = bpy.data.objects.new("TYPEX", None)
             blenderbim.core.root.assign_class(

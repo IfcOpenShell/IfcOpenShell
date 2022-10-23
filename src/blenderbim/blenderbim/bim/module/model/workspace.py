@@ -300,15 +300,16 @@ class BimToolUI:
         if AuthoringData.data["ifc_classes"]:
             row.label(text="", icon="FILE_VOLUME")
             row.prop(data=cls.props, property="ifc_class", text="")
-        else:
-            row.label(text="No Construction Class", icon="FILE_VOLUME")
-        row = cls.layout.row(align=True)
-        if AuthoringData.data["relating_types_ids"]:
-            row.label(text="", icon="FILE_3D")
-            prop_with_search(row, cls.props, "relating_type_id", text="")
+            row = cls.layout.row(align=True)
+            if AuthoringData.data["relating_types_ids"]:
+                row.label(text="", icon="FILE_3D")
+                prop_with_search(row, cls.props, "relating_type_id", text="")
+            else:
+                row.label(text="No Construction Type", icon="FILE_3D")
             row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
         else:
-            row.label(text="No Construction Type", icon="FILE_3D")
+            row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID")
+
         if AuthoringData.data["ifc_classes"]:
             #row = cls.layout.row()
             #row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
