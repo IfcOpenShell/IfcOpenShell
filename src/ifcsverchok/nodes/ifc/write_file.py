@@ -50,7 +50,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
         
     def draw_buttons(self, context, layout):
         row = layout.row(align=True)
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Writes active Ifc file to path.\n It will overwrite an existing file."
+        row.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Writes active Ifc file to path.\n It will overwrite an existing file."
         row.prop(self, 'refresh_local', icon='FILE_REFRESH')
 
     def process(self):

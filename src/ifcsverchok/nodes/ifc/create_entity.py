@@ -13,7 +13,7 @@ from ifcsverchok.ifcstore import SvIfcStore
 import bpy
 import ifcopenshell
 
-from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty, PointerProperty
+from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, flatten_data, repeat_last_for_length
 
@@ -38,6 +38,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
     Descriptions: StringProperty(name="Descriptions", default="", update=updateNode)
     IfcClass: StringProperty(name="IfcClass", update=updateNode)
     Representations: StringProperty(name="Representations", default="", update=updateNode)
+    # Locations: FloatVectorProperty(name="Locations", default="", update=updateNode)
     Properties: StringProperty(name="properties", update=updateNode)
 
     def sv_init(self, context):
@@ -45,6 +46,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         self.inputs.new("SvStringsSocket", "Descriptions").prop_name = "Descriptions"
         self.inputs.new("SvStringsSocket", "IfcClass").prop_name = "IfcClass"
         self.inputs.new("SvStringsSocket", "Representations").prop_name = "Representations"
+        self.inputs.new("SvMatrixSocket", "Locations").is_mandatory=False
         self.inputs.new("SvStringsSocket", "Properties").prop_name = "Properties"
         self.outputs.new("SvStringsSocket", "Entities")
         self.outputs.new("SvStringsSocket", "file")  # only for testing
@@ -57,9 +59,6 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         row.prop(self, 'is_interactive', icon='SCENE_DATA', icon_only=True)
         row.prop(self, 'refresh_local', icon='FILE_REFRESH')
 
-
-
-
     def process(self):
         print("#"*20, "\n running create_entity3 PROCESS()... \n", "#"*20,)
         print("#"*20, "\n hash(self):", hash(self), "\n", "#"*20,)
@@ -68,6 +67,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         self.descriptions = flatten_data(self.inputs["Descriptions"].sv_get(), target_level=1)
         self.ifc_class = self.inputs["IfcClass"].sv_get()[0][0]
         self.representations = flatten_data(self.inputs["Representations"].sv_get(), target_level=1)
+        self.locations = flatten_data(self.inputs["Locations"].sv_get(default=[]), target_level=1)
         self.properties = self.inputs["Properties"].sv_get()
     
 
@@ -84,7 +84,9 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
 
         edit = False
         for i in range(len(self.inputs)):
-            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=False)
+            # if self.sv_input_names[i] == "Locations":
+            #     input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=False, default = [])
+            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=False, default =[])
             # print("input: ", input)
             # print("self.node_dict[hash(self)][self.inputs[i].name]: ", self.node_dict[hash(self)][self.inputs[i].name])
             if isinstance(self.node_dict[hash(self)][self.inputs[i].name], list) and input != self.node_dict[hash(self)][self.inputs[i].name]:
@@ -137,6 +139,11 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                     ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
                 except IndexError:
                     pass
+                try:
+                    print("LOCATION[i]: ", self.locations[i])
+                    ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
+                except IndexError:
+                    pass
                 entities_ids.append(entity.id())
                 SvIfcStore.id_map.setdefault(self.node_id, []).append(entity.id())
             except Exception as e: 
@@ -164,7 +171,11 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                     entity.Representation = self.representations[i]
             except IndexError:
                 pass
-            
+            try:
+                print("LOCATION[i]: ", self.locations[i])
+                ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
+            except IndexError:
+                pass
             if entity.is_a() != self.ifc_class:
                 SvIfcStore.id_map[self.node_id].remove(step_id)
                 entity = ifcopenshell.util.schema.reassign_class(self.file, entity, self.ifc_class)
