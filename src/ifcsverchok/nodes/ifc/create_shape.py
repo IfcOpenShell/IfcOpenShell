@@ -56,7 +56,7 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
             self.process()
             self.refresh_local = False
 
-    refresh_local: BoolProperty(name="Update Node", description="Update Node", update=refresh_node)
+    refresh_local: BoolProperty(name="Create shape(s)", description="Update Node", update=refresh_node)
 
     bl_idname = "SvIfcCreateShape"
     bl_label = "IFC Create Blender Shape"
@@ -68,26 +68,19 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
         self.outputs.new('SvStringsSocket', "Object(s)")
 
     def draw_buttons(self, context, layout):
-        # self.wrapper_tracked_ui_draw_op(layout, "node.sv_ifc_create_shape_refresh", icon="FILE_REFRESH", text="Refresh")
         row = layout.row(align=True)
         row.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Create Blender shape from Ifc Entity. Takes one or multiple Ifc Entities."
-        # row.prop(self, 'is_interactive', icon='SCENE_DATA', icon_only=True)
         row.prop(self, 'refresh_local', icon='FILE_REFRESH')
 
     def process(self):
-        print("#"*20, "\n running create_entity3 PROCESS()... \n", "#"*20,)
-        print("#"*20, "\n hash(self):", hash(self), "\n", "#"*20,)
-        print("node_dict: ", self.node_dict)
         self.entities = flatten_data(self.inputs["Entities"].sv_get(), target_level = 1)
         if not self.entities[0]:
             return
         
         if self.refresh_local or hash(self) not in self.node_dict:
-            print("grr")
             self.file = SvIfcStore.get_file()
             blender_objects = self.create()
             self.node_dict[hash(self)] = blender_objects
-            print("blender_objects: ", blender_objects)
         else:
             blender_objects = self.node_dict[hash(self)]
         
@@ -96,7 +89,6 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
     def create(self):
         blender_objects = []
         for entity in self.entities:
-            print("entity: ", entity)
             try:
                 if not entity.is_a("IfcProduct"):
                     return
