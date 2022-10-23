@@ -56,6 +56,9 @@ release = "0.7.0"
 # - I couldn't customise the template to show submodules above members which makes API discovery hard for users
 extensions = ["autoapi.extension"]
 
+# We'll add the toctree entry ourselves to distinguish between C++ and Python
+autoapi_add_toctree_entry = True
+
 # We're only documenting Python here
 autoapi_type = 'python'
 
