@@ -176,7 +176,8 @@ class DumbSlabGenerator:
             obj.matrix_world = matrix_world
             bpy.context.view_layer.update()
             self.collection.objects.link(obj)
-            obj.rotation_euler[0] = self.x_angle
+            rotation = mathutils.Matrix.Rotation(self.x_angle, 4, 'X')
+            obj.matrix_world = rotation
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
