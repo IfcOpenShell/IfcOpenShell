@@ -100,7 +100,10 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         
         self.file = SvIfcStore.get_file()
         if self.representations[0]:
-            self.representations = [self.file.by_id(step_id) for step_id in self.representations]
+            try:
+                self.representations = [self.file.by_id(step_id) for step_id in self.representations]
+            except Exception as e:
+                raise
             self.names = self.repeat_input_unique(self.names, len(self.representations))
             self.descriptions = self.repeat_input_unique(self.descriptions, len(self.representations))
         elif not self.representations[0]:
@@ -191,15 +194,6 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         if input[0]:
             input = [a if not (s:=sum(j == a for j in input[:i])) else f'{a}-{s+1}' for i, a in enumerate(input)]  # add number to duplicates
         return input
-
-
-    def get_existing_element(self):
-        results = []
-        for i, step_id in enumerate(SvIfcStore.id_map[self.node_id]):
-            entity = self.file.by_id(step_id)
-            results.append([entity])
-        return results
-
     
     def sv_free(self):
         try:
