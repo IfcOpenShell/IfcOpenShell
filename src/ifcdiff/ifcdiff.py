@@ -38,13 +38,10 @@ class IfcDiff:
 
     If you are using IfcDiff as a library, this is the class you should use.
 
-    :param old_file: Filepath to the old file
-    :type old_file: string
-    :param new_file: Filepath to the new file
-    :type new_file: string
-    :param output_file: Filepath to the output JSON file to store the diff
-        results
-    :type output_file: string
+    :param old: IFC file object for the old model
+    :type old: ifcopenshell.file.file
+    :param new: IFC file object for the old model
+    :type new: ifcopenshell.file.file
     :param relationships: List of relationships to check. An empty list means
         that only geometry and attributes are compared.
     :type relationships: list[string]
@@ -66,10 +63,9 @@ class IfcDiff:
         ifc_diff.export()
     """
 
-    def __init__(self, old_file, new_file, output_file, relationships=None, is_shallow=True, filter_elements=None):
-        self.old_file = old_file
-        self.new_file = new_file
-        self.output_file = output_file
+    def __init__(self, old, new, relationships=None, is_shallow=True, filter_elements=None):
+        self.old = old
+        self.new = new
         self.change_register = {}
         self.representation_ids = {}
         self.relationships = relationships
@@ -78,9 +74,7 @@ class IfcDiff:
         self.filter_elements = filter_elements
 
     def diff(self):
-        print("# IFC Diff")
         logging.disable(logging.CRITICAL)
-        self.load()
 
         self.precision = self.get_precision()
 
@@ -97,11 +91,6 @@ class IfcDiff:
         same_elements = new_elements - self.added_elements
         total_same_elements = len(same_elements)
 
-        print(" - {} item(s) were deleted".format(len(self.deleted_elements)))
-        print(" - {} item(s) were added".format(len(self.added_elements)))
-        print(" - {} item(s) were retained between the old and new IFC file".format(total_same_elements))
-
-        start = time.time()
         total_diffed = 0
 
         for global_id in same_elements:
@@ -118,12 +107,10 @@ class IfcDiff:
             if diff:
                 self.change_register.setdefault(new.GlobalId, {}).update({"geometry_changed": True})
 
-        print(" - {} item(s) were changed either geometrically or with data".format(len(self.change_register.keys())))
-        print("# Diff finished in {:.2f} seconds".format(time.time() - start))
         logging.disable(logging.NOTSET)
 
-    def export(self):
-        with open(self.output_file, "w", encoding="utf-8") as diff_file:
+    def export(self, path):
+        with open(path, "w", encoding="utf-8") as diff_file:
             json.dump(
                 {
                     "added": list(self.added_elements),
@@ -133,12 +120,6 @@ class IfcDiff:
                 diff_file,
                 indent=4,
             )
-
-    def load(self):
-        print("Loading old file ...")
-        self.old = ifcopenshell.open(self.old_file)
-        print("Loading new file ...")
-        self.new = ifcopenshell.open(self.new_file)
 
     def get_precision(self):
         contexts = [c for c in self.new.by_type("IfcGeometricRepresentationContext") if c.ContextType == "Model"]
@@ -295,6 +276,24 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    ifc_diff = IfcDiff(args.old, args.new, args.output, args.relationships.split())
+    print("# IFC Diff")
+
+    start = time.time()
+    print("Loading old file ...")
+    old = ifcopenshell.open(args.old)
+    print("Loading new file ...")
+    new = ifcopenshell.open(args.new)
+
+    print("# Loading finished in {:.2f} seconds".format(time.time() - start))
+    start = time.time()
+
+    ifc_diff = IfcDiff(old, new, args.relationships.split())
     ifc_diff.diff()
-    ifc_diff.export()
+
+    print(" - {} item(s) were deleted".format(len(ifc_diff.deleted_elements)))
+    print(" - {} item(s) were added".format(len(ifc_diff.added_elements)))
+    print(" - {} item(s) were changed".format(len(ifc_diff.change_register.keys())))
+
+    print("# Diff finished in {:.2f} seconds".format(time.time() - start))
+
+    ifc_diff.export(args.output)
