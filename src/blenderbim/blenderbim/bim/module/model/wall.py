@@ -609,7 +609,7 @@ class DumbWallGenerator:
             "geometry.add_wall_representation",
             tool.Ifc.get(),
             context=self.body_context,
-            thickness=self.layers["thickness"],
+            thickness=self.layers["thickness"] * 1/cos(self.x_angle), #1/cos(self.x_angle) maintains the correct MaterialLayer thickness upon rotation
             offset=self.layers["offset"],
             length=self.length,
             height=self.height,
@@ -1090,7 +1090,7 @@ class DumbWallJoiner:
             height=height,
             x_angle=x_angle,
             offset=layers["offset"],
-            thickness=layers["thickness"],
+            thickness=layers["thickness"] * 1/cos(x_angle), #1/cos(x_angle) maintains the correct MaterialLayer thickness upon rotation
             clippings=self.clippings,
             booleans=tool.Model.get_manual_booleans(element),
         )
