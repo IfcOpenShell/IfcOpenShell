@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
 import ifcopenshell.api
@@ -176,13 +177,50 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         ifc_class = props.type_class
         predefined_type = props.type_predefined_type
         template = props.type_template
-        if template == "EMPTY":
+        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        if not body:
+            return {"FINISHED"}
+        if template == "MESH":
+            location = context.scene.cursor.location
+            if context.active_object and context.selected_objects and context.active_object.data:
+                obj = context.active_object
+                element = tool.Ifc.get_entity(obj)
+                if element:
+                    mesh = obj.data.copy()
+                    mesh.BIMMeshProperties.ifc_definition_id = 0
+                    obj = bpy.data.objects.new(element.Name or "TYPEX", mesh)
+            else:
+                mesh = bpy.data.meshes.new("TYPEX")
+                bm = bmesh.new()
+                bmesh.ops.create_cube(bm, size=1)
+                bm.to_mesh(mesh)
+                bm.free()
+                obj = bpy.data.objects.new("TYPEX", mesh)
+            obj.matrix_world.col[3] = location.to_4d()
+            blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=True,
+                context=body,
+                ifc_representation_class=None,
+            )
+        elif template == "EMPTY":
             obj = bpy.data.objects.new("TYPEX", None)
-            element = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class=ifc_class, predefined_type=predefined_type, name="TYPEX")
-            tool.Ifc.link(element, obj)
-            collection = bpy.data.collections.get("Types")
-            if collection:
-                collection.objects.link(obj)
+            blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=True,
+                context=body,
+                ifc_representation_class=None,
+            )
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         return {"FINISHED"}
 
