@@ -54,6 +54,9 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
     refresh_local: BoolProperty(name="Update Node", description="Update Node", update=refresh_node)
 
     n_id: StringProperty()
+    flat_output: BoolProperty(
+    name="Flat output", description="Flatten output by list-joining level 1",
+    default=True, update=updateNode)
     context_types = [
         ('Model', 'Model', 'Context type: Model', 0),
         ('Plan', 'Plan', 'Context type: Plan', 1),
@@ -90,9 +93,8 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         self.inputs.new("SvStringsSocket", "paradigm").prop_name = "paradigm"
         self.inputs.new("SvObjectSocket", "blender_objects").prop_name = "blender_objects" #no prop for now
         self.outputs.new("SvVerticesSocket", "Representations")
+        self.outputs.new("SvMatrixSocket", "Locations")
         
-
-
     def draw_buttons(self, context, layout):
         layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Blender mesh to Ifc Shape Representation. \nTakes one or multiple geometries."
         
@@ -127,28 +129,37 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         if self.refresh_local:
             edit = True
         if self.node_id not in SvIfcStore.id_map:
-            representations = self.create(blender_objects)
+            representations, locations = self.create(blender_objects)
         else:
             if edit is True:
                 self.edit()
-                representations = self.create(blender_objects)
+                representations, locations = self.create(blender_objects)
             else:
                 # representations = self.get_existing_element()
                 representations = SvIfcStore.id_map[self.node_id]["Representations"]
+                locations = SvIfcStore.id_map[self.node_id]["Locations"]
         
         print("representations: ", representations)
+        print("locations: ", locations)
 
         self.outputs["Representations"].sv_set(representations)
+        self.outputs["Locations"].sv_set(locations)
 
     def create(self, blender_objects):
         representations_ids = []
+        locations = []
+        add_matrix = locations.extend if self.flat_output else locations.append
         for blender_object in blender_objects:
             representation = ifcopenshell.api.run("geometry.add_representation", self.file, should_run_listeners=False,blender_object = blender_object, geometry=blender_object.data, context = self.get_context())
             if not representation:
                 raise Exception("Couldn't create representation. Possibly wrong context.")
             representations_ids.append(representation.id())
             SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(representation.id())
-        return representations_ids
+            location = blender_object.matrix_world
+            print("\n", "#"*30, "location: ", location)
+            add_matrix(location)
+            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Locations", []).append(location)
+        return representations_ids, locations
 
     def edit(self):
         # results = self.get_existing_element()
@@ -158,6 +169,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             #if self.file.by_id(step_id).is_a('IfcShapeRepresentation'):
             ifcopenshell.api.run("geometry.remove_representation", self.file, representation=self.file.by_id(step_id))
         del SvIfcStore.id_map[self.node_id]["Representations"]
+        del SvIfcStore.id_map[self.node_id]["Locations"]
         return
 
     def get_existing_element(self):
