@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
  
+from copy import deepcopy
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
@@ -23,15 +24,21 @@ import ifcopenshell.api
 from ifcsverchok.ifcstore import SvIfcStore
 import blenderbim.tool as tool
 import blenderbim.core.geometry as core
-from bpy.props import StringProperty, EnumProperty, IntProperty
+from bpy.props import StringProperty, EnumProperty, IntProperty, FloatVectorProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
  
  
-class SvIfcSverchokToIfc(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
-    bl_idname = "SvIfcSverchokToIfc"
-    bl_label = "IFC Sverchok to IFC"
+class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+    """
+    Triggers: Sv to Ifc Repr
+    Tooltip: Sverchok geometry to Ifc Shape Representation
+    """
+    bl_idname = "SvIfcSverchokToIfcRepr"
+    bl_label = "IFC Sverchok to IFC Repr"
+    node_dict = {}
  
+    n_id: StringProperty()
     context_types = [
         ('Model', 'Model', 'Context type: Model', 0),
         ('Plan', 'Plan', 'Context type: Plan', 1),
@@ -53,52 +60,94 @@ class SvIfcSverchokToIfc(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
     context_type: EnumProperty(name="Context Type", description="Default: Model", default="Model",items=context_types,update=updateNode)
     context_identifier: EnumProperty(name="Context Identifier", description="Default: Body", default="Body", items=context_identifiers, update=updateNode)
     target_view: EnumProperty(name="Target View", description="Default: MODEL VIEW", default="MODEL_VIEW",items=target_views, update=updateNode)
- 
+    
     def sv_init(self, context):
-        self.inputs.new("SvVerticesSocket", "Vertices")
-        self.inputs.new("SvStringsSocket", "Edges")
-        self.inputs.new("SvStringsSocket", "Faces")
         self.inputs.new("SvStringsSocket", "context_type").prop_name = "context_type"
         self.inputs.new("SvStringsSocket", "context_identifier").prop_name = "context_identifier"
         self.inputs.new("SvStringsSocket", "target_view").prop_name = "target_view"
- 
-        self.outputs.new("SvVerticesSocket", "Representation")
+        self.inputs.new("SvVerticesSocket", "Vertices")
+        self.inputs.new("SvStringsSocket", "Edges")
+        self.inputs.new("SvStringsSocket", "Faces")        
+        self.outputs.new("SvVerticesSocket", "Representation(s)")
         self.outputs.new("SvVerticesSocket", "File")
+        self.width = 210
+        self.node_dict[hash(self)] = {}
  
     def draw_buttons(self, context, layout):
         op = layout.operator(
             "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Blender mesh to Ifc Shape Representation"
+        ).tooltip = "Sverchok geometry to Ifc Shape Representation. \nTakes one or multiple geometries."
  
     def process(self):
+        if not any(socket.is_linked for socket in self.inputs):
+            return
+
         self.file = SvIfcStore.get_file()
- 
         self.sv_input_names = [i.name for i in self.inputs]
  
-        if self.node_id in SvIfcStore.id_map:
-            for step_id in SvIfcStore.id_map[self.node_id]:
-                ifcopenshell.api.run(
-                    "geometry.remove_representation", self.file, representation=self.file.by_id(step_id)
-                )
-            del SvIfcStore.id_map[self.node_id]
+        if hash(self) not in self.node_dict:
+            self.node_dict[hash(self)] = {} #happens if node is already on canvas when blender loads
+        if not self.node_dict[hash(self)]:
+            self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
+
+        print("node_dict: ", self.node_dict)
+        edit = False
+        for i in range(len(self.inputs)):
+            input = self.inputs[i].sv_get(deepcopy=False)
+            if isinstance(self.node_dict[hash(self)][self.inputs[i].name], list) and input != self.node_dict[hash(self)][self.inputs[i].name]:
+                edit = True
+                print("Edit = True")
+            self.node_dict[hash(self)][self.inputs[i].name] = input
+
+        self.vertices = self.inputs["Vertices"].sv_get(deepcopy=False)
+        self.edges = self.inputs["Edges"].sv_get(deepcopy=False)
+        self.faces = self.inputs["Faces"].sv_get(deepcopy=False)
+        data = list(zip(self.vertices, self.edges, self.faces))
+
+        if self.node_id not in SvIfcStore.id_map:
+
+            representations = self.create(data)
+        else:
+            print("edit: ", edit)
+            if edit is True:
+                self.edit()
+                representations = self.create(data)
+            else:
+                # representations = self.get_existing_element()
+                representations = SvIfcStore.id_map[self.node_id]["Representations"]
  
-        results = []
- 
-        representation = ifcopenshell.api.run(
+        self.outputs["Representation(s)"].sv_set(representations)
+    
+    def create(self, data):
+        representations_ids = []
+        self.context = self.get_context()
+        for item in data:
+            representation = ifcopenshell.api.run(
             "geometry.add_sverchok_representation",
             self.file,
             should_run_listeners=False,
-            context=self.get_context(),
-            vertices=self.inputs["Vertices"].sv_get(),
-            faces=self.inputs["Faces"].sv_get(),
-        )
-        results.append(representation)
-        SvIfcStore.id_map.setdefault(self.node_id, []).append(representation.id())
- 
-        SvIfcStore.file = self.file
- 
-        self.outputs["File"].sv_set([[self.file]])  # only for testing
-        self.outputs["Representation"].sv_set([results])
+            context=self.context,
+            vertices=[item[0]],
+            edges=[item[1]],
+            faces=[item[2]],
+            )
+            if not representation:
+                raise Exception("Couldn't create representation. Possibly wrong context.")
+            representations_ids.append(representation.id())
+            print("Representation: ", representation)
+            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(representation.id())
+        return representations_ids
+    
+    def edit(self):
+            # results = self.get_existing_element()
+        if "Representations" not in SvIfcStore.id_map[self.node_id]:
+            return
+        for step_id in SvIfcStore.id_map[self.node_id]["Representations"]:
+            ifcopenshell.api.run(
+                    "geometry.remove_representation", self.file, representation=self.file.by_id(step_id)
+                )
+        del SvIfcStore.id_map[self.node_id]["Representations"]
+        return
  
     def get_context(self):
         context = ifcopenshell.util.representation.get_context(
@@ -114,23 +163,41 @@ class SvIfcSverchokToIfc(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
                 context_type=self.context_type,
                 context_identifier=self.context_identifier,
                 target_view=self.target_view,
-                parent=model,
+                parent=parent,
             )
+            print("context: ", context)
+            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Contexts", []).append(context.id())
         return context
  
     def sv_free(self):
-        print("it was deleted")
         try:
-            pass
-            # SvIfcStore.id_map.pop(self.representation.id())
-            # SvIfcStore.id_map.pop(self.context.id())
+            self.file = SvIfcStore.get_file()
+            if "Representations" in SvIfcStore.id_map[self.node_id]:
+                for step_id in SvIfcStore.id_map[self.node_id]["Representations"]:
+                    ifcopenshell.api.run("geometry.remove_representation", self.file, representation=self.file.by_id(step_id))
+
+            if "Contexts" in SvIfcStore.id_map[self.node_id]:
+                for context_id in SvIfcStore.id_map[self.node_id]["Contexts"]:
+                    context = self.file.by_id(context_id)
+                    if not self.file.get_inverse(context):
+                        if self.file.by_id(context_id).ParentContext:
+                            parent = self.file.by_id(context_id).ParentContext
+                        ifcopenshell.api.run("context.remove_context", self.file, context=context)
+                        if parent:
+                            if not self.file.get_inverse(parent):
+                                ifcopenshell.api.run("context.remove_context", self.file, context=parent)
+                        print("Removed context with step ID: ", context_id)
+                        SvIfcStore.id_map[self.node_id]["Contexts"].remove(context_id)
+            del SvIfcStore.id_map[self.node_id]
+            del self.node_dict[hash(self)]
+            print('Node was deleted')
         except KeyError or AttributeError:
             pass
  
  
 def register():
-    bpy.utils.register_class(SvIfcSverchokToIfc)
+    bpy.utils.register_class(SvIfcSverchokToIfcRepr)
  
  
 def unregister():
-    bpy.utils.unregister_class(SvIfcSverchokToIfc)
+    bpy.utils.unregister_class(SvIfcSverchokToIfcRepr)

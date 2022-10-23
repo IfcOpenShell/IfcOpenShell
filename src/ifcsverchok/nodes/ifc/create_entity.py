@@ -191,9 +191,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
 
     
     def sv_free(self):
-        
         try:
-            print('DELETING')
             del SvIfcStore.id_map[self.node_id]
             del self.node_dict[hash(self)]
             print('Node was deleted')
