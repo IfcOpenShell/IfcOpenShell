@@ -69,7 +69,6 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         self.inputs.new("SvStringsSocket", "Edges")
         self.inputs.new("SvStringsSocket", "Faces")        
         self.outputs.new("SvVerticesSocket", "Representation(s)")
-        self.outputs.new("SvVerticesSocket", "File")
         self.width = 210
         self.node_dict[hash(self)] = {}
  
@@ -102,26 +101,26 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         self.vertices = self.inputs["Vertices"].sv_get(deepcopy=False)
         self.edges = self.inputs["Edges"].sv_get(deepcopy=False)
         self.faces = self.inputs["Faces"].sv_get(deepcopy=False)
-        data = list(zip(self.vertices, self.edges, self.faces))
+        geo_data = list(zip(self.vertices, self.edges, self.faces))
 
         if self.node_id not in SvIfcStore.id_map:
 
-            representations = self.create(data)
+            representations = self.create(geo_data)
         else:
             print("edit: ", edit)
             if edit is True:
                 self.edit()
-                representations = self.create(data)
+                representations = self.create(geo_data)
             else:
                 # representations = self.get_existing_element()
                 representations = SvIfcStore.id_map[self.node_id]["Representations"]
  
         self.outputs["Representation(s)"].sv_set(representations)
     
-    def create(self, data):
+    def create(self, geo_data):
         representations_ids = []
         self.context = self.get_context()
-        for item in data:
+        for item in geo_data:
             representation = ifcopenshell.api.run(
             "geometry.add_sverchok_representation",
             self.file,

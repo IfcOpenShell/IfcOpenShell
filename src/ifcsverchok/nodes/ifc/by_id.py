@@ -23,13 +23,13 @@ import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
+from sverchok.data_structure import updateNode, flatten_data
 
 
 class SvIfcById(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcById"
     bl_label = "IFC By Id"
-    id: StringProperty(name="Id(s)", update=updateNode)
+    id: StringProperty(name="Id(s)", update=updateNode, )
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "id").prop_name = "id"
@@ -39,9 +39,12 @@ class SvIfcById(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCo
         layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Get IFC element by step id. Takes one or multiple step ids."
 
     def process(self):
-        self.ids = self.inputs["id"].sv_get()
+        self.ids = flatten_data(self.inputs["id"].sv_get(), target_level=1)
+        print(self.ids)
+        if not self.ids[0]:
+            return
         self.file = SvIfcStore.get_file()
-        self.entities = [self.file.by_id(step_id) for step_id in self.ids]
+        self.entities = [self.file.by_id(int(step_id)) for step_id in self.ids]
         self.outputs["Entities"].sv_set(self.entities)
 
 def register():
