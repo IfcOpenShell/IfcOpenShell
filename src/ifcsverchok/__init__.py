@@ -68,8 +68,8 @@ def nodes_index():
                 ("ifc.select_blender_objects", "SvIfcSelectBlenderObjects"),
                 ("ifc.api", "SvIfcApi"),
                 ("ifc.api_WIP", "SvIfcApiWIP"),
-                ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcGeo"),
-                ("ifc.sverchok_to_ifc", "SvIfcSverchokToIfc"),
+                ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcRepr"),
+                ("ifc.sverchok_to_ifc", "SvIfcSverchokToIfcRepr"),
                 ("ifc.create_project", "SvIfcCreateProject"),
                 ("ifc.quick_project_setup", "SvIfcQuickProjectSetup")
 

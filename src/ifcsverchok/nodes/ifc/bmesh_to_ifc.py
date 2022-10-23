@@ -17,6 +17,7 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 from copy import deepcopy
+from decimal import Context
 from email.policy import default
 import bpy
 import ifcopenshell
@@ -89,21 +90,17 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         self.inputs.new("SvStringsSocket", "paradigm").prop_name = "paradigm"
         self.inputs.new("SvObjectSocket", "blender_objects").prop_name = "blender_objects" #no prop for now
         self.outputs.new("SvVerticesSocket", "Representations")
-        self.width = 210
-        self.node_dict[hash(self)] = {}
+        
 
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Blender mesh to Ifc Shape Representation"
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Blender mesh to Ifc Shape Representation. \nTakes one or multiple geometries."
         
         row = layout.row(align=True)
         row.prop(self, 'is_interactive', icon='SCENE_DATA', icon_only=True)
         row.prop(self, 'refresh_local', icon='FILE_REFRESH')
 
-    def process(self):
-        # print("#"*20, "\n running bmesh_to_ifc3 PROCESS()... \n", "#"*20,)
-        # print("#"*20, "\n hash(self):", hash(self), "\n", "#"*20,)
-        
+    def process(self):        
         self.sv_input_names = [i.name for i in self.inputs]
 
         if hash(self) not in self.node_dict:
@@ -111,35 +108,24 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
         
-        # print("node_dict: ", self.node_dict)
         if not self.inputs["blender_objects"].sv_get()[0]:
             return
         edit = False
         for i in range(len(self.inputs)):
             input = self.inputs[i].sv_get(deepcopy=False)
-            # print("input: ", input)
-            # print("self.node_dict[hash(self)][self.inputs[i].name]: ", self.node_dict[hash(self)][self.inputs[i].name])
             if isinstance(self.node_dict[hash(self)][self.inputs[i].name], list) and input != self.node_dict[hash(self)][self.inputs[i].name]:
                 edit = True
             self.node_dict[hash(self)][self.inputs[i].name] = input
         
+        blender_objects = self.inputs["blender_objects"].sv_get()
+        self.file = SvIfcStore.get_file()
+
         #temporary
         if self.paradigm == "Extrusion":
             raise Exception("Extrusion not yet implemented.")
             return
-
         if self.refresh_local:
             edit = True
-
-        blender_objects = self.inputs["blender_objects"].sv_get()
-        # print("\ncontext_type: ", self.context_type)
-        # print("context_identifier: ", self.context_identifier)
-        # print("blender_objects: ", blender_objects)
-
-        self.file = SvIfcStore.get_file()
-        print(self.file)
-
-        self.context = self.get_context()
         if self.node_id not in SvIfcStore.id_map:
             representations = self.create(blender_objects)
         else:
@@ -151,14 +137,13 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                 representations = SvIfcStore.id_map[self.node_id]["Representations"]
         
         print("representations: ", representations)
-        print("SvIfcStore.id_map: ", SvIfcStore.id_map)
 
         self.outputs["Representations"].sv_set(representations)
 
     def create(self, blender_objects):
         representations_ids = []
         for blender_object in blender_objects:
-            representation = ifcopenshell.api.run("geometry.add_representation", self.file, should_run_listeners=False,blender_object = blender_object, geometry=blender_object.data, context = self.context)
+            representation = ifcopenshell.api.run("geometry.add_representation", self.file, should_run_listeners=False,blender_object = blender_object, geometry=blender_object.data, context = self.get_context())
             if not representation:
                 raise Exception("Couldn't create representation. Possibly wrong context.")
             representations_ids.append(representation.id())
@@ -203,19 +188,22 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         return context
     
     def sv_free(self):
-        
         try:
-            print('DELETING')
             self.file = SvIfcStore.get_file()
             if "Representations" in SvIfcStore.id_map[self.node_id]:
                 for step_id in SvIfcStore.id_map[self.node_id]["Representations"]:
-                    print("step_id: ", step_id)
                     ifcopenshell.api.run("geometry.remove_representation", self.file, representation=self.file.by_id(step_id))
 
             if "Contexts" in SvIfcStore.id_map[self.node_id]:
                 for context_id in SvIfcStore.id_map[self.node_id]["Contexts"]:
-                    if not self.file.get_inverse(self.file.by_id(self.context.id())):
-                        ifcopenshell.api.run("context.remove_context", self.file, representation=self.file.by_id(context_id))
+                    context = self.file.by_id(context_id)
+                    if not self.file.get_inverse(context):
+                        if self.file.by_id(context_id).ParentContext:
+                            parent = self.file.by_id(context_id).ParentContext
+                        ifcopenshell.api.run("context.remove_context", self.file, context=context)
+                        if parent:
+                            if not self.file.get_inverse(parent):
+                                ifcopenshell.api.run("context.remove_context", self.file, context=parent)
                         print("Removed context with step ID: ", context_id)
                         SvIfcStore.id_map[self.node_id]["Contexts"].remove(context_id)
             del SvIfcStore.id_map[self.node_id]
