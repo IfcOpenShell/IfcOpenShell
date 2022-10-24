@@ -62,6 +62,7 @@ class Model(blenderbim.core.tool.Model):
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
+        ifc_importer.material_creator.load_existing_materials()
         openings = set(openings)
         openings -= ifc_importer.create_products(openings)
         for opening in openings or []:
