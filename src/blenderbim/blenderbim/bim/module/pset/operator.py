@@ -344,6 +344,44 @@ class AddQto(bpy.types.Operator, Operator):
         Data.load(IfcStore.get_file(), ifc_definition_id)
 
 
+class CalculateQuantity(bpy.types.Operator):
+    bl_idname = "bim.calculate_quantity"
+    bl_label = "Calculate Quantity"
+    bl_options = {"REGISTER", "UNDO"}
+    prop: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.qto_calculator = QtoCalculator()
+        obj = context.active_object
+        prop = obj.PsetProperties.properties.get(self.prop)
+        prop.metadata.float_value = self.calculate_quantity(obj, context)
+        return {"FINISHED"}
+
+    def calculate_quantity(self, obj, context):
+        quantity = self.qto_calculator.calculate_quantity(obj.PsetProperties.active_pset_name, self.prop, obj)
+        prefix, name = self.get_blender_prefix_name(context)
+        quantity = ifcopenshell.util.unit.convert(quantity, None, "METRE", prefix, name)
+        return round(quantity, 3)
+
+    def get_prefix_name(self, value):
+        if "/" in value:
+            return value.split("/")
+        return None, value
+
+    def get_blender_prefix_name(self, context):
+        unit_settings = context.scene.unit_settings
+        if unit_settings.system == "IMPERIAL":
+            if unit_settings.length_unit == "INCHES":
+                return None, "inch"
+            elif unit_settings.length_unit == "FEET":
+                return None, "foot"
+        elif unit_settings.system == "METRIC":
+            if unit_settings.length_unit == "METERS":
+                return None, "METRE"
+            return unit_settings.length_unit[0 : -len("METERS")], "METRE"
+
+
+
 class GuessQuantity(bpy.types.Operator):
     bl_idname = "bim.guess_quantity"
     bl_label = "Guess Quantity"
