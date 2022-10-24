@@ -252,13 +252,19 @@ class IfcStore:
         if not obj:
             return
         if obj.BIMObjectProperties.ifc_definition_id:
-            element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            try:
+                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            except:
+                return
             data = {"id": element.id(), "obj": obj.name}
             if hasattr(element, "GlobalId"):
                 data["guid"] = element.GlobalId
             IfcStore.commit_link_element(data)
         if hasattr(obj, "BIMMaterialProperties") and obj.BIMMaterialProperties.ifc_style_id:
-            element = IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id)
+            try:
+                element = IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id)
+            except:
+                return
             data = {"id": element.id(), "obj": obj.name}
             IfcStore.commit_link_element(data)
 
