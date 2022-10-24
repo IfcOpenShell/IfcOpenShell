@@ -62,10 +62,13 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
             result = ifcopenshell.api.run("root.create_entity", self.file, name=self.names[i], ifc_class=self.ifc_class)
             for items in element:
                 print("items: ", items)
-                ifcopenshell.api.run("spatial.assign_container", self.file, product=items, relating_structure=result)
+                if items.is_a("IfcSpatialElement") or items.is_a("IfcSpatialStructureElement"):
+                    ifcopenshell.api.run("aggregate.assign_object", self.file, product=items, relating_object=result)
+                else:
+                    ifcopenshell.api.run("spatial.assign_container", self.file, product=items, relating_structure=result)
                 SvIfcStore.id_map[result.id()] = self.node_id
                 SvIfcStore.id_map.setdefault(self.node_id, []).append(result.id())
-            results.append(result)
+            results.append(result.id())
         return results
 
     def edit(self):
@@ -73,7 +76,6 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         results_ids = SvIfcStore.id_map[self.node_id]
         for result_id in results_ids:
             result = self.file.by_id(result_id)
-            print("\n\nresult: ", result)
             subelements = set(ifcopenshell.util.element.get_decomposition(result))
             for element in self.elements:
                 print("\nElement: ", element)
@@ -85,9 +87,12 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                     # Just realised I don't have a spatial.unassign_container, but if so we'd do it here
                     pass
                 for added_element in element_set - subelements:
-                    ifcopenshell.api.run("spatial.assign_container", self.file, product=added_element, relating_structure=result)
+                    if added_element.is_a("IfcSpatialElement") or added_element.is_a("IfcSpatialStructureElement"):
+                        ifcopenshell.api.run("aggregate.assign_object", self.file, product=added_element, relating_object=result)
+                    else:
+                        ifcopenshell.api.run("spatial.assign_container", self.file, product=added_element, relating_structure=result)
                     print("assigned container")
-            results.append(result)
+            results.append(result.id())
         return results
 
     def repeat_input_unique(self, input, count):
