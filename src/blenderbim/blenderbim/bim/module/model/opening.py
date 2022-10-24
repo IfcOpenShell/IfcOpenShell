@@ -71,12 +71,12 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         new_matrix = voided_obj.matrix_world.copy()
         new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
-        if not filling.is_a("IfcDoor"):
-            container = ifcopenshell.util.element.get_container(element)
-            if container:
-                container_obj = tool.Ifc.get_object(container)
-                if container_obj:
-                    new_matrix[2][3] = container_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
+
+        if filling.is_a("IfcDoor"):
+            new_matrix[2][3] = voided_obj.matrix_world[2][3]
+        else:
+            new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
+
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
