@@ -547,7 +547,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             # Copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             if new:
-                old_to_new[tool.Ifc.get_entity(obj)] = new
+                old_to_new[tool.Ifc.get_entity(obj)] = [new]
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
