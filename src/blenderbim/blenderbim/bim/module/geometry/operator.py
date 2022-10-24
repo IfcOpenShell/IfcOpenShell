@@ -367,10 +367,12 @@ class OverrideDeleteTrait:
             if getattr(element, "FillsVoids", None):
                 self.remove_filling(element)
             if element.is_a("IfcOpeningElement"):
-                for rel in element.HasFillings:
-                    self.remove_filling(rel.RelatedBuildingElement)
-                if element.VoidsElements:
-                    self.delete_opening_element(element)
+                if element.HasFillings:
+                    for rel in element.HasFillings:
+                        self.remove_filling(rel.RelatedBuildingElement)
+                else:
+                    if element.VoidsElements:
+                        self.delete_opening_element(element)
             else:
                 if getattr(element, "HasOpenings", None):
                     for rel in element.HasOpenings:
