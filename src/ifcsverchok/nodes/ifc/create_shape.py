@@ -79,6 +79,10 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
         
         if self.refresh_local or hash(self) not in self.node_dict:
             self.file = SvIfcStore.get_file()
+            try:
+                self.entities = [self.file.by_id(step_id) for step_id in self.entities]
+            except Exception as e:
+                raise
             blender_objects = self.create()
             self.node_dict[hash(self)] = blender_objects
         else:
