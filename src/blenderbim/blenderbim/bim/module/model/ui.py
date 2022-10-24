@@ -20,7 +20,7 @@ import bpy
 from bpy.types import Panel, Operator, Menu
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.prop import store_cursor_position
-from blenderbim.bim.helper import prop_with_search, close_operator_panel
+from blenderbim.bim.helper import prop_with_search
 
 
 class LaunchTypeManager(bpy.types.Operator):
@@ -46,7 +46,7 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
 
         row = self.layout.row()
-        row.prop(props, "type_class", text="")
+        prop_with_search(row, props, "type_class", text="")
 
         columns = self.layout.column_flow(columns=3)
         row = columns.row()
