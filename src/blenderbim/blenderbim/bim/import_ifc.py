@@ -177,6 +177,7 @@ class IfcImporter:
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.settings_2d.set(self.settings.STRICT_TOLERANCE, True)
         self.project = None
+        self.has_existing_project = False
         self.collections = {}
         self.elements = set()
         self.type_collection = None
@@ -893,6 +894,11 @@ class IfcImporter:
         if element is None:
             return
 
+        if self.has_existing_project:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                return obj
+
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
         if mesh:
@@ -1306,7 +1312,13 @@ class IfcImporter:
                 )
 
     def create_project(self):
-        self.project = {"ifc": self.file.by_type("IfcProject")[0]}
+        project = self.file.by_type("IfcProject")[0]
+        self.project = {"ifc": project}
+        obj = tool.Ifc.get_object(project)
+        if obj:
+            self.project["blender"] = obj.users_collection[0]
+            self.has_existing_project = True
+            return
         self.project["blender"] = bpy.data.collections.new(
             "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
         )
@@ -1359,10 +1371,17 @@ class IfcImporter:
         for element in related_objects:
             if element not in self.spatial_elements:
                 continue
-            global_id = element.GlobalId
-            collection = bpy.data.collections.new(self.get_name(element))
-            self.collections[global_id] = collection
-            parent.children.link(collection)
+            is_existing = False
+            if self.has_existing_project:
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    is_existing = True
+                    collection = obj.users_collection[0]
+                    self.collections[element.GlobalId] = collection
+            if not is_existing:
+                collection = bpy.data.collections.new(self.get_name(element))
+                self.collections[element.GlobalId] = collection
+                parent.children.link(collection)
             if element.IsDecomposedBy:
                 for rel_aggregate in element.IsDecomposedBy:
                     self.create_spatial_decomposition_collection(collection, rel_aggregate.RelatedObjects)
