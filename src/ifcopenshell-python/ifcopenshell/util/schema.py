@@ -83,17 +83,19 @@ class BatchReassignClass:
                 new_element[new_attributes.index(element.attribute_name(i))] = attribute
             except:
                 continue
-        for inverse in self.file.get_inverse(element):
-            self.replacements.setdefault(inverse, {})[element] = new_element
+        for inverse_pair in self.file.get_inverse(element, allow_duplicate=True, with_attribute_indices=True):
+            inverse, index = inverse_pair
+            self.replacements.setdefault(inverse, {}).setdefault(index, {})[element] = new_element
         self.to_delete.add(element)
         return new_element
 
     def unbatch(self):
-        for element, replacements in self.replacements.items():
-            for i, attribute in enumerate(element):
-                new = element.walk(lambda v: v in replacements.keys(), lambda v: replacements[v], attribute)
-                if attribute != new:
-                    element[i] = new
+        for inverse, replacements in self.replacements.items():
+            for index, element_map in replacements.items():
+                value = inverse[index]
+                new = inverse.walk(lambda x : True, lambda v: element_map.get(v, v), value)
+                if value != new:
+                    inverse[index] = new
 
         for element in self.to_delete:
             self.file.remove(element)
