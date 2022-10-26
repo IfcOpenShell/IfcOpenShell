@@ -367,10 +367,12 @@ class OverrideDeleteTrait:
             if getattr(element, "FillsVoids", None):
                 self.remove_filling(element)
             if element.is_a("IfcOpeningElement"):
-                for rel in element.HasFillings:
-                    self.remove_filling(rel.RelatedBuildingElement)
-                if element.VoidsElements:
-                    self.delete_opening_element(element)
+                if element.HasFillings:
+                    for rel in element.HasFillings:
+                        self.remove_filling(rel.RelatedBuildingElement)
+                else:
+                    if element.VoidsElements:
+                        self.delete_opening_element(element)
             else:
                 if getattr(element, "HasOpenings", None):
                     for rel in element.HasOpenings:
@@ -545,7 +547,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             # Copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             if new:
-                old_to_new[tool.Ifc.get_entity(obj)] = new
+                old_to_new[tool.Ifc.get_entity(obj)] = [new]
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
         bpy.ops.transform.translate("INVOKE_DEFAULT")

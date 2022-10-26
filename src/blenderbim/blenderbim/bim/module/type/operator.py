@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
 import ifcopenshell.api
@@ -113,15 +114,12 @@ class SelectType(bpy.types.Operator):
     bl_idname = "bim.select_type"
     bl_label = "Select Type"
     bl_options = {"REGISTER", "UNDO"}
-    related_object: bpy.props.StringProperty()
+    relating_type: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
-        related_object = bpy.data.objects.get(self.related_object, context.active_object)
-        oprops = related_object.BIMObjectProperties
-        element_type = ifcopenshell.util.element.get_type(self.file.by_id(oprops.ifc_definition_id))
-        if element_type is not None:
-            obj = IfcStore.get_element(element_type.GlobalId)
+        element = tool.Ifc.get().by_id(self.relating_type)
+        obj = tool.Ifc.get_object(element)
+        if obj:
             context.view_layer.objects.active = obj
             obj.select_set(True)
         return {"FINISHED"}
@@ -167,6 +165,135 @@ class SelectTypeObjects(bpy.types.Operator):
             if obj:
                 obj.select_set(True)
         return {"FINISHED"}
+
+
+class AddType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_type"
+    bl_label = "Add Type"
+    bl_options = {"REGISTER"}
+
+    def _execute(self, context):
+        props = context.scene.BIMModelProperties
+        ifc_class = props.type_class
+        predefined_type = props.type_predefined_type
+        template = props.type_template
+        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        if not body:
+            return {"FINISHED"}
+        if template == "MESH":
+            location = context.scene.cursor.location
+            if context.active_object and context.selected_objects and context.active_object.data:
+                obj = context.active_object
+                element = tool.Ifc.get_entity(obj)
+                if element:
+                    mesh = obj.data.copy()
+                    mesh.BIMMeshProperties.ifc_definition_id = 0
+                    obj = bpy.data.objects.new(element.Name or "TYPEX", mesh)
+            else:
+                mesh = bpy.data.meshes.new("TYPEX")
+                bm = bmesh.new()
+                bmesh.ops.create_cube(bm, size=1)
+                bm.to_mesh(mesh)
+                bm.free()
+                obj = bpy.data.objects.new("TYPEX", mesh)
+            obj.matrix_world.col[3] = location.to_4d()
+            blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=True,
+                context=body,
+                ifc_representation_class=None,
+            )
+        elif template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            obj = bpy.data.objects.new("TYPEX", None)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=True,
+                context=body,
+                ifc_representation_class=None,
+            )
+            materials = tool.Ifc.get().by_type("IfcMaterial")
+            if materials:
+                material = materials[0]  # Arbitrarily pick a material
+            else:
+                material = self.add_default_material()
+            rel = ifcopenshell.api.run(
+                "material.assign_material", tool.Ifc.get(), product=element, type="IfcMaterialLayerSet"
+            )
+            layer_set = rel.RelatingMaterial
+            layer = ifcopenshell.api.run("material.add_layer", tool.Ifc.get(), layer_set=layer_set, material=material)
+            thickness = 0.1  # Arbitrary metric thickness for now
+            layer.LayerThickness = thickness / unit_scale
+
+            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Parametric")
+            if template == "LAYERSET_AXIS2":
+                axis = "AXIS2"
+            elif template == "LAYERSET_AXIS3":
+                axis = "AXIS3"
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"LayerSetDirection": axis})
+        elif template == "PROFILESET":
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            obj = bpy.data.objects.new("TYPEX", None)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=True,
+                context=body,
+                ifc_representation_class=None,
+            )
+            materials = tool.Ifc.get().by_type("IfcMaterial")
+            if materials:
+                material = materials[0]  # Arbitrarily pick a material
+            else:
+                material = self.add_default_material()
+            size = 0.5 / unit_scale
+            profile = tool.Ifc.get().create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=size, YDim=size)
+            rel = ifcopenshell.api.run(
+                "material.assign_material", tool.Ifc.get(), product=element, type="IfcMaterialProfileSet"
+            )
+            profile_set = rel.RelatingMaterial
+            material_profile = ifcopenshell.api.run(
+                "material.add_profile", tool.Ifc.get(), profile_set=profile_set, material=material
+            )
+            ifcopenshell.api.run(
+                "material.assign_profile", tool.Ifc.get(), material_profile=material_profile, profile=profile
+            )
+        elif template == "EMPTY":
+            obj = bpy.data.objects.new("TYPEX", None)
+            blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=True,
+                context=body,
+                ifc_representation_class=None,
+            )
+        bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
+        return {"FINISHED"}
+
+    def add_default_material(self):
+        material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
+        blender_material = bpy.data.materials.new(material.Name)
+        tool.Ifc.link(material, blender_material)
+        blender_material.use_fake_user = True
+        return material
 
 
 class RemoveType(bpy.types.Operator, tool.Ifc.Operator):

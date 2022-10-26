@@ -101,7 +101,7 @@ class BIM_PT_Boundary(Panel):
             entity = getattr(boundary, ifc_attribute)
             if entity:
                 row.label(text=f"{entity.is_a()}/{entity.Name}")
-                op = row.operator("bim.select_global_id", text="", icon="TRACKER")
+                op = row.operator("bim.select_global_id", text="", icon="OBJECT_DATA")
                 op.global_id = entity.GlobalId
             else:
                 row.label(text="")

@@ -106,14 +106,16 @@ class Root(blenderbim.core.tool.Root):
     @classmethod
     def recreate_decompositions(cls, relationships, old_to_new):
         for subelement, data in relationships.items():
-            subelement = old_to_new.get(subelement)
-            element = old_to_new.get(data["element"])
-            if not subelement or not element:
+            new_subelements = old_to_new.get(subelement)
+            new_elements = old_to_new.get(data["element"])
+            if not new_subelements or not new_elements:
                 continue
-            if data["type"] == "fill":
-                obj1 = tool.Ifc.get_object(element)
-                obj2 = tool.Ifc.get_object(subelement)
-                bpy.ops.bim.add_filled_opening(voided_obj=obj1.name, filling_obj=obj2.name)
+            for i, new_subelement in enumerate(new_subelements):
+                new_element = new_elements[i]
+                if data["type"] == "fill":
+                    obj1 = tool.Ifc.get_object(new_element)
+                    obj2 = tool.Ifc.get_object(new_subelement)
+                    bpy.ops.bim.add_filled_opening(voided_obj=obj1.name, filling_obj=obj2.name)
 
     @classmethod
     def run_geometry_add_representation(

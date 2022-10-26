@@ -115,15 +115,14 @@ class ExecuteIfcDiff(bpy.types.Operator):
     def execute(self, context):
         import ifcdiff
 
-        ifc_diff = ifcdiff.IfcDiff(
-            context.scene.DiffProperties.old_file,
-            context.scene.DiffProperties.new_file,
-            self.filepath,
-            [r.relationship for r in context.scene.DiffProperties.diff_relationships],
-            context.scene.DiffProperties.diff_filter_elements,
-        )
+        old = ifcopenshell.open(context.scene.DiffProperties.old_file)
+        new = ifcopenshell.open(context.scene.DiffProperties.new_file)
+        relationships = [r.relationship for r in context.scene.DiffProperties.diff_relationships]
+        query = context.scene.DiffProperties.diff_filter_elements
+
+        ifc_diff = ifcdiff.IfcDiff(old, new, relationships=relationships, filter_elements=query)
         ifc_diff.diff()
-        ifc_diff.export()
+        ifc_diff.export(self.filepath)
         context.scene.DiffProperties.diff_json_file = self.filepath
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}

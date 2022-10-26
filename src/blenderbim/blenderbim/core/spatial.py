@@ -69,13 +69,15 @@ def copy_to_container(ifc, spatial, obj=None, containers=None):
         matrix = spatial.get_relative_object_matrix(obj, ifc.get_object(from_container))
     else:
         matrix = spatial.get_object_matrix(obj)
+    result_objs = []
     for to_container in containers:
         to_container_obj = ifc.get_object(to_container)
         copied_obj = spatial.duplicate_object_and_data(obj)
         spatial.set_relative_object_matrix(copied_obj, to_container_obj, matrix)
-        spatial.run_root_copy_class(obj=copied_obj)
+        result_objs.append(spatial.run_root_copy_class(obj=copied_obj))
         spatial.run_spatial_assign_container(structure_obj=to_container_obj, element_obj=copied_obj)
     spatial.disable_editing(obj)
+    return result_objs
 
 
 def select_container(ifc, spatial, obj=None):

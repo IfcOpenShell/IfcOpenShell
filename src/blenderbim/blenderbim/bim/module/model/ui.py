@@ -20,7 +20,7 @@ import bpy
 from bpy.types import Panel, Operator, Menu
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.prop import store_cursor_position
-from blenderbim.bim.helper import prop_with_search, close_operator_panel
+from blenderbim.bim.helper import prop_with_search
 
 
 class LaunchTypeManager(bpy.types.Operator):
@@ -37,7 +37,7 @@ class LaunchTypeManager(bpy.types.Operator):
         props.type_page = 1
         if props.ifc_class:
             props.type_class = props.ifc_class
-        bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class)
+            bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class)
         if not AuthoringData.is_loaded:
             AuthoringData.load()
         return context.window_manager.invoke_popup(self, width=550)
@@ -46,7 +46,7 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
 
         row = self.layout.row()
-        row.prop(props, "type_class", text="")
+        prop_with_search(row, props, "type_class", text="")
 
         columns = self.layout.column_flow(columns=3)
         row = columns.row()
@@ -57,7 +57,7 @@ class LaunchTypeManager(bpy.types.Operator):
         row.alignment = "CENTER"
         row.prop(props, "type_predefined_type", text="")
         row.prop(props, "type_template", text="")
-        op = row.operator("bim.change_type_page", icon="ADD", text="")
+        row.operator("bim.add_type", icon="ADD", text="")
 
         row = columns.row(align=True)
         row.alignment = "RIGHT"
@@ -99,6 +99,8 @@ class LaunchTypeManager(bpy.types.Operator):
             op.ifc_class = relating_type["ifc_class"]
             op.relating_type_id = relating_type["id"]
 
+            op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
+            op.relating_type = relating_type["id"]
             op = row.operator("bim.duplicate_type", icon="COPYDOWN", text="")
             op.element = relating_type["id"]
             op = row.operator("bim.remove_type", icon="X", text="")

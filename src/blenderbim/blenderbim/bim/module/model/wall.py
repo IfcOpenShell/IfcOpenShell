@@ -76,7 +76,7 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Join Wall"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = """ Trim/Extend the selected walls to the last selected wall:
-    'T' mode: Trim/Extend to a selected wall or 3D target
+    'T' mode: Trim/Extend to a selected wall, slab, or 3D target
     'L' mode: Butt join two selected walls
     'V' mode: Mitre join two selected wall
     '' (empty) mode: Unjoin selected walls
@@ -107,10 +107,18 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
         if len(selected_objs) < 2:
             return {"FINISHED"}
         if self.join_type == "T":
-            for obj in selected_objs:
-                if obj == context.active_object:
-                    continue
-                joiner.join_T(obj, context.active_object)
+            elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]
+            targets = [e for e in elements if e and e.is_a() in ("IfcSlab", "IfcSlabStandardCase", "IfcRoof")]
+            if targets:
+                target = tool.Ifc.get_object(targets[0])
+                for element in elements:
+                    if element.is_a("IfcWall"):
+                        joiner.join_Z(tool.Ifc.get_object(element), target)
+            else:
+                for obj in selected_objs:
+                    if obj == context.active_object:
+                        continue
+                    joiner.join_T(obj, context.active_object)
         return {"FINISHED"}
 
 
@@ -236,6 +244,14 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
                 return
             extrusion.Depth = self.depth
             if element.is_a("IfcWall"):
+                for rel in element.ConnectedFrom:
+                    if rel.is_a() == "IfcRelConnectsElements":
+                        ifcopenshell.api.run(
+                            "geometry.disconnect_element",
+                            tool.Ifc.get(),
+                            relating_element=rel.RelatingElement,
+                            related_element=element,
+                        )
                 wall_objs.append(obj)
         if wall_objs:
             DumbWallRecalculator().recalculate(wall_objs)
@@ -278,6 +294,12 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     is_global=True,
                     should_sync_changes_first=False,
                 )
+
+                euler = obj.matrix_world.to_euler()
+                euler.x = x_angle
+                new_matrix = euler.to_matrix().to_4x4()
+                new_matrix.col[3] = obj.matrix_world.col[3]
+                obj.matrix_world = new_matrix
         if wall_objs:
             DumbWallRecalculator().recalculate(wall_objs)
         return {"FINISHED"}
@@ -609,7 +631,9 @@ class DumbWallGenerator:
             "geometry.add_wall_representation",
             tool.Ifc.get(),
             context=self.body_context,
-            thickness=self.layers["thickness"],
+            thickness=self.layers["thickness"]
+            * 1
+            / cos(self.x_angle),  # 1/cos(self.x_angle) maintains the correct MaterialLayer thickness upon rotation
             offset=self.layers["offset"],
             length=self.length,
             height=self.height,
@@ -918,6 +942,20 @@ class DumbWallJoiner:
         blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
         return wall2
 
+    def join_Z(self, wall1, slab2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(slab2)
+
+        ifcopenshell.api.run(
+            "geometry.connect_element",
+            tool.Ifc.get(),
+            relating_element=element2,
+            related_element=element1,
+            description="TOP",
+        )
+
+        self.recreate_wall(element1, wall1)
+
     def join_L(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
@@ -1041,22 +1079,37 @@ class DumbWallJoiner:
         layers = tool.Model.get_material_layer_parameters(element)
 
         for rel in element.ConnectedTo:
-            connection = rel.RelatingConnectionType
-            other = tool.Ifc.get_object(rel.RelatedElement)
-            if connection not in ["ATPATH", "NOTDEFINED"]:
-                self.join(
-                    obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
-                )
+            if rel.is_a("IfcRelConnectsPathElements"):
+                connection = rel.RelatingConnectionType
+                other = tool.Ifc.get_object(rel.RelatedElement)
+                if connection not in ["ATPATH", "NOTDEFINED"]:
+                    self.join(
+                        obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
+                    )
         for rel in element.ConnectedFrom:
-            connection = rel.RelatedConnectionType
-            other = tool.Ifc.get_object(rel.RelatingElement)
-            if connection not in ["ATPATH", "NOTDEFINED"]:
-                self.join(
-                    obj, other, connection, rel.RelatingConnectionType, is_relating=False, description=rel.Description
-                )
+            if rel.is_a("IfcRelConnectsPathElements"):
+                connection = rel.RelatedConnectionType
+                other = tool.Ifc.get_object(rel.RelatingElement)
+                if connection not in ["ATPATH", "NOTDEFINED"]:
+                    self.join(
+                        obj,
+                        other,
+                        connection,
+                        rel.RelatingConnectionType,
+                        is_relating=False,
+                        description=rel.Description,
+                    )
+
+        previous_matrix = obj.matrix_world.copy()
+        previous_origin = previous_matrix.col[3].to_2d()
+        obj.matrix_world[0][3], obj.matrix_world[1][3] = self.body[0]
+        bpy.context.view_layer.update()
+
+        for rel in element.ConnectedFrom:
+            if rel.is_a() == "IfcRelConnectsElements":
+                height = self.clip(obj, tool.Ifc.get_object(rel.RelatingElement))
 
         new_matrix = copy.deepcopy(obj.matrix_world)
-        new_matrix.col[3] = self.body[0].to_4d().copy()
         new_matrix.invert()
 
         for clipping in self.clippings:
@@ -1090,7 +1143,9 @@ class DumbWallJoiner:
             height=height,
             x_angle=x_angle,
             offset=layers["offset"],
-            thickness=layers["thickness"],
+            thickness=layers["thickness"]
+            * 1
+            / cos(x_angle),  # 1/cos(x_angle) maintains the correct MaterialLayer thickness upon rotation
             clippings=self.clippings,
             booleans=tool.Model.get_manual_booleans(element),
         )
@@ -1107,10 +1162,6 @@ class DumbWallJoiner:
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
             )
 
-        previous_matrix = obj.matrix_world.copy()
-        previous_origin = previous_matrix.col[3].to_2d()
-        obj.matrix_world[0][3], obj.matrix_world[1][3] = self.body[0]
-        bpy.context.view_layer.update()
         if tool.Ifc.is_moved(obj):
             # Openings should move with the host overall ...
             # ... except their position should stay the same along the local X axis of the wall
@@ -1150,10 +1201,11 @@ class DumbWallJoiner:
         )
 
     def get_extrusion_data(self, representation):
-        results = {"height": 3.0, "x_angle": 0, "is_sloped": False, "direction": Vector((0, 0, 1))}
+        results = {"item": None, "height": 3.0, "x_angle": 0, "is_sloped": False, "direction": Vector((0, 0, 1))}
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
+                results["item"] = item
                 results["height"] = item.Depth * self.unit_scale
                 x, y, z = item.ExtrudedDirection.DirectionRatios
                 if not tool.Cad.is_x(x, 0) or not tool.Cad.is_x(y, 0) or not tool.Cad.is_x(z, 1):
@@ -1334,3 +1386,41 @@ class DumbWallJoiner:
             )
 
         return True
+
+    def clip(self, wall1, slab2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(slab2)
+
+        layers1 = tool.Model.get_material_layer_parameters(element1)
+        axis1 = tool.Model.get_wall_axis(wall1, layers1)
+
+        bases = [axis1["base"][0].to_3d(), axis1["base"][1].to_3d(), axis1["side"][0].to_3d(), axis1["side"][1].to_3d()]
+
+        extrusion = self.get_extrusion_data(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
+        d = wall1.matrix_world.to_quaternion() @ extrusion["direction"]
+
+        slab_pt = slab2.matrix_world @ Vector((0, 0, 0))
+        slab_dir = slab2.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+
+        tops = [mathutils.geometry.intersect_line_plane(b, b + d, slab_pt, slab_dir) for b in bases]
+
+        i_bottom = None
+        i_top = None
+        for i, co in enumerate(tops):
+            if i_top is None or co[2] > i_top[2]:
+                i_top = co
+                i_bottom = bases[i]
+
+        quaternion = slab2.matrix_world.to_quaternion()
+        x_axis = quaternion @ Vector((1, 0, 0))
+        y_axis = quaternion @ Vector((0, 1, 0))
+        z_axis = quaternion @ Vector((0, 0, 1))
+        self.clippings.append(
+            {
+                "type": "IfcBooleanClippingResult",
+                "operand_type": "IfcHalfSpaceSolid",
+                "matrix": self.create_matrix(i_top, x_axis, y_axis, z_axis),
+            }
+        )
+
+        return (i_top - i_bottom).length
