@@ -32,6 +32,7 @@ from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
+from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 
 
 class Operator:
@@ -100,13 +101,13 @@ class EnablePsetEditing(bpy.types.Operator):
             if not prop_template.is_a("IfcSimplePropertyTemplate"):
                 continue  # Other types not yet supported
             if prop_template.TemplateType == "P_SINGLEVALUE":
-                self.load_single_value(prop_template, data)
+                self.load_single_value(pset_template, prop_template, data)
             elif prop_template.TemplateType.startswith("Q_"):
-                self.load_single_value(prop_template, data)
+                self.load_single_value(pset_template, prop_template, data)
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 self.load_enumerated_value(prop_template, data)
 
-    def load_single_value(self, prop_template, data):
+    def load_single_value(self, pset_template, prop_template, data):
         prop = self.props.properties.add()
         prop.name = prop_template.Name
         prop.value_type = "IfcPropertySingleValue"
@@ -115,6 +116,7 @@ class EnablePsetEditing(bpy.types.Operator):
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
         metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
+        metadata.has_calculator = bool(mapper.get(pset_template.Name, {}).get(prop_template.Name, None))
         metadata.data_type = self.get_data_type(prop_template)
 
         if metadata.data_type == "string":
@@ -379,7 +381,6 @@ class CalculateQuantity(bpy.types.Operator):
             if unit_settings.length_unit == "METERS":
                 return None, "METRE"
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
-
 
 
 class GuessQuantity(bpy.types.Operator):
