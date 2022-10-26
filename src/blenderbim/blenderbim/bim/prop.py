@@ -226,6 +226,7 @@ class Attribute(PropertyGroup):
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
+    has_calculator: BoolProperty(name="Has Calculator", default=False)
 
     def get_value(self):
         if self.is_null:
