@@ -51,6 +51,7 @@ class Usecase:
     def create_item(self):
         length = self.convert_si_to_unit(self.settings["length"])
         thickness = self.convert_si_to_unit(self.settings["thickness"])
+        thickness *= 1 / cos(self.settings["x_angle"])
         points = (
             (0.0, 0.0),
             (0.0, thickness),
@@ -76,7 +77,7 @@ class Usecase:
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),
             extrusion_direction,
-            self.convert_si_to_unit(self.settings["height"]),
+            self.convert_si_to_unit(self.settings["height"]) * (1 / cos(self.settings["x_angle"])),
         )
         if self.settings["booleans"]:
             extrusion = self.apply_booleans(extrusion)
