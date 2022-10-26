@@ -294,8 +294,12 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     is_global=True,
                     should_sync_changes_first=False,
                 )
-                rotation = mathutils.Matrix.Rotation(x_angle, 4, "X")
-                obj.matrix_world = rotation
+
+                euler = obj.matrix_world.to_euler()
+                euler.x = x_angle
+                new_matrix = euler.to_matrix().to_4x4()
+                new_matrix.col[3] = obj.matrix_world.col[3]
+                obj.matrix_world = new_matrix
         if wall_objs:
             DumbWallRecalculator().recalculate(wall_objs)
         return {"FINISHED"}
