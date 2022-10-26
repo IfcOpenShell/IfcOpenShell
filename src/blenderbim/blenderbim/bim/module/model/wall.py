@@ -244,6 +244,14 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
                 return
             extrusion.Depth = self.depth
             if element.is_a("IfcWall"):
+                for rel in element.ConnectedFrom:
+                    if rel.is_a() == "IfcRelConnectsElements":
+                        ifcopenshell.api.run(
+                            "geometry.disconnect_element",
+                            tool.Ifc.get(),
+                            relating_element=rel.RelatingElement,
+                            related_element=element,
+                        )
                 wall_objs.append(obj)
         if wall_objs:
             DumbWallRecalculator().recalculate(wall_objs)
