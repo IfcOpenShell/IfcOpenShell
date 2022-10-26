@@ -25,9 +25,23 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import blenderbim.tool as tool
 import ifcopenshell
+from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 
 
 class QtoCalculator:
+
+    def __init__(self):
+        self.mapping_dict = {}
+        for key in mapper.keys():
+            self.mapping_dict[key] = dict(mapper[key].items())
+
+        for key in self.mapping_dict.keys():
+            for item in self.mapping_dict[key].keys():
+                self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item])
+
+    def calculate_quantity(self, qto_name, quantity_name, obj):
+        return self.mapping_dict[qto_name][quantity_name](obj)
+
     def guess_quantity(self, prop_name, alternative_prop_names, obj):
         prop_name = prop_name.lower()
         alternative_prop_names = [p.lower() for p in alternative_prop_names]
