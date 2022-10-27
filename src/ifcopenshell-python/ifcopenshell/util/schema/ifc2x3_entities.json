@@ -28,10 +28,16 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcactorresource/lexical/ifcactorrole.htm"
     },
     "IfcActuatorType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of actuator from which the type required may be set."
-        },
         "description": "An IfcActuatorType defines a particular type of actuating device that is typically used in a control system such as a building automation control system.",
+        "predefined_types": {
+            "ELECTRICACTUATOR": "A device that electrically actuates a control element.",
+            "HANDOPERATEDACTUATOR": "A device that manually actuates a control element.",
+            "HYDRAULICACTUATOR": "A device that electrically actuates a control element.",
+            "NOTDEFINED": "Undefined type.",
+            "PNEUMATICACTUATOR": "A device that pneumatically actuates a control element.",
+            "THERMOSTATICACTUATOR": "A device that thermostatically actuates a control element.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifcactuatortype.htm"
     },
     "IfcAddress": {
@@ -46,31 +52,60 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcactorresource/lexical/ifcaddress.htm"
     },
     "IfcAirTerminalBoxType": {
-        "attributes": {
-            "PredefinedType": "The air terminal box type."
-        },
         "description": "The element type IfcAirTerminalBoxType defines a list of commonly shared property set definitions of an air termainal box and an optional set of product representations. It is used to define an air terminal box specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "CONSTANTFLOW": "Terminal box does not include a means to reset the volume automatically to an outside signal such as thermostat.",
+            "NOTDEFINED": "Undefined terminal box.",
+            "USERDEFINED": "User-defined terminal box.",
+            "VARIABLEFLOWPRESSUREDEPENDANT": "Terminal box includes a means to reset the volume automatically to a different control point in response to an outside signal such as thermostat: air-flow rate depends on supply pressure.",
+            "VARIABLEFLOWPRESSUREINDEPENDANT": "Terminal box includes a means to reset the volume automatically to a different control point in response to an outside signal such as thermostat: air-flow rate is independant of supply pressure."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcairterminalboxtype.htm"
     },
     "IfcAirTerminalType": {
-        "attributes": {
-            "PredefinedType": ""
-        },
         "description": "The element type IfcAirTerminalType defines a list of commonly shared property set definitions of an air terminal and an optional set of product representations. It is used to define an air terminal specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "DIFFUSER": "An outlet discharging supply air in various directions and planes.",
+            "EYEBALL": "",
+            "GRILLE": "A covering for any area through which air passes.",
+            "IRIS": "",
+            "LINEARDIFFUSER": "",
+            "LINEARGRILLE": "",
+            "NOTDEFINED": "Undefined air terminal type.",
+            "REGISTER": "A grille typically equipped with a damper or control valve.",
+            "USERDEFINED": "User-defined air terminal type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcairterminaltype.htm"
     },
     "IfcAirToAirHeatRecoveryType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of air to air heat recovery device."
-        },
         "description": "The element type IfcAirToAirHeatRecoveryType defines a list of commonly shared property set definitions of an air-to-air heat recovery device and an optional set of product representations. It is used to define an air-to-air heat recovery device specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "FIXEDPLATECOUNTERFLOWEXCHANGER": "Heat exchanger with moving parts and alternate layers of plates, separated and sealed from the exhaust and supply air stream passages with primary air entering at secondary air outlet location and exiting at secondary air inlet location.",
+            "FIXEDPLATECROSSFLOWEXCHANGER": "Heat exchanger with moving parts and alternate layers of plates, separated and sealed from the exhaust and supply air stream passages with secondary air flow in the direction perpendicular to primary air flow.",
+            "FIXEDPLATEPARALLELFLOWEXCHANGER": "Heat exchanger with moving parts and alternate layers of plates, separated and sealed from the exhaust and supply air stream passages with primary air entering at secondary air inlet location and exiting at secondary air outlet location.",
+            "HEATPIPE": "A passive energy recovery device with a heat pipe divided into evaporator and condenser sections.",
+            "NOTDEFINED": "Undefined air to air heat recovery type.",
+            "ROTARYWHEEL": "A heat wheel with a revolving cylinder filled with an air-permeable medium having a large internal surface area.",
+            "RUNAROUNDCOILLOOP": "A typical coil energy recovery loop places extended surface, finned tube water coils in the supply and exhaust airstreams of a building.",
+            "THERMOSIPHONCOILTYPEHEATEXCHANGERS": "Sealed systems that consist of an evaporator, a condenser, interconnecting piping, and an intermediate working fluid that is present in both liquid and vapor phases where the evaporator and condensor coils are installed independently in the ducts and are interconnected by the working fluid piping.",
+            "THERMOSIPHONSEALEDTUBEHEATEXCHANGERS": "Sealed systems that consist of an evaporator, a condenser, interconnecting piping, and an intermediate working fluid that is present in both liquid and vapor phases where the evaporator and the condenser are usually at opposite ends of a bundle of straight, individual thermosiphon tubes and the exhaust and supply ducts are adjacent to each other.",
+            "TWINTOWERENTHALPYRECOVERYLOOPS": "An air-to-liquid, liquid-to-air enthalpy recovery system with a sorbent liquid circulates continuously between supply and exhaust airstreams, alternately contacting both airstreams directly in contactor towers.",
+            "USERDEFINED": "User-defined air to air heat recovery type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcairtoairheatrecoverytype.htm"
     },
     "IfcAlarmType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of alarm from which the type required may be set."
-        },
         "description": "The IfcAlarmType defines a device that signals the existence of a condition or situation that is outside the boundaries of normal expectation or that activates such a device.",
+        "predefined_types": {
+            "BELL": "An audible alarm.",
+            "BREAKGLASSBUTTON": "An alarm activation mechanism in which a protective glass has to be broken to enable a button to be pressed.",
+            "LIGHT": "A visual alarm.",
+            "MANUALPULLBOX": "An alarm activation mechanism in which activation is achieved by a pulling action.",
+            "NOTDEFINED": "Undefined type.",
+            "SIREN": "An audible alarm.",
+            "USERDEFINED": "User-defined type.",
+            "WHISTLE": "An audible alarm."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifcalarmtype.htm"
     },
     "IfcAngularDimension": {
@@ -296,10 +331,15 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcbeam.htm"
     },
     "IfcBeamType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a beam element from which the type required may be set."
-        },
         "description": "The element type (IfcBeamType) defines a list of commonly shared property set definitions of a beam and an optional set of product representations. It is used to define a beam specification (i.e. the specific product information that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BEAM": "A standard beam usually used horizontally.",
+            "JOIST": "A beam used to support a floor or ceiling.",
+            "LINTEL": "A beam or horizontal piece of material over an opening (e.g. door, window).",
+            "NOTDEFINED": "Undefined linear beam element.",
+            "T_BEAM": "A beam that forms part of a slab construction and acts together with the slab which its carries. Such beams are often of T-shape (therefore the English name), but may have other shapes as well, e.g. an L-Shape or an Inverted-T-Shape.",
+            "USERDEFINED": "User-defined linear beam element."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcbeamtype.htm"
     },
     "IfcBezierCurve": {
@@ -324,10 +364,13 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricmodelresource/lexical/ifcblock.htm"
     },
     "IfcBoilerType": {
-        "attributes": {
-            "PredefinedType": "Defines types of boilers."
-        },
         "description": "The element type IfcBoilerType defines a list of commonly shared property set definitions of a boiler and an optional set of product representations. It is used to define a boiler specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined Boiler type.",
+            "STEAM": "Steam boiler.",
+            "USERDEFINED": "User-defined Boiler type.",
+            "WATER": "Water boiler."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcboilertype.htm"
     },
     "IfcBooleanClippingResult": {
@@ -446,10 +489,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcbuildingelementproxy.htm"
     },
     "IfcBuildingElementProxyType": {
-        "attributes": {
-            "PredefinedType": "Predefined types to define the particular type of an building element proxy. There may be property set definitions available for each predefined or user defined type."
-        },
         "description": "The IfcBuildingElementProxyType defines a list of commonly shared property set definitions of a building element proxy and an optional set of product representations. It is used to define an element specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined building element proxy.",
+            "USERDEFINED": "User-defined building element proxy."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcbuildingelementproxytype.htm"
     },
     "IfcBuildingElementType": {
@@ -476,24 +520,37 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprofileresource/lexical/ifccshapeprofiledef.htm"
     },
     "IfcCableCarrierFittingType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of cable carrier fitting from which the type required may be set."
-        },
         "description": "An IfcCableCarrierFittingType defines a particular type of cable carrier fitting which is a fitting that is placed at junction or transition in a cable carrier system.",
+        "predefined_types": {
+            "BEND": "A fitting that changes the route of the cable carrier.",
+            "CROSS": "A fitting at which two branches are taken from the main route of the cable carrier simultaneously.",
+            "NOTDEFINED": "Undefined type.",
+            "REDUCER": "A fitting that changes the physical size of the main route of the cable carrier.",
+            "TEE": "A fitting at which a branch is taken from the main route of the cable carrier.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifccablecarrierfittingtype.htm"
     },
     "IfcCableCarrierSegmentType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of cable carrier segment from which the type required may be set."
-        },
         "description": "The IfcCableCarrierSegmentType is a flow segment that is specifically used to carry and support cabling.",
+        "predefined_types": {
+            "CABLELADDERSEGMENT": "An open carrier segment on which cables are carried on a ladder structure.",
+            "CABLETRAYSEGMENT": "A (typically) open carrier segment onto which cables are laid.",
+            "CABLETRUNKINGSEGMENT": "An enclosed carrier segment with one or more compartments into which cables are placed.",
+            "CONDUITSEGMENT": "An enclosed tubular carrier segment through which cables are pulled.",
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifccablecarriersegmenttype.htm"
     },
     "IfcCableSegmentType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of cable segment from which the type required may be set."
-        },
         "description": "An IfcCableSegmentType is a type of flow segment used to carry electrical power or communications signals.",
+        "predefined_types": {
+            "CABLESEGMENT": "Cable with a specific purpose to lead electric current within a circuit or any other electric construction. Includes all types of electric cables, mainly several core segments or conductor segments wrapped together.",
+            "CONDUCTORSEGMENT": "A single linear element within a cable or an exposed wire (such as for grounding) with the specific purpose to lead electric current, data, or a telecommunications signal.",
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifccablesegmenttype.htm"
     },
     "IfcCalendarDate": {
@@ -574,10 +631,14 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedcomponentelements/lexical/ifcchamferedgefeature.htm"
     },
     "IfcChillerType": {
-        "attributes": {
-            "PredefinedType": "Defines the typical types of chillers (e.g., air-cooled, water-cooled, etc.)."
-        },
         "description": "The element type IfcChillerType defines a list of commonly shared property set definitions of a chiller and an optional set of product representations. It is used to define a chiller specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "AIRCOOLED": "Air cooled chiller.",
+            "HEATRECOVERY": "Heat recovery chiller.",
+            "NOTDEFINED": "Undefined chiller type.",
+            "USERDEFINED": "User-defined chiller type.",
+            "WATERCOOLED": "Water cooled chiller."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcchillertype.htm"
     },
     "IfcCircle": {
@@ -657,10 +718,17 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifctopologyresource/lexical/ifcclosedshell.htm"
     },
     "IfcCoilType": {
-        "attributes": {
-            "PredefinedType": "Defines typical types of coils (e.g., Cooling, Heating, etc.)"
-        },
         "description": "The element type IfcCoilType defines a list of commonly shared property set definitions of a coil and an optional set of product representations. It is used to define a coil specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "DXCOOLINGCOIL": "Cooling coil using a refrigerant to cool the air stream directly.",
+            "ELECTRICHEATINGCOIL": "Heating coil using electricity as a heating source.",
+            "GASHEATINGCOIL": "Heating coil using gas as a heating source.",
+            "NOTDEFINED": "Undefined coil type.",
+            "STEAMHEATINGCOIL": "Heating coil using steam as heating source.",
+            "USERDEFINED": "User-defined coil type.",
+            "WATERCOOLINGCOIL": "Cooling coil using chilled water. HYDRONICCOIL supercedes this enumerator.",
+            "WATERHEATINGCOIL": "Heating coil using hot water as a heating source. HYDRONICCOIL supercedes this enumerator."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccoiltype.htm"
     },
     "IfcColourRgb": {
@@ -684,10 +752,12 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifccolumn.htm"
     },
     "IfcColumnType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a column element from which the type required may be set."
-        },
         "description": "The element type (IfcColumnType) defines a list of commonly shared property set definitions of a column and an optional set of product representations. It is used to define a column specification (i.e. the specific product information that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "COLUMN": "A standard member usually vertical and requiring resistance to vertical forces by compression but also sometimes to lateral forces.",
+            "NOTDEFINED": "Undefined linear element.",
+            "USERDEFINED": "User-defined linear element."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifccolumntype.htm"
     },
     "IfcComplexProperty": {
@@ -728,17 +798,40 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprofileresource/lexical/ifccompositeprofiledef.htm"
     },
     "IfcCompressorType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of compressor (e.g., hermetic, reciprocating, etc.)."
-        },
         "description": "The element type IfcCompressorType defines a list of commonly shared property set definitions of a compressor and an optional set of product representations. It is used to define a compressor specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BOOSTER": "Positive-displacement reciprocating compressor where pressure is increased by a booster.",
+            "DYNAMIC": "The pressure of refrigerant vapor is increased by a continuous transfer of angular momentum from a rotating member to the vapor followed by conversion of this momentum into static pressure.",
+            "HERMETIC": "Positive-displacement reciprocating compressor where the motor and compressor are contained within the same housing, with the motor shaft integral with the compressor crankshaft and the motor in contact with refrigerant.",
+            "NOTDEFINED": "Undefined compressor type.",
+            "OPENTYPE": "Positive-displacement reciprocating compressor where the shaft extends through a seal in the crankcase for an external drive.",
+            "RECIPROCATING": "Positive-displacement compressor using a piston driven by a connecting rod from a crankshaft.",
+            "ROLLINGPISTON": "Positive-displacement rotary compressor using a roller mounted on the eccentric of a shaft with a single vane in the nonrotating cylindrical housing.",
+            "ROTARY": "Positive-displacement compressor using a roller or rotor device.",
+            "ROTARYVANE": "Positive-displacement rotary compressor using a roller mounted on the eccentric of a shaft with multiple vanes in the nontotating cylindrical housing.",
+            "SCROLL": "Positive-displacement compressor using two inter-fitting, spiral-shaped scroll members.",
+            "SEMIHERMETIC": "Positive-displacement reciprocating compressor where the hermetic compressors use bolted construction amenable to field repair.",
+            "SINGLESCREW": "Positive-displacement rotary compressor using a single cylindrical main rotor that works with a pair of gate rotors.",
+            "SINGLESTAGE": "Positive-displacement reciprocating compressor where vapor is compressed in a single stage.",
+            "TROCHOIDAL": "Positive-displacement compressor using a rolling motion of one circle outside or inside the circumference of a basic circle and produce either epitrochoids or hypotrochoids.",
+            "TWINSCREW": "Positive-displacement rotary compressor using two mating helically grooved rotors, male (lobes) and female (flutes) in a stationary housing with inlet and outlet gas ports.",
+            "USERDEFINED": "User-defined compressor type.",
+            "WELDEDSHELLHERMETIC": "Positive-displacement reciprocating compressor where the motor compressor is mounted inside a steel shell, which, in turn is sealed by welding."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccompressortype.htm"
     },
     "IfcCondenserType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of condenser."
-        },
         "description": "The element type IfcCondenserType defines a list of commonly shared property set definitions of a condenser and an optional set of product representations. It is used to define a condenser specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "AIRCOOLED": "A condenser in which heat is transferred to an air-stream.",
+            "EVAPORATIVECOOLED": "A condenser that is cooled evaporatively.",
+            "NOTDEFINED": "Undefined condenser type.",
+            "USERDEFINED": "User-defined condenser type.",
+            "WATERCOOLEDBRAZEDPLATE": "Water-cooled condenser with plates brazed together to form an assembly of separate channels.",
+            "WATERCOOLEDSHELLCOIL": "Water-cooled condenser with cooling water circulated through one or more continuous or assembled coils contained within the shell.",
+            "WATERCOOLEDSHELLTUBE": "Water-cooled condenser with cooling water circulated through one or more tubes contained within the shell.",
+            "WATERCOOLEDTUBEINTUBE": "Water-cooled condenser consisting of one or more assemblies of two tubes, one within the other."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccondensertype.htm"
     },
     "IfcCondition": {
@@ -902,10 +995,17 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifckernel/lexical/ifccontrol.htm"
     },
     "IfcControllerType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of controller from which the type required may be set."
-        },
         "description": "An IfcControllerType defines a particular type of controller that interacts with other devices in a control system such as a building automation control system.",
+        "predefined_types": {
+            "FLOATING": "Output increases or decreases at a constant or accelerating rate.",
+            "NOTDEFINED": "Undefined type.",
+            "PROPORTIONAL": "Output is proportional to the control error and optionally time integral and derivative.",
+            "PROPORTIONALINTEGRAL": "",
+            "PROPORTIONALINTEGRALDERIVATIVE": "",
+            "TIMEDTWOPOSITION": "",
+            "TWOPOSITION": "Output can be either on or off.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifccontrollertype.htm"
     },
     "IfcConversionBasedUnit": {
@@ -917,17 +1017,24 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcconversionbasedunit.htm"
     },
     "IfcCooledBeamType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of cooled beam."
-        },
         "description": "The element type IfcCooledBeamType defines a list of commonly shared property set definitions of a cooled beam and an optional set of product representations. It is used to define a cooled beam specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "ACTIVE": "An active or ventilated cooled beam provides cooling (and heating) but can also function as an air terminal in a ventilation system.",
+            "NOTDEFINED": "Undefined cooled beam type.",
+            "PASSIVE": "A passive or static cooled beam provides cooling (and heating) to a room or zone.",
+            "USERDEFINED": "User-defined cooled beam type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccooledbeamtype.htm"
     },
     "IfcCoolingTowerType": {
-        "attributes": {
-            "PredefinedType": "Defines the typical types of cooling towers (e.g., OpenTower, ClosedTower, CrossFlow, etc.)."
-        },
         "description": "The element type IfcCoolingTowerType defines a list of commonly shared property set definitions of a cooling tower and an optional set of product representations. It is used to define a cooling tower specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "MECHANICALFORCEDDRAFT": "Air flow is produced by a mechanical device, typically one or more fans, located on the inlet air side of the cooling tower.",
+            "MECHANICALINDUCEDDRAFT": "Air flow is produced by a mechanical device, typically one or more fans, located on the air outlet side of the cooling tower.",
+            "NATURALDRAFT": "Air flow is produced naturally.",
+            "NOTDEFINED": "Undefined cooling tower type.",
+            "USERDEFINED": "User-defined cooling tower type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccoolingtowertype.htm"
     },
     "IfcCoordinatedUniversalTimeOffset": {
@@ -946,7 +1053,6 @@
     "IfcCostSchedule": {
         "attributes": {
             "ID": "A unique identification assigned to a cost schedule that enables its differentiation from other cost schedules.",
-            "PredefinedType": "Predefined types of cost schedule from which that required may be selected.",
             "PreparedBy": "The identity of the person or organization preparing the cost schedule.",
             "Status": "The current status of a cost schedule. Examples of status values that might be used for a cost schedule status include: - PLANNED - APPROVED - AGREED - ISSUED - STARTED",
             "SubmittedBy": "The identity of the person or organization submitting the cost schedule.",
@@ -955,6 +1061,17 @@
             "UpdateDate": "The date that this cost schedule is updated; this allows tracking the schedule history."
         },
         "description": "An IfcCostSchedule brings together instances of IfcCostItem either for the purpose of identifying purely cost information as in an estimate for constructions costs, bill of quantities etc. or for including cost information within another presentation form such as an order (of whatever type)",
+        "predefined_types": {
+            "BUDGET": "An allocation of money for a particular purpose.",
+            "COSTPLAN": "An assessment of the amount of money needing to be expended for a defined purpose based on incomplete information about the goods and services required for a construction or installation.",
+            "ESTIMATE": "An assessment of the amount of money needing to be expended for a defined purpose based on actual information about the goods and services required for a construction or installation.",
+            "NOTDEFINED": "Undefined type.",
+            "PRICEDBILLOFQUANTITIES": "A complete listing of all work items forming construction or installation works in which costs have been allocated to work items.",
+            "SCHEDULEOFRATES": "A listing of each type of goods forming construction or installation works with the cost of purchase, construction/installation, overheads and profit assigned so that additional items of that type can be costed.",
+            "TENDER": "An offer to provide goods and services.",
+            "UNPRICEDBILLOFQUANTITIES": "A complete listing of all work items forming construction or installation works in which costs have not yet been allocated to work items.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedmgmtelements/lexical/ifccostschedule.htm"
     },
     "IfcCostValue": {
@@ -968,17 +1085,37 @@
     "IfcCovering": {
         "attributes": {
             "Covers": "Reference to the objectified relationship that handles the relationship of the covering to the covered space.",
-            "CoversSpaces": "",
-            "PredefinedType": "Predefined types to define the particular type of the covering. There may be property set definitions available for each predefined type."
+            "CoversSpaces": ""
         },
         "description": "Definition from ISO 6707-1:1989: term used: Finishing - final coverings and treatments of surfaces and their intersections.",
+        "predefined_types": {
+            "CEILING": "The covering is used torepresent a ceiling.",
+            "CLADDING": "The covering is used to represent a cladding.",
+            "FLOORING": "The covering is used to represent a flooring.",
+            "INSULATION": "The covering is used to insulate an element for thermal or acoustic purposes.",
+            "MEMBRANE": "An impervious layer that could be used for e.g. roof covering (below tiling - that may be known as sarking etc.) or as a damp proof course membrane.",
+            "NOTDEFINED": "Undefined type of covering.",
+            "ROOFING": "The covering is used to represent a roof covering.",
+            "SLEEVING": "The covering is used to isolate a distribution element from a space in which it is contained.",
+            "USERDEFINED": "User defined type of covering.",
+            "WRAPPING": "The covering is used for wrapping particularly of distribution elements using tape."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifccovering.htm"
     },
     "IfcCoveringType": {
-        "attributes": {
-            "PredefinedType": "Predefined types to define the particular type of the covering. There may be property set definitions available for each predefined type."
-        },
         "description": "The IfcCoveringType defines a list of commonly shared property set definitions of an element and an optional set of product representations. It is used to define an element specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "CEILING": "The covering is used torepresent a ceiling.",
+            "CLADDING": "The covering is used to represent a cladding.",
+            "FLOORING": "The covering is used to represent a flooring.",
+            "INSULATION": "The covering is used to insulate an element for thermal or acoustic purposes.",
+            "MEMBRANE": "An impervious layer that could be used for e.g. roof covering (below tiling - that may be known as sarking etc.) or as a damp proof course membrane.",
+            "NOTDEFINED": "Undefined type of covering.",
+            "ROOFING": "The covering is used to represent a roof covering.",
+            "SLEEVING": "The covering is used to isolate a distribution element from a space in which it is contained.",
+            "USERDEFINED": "User defined type of covering.",
+            "WRAPPING": "The covering is used for wrapping particularly of distribution elements using tape."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifccoveringtype.htm"
     },
     "IfcCraneRailAShapeProfileDef": {
@@ -1049,10 +1186,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifccurtainwall.htm"
     },
     "IfcCurtainWallType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a curtain wall element from which the type required may be set."
-        },
         "description": "The element type (IfcCurtainWallType) defines a list of commonly shared property set definitions of a curtain wall element and an optional set of product representations. It is used to define a curtain wall specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "NOTDEFINED": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifccurtainwalltype.htm"
     },
     "IfcCurve": {
@@ -1107,10 +1245,22 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifccurvestylefontpattern.htm"
     },
     "IfcDamperType": {
-        "attributes": {
-            "PredefinedType": "Type of damper."
-        },
         "description": "The element type IfcDamperType defines a list of commonly shared property set definitions of a damper and an optional set of product representations. It is used to define a damper specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BACKDRAFTDAMPER": "Damper used for purposes of manually balancing pressure differences.  Commonly operated by mechanical adjustment.",
+            "BALANCINGDAMPER": "Backdraft damper used to restrict the movement of air in one direction.  Commonly operated by mechanical spring.",
+            "BLASTDAMPER": "Blast damper used to prevent protect occupants and equipment against overpressures resultant of an explosion.  Commonly operated by mechanical spring.",
+            "CONTROLDAMPER": "Control damper used to modulate the flow of air by adjusting the position of the blades.  Commonly operated by an actuator of a building automation system.",
+            "FIREDAMPER": "Fire damper used to prevent the spread of fire for a specified duration.  Commonly operated by fusable link that melts above a certain temperature.",
+            "FIRESMOKEDAMPER": "Combination fire and smoke damper used to preven the spread of fire and smoke.  Commonly operated by a fusable link and a smoke detector.",
+            "FUMEHOODEXHAUST": "Fume hood exhaust damper.  Commonly operated by actuator.",
+            "GRAVITYDAMPER": "Gravity damper closes from the force of gravity.  Commonly operated by gravitational weight.",
+            "GRAVITYRELIEFDAMPER": "Gravity-relief damper used to allow air to move upon a buildup of enough pressure to overcome the gravitational force exerted upon the damper blades.  Commonly operated by gravitational weight.",
+            "NOTDEFINED": "Undefined damper.",
+            "RELIEFDAMPER": "Relief damper used to allow air to move upon a buildup of a specified pressure differential.  Commonly operated by mechanical spring.",
+            "SMOKEDAMPER": "Smoke damper used to prevent the spread of smoke.  Commonly operated by a smoke detector of a building automation system.",
+            "USERDEFINED": "User-defined damper."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcdampertype.htm"
     },
     "IfcDateAndTime": {
@@ -1220,10 +1370,19 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcdistributionchamberelement.htm"
     },
     "IfcDistributionChamberElementType": {
-        "attributes": {
-            "PredefinedType": "Predefined types of distribution chambers."
-        },
         "description": "The element type IfcDistributionChamberElementType defines a list of commonly shared property set definitions of a distribution chamber element and an optional set of product representations. It is used to define a distribution chamber element specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "FORMEDDUCT": "Space formed in the ground for the passage of pipes, cables, ducts.",
+            "INSPECTIONCHAMBER": "Chamber constructed on a drain, sewer or pipeline with a removable cover that permits visble inspection.",
+            "INSPECTIONPIT": "Recess or chamber formed to permit access for inspection of substructure and services.",
+            "MANHOLE": "hamber constructed on a drain, sewer or pipeline with a removable cover that permits the entry of a person.",
+            "METERCHAMBER": "Chamber that houses a meter(s).",
+            "NOTDEFINED": "Undefined chamber type.",
+            "SUMP": "Recessed or small chamber into which liquid is drained to facilitate its collection for removal.",
+            "TRENCH": "Excavated chamber, the length of which typically exceeds the width.",
+            "USERDEFINED": "User-defined chamber type.",
+            "VALVECHAMBER": "Chamber that houses a valve(s)."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcdistributionchamberelementtype.htm"
     },
     "IfcDistributionControlElement": {
@@ -1392,24 +1551,39 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifcdraughtingpredefinedtextfont.htm"
     },
     "IfcDuctFittingType": {
-        "attributes": {
-            "PredefinedType": "The type of duct fitting."
-        },
         "description": "The element type IfcDuctFittingType defines a list of commonly shared property set definitions of a duct fitting and an optional set of product representations. It is used to define an duct fitting specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BEND": "A fitting with typically two ports used to change the direction of flow between connected elements.",
+            "CONNECTOR": "Connector fitting, typically used to join two ports together within a flow distribution system (e.g., a coupling used to join two duct segments).",
+            "ENTRY": "Entry fitting, typically unconnected at one port and connected to a flow distribution system at the other (e.g., an outside air duct system intake opening).",
+            "EXIT": "Exit fitting, typically unconnected at one port and connected to a flow distribution system at the other (e.g., an exhaust air discharge opening).",
+            "JUNCTION": "A fitting with typically more than two ports used to redistribute flow among the ports and/or to change the direction of flow between connected elements (e.g, tee, cross, wye, etc.).",
+            "NOTDEFINED": "Undefined fitting.",
+            "OBSTRUCTION": "A fitting with typically two ports used to obstruct or restrict flow between the connected elements (e.g., screen, perforated plate, etc.).",
+            "TRANSITION": "A fitting with typically two ports having different shapes or sizes. Can also be used to change the direction of flow between connected elements.",
+            "USERDEFINED": "User-defined fitting."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcductfittingtype.htm"
     },
     "IfcDuctSegmentType": {
-        "attributes": {
-            "PredefinedType": "The type of duct segment."
-        },
         "description": "The element type IfcDuctSegmentType defines a list of commonly shared property set definitions of a duct segment and an optional set of product representations. It is used to define a duct segment specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "FLEXIBLESEGMENT": "A flexible segment is a continuous non-linear segment of duct that can be deformed and change the direction of flow.",
+            "NOTDEFINED": "Undefined segment.",
+            "RIGIDSEGMENT": "A rigid segment is a continuous linear segment of duct that cannot be deformed.",
+            "USERDEFINED": "User-defined segment."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcductsegmenttype.htm"
     },
     "IfcDuctSilencerType": {
-        "attributes": {
-            "PredefinedType": "The type of duct silencer."
-        },
         "description": "The element type IfcDuctSilencerType defines a list of commonly shared property set definitions of a duct silencer and an optional set of product representations. It is used to define a duct silencer specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "FLATOVAL": "Flat-oval shaped duct silencer type.",
+            "NOTDEFINED": "Undefined duct silencer type.",
+            "RECTANGULAR": "Rectangular shaped duct silencer type.",
+            "ROUND": "Round duct silencer type.",
+            "USERDEFINED": "User-defined duct silencer type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcductsilencertype.htm"
     },
     "IfcEdge": {
@@ -1444,10 +1618,35 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifctopologyresource/lexical/ifcedgeloop.htm"
     },
     "IfcElectricApplianceType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of electrical appliance from which the type required may be set."
-        },
         "description": "An IfcElectricApplianceType defines a particular type of common electrical appliance found in a typical AEC/FM facility. Electrical Appliances generally consist of electrical devices that are not a fixed part of the building but instead can be moved from one space to another and are powered with electricity.",
+        "predefined_types": {
+            "COMPUTER": "",
+            "DIRECTWATERHEATER": "",
+            "DISHWASHER": "An appliance that has the primary function of washing dishes.",
+            "ELECTRICCOOKER": "An electrical appliance that has the primary function of cooking food (including oven, hob, grill).",
+            "ELECTRICHEATER": "",
+            "FACSIMILE": "",
+            "FREESTANDINGFAN": "An electrical appliance that is used occasionally to provide ventilation. A freestanding fan is a 'plugged' appliance whose load may be removed from an electric circuit.",
+            "FREEZER": "An electrical appliance that has the primary function of storing food at temperatures below the freezing point of water.",
+            "FRIDGE_FREEZER": "An electrical appliance that combines the functions of a freezer and a refrigerator through the provision of separate compartments.",
+            "HANDDRYER": "An electrical appliance that has the primary function of drying hands.",
+            "INDIRECTWATERHEATER": "",
+            "MICROWAVE": "An electrical appliance that has the primary function of cooking food using microwaves.",
+            "NOTDEFINED": "Undefined type.",
+            "PHOTOCOPIER": "A machine that has the primary function of reproduction of printed matter.",
+            "PRINTER": "",
+            "RADIANTHEATER": "",
+            "REFRIGERATOR": "An electrical appliance that has the primary function of storing food at low temperature but above the freezing point of water.",
+            "SCANNER": "",
+            "TELEPHONE": "",
+            "TUMBLEDRYER": "An electrical appliance that has the primary function of drying clothes.",
+            "TV": "",
+            "USERDEFINED": "User-defined type.",
+            "VENDINGMACHINE": "An appliance that stores and vends goods including food, drink and goods of various types.",
+            "WASHINGMACHINE": "An appliance that has the primary function of washing clothes.",
+            "WATERCOOLER": "",
+            "WATERHEATER": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricappliancetype.htm"
     },
     "IfcElectricDistributionPoint": {
@@ -1459,38 +1658,59 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricdistributionpoint.htm"
     },
     "IfcElectricFlowStorageDeviceType": {
-        "attributes": {
-            "PredefinedType": ""
-        },
         "description": "An IfcElectricFlowStorageDeviceType is a device in which electrical energy is stored and from which energy may be progressively released.",
+        "predefined_types": {
+            "BATTERY": "A device for storing energy in chemical form so that it can be released as electrical energy.",
+            "CAPACITORBANK": "A device that stores electrical energy when an external power supply is present using the electrical property of capacitance.",
+            "HARMONICFILTER": "A device that constantly injects currents that precisely correspond to the harmonic components drawn by the load.",
+            "INDUCTORBANK": "",
+            "NOTDEFINED": "Undefined type.",
+            "UPS": "A device that provides a time limited alternative source of power supply in the event of failure of the main supply.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricflowstoragedevicetype.htm"
     },
     "IfcElectricGeneratorType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of electric generators from which the type required may be set."
-        },
         "description": "An IfcElectricGeneratorType defines a particular type of engine that is a machine for converting mechanical energy into electrical energy.",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricgeneratortype.htm"
     },
     "IfcElectricHeaterType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of electric heater from which the type required may be set."
-        },
         "description": "An IfcElectricHeaterType is a device that emits electrical energy as heat.",
+        "predefined_types": {
+            "ELECTRICCABLEHEATER": "",
+            "ELECTRICMATHEATER": "",
+            "ELECTRICPOINTHEATER": "",
+            "NOTDEFINED": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricheatertype.htm"
     },
     "IfcElectricMotorType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of electric motor from which the type required may be set."
-        },
         "description": "Definition from BS6100 310 5201: An IfcElectricMotorType defines a particular type of engine that is a machine for converting electrical energy into mechanical energy.",
+        "predefined_types": {
+            "DC": "A motor using either generated or rectified Direct Current (DC) power.",
+            "INDUCTION": "An alternating current motor in which the primary winding on one member (usually the stator) is connected to the power source and a secondary winding or a squirrel-cage secondary winding on the other member (usually the rotor) carries the induced current. There is no physical electrical connection to the secondary winding, its current is induced.",
+            "NOTDEFINED": "Undefined type.",
+            "POLYPHASE": "A two or three-phase induction motor in which the windings, one for each phase, are evenly divided by the same number of electrical degrees.",
+            "RELUCTANCESYNCHRONOUS": "A synchronous motor with a special rotor design which directly lines the rotor up with the rotating magnetic field of the stator, allowing for no slip under load.",
+            "SYNCHRONOUS": "A motor that operates at a constant speed up to full load. The rotor speed is equal to the speed of the rotating magnetic field of the stator; there is no slip.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricmotortype.htm"
     },
     "IfcElectricTimeControlType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of electrical time control from which the type required may be set."
-        },
         "description": "An IfcElectricTimeControlType is a device that applies control to the provision or flow of electrical energy over time.",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined type.",
+            "RELAY": "Electromagnetically operated contactor for making or breaking a control circuit.",
+            "TIMECLOCK": "A control that causes action to occur at set times.",
+            "TIMEDELAY": "A control that causes action to occur following a set duration.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectrictimecontroltype.htm"
     },
     "IfcElectricalBaseProperties": {
@@ -1536,10 +1756,22 @@
     },
     "IfcElementAssembly": {
         "attributes": {
-            "AssemblyPlace": "A designation of where the assembly is intended to take place defined by an Enum.",
-            "PredefinedType": "Predefined generic types for a element assembly that are specified in an enumeration."
+            "AssemblyPlace": "A designation of where the assembly is intended to take place defined by an Enum."
         },
         "description": "A container class that represents complex element assemblies aggregated from several elements, such as discrete elements, building elements, or other elements.",
+        "predefined_types": {
+            "ACCESSORY_ASSEMBLY": "Assembled accessories or components.",
+            "ARCH": "A curved structure.",
+            "BEAM_GRID": "Interconnected beams, located in one (typically horizontal) plane.",
+            "BRACED_FRAME": "A rigid frame with additional bracing members.",
+            "GIRDER": "A beam-like superstructure.",
+            "NOTDEFINED": "Undefined element assembly.",
+            "REINFORCEMENT_UNIT": "Assembled reinforcement elements.",
+            "RIGID_FRAME": "A structure built up of beams, columns, etc. with moment-resisting joints.",
+            "SLAB_FIELD": "Slabs, laid out in one plane.",
+            "TRUSS": "A structure built up of members with (quasi) pinned joint.",
+            "USERDEFINED": "User-defined element assembly."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcelementassembly.htm"
     },
     "IfcElementComponent": {
@@ -1623,17 +1855,33 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcfacilitiesmgmtdomain/lexical/ifcequipmentstandard.htm"
     },
     "IfcEvaporativeCoolerType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of evaporative cooler."
-        },
         "description": "The element type IfcEvaporativeCoolerType defines a list of commonly shared property set definitions of an evaporative cooler and an optional set of product representations. It is used to define an evaporative cooler specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "DIRECTEVAPORATIVEAIRWASHER": "Direct evaporative air washer: Cools the air stream by evaporating water dircectly into the air stream using coolers with spray-type air washer consist of a chamber or casing containing spray nozzles, and tank for collecting spray water, and an eliminator section for removing entrained drops of water from the air.",
+            "DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER": "Direct evaporative packaged rotary air cooler: Cools the air stream by evaporating water dircectly into the air stream using coolers that wet and wash the evaporative pad by rotating it through a water bath.",
+            "DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER": "Direct evaporative random media air cooler: Cools the air stream by evaporating water dircectly into the air stream using coolers with evaporative pads, usually of aspen wood or plastic fiber/foam.",
+            "DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER": "Direct evaporative rigid media air cooler: Cools the air stream by evaporating water dircectly into the air stream using coolers with sheets of rigid, corrugated material as the wetted surface.",
+            "DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER": "Direct evaporative slingers packaged air cooler: Cools the air stream by evaporating water dircectly into the air stream using coolers with a water slinger in an evaporative cooling section and a fan section.",
+            "INDIRECTDIRECTCOMBINATION": "Indirect/Direct combination: Cools the air stream by evaporating water indirectly and without adding moisture into the air stream using a two-stage cooler with a first-stage indirect evaporative cooler and second-stage direct evaporative cooler.",
+            "INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER": "Indirect evaporative cooling tower or coil cooler: Cools the air stream by evaporating water indirectly and without adding moisture into the air stream using a combination of a cooling tower or other evaporative water cooler with a water-to-air heat exchanger coil and water circulating pump.",
+            "INDIRECTEVAPORATIVEPACKAGEAIRCOOLER": "Indirect evaporative package air cooler: Cools the air stream by evaporating water indirectly and without adding moisture into the air stream. On one side of the heat exchanger, the secondary air stream is cooled by evaporation, while on the other side of heat exchanger, the primary air stream (conditioned air to be supplied to the room) is sensibly cooled by the heat exchanger surfaces.",
+            "INDIRECTEVAPORATIVEWETCOIL": "Indirect evaporative wet coil: Cools the air stream by evaporating water indirectly and without adding moisture into the air stream. Water is sprayed directly on the tubes of the heat exchanger where latent cooling takes place and the vaporization of the water on the outside of the heat exchanger tubes allows the simultaneous heat and mass transfer which removes heat from the supply air on the tube side.",
+            "NOTDEFINED": "Undefined evaporative cooler type.",
+            "USERDEFINED": "User-defined evaporative cooler type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcevaporativecoolertype.htm"
     },
     "IfcEvaporatorType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of evaporator."
-        },
         "description": "The element type IfcEvaporatorType defines a list of commonly shared property set definitions of an evaporator and an optional set of product representations. It is used to define an evaporator specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "DIRECTEXPANSIONBRAZEDPLATE": "Direct-expansion evaporator where a refrigerant evaporates inside plates brazed or welded together to make up an assembly of separate channels.",
+            "DIRECTEXPANSIONSHELLANDTUBE": "Direct-expansion evaporator where a refrigerant evaporates inside a series of baffles that channel the fluid throughout the shell side.",
+            "DIRECTEXPANSIONTUBEINTUBE": "Direct-expansion evaporator where a refrigerant evaporates inside one or more pairs of coaxial tubes.",
+            "FLOODEDSHELLANDTUBE": "Evaporator in which refrigerant evaporates outside tubes.",
+            "NOTDEFINED": "Undefined evaporator type.",
+            "SHELLANDCOIL": "Evaporator in which refrigerant evaporates inside a simple coiled tube immersed in the fluid to be cooled.",
+            "USERDEFINED": "User-defined evaporator type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcevaporatortype.htm"
     },
     "IfcExtendedMaterialProperties": {
@@ -1737,10 +1985,18 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralloadresource/lexical/ifcfailureconnectioncondition.htm"
     },
     "IfcFanType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of fan typically used in building services."
-        },
         "description": "The element type IfcFanType defines a list of commonly shared property set definitions of a fan and an optional set of product representations. It is used to define a fan specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "CENTRIFUGALAIRFOIL": "Air flows through the impeller radially using blades that are airfoil shaped.",
+            "CENTRIFUGALBACKWARDINCLINEDCURVED": "Air flows through the impeller radially using blades that are backward curved.",
+            "CENTRIFUGALFORWARDCURVED": "Air flows through the impeller radially using blades that are forward curved.",
+            "CENTRIFUGALRADIAL": "Air flows through the impeller radially using blades that are uncurved or slightly forward curved.",
+            "NOTDEFINED": "Undefined fan type.",
+            "PROPELLORAXIAL": "Air flows through the impeller axially and small hub-to-tip ratio impeller mounted in an orifice plate or inlet ring.",
+            "TUBEAXIAL": "Air flows through the impeller axially with guide vanes and reduced running blade tip clearance.",
+            "USERDEFINED": "User-defined fan type.",
+            "VANEAXIAL": "Air flows through the impeller axially with guide vanes and reduced running blade tip clearance."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcfantype.htm"
     },
     "IfcFastener": {
@@ -1804,17 +2060,29 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcfillareastyletiles.htm"
     },
     "IfcFilterType": {
-        "attributes": {
-            "PredefinedType": "The type of air filter."
-        },
         "description": "The element type IfcFilterType defines a list of commonly shared property set definitions of a filter and an optional set of product representations. It is used to define a filter specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "AIRPARTICLEFILTER": "A filter used to remove particulates from air.",
+            "NOTDEFINED": "Undefined filter type.",
+            "ODORFILTER": "A filter used to remove odors from air.",
+            "OILFILTER": "A filter used to remove particulates from oil.",
+            "STRAINER": "A filter used to remove particulates from a fluid.",
+            "USERDEFINED": "User-defined filter type.",
+            "WATERFILTER": "A filter used to remove particulates from water."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcfiltertype.htm"
     },
     "IfcFireSuppressionTerminalType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of fire suppression terminal from which the type required may be set."
-        },
         "description": "The IfcFireSuppressionTerminalType defines a particular type of IfcFlowTerminal that has the purpose of delivering a fluid (gas or liquid) that will suppress a fire.",
+        "predefined_types": {
+            "BREECHINGINLET": "Symmetrical pipe fitting that unites two or more inlets into a single pipe. A breeching inlet may be used on either a wet or dry riser. Used by fire services personnel for fast connection of fire appliance hose reels. May also be used for foam.",
+            "FIREHYDRANT": "Device, fitted to a pipe, through which a temporary supply of water may be provided.  May also be termed a stand pipe.",
+            "HOSEREEL": "A supporting framework on which a hose may be wound.",
+            "NOTDEFINED": "Underined type.",
+            "SPRINKLER": "Device for sprinkling water from a pipe under pressure over an area.",
+            "SPRINKLERDEFLECTOR": "Device attached to a sprinkler to deflect the water flow into a spread pattern to cover the required area.",
+            "USERDEFINED": "User-defined type"
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcplumbingfireprotectiondomain/lexical/ifcfiresuppressionterminaltype.htm"
     },
     "IfcFlowController": {
@@ -1834,17 +2102,33 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcflowfittingtype.htm"
     },
     "IfcFlowInstrumentType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of flow instrument from which the type required may be set."
-        },
         "description": "An IfcFlowInstrumentType defines a particular type of flow instrument that reads and displays the value of a particular property of a system at a point, or that displays the difference in the value of a property between two points.",
+        "predefined_types": {
+            "AMMETER": "A device that reads and displays the current flow in a circuit.",
+            "FREQUENCYMETER": "A device that reads and displays the electrical frequency of an alternating current circuit.",
+            "NOTDEFINED": "Undefined type.",
+            "PHASEANGLEMETER": "A device that reads and displays the phase angle of a phase in a polyphase electrical circuit.",
+            "POWERFACTORMETER": "A device that reads and displays the power factor of an electrical circuit.",
+            "PRESSUREGAUGE": "A device that reads and displays a pressure value at a point or the pressure difference between two points.",
+            "THERMOMETER": "A device that reads and displays a temperature value at a point.",
+            "USERDEFINED": "User-defined type.",
+            "VOLTMETER_PEAK": "A device that reads and displays the peak voltage in an electrical circuit.",
+            "VOLTMETER_RMS": "A device that reads and displays the RMS (mean) voltage in an electrical circuit."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifcflowinstrumenttype.htm"
     },
     "IfcFlowMeterType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of flow meter."
-        },
         "description": "The element type IfcFlowMeterType defines a list of commonly shared property set definitions of a flow meter and an optional set of product representations. It is used to define a flow meter specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "ELECTRICMETER": "",
+            "ENERGYMETER": "An electric meter or energy meter is a device that measures the amount of electrical energy supplied to or produced by a residence, business or machine.",
+            "FLOWMETER": "",
+            "GASMETER": "A device that measures the quantity of a gas or fuel.",
+            "NOTDEFINED": "Undefined meter type",
+            "OILMETER": "A device that measures the quantity of oil.",
+            "USERDEFINED": "User-defined meter type",
+            "WATERMETER": "A device that measures the quantity of water."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcflowmetertype.htm"
     },
     "IfcFlowMovingDevice": {
@@ -1909,10 +2193,15 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcfluidflowproperties.htm"
     },
     "IfcFooting": {
-        "attributes": {
-            "PredefinedType": "The generic type of the footing."
-        },
         "description": "A part of the foundation of a structure that spreads and transmits the load directly to the soil.",
+        "predefined_types": {
+            "FOOTING_BEAM": "Footing elements that are in bending and are supported clear of the ground. They will normally span between piers, piles or pile caps. They are distinguished from beams in the building superstructure since they will normally require a lower grade of finish. They are distinguished from _STRIP_FOOTING_ since they are clear of the ground surface and hence require support to the lower face while the concrete is curing.",
+            "NOTDEFINED": "The type of footing is not defined.",
+            "PAD_FOOTING": "An element that transfers the load of a single column (possibly two) to the ground.",
+            "PILE_CAP": "An element that transfers the load from a column or group of columns to a pier or pile or group of piers or piles.",
+            "STRIP_FOOTING": "A linear element that transfers loads into the ground from either a continuous element, such as a wall, or from a series of elements, such as columns.",
+            "USERDEFINED": "Special types of footings which meet specific local requirements."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralelementsdomain/lexical/ifcfooting.htm"
     },
     "IfcFuelProperties": {
@@ -1945,10 +2234,14 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedfacilitieselements/lexical/ifcfurnituretype.htm"
     },
     "IfcGasTerminalType": {
-        "attributes": {
-            "PredefinedType": ""
-        },
         "description": "The element type IfcGasTerminalType defines a list of commonly shared property set definitions of a gas terminal and an optional set of product representations. It is used to define a gas terminal specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "GASAPPLIANCE": "",
+            "GASBOOSTER": "",
+            "GASBURNER": "",
+            "NOTDEFINED": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcgasterminaltype.htm"
     },
     "IfcGeneralMaterialProperties": {
@@ -2060,17 +2353,34 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricmodelresource/lexical/ifchalfspacesolid.htm"
     },
     "IfcHeatExchangerType": {
-        "attributes": {
-            "PredefinedType": "Defines the basic types of heat exchanger (e.g., plate, shell and tube, etc.)."
-        },
         "description": "The element type IfcHeatExchangerType defines a list of commonly shared property set definitions of a heat exchanger and an optional set of product representations. It is used to define a heat exchanger specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined heat exchanger type.",
+            "PLATE": "Plate heat exchanger.",
+            "SHELLANDTUBE": "Shell and Tube heat exchanger.",
+            "USERDEFINED": "User-defined heat exchanger type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcheatexchangertype.htm"
     },
     "IfcHumidifierType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of humidifier."
-        },
         "description": "The element type IfcHumidifierType defines a list of commonly shared property set definitions of a humidifier and an optional set of product representations. It is used to define a humidifier specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "ADIABATICAIRWASHER": "Water vapor is added into the airstream through adiabatic evaporation using an air washing element.",
+            "ADIABATICATOMIZING": "Water vapor is added into the airstream through adiabatic evaporation using an atomizing element.",
+            "ADIABATICCOMPRESSEDAIRNOZZLE": "Water vapor is added into the airstream through adiabatic evaporation using a compressed air nozzle.",
+            "ADIABATICPAN": "Water vapor is added into the airstream through adiabatic evaporation using a pan.",
+            "ADIABATICRIGIDMEDIA": "Water vapor is added into the airstream through adiabatic evaporation using a rigid media.",
+            "ADIABATICULTRASONIC": "Water vapor is added into the airstream through adiabatic evaporation using an ultrasonic element.",
+            "ADIABATICWETTEDELEMENT": "Water vapor is added into the airstream through adiabatic evaporation using a wetted element.",
+            "ASSISTEDBUTANE": "Water vapor is added into the airstream through water heated evaporation using a butane heater.",
+            "ASSISTEDELECTRIC": "Water vapor is added into the airstream through water heated evaporation using an electric heater.",
+            "ASSISTEDNATURALGAS": "Water vapor is added into the airstream through water heated evaporation using a natural gas heater.",
+            "ASSISTEDPROPANE": "Water vapor is added into the airstream through water heated evaporation using a propane heater.",
+            "ASSISTEDSTEAM": "Water vapor is added into the airstream through water heated evaporation using a steam heater.",
+            "NOTDEFINED": "Undefined humidifier type.",
+            "STEAMINJECTION": "Water vapor is added into the airstream through direct steam injection.",
+            "USERDEFINED": "User-defined humidifier type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifchumidifiertype.htm"
     },
     "IfcHygroscopicMaterialProperties": {
@@ -2130,10 +2440,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifctimeseriesresource/lexical/ifcirregulartimeseriesvalue.htm"
     },
     "IfcJunctionBoxType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of junction boxes from which the type required may be set."
-        },
         "description": "An IfcJunctionBoxType defines a particular type of junction box which is a housing inside which cables from electrical components are connected electrically.",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcjunctionboxtype.htm"
     },
     "IfcLShapeProfileDef": {
@@ -2158,10 +2469,17 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstructionmgmtdomain/lexical/ifclaborresource.htm"
     },
     "IfcLampType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of lamp from which the type required may be set."
-        },
         "description": "An IfcLampType is a type of device that is designed to emit light.",
+        "predefined_types": {
+            "COMPACTFLUORESCENT": "A fluorescent lamp having a compact form factor produced by shaping the tube.",
+            "FLUORESCENT": "A typically tubular discharge lamp in which most of the light is emitted by one or several layers of phosphors excited by ultraviolet radiation from the discharge.",
+            "HIGHPRESSUREMERCURY": "A discharge lamp in which most of the light is emitted by exciting mercury at high pressure.",
+            "HIGHPRESSURESODIUM": "A discharge lamp in which most of the light is emitted by exciting sodium at high pressure.",
+            "METALHALIDE": "A discharge lamp in which most of the light is emitted by exciting a metal halide.",
+            "NOTDEFINED": "Undefined type.",
+            "TUNGSTENFILAMENT": "A lamp that emits light by passing an electrical current through a tungsten wire filament in a near vacuum.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifclamptype.htm"
     },
     "IfcLibraryInformation": {
@@ -2192,10 +2510,13 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationorganizationresource/lexical/ifclightdistributiondata.htm"
     },
     "IfcLightFixtureType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of light fixture from which the type required may be set."
-        },
         "description": "An IfcLightFixtureType is a container type that is designed for the purpose of housing one or more lamps and the devices that control, restrict or vary their emission.",
+        "predefined_types": {
+            "DIRECTIONSOURCE": "A light fixture that is considered to have a length or surface area from which it emits light in a direction. A light fixture containing one or more fluorescent lamps is an example of a direction source.",
+            "NOTDEFINED": "Undefined type.",
+            "POINTSOURCE": "A light fixture that is considered to have negligible area and that emit light with approximately equal intensity in all directions.  A light fixture containing a tungsten, halogen or similar bulb is an example of a point source.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifclightfixturetype.htm"
     },
     "IfcLightIntensityDistribution": {
@@ -2438,10 +2759,23 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcmember.htm"
     },
     "IfcMemberType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a linear structural member element from which the type required may be set."
-        },
         "description": "The element type (IfcMemberType) defines a list of commonly shared property set definitions of a structural member and an optional set of product representations. It is used to define a structural member specification (i.e. the specific product information that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BRACE": "A linear element (usually sloped) often used for bracing of a girder or truss.",
+            "CHORD": "Upper or lower longitudinal member of a truss, used horizontally or sloped.",
+            "COLLAR": "A linear element (usually used horizontally) within a roof structure to connect rafters and posts.",
+            "MEMBER": "A linear element within a girder or truss with no further meaning.",
+            "MULLION": "A linear element within a curtain wall system to connect two (or more) panels.",
+            "NOTDEFINED": "Undefined linear element.",
+            "PLATE": "A&nbsp;linear continuous horizontal element in wall framing, such as a head piece or a sole plate.",
+            "POST": "A linear member (usually used vertically) within a roof structure to support purlins.",
+            "PURLIN": "A linear element (usually used horizontally) within a roof structure to support rafters.",
+            "RAFTER": "A linear elements used to support roof slabs or roof covering, usually used with slope.",
+            "STRINGER": "A linear element used to support stair or ramp flights, usually used with slope.",
+            "STRUT": "A linear element often used within a girder or truss.",
+            "STUD": "Vertical element in wall framing.",
+            "USERDEFINED": "User-defined linear element."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcmembertype.htm"
     },
     "IfcMetric": {
@@ -2461,10 +2795,14 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmonetaryunit.htm"
     },
     "IfcMotorConnectionType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of motor connection from which the type required may be set."
-        },
         "description": "An IfcMotorConnectionType provides the means for connecting a motor as the driving device to the driven device.",
+        "predefined_types": {
+            "BELTDRIVE": "An indirect connection made through the medium of a shaped, flexible continuous loop.",
+            "COUPLING": "An indirect connection made through the medium of the viscosity of a fluid.",
+            "DIRECTDRIVE": "A direct, physical connection made between the motor and the driven device.",
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcmotorconnectiontype.htm"
     },
     "IfcMove": {
@@ -2521,10 +2859,18 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstraintresource/lexical/ifcobjective.htm"
     },
     "IfcOccupant": {
-        "attributes": {
-            "PredefinedType": "Predefined occupant types from which that required may be set."
-        },
         "description": "An_IfcOccupant_ is a type of actor that defines the form of occupancy of a property.",
+        "predefined_types": {
+            "ASSIGNEE": "Actor receiving the assignment of a property agreement from an assignor.",
+            "ASSIGNOR": "Actor assigning a property agreement to an assignor.",
+            "LESSEE": "Actor receiving the lease of a property from a lessor.",
+            "LESSOR": "Actor leasing a property to a lessee.",
+            "LETTINGAGENT": "Actor participating in a property agreement on behalf of an owner, lessor or assignor.",
+            "NOTDEFINED": "Undefined type.",
+            "OWNER": "Actor that owns a property.",
+            "TENANT": "Actor renting the use of a property fro a period of time.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedfacilitieselements/lexical/ifcoccupant.htm"
     },
     "IfcOffsetCurve2D": {
@@ -2621,10 +2967,14 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifctopologyresource/lexical/ifcorientededge.htm"
     },
     "IfcOutletType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of outlet from which the type required may be set."
-        },
         "description": "An IfcOutletType defines a particular type of outlet which is a device installed at a point to receive an inserted plug.",
+        "predefined_types": {
+            "AUDIOVISUALOUTLET": "An outlet used for an audio or visual device.",
+            "COMMUNICATIONSOUTLET": "An outlet used for connecting communications equipment.",
+            "NOTDEFINED": "Undefined type.<",
+            "POWEROUTLET": "An outlet used for connecting electrical devices requiring power.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcoutlettype.htm"
     },
     "IfcOwnerHistory": {
@@ -2732,24 +3082,43 @@
     },
     "IfcPile": {
         "attributes": {
-            "ConstructionType": "General designator for how the pile is constructed.",
-            "PredefinedType": "The predefined generic type of the pile according to function."
+            "ConstructionType": "General designator for how the pile is constructed."
         },
         "description": "A slender timber, concrete, or steel structural element, driven, jetted, or otherwise embedded on end in the ground for the purpose of supporting a load.",
+        "predefined_types": {
+            "COHESION": "A cohesion pile.",
+            "FRICTION": "A friction pile.",
+            "NOTDEFINED": "The type of pile function is not defined.",
+            "SUPPORT": "A support pile.",
+            "USERDEFINED": "The type of pile function is user defined."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralelementsdomain/lexical/ifcpile.htm"
     },
     "IfcPipeFittingType": {
-        "attributes": {
-            "PredefinedType": "The type of pipe fitting."
-        },
         "description": "The element type IfcPipeFittingType defines a list of commonly shared property set definitions of a pipe fitting and an optional set of product representations. It is used to define a pipe fitting specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BEND": "A fitting with typically two ports used to change the direction of flow between connected elements.",
+            "CONNECTOR": "Connector fitting, typically used to join two ports together within a flow distribution system (e.g., a coupling used to join two pipe segments).",
+            "ENTRY": "Entry fitting, typically unconnected at one port and connected to a flow distribution system at the other (e.g., a breeching inlet).",
+            "EXIT": "Exit fitting, typically unconnected at one port and connected to a flow distribution system at the other (e.g., a hose bibb).",
+            "JUNCTION": "A fitting with typically more than two ports used to redistribute flow among the ports and/or to change the direction of flow between connected elements (e.g, tee, cross, wye, etc.).",
+            "NOTDEFINED": "Undefined fitting.",
+            "OBSTRUCTION": "A fitting with typically two ports used to obstruct or restrict flow between the connected elements (e.g., screen, perforated plate, etc.).",
+            "TRANSITION": "A fitting with typically two ports having different shapes or sizes. Can also be used to change the direction of flow between connected elements.",
+            "USERDEFINED": "User-defined fitting."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcpipefittingtype.htm"
     },
     "IfcPipeSegmentType": {
-        "attributes": {
-            "PredefinedType": "The type of pipe segment."
-        },
         "description": "The element type IfcPipeSegmentType defines a list of commonly shared property set definitions of a pipe segment and an optional set of product representations. It is used to define a pipe segment specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "FLEXIBLESEGMENT": "A flexible segment is a continuous non-linear segment of pipe that can be deformed and change the direction of flow.",
+            "GUTTER": "A gutter segment is a continuous open-channel segment of pipe.",
+            "NOTDEFINED": "Undefined segment.",
+            "RIGIDSEGMENT": "A rigid segment is continuous linear segment of pipe that cannot be deformed.",
+            "SPOOL": "A type of rigid segment that is typically shorter and used for providing connectivity within a piping network.",
+            "USERDEFINED": "User-defined segment."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcpipesegmenttype.htm"
     },
     "IfcPixelTexture": {
@@ -2794,10 +3163,13 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcplate.htm"
     },
     "IfcPlateType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a planar structural member element from which the type required may be set."
-        },
         "description": "The element type IfcPlateType defines a list of commonly shared property set definitions of a thin planar element and an optional set of product representations (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "CURTAIN_PANEL": "A planar element within a curtain wall, often consisting of a frame with fixed glazing.",
+            "NOTDEFINED": "Undefined linear element.",
+            "SHEET": "A planar, flat and thin element, comes usually as metal sheet, and is often used as an additonal part within an assembly.",
+            "USERDEFINED": "User-defined linear element."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcplatetype.htm"
     },
     "IfcPoint": {
@@ -3019,18 +3391,34 @@
     "IfcProjectOrder": {
         "attributes": {
             "ID": "A unique identification assigned to a project order that enables its differentiation from other project orders.",
-            "PredefinedType": "The type of project order.",
             "Status": "The current status of a project order.Examples of status values that might be used for a project order status include: - PLANNED - REQUESTED - APPROVED - ISSUED - STARTED - DELAYED - DONE"
         },
         "description": "An IfcProjectOrder sets common properties for project orders issued in a construction or facilities management project.",
+        "predefined_types": {
+            "CHANGEORDER": "An instruction to make a change to a product or work being undertaken and a description of the work that is to be performed.",
+            "MAINTENANCEWORKORDER": "An instruction to carry out maintenance work and a description of the work that is to be performed.",
+            "MOVEORDER": "An instruction to move persons and artefacts and a description of the move locations, objects to be moved, etc.",
+            "NOTDEFINED": "Undefined type.",
+            "PURCHASEORDER": "An instruction to purchase goods and/or services and a description of the goods and/or services to be purchased that is to be performed.",
+            "USERDEFINED": "User-defined type.",
+            "WORKORDER": "A general instruction to carry out work and a description of the work to be done. Note the difference between a work order generally and a maintenance work order."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedmgmtelements/lexical/ifcprojectorder.htm"
     },
     "IfcProjectOrderRecord": {
         "attributes": {
-            "PredefinedType": "Identifies the type of project incident.",
             "Records": "Records in the sequence of occurrence the incident of a project order and the objects that are related to that project order. For instance, a maintenance incident will connect a work order with the objects (elements or assets) that are subject to the provisions of the work order"
         },
         "description": "An IfcProjectOrderRecord records information in sequence about the incidence of each order that is connected with one or a set of objects.",
+        "predefined_types": {
+            "CHANGE": "",
+            "MAINTENANCE": "",
+            "MOVE": "",
+            "NOTDEFINED": "",
+            "PURCHASE": "",
+            "USERDEFINED": "",
+            "WORK": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedmgmtelements/lexical/ifcprojectorderrecord.htm"
     },
     "IfcProjectionCurve": {
@@ -3157,10 +3545,17 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpropertyresource/lexical/ifcpropertytablevalue.htm"
     },
     "IfcProtectiveDeviceType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of protective device from which the type required may be set."
-        },
         "description": "An IfcProtectiveDeviceType is a device that breaks an electrical circuit when a stated electric current that passes through it is exceeded.",
+        "predefined_types": {
+            "CIRCUITBREAKER": "A mechanical switching device capable of making, carrying, and breaking currents under normal circuit conditions and also making, carrying for a specified time and breaking, current under specified abnormal circuit conditions such as those of short circuit.",
+            "EARTHFAILUREDEVICE": "",
+            "FUSEDISCONNECTOR": "A device that will electrically open the circuit after a period of prolonged, abnormal current flow.",
+            "NOTDEFINED": "Undefined type.",
+            "RESIDUALCURRENTCIRCUITBREAKER": "A device that opens, closes, or isolates a circuit and has short circuit and overload protection.  It attempts to break the circuit when there is a difference in current between any two phases.  May also be referred to as 'Ground Fault Interupter (GFI)' or 'Ground Fault Circuit Interuptor (GFCI)'",
+            "RESIDUALCURRENTSWITCH": "A device that opens, closes or isolates a circuit and has no short circuit or overload protection.  May also be identified as a 'ground fault switch'.",
+            "USERDEFINED": "User-defined type.",
+            "VARISTOR": "A high voltage surge protection device."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcprotectivedevicetype.htm"
     },
     "IfcProxy": {
@@ -3172,10 +3567,16 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifckernel/lexical/ifcproxy.htm"
     },
     "IfcPumpType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of pump typically used in building services."
-        },
         "description": "The element type IfcPumpType defines a list of commonly shared property set definitions of a pump and an optional set of product representations. It is used to define a pump specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "CIRCULATOR": "A Circulator pump is a generic low-pressure, low-capacity pump. It may have a wet rotor and may be driven by a flexible-coupled motor.",
+            "ENDSUCTION": "An End Suction pump, when mounted horizontally, has a single horizontal inlet on the impeller suction side and a vertical discharge. It may have a direct or close-coupled motor.",
+            "NOTDEFINED": "Pump type has not been defined.",
+            "SPLITCASE": "A Split Case pump, when mounted horizontally, has an inlet and outlet on each side of the impeller. The impeller can be easily accessed by removing the front of the impeller casing. It may have a direct or close-coupled motor.",
+            "USERDEFINED": "User-defined pump type.",
+            "VERTICALINLINE": "A Vertical Inline pump has the pump and motor close-coupled on the pump casing. The pump depends on the connected, horizontal piping for support, with the suction and discharge along the piping axis.",
+            "VERTICALTURBINE": "A Vertical Turbine pump has a motor mounted vertically on the pump casing for either\n                wet-pit sump mounting or dry-well mounting."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcpumptype.htm"
     },
     "IfcQuantityArea": {
@@ -3225,17 +3626,25 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdimensioningresource/lexical/ifcradiusdimension.htm"
     },
     "IfcRailing": {
-        "attributes": {
-            "PredefinedType": "Predefined generic types for a railing that are specified in an enumeration. There may be a property set given for the predefined types. > NOTE: The use of the predefined type directly at the occurrence object level of IfcRailing is only permitted, if no type object IfcRailingType is assigned."
-        },
         "description": "Definition of IAI: The railing is a frame assembly adjacent to human circulation spaces and at some space boundaries where it is used in lieu of walls or to complement walls. Designed to aid humans, either as an optional physical support, or to prevent injury by falling. A list of references to accessory/mounting hardware for this railing might be given by including these assessories (IfcDiscreteAssessory) through the objectified relationship IfcRelAggregates.",
+        "predefined_types": {
+            "BALUSTRADE": "Similar to the definitions of a guardrail except the location is at the edge of a floor, rather then a stair or ramp. Examples are balustrates at roof-tops or balconies.",
+            "GUARDRAIL": "A type of railing designed to guard human occupants from falling off a stair, ramp or landing where there is a vertical drop at the edge of such floors/landings.",
+            "HANDRAIL": "A type of railing designed to serve as an optional structural support for loads applied by human occupants (at hand height). Generally located adjacent to ramps and stairs. Generally floor or wall mounted.",
+            "NOTDEFINED": "Undefined railing element, no type information available.",
+            "USERDEFINED": "User-defined railing element, a term to identify the user type is given by the attribute _IfcRailing.ObjectType._"
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcrailing.htm"
     },
     "IfcRailingType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a railing element from which the type required may be set."
-        },
         "description": "The element type (IfcRailingType) defines a list of commonly shared property set definitions of a railing element and an optional set of product representations. It is used to define a railing specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BALUSTRADE": "Similar to the definitions of a guardrail except the location is at the edge of a floor, rather then a stair or ramp. Examples are balustrates at roof-tops or balconies.",
+            "GUARDRAIL": "A type of railing designed to guard human occupants from falling off a stair, ramp or landing where there is a vertical drop at the edge of such floors/landings.",
+            "HANDRAIL": "A type of railing designed to serve as an optional structural support for loads applied by human occupants (at hand height). Generally located adjacent to ramps and stairs. Generally floor or wall mounted.",
+            "NOTDEFINED": "Undefined railing element, no type information available.",
+            "USERDEFINED": "User-defined railing element, a term to identify the user type is given by the attribute _IfcRailing.ObjectType._"
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcrailingtype.htm"
     },
     "IfcRamp": {
@@ -3250,10 +3659,13 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcrampflight.htm"
     },
     "IfcRampFlightType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a ramp flight element from which the type required may be set."
-        },
         "description": "The element type (IfcRampFlightType) defines a list of commonly shared property set definitions of a ramp flight and an optional set of product representations. It is used to define an ramp flight specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined ramp flight.",
+            "SPIRAL": "A ramp flight with a circular or elliptic walking line.",
+            "STRAIGHT": "A ramp flight with a straight walking line.",
+            "USERDEFINED": "User-defined ramp flight."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcrampflighttype.htm"
     },
     "IfcRationalBezierCurve": {
@@ -3877,10 +4289,21 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsiunit.htm"
     },
     "IfcSanitaryTerminalType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of sanitary terminal from which the type required may be set."
-        },
         "description": "IfcSanitaryTerminalType defines a particular type of IfcFlowTerminal that is a fixed appliance or terminal usually supplied with water and used for drinking, cleaning or foul water disposal or that is an item of equipment directly used with such an appliance or terminal.",
+        "predefined_types": {
+            "BATH": "Sanitary appliance for immersion of the human body or parts of it.",
+            "BIDET": "Waste water appliance for washing the excretory organs while sitting astride the bowl.",
+            "CISTERN": "A water storage unit attached to a sanitary terminal that is fitted with a device, operated automatically or by the user, that discharges water to cleanse a water closet (toilet) pan, urinal or slop hopper.",
+            "NOTDEFINED": "Undefined type.",
+            "SANITARYFOUNTAIN": "A sanitary terminal that provides a low pressure jet of water for a specific purpose.",
+            "SHOWER": "Installation or waste water appliance that emits a spray of water to wash the human body.",
+            "SINK": "Waste water appliance for receiving, retaining or disposing of domestic, culinary, laboratory or industrial process liquids.",
+            "TOILETPAN": "Soil appliance for the disposal of excrement.",
+            "URINAL": "Soil appliance that receives urine and directs it to a waste outlet.",
+            "USERDEFINED": "User-defined type.",
+            "WASHHANDBASIN": "Waste water appliance for washing the upper parts of the body.",
+            "WCSEAT": "Hinged seat that fits on the top of a water closet (WC) pan.\n{ .deprecated}\n> DEPRECATION&nbsp; Enumerator shall not be used in IFC4."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcplumbingfireprotectiondomain/lexical/ifcsanitaryterminaltype.htm"
     },
     "IfcScheduleTimeControl": {
@@ -3940,10 +4363,24 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricmodelresource/lexical/ifcsectionedspine.htm"
     },
     "IfcSensorType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of sensor from which the type required may be set."
-        },
         "description": "An IfcSensorType defines a particular type of sensor which is used for detection in a control system such as a building automation control system.",
+        "predefined_types": {
+            "CO2SENSOR": "",
+            "FIRESENSOR": "A device that senses or detects fire",
+            "FLOWSENSOR": "A device that senses or detects flow in a fluid.",
+            "GASSENSOR": "A device that senses or detects gas concentration (other than CO2)",
+            "HEATSENSOR": "A device that senses or detects heat.",
+            "HUMIDITYSENSOR": "A device that senses or detects humidity.",
+            "LIGHTSENSOR": "A device that senses or detects light.",
+            "MOISTURESENSOR": "A device that senses or detects moisture.",
+            "MOVEMENTSENSOR": "A device that senses or detects movement.",
+            "NOTDEFINED": "Undefined type.",
+            "PRESSURESENSOR": "A device that senses or detects pressure.",
+            "SMOKESENSOR": "A device that senses or detects smoke.",
+            "SOUNDSENSOR": "A device that senses or detects sound.",
+            "TEMPERATURESENSOR": "A device that senses or detects temperature.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifcsensortype.htm"
     },
     "IfcServiceLife": {
@@ -3958,10 +4395,20 @@
         "attributes": {
             "LowerValue": "Lower of the three values assigned to the service life factor.",
             "MostUsedValue": "Most used of the three values assigned to the service life factor.",
-            "PredefinedType": "Predefined service life factor types from which that required may be set.",
             "UpperValue": "Upper of the three values assigned to the service life factor."
         },
         "description": "An IfcServiceLifeFactor captures the various factors that impact upon the expected service life of an artefact.",
+        "predefined_types": {
+            "A_QUALITYOFCOMPONENTS": "",
+            "B_DESIGNLEVEL": "",
+            "C_WORKEXECUTIONLEVEL": "",
+            "D_INDOORENVIRONMENT": "",
+            "E_OUTDOORENVIRONMENT": "",
+            "F_INUSECONDITIONS": "",
+            "G_MAINTENANCELEVEL": "",
+            "NOTDEFINED": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedfacilitieselements/lexical/ifcservicelifefactor.htm"
     },
     "IfcShapeAspect": {
@@ -4010,17 +4457,27 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcsite.htm"
     },
     "IfcSlab": {
-        "attributes": {
-            "PredefinedType": "Predefined generic types for a slab that are specified in an enumeration. There may be a property set given for the predefined types. > NOTE: The use of the predefined type directly at the occurrence object level of IfcSlab is only permitted, if no type object IfcSlabType is assigned."
-        },
         "description": "A slab is a component of the construction that normally encloses a space vertically. The slab may provide the lower support (floor) or upper construction (roof slab) in any space in a building. It shall be noted, that only the core or constructional part of this construction is considered to be a slab. The upper finish (flooring, roofing) and the lower finish (ceiling, suspended ceiling) are considered to be coverings. A special type of slab is the landing, described as a floor section to which one or more stair flights or ramp flights connect. May or may not be adjacent to a building storey floor.",
+        "predefined_types": {
+            "BASESLAB": "The slab is used to represent a floor slab against the ground (and thereby being a part of the foundation). Another name is mat foundation.",
+            "FLOOR": "The slab is used to represent a floor slab.",
+            "LANDING": "The slab is used to represent a landing within a stair or ramp.",
+            "NOTDEFINED": "",
+            "ROOF": "The slab is used to represent a roof slab (either flat or sloped).",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcslab.htm"
     },
     "IfcSlabType": {
-        "attributes": {
-            "PredefinedType": "Type of the slab."
-        },
         "description": "The element type (IfcSlabType) defines a list of commonly shared property set definitions of a slab and an optional set of product representations. It is used to define a slab specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BASESLAB": "The slab is used to represent a floor slab against the ground (and thereby being a part of the foundation). Another name is mat foundation.",
+            "FLOOR": "The slab is used to represent a floor slab.",
+            "LANDING": "The slab is used to represent a landing within a stair or ramp.",
+            "NOTDEFINED": "",
+            "ROOF": "The slab is used to represent a roof slab (either flat or sloped).",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcslabtype.htm"
     },
     "IfcSlippageConnectionCondition": {
@@ -4068,10 +4525,18 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcspace.htm"
     },
     "IfcSpaceHeaterType": {
-        "attributes": {
-            "PredefinedType": "Enumeration of possible types of space heater (e.g., baseboard heater, convector, radiator, etc.)."
-        },
         "description": "The element type IfcSpaceHeaterType defines a list of commonly shared property set definitions of a space heater and an optional set of product representations. It is used to define a space heater specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "BASEBOARDHEATER": "",
+            "CONVECTOR": "A heat-distributing unit that operates with gravity-circulated air.",
+            "FINNEDTUBEUNIT": "",
+            "NOTDEFINED": "Undefined space heater type.",
+            "PANELRADIATOR": "",
+            "SECTIONALRADIATOR": "",
+            "TUBULARRADIATOR": "",
+            "UNITHEATER": "",
+            "USERDEFINED": "User-defined space heater type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcspaceheatertype.htm"
     },
     "IfcSpaceProgram": {
@@ -4104,10 +4569,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcspacethermalloadproperties.htm"
     },
     "IfcSpaceType": {
-        "attributes": {
-            "PredefinedType": "Predefined types to define the particular type of space. There may be property set definitions available for each predefined type."
-        },
         "description": "The IfcSpaceType defines a list of commonly shared property set definitions of a space and an optional set of product representations. It is used to define an space specification (i.e. the specific space information, that is common to all occurrences of that space type).",
+        "predefined_types": {
+            "NOTDEFINED": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcspacetype.htm"
     },
     "IfcSpatialStructureElement": {
@@ -4133,10 +4599,14 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricmodelresource/lexical/ifcsphere.htm"
     },
     "IfcStackTerminalType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of stack terminal from which the type required may be set."
-        },
         "description": "The IfcStackTerminalType defines a particular type of IfcFlowTerminal placed at the top of a ventilating stack (to prevent ingress by birds, rainwater etc.) or rainwater pipe (to act as a collector or hopper for discharge from guttering).",
+        "predefined_types": {
+            "BIRDCAGE": "Guard cage, typically wire mesh, at the top of the stack preventing access by birds.",
+            "COWL": "A cowling placed at the top of a stack to eliminate downdraft.",
+            "NOTDEFINED": "Undefined type.",
+            "RAINWATERHOPPER": "A box placed at the top of a rainwater downpipe to catch rainwater from guttering.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcplumbingfireprotectiondomain/lexical/ifcstackterminaltype.htm"
     },
     "IfcStair": {
@@ -4157,10 +4627,16 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcstairflight.htm"
     },
     "IfcStairFlightType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a stair flight element from which the type required may be set."
-        },
         "description": "The element type (IfcStairFlightType) defines a list of commonly shared property set definitions of a stair flight and an optional set of product representations. It is used to define an stair flight specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "CURVED": "A stair flight with a curved walking line.",
+            "FREEFORM": "A stair flight with a free form walking line (and outer boundaries).",
+            "NOTDEFINED": "Undefined stair flight.",
+            "SPIRAL": "A stair flight with a circular or elliptic walking line.",
+            "STRAIGHT": "A stair flight with a straight walking line.",
+            "USERDEFINED": "User-defined stair flight.",
+            "WINDER": "A stair flight with a walking line including straight and curved sections."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcstairflighttype.htm"
     },
     "IfcStructuralAction": {
@@ -4184,10 +4660,16 @@
         "attributes": {
             "HasResults": "References to all result groups available for this structural analysis model.",
             "LoadedBy": "References to all load groups to be analyzed.",
-            "OrientationOf2DPlane": "If the selected model type (PredefinedType) describes a 2D system the orientation is needed to define the upright direction to the focused plane (z-axes). This is needed because all data for the structural analysis model (structural members, structural activities) are defined by using 3-D space. The orientation is given in relation to the coordinate system of the project. By 3D systems this value is not asserted.",
-            "PredefinedType": "Defines the type of the structural analysis model."
+            "OrientationOf2DPlane": "If the selected model type (PredefinedType) describes a 2D system the orientation is needed to define the upright direction to the focused plane (z-axes). This is needed because all data for the structural analysis model (structural members, structural activities) are defined by using 3-D space. The orientation is given in relation to the coordinate system of the project. By 3D systems this value is not asserted."
         },
         "description": "The IfcStructuralAnalysisModel is used to assemble all information needed to represent a structural analysis model. It encompasses certain general properties (such as analysis type), references to all contained structural members, structural supports or connecting members, the connection properties, as well as loads and the respective load results.",
+        "predefined_types": {
+            "IN_PLANE_LOADING_2D": "",
+            "LOADING_3D": "",
+            "NOTDEFINED": "",
+            "OUT_PLANE_LOADING_2D": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcstructuralanalysismodel.htm"
     },
     "IfcStructuralConnection": {
@@ -4210,10 +4692,16 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcstructuralcurveconnection.htm"
     },
     "IfcStructuralCurveMember": {
-        "attributes": {
-            "PredefinedType": "Defines the load carrying behavior of the member, as far as it is taken into account in the analysis."
-        },
         "description": "Definition from IAI: Instances of the entity IfcStructuralCurveMember shall be used to describe linear structural elements. Profile and material properties are defined by using objectified relationships:",
+        "predefined_types": {
+            "CABLE": "",
+            "COMPRESSION_MEMBER": "",
+            "NOTDEFINED": "",
+            "PIN_JOINED_MEMBER": "",
+            "RIGID_JOINED_MEMBER": "",
+            "TENSION_MEMBER": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcstructuralcurvemember.htm"
     },
     "IfcStructuralCurveMemberVarying": {
@@ -4256,11 +4744,18 @@
             "ActionType": "Type of actions in the group. Normally needed if 'PredefinedType' specifies a LOAD_COMBINATION_GROUP.",
             "Coefficient": "Load factor. If omitted, a factor is not yet known or not specified. A load factor of 1.0 shall be explicitly exported as Coefficient = 1.0.",
             "LoadGroupFor": "Analysis models in which this load group is used.",
-            "PredefinedType": "Selects a predefined type for the load group. It can be differentiated between load groups, load cases, load combination groups (a necessary construct for the description of load combinations) and load combinations.",
             "Purpose": "Description of the purpose of this instance. Among else, possible values of the Purpose of load combinations are 'SLS', 'ULS', 'ALS' to indicate serviceability, ultimate, or accidental limit state.",
             "SourceOfResultGroup": "Results which were computed using this load group."
         },
         "description": "The entity IfcStructuralLoadGroup is used to structure the physical impacts. By using the grouping features inherited from IfcGroup, instances of IfcStructuralAction (or its subclasses) and of IfcStructuralLoadGroup can be used to define load groups, load cases and load combinations. An optional coefficient can be provided to represent safety factors known from several codes of practice. (see also IfcLoadGroupTypeEnum)",
+        "predefined_types": {
+            "LOAD_CASE": "Groups LOAD_GROUPs and instances of subtypes of _IfcStructuralAction_.\n      It should be used as a container for loads with the same origin.",
+            "LOAD_COMBINATION": "An intermediate level between LOAD_CASE and LOAD_COMBINATION.  This level is obsolete and deprecated.  Before the introduction of _IfcRelAssignsToGroupByFactor_, the purpose of this level was to provide a factor with which one or more LOAD_CASEs occur in a LOAD_COMBINATION.",
+            "LOAD_COMBINATION_GROUP": "",
+            "LOAD_GROUP": "Groups instances of subtypes of _IfcStructuralAction_.  It shall be used as a container for loads grouped together for specific purposes, such as loads which are part of a special load pattern.",
+            "NOTDEFINED": "The grouping level is not yet known.",
+            "USERDEFINED": "A grouping level which does not follow the standard hierarchy of load group types."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcstructuralloadgroup.htm"
     },
     "IfcStructuralLoadLinearForce": {
@@ -4426,10 +4921,16 @@
     },
     "IfcStructuralSurfaceMember": {
         "attributes": {
-            "PredefinedType": "Defines the load carrying behavior of the member, as far as it is taken into account in the analysis.",
             "Thickness": "Defines the typically understood thickness of the structural face member, i.e. the smallest spatial dimension of the element."
         },
         "description": "Instances of the entity IfcStructuralSurfaceMember shall be used to describe planar structural elements.",
+        "predefined_types": {
+            "BENDING_ELEMENT": "",
+            "MEMBRANE_ELEMENT": "",
+            "NOTDEFINED": "",
+            "SHELL": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcstructuralsurfacemember.htm"
     },
     "IfcStructuralSurfaceMemberVarying": {
@@ -4601,10 +5102,16 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifcsweptsurface.htm"
     },
     "IfcSwitchingDeviceType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of switch from which the type required may be set."
-        },
         "description": "An IfcSwitchingDeviceType defines a particular type of switch which is a mechanically operated contactor.",
+        "predefined_types": {
+            "CONTACTOR": "An electrical device used to control the flow of power in a circuit on or off.",
+            "EMERGENCYSTOP": "An emergency stop device acts to remove as quickly as possible any danger that may have arisen unexpectedly.",
+            "NOTDEFINED": "Undefined type.",
+            "STARTER": "A starter is a switch which in the closed position controls the application of power to an electrical device.",
+            "SWITCHDISCONNECTOR": "A switch disconnector is a switch which in the open position satisfies the isolating requirements specified for a disconnector.",
+            "TOGGLESWITCH": "A toggle switch has two positions, and may enable or isolate electrical power or other setting (according to the switched port type).",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcswitchingdevicetype.htm"
     },
     "IfcSymbolStyle": {
@@ -4662,10 +5169,15 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcutilityresource/lexical/ifctablerow.htm"
     },
     "IfcTankType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of tank."
-        },
         "description": "The element type IfcTankType defines a list of commonly shared property set definitions of a tank and an optional set of product representations. It is used to define a tank specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "EXPANSION": "A closed container used in a closed fluid distribution system to mitigate the effects of thermal expansion or water hammer. The tank is typically constructed with a diaphragm dividing the tank into two sections, with fluid on one side of the diaphragm and air on the other. One example application is when connected to the primary circuit of a hot water system to accommodate the increase in volume of the water when it is heated.",
+            "NOTDEFINED": "Undefined tank type.",
+            "PREFORMED": "",
+            "PRESSUREVESSEL": "A closed container used for storing fluids or gases at a pressure different from the ambient pressure. A pressure vessel is typically rated by an authority having jurisdiction for the operational pressure.",
+            "SECTIONAL": "",
+            "USERDEFINED": "User-defined tank type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifctanktype.htm"
     },
     "IfcTask": {
@@ -4698,10 +5210,17 @@
             "MinCurvatureRadius": "The smallest curvature radius calculated on the whole effective length of the tendon where the tension properties are still valid.",
             "NominalDiameter": "The nominal diameter defining the cross-section size of the tendon.",
             "PreStress": "The prestress to be applied on the tendon.",
-            "PredefinedType": "Predefined generic types for a tendon.",
             "TensionForce": "The maximum allowed tension force that can be applied on the tendon."
         },
         "description": "A steel element such as a wire, cable, bar, rod, or strand used to impart prestress to concrete when the element is tensioned.",
+        "predefined_types": {
+            "BAR": "The tendon is configured as a bar.",
+            "COATED": "The tendon is coated.",
+            "NOTDEFINED": "The type of tendon is not defined.",
+            "STRAND": "The tendon is a strand.",
+            "USERDEFINED": "The type of tendon is user defined.",
+            "WIRE": "The tendon is a wire."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralelementsdomain/lexical/ifctendon.htm"
     },
     "IfcTendonAnchor": {
@@ -4871,10 +5390,14 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcrepresentationresource/lexical/ifctopologyrepresentation.htm"
     },
     "IfcTransformerType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of transformer from which the type required may be set."
-        },
         "description": "An IfcTransformerType defines a particular type of transformer that is an inductive stationary device that transfers electrical energy from one circuit to another.",
+        "predefined_types": {
+            "CURRENT": "A transformer that changes the current between circuits.",
+            "FREQUENCY": "A transformer that changes the frequency between circuits.",
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type.",
+            "VOLTAGE": "A transformer that changes the voltage between circuits."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifctransformertype.htm"
     },
     "IfcTransportElement": {
@@ -4887,10 +5410,14 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifctransportelement.htm"
     },
     "IfcTransportElementType": {
-        "attributes": {
-            "PredefinedType": "Predefined types to define the particular type of the transport element. There may be property set definitions available for each predefined type."
-        },
         "description": "The element type (IfcTransportElementType) defines a list of commonly shared property set definitions of an element and an optional set of product representations. It is used to define an element specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "ELEVATOR": "Elevator or lift being a transport device to move people of good vertically.",
+            "ESCALATOR": "Escalator being a transport device to move people. It consists of individual linked steps that move up and down on tracks while keeping the threads horizontal.",
+            "MOVINGWALKWAY": "Moving walkway being a transport device to move people horizontally or on an incline. It is a slow conveyor belt that transports people.",
+            "NOTDEFINED": "",
+            "USERDEFINED": ""
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifctransportelementtype.htm"
     },
     "IfcTrapeziumProfileDef": {
@@ -4915,10 +5442,12 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifctrimmedcurve.htm"
     },
     "IfcTubeBundleType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of tube bundle."
-        },
         "description": "The element type IfcTubeBundleType defines a list of commonly shared property set definitions of a tube buncle and an optional set of product representations. It is used to define a tube bundle specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "FINNED": "Finned tube bundle type.",
+            "NOTDEFINED": "Undefined tube bundle type.",
+            "USERDEFINED": "User-defined tube bundle type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifctubebundletype.htm"
     },
     "IfcTwoDirectionRepeatFactor": {
@@ -4967,17 +5496,44 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcunitassignment.htm"
     },
     "IfcUnitaryEquipmentType": {
-        "attributes": {
-            "PredefinedType": "The type of unitary equipment."
-        },
         "description": "The element type IfcUnitaryEquipmentType defines a list of commonly shared property set definitions of a unitary equipment element and an optional set of product representations. It is used to define a unitary equipment element specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "AIRCONDITIONINGUNIT": "A unitary packaged air-conditioning unit typically used in residential or light commercial applications.",
+            "AIRHANDLER": "A unitary air handling unit typically containing a fan, economizer, and coils.",
+            "NOTDEFINED": "Undefined unitary equipment type.",
+            "ROOFTOPUNIT": "A packaged assembly that is either field-erected or manufactured atop the roof of a large residential or commercial building and acts as a unitary component.",
+            "SPLITSYSTEM": "A system which separates the compressor from the evaporator, but acts as a unitary component typically within residential or light commercial applications.",
+            "USERDEFINED": "User-defined unitary equipment type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcunitaryequipmenttype.htm"
     },
     "IfcValveType": {
-        "attributes": {
-            "PredefinedType": "The type of valve."
-        },
         "description": "The element type IfcValveType defines a list of commonly shared property set definitions of a valve and an optional set of product representations. It is used to define a valve specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "AIRRELEASE": "Valve used to release air from a pipe or fitting.",
+            "ANTIVACUUM": "Valve that opens to admit air if the pressure falls below atmospheric pressure.",
+            "CHANGEOVER": "Valve that enables flow to be switched between pipelines (3 or 4 port).",
+            "CHECK": "Valve that permits water to flow in one direction only and is enclosed when there is no flow (2 port).",
+            "COMMISSIONING": "Valve used to facilitate commissioning of a system (2 port).",
+            "DIVERTING": "Valve that enables flow to be diverted from one branch of a pipeline to another (3 port).",
+            "DOUBLECHECK": "An assembly that incorporates two valves used to prevent backflow.",
+            "DOUBLEREGULATING": "Valve used to facilitate regulation of fluid flow in a system.",
+            "DRAWOFFCOCK": "A valve used to remove fluid from a piping system.",
+            "FAUCET": "Faucet valve typically used as a flow discharge.",
+            "FLUSHING": "Valve that flushes a predetermined quantity of water to cleanse a toilet, urinal, etc.",
+            "GASCOCK": "Valve that is used for controlling the flow of gas.",
+            "GASTAP": "Gas tap typically used for venting or discharging gas from a system.",
+            "ISOLATING": "Valve that closes off flow in a pipeline.",
+            "MIXING": "Valve that enables flow from two branches of a pipeline to be mixed together (3 port).",
+            "NOTDEFINED": "Undefined valve type.",
+            "PRESSUREREDUCING": "Valve that reduces the pressure of a fluid immediately downstream of its position in a pipeline to a preselected value or by a predetermined ratio.",
+            "PRESSURERELIEF": "Spring or weight loaded valve that automatically discharges to a safe place fluid that has built up to excessive pressure in pipes or fittings.",
+            "REGULATING": "Valve used to facilitate regulation of fluid flow in a system.",
+            "SAFETYCUTOFF": "Valve that closes under the action of a safety mechanism such as a drop weight, solenoid etc.",
+            "STEAMTRAP": "Valve that restricts flow of steam while allowing condensate to pass through.",
+            "STOPCOCK": "An isolating valve used on a domestic water service.",
+            "USERDEFINED": "User-defined valve type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcvalvetype.htm"
     },
     "IfcVector": {
@@ -5016,10 +5572,13 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifctopologyresource/lexical/ifcvertexpoint.htm"
     },
     "IfcVibrationIsolatorType": {
-        "attributes": {
-            "PredefinedType": "Defines the type of vibration isolator."
-        },
         "description": "The element type IfcVibrationIsolatorType defines a list of commonly shared property set definitions of a vibration isolator and an optional set of product representations. It is used to define a vibration isolator specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "COMPRESSION": "Compression type vibration isolator.",
+            "NOTDEFINED": "Undefined vibration isolator type.",
+            "SPRING": "Spring type vibration isolator.",
+            "USERDEFINED": "User-defined vibration isolator type."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcvibrationisolatortype.htm"
     },
     "IfcVirtualElement": {
@@ -5043,17 +5602,34 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcwallstandardcase.htm"
     },
     "IfcWallType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of a wall element from which the type required may be set."
-        },
         "description": "The element type (IfcWallType) defines a list of commonly shared property set definitions of a wall and an optional set of product representations. It is used to define an element specification (i.e. the specific product information, that is common to all occurrences of that product type).",
+        "predefined_types": {
+            "ELEMENTEDWALL": "A stud wall framed with studs and faced with sheetings, sidings, wallboard, or plasterwork.",
+            "NOTDEFINED": "Undefined wall element.",
+            "PLUMBINGWALL": "A pier, or enclosure, or encasement, normally used to enclose plumbing in sanitary rooms. Such walls often do not extent to the ceiling.",
+            "POLYGONAL": "A polygonal wall, extruded vertically, where the wall thickness varies along the wall path.\n{ .deprecated}\n> IFC4 DEPRECATION&nbsp; The enumerator POLYGONAL is deprecated and shall no longer be used.",
+            "SHEAR": "A wall designed to withstand shear loads. Such shear walls are often designed having a non-rectangular cross section along the wall path. Also called retaining walls or supporting walls they are used to protect against soil layers behind.",
+            "STANDARD": "A standard wall, extruded vertically with a constant thickness along the wall path.",
+            "USERDEFINED": "User-defined wall element."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcwalltype.htm"
     },
     "IfcWasteTerminalType": {
-        "attributes": {
-            "PredefinedType": "Identifies the predefined types of waste terminal from which the type required may be set."
-        },
         "description": "The IfcWasteTerminalType defines a particular type of sanitary flow that has the purpose of collecting or intercepting waste from one or more sanitary terminals or other fluid waste generating equipment and discharging it into a single waste/drainage system.",
+        "predefined_types": {
+            "FLOORTRAP": "Pipe fitting, set into the floor, that retains liquid to prevent the passage of foul air",
+            "FLOORWASTE": "Pipe fitting, set into the floor, that collects waste water and discharges it to a separate trap.",
+            "GREASEINTERCEPTOR": "",
+            "GULLYSUMP": "Pipe fitting or assembly of fittings to receive surface water or waste water, fitted with a grating or sealed cover.",
+            "GULLYTRAP": "Pipe fitting or assembly of fittings that receives surface water or waste water; fitted with a grating or sealed cover that discharges water through a trap.",
+            "NOTDEFINED": "Undefined type.",
+            "OILINTERCEPTOR": "",
+            "PETROLINTERCEPTOR": "",
+            "ROOFDRAIN": "Pipe fitting, set into the roof, that collects rainwater for discharge into the rainwater system.",
+            "USERDEFINED": "User-defined type.",
+            "WASTEDISPOSALUNIT": "Electrically operated device that reduces kitchen or other waste into fragments small enough to be flushed into a drainage system.",
+            "WASTETRAP": "Pipe fitting, set adjacent to a sanitary terminal, that retains liquid to prevent the passage of foul air."
+        },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcplumbingfireprotectiondomain/lexical/ifcwasteterminaltype.htm"
     },
     "IfcWaterProperties": {

@@ -79,6 +79,12 @@ def get_attribute_doc(version, entity, attribute):
         if entity:
             return entity["attributes"].get(attribute)
 
+def get_predefined_type_doc(version, entity, predefined_type):
+    db = get_db(version)
+    if db:
+        entity = db["entities"].get(entity)
+        if entity:
+            return entity["predefined_types"].get(predefined_type)
 
 def get_property_set_doc(version, pset):
     db = get_db(version)
@@ -111,6 +117,7 @@ class DocExtractor:
         # probably due domains on the website being from 4_0
         # example (property set / github domain / website domain):
         # Pset_AirTerminalBoxPHistory IfcControlExtension IfcHvacDomain
+        
         self.extract_ifc2x3_property_sets_site_domains()
         self.extract_ifc2x3_entities()
         self.extract_ifc2x3_property_sets()
@@ -128,7 +135,23 @@ class DocExtractor:
             print(f"{len(property_sets_domains)} property sets domains were parsed from the website")
             json.dump(property_sets_domains, fo, sort_keys=True, indent=4)
 
+    def setup_ifc2x3_reference_lookup(self):
+        # setup references look up tables to convert property hrefs to actual data paths
+        references_paths_lookup = dict()
+        glob_query = f"{IFC2x3_DOCS_LOCATION}/Constants/*/*"
+        parsed_paths = [filepath for filepath in glob.iglob(f"{IFC2x3_DOCS_LOCATION}/Properties/*/*", recursive=False)]
+        parsed_paths += [filepath for filepath in glob.iglob(f"{IFC2x3_DOCS_LOCATION}/Constants/*/*", recursive=False)]
+        for parsed_path in parsed_paths:
+            parsed_path = Path(parsed_path)
+            # all references omit "$" character, I've checked it on 2_3
+            # need to check it if moving to next IFC version
+            property_reference = parsed_path.stem.replace("$", "")
+            references_paths_lookup[property_reference] = parsed_path
+        return references_paths_lookup
+
     def extract_ifc2x3_entities(self):
+        ifc2x3_references_paths_lookup = self.setup_ifc2x3_reference_lookup()
+        ifc4_references_paths_lookup = self.setup_ifc4_reference_lookup()
         entities_dict = dict()
 
         # search
@@ -156,14 +179,38 @@ class DocExtractor:
 
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
-                    entity_attrs = dict()
-                    # temporarily disable MarkupResemblesLocatorWarning
-                    # because BeautifulSoup wrongly assume we confused
-                    # html code for filepath and gives warnings
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
+                
+                entity_attrs = dict()
+                predefined_types = dict()
+                # temporarily disable MarkupResemblesLocatorWarning
+                # because BeautifulSoup wrongly assume we confused
+                # html code for filepath and gives warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
 
-                        for html_attr in bs_tree.find_all("docattribute"):
+                    for html_attr in bs_tree.find_all("docattribute"):
+                        attr_name = html_attr["name"]
+                        if attr_name == "PredefinedType":
+                            # get references to all predefined types
+                            defined_type = html_attr["definedtype"]
+                            enum_path = xml_path.parents[2] / "Types" / defined_type / 'DocEnumeration.xml'
+                            with open(enum_path, "r", encoding="utf-8") as fi:
+                                enum_bs_tree = BeautifulSoup(fi.read(), features="lxml")
+                            hrefs = [i["href"] for i in enum_bs_tree.find_all("docconstant")]
+
+                            # iterate over list of predefined types
+                            for href in hrefs:
+                                # in IFC2X3 all documentation for constants is empty
+                                # and as a temporary solution I'm trying to get constant's description from IFC4
+                                const_path = ifc4_references_paths_lookup.get(href, ifc2x3_references_paths_lookup[href])
+                                with open(const_path, "r", encoding="utf-8") as fi:
+                                    const_bs_tree = BeautifulSoup(fi.read(), features="lxml")
+                                const_name = const_bs_tree.find("docconstant")["name"]
+                                description_tag = const_bs_tree.find("documentation")
+                                const_description = "" if not description_tag else description_tag.text
+                                predefined_types[const_name] = const_description
+
+                        else:
                             html_description = BeautifulSoup(html_attr.text, features="lxml")
                             attr_description = html_description.get_text()
 
@@ -182,10 +229,14 @@ class DocExtractor:
                             attr_description = attr_description.split("IFC2x Edition3 CHANGE", 1)[0]
 
                             attr_description = attr_description.strip().rstrip(">").strip()
-                            entity_attrs[html_attr["name"]] = attr_description
+                            entity_attrs[attr_name] = attr_description
 
-                    if entity_attrs:
-                        entities_dict[entity_name]["attributes"] = entity_attrs
+
+                if entity_attrs:
+                    entities_dict[entity_name]["attributes"] = entity_attrs
+                
+                if predefined_types:
+                    entities_dict[entity_name]["predefined_types"] = predefined_types
 
                 entities_dict[entity_name]["description"] = entity_description
                 spec_url = (
@@ -234,14 +285,7 @@ class DocExtractor:
                 property_sets_spec_urls[property_set_name] = spec_url
 
         # setup references look up tables to convert property hrefs to actual data paths
-        references_paths_lookup = dict()
-        glob_query = f"{IFC2x3_DOCS_LOCATION}/Properties/*/*"
-        for parsed_path in [filepath for filepath in glob.iglob(glob_query, recursive=False)]:
-            parsed_path = Path(parsed_path)
-            # all references omit "$" character, I've checked it on 2_3
-            # need to check it if moving to next IFC version
-            property_reference = parsed_path.name.replace("$", "")
-            references_paths_lookup[property_reference] = parsed_path
+        references_paths_lookup = self.setup_ifc2x3_reference_lookup()
 
         # setup a function because we'll need to check child properties recusively
         def get_property_info_by_href(href):
@@ -360,7 +404,24 @@ class DocExtractor:
             print(f"{len(property_sets_domains)} property sets domains were parsed from the website")
             json.dump(property_sets_domains, fo, sort_keys=True, indent=4)
 
+    def setup_ifc4_reference_lookup(self):
+        references_paths_lookup = dict()
+        parsed_paths = [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Properties/*/*", recursive=False)]
+        parsed_paths += [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Quantities/*/*", recursive=False)]
+        parsed_paths += [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Constants/*/*", recursive=False)]
+        for parsed_path in parsed_paths:
+            parsed_path = Path(parsed_path)
+            # all references omit "$" character, I've checked it on 4_0
+            # need to check it if moving to next IFC version
+            # btw no reason to check if all references were used in properties
+            # because there are also child properties
+            property_reference = parsed_path.stem.replace("$", "")
+            references_paths_lookup[property_reference] = parsed_path
+        return references_paths_lookup
+
+
     def extract_ifc4_entities(self):
+        references_paths_lookup = self.setup_ifc4_reference_lookup()
         entities_dict = dict()
 
         # search
@@ -390,13 +451,34 @@ class DocExtractor:
 
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
-                    entity_attrs = dict()
-                    # temporarily disable MarkupResemblesLocatorWarning
-                    # because BeautifulSoup wrongly assume we confused
-                    # html code for filepath and gives warnings
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
-                        for html_attr in bs_tree.find_all("docattribute"):
+
+                entity_attrs = dict()
+                predefined_types = dict()
+                # temporarily disable MarkupResemblesLocatorWarning
+                # because BeautifulSoup wrongly assume we confused
+                # html code for filepath and gives warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
+                    for html_attr in bs_tree.find_all("docattribute"):
+                        attr_name = html_attr["name"]
+                        if attr_name == "PredefinedType":
+                            # get references to all predefined types
+                            defined_type = html_attr["definedtype"]
+                            enum_path = xml_path.parents[2] / "Types" / defined_type / 'DocEnumeration.xml'
+                            with open(enum_path, "r", encoding="utf-8") as fi:
+                                enum_bs_tree = BeautifulSoup(fi.read(), features="lxml")
+                            hrefs = [i["href"] for i in enum_bs_tree.find_all("docconstant")]
+
+                            # iterate over list of predefined types
+                            for href in hrefs:
+                                const_path = references_paths_lookup[href]
+                                with open(const_path, "r", encoding="utf-8") as fi:
+                                    const_bs_tree = BeautifulSoup(fi.read(), features="lxml")
+                                const_name = const_bs_tree.find("docconstant")["name"]
+                                description_tag = const_bs_tree.find("documentation")
+                                const_description = "" if not description_tag else description_tag.text
+                                predefined_types[const_name] = const_description
+                        else:
                             html_description = BeautifulSoup(html_attr.text, features="lxml")
                             attr_description = html_description.get_text()
                             attr_description = attr_description.replace("\n", " ")
@@ -413,10 +495,13 @@ class DocExtractor:
                             attr_description = attr_description.split("{ .history", 1)[0]
 
                             attr_description = attr_description.strip()
-                            entity_attrs[html_attr["name"]] = attr_description
+                            entity_attrs[attr_name] = attr_description
 
-                    if entity_attrs:
-                        entities_dict[entity_name]["attributes"] = entity_attrs
+                if entity_attrs:
+                    entities_dict[entity_name]["attributes"] = entity_attrs
+                
+                if predefined_types:
+                    entities_dict[entity_name]["predefined_types"] = predefined_types
 
                 entities_dict[entity_name]["description"] = entity_description
                 spec_url = (
@@ -482,17 +567,7 @@ class DocExtractor:
                     property_sets_spec_urls[property_set_name] = spec_url
 
         # setup references look up tables to convert property hrefs to actual data paths
-        references_paths_lookup = dict()
-        parsed_paths = [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Properties/*/*", recursive=False)]
-        parsed_paths += [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Quantities/*/*", recursive=False)]
-        for parsed_path in parsed_paths:
-            parsed_path = Path(parsed_path)
-            # all references omit "$" character, I've checked it on 4_0
-            # need to check it if moving to next IFC version
-            # btw no reason to check if all references were used in properties
-            # because there are also child properties
-            property_reference = parsed_path.name.replace("$", "")
-            references_paths_lookup[property_reference] = parsed_path
+        references_paths_lookup = self.setup_ifc4_reference_lookup()
 
         # setup a function because we'll need to check child properties recusively
         def get_property_info_by_href(href):
@@ -572,7 +647,11 @@ def run_doc_api_examples():
 
     print("Entity attributes:")
     print(get_attribute_doc("IFC2X3", "IfcActionRequest", "RequestID"))
-    print(get_attribute_doc("IFC4", "IfcActionRequest", "PredefinedType"))
+    print(get_attribute_doc("IFC4", "IfcActionRequest", "LongDescription"))
+
+    print("Entity predefined types:")
+    print(get_predefined_type_doc("IFC2X3", "IfcControllerType", "FLOATING"))
+    print(get_predefined_type_doc("IFC4", "IfcControllerType", "FLOATING"))
 
     print("Propety sets:")
     print(get_property_set_doc("IFC2X3", "Pset_ZoneCommon"))
