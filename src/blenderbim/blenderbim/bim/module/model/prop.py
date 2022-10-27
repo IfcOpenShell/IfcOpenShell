@@ -245,3 +245,11 @@ class BIMModelProperties(PropertyGroup):
     )
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
+
+
+class BIMArrayProperties(PropertyGroup):
+    is_editing: bpy.props.IntProperty(default=-1)
+    count: bpy.props.IntProperty(name="Count", default=0)
+    x: bpy.props.FloatProperty(name="X", default=0)
+    y: bpy.props.FloatProperty(name="Y", default=0)
+    z: bpy.props.FloatProperty(name="Z", default=0)

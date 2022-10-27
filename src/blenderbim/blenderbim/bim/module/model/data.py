@@ -18,8 +18,10 @@
 
 import bpy
 import math
+import json
 import functools
 import ifcopenshell
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
@@ -28,6 +30,7 @@ from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_
 
 def refresh():
     AuthoringData.is_loaded = False
+    ArrayData.is_loaded = False
 
 
 class AuthoringData:
@@ -316,3 +319,29 @@ class AuthoringData:
     def relating_type_id_by_name(cls, ifc_class, relating_type):
         relating_types = [ct[0] for ct in cls.relating_types(ifc_class=ifc_class) if ct[1] == relating_type]
         return None if len(relating_types) == 0 else relating_types[0]
+
+
+class ArrayData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = { "parameters": cls.parameters() }
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Array", None)
+            if parameters:
+                try:
+                    parent = tool.Ifc.get().by_guid(parameters["Parent"])
+                    parameters["has_parent"] = True
+                    parameters["parent_name"] = parent.Name or "Unnamed"
+                    parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                except:
+                    parameters["has_parent"] = False
+                return parameters

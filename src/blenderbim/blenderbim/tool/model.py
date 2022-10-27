@@ -139,3 +139,61 @@ class Model(blenderbim.core.tool.Model):
             (obj.matrix_world @ Vector((max_x, 0.0, 0.0))).to_2d(),
         ]
         return axes
+
+    @classmethod
+    def regenerate_array(cls, parent, data):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        obj_stack = [parent]
+        for array in data:
+            child_i = 0
+            existing_children = set(array["children"])
+            total_existing_children = len(array["children"])
+            children_elements = []
+            children_objs = []
+            for i in range(0, array["count"]):
+                if i == 0:
+                    continue
+                offset = Vector((i * array["x"] * unit_scale, i * array["y"] * unit_scale, i * array["z"] * unit_scale))
+                for obj in obj_stack:
+                    if child_i >= total_existing_children:
+                        child_obj = tool.Spatial.duplicate_object_and_data(obj)
+                        child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
+                    else:
+                        global_id = array["children"][child_i]
+                        try:
+                            child_element = tool.Ifc.get().by_guid(global_id)
+                            child_obj = tool.Ifc.get_object(child_element)
+                            assert child_obj
+                        except:
+                            child_obj = tool.Spatial.duplicate_object_and_data(obj)
+                            child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
+
+                    child_psets = ifcopenshell.util.element.get_psets(child_element)
+                    child_pset = child_psets.get("BBIM_Array")
+                    if child_pset:
+                        ifcopenshell.api.run(
+                            "pset.edit_pset",
+                            tool.Ifc.get(),
+                            product=child_element,
+                            pset=tool.Ifc.get().by_id(child_pset["id"]),
+                            properties={"Data": None},
+                        )
+
+                    new_matrix = obj.matrix_world.copy()
+                    new_matrix.col[3] = (obj.matrix_world.col[3].to_3d() + offset).to_4d()
+                    child_obj.matrix_world = new_matrix
+                    children_objs.append(child_obj)
+                    children_elements.append(child_element)
+                    child_i += 1
+            obj_stack.extend(children_objs)
+            array["children"] = [e.GlobalId for e in children_elements]
+
+            removed_children = set(existing_children) - set(array["children"])
+            for removed_child in removed_children:
+                element = tool.Ifc.get().by_guid(removed_child)
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    bpy.data.objects.remove(obj)
+                # TODO: Not sufficient, refactor OverrideDeleteTrait
+
+            bpy.context.view_layer.update()
