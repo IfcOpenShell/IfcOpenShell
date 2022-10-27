@@ -1268,7 +1268,8 @@ class DumbWallJoiner:
         bp2 = wall2.matrix_world @ Vector(wall2.bound_box[0])
         tp1 = wall1.matrix_world @ Vector(wall1.bound_box[1])
 
-        # Axis lines on bottom, for base and side axes
+        # Axis lines on bottom, for reference, base, and side axes
+        bra1 = (Vector((*axis1["reference"][0], bp1[2])), Vector((*axis1["reference"][1], bp1[2])))
         bba1 = (Vector((*axis1["base"][0], bp1[2])), Vector((*axis1["base"][1], bp1[2])))
         bsa1 = (Vector((*axis1["side"][0], bp1[2])), Vector((*axis1["side"][1], bp1[2])))
         bba2 = (Vector((*axis2["base"][0], bp2[2])), Vector((*axis2["base"][1], bp2[2])))
@@ -1313,7 +1314,7 @@ class DumbWallJoiner:
             new_body = tool.Cad.furthest_vector(bba1[i], (bbf, bsf_)).copy()
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tbf_)).copy()
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tsf_)).copy()
-            self.body[j] = new_body.to_2d()
+            self.body[j] = tool.Cad.point_on_edge(new_body, bra1).to_2d()
 
             if connection1 == connection2:
                 if (connection1 == "ATEND" and angle > 0) or (connection1 != "ATEND" and angle < 0):
@@ -1354,9 +1355,9 @@ class DumbWallJoiner:
                 and not extrusion2["is_sloped"]
             ):
                 if is_relating:
-                    self.body[j] = bbf.to_2d()
+                    self.body[j] = tool.Cad.point_on_edge(bbf, bra1).to_2d()
                 else:
-                    self.body[j] = bbn.to_2d()
+                    self.body[j] = tool.Cad.point_on_edge(bbn, bra1).to_2d()
                 return True
 
             bsf_ = tool.Cad.point_on_edge(bsf, bba1)
@@ -1365,7 +1366,7 @@ class DumbWallJoiner:
             new_body = tool.Cad.furthest_vector(bba1[i], (bbf, bsf_)).copy()
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tbf_)).copy()
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tsf_)).copy()
-            self.body[j] = new_body.to_2d()
+            self.body[j] = tool.Cad.point_on_edge(new_body, bra1).to_2d()
 
             if is_relating:
                 pt = bbf.to_2d().to_3d()
