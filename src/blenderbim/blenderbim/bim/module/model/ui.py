@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,8 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.tool as tool
 from bpy.types import Panel, Operator, Menu
-from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model.data import AuthoringData, ArrayData
 from blenderbim.bim.module.model.prop import store_cursor_position
 from blenderbim.bim.helper import prop_with_search
 
@@ -252,6 +253,57 @@ class HelpConstrTypes(Operator):
             "The Construction Type Browser allows to preview and add new instances to the model.",
             "For further support, please click on the Documentation link below.",
         ]
+
+
+class BIM_PT_array(bpy.types.Panel):
+    bl_label = "IFC Array"
+    bl_idname = "BIM_PT_array"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "modifier"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+
+    def draw(self, context):
+        if not ArrayData.is_loaded:
+            ArrayData.load()
+
+        props = context.active_object.BIMArrayProperties
+
+        if ArrayData.data["parameters"]:
+            row = self.layout.row(align=True)
+            row.label(text=ArrayData.data["parameters"]["parent_name"], icon="CON_CHILDOF")
+            op = row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
+            op.parent = ArrayData.data["parameters"]["Parent"]
+            if ArrayData.data["parameters"]["data"]:
+                row.operator("bim.add_array", icon="ADD", text="")
+
+            for i, array in enumerate(ArrayData.data["parameters"]["data"]):
+                box = self.layout.box()
+                if props.is_editing == i:
+                    row = box.row(align=True)
+                    row.prop(props, "count", icon="MOD_ARRAY")
+                    row.operator("bim.edit_array", icon="CHECKMARK", text="").item = i
+                    row.operator("bim.disable_editing_array", icon="CANCEL", text="")
+                    row = box.row(align=True)
+                    row.prop(props, "x")
+                    row.prop(props, "y")
+                    row.prop(props, "z")
+                else:
+                    row = box.row(align=True)
+                    row.label(text=f"{array['count']} Items", icon="MOD_ARRAY")
+                    row.operator("bim.enable_editing_array", icon="GREASEPENCIL", text="").item = i
+                    row.operator("bim.remove_array", icon="X", text="").item = i
+                    row = box.row(align=True)
+                    row.label(text=f"X: {array['x']}")
+                    row.label(text=f"Y: {array['y']}")
+                    row.label(text=f"Z: {array['z']}")
+        else:
+            row = self.layout.row()
+            row.label(text="No Array Found")
+            row.operator("bim.add_array", icon="ADD", text="")
 
 
 class BIM_MT_model(Menu):
