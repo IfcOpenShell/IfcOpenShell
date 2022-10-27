@@ -25,7 +25,7 @@ import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
-from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_descriptions
+from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_description
 
 
 def refresh():
@@ -72,9 +72,12 @@ class AuthoringData:
         declaration = tool.Ifc().schema().declaration_by_name(cls.props.type_class)
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
-                declared_type = attribute.type_of_attribute().declared_type()
-                descriptions = get_predefined_type_descriptions(declared_type.name())
-                results.extend([(e, e, descriptions.get(e, "")) for e in declared_type.enumeration_items()])
+                results.extend(
+                    [
+                        (e, e, get_predefined_type_description(cls.props.type_class, e))
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                    ]
+                )
                 break
         return results
 
