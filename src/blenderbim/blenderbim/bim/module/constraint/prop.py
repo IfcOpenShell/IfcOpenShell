@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.prop import StrProperty, Attribute, get_ifc_entity_description
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -29,6 +29,10 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def get_available_constraint_types(self, context):
+    return [(c, c, get_ifc_entity_description(c)) for c in ["IfcObjective"]]
 
 
 class Constraint(PropertyGroup):
@@ -46,6 +50,4 @@ class BIMConstraintProperties(PropertyGroup):
 
 class BIMObjectConstraintProperties(PropertyGroup):
     is_adding: StringProperty(name="Is Adding")
-    available_constraint_types: EnumProperty(
-        items=[(c, c, "") for c in ["IfcObjective"]], name="Available Constraint Types"
-    )
+    available_constraint_types: EnumProperty(items=get_available_constraint_types, name="Available Constraint Types")

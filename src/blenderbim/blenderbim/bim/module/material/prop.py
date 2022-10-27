@@ -20,7 +20,7 @@ import bpy
 from ifcopenshell.api.material.data import Data
 from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.prop import StrProperty, Attribute, get_ifc_entity_description
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -81,7 +81,7 @@ def get_materials(self, context):
     return ObjectMaterialData.data["materials"]
 
 
-def getMaterialTypes(self, context):
+def get_object_material_types(self, context):
     global materialtypes_enum
     if len(materialtypes_enum) == 0 and IfcStore.get_file():
         material_types = [
@@ -96,7 +96,7 @@ def getMaterialTypes(self, context):
         if IfcStore.get_file().schema == "IFC2X3":
             material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialLayerSetUsage", "IfcMaterialList"]
         materialtypes_enum.clear()
-        materialtypes_enum = [(m, m, "") for m in material_types]
+        materialtypes_enum = [(m, m, get_ifc_entity_description(m)) for m in material_types]
     return materialtypes_enum
 
 
@@ -122,7 +122,7 @@ class BIMMaterialProperties(PropertyGroup):
 
 
 class BIMObjectMaterialProperties(PropertyGroup):
-    material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
+    material_type: EnumProperty(items=get_object_material_types, name="Material Type")
     material: EnumProperty(items=get_materials, name="Material")
     is_editing: BoolProperty(name="Is Editing", default=False)
     material_set_usage_attributes: CollectionProperty(name="Material Set Usage Attributes", type=Attribute)

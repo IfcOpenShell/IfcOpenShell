@@ -128,7 +128,19 @@ def get_predefined_type_description(entity, predefined_type):
         return get_predefined_type_doc(schema, entity, predefined_type)
 
 
-def getAttributeEnumValues(prop, context):
+def get_attribute_description(entity, attribute):
+    schema = tool.Ifc.get_schema()
+    if schema is not None:
+        return get_attribute_doc(schema, entity, attribute)
+
+
+def get_property_set_description(pset):
+    schema = tool.Ifc.get_schema()
+    if schema is not None:
+        return get_property_set_doc(schema, pset)
+
+
+def get_attribute_enum_values(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
     data = json.loads(prop.enum_items)
@@ -200,7 +212,7 @@ class ObjProperty(PropertyGroup):
     obj: bpy.props.PointerProperty(type=bpy.types.Object)
 
 
-def updateAttributeValue(self, context):
+def update_attribute_value(self, context):
     value_name = self.get_value_name()
     if value_name:
         value_names = [value_name]
@@ -217,12 +229,12 @@ def updateAttributeValue(self, context):
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value", update=updateAttributeValue)
-    bool_value: BoolProperty(name="Value", update=updateAttributeValue)
-    int_value: IntProperty(name="Value", update=updateAttributeValue)
-    float_value: FloatProperty(name="Value", update=updateAttributeValue)
+    string_value: StringProperty(name="Value", update=update_attribute_value)
+    bool_value: BoolProperty(name="Value", update=update_attribute_value)
+    int_value: IntProperty(name="Value", update=update_attribute_value)
+    float_value: FloatProperty(name="Value", update=update_attribute_value)
     enum_items: StringProperty(name="Value")
-    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
+    enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)

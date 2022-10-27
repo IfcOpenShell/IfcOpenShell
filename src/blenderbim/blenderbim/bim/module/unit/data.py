@@ -21,6 +21,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
 import blenderbim.tool as tool
+from blenderbim.bim.prop import get_ifc_entity_description
 
 
 def refresh():
@@ -44,7 +45,7 @@ class UnitsData:
     @classmethod
     def unit_classes(cls):
         declarations = ifcopenshell.util.schema.get_subtypes(tool.Ifc.schema().declaration_by_name("IfcNamedUnit"))
-        results = [(c, c, "") for c in sorted([d.name() for d in declarations])]
+        results = [(c, c, get_ifc_entity_description(c)) for c in sorted([d.name() for d in declarations])]
         results.extend([("IfcDerivedUnit", "IfcDerivedUnit", ""), ("IfcMonetaryUnit", "IfcMonetaryUnit", "")])
         return results
 
