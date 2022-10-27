@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
+from blenderbim.bim.prop import get_ifc_entity_description
 
 
 def refresh():
@@ -46,7 +47,7 @@ class SystemData:
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         # We're only interested in systems for services. Not sure why IFC groups these together.
         return [
-            (c, c, "")
+            (c, c, get_ifc_entity_description(c))
             for c in sorted([d.name() for d in declarations])
             if c not in ("IfcZone", "IfcStructuralAnalysisModel")
         ]

@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell.util.type
 import ifcopenshell.util.element
 import blenderbim.tool as tool
+from blenderbim.bim.prop import get_ifc_entity_description
 
 
 def refresh():
@@ -54,7 +55,7 @@ class TypeData:
         if not element:
             return []
         types = ifcopenshell.util.type.get_applicable_types(element.is_a(), schema=tool.Ifc.get_schema())
-        results.extend((t, t, "") for t in types)
+        results.extend((t, t, get_ifc_entity_description(t)) for t in types)
         return results
 
     @classmethod

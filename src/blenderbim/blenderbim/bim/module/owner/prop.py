@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.prop import StrProperty, Attribute, get_ifc_entity_description
 from blenderbim.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -64,6 +64,21 @@ def update_actor_class(self, context):
     ActorData.data["actors"] = ActorData.actors()
 
 
+def get_actor_class_enum(self, context):
+    return [
+        ("IfcActor", "Actor", get_ifc_entity_description("IfcActor")),
+        ("IfcOccupant", "Occupant", get_ifc_entity_description("IfcOccupant")),
+    ]
+
+
+def get_actor_type_enum(self, context):
+    return [
+        ("IfcPerson", "Person", get_ifc_entity_description("IfcPerson")),
+        ("IfcOrganization", "Organisation", get_ifc_entity_description("IfcOrganization")),
+        ("IfcPersonAndOrganization", "User", get_ifc_entity_description("IfcPersonAndOrganization")),
+    ]
+
+
 class BIMOwnerProperties(PropertyGroup):
     active_person_id: IntProperty(name="Active Person Id")
     person_attributes: CollectionProperty(name="Person Attributes", type=Attribute)
@@ -87,16 +102,12 @@ class BIMOwnerProperties(PropertyGroup):
     active_actor_id: IntProperty(name="Active Actor Id")
     actor_attributes: CollectionProperty(name="Actor Attributes", type=Attribute)
     actor_class: EnumProperty(
-        items=(("IfcActor", "Actor", ""), ("IfcOccupant", "Occupant", "")),
+        items=get_actor_class_enum,
         name="Actor Type",
         update=update_actor_class,
     )
     actor_type: EnumProperty(
-        items=(
-            ("IfcPerson", "Person", ""),
-            ("IfcOrganization", "Organisation", ""),
-            ("IfcPersonAndOrganization", "User", ""),
-        ),
+        items=get_actor_type_enum,
         name="Actor Type",
         update=update_actor_type,
     )
