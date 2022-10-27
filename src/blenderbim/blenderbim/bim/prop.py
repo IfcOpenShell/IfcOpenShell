@@ -23,7 +23,13 @@ import json
 import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
-from ifcopenshell.util.doc import get_entity_doc, get_attribute_doc, get_property_set_doc, get_property_doc
+from ifcopenshell.util.doc import (
+    get_entity_doc,
+    get_attribute_doc,
+    get_property_set_doc,
+    get_property_doc,
+    get_predefined_type_doc,
+)
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
@@ -42,11 +48,6 @@ from bpy.props import (
 )
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-
-BASE_MODULE_PATH = Path(__file__).parent
-DESCRIPTION_FILES = {
-    "PredefinedType": BASE_MODULE_PATH / "schema" / "enum_descriptions.json",
-}
 
 materialpsetnames_enum = []
 
@@ -121,10 +122,10 @@ def get_ifc_entity_doc_url(ifc_entity):
     return docs.get("spec_url", "") if docs is not None else ""
 
 
-def get_predefined_type_descriptions(ifc_class_enum):
-    with open(DESCRIPTION_FILES["PredefinedType"], "r") as fi:
-        docs = json.load(fi)
-    return docs.get(ifc_class_enum, None) or {}
+def get_predefined_type_description(entity, predefined_type):
+    schema = tool.Ifc.get_schema()
+    if schema is not None:
+        return get_predefined_type_doc(schema, entity, predefined_type)
 
 
 def getAttributeEnumValues(prop, context):

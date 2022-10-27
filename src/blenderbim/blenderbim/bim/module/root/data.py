@@ -21,7 +21,7 @@ import bpy
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_descriptions
+from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_description
 
 
 def refresh():
@@ -77,7 +77,6 @@ class IfcClassData:
         names = [d.name() for d in declarations]
         if ifc_product == "IfcElementType":
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-        
         return [(c, c, get_ifc_entity_description(c)) for c in sorted(names)]
 
     @classmethod
@@ -87,9 +86,12 @@ class IfcClassData:
         declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
-                declared_type = attribute.type_of_attribute().declared_type()
-                descriptions = get_predefined_type_descriptions(declared_type.name())
-                types_enum.extend([(e, e, descriptions.get(e, "")) for e in declared_type.enumeration_items()])
+                types_enum.extend(
+                    [
+                        (e, e, get_predefined_type_description(ifc_class, e))
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                    ]
+                )
                 break
         return types_enum
 
