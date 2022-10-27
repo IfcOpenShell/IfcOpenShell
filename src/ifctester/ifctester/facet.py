@@ -693,7 +693,7 @@ class Material(Facet):
             "All data with a material",
         ]
         self.requirement_templates = [
-            "Shall shall have a material of {value}",
+            "Shall have a material of {value}",
             "Shall have a material",
         ]
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
@@ -745,9 +745,9 @@ class Material(Facet):
 
 
 class Restriction:
-    def __init__(self, options={}, base="string"):
+    def __init__(self, options=None, base="string"):
         self.base = base
-        self.options = options
+        self.options = options or {}
 
     def parse(self, ids_dict):
         if not ids_dict:
