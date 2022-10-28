@@ -260,14 +260,15 @@ def update_attribute_value(self, context):
 
 
 class Attribute(PropertyGroup):
+    tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
     ifc_class: StringProperty(name="Ifc Class")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value", update=update_attribute_value)
-    bool_value: BoolProperty(name="Value", update=update_attribute_value)
-    int_value: IntProperty(name="Value", update=update_attribute_value)
-    float_value: FloatProperty(name="Value", update=update_attribute_value)
+    string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
+    bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
+    int_value: IntProperty(name="Value", update=update_attribute_value, description=tooltip)
+    float_value: FloatProperty(name="Value", update=update_attribute_value, description=tooltip)
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
