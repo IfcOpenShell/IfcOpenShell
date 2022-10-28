@@ -19,6 +19,7 @@
 import os
 import bpy
 import json
+import textwrap
 import time
 import logging
 import webbrowser
@@ -28,7 +29,7 @@ import blenderbim.tool as tool
 from . import schema
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty
+from blenderbim.bim.prop import StrProperty, get_ifc_entity_doc_url
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
@@ -688,10 +689,25 @@ class EditBlenderCollection(bpy.types.Operator):
 class BIM_OT_show_description(bpy.types.Operator):
     bl_idname = "bim.show_description"
     bl_label = "Description"
+    ifc_class: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
 
     def execute(self, context):
         return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=80)
+        for line in wrapper.wrap(self.description):
+            layout.label(text=line)
+        url = get_ifc_entity_doc_url(self.ifc_class)
+        if url:
+            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
+            url_op.url = url
 
     @classmethod
     def description(cls, context, properties):
