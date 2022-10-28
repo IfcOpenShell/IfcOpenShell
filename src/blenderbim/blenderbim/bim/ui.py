@@ -394,8 +394,17 @@ def draw_custom_context_menu(self, context):
     url = get_ifc_entity_doc_url(prop_value)
     if not bool(url):
         url = get_property_set_doc_url(prop_value)
+
+    description = getattr(context.button_pointer, "description", None)
+    if not url and not description:
+        return
+    layout = self.layout
+    layout.separator()
     if url:
-        layout = self.layout
-        layout.separator()
         url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
         url_op.url = url
+    if description:
+        op_description = layout.operator(
+            "bim.show_description", text="Hover for Description", icon="INFO", emboss=False
+        )
+        op_description.description = description

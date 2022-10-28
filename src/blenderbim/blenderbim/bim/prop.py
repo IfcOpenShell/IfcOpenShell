@@ -128,10 +128,26 @@ def get_predefined_type_description(entity, predefined_type):
         return get_predefined_type_doc(schema, entity, predefined_type)
 
 
+HARDCODED_ATTRIBUTE_DESCRIPTIONS = {
+    "GlobalId": "Unique Entity Identifier",
+    "Name": "TODO",
+    "Description": "TODO",
+    "PredefinedType": "TODO",
+    "ObjectType": "TODO",
+    "Tag": "TODO",
+}
+
+
 def get_attribute_description(entity, attribute):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_attribute_doc(schema, entity, attribute)
+    doc = HARDCODED_ATTRIBUTE_DESCRIPTIONS.get(attribute, None)
+    if doc is None:
+        schema = tool.Ifc.get_schema()
+        if schema is not None:
+            try:
+                doc = get_attribute_doc(schema, entity, attribute)
+            except KeyError:  # This entity doesn't have any attribute or doesn't implement this attribute
+                pass
+    return doc
 
 
 def get_property_set_docs(pset):
@@ -173,6 +189,10 @@ def get_attribute_enum_values(prop, context):
                     "",
                 )
             )
+
+    items = [
+        (identifier, name, prop.enum_descriptions[i].name) for i, (identifier, name, _) in enumerate(items)
+    ]
 
     return items
 
@@ -238,12 +258,14 @@ def update_attribute_value(self, context):
 
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
     data_type: StringProperty(name="Data Type")
     string_value: StringProperty(name="Value", update=update_attribute_value)
     bool_value: BoolProperty(name="Value", update=update_attribute_value)
     int_value: IntProperty(name="Value", update=update_attribute_value)
     float_value: FloatProperty(name="Value", update=update_attribute_value)
     enum_items: StringProperty(name="Value")
+    enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
