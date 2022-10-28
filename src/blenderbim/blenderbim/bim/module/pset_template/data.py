@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import get_ifc_entity_description
 
 
 def refresh():
@@ -43,7 +44,7 @@ class PsetTemplatesData:
     @classmethod
     def primary_measure_type(cls):
         schema = tool.Ifc.schema()
-        return [(t, t, "") for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])]
+        return [(t, t, get_ifc_entity_description(t)) for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])]
 
     @classmethod
     def pset_template_files(cls):
