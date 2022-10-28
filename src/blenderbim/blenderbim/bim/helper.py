@@ -115,6 +115,7 @@ def import_attribute(attribute, props, data, callback=None):
     description = get_attribute_description(data["type"], attribute.name())
     if description:
         new.description = description
+    new.ifc_class = data["type"]
 
 
 def export_attributes(props, callback=None):
