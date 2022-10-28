@@ -125,7 +125,10 @@ def get_ifc_entity_doc_url(ifc_entity):
 def get_predefined_type_description(entity, predefined_type):
     schema = tool.Ifc.get_schema()
     if schema is not None:
-        return get_predefined_type_doc(schema, entity, predefined_type)
+        try:
+            return get_predefined_type_doc(schema, entity, predefined_type)
+        except KeyError:  # This entity doesn't have any predefined types
+            return ""
 
 
 HARDCODED_ATTRIBUTE_DESCRIPTIONS = {
