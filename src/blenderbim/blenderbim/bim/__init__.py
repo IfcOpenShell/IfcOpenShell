@@ -159,6 +159,7 @@ def register():
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.SCENE_PT_unit.append(ui.ifc_units)
+    bpy.types.UI_MT_button_context_menu.append(ui.draw_custom_context_menu)
 
     for mod in modules.values():
         mod.register()
@@ -179,6 +180,7 @@ def unregister():
     del bpy.types.Camera.BIMMeshProperties
     del bpy.types.PointLight.BIMMeshProperties
     bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
+    bpy.types.UI_MT_button_context_menu.remove(ui.draw_custom_context_menu)
 
     for mod in reversed(list(modules.values())):
         mod.unregister()

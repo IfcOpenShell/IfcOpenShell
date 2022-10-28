@@ -23,6 +23,7 @@ from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from blenderbim.bim.helper import IfcHeaderExtractor
+from blenderbim.bim.prop import get_ifc_entity_doc_url
 import blenderbim.tool as tool
 
 
@@ -381,3 +382,19 @@ class BIM_PT_misc_object(Panel):
 
     def draw(self, context):
         pass
+
+
+def draw_custom_context_menu(self, context):
+    layout = self.layout
+    layout.separator()
+    # https://blender.stackexchange.com/a/275555/86891
+    prop_value = getattr(context.button_pointer, context.button_prop.identifier)
+    try:
+        url = get_ifc_entity_doc_url(prop_value)
+    except KeyError:
+        # TODO : support attributes, pset, etc.
+        pass
+    else:
+        if url:
+            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Open IFC Documentation")
+            url_op.url = url
