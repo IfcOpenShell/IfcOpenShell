@@ -103,19 +103,27 @@ def import_attribute(attribute, props, data, callback=None):
     elif data_type == "enum":
         enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
         new.enum_items = json.dumps(enum_items)
-        new.enum_descriptions.clear()
-        if isinstance(enum_items, dict):
-            enum_items = enum_items.keys()
-        for enum_item in enum_items:
-            new_enum_description = new.enum_descriptions.add()
-            # TODO this only supports predefined type enums. Add support for other types of enums ?
-            new_enum_description.name = get_predefined_type_description(data["type"], enum_item) or ""
-        if data[attribute.name()]:
-            new.enum_value = data[attribute.name()]
-    description = get_attribute_description(data["type"], attribute.name())
-    if description:
-        new.description = description
+        add_attribute_enum_items_descriptions(data["type"], new, enum_items)
+        if data[new.name]:
+            new.enum_value = data[new.name]
+    add_attribute_description(data["type"], new)
     new.ifc_class = data["type"]
+
+
+def add_attribute_enum_items_descriptions(ifc_class, new_attribute, enum_items):
+    new_attribute.enum_descriptions.clear()
+    if isinstance(enum_items, dict):
+        enum_items = enum_items.keys()
+    for enum_item in enum_items:
+        new_enum_description = new_attribute.enum_descriptions.add()
+        # TODO this only supports predefined type enums. Add support for other types of enums ?
+        new_enum_description.name = get_predefined_type_description(ifc_class, enum_item) or ""
+
+
+def add_attribute_description(ifc_class, new_attribute):
+    description = get_attribute_description(ifc_class, new_attribute.name)
+    if description:
+        new_attribute.description = description
 
 
 def export_attributes(props, callback=None):
