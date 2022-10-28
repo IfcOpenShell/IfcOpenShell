@@ -26,6 +26,7 @@ import ifcopenshell.util.attribute
 from mathutils import geometry
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import get_attribute_description, get_predefined_type_description
 
 
 def draw_attributes(props, layout, copy_operator=None):
@@ -100,9 +101,20 @@ def import_attribute(attribute, props, data, callback=None):
     elif data_type == "float":
         new.float_value = 0.0 if new.is_null else data[attribute.name()]
     elif data_type == "enum":
-        new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+        enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
+        new.enum_items = json.dumps(enum_items)
+        new.enum_descriptions.clear()
+        if isinstance(enum_items, dict):
+            enum_items = enum_items.keys()
+        for enum_item in enum_items:
+            new_enum_description = new.enum_descriptions.add()
+            # TODO this only supports predefined type enums. Add support for other types of enums ?
+            new_enum_description.name = get_predefined_type_description(data["type"], enum_item) or ""
         if data[attribute.name()]:
             new.enum_value = data[attribute.name()]
+    description = get_attribute_description(data["type"], attribute.name())
+    if description:
+        new.description = description
 
 
 def export_attributes(props, callback=None):

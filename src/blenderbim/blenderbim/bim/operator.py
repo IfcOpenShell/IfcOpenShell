@@ -683,3 +683,16 @@ class EditBlenderCollection(bpy.types.Operator):
         else:
             getattr(context.bim_prop_group, self.collection).remove(self.index)
         return {"FINISHED"}
+
+
+class BIM_OT_show_description(bpy.types.Operator):
+    bl_idname = "bim.show_description"
+    bl_label = "Description"
+    description: bpy.props.StringProperty()
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    @classmethod
+    def description(cls, context, properties):
+        return properties.description
