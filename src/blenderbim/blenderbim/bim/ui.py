@@ -385,6 +385,8 @@ class BIM_PT_misc_object(Panel):
 
 
 def draw_custom_context_menu(self, context):
+    if not hasattr(context, "button_pointer") or not hasattr(context, "button_prop"):
+        return
     # https://blender.stackexchange.com/a/275555/86891
     prop = context.button_pointer
     prop_name = context.button_prop.identifier
