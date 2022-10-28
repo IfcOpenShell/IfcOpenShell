@@ -625,6 +625,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                 elif data_type == "boolean":
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
                 blenderbim.bim.helper.add_attribute_description(material_set_item.is_a(), new)
+                new.ifc_class = material_set_item.is_a()
 
     def load_profile_attributes(self, material_set_item, material_set_item_data):
         self.props.material_set_item_profile_attributes.clear()
@@ -657,6 +658,9 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                     new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                     if profile_data[attribute.name()]:
                         new.enum_value = profile_data[attribute.name()]
+
+                blenderbim.bim.helper.add_attribute_description(profile.is_a(), new)
+                new.ifc_class = profile.is_a()
 
                 # Force null to be false if the attribute is mandatory because when we first assign a profile, all of
                 # its fields are null (which is illegal).
