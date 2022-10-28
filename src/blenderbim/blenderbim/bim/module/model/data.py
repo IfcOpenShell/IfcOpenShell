@@ -188,14 +188,17 @@ class AuthoringData:
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
         if ifc_class:
-            elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: s.Name)
+            elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: s.Name or "Unnamed")
             results.extend(elements)
             return results
         return []
 
     @classmethod
     def relating_types(cls, ifc_class=None):
-        return [(str(e.id()), e.Name, e.Description or "") for e in cls.constr_class_entities(ifc_class=ifc_class)]
+        return [
+            (str(e.id()), e.Name or "Unnamed", e.Description or "")
+            for e in cls.constr_class_entities(ifc_class=ifc_class)
+        ]
 
     @classmethod
     def relating_types_browser(cls):
@@ -331,7 +334,7 @@ class ArrayData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = { "parameters": cls.parameters() }
+        cls.data = {"parameters": cls.parameters()}
 
     @classmethod
     def parameters(cls):
