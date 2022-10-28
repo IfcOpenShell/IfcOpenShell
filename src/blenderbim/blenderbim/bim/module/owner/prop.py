@@ -96,8 +96,14 @@ class BIMOwnerProperties(PropertyGroup):
     facsimile_numbers: CollectionProperty(type=StrProperty, name="Facsimile Numbers")
     electronic_mail_addresses: CollectionProperty(type=StrProperty, name="Emails")
     messaging_ids: CollectionProperty(type=StrProperty, name="IMs")
-    user_person: EnumProperty(items=get_user_person, name="Person")
-    user_organisation: EnumProperty(items=get_user_organisation, name="Organisation")
+    user_person: EnumProperty(
+        items=get_user_person, name="Person", description="This entity represents an individual human being."
+    )
+    user_organisation: EnumProperty(
+        items=get_user_organisation,
+        name="Organisation",
+        description="A named and structured grouping with a corporate identity.",
+    )
     active_user_id: IntProperty(name="Active User Id")
     active_actor_id: IntProperty(name="Active Actor Id")
     actor_attributes: CollectionProperty(name="Actor Attributes", type=Attribute)
@@ -111,5 +117,7 @@ class BIMOwnerProperties(PropertyGroup):
         name="Actor Type",
         update=update_actor_type,
     )
-    the_actor: EnumProperty(items=get_the_actor, name="Actor")
+    the_actor: EnumProperty(
+        items=get_the_actor, name="Actor", description="This entity represents an individual human being."
+    )
     actor: EnumProperty(items=get_actor, name="Actor")
