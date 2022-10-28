@@ -385,10 +385,12 @@ class BIM_PT_misc_object(Panel):
 
 
 def draw_custom_context_menu(self, context):
-    layout = self.layout
-    layout.separator()
     # https://blender.stackexchange.com/a/275555/86891
-    prop_value = getattr(context.button_pointer, context.button_prop.identifier)
+    prop = context.button_pointer
+    prop_name = context.button_prop.identifier
+    prop_value = getattr(prop, prop_name, None)
+    if prop_value is None:
+        return
     try:
         url = get_ifc_entity_doc_url(prop_value)
     except KeyError:
@@ -396,5 +398,7 @@ def draw_custom_context_menu(self, context):
         pass
     else:
         if url:
-            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Open IFC Documentation")
+            layout = self.layout
+            layout.separator()
+            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
             url_op.url = url
