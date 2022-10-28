@@ -191,9 +191,8 @@ def get_attribute_enum_values(prop, context):
                 )
             )
 
-    items = [
-        (identifier, name, prop.enum_descriptions[i].name) for i, (identifier, name, _) in enumerate(items)
-    ]
+    if prop.enum_descriptions:
+        items = [(identifier, name, prop.enum_descriptions[i].name) for i, (identifier, name, _) in enumerate(items)]
 
     return items
 
