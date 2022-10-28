@@ -624,6 +624,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                     new.int_value = 0 if new.is_null else material_set_item_data[attribute.name()]
                 elif data_type == "boolean":
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
+                blenderbim.bim.helper.add_attribute_description(material_set_item.is_a(), new)
 
     def load_profile_attributes(self, material_set_item, material_set_item_data):
         self.props.material_set_item_profile_attributes.clear()
