@@ -47,12 +47,12 @@ def purge():
     parameterizedprofileclasses_enum = []
 
 
-def getProfileClasses(self, context):
+def get_profile_classes(self, context):
     global profileclasses_enum
     if len(profileclasses_enum) == 0 and IfcStore.get_schema():
         profileclasses_enum.clear()
         profileclasses_enum = [
-            (t.name(), t.name(), "") for t in IfcStore.get_schema().declaration_by_name("IfcProfileDef").subtypes()
+            (t.name(), t.name(), get_ifc_entity_description(t.name())) for t in IfcStore.get_schema().declaration_by_name("IfcProfileDef").subtypes()
         ]
     return profileclasses_enum
 
@@ -133,7 +133,7 @@ class BIMObjectMaterialProperties(PropertyGroup):
         name="Material Set Item Profile Attributes", type=Attribute
     )
     material_set_item_material: EnumProperty(items=get_materials, name="Material")
-    profile_classes: EnumProperty(items=getProfileClasses, name="Profile Classes")
+    profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
     parameterized_profile_classes: EnumProperty(
         items=getParameterizedProfileClasses, name="Parameterized Profile Classes"
     )
