@@ -140,11 +140,14 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
-    if len(get_enum_items(data, prop_name)) > 10:
-        # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
-        row.context_pointer_set(name="data", data=data)
-        op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
-        op.prop_name = prop_name
+    try:
+        if len(get_enum_items(data, prop_name)) > 10:
+            # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
+            row.context_pointer_set(name="data", data=data)
+            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+            op.prop_name = prop_name
+    except TypeError:  # Prop is not iterable
+        pass
 
 
 def get_enum_items(data, prop_name, context=None):
