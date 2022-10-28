@@ -693,7 +693,7 @@ class Material(Facet):
             "All data with a material",
         ]
         self.requirement_templates = [
-            "Shall shall have a material of {value}",
+            "Shall have a material of {value}",
             "Shall have a material",
         ]
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
