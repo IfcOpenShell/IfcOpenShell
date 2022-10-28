@@ -57,18 +57,18 @@ def get_profile_classes(self, context):
     return profileclasses_enum
 
 
-def getParameterizedProfileClasses(self, context):
+def get_parameterized_profile_classes(self, context):
     global parameterizedprofileclasses_enum
     if len(parameterizedprofileclasses_enum) == 0 and IfcStore.get_schema():
         parameterizedprofileclasses_enum.clear()
         parameterizedprofileclasses_enum = [
-            (t.name(), t.name(), "")
+            (t.name(), t.name(), get_ifc_entity_description(t.name()))
             for t in IfcStore.get_schema().declaration_by_name("IfcParameterizedProfileDef").subtypes()
         ]
         for ifc_class in parameterizedprofileclasses_enum:
             parameterizedprofileclasses_enum.extend(
                 [
-                    (t.name(), t.name(), "")
+                    (t.name(), t.name(), get_ifc_entity_description(t.name()))
                     for t in IfcStore.get_schema().declaration_by_name(ifc_class[0]).subtypes() or []
                 ]
             )
@@ -135,5 +135,5 @@ class BIMObjectMaterialProperties(PropertyGroup):
     material_set_item_material: EnumProperty(items=get_materials, name="Material")
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
     parameterized_profile_classes: EnumProperty(
-        items=getParameterizedProfileClasses, name="Parameterized Profile Classes"
+        items=get_parameterized_profile_classes, name="Parameterized Profile Classes"
     )
