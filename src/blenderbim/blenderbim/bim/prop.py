@@ -129,12 +129,13 @@ def get_predefined_type_description(entity, predefined_type):
 
 
 HARDCODED_ATTRIBUTE_DESCRIPTIONS = {
-    "GlobalId": "Unique Entity Identifier",
-    "Name": "TODO",
-    "Description": "TODO",
-    "PredefinedType": "TODO",
-    "ObjectType": "TODO",
-    "Tag": "TODO",
+    "GlobalId": "Assignment of a globally unique identifier within the entire software world.",
+    "OwnerHistory": "Assignment of the information about the current ownership of that object, including owning actor, application, local identification and information captured about the recent changes of the object, NOTE  only the last modification in stored - either as addition, deletion or modification.",
+    "Name": "Optional name for use by the participating software systems or users. For some subtypes of IfcRoot the insertion of the Name attribute may be required. This would be enforced by a where rule. ",
+    "Description": "Optional description, provided for exchanging informative comments.",
+    "PredefinedType": "Predefined generic type for a window that is specified in an enumeration. There may be a property set given specificly for the predefined types. NOTE  The PredefinedType shall only be used, if no IfcWindowType is assigned, providing its own IfcWindowType.PredefinedType.",
+    "ObjectType": "The type denotes a particular type that indicates the object further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute PredefinedType is set to USERDEFINED.",
+    "Tag": "The tag (or label) identifier at the particular instance of a product, e.g. the serial number, or the position number. It is the identifier at the occurrence level.",
 }
 
 

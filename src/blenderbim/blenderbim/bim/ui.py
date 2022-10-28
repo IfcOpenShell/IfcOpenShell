@@ -404,7 +404,6 @@ def draw_custom_context_menu(self, context):
         url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
         url_op.url = url
     if description:
-        op_description = layout.operator(
-            "bim.show_description", text="Hover for Description", icon="INFO", emboss=False
-        )
+        op_description = layout.operator("bim.show_description", text="IFC Description", icon="INFO")
         op_description.description = description
+        op_description.ifc_class = getattr(context.button_pointer, "ifc_class", "")
