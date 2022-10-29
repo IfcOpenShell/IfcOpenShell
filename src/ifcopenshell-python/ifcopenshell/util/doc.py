@@ -117,7 +117,6 @@ class DocExtractor:
         # probably due domains on the website being from 4_0
         # example (property set / github domain / website domain):
         # Pset_AirTerminalBoxPHistory IfcControlExtension IfcHvacDomain
-        
         self.extract_ifc2x3_property_sets_site_domains()
         self.extract_ifc2x3_entities()
         self.extract_ifc2x3_property_sets()
@@ -193,7 +192,7 @@ class DocExtractor:
                         if attr_name == "PredefinedType":
                             # get references to all predefined types
                             defined_type = html_attr["definedtype"]
-                            enum_path = xml_path.parents[2] / "Types" / defined_type / 'DocEnumeration.xml'
+                            enum_path = xml_path.parents[2] / "Types" / defined_type / "DocEnumeration.xml"
                             with open(enum_path, "r", encoding="utf-8") as fi:
                                 enum_bs_tree = BeautifulSoup(fi.read(), features="lxml")
                             hrefs = [i["href"] for i in enum_bs_tree.find_all("docconstant")]
@@ -268,9 +267,27 @@ class DocExtractor:
             for property_set_path in glob.iglob(f"{parse_folder_path}/**/"):
                 property_set_path = Path(property_set_path)
                 property_set_name = property_set_path.stem
+                property_set_dict = dict()
 
                 property_references = list()
                 xml_path = property_set_path / "DocPropertySet.xml"
+                md_path = property_set_path / "Documentation.md"
+
+                if md_path.is_file():
+                    with open(md_path, "r", encoding="utf-8-sig") as fi:
+                        # convert markdown to html for easier parsing
+                        html = markdown(fi.read())
+                        property_set_description = BeautifulSoup(html, features="lxml").find("p").text
+                        property_set_description = property_set_description.replace("\n", " ")
+                        property_set_description = property_set_description.split("HISTORY:", 1)[0]
+                        property_set_description = property_set_description.strip()
+                        property_set_dict["description"] = property_set_description
+                else:
+                    print(
+                        f"WARNING. Property set {property_set_name} has no Documentation.md, "
+                        f"property set will be left without description."
+                    )
+
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
                     for html_attr in bs_tree.find_all("docproperty"):
@@ -282,7 +299,8 @@ class DocExtractor:
                     "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML"
                     f"/psd/{property_set_domain}/{property_set_name}.xml"
                 )
-                property_sets_spec_urls[property_set_name] = spec_url
+                property_set_dict["spec_url"] = spec_url
+                property_sets_dict[property_set_name] = property_set_dict
 
         # setup references look up tables to convert property hrefs to actual data paths
         references_paths_lookup = self.setup_ifc2x3_reference_lookup()
@@ -345,10 +363,7 @@ class DocExtractor:
             for property_reference in property_sets_references[property_set_name]:
                 property_name, property_dict = get_property_info_by_href(property_reference)
                 properties_dict[property_name] = property_dict
-            property_sets_dict[property_set_name] = {
-                "properties": properties_dict,
-                "spec_url": property_sets_spec_urls[property_set_name],
-            }
+            property_sets_dict[property_set_name]["properties"] = properties_dict
 
         # export property sets data
         with open(BASE_MODULE_PATH / "schema/ifc2x3_properties.json", "w", encoding="utf-8") as fo:
@@ -464,7 +479,7 @@ class DocExtractor:
                         if attr_name == "PredefinedType":
                             # get references to all predefined types
                             defined_type = html_attr["definedtype"]
-                            enum_path = xml_path.parents[2] / "Types" / defined_type / 'DocEnumeration.xml'
+                            enum_path = xml_path.parents[2] / "Types" / defined_type / "DocEnumeration.xml"
                             with open(enum_path, "r", encoding="utf-8") as fi:
                                 enum_bs_tree = BeautifulSoup(fi.read(), features="lxml")
                             hrefs = [i["href"] for i in enum_bs_tree.find_all("docconstant")]
@@ -520,7 +535,6 @@ class DocExtractor:
         # function parses both property and quantity sets
         property_sets_dict = dict()
         property_sets_references = dict()
-        property_sets_spec_urls = dict()
 
         # extract lists of properties and theirs references for each property set
         parsed_paths = [
@@ -539,10 +553,27 @@ class DocExtractor:
             for property_set_path in glob.iglob(f"{parse_folder_path}/**/"):
                 property_set_path = Path(property_set_path)
                 property_set_name = property_set_path.stem
+                property_set_dict = dict()
 
                 property_references = list()
                 property_quantity = property_set_path.parents[0].name == "QuantitySets"
                 xml_path = property_set_path / ("DocQuantitySet.xml" if property_quantity else "DocPropertySet.xml")
+                md_path = property_set_path / "Documentation.md"
+
+                if md_path.is_file():
+                    with open(md_path, "r", encoding="utf-8-sig") as fi:
+                        # convert markdown to html for easier parsing
+                        html = markdown(fi.read())
+                        property_set_description = BeautifulSoup(html, features="lxml").find("p").text
+                        property_set_description = property_set_description.replace("\n", " ")
+                        property_set_description = property_set_description.split("HISTORY:", 1)[0]
+                        property_set_description = property_set_description.strip()
+                        property_set_dict["description"] = property_set_description
+                else:
+                    print(
+                        f"WARNING. Property set {property_set_name} has no Documentation.md, "
+                        f"property set will be left without description."
+                    )
 
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
@@ -561,10 +592,11 @@ class DocExtractor:
                     spec_url = (
                         "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML"
                         f"/schema/{property_set_domain}"
-                        f'/{"qset" if property_quantity else "pset"}'
+                        f"/{'qset' if property_quantity else 'pset'}"
                         f"/{property_set_name.lower()}.htm"
                     )
-                    property_sets_spec_urls[property_set_name] = spec_url
+                    property_set_dict["spec_url"] = spec_url
+                property_sets_dict[property_set_name] = property_set_dict
 
         # setup references look up tables to convert property hrefs to actual data paths
         references_paths_lookup = self.setup_ifc4_reference_lookup()
@@ -629,10 +661,7 @@ class DocExtractor:
             for property_reference in property_sets_references[property_set_name]:
                 property_name, property_dict = get_property_info_by_href(property_reference)
                 properties_dict[property_name] = property_dict
-            property_sets_dict[property_set_name] = {"properties": properties_dict}
-            if property_set_name in property_sets_spec_urls:
-                spec_url = property_sets_spec_urls[property_set_name]
-                property_sets_dict[property_set_name]["spec_url"] = spec_url
+            property_sets_dict[property_set_name]["properties"] = properties_dict
 
         # export property sets data
         with open(BASE_MODULE_PATH / "schema/ifc4_properties.json", "w", encoding="utf-8") as fo:
