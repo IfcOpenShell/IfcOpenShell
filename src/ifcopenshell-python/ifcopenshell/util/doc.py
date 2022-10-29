@@ -18,6 +18,8 @@
 
 import json
 from pathlib import Path
+from pprint import pprint
+import copy
 
 try:
     import glob
@@ -66,16 +68,26 @@ def get_db(version):
     return db.get(version)
 
 
-def get_entity_doc(version, entity):
+def get_entity_doc(version, entity, recursive=False):
     db = get_db(version)
     if db:
-        return db["entities"].get(entity)
+        entity = copy.deepcopy(db["entities"].get(entity))
+        if not recursive:
+            return entity
+        
+        if "parent_entity" in entity:
+            parent_entity = get_entity_doc(version, entity["parent_entity"], recursive=True)
+            if 'attributes' not in entity:
+                entity['attributes'] = dict()
+            for parent_attr in parent_entity["attributes"]:
+                entity['attributes'][parent_attr] = parent_entity["attributes"][parent_attr]
+        return entity
 
 
-def get_attribute_doc(version, entity, attribute):
+def get_attribute_doc(version, entity, attribute, recursive=False):
     db = get_db(version)
     if db:
-        entity = db["entities"].get(entity)
+        entity = get_entity_doc(version, entity, recursive)
         if entity:
             return entity["attributes"].get(attribute)
 
@@ -186,6 +198,9 @@ class DocExtractor:
                 # html code for filepath and gives warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
+                    doc_entity = bs_tree.find("docentity")
+                    if doc_entity.has_attr('basedefinition'):
+                        entities_dict[entity_name]["parent_entity"] = doc_entity["basedefinition"]
 
                     for html_attr in bs_tree.find_all("docattribute"):
                         attr_name = html_attr["name"]
@@ -252,7 +267,6 @@ class DocExtractor:
     def extract_ifc2x3_property_sets(self):
         property_sets_dict = dict()
         property_sets_references = dict()
-        property_sets_spec_urls = dict()
 
         # extract lists of properties and theirs references for each property set
         parsed_paths = [
@@ -474,6 +488,10 @@ class DocExtractor:
                 # html code for filepath and gives warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
+                    doc_entity = bs_tree.find("docentity")
+                    if doc_entity.has_attr('basedefinition'):
+                        entities_dict[entity_name]["parent_entity"] = doc_entity["basedefinition"]
+
                     for html_attr in bs_tree.find_all("docattribute"):
                         attr_name = html_attr["name"]
                         if attr_name == "PredefinedType":
@@ -671,12 +689,20 @@ class DocExtractor:
 
 def run_doc_api_examples():
     print("Entities:")
-    print(get_entity_doc("IFC2X3", "IfcActionRequest"))
-    print(get_entity_doc("IFC4", "IfcActionRequest"))
+    print(get_entity_doc("IFC2X3", "IfcWindow"))
+    print(get_entity_doc("IFC4", "IfcWindow"))
 
     print("Entity attributes:")
     print(get_attribute_doc("IFC2X3", "IfcActionRequest", "RequestID"))
     print(get_attribute_doc("IFC4", "IfcActionRequest", "LongDescription"))
+
+    print("Entities (with parent entities attributes included):")
+    print(get_entity_doc("IFC2X3", "IfcWindow", recursive=True))
+    print(get_entity_doc("IFC4", "IfcWindow", recursive=True))
+
+    print("Entity attributes (with parent entities attributes included):")
+    print(get_attribute_doc("IFC2X3", "IfcWindow", "OwnerHistory", recursive=True))
+    print(get_attribute_doc("IFC4", "IfcWindow", "OwnerHistory", recursive=True))
 
     print("Entity predefined types:")
     print(get_predefined_type_doc("IFC2X3", "IfcControllerType", "FLOATING"))
