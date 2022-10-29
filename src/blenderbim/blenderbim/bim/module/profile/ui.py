@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,9 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
+import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.profile.data import Data
+from blenderbim.bim.module.profile.data import ProfileData
 
 
 class BIM_PT_profiles(Panel):
@@ -33,17 +33,15 @@ class BIM_PT_profiles(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
-        return file
+        return tool.Ifc.get()
 
     def draw(self, context):
-        self.file = IfcStore.get_file()
-        if not Data.is_loaded:
-            Data.load(self.file)
+        if not ProfileData.is_loaded:
+            ProfileData.load()
         self.props = context.scene.BIMProfileProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Profiles Found".format(len(Data.profiles)), icon="SNAP_GRID")
+        row.label(text="{} Profiles Found".format(ProfileData.data["total_profiles"]), icon="SNAP_GRID")
         if self.props.is_editing:
             row.operator("bim.disable_profile_editing_ui", text="", icon="CANCEL")
         else:
