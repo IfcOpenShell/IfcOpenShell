@@ -74,7 +74,7 @@ def get_schema_by_name(version):
         schema_by_name[version] = ifcopenshell.ifcopenshell_wrapper.schema_by_name(version)
     return schema_by_name[version]
 
-def get_entity_doc(version, entity_name, recursive=False):
+def get_entity_doc(version, entity_name, recursive=True):
     db = get_db(version)
     if db:
         entity = copy.deepcopy(db["entities"].get(entity_name))
@@ -93,7 +93,7 @@ def get_entity_doc(version, entity_name, recursive=False):
         return entity
 
 
-def get_attribute_doc(version, entity, attribute, recursive=False):
+def get_attribute_doc(version, entity, attribute, recursive=True):
     db = get_db(version)
     if db:
         entity = get_entity_doc(version, entity, recursive)
@@ -691,21 +691,13 @@ class DocExtractor:
 
 
 def run_doc_api_examples():
-    print("Entities:")
+    print("Entities (with parent entities attributes included):")
     print(get_entity_doc("IFC2X3", "IfcWindow"))
     print(get_entity_doc("IFC4", "IfcWindow"))
 
-    print("Entity attributes:")
-    print(get_attribute_doc("IFC2X3", "IfcActionRequest", "RequestID"))
-    print(get_attribute_doc("IFC4", "IfcActionRequest", "LongDescription"))
-
-    print("Entities (with parent entities attributes included):")
-    print(get_entity_doc("IFC2X3", "IfcWindow", recursive=True))
-    print(get_entity_doc("IFC4", "IfcWindow", recursive=True))
-
     print("Entity attributes (with parent entities attributes included):")
-    print(get_attribute_doc("IFC2X3", "IfcWindow", "OwnerHistory", recursive=True))
-    print(get_attribute_doc("IFC4", "IfcWindow", "OwnerHistory", recursive=True))
+    print(get_attribute_doc("IFC2X3", "IfcWindow", "OwnerHistory"))
+    print(get_attribute_doc("IFC4", "IfcWindow", "OwnerHistory"))
 
     print("Entity predefined types:")
     print(get_predefined_type_doc("IFC2X3", "IfcControllerType", "FLOATING"))
