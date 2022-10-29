@@ -20,6 +20,7 @@ import json
 from pathlib import Path
 from pprint import pprint
 import copy
+import ifcopenshell
 
 try:
     import glob
@@ -49,7 +50,7 @@ SCHEMA_FILES = {
 }
 
 db = None
-
+schema_by_name = {"IFC2X3": None, "IFC4": None}
 
 def get_db(version):
     global db
@@ -67,16 +68,24 @@ def get_db(version):
                     db[ifc_version][data_type] = json.load(fi)
     return db.get(version)
 
+def get_schema_by_name(version):
+    global schema_by_name
+    if not schema_by_name[version]:
+        schema_by_name[version] = ifcopenshell.ifcopenshell_wrapper.schema_by_name(version)
+    return schema_by_name[version]
 
-def get_entity_doc(version, entity, recursive=False):
+def get_entity_doc(version, entity_name, recursive=False):
     db = get_db(version)
     if db:
-        entity = copy.deepcopy(db["entities"].get(entity))
+        entity = copy.deepcopy(db["entities"].get(entity_name))
         if not recursive:
             return entity
         
-        if "parent_entity" in entity:
-            parent_entity = get_entity_doc(version, entity["parent_entity"], recursive=True)
+        ifc_schema = get_schema_by_name(version)
+        ifc_entity = ifc_schema.declaration_by_name(entity_name)
+        ifc_supertype = ifc_entity.supertype()
+        if ifc_entity.supertype():
+            parent_entity = get_entity_doc(version, ifc_supertype.name(), recursive=True)
             if 'attributes' not in entity:
                 entity['attributes'] = dict()
             for parent_attr in parent_entity["attributes"]:
@@ -197,10 +206,7 @@ class DocExtractor:
                 # because BeautifulSoup wrongly assume we confused
                 # html code for filepath and gives warnings
                 with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
-                    doc_entity = bs_tree.find("docentity")
-                    if doc_entity.has_attr('basedefinition'):
-                        entities_dict[entity_name]["parent_entity"] = doc_entity["basedefinition"]
+                    warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning) 
 
                     for html_attr in bs_tree.find_all("docattribute"):
                         attr_name = html_attr["name"]
@@ -488,9 +494,6 @@ class DocExtractor:
                 # html code for filepath and gives warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
-                    doc_entity = bs_tree.find("docentity")
-                    if doc_entity.has_attr('basedefinition'):
-                        entities_dict[entity_name]["parent_entity"] = doc_entity["basedefinition"]
 
                     for html_attr in bs_tree.find_all("docattribute"):
                         attr_name = html_attr["name"]
