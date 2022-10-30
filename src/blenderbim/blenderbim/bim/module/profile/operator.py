@@ -99,3 +99,20 @@ class EditProfile(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
         bpy.ops.bim.load_profiles()
         return {"FINISHED"}
+
+
+class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_profile_def"
+    bl_label = "Add Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        profile_class = props.profile_classes
+        if profile_class == "IfcArbitraryClosedProfileDef":
+            points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1)]
+            ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+        else:
+            ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
+        bpy.ops.bim.load_profiles()
+        return {"FINISHED"}
