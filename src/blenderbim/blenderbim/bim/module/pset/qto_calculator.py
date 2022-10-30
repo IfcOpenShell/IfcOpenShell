@@ -38,12 +38,22 @@ class QtoCalculator:
         for key in self.mapping_dict.keys():
             for item in self.mapping_dict[key].keys():
                 if self.mapping_dict[key][item]:
-                    self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item])
+                    if isinstance(self.mapping_dict[key][item], str):
+                        self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item])
+                    if isinstance(self.mapping_dict[key][item], dict):
+                        self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item]["function_name"])
                 else:
                     self.mapping_dict[key][item] = None
 
     def calculate_quantity(self, qto_name, quantity_name, obj):
-        return self.mapping_dict[qto_name][quantity_name](obj)
+        string = "self.mapping_dict[qto_name][quantity_name](obj"
+        if isinstance(mapper[qto_name][quantity_name], dict):
+            args = mapper[qto_name][quantity_name]["args"]
+        else:
+            args = ""
+        string += args
+        string += ")"
+        return eval(string)
 
     def guess_quantity(self, prop_name, alternative_prop_names, obj):
         prop_name = prop_name.lower()
