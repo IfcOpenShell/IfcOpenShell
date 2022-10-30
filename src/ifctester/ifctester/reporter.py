@@ -204,63 +204,58 @@ class Html(Json):
                 return outfile.write(pystache.render(file.read(), self.results))
 
 
-class BcfHandler(logging.StreamHandler):
-    """Logging handler for creation of BCF report files.
+class Bcf(Reporter):
+    def __init__(self, ids, with_viewpoint=True, filepath=None, group=False):
+        super().__init__(ids)
 
-    :param project_name: defaults to "IDS Project"
-    :type project_name: str, optional
-    :param author: Email of the person creating the BCF report, defaults to "your@email.com"
-    :type author: str, optional
-    :param filepath: Path to save the BCF report, defaults to None
-    :type filepath: str, optional
-    :param report_valid: True if you want to list all the compliant cases as well, defaults to False
-    :type report_valid: bool, optional
+        from bcf.v2.bcfxml import BcfXml
 
-    Example::
+        self.with_viewpoint = with_viewpoint
+        self.group = group
+        self.bcf = BcfXml()
+        self.bcf.new_project()
+        if not filepath:
+            self.filepath=os.path.join(sys.path[0], self.ids.info['title'] + '.bcf')
+        # self.bcf.filepath = sys.path[0]
+        self.bcf.project.name = self.ids.info.get("title", "Untitled IDS")
+        self.bcf.author = self.ids.info.get("author", "your@email.com")
+        self.bcf.creation_date = datetime.datetime.today().replace(microsecond=0).isoformat()
+        self.bcf.modified_date = datetime.datetime.today().replace(microsecond=0).isoformat()
 
-        bcf_handler = BcfHandler(
-            project_name="Default IDS Project",
-            author="your@email.com",
-            filepath="example.bcf",
-        )
-        logger = logging.getLogger("IDS_Logger")
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
-        logger.addHandler(bcf_handler)
-    """
+    def report(self):
+        for specification in self.ids.specifications:
+            self.report_specification(specification, save_project=False)
+        self.bcf.save_project(self.filepath)
 
-    def __init__(self, project_name="IDS Project", author="your@email.com", filepath=None, report_valid=False):
+    def report_specification(self, specification, save_project=True):
+        from bcf.v2 import data as bcf
+        for requirement in specification.requirements:
+            if self.group:
+                topic = bcf.Topic()
+                topic.title = requirement.to_string("requirement")
+                topic.description = ";\n".join([requirement.failed_reasons[i] + " for " + str(e.get_info()['type']) + ": " + str(e.GlobalId) for i, e in enumerate(requirement.failed_entities)])
+                self.bcf.add_topic(topic)
+                if self.with_viewpoint: 
+                    self.add_viewpoint(topic, requirement)
+            else:
+                for i, e in enumerate(requirement.failed_entities):
+                    topic = bcf.Topic()
+                    topic.title = requirement.to_string("requirement")
+                    topic.description = requirement.failed_reasons[i] + " for " + str(e.get_info()['type']) + ": " + str(e.GlobalId)
+                    self.bcf.add_topic(topic)
+                    if self.with_viewpoint: 
+                        self.add_viewpoint(topic, requirement)
+        if save_project:
+            self.bcf.save_project(self.filepath)
+
+    def add_viewpoint(self, topic, requirement):
         import numpy as np
         import ifcopenshell.util.placement
-        from bcf.v2.bcfxml import BcfXml
         from bcf.v2 import data as bcf
 
-        logging.StreamHandler.__init__(self)
-        if report_valid:
-            self.setLevel(logging.INFO)
-        else:
-            self.setLevel(logging.ERROR)
-        self.bcf = BcfXml()
-        self.bcf.author = author
-        self.bcf.new_project()
-        self.bcf.project.name = project_name
-        self.filepath = filepath
-        self.bcf.edit_project()
-
-    def emit(self, log_content):
-        """Triggered on each use of logging with the BCF handler enabled.
-
-        :param log_content: default logger message
-        :type log_content: string|dict
-        """
-        topic = bcf.Topic()
-        topic.title = log_content.msg["sentence"].split(".\n")[1]
-        topic.description = log_content.msg["sentence"].split(".\n")[0]
-        self.bcf.add_topic(topic)
-        # try:  # Add viewpoint and link to ifc object
         viewpoint = bcf.Viewpoint()
         viewpoint.perspective_camera = bcf.PerspectiveCamera()
-        ifc_elem = log_content.msg["ifc_element"]
-        # ifc_elem = ifc_file.by_guid(log_content.msg["guid"])
+        ifc_elem = requirement.failed_entities[0]
         target_position = np.array(ifcopenshell.util.placement.get_local_placement(ifc_elem.ObjectPlacement))
         target_position = target_position[:, 3][0:3]
         camera_position = target_position + np.array((5, 5, 5))
@@ -289,18 +284,17 @@ class BcfHandler(logging.StreamHandler):
         viewpoint.perspective_camera.camera_up_vector.y = mat[1][1]
         viewpoint.perspective_camera.camera_up_vector.z = mat[2][1]
         viewpoint.components = bcf.Components()
-        c = bcf.Component()
-        c.ifc_guid = log_content.msg["guid"]
-        viewpoint.components.selection.append(c)
+        for e in requirement.failed_entities:
+            c = bcf.Component()
+            c.ifc_guid = e.GlobalId
+            viewpoint.components.selection.append(c)
         viewpoint.components.visibility = bcf.ComponentVisibility()
         viewpoint.components.visibility.default_visibility = True
-        viewpoint.snapshot = None
+        # add single pixel png file as a snapshot, as viewpoints without snapshots won't open in viewers
+        png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x01\x03\x00\x00\x00%\xdbV\xca\x00\x00\x00\x03PLTE\x00\x00\x00\xa7z=\xda\x00\x00\x00\x01tRNS\x00@\xe6\xd8f\x00\x00\x00\nIDAT\x08\xd7c`\x00\x00\x00\x02\x00\x01\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82"
+        snapshot_path = os.path.join(self.bcf.filepath, topic.guid, topic.guid+".png")
+        snapshot = open(snapshot_path, "wb")
+        snapshot.write(png)
+        snapshot.close()
+        viewpoint.snapshot = topic.guid+".png"
         self.bcf.add_viewpoint(topic, viewpoint)
-
-    def flush(self):
-        """Saves the BCF report to file. Triggered at the end of the validation process."""
-        if not self.filepath:
-            self.filepath = os.getcwd() + r"\IDS_report.bcf"
-        if not (self.filepath.endswith(".bcf") or self.filepath.endswith(".bcfzip")):
-            self.filepath = self.filepath + r"\IDS_report.bcf"
-        self.bcf.save_project(self.filepath)
