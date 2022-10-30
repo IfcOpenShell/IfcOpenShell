@@ -42,7 +42,6 @@ from sverchok.utils.extra_categories import (
 from sverchok.ui.nodeview_space_menu import make_extra_category_menus
 from sverchok.utils.logging import info, debug
 
-
 def nodes_index():
     return [
         (
@@ -94,7 +93,65 @@ imported_modules = make_node_list()
 reload_event = False
 
 import bpy
+import os
+from os.path import abspath, splitext
+import ifcopenshell
+from ifcsverchok.ifcstore import SvIfcStore
+from sverchok.data_structure import flatten_data
 
+class IFC_Sv_write_file(bpy.types.Operator):
+    bl_idname = "ifc.write_file_panel"
+    bl_label = "Write File"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "File path to write to."
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        return any("IFC" in n for n in context.space_data.edit_tree.nodes.keys())
+
+    def execute(self, context):
+        self.file = SvIfcStore.file
+        if not self.file:
+            raise Exception("No IFC file in SvIfcStore.")
+        _, ext = splitext(self.filepath)
+        if not ext:
+            raise Exception("Bad path. Provide a path to a file.")
+        else:
+            if not (self.file.by_type("IfcSpatialElement") or self.file.by_type("IfcSpatialStructureElement")):
+                print("No Ifc Spatial Element found. Adding all elements to IfcBuilding.")
+                elements = self.file.by_type("IfcElement")
+                building = ifcopenshell.api.run("root.create_entity", self.file, name="DefaultBuilding", ifc_class="IfcBuilding")
+                for element in elements:
+                    ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+            self.file.write(self.filepath)
+            print(f"File written to: {self.filepath}")
+        return {"FINISHED"}
+    
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+class IFC_PT_write_file_panel(bpy.types.Panel):
+    bl_idname = "IFC_PT_write_file_panel"
+    bl_label = "Write IFC to file"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "NODE_EDITOR"
+    bl_region_type = "UI"
+    bl_category = "IfcSverchok"
+
+    @classmethod
+    def poll(cls, context):
+        if context.space_data.edit_tree and any("IFC" in n for n in context.space_data.edit_tree.nodes.keys()):
+            return True
+
+    def draw(self, context):
+        layout = self.layout
+        row = layout.split(factor=0.2, align=True)
+        row = layout.row()
+        row.operator("ifc.write_file_panel")
+
+CLASSES = [IFC_Sv_write_file, IFC_PT_write_file_panel]
 
 def register_nodes():
     node_modules = make_node_list()
@@ -148,7 +205,8 @@ def register():
     global our_menu_classes
 
     debug("Registering ifcsverchok")
-
+    for klass in CLASSES:
+        bpy.utils.register_class(klass)
     register_nodes()
     extra_nodes = importlib.import_module(".nodes", "ifcsverchok")
     auto_gather_node_classes(extra_nodes)
@@ -173,3 +231,5 @@ def unregister():
             print(e)
     unregister_extra_category_provider("IFCSVERCHOK")
     unregister_nodes()
+    for klass in CLASSES:
+        bpy.utils.unregister_class(klass)
