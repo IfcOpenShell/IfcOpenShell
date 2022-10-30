@@ -1,0 +1,1310 @@
+{
+    "IfcAbsorbedDoseMeasure": {
+        "description": "A measure of the absorbed radioactivity dose.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcabsorbeddosemeasure.htm"
+    },
+    "IfcAccelerationMeasure": {
+        "description": "A measure of acceleration.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcaccelerationmeasure.htm"
+    },
+    "IfcActionSourceTypeEnum": {
+        "description": "This enumeration type contains possible action sources. The IfcActionSourceTypeEnum type is referenced by the entity IfcStructuralLoadGroup which shall normally be of the type LOAD_CASE (see also IfcLoadGroupTypeEnum).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcactionsourcetypeenum.htm"
+    },
+    "IfcActionTypeEnum": {
+        "description": "This enumeration type is used to distinguish between possible action types at a high level. It can be used for an automated definition of load combinations and for dimensioning. The contained items and their acronyms are adopted from the Eurocode standard.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcactiontypeenum.htm"
+    },
+    "IfcActorSelect": {
+        "description": "The actor select type allows a person and/or organization to be referenced.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcactorresource/lexical/ifcactorselect.htm"
+    },
+    "IfcActuatorTypeEnum": {
+        "description": "The IfcActuatorTypeEnum defines the range of different types of actuator that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifcactuatortypeenum.htm"
+    },
+    "IfcAddressTypeEnum": {
+        "description": "Identifies the logical location of the address.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcactorresource/lexical/ifcaddresstypeenum.htm"
+    },
+    "IfcAheadOrBehind": {
+        "description": "An enumeration type that is used to specify whether a local time is ahead or behind of the coordinated universal time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifcaheadorbehind.htm"
+    },
+    "IfcAirTerminalBoxTypeEnum": {
+        "description": "This enumeration identifies different types of air terminal boxes.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcairterminalboxtypeenum.htm"
+    },
+    "IfcAirTerminalTypeEnum": {
+        "description": "Enumeration defining the functional types of air terminals. The IfcAirTerminalTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcairterminaltypeenum.htm"
+    },
+    "IfcAirToAirHeatRecoveryTypeEnum": {
+        "description": "Defines general types of pumps. The IfcPumpTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcairtoairheatrecoverytypeenum.htm"
+    },
+    "IfcAlarmTypeEnum": {
+        "description": "The IfcAlarmTypeEnum defines the range of different types of alarm that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifcalarmtypeenum.htm"
+    },
+    "IfcAmountOfSubstanceMeasure": {
+        "description": "An amount of substance measure is the value for the quantity of a substance when compared with the number of atoms in 0.012kilogram of carbon 12.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcamountofsubstancemeasure.htm"
+    },
+    "IfcAnalysisModelTypeEnum": {
+        "description": "This type definition is used to distinguish between different types of structural analysis models. The analysis models are differentiated by their dimensionality.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcanalysismodeltypeenum.htm"
+    },
+    "IfcAnalysisTheoryTypeEnum": {
+        "description": "This type definition is used to distinguish between different types of structural analysis methods, i.e. first order theory, second order theory (small deformations), third order theory (large deformations) and the full nonlinear theory (large deformations and higher order effects). The IfcAnalysisTheoryTypeEnum type is referenced by the entity IfcStructuralResultGroup.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcanalysistheorytypeenum.htm"
+    },
+    "IfcAngularVelocityMeasure": {
+        "description": "A measure of the velocity of a body measured in terms of angle subtended per unit time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcangularvelocitymeasure.htm"
+    },
+    "IfcAppliedValueSelect": {
+        "description": "The IfcAppliedValueSelect defines the selection of whether a value (expressed as a ratio) or an amount should be used as the value for an IfcAppliedValue.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifccostresource/lexical/ifcappliedvalueselect.htm"
+    },
+    "IfcAreaMeasure": {
+        "description": "An area measure is the value of the extent of a surface.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcareameasure.htm"
+    },
+    "IfcArithmeticOperatorEnum": {
+        "description": "The IfcArithmeticOperatorEnum specifies the form of arithmetical operation implied by the relationship.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifccostresource/lexical/ifcarithmeticoperatorenum.htm"
+    },
+    "IfcAssemblyPlaceEnum": {
+        "description": "Enumeration defining where the assembly is intended to take place, either in a factory or on the building site.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcassemblyplaceenum.htm"
+    },
+    "IfcAxis2Placement": {
+        "description": "This select type collects together both versions of the placement as used in two dimensional or in three dimensional Cartesian space. This enables entities requiring this information to reference them without specifying the space dimensionality.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifcaxis2placement.htm"
+    },
+    "IfcBSplineCurveForm": {
+        "description": "This type is used to indicate that the B-spline curve represents a part of a curve of some specific form.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifcbsplinecurveform.htm"
+    },
+    "IfcBeamTypeEnum": {
+        "description": "This enumeration defines the different types of linear elements an IfcBeamType object can fulfill:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcbeamtypeenum.htm"
+    },
+    "IfcBenchmarkEnum": {
+        "description": "An IfcBenchmarkEnum is an enumeration used to identify the logical comparators that can be applied in conjunction with constraint values.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstraintresource/lexical/ifcbenchmarkenum.htm"
+    },
+    "IfcBoilerTypeEnum": {
+        "description": "Enumeration defining the typical types of boilers. The IfcBoilerTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcboilertypeenum.htm"
+    },
+    "IfcBoolean": {
+        "description": "A defined data type of simple data type Boolean. (Required since a select type, i.e. IfcSimpleValue, cannot include directly simple types in its select list). A boolean type can have value TRUE or FALSE.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcboolean.htm"
+    },
+    "IfcBooleanOperand": {
+        "description": "This select type identifies all those types of entities which may participate in a Boolean operation to form a CSG solid.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricmodelresource/lexical/ifcbooleanoperand.htm"
+    },
+    "IfcBooleanOperator": {
+        "description": "This type defines the three Boolean operators used in the definition of CSG solids.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricmodelresource/lexical/ifcbooleanoperator.htm"
+    },
+    "IfcBoxAlignment": {
+        "description": "Definition from IAI: The box alignment specifies the alignment of the text box relative to its position. The following string values shall be used:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdefinitionresource/lexical/ifcboxalignment.htm"
+    },
+    "IfcBuildingElementProxyTypeEnum": {
+        "description": "This enumeration defines the available generic types for IfcBuildingElementProxyType.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcbuildingelementproxytypeenum.htm"
+    },
+    "IfcCableCarrierFittingTypeEnum": {
+        "description": "The IfcCableCarrierFittingTypeEnum defines the range of different types of cable carrier fitting that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifccablecarrierfittingtypeenum.htm"
+    },
+    "IfcCableCarrierSegmentTypeEnum": {
+        "description": "The IfcCableCarrierSegmentTypeEnum defines the range of different types of cable carrier segment that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifccablecarriersegmenttypeenum.htm"
+    },
+    "IfcCableSegmentTypeEnum": {
+        "description": "The IfcCableSegmentTypeEnum defines the range of different types of cable segment that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifccablesegmenttypeenum.htm"
+    },
+    "IfcChangeActionEnum": {
+        "description": "Enumeration identifying the type of change that might have occurred to the object during the last session (e.g., unchanged, added, deleted, etc.). This information is required in a partial model exchange scenario so that an application or model server will know how an object might have been affected by the previous application. Valid enumerations are:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcutilityresource/lexical/ifcchangeactionenum.htm"
+    },
+    "IfcCharacterStyleSelect": {
+        "description": "Definition from IAI: The character style select allows for a selection of character styles for text. Currently only text color and background color is selectable.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifccharacterstyleselect.htm"
+    },
+    "IfcChillerTypeEnum": {
+        "description": "Enumeration defining the typical types of Chillers classified by their method of heat rejection. The IfcChillerTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcchillertypeenum.htm"
+    },
+    "IfcClassificationNotationSelect": {
+        "description": "IfcClassificationNotationSelect enables selection of whether a classification notation is to be contained within an IFC model or is to be referenced from an external source (or classification server).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcexternalreferenceresource/lexical/ifcclassificationnotationselect.htm"
+    },
+    "IfcCoilTypeEnum": {
+        "description": "Enumeration defining the typical types of coils. The IfcCoilTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccoiltypeenum.htm"
+    },
+    "IfcColour": {
+        "description": "The colour entity defines a basic appearance of elements which shall be visualized in a picture.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifccolour.htm"
+    },
+    "IfcColourOrFactor": {
+        "description": "The IfcColourOrFactor enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifccolourorfactor.htm"
+    },
+    "IfcColumnTypeEnum": {
+        "description": "This enumeration defines the different types of linear elements an IfcColumnType object can fulfill:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifccolumntypeenum.htm"
+    },
+    "IfcComplexNumber": {
+        "description": "Representation of a complex number expressed as an array with two elements. The first element (index 1) denotes the real component, i.e. the numerical component of a complex number whose square roots can be calculated explicitly. The second element (index 2) denotes the imaginary component, i.e. numerical component of a complex number whose square roots cannot be determined other than through the provision of the square of the imaginary number j where j\\^2 = -1. Note that the imaginary component may be referred to as i in certain references.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifccomplexnumber.htm"
+    },
+    "IfcCompoundPlaneAngleMeasure": {
+        "description": "A compound measure of plane angle in degrees, minutes, seconds, and optionally millionth-seconds of arc.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifccompoundplaneanglemeasure.htm"
+    },
+    "IfcCompressorTypeEnum": {
+        "description": "Types of compressors. The IfcCompressorTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccompressortypeenum.htm"
+    },
+    "IfcCondenserTypeEnum": {
+        "description": "Enumeration defining the typical types of condensers. The IfcCondenserTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccondensertypeenum.htm"
+    },
+    "IfcConditionCriterionSelect": {
+        "description": "An IfcConditionCriterionSelect enables the selection of the criterion that is to be measured or assessed to establish the condition of an artifact(s).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcfacilitiesmgmtdomain/lexical/ifcconditioncriterionselect.htm"
+    },
+    "IfcConnectionTypeEnum": {
+        "description": "This enumeration defines the different ways how path based elements (here IfcWallStandardCase) can connect..",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcconnectiontypeenum.htm"
+    },
+    "IfcConstraintEnum": {
+        "description": "An IfcConstraintEnum is an enumeration used to qualify a constraint.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstraintresource/lexical/ifcconstraintenum.htm"
+    },
+    "IfcContextDependentMeasure": {
+        "description": "Is the value of a physical quantity as defined by an application context.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifccontextdependentmeasure.htm"
+    },
+    "IfcControllerTypeEnum": {
+        "description": "The IfcControllerTypeEnum defines the range of different types of controller that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifccontrollertypeenum.htm"
+    },
+    "IfcCooledBeamTypeEnum": {
+        "description": "Enumeration defining the typical types of cooled beams. The IfcCooledBeamTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccooledbeamtypeenum.htm"
+    },
+    "IfcCoolingTowerTypeEnum": {
+        "description": "Enumeration defining the typical types of cooling towers. The IfcCoolingTowerTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifccoolingtowertypeenum.htm"
+    },
+    "IfcCostScheduleTypeEnum": {
+        "description": "An IfcCostScheduleTypeEnum is a list of the available types of cost schedule from which that required may be selected.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedmgmtelements/lexical/ifccostscheduletypeenum.htm"
+    },
+    "IfcCountMeasure": {
+        "description": "A count measure is the value of a count.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifccountmeasure.htm"
+    },
+    "IfcCoveringTypeEnum": {
+        "description": "This enumeration defines the range of different types of covering that can further specify an IfcCovering or an IfcCoveringType.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifccoveringtypeenum.htm"
+    },
+    "IfcCsgSelect": {
+        "description": "This type identifies the types of entity which may be selected as the root of a CSG tree including a single CSG primitive as a special case (currently not in IFC).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricmodelresource/lexical/ifccsgselect.htm"
+    },
+    "IfcCurrencyEnum": {
+        "description": "An enumeration of the international abbreviations of currencies used of various countries.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifccurrencyenum.htm"
+    },
+    "IfcCurtainWallTypeEnum": {
+        "description": "Enumeration defining the valid types of curtain wall that can be predefined using the enumeration values.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifccurtainwalltypeenum.htm"
+    },
+    "IfcCurvatureMeasure": {
+        "description": "A measure for curvature, which is defined as the change of slope per length. This is typically a computed value in structural analysis. It is usually measured in rad/m.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifccurvaturemeasure.htm"
+    },
+    "IfcCurveFontOrScaledCurveFontSelect": {
+        "description": "The curve font or scaled curve font select is a selection of either a curve font style select (being either a predefined curve font or an explicitly defined curve font) or a curve style font and scaling.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifccurvefontorscaledcurvefontselect.htm"
+    },
+    "IfcCurveOrEdgeCurve": {
+        "description": "The IfcCurveOrEdgeCurve provides the option to either select a geometric curve (IfcCurve and subtypes) within a geometric model, or a curve with associated geometry and coordinates (Ifc__EdgeCurve) within a topological model.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricconstraintresource/lexical/ifccurveoredgecurve.htm"
+    },
+    "IfcCurveStyleFontSelect": {
+        "description": "The curve style font select is a selection of a curve style font or a predefined curve style font.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifccurvestylefontselect.htm"
+    },
+    "IfcDamperTypeEnum": {
+        "description": "This enumeration defines the various types of damper:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcdampertypeenum.htm"
+    },
+    "IfcDataOriginEnum": {
+        "description": "The IfcTimeSeriesDataGeneratedByEnum identifies the origin of the time series data:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifctimeseriesresource/lexical/ifcdataoriginenum.htm"
+    },
+    "IfcDateTimeSelect": {
+        "description": "Allows a date (IfcCalendarDate) and/or local time (IfcDateAndTime, IfcLocalTime) to be referenced.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifcdatetimeselect.htm"
+    },
+    "IfcDayInMonthNumber": {
+        "description": "The position of the specified day in a month.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifcdayinmonthnumber.htm"
+    },
+    "IfcDaylightSavingHour": {
+        "description": "The positive integer value by which clock time is offset from solar time at the particular location.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifcdaylightsavinghour.htm"
+    },
+    "IfcDefinedSymbolSelect": {
+        "description": "The defined symbol select is a selection between a predefined symbol and an externally defined symbol.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdefinitionresource/lexical/ifcdefinedsymbolselect.htm"
+    },
+    "IfcDerivedMeasureValue": {
+        "description": "A select type for selecting between derived measure types.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcderivedmeasurevalue.htm"
+    },
+    "IfcDerivedUnitEnum": {
+        "description": "An enumeration type for allowed types of derived units.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcderivedunitenum.htm"
+    },
+    "IfcDescriptiveMeasure": {
+        "description": "A descriptive measure is a human interpretable definition of a quantifiable value.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcdescriptivemeasure.htm"
+    },
+    "IfcDimensionCount": {
+        "description": "A dimension count is a positive integer used to define the coordinate space dimensionality.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifcdimensioncount.htm"
+    },
+    "IfcDimensionExtentUsage": {
+        "description": "The dimension extent usage declares the usage of a dimension terminator symbol, being either an origin, or a target.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdimensioningresource/lexical/ifcdimensionextentusage.htm"
+    },
+    "IfcDirectionSenseEnum": {
+        "description": "Enumeration denoting whether sense of direction is positive or negative along the given axis.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmaterialresource/lexical/ifcdirectionsenseenum.htm"
+    },
+    "IfcDistributionChamberElementTypeEnum": {
+        "description": "The This enumeration identifies different types of distribution chambers.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcdistributionchamberelementtypeenum.htm"
+    },
+    "IfcDocumentConfidentialityEnum": {
+        "description": "IfcDocumentConfidentialityEnum enables selection of the level of confidentiality of document information from a list of choices.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcexternalreferenceresource/lexical/ifcdocumentconfidentialityenum.htm"
+    },
+    "IfcDocumentSelect": {
+        "description": "IfcDocumentSelect enables selection of whether document information is to be contained within an IFC model or is to be referenced from an external source.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcexternalreferenceresource/lexical/ifcdocumentselect.htm"
+    },
+    "IfcDocumentStatusEnum": {
+        "description": "Enables selection of the status of document information from a list of choices.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcexternalreferenceresource/lexical/ifcdocumentstatusenum.htm"
+    },
+    "IfcDoorPanelOperationEnum": {
+        "description": "This enumeration defines the basic ways how individual door panels operate.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcdoorpaneloperationenum.htm"
+    },
+    "IfcDoorPanelPositionEnum": {
+        "description": "This enumeration defines the basic ways to describe the location of a door panel within a door lining.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcdoorpanelpositionenum.htm"
+    },
+    "IfcDoorStyleConstructionEnum": {
+        "description": "This enumeration defines the basic types of construction of doors. The construction type relates to the main material (or material combination) used for making the door.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcdoorstyleconstructionenum.htm"
+    },
+    "IfcDoorStyleOperationEnum": {
+        "description": "This enumeration defines the basic ways to describe how doors operate.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcdoorstyleoperationenum.htm"
+    },
+    "IfcDoseEquivalentMeasure": {
+        "description": "A measure of the radioactive dose equivalent.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcdoseequivalentmeasure.htm"
+    },
+    "IfcDraughtingCalloutElement": {
+        "description": "The draughting callout elements can either be annotated curves, symbols or text.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdimensioningresource/lexical/ifcdraughtingcalloutelement.htm"
+    },
+    "IfcDuctFittingTypeEnum": {
+        "description": "This enumeration is used to identify the primary purpose of a duct fitting. This is a very basic categorization mechanism to generically identify the duct fitting type. Subcategories of duct fittings are not enumerated. The IfcDuctFittingTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcductfittingtypeenum.htm"
+    },
+    "IfcDuctSegmentTypeEnum": {
+        "description": "This enumeration is used to identify the primary purpose of a duct segment. This is a very basic categorization mechanism to generically identify the duct segment type. Subcategories of duct segments are not enumerated. The IfcDuctSegmentTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcductsegmenttypeenum.htm"
+    },
+    "IfcDuctSilencerTypeEnum": {
+        "description": "Enumeration defining the typical types of duct silencers. The IfcDuctSilencerTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcductsilencertypeenum.htm"
+    },
+    "IfcDynamicViscosityMeasure": {
+        "description": "A measure of the viscous resistance of a medium.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcdynamicviscositymeasure.htm"
+    },
+    "IfcElectricApplianceTypeEnum": {
+        "description": "The IfcElectricApplianceTypeEnum defines the range of different types of electrical appliance that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricappliancetypeenum.htm"
+    },
+    "IfcElectricCapacitanceMeasure": {
+        "description": "A measure of the electric capacitance.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcelectriccapacitancemeasure.htm"
+    },
+    "IfcElectricChargeMeasure": {
+        "description": "A measure of the electric charge.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcelectricchargemeasure.htm"
+    },
+    "IfcElectricConductanceMeasure": {
+        "description": "A measure of the electric conductance.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcelectricconductancemeasure.htm"
+    },
+    "IfcElectricCurrentEnum": {
+        "description": "This enumeration defines the different types of available electrical current:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcelectriccurrentenum.htm"
+    },
+    "IfcElectricCurrentMeasure": {
+        "description": "The value for the movement of electrically charged particles.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcelectriccurrentmeasure.htm"
+    },
+    "IfcElectricDistributionPointFunctionEnum": {
+        "description": "The IfcElectricDistributionPointTypeEnum defines the range of different functions that an electric distribution point can fulfil.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricdistributionpointfunctionenum.htm"
+    },
+    "IfcElectricFlowStorageDeviceTypeEnum": {
+        "description": "The IfcElectricFlowStorageDeviceTypeEnum defines the range of different types of electrical flow storage device available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricflowstoragedevicetypeenum.htm"
+    },
+    "IfcElectricGeneratorTypeEnum": {
+        "description": "The IfcElectricGeneratorTypeEnum defines the range of types of electric generators available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricgeneratortypeenum.htm"
+    },
+    "IfcElectricHeaterTypeEnum": {
+        "description": "The IfcElectricHeaterTypeEnum defines the range of types of electric heater available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricheatertypeenum.htm"
+    },
+    "IfcElectricMotorTypeEnum": {
+        "description": "The IfcElectricMotorTypeEnum defines the range of different types of electric motor that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectricmotortypeenum.htm"
+    },
+    "IfcElectricResistanceMeasure": {
+        "description": "A measure of the electric resistance.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcelectricresistancemeasure.htm"
+    },
+    "IfcElectricTimeControlTypeEnum": {
+        "description": "The IfcElectricTimeControlTypeEnum defines the range of types of electrical time control available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcelectrictimecontroltypeenum.htm"
+    },
+    "IfcElectricVoltageMeasure": {
+        "description": "A measure of electromotive force.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcelectricvoltagemeasure.htm"
+    },
+    "IfcElementAssemblyTypeEnum": {
+        "description": "An enumeration defining the basic configuration types for element assemblies.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcelementassemblytypeenum.htm"
+    },
+    "IfcElementCompositionEnum": {
+        "description": "Enumeration that provides an indication, whether the spatial structure element or proxy represents a:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcelementcompositionenum.htm"
+    },
+    "IfcEnergyMeasure": {
+        "description": "A measure of energy required or used.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcenergymeasure.htm"
+    },
+    "IfcEnergySequenceEnum": {
+        "description": "This enumeration is used to identify the sequence of usage of the energy source. The IfcEnergySequenceEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcenergysequenceenum.htm"
+    },
+    "IfcEnvironmentalImpactCategoryEnum": {
+        "description": "The IfcEnvironmentalImpactCategoryEnum defines the range of categories into which an environmental impact can be broken down and from which the category required may be selected.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifccostresource/lexical/ifcenvironmentalimpactcategoryenum.htm"
+    },
+    "IfcEvaporativeCoolerTypeEnum": {
+        "description": "Enumeration defining the typical types of evaporative coolers. The IfcEvaporativeCoolerTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcevaporativecoolertypeenum.htm"
+    },
+    "IfcEvaporatorTypeEnum": {
+        "description": "Enumeration defining the typical types of evaporators. The IfcEvaporatorTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcevaporatortypeenum.htm"
+    },
+    "IfcFanTypeEnum": {
+        "description": "Enumeration defining the typical types of fans. The IfcFanTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcfantypeenum.htm"
+    },
+    "IfcFillAreaStyleTileShapeSelect": {
+        "description": "The fill area style tile shape select is used to make a selection for the style of the fill area style tile.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcfillareastyletileshapeselect.htm"
+    },
+    "IfcFillStyleSelect": {
+        "description": "The fill style select is a selection between different fill area styles.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcfillstyleselect.htm"
+    },
+    "IfcFilterTypeEnum": {
+        "description": "This enumeration defines the various types of filter typically used within building services distribution systems:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcfiltertypeenum.htm"
+    },
+    "IfcFireSuppressionTerminalTypeEnum": {
+        "description": "The IfcFireSuppressionTerminalTypeEnum defines the range of different types of fire suppression terminal that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcplumbingfireprotectiondomain/lexical/ifcfiresuppressionterminaltypeenum.htm"
+    },
+    "IfcFlowDirectionEnum": {
+        "description": "This enumeration defines the flow direction at a connection point as either a Source, Sink, or both SourceAndSink:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcflowdirectionenum.htm"
+    },
+    "IfcFlowInstrumentTypeEnum": {
+        "description": "The IfcFlowInstrumentTypeEnum defines the range of different types of flow instrument that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifcflowinstrumenttypeenum.htm"
+    },
+    "IfcFlowMeterTypeEnum": {
+        "description": "This enumeration defines various types of flow meter:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcflowmetertypeenum.htm"
+    },
+    "IfcFontStyle": {
+        "description": "Definition from CSS1 (W3C Recommendation): The font-style property selects between normal (sometimes referred to as \"roman\" or \"upright\"), italic and oblique faces within a font family. Values are:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifcfontstyle.htm"
+    },
+    "IfcFontVariant": {
+        "description": "Definition from CSS1 (W3C Recommendation): The font-style property selects between normal and small-caps within a font family. Values are:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifcfontvariant.htm"
+    },
+    "IfcFontWeight": {
+        "description": "Definition from CSS1 (W3C Recommendation): The 'font-weight' property selects the weight of the font. The values '100' to '900' form an ordered sequence, where each number indicates a weight that is at least as dark as its predecessor. The keyword 'normal' is synonymous with '400', and 'bold' is synonymous with '700'. Keywords other than 'normal' and 'bold' have been shown to be often confused with font names and a numerical scale was therefore chosen for the 9-value list. Values are:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifcfontweight.htm"
+    },
+    "IfcFootingTypeEnum": {
+        "description": "Definition from         IAI: Enumeration defining the generic footing type.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralelementsdomain/lexical/ifcfootingtypeenum.htm"
+    },
+    "IfcForceMeasure": {
+        "description": "A measure of the force.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcforcemeasure.htm"
+    },
+    "IfcFrequencyMeasure": {
+        "description": "A measure of the number of times that an item vibrates in unit time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcfrequencymeasure.htm"
+    },
+    "IfcGasTerminalTypeEnum": {
+        "description": "Enumeration defining the functional type of gas terminal. The IfcGasTerminalTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcgasterminaltypeenum.htm"
+    },
+    "IfcGeometricProjectionEnum": {
+        "description": "Definition from IAI: The IfcGeometricProjectionEnum defines the various representation types that can be semantically distinguished. Often different levels of detail of the shape representation are controlled by the representation type.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcrepresentationresource/lexical/ifcgeometricprojectionenum.htm"
+    },
+    "IfcGeometricSetSelect": {
+        "description": "This select type identifies the types of entities which can occur in a geometric set.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricmodelresource/lexical/ifcgeometricsetselect.htm"
+    },
+    "IfcGlobalOrLocalEnum": {
+        "description": "Definition from IAI: This enumeration type defines if the local object coordinate system or the global world coordinate system for the project is used to describe the measure values of entities which have a reference to this type.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcrepresentationresource/lexical/ifcglobalorlocalenum.htm"
+    },
+    "IfcGloballyUniqueId": {
+        "description": "Holds an identifier that is unique throughout the software world. This is also known as a Globally Unique Identifier (GUID) or Universal Unique Identifier (UUID) by the Open Group. The identifier is generated using an algorithm published by the Object Management Group. The algorithm is explained at the open group website. The Microsoft Foundation Class (MFC) function \"CoCreateGuid\", which is an implementation of the above algorithm, has been used by many IFC implementers to create an identifier.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcutilityresource/lexical/ifcgloballyuniqueid.htm"
+    },
+    "IfcHatchLineDistanceSelect": {
+        "description": "Definition from IAI: The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector..",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifchatchlinedistanceselect.htm"
+    },
+    "IfcHeatExchangerTypeEnum": {
+        "description": "Enumeration defining the typical types of heat exchangers. The IfcHeatExchangerTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcheatexchangertypeenum.htm"
+    },
+    "IfcHeatFluxDensityMeasure": {
+        "description": "A measure of the density of heat flux within a body.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcheatfluxdensitymeasure.htm"
+    },
+    "IfcHeatingValueMeasure": {
+        "description": "Defines the amount of energy released (usually in MJ/kg) when a fuel is burned.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcheatingvaluemeasure.htm"
+    },
+    "IfcHourInDay": {
+        "description": "The hour element of a specified time on a 24 hour clock.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifchourinday.htm"
+    },
+    "IfcHumidifierTypeEnum": {
+        "description": "Enumeration defining the typical types of humidifiers. The IfcHumidifierTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifchumidifiertypeenum.htm"
+    },
+    "IfcIdentifier": {
+        "description": "An identifier is an alphanumeric string which allows an individual thing to be identified. It may not provide natural-language meaning.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcidentifier.htm"
+    },
+    "IfcIlluminanceMeasure": {
+        "description": "A measure of the illuminance.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcilluminancemeasure.htm"
+    },
+    "IfcInductanceMeasure": {
+        "description": "A measure of the inductance.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcinductancemeasure.htm"
+    },
+    "IfcInteger": {
+        "description": "A defined type of simple data type Integer. (Required since a select type, i.e. IfcSimpleValue, cannot include directly simple types in its select list).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcinteger.htm"
+    },
+    "IfcIntegerCountRateMeasure": {
+        "description": "A measure of the integer number of units flowing per unit time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcintegercountratemeasure.htm"
+    },
+    "IfcInternalOrExternalEnum": {
+        "description": "This enumeration defines the different types of spaces or space boundaries in terms of either being inside the building or outside the building.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcinternalorexternalenum.htm"
+    },
+    "IfcInventoryTypeEnum": {
+        "description": "IfcInventoryTypeEnum defines the types of inventory that can be defined.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedfacilitieselements/lexical/ifcinventorytypeenum.htm"
+    },
+    "IfcIonConcentrationMeasure": {
+        "description": "A measure of particular ion concentration in a liquid, given in mg/L.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcionconcentrationmeasure.htm"
+    },
+    "IfcIsothermalMoistureCapacityMeasure": {
+        "description": "A measure of isothermal moisture capacity.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcisothermalmoisturecapacitymeasure.htm"
+    },
+    "IfcJunctionBoxTypeEnum": {
+        "description": "The IfcJunctionBoxTypeEnum defines the range of types of junction boxes available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcjunctionboxtypeenum.htm"
+    },
+    "IfcKinematicViscosityMeasure": {
+        "description": "A measure of the viscous resistance of a medium to a moving body.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifckinematicviscositymeasure.htm"
+    },
+    "IfcLabel": {
+        "description": "A label is the term by which something may be referred to. It is a string which represents the human-interpretable name of something and shall have a natural-language meaning.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifclabel.htm"
+    },
+    "IfcLampTypeEnum": {
+        "description": "The IfcLampTypeEnum defines the range of different types of lamp available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifclamptypeenum.htm"
+    },
+    "IfcLayerSetDirectionEnum": {
+        "description": "Identification of the axis of element geometry denoting the layer set thickness direction.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmaterialresource/lexical/ifclayersetdirectionenum.htm"
+    },
+    "IfcLayeredItem": {
+        "description": "The layered things type selects those things, which can be grouped in layers.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationorganizationresource/lexical/ifclayereditem.htm"
+    },
+    "IfcLengthMeasure": {
+        "description": "A length measure is the value of a distance.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifclengthmeasure.htm"
+    },
+    "IfcLibrarySelect": {
+        "description": "An IfcLibrarySelect enables selection of whether library information is to be contained within an IFC model or is to be referenced from an external source.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcexternalreferenceresource/lexical/ifclibraryselect.htm"
+    },
+    "IfcLightDistributionCurveEnum": {
+        "description": "There are three kinds of light distribution curves:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationorganizationresource/lexical/ifclightdistributioncurveenum.htm"
+    },
+    "IfcLightDistributionDataSourceSelect": {
+        "description": "A goniometric light gets its intensity distribution function (how much light goes in any one direction) from one of two sources: (i) an industry-standard file, (ii) from distribution data passed directly via the IfcLightIntensityDistribution.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationorganizationresource/lexical/ifclightdistributiondatasourceselect.htm"
+    },
+    "IfcLightEmissionSourceEnum": {
+        "description": "The IfcLightEmissionSourceEnum defines the range of different types of light emitter available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationorganizationresource/lexical/ifclightemissionsourceenum.htm"
+    },
+    "IfcLightFixtureTypeEnum": {
+        "description": "The IfcLightFixtureTypeEnum defines the range of different types of light fixture available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifclightfixturetypeenum.htm"
+    },
+    "IfcLinearForceMeasure": {
+        "description": "A measure of linear force.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifclinearforcemeasure.htm"
+    },
+    "IfcLinearMomentMeasure": {
+        "description": "A measure of linear moment.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifclinearmomentmeasure.htm"
+    },
+    "IfcLinearStiffnessMeasure": {
+        "description": "A measure of linear stiffness.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifclinearstiffnessmeasure.htm"
+    },
+    "IfcLinearVelocityMeasure": {
+        "description": "A measure of the velocity of a body measured in terms of distance moved per unit time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifclinearvelocitymeasure.htm"
+    },
+    "IfcLoadGroupTypeEnum": {
+        "description": "This type definition is used to distinguish between different kinds and purposes of load grouping. It allows to differentiate between load groups, load cases, load combination groups and load combinations. Normally, these enumeration types shall be used in the following context :",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcloadgrouptypeenum.htm"
+    },
+    "IfcLogical": {
+        "description": "A defined type of simple type logical. (Required since a select type, i.e. IfcSimpleValue, cannot include directly simple types in its select list). Logical datatype can have values TRUE, FALSE or UNKNOWN.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifclogical.htm"
+    },
+    "IfcLogicalOperatorEnum": {
+        "description": "IfcLogicalOperatorEnum is an enumeration that defines the logical operators that may be applied for the satisfaction of more than one constraint at a time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstraintresource/lexical/ifclogicaloperatorenum.htm"
+    },
+    "IfcLuminousFluxMeasure": {
+        "description": "A measure of the luminous flux.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcluminousfluxmeasure.htm"
+    },
+    "IfcLuminousIntensityDistributionMeasure": {
+        "description": "A measure of the luminous intensity of a light source that changes according to the direction of the ray. It is normally based on some standardized distribution light distribution curves.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcluminousintensitydistributionmeasure.htm"
+    },
+    "IfcLuminousIntensityMeasure": {
+        "description": "A luminous intensity measure is the value for the brightness of a body.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcluminousintensitymeasure.htm"
+    },
+    "IfcMagneticFluxDensityMeasure": {
+        "description": "A measure of the magnetic flux density.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmagneticfluxdensitymeasure.htm"
+    },
+    "IfcMagneticFluxMeasure": {
+        "description": "A measure of the magnetic flux.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmagneticfluxmeasure.htm"
+    },
+    "IfcMassDensityMeasure": {
+        "description": "A measure of the density of a medium.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmassdensitymeasure.htm"
+    },
+    "IfcMassFlowRateMeasure": {
+        "description": "A measure of the mass of a medium flowing per unit time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmassflowratemeasure.htm"
+    },
+    "IfcMassMeasure": {
+        "description": "A mass measure is the value of the amount of matter that a body contains.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmassmeasure.htm"
+    },
+    "IfcMassPerLengthMeasure": {
+        "description": "A measure for mass per length. For example for rolled steel profiles the weight of an imaginary beam is usually expressed by kg/m length for cost calculation and structural analysis purposes.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmassperlengthmeasure.htm"
+    },
+    "IfcMaterialSelect": {
+        "description": "Selection of whether a material, a material layer, material layer set (with or without usage information) or a material list is assigned to an element.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmaterialresource/lexical/ifcmaterialselect.htm"
+    },
+    "IfcMeasureValue": {
+        "description": "A measure value is a value as defined in ISO 31-0 (clause 2).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmeasurevalue.htm"
+    },
+    "IfcMemberTypeEnum": {
+        "description": "This enumeration defines the different types of linear elements an IfcMemberType object can fulfill:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcmembertypeenum.htm"
+    },
+    "IfcMetricValueSelect": {
+        "description": "An IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstraintresource/lexical/ifcmetricvalueselect.htm"
+    },
+    "IfcMinuteInHour": {
+        "description": "The minute element of a specified time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifcminuteinhour.htm"
+    },
+    "IfcModulusOfElasticityMeasure": {
+        "description": "A measure of modulus of elasticity.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmodulusofelasticitymeasure.htm"
+    },
+    "IfcModulusOfLinearSubgradeReactionMeasure": {
+        "description": "A measure for modulus of linear subgrade reaction, which expresses the elastic bedding of a linear structural element per length, e.g. a beam. It is typically measured in N/m\\^2.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmodulusoflinearsubgradereactionmeasure.htm"
+    },
+    "IfcModulusOfRotationalSubgradeReactionMeasure": {
+        "description": "A measure for modulus of rotational subgrade reaction, which expresses the rotational elastic bedding of a linear structural element per length, e.g. a beam. It is typically measured in Nm/(m*rad).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmodulusofrotationalsubgradereactionmeasure.htm"
+    },
+    "IfcModulusOfSubgradeReactionMeasure": {
+        "description": "A geotechnical measure describing         interaction between foundation structures and the soil. May also be known as         bedding measure.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmodulusofsubgradereactionmeasure.htm"
+    },
+    "IfcMoistureDiffusivityMeasure": {
+        "description": "A measure of moisture diffusivity.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmoisturediffusivitymeasure.htm"
+    },
+    "IfcMolecularWeightMeasure": {
+        "description": "A measure of molecular weight of material (typically gas).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmolecularweightmeasure.htm"
+    },
+    "IfcMomentOfInertiaMeasure": {
+        "description": "A measure of moment of inertia.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmomentofinertiameasure.htm"
+    },
+    "IfcMonetaryMeasure": {
+        "description": "A monetary measure is the value of an amount of money without regard to its currency.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcmonetarymeasure.htm"
+    },
+    "IfcMonthInYearNumber": {
+        "description": "The position of the specified month in a year as defined in ISO 8601 (subcaluse 5.2.1).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifcmonthinyearnumber.htm"
+    },
+    "IfcMotorConnectionTypeEnum": {
+        "description": "The IfcMotorConnectionTypeEnum defines the range of different types of motor connection that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcmotorconnectiontypeenum.htm"
+    },
+    "IfcNormalisedRatioMeasure": {
+        "description": "Dimensionless measure to express ratio values ranging from 0.0 to 1.0",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcnormalisedratiomeasure.htm"
+    },
+    "IfcNullStyle": {
+        "description": "The null style type specifies, that a representation item is not styled.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcnullstyle.htm"
+    },
+    "IfcNumericMeasure": {
+        "description": "A numeric measure is the numeric value of a physical quantity.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcnumericmeasure.htm"
+    },
+    "IfcObjectReferenceSelect": {
+        "description": "A select type, that holds a list of resource level entities that can be used as properties within a property set.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpropertyresource/lexical/ifcobjectreferenceselect.htm"
+    },
+    "IfcObjectTypeEnum": {
+        "description": "This enumeration defines the applicable object categories (i.e. the subtypes at the 2^nd^ level of the IFC inheritance tree) . Attached to an object, it indicates to which subtype of IfcObject the entity referencing it would otherwise comply with.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifckernel/lexical/ifcobjecttypeenum.htm"
+    },
+    "IfcObjectiveEnum": {
+        "description": "An IfcObjectiveEnum is an enumeration used to determine the objective for which purpose the constraint needs to be satisfied.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstraintresource/lexical/ifcobjectiveenum.htm"
+    },
+    "IfcOccupantTypeEnum": {
+        "description": "IfcOccupantTypeEnum defines the types of occupant from which the type required can be selected.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedfacilitieselements/lexical/ifcoccupanttypeenum.htm"
+    },
+    "IfcOrientationSelect": {
+        "description": "The IfcOrientationSelect is a selection between different ways to determine the orientation of a profile about the longitudinal axis.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcorientationselect.htm"
+    },
+    "IfcOutletTypeEnum": {
+        "description": "The IfcOutletTypeEnum defines the range of different types of outlet that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcoutlettypeenum.htm"
+    },
+    "IfcPHMeasure": {
+        "description": "A measure of the molar hydrogen ion concentration in a liquid (usually defined as the measure of acidity) in a range from 0 to 14.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcphmeasure.htm"
+    },
+    "IfcParameterValue": {
+        "description": "A parameter value is the value which specifies the amount of a parameter in some parameter space.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcparametervalue.htm"
+    },
+    "IfcPermeableCoveringOperationEnum": {
+        "description": "Enumeration defining the valid types of permeable coverings.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcarchitecturedomain/lexical/ifcpermeablecoveringoperationenum.htm"
+    },
+    "IfcPhysicalOrVirtualEnum": {
+        "description": "This enumeration defines the different types of space boundaries in terms of its physical manifestation. A space boundary can either be physically dividing or can be a virtual divider.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcphysicalorvirtualenum.htm"
+    },
+    "IfcPileConstructionEnum": {
+        "description": "Enumeration defining the construction type for piles. The type is mainly based on how the piles are used and manufactured. Some material information is mixed in because this affects the way the piles are used.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralelementsdomain/lexical/ifcpileconstructionenum.htm"
+    },
+    "IfcPileTypeEnum": {
+        "description": "Enumeration defining the pile type according to function.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralelementsdomain/lexical/ifcpiletypeenum.htm"
+    },
+    "IfcPipeFittingTypeEnum": {
+        "description": "This enumeration is used to identify the primary purpose of a pipe fitting. This is a very basic categorization mechanism to generically identify the pipe fitting type. Subcategories of pipe fittings are not enumerated. The IfcpipeFittingTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcpipefittingtypeenum.htm"
+    },
+    "IfcPipeSegmentTypeEnum": {
+        "description": "This enumeration is used to identify the primary purpose of a pipe segment. This is a very basic categorization mechanism to generically identify the pipe segment type. Subcategories of pipe segments are not enumerated. The IfcPipeSegmentTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcpipesegmenttypeenum.htm"
+    },
+    "IfcPlanarForceMeasure": {
+        "description": "A measure of force on an area.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcplanarforcemeasure.htm"
+    },
+    "IfcPlaneAngleMeasure": {
+        "description": "A plane angle measure is the value of an angle in a plane.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcplaneanglemeasure.htm"
+    },
+    "IfcPlateTypeEnum": {
+        "description": "This enumeration defines the different types of planar elements an IfcPlateType object can fulfill:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcplatetypeenum.htm"
+    },
+    "IfcPointOrVertexPoint": {
+        "description": "The IfcPointOrVertexPoint provides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricconstraintresource/lexical/ifcpointorvertexpoint.htm"
+    },
+    "IfcPositiveLengthMeasure": {
+        "description": "A positive length measure is a length measure that is greater than zero.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcpositivelengthmeasure.htm"
+    },
+    "IfcPositivePlaneAngleMeasure": {
+        "description": "A positive plaPositive plane angle measure is a plane angle measure that is greater than zero.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcpositiveplaneanglemeasure.htm"
+    },
+    "IfcPositiveRatioMeasure": {
+        "description": "A positive ratio measure is a ratio measure that is greater than zero.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcpositiveratiomeasure.htm"
+    },
+    "IfcPowerMeasure": {
+        "description": "A measure of power required or used.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcpowermeasure.htm"
+    },
+    "IfcPresentableText": {
+        "description": "Definition from IAI: The IfcPresentableText is a text string used to capture the content of a text literal for the purpose of presentation. The _IfcPresentableText_can include multiple lines of text, then the line feed character LF, 0x0A, should be used to separate lines.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifcpresentabletext.htm"
+    },
+    "IfcPresentationStyleSelect": {
+        "description": "The presentation style select is a selection of one of many kinds of styles, a different one for each kind of geometric representation item to be styled.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcpresentationstyleselect.htm"
+    },
+    "IfcPressureMeasure": {
+        "description": "A measure of the quantity of a medium acting on a unit area.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcpressuremeasure.htm"
+    },
+    "IfcProcedureTypeEnum": {
+        "description": "The IfcProcedureTypeEnum defines the range of different types of procedure that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprocessextension/lexical/ifcproceduretypeenum.htm"
+    },
+    "IfcProfileTypeEnum": {
+        "description": "Definition from IAI: The enumeration defines whether the definition of a profile shape shall be geometrically resolved into a curve or into a surface.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprofileresource/lexical/ifcprofiletypeenum.htm"
+    },
+    "IfcProjectOrderRecordTypeEnum": {
+        "description": "An IfcProjectOrderRecordTypeEnum is a designation of the type of event being recorded.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedmgmtelements/lexical/ifcprojectorderrecordtypeenum.htm"
+    },
+    "IfcProjectOrderTypeEnum": {
+        "description": "An IfcProjectOrderTypeEnum is a list of the types of project order that may be identified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedmgmtelements/lexical/ifcprojectordertypeenum.htm"
+    },
+    "IfcProjectedOrTrueLengthEnum": {
+        "description": "This enumeration type is needed for load definition and is only considered if the load values are given as global actions and if they define linear or planar loads.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcprojectedortruelengthenum.htm"
+    },
+    "IfcPropertySourceEnum": {
+        "description": "This enumeration is used to qualify the life-cycle or design state of the properties contained in the entity and contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcpropertysourceenum.htm"
+    },
+    "IfcProtectiveDeviceTypeEnum": {
+        "description": "The IfcProtectiveDeviceTypeEnum defines the range of different types of protective device available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcprotectivedevicetypeenum.htm"
+    },
+    "IfcPumpTypeEnum": {
+        "description": "Defines general types of pumps. The IfcPumpTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcpumptypeenum.htm"
+    },
+    "IfcRadioActivityMeasure": {
+        "description": "A measure of activity of radionuclide.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcradioactivitymeasure.htm"
+    },
+    "IfcRailingTypeEnum": {
+        "description": "Enumeration defining the valid types of railings that can be predefined using the enumeration values.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcrailingtypeenum.htm"
+    },
+    "IfcRampFlightTypeEnum": {
+        "description": "This enumeration defines the different types of linear elements an IfcRampFlightType object can fulfill:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcrampflighttypeenum.htm"
+    },
+    "IfcRampTypeEnum": {
+        "description": "This enumeration defines the basic configuration of the ramp type in terms of the number and shape of ramp flights. The type also distinguished turns by landings. In addition the subdivision of the straight and changing direction ramps is included. The ramp configurations are given for ramps without and with one and two landings.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcramptypeenum.htm"
+    },
+    "IfcRatioMeasure": {
+        "description": "A ratio measure is the value of the relation between two physical quantities that are of the same kind.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcratiomeasure.htm"
+    },
+    "IfcReal": {
+        "description": "A defined type of simple data type REAL (required since a select type, i.e. IfcSimpleValue, cannot include directly simple types in its select list). In principle, the domain of IfcReal (being a Real) is all rational, irrational and scientific real numbers. Here the precision is unconstrained, but in practice it is implementation specific.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcreal.htm"
+    },
+    "IfcReflectanceMethodEnum": {
+        "description": "The IfcReflectanceMethodEnum defines the range of different reflectance methods available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcreflectancemethodenum.htm"
+    },
+    "IfcReinforcingBarRoleEnum": {
+        "description": "Enumeration defining standard types for the role, purpose or usage of the bar, i.e. the kind of loads and stresses they are intended to carry.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprofilepropertyresource/lexical/ifcreinforcingbarroleenum.htm"
+    },
+    "IfcReinforcingBarSurfaceEnum": {
+        "description": "Enumeration indicating whether the bar has a plain or textured (ribbed) surface.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprofilepropertyresource/lexical/ifcreinforcingbarsurfaceenum.htm"
+    },
+    "IfcResourceConsumptionEnum": {
+        "description": "This enumeration indicates how the resource is consumed during the use.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstructionmgmtdomain/lexical/ifcresourceconsumptionenum.htm"
+    },
+    "IfcRibPlateDirectionEnum": {
+        "description": "This enumeration type specifies the axis which is used for the definition of the profile properties. This differentiation is only needed for the definition of profile properties of face members. The IfcRibPlateDirectionEnum type is referenced by the entity IfcRibPlateProfileProperties.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprofilepropertyresource/lexical/ifcribplatedirectionenum.htm"
+    },
+    "IfcRoleEnum": {
+        "description": "Roles which may be played by an actor.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcactorresource/lexical/ifcroleenum.htm"
+    },
+    "IfcRoofTypeEnum": {
+        "description": "This enumeration defines the basic configuration of the roof in terms of the different roof shapes.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcrooftypeenum.htm"
+    },
+    "IfcRotationalFrequencyMeasure": {
+        "description": "A measure of the number of cycles that an item revolves in unit time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcrotationalfrequencymeasure.htm"
+    },
+    "IfcRotationalMassMeasure": {
+        "description": "The rotational mass measure denotes the inertia of a body with respect to angular acceleration.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcrotationalmassmeasure.htm"
+    },
+    "IfcRotationalStiffnessMeasure": {
+        "description": "A measure of rotational stiffness.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcrotationalstiffnessmeasure.htm"
+    },
+    "IfcSIPrefix": {
+        "description": "An SI prefix is the name of a prefix that may be associated with an SI unit. The definitions of SI prefixes are specified in ISO 1000 (clause 3).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsiprefix.htm"
+    },
+    "IfcSIUnitName": {
+        "description": "An SI unit name is the name of an SI unit. The definitions of the names of SI units are specified in ISO 1000 (clause 2).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsiunitname.htm"
+    },
+    "IfcSanitaryTerminalTypeEnum": {
+        "description": "The IfcSanitaryTerminalTypeEnum defines the range of different types of sanitary terminal that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcplumbingfireprotectiondomain/lexical/ifcsanitaryterminaltypeenum.htm"
+    },
+    "IfcSecondInMinute": {
+        "description": "The second element of a specified time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifcsecondinminute.htm"
+    },
+    "IfcSectionModulusMeasure": {
+        "description": "A measure for the resistance of a cross section against bending or torsional moment. It is usually measured in m\\^3.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsectionmodulusmeasure.htm"
+    },
+    "IfcSectionTypeEnum": {
+        "description": "An enumeration indicating whether a specific piece of a cross section is uniform or tapered in longitudinal direction.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprofilepropertyresource/lexical/ifcsectiontypeenum.htm"
+    },
+    "IfcSectionalAreaIntegralMeasure": {
+        "description": "The sectional area integral measure is typically used in torsional analysis. It is usually measured in m\\^5.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsectionalareaintegralmeasure.htm"
+    },
+    "IfcSensorTypeEnum": {
+        "description": "The IfcSensorTypeEnum defines the range of different types of sensor that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcbuildingcontrolsdomain/lexical/ifcsensortypeenum.htm"
+    },
+    "IfcSequenceEnum": {
+        "description": "This enumeration defines the different ways, in which a time lag is applied to a sequence between two processes.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifckernel/lexical/ifcsequenceenum.htm"
+    },
+    "IfcServiceLifeFactorTypeEnum": {
+        "description": "An IfcServiceLifeFactorTypeEnum is an enumerated list of the types of service life factor that can be applied and that modify the extent of the service life.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedfacilitieselements/lexical/ifcservicelifefactortypeenum.htm"
+    },
+    "IfcServiceLifeTypeEnum": {
+        "description": "An IfcServiceLifeTypeEnum is an enumerated list of the types of service life of an artefact",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedfacilitieselements/lexical/ifcservicelifetypeenum.htm"
+    },
+    "IfcShearModulusMeasure": {
+        "description": "A measure of shear modulus.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcshearmodulusmeasure.htm"
+    },
+    "IfcShell": {
+        "description": "This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 \u00a3X<\u00a5 .",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifctopologyresource/lexical/ifcshell.htm"
+    },
+    "IfcSimpleValue": {
+        "description": "A select type for selecting between simple value types.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsimplevalue.htm"
+    },
+    "IfcSizeSelect": {
+        "description": "The size select is a selection of a specific positive length measure.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcsizeselect.htm"
+    },
+    "IfcSlabTypeEnum": {
+        "description": "This enumeration defines the available predefined types of a slab. The IfcSlabTypeEnum can be used for slab occurrences, IfcSlab, and slab types, IfcSlabType. A special property set definition may be provided for each predefined type.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcslabtypeenum.htm"
+    },
+    "IfcSolidAngleMeasure": {
+        "description": "A solid angle measure is the value of an angle in a solid.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsolidanglemeasure.htm"
+    },
+    "IfcSoundPowerMeasure": {
+        "description": "A sound power measure is a measure of total radiated noise with units of decibels with a reference value of picowatts.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsoundpowermeasure.htm"
+    },
+    "IfcSoundPressureMeasure": {
+        "description": "A sound pressure measure is a measure of the pressure fluctuations superimposed over the ambient pressure level with units of decibels with a reference value of micropascals.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcsoundpressuremeasure.htm"
+    },
+    "IfcSoundScaleEnum": {
+        "description": "This enumeration defines the different sound scales:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcsoundscaleenum.htm"
+    },
+    "IfcSpaceHeaterTypeEnum": {
+        "description": "Enumeration defining the functional type of space heater. The IfcSpaceHeaterTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcspaceheatertypeenum.htm"
+    },
+    "IfcSpaceTypeEnum": {
+        "description": "This enumeration defines the available generic types for IfcSpaceType.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcspacetypeenum.htm"
+    },
+    "IfcSpecificHeatCapacityMeasure": {
+        "description": "Defines the specific heat of material: The heat energy absorbed per temperature unit.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcspecificheatcapacitymeasure.htm"
+    },
+    "IfcSpecularExponent": {
+        "description": "The IfcSpecularExponent defines the datatype for exponent determining the sharpness of the 'reflection'. reflection is made sharper with large values of the exponent, such as 10.0. Small values, such as 1.0, decrease the specular fall-off.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcspecularexponent.htm"
+    },
+    "IfcSpecularHighlightSelect": {
+        "description": "The IfcSpecularHighlightSelect defines the selectable types of value for specular highlight sharpness.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcspecularhighlightselect.htm"
+    },
+    "IfcSpecularRoughness": {
+        "description": "The IfcSpecularRoughness defines the datatype for the reflection resulting from the roughness of a surface through the height of surface impurities where the specular highlight is made sharper with small values for the roughness, such as 0.1.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcspecularroughness.htm"
+    },
+    "IfcStackTerminalTypeEnum": {
+        "description": "An IfcStackTerminalTypeEnum defines the range of different types of stack terminal that can be specified for use at the top of a vertical stack subsystem.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcplumbingfireprotectiondomain/lexical/ifcstackterminaltypeenum.htm"
+    },
+    "IfcStairFlightTypeEnum": {
+        "description": "This enumeration defines the different types of stair flights an IfcStairFlightType object can fulfill:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcstairflighttypeenum.htm"
+    },
+    "IfcStairTypeEnum": {
+        "description": "This enumeration defines the basic configuration of the stair type in terms of the number of stair flights and the number of landings. The type also distinguished turns by windings or by landings. In addition the subdivision of the straight and changing direction stairs is included. The stair configurations are given for stairs without and with one, two or three landings.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcstairtypeenum.htm"
+    },
+    "IfcStateEnum": {
+        "description": "Enumeration identifying the state or accessibility of the object (e.g., read/write, locked, etc.). This concept was initially introduced in IFC 2.0 as IfcModifiedFlag of type BINARY(3) FIXED and has been modified in R2x to an enumeration. It was initially introduced as a first step towards providing facilities for partial model exchange from a server as requested by the IFC implementers. It is intended for use primarily by a model server so that an application can identify the state of the object.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcutilityresource/lexical/ifcstateenum.htm"
+    },
+    "IfcStructuralActivityAssignmentSelect": {
+        "description": "This type definition shall be used to distinguish between a reference to an instance either of IfcStructuralItem or IfcBuildingElement. The IfcStructuralActivityAssignmentSelect type is referenced by the entity IfcRelConnectsStructuralActivity which defines the connection between activities (IfcStructuralActivity) and the loaded element.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcstructuralactivityassignmentselect.htm"
+    },
+    "IfcStructuralCurveTypeEnum": {
+        "description": "This type definition shall be used to distinguish between different types of structural 'curve' members, such as cables. The IfcStructuralCurveTypeEnum type is referenced by the entity IfcStructuralCurveMember.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcstructuralcurvetypeenum.htm"
+    },
+    "IfcStructuralSurfaceTypeEnum": {
+        "description": "This type definition shall be used to distinguish between different types of structural surface members, such as the typical mechanical function of walls, slabs and shells.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralanalysisdomain/lexical/ifcstructuralsurfacetypeenum.htm"
+    },
+    "IfcSurfaceOrFaceSurface": {
+        "description": "The IfcSurfaceOrFaceSurface provides the option to either select a geometric surface (IfcSurface and subtypes) within a geometric model, or a face with associated surface geometry and coordinates (IfcFaceSurface) within a topological model.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometricconstraintresource/lexical/ifcsurfaceorfacesurface.htm"
+    },
+    "IfcSurfaceSide": {
+        "description": "Denotion of whether negative, positive or both sides of a surface are being referenced.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcsurfaceside.htm"
+    },
+    "IfcSurfaceStyleElementSelect": {
+        "description": "The surface style element select is a selection of the different surface styles to use in the presentation of the side of a surface.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcsurfacestyleelementselect.htm"
+    },
+    "IfcSurfaceTextureEnum": {
+        "description": "The IfcSurfaceTextureEnum defines the range of different types of image or pixel maps available.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcsurfacetextureenum.htm"
+    },
+    "IfcSwitchingDeviceTypeEnum": {
+        "description": "The IfcSwitchingDeviceTypeEnum defines the range of different types of switch that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifcswitchingdevicetypeenum.htm"
+    },
+    "IfcSymbolStyleSelect": {
+        "description": "The symbol style select allows for the selection of styles to be assigned to an annotated symbol.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifcsymbolstyleselect.htm"
+    },
+    "IfcTankTypeEnum": {
+        "description": "Enumeration defining the typical types of tanks. The IfcTankTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifctanktypeenum.htm"
+    },
+    "IfcTemperatureGradientMeasure": {
+        "description": "The temperature gradient measures the difference of a temperature per lenght, as for instance used in an external wall or its layers. It is usually measured in K/m.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifctemperaturegradientmeasure.htm"
+    },
+    "IfcTendonTypeEnum": {
+        "description": "Enumeration defining the types of tendons.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcstructuralelementsdomain/lexical/ifctendontypeenum.htm"
+    },
+    "IfcText": {
+        "description": "A text is an alphanumeric string of characters which is intended to be read and understood by a human being. It is for information purposes only.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifctext.htm"
+    },
+    "IfcTextAlignment": {
+        "description": "Definition from CSS1 (W3C Recommendation): This property describes how text is aligned within the element. The actual justification algorithm used is user agent and human language dependent. If 'justify' is not supported, the user agent will supply a replacement. Typically, this will be 'left' for western languages. Values are:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifctextalignment.htm"
+    },
+    "IfcTextDecoration": {
+        "description": "Definition from CSS1 (W3C Recommendation): This property describes decorations that are added to the text of an element. A value of 'blink' causes the text to blink.. Values are:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifctextdecoration.htm"
+    },
+    "IfcTextFontName": {
+        "description": "Definition from CSS1 (W3C Recommendation): The value is a  font family name and/or generic family name. Values are:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifctextfontname.htm"
+    },
+    "IfcTextFontSelect": {
+        "description": "The IfcTextFontSelect allows for either a predefined text font, a text font model or an externally defined text font to be used to describe the font of a text literal. The definition of the text font model is based on W3C TR Cascading Style Sheet Version 1, whereas the definition of predefined text font is based on ISO 10303.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationresource/lexical/ifctextfontselect.htm"
+    },
+    "IfcTextPath": {
+        "description": "The text path determines the direction of the text characters in respect to each other.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationdefinitionresource/lexical/ifctextpath.htm"
+    },
+    "IfcTextStyleSelect": {
+        "description": "Definition from IAI: The text style select allows for the selection of styles to be assigned to an annotated text. The text style determines the text model that affect the visual presentation of characters, spaces, words, and paragraphs. There are two choices:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifctextstyleselect.htm"
+    },
+    "IfcTextTransformation": {
+        "description": "Definition from CSS1 (W3C Recommendation): This property describes how the cases of characters are handled. Values are:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcpresentationappearanceresource/lexical/ifctexttransformation.htm"
+    },
+    "IfcThermalAdmittanceMeasure": {
+        "description": "The measure of the ability of a surface to smooth out temperature variations.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcthermaladmittancemeasure.htm"
+    },
+    "IfcThermalConductivityMeasure": {
+        "description": "A measure of thermal conductivity.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcthermalconductivitymeasure.htm"
+    },
+    "IfcThermalExpansionCoefficientMeasure": {
+        "description": "A measure of the thermal expansion coefficient of a material, which expresses its elongation (as a ratio) per temperature difference. It is usually measured in 1/K. A positive elongation per (positive) rise of temperature is expressed by a positive value.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcthermalexpansioncoefficientmeasure.htm"
+    },
+    "IfcThermalLoadSourceEnum": {
+        "description": "This enumeration defines the various sources of thermal gains or losses for spaces or zones, derived from various use cases:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcthermalloadsourceenum.htm"
+    },
+    "IfcThermalLoadTypeEnum": {
+        "description": "This enumeration defines the type of thermal load for spaces or zones, as derived from various use cases:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgserviceelements/lexical/ifcthermalloadtypeenum.htm"
+    },
+    "IfcThermalResistanceMeasure": {
+        "description": "A measure of the resistance offered by a body to the flow of energy.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcthermalresistancemeasure.htm"
+    },
+    "IfcThermalTransmittanceMeasure": {
+        "description": "A measure of the rate at which energy is transmitted through a body.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcthermaltransmittancemeasure.htm"
+    },
+    "IfcThermodynamicTemperatureMeasure": {
+        "description": "A thermodynamic temperature measure is the value for the degree of heat of a body.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcthermodynamictemperaturemeasure.htm"
+    },
+    "IfcTimeMeasure": {
+        "description": "A time measure is the value of the duration of periods.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifctimemeasure.htm"
+    },
+    "IfcTimeSeriesDataTypeEnum": {
+        "description": "The IfcTimeSeriesDataTypeEnum describes a type of time series data and is used to determine a value during the time series which is not explicitly specified:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifctimeseriesresource/lexical/ifctimeseriesdatatypeenum.htm"
+    },
+    "IfcTimeSeriesScheduleTypeEnum": {
+        "description": "Defines the type of time series schedule, such as daily, weekly, monthly or annually.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifccontrolextension/lexical/ifctimeseriesscheduletypeenum.htm"
+    },
+    "IfcTimeStamp": {
+        "description": "An indication of date and time by measuring the number of seconds which have elapsed since the beginning of the year 1970.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifctimestamp.htm"
+    },
+    "IfcTorqueMeasure": {
+        "description": "A measure of the torque or moment of a couple.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifctorquemeasure.htm"
+    },
+    "IfcTransformerTypeEnum": {
+        "description": "The IfcTransformerTypeEnum defines the range of different types of transformer that can be specified.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcelectricaldomain/lexical/ifctransformertypeenum.htm"
+    },
+    "IfcTransitionCode": {
+        "description": "This type conveys the continuity properties of a composite curve or surface. The continuity referred to is geometric, not parametric continuity. For example, in ContSameGradient the tangent vectors of successive segments will have the same direction, but may have different magnitude.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifctransitioncode.htm"
+    },
+    "IfcTransportElementTypeEnum": {
+        "description": "This enumeration is used to identify primary transport element types. The IfcTransportElementTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifctransportelementtypeenum.htm"
+    },
+    "IfcTrimmingPreference": {
+        "description": "This type is used to describe the preferred way of trimming a parametric curve where the trimming is multiply defined.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifctrimmingpreference.htm"
+    },
+    "IfcTrimmingSelect": {
+        "description": "This select type identifies the two possible ways of trimming a parametric curve; by a Cartesian point on the curve, or by a REAL number defining a parameter value within the parametric range of the curve.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifctrimmingselect.htm"
+    },
+    "IfcTubeBundleTypeEnum": {
+        "description": "Enumeration defining the typical types of tube bundles. The IfcTubeBundleTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifctubebundletypeenum.htm"
+    },
+    "IfcUnit": {
+        "description": "A unit is a physical quantity, with a value of one, which is used as a standard in terms of which other quantities are expressed.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcunit.htm"
+    },
+    "IfcUnitEnum": {
+        "description": "An enumeration type for allowed unit types of IfcNamedUnit.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcunitenum.htm"
+    },
+    "IfcUnitaryEquipmentTypeEnum": {
+        "description": "Enumeration defining the functional type of unitary equipment. The IfcUnitaryEquipmentTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcunitaryequipmenttypeenum.htm"
+    },
+    "IfcValue": {
+        "description": "A select type for selecting between more specialised select types IfcSimpleValue, IfcMeasureValue and IfcDerivedMeasureValue.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcvalue.htm"
+    },
+    "IfcValveTypeEnum": {
+        "description": "The IfcValveTypeEnum defines the range of different types of valve that can be specified. These are typically used in conjunction with Pset_ValveTypeCommon, which contains common properties for all valve types. The IfcValveTypeEnum contains:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcvalvetypeenum.htm"
+    },
+    "IfcVaporPermeabilityMeasure": {
+        "description": "A measure of vapor permeability.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcvaporpermeabilitymeasure.htm"
+    },
+    "IfcVectorOrDirection": {
+        "description": "This type is used to identify the types of entity which can participate in vector computations.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcgeometryresource/lexical/ifcvectorordirection.htm"
+    },
+    "IfcVibrationIsolatorTypeEnum": {
+        "description": "Enumeration defining the typical types of vibration isolators. The IfcVibrationIsolatorTypeEnum contains the following:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcvibrationisolatortypeenum.htm"
+    },
+    "IfcVolumeMeasure": {
+        "description": "A volume measure is the value of the solid content of a body.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcvolumemeasure.htm"
+    },
+    "IfcVolumetricFlowRateMeasure": {
+        "description": "A measure of the volume of a medium flowing per unit time.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcvolumetricflowratemeasure.htm"
+    },
+    "IfcWallTypeEnum": {
+        "description": "This enumeration defines the different types of walls an IfcWallType object can fulfill:",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcwalltypeenum.htm"
+    },
+    "IfcWarpingConstantMeasure": {
+        "description": "A measure for the warping constant or warping resistance of a cross section under torsional loading. It is usually measured in m\\^6.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcwarpingconstantmeasure.htm"
+    },
+    "IfcWarpingMomentMeasure": {
+        "description": "The warping moment measure is a measure for the warping moment, which occurs in warping torsional analysis. It is usually measured in kN*m\\^2.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcwarpingmomentmeasure.htm"
+    },
+    "IfcWasteTerminalTypeEnum": {
+        "description": "IfcWasteTerminalTypeEnum",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcplumbingfireprotectiondomain/lexical/ifcwasteterminaltypeenum.htm"
+    },
+    "IfcWindowPanelOperationEnum": {
+        "description": "This enumeration defines the basic ways to describe how window panels operate.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcwindowpaneloperationenum.htm"
+    },
+    "IfcWindowPanelPositionEnum": {
+        "description": "This enumeration defines the basic configuration of the window type in terms of the location of window panels. The window configurations are given for windows with one, two or three panels (including fixed panels). It corresponds to the OperationType of the IfcWindowStyle definition, which references the IfcWindowPanelProperties.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcwindowpanelpositionenum.htm"
+    },
+    "IfcWindowStyleConstructionEnum": {
+        "description": "This enumeration defines the basic types of construction of windows. The construction type relates to the main material (or material combination) used for making the window.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcwindowstyleconstructionenum.htm"
+    },
+    "IfcWindowStyleOperationEnum": {
+        "description": "This enumeration defines the basic configuration of the window type in terms of the number of window panels and the subdivision of the total window. The window configurations are given for windows with one, two or three panels (including fixed panels).",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcwindowstyleoperationenum.htm"
+    },
+    "IfcWorkControlTypeEnum": {
+        "description": "An IfcWorkControlTypeEnum is an enumeration data type that specifies the types of work control from which the relevant control can be selected.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcprocessextension/lexical/ifcworkcontroltypeenum.htm"
+    },
+    "IfcYearNumber": {
+        "description": "The year as defined in Gregorian Calendar.",
+        "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcdatetimeresource/lexical/ifcyearnumber.htm"
+    }
+}

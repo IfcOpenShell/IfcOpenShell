@@ -42,10 +42,12 @@ SCHEMA_FILES = {
     "IFC2X3": {
         "entities": BASE_MODULE_PATH / "schema/ifc2x3_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc2x3_properties.json",
+        "types": BASE_MODULE_PATH / "schema/ifc2x3_types.json",
     },
     "IFC4": {
         "entities": BASE_MODULE_PATH / "schema/ifc4_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc4_properties.json",
+        "types": BASE_MODULE_PATH / "schema/ifc4_types.json",
     },
 }
 
@@ -112,7 +114,6 @@ def get_property_set_doc(version, pset):
     if db:
         return db["properties"].get(pset)
 
-
 def get_property_doc(version, pset, prop):
     db = get_db(version)
     if db:
@@ -120,6 +121,10 @@ def get_property_doc(version, pset, prop):
         if pset:
             return pset["properties"].get(prop)
 
+def get_type_doc(version, ifc_type):
+    db = get_db(version)
+    if db:
+        return db["types"].get(ifc_type)
 
 class DocExtractor:
     def extract_ifc2x3(self):
@@ -141,6 +146,7 @@ class DocExtractor:
         self.extract_ifc2x3_property_sets_site_domains()
         self.extract_ifc2x3_entities()
         self.extract_ifc2x3_property_sets()
+        self.extract_ifc2x3_types()
 
     def extract_ifc2x3_property_sets_site_domains(self):
         property_sets_domains = dict()
@@ -250,7 +256,6 @@ class DocExtractor:
 
                             attr_description = attr_description.strip().rstrip(">").strip()
                             entity_attrs[attr_name] = attr_description
-
 
                 if entity_attrs:
                     entities_dict[entity_name]["attributes"] = entity_attrs
@@ -390,6 +395,47 @@ class DocExtractor:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
 
+    def extract_ifc2x3_types(self):
+        types_dict = dict()
+        # search
+        types_paths = [
+            filepath for filepath in glob.iglob(f"{IFC2x3_DOCS_LOCATION}/Sections/**/Types", recursive=True)
+        ]
+        for parse_folder_path in types_paths:
+            for type_path in glob.iglob(f"{parse_folder_path}/**/"):
+                type_path = Path(type_path)
+                type_name = type_path.stem
+                types_dict[type_name] = dict()
+                md_path = type_path / "Documentation.md"
+
+                # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
+                with open(md_path, "r", encoding="utf-8-sig") as fi:
+                    # convert markdown to html for easier parsing
+                    html = markdown(fi.read())
+                    type_description = BeautifulSoup(html, features="lxml").find("p").text
+                    type_description = type_description.replace("\n", " ")
+                    type_description = type_description.replace("\u00a0", " ")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-46:1992: ", "")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-42:1992 ", "")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-42:1992: ", "")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-41:1992: ", "")
+
+                    type_description = type_description.strip()
+                
+                if type_description:
+                    types_dict[type_name]['description'] = type_description
+
+                spec_url = (
+                    "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/"
+                    f"{md_path.parents[2].name.lower()}/lexical/{type_name.lower()}.htm"
+                )
+                types_dict[type_name]['spec_url'] = spec_url
+
+        # export entities data
+        with open(BASE_MODULE_PATH / "schema/ifc2x3_types.json", "w", encoding="utf-8") as fo:
+            print(f"{len(types_dict)} ifc types parsed")
+            json.dump(types_dict, fo, sort_keys=True, indent=4)
+
     def extract_ifc4(self):
         print("Parsing data for Ifc4.0.2.1")
         if not IFC4_DOCS_LOCATION.is_dir():
@@ -409,6 +455,7 @@ class DocExtractor:
         self.extract_ifc4_property_sets_site_domains()
         self.extract_ifc4_entities()
         self.extract_ifc4_property_sets()
+        self.extract_ifc4_types()
 
     def extract_ifc4_property_sets_site_domains(self):
         property_sets_domains = dict()
@@ -469,12 +516,12 @@ class DocExtractor:
                 entity_name = entity_path.stem
                 entities_dict[entity_name] = dict()
 
-                # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
                 md_path = entity_path / "Documentation.md"
                 xml_path = entity_path / "DocEntity.xml"
                 md_url_part = urllib.parse.quote(str(md_path.relative_to(Path(__file__).parent).as_posix()))
                 github_md_url = f"https://github.com/buildingSMART/IFC/blob/{md_url_part}"
 
+                # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
                 with open(md_path, "r", encoding="utf-8-sig") as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
@@ -689,6 +736,45 @@ class DocExtractor:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
 
+    def extract_ifc4_types(self):
+        types_dict = dict()
+        # search
+        types_paths = [
+            filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Sections/**/Types", recursive=True)
+        ]
+        for parse_folder_path in types_paths:
+            for type_path in glob.iglob(f"{parse_folder_path}/**/"):
+                type_path = Path(type_path)
+                type_name = type_path.stem
+                types_dict[type_name] = dict()
+                md_path = type_path / "Documentation.md"
+
+                # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
+                with open(md_path, "r", encoding="utf-8-sig") as fi:
+                    # convert markdown to html for easier parsing
+                    html = markdown(fi.read().replace("{ .extDef}", ""))
+                    type_description = BeautifulSoup(html, features="lxml").find("p").text
+                    type_description = type_description.replace("\n", " ")
+                    type_description = type_description.replace("\u00a0", " ")
+                    type_description = type_description.replace("{ .extDef}", "")
+                    type_description = type_description.replace("NOTE  Definition according to ISO/CD 10303-41:1992 ", "")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-41:1992: ", "")
+
+                    type_description = type_description.strip()
+                
+                if type_description:
+                    types_dict[type_name]['description'] = type_description
+
+                spec_url = (
+                    "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/"
+                    f"{md_path.parents[2].name.lower()}/lexical/{type_name.lower()}.htm"
+                )
+                types_dict[type_name]['spec_url'] = spec_url
+
+        # export entities data
+        with open(BASE_MODULE_PATH / "schema/ifc4_types.json", "w", encoding="utf-8") as fo:
+            print(f"{len(types_dict)} ifc types parsed")
+            json.dump(types_dict, fo, sort_keys=True, indent=4)
 
 def run_doc_api_examples():
     print("Entities (with parent entities attributes included):")
@@ -710,6 +796,10 @@ def run_doc_api_examples():
     print("Propety sets attributes:")
     print(get_property_doc("IFC2X3", "Pset_ZoneCommon", "Category"))
     print(get_property_doc("IFC4", "Pset_ZoneCommon", "NetPlannedArea"))
+
+    print("Types:")
+    print(get_type_doc("IFC2X3", "IfcIsothermalMoistureCapacityMeasure"))
+    print(get_type_doc("IFC4", "IfcDuration"))
 
 
 if __name__ == "__main__":
