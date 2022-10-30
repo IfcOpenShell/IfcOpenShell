@@ -1,6 +1,5 @@
 import bpy
-
-# from helper import SayHello
+from mathutils import Matrix
 import ifcopenshell
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
@@ -62,7 +61,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
     def process(self):
         print("#"*20, "\n running create_entity3 PROCESS()... \n", "#"*20,)
         print("#"*20, "\n hash(self):", hash(self), "\n", "#"*20,)
-
+        
         self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
         self.descriptions = flatten_data(self.inputs["Descriptions"].sv_get(), target_level=1)
         self.ifc_class = self.inputs["IfcClass"].sv_get()[0][0]
@@ -139,12 +138,15 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
             try:
                 entity = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=self.ifc_class, name=self.names[i], description=self.descriptions[i])
                 try:
-                    ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
+                    print("representations[i]: ", self.representations[i])
+                    if self.representations[i]:
+                        ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
                 except IndexError:
                     pass
                 try:
-                    print("LOCATION[i]: ", self.locations[i])
-                    ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
+                    if isinstance(self.locations[i], Matrix):
+                        print("LOCATION[i]: ", self.locations[i], type(self.locations[i]))
+                        ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
                 except IndexError:
                     pass
                 entities_ids.append(entity.id())
