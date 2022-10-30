@@ -50,6 +50,10 @@ class BIM_PT_profiles(Panel):
         if not self.props.is_editing:
             return
 
+        row = self.layout.row(align=True)
+        row.prop(self.props, "profile_classes", text="")
+        row.operator("bim.add_profile_def", text="", icon="ADD")
+
         self.layout.template_list(
             "BIM_UL_profiles",
             "",

@@ -242,7 +242,7 @@ class Attribute(PropertyGroup):
     has_calculator: BoolProperty(name="Has Calculator", default=False)
 
     def get_value(self):
-        if self.is_null:
+        if self.is_optional and self.is_null:
             return None
         return getattr(self, str(self.get_value_name()), None)
 

@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.doc
 import blenderbim.tool as tool
 
 
@@ -30,9 +31,24 @@ class ProfileData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_profiles": cls.total_profiles()}
+        cls.data = {"total_profiles": cls.total_profiles(), "profile_classes": cls.profile_classes()}
         cls.is_loaded = True
 
     @classmethod
     def total_profiles(cls):
         return len(tool.Ifc.get().by_type("IfcProfileDef"))
+
+    @classmethod
+    def profile_classes(cls):
+        classes = ["IfcArbitraryClosedProfileDef"]
+        queue = ["IfcParameterizedProfileDef"]
+        while queue:
+            item = queue.pop()
+            subtypes = [s.name() for s in tool.Ifc.schema().declaration_by_name(item).subtypes()]
+            classes.extend(subtypes)
+            queue.extend(subtypes)
+        schema_identifier = tool.Ifc.get_schema()
+        return [
+            (c, c, ifcopenshell.util.doc.get_entity_doc(schema_identifier, c)["description"] or "")
+            for c in sorted(classes)
+        ]
