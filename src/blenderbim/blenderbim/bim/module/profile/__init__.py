@@ -21,9 +21,12 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddProfileDef,
+    operator.DisableEditingArbitraryProfile,
     operator.DisableEditingProfile,
     operator.DisableProfileEditingUI,
+    operator.EditArbitraryProfile,
     operator.EditProfile,
+    operator.EnableEditingArbitraryProfile,
     operator.EnableEditingProfile,
     operator.LoadProfiles,
     operator.RemoveProfileDef,

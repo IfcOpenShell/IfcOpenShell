@@ -67,6 +67,14 @@ class BIM_PT_profiles(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
+        if ProfileData.data["is_arbitrary_profile"]:
+            if ProfileData.data["is_editing_arbitrary_profile"]:
+                row = self.layout.row(align=True)
+                row.operator("bim.edit_arbitrary_profile", text="Save Profile", icon="CHECKMARK")
+                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_arbitrary_profile", text="Edit Profile", icon="GREASEPENCIL")
         blenderbim.bim.helper.draw_attributes(self.props.profile_attributes, self.layout)
 
 
@@ -76,6 +84,7 @@ class BIM_UL_profiles(UIList):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name or "Unnamed")
+            row.label(text=item.ifc_class)
 
             if props.active_profile_id == item.ifc_definition_id:
                 row.operator("bim.edit_profile", text="", icon="CHECKMARK")

@@ -44,6 +44,7 @@ def get_profile_classes(self, context):
 
 class Profile(PropertyGroup):
     name: StringProperty(name="Name")
+    ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
