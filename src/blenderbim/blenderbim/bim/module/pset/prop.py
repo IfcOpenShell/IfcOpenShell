@@ -24,7 +24,6 @@ from ifcopenshell.api.pset.data import Data
 import blenderbim.tool as tool
 from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import get_property_set_description
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -50,7 +49,12 @@ def purge():
 
 
 def blender_formatted_enum_from_psets(psets):
-    return [(p.Name, p.Name, get_property_set_description(p.Name)) for p in psets]
+    enum_items = []
+    version = tool.Ifc.get_schema()
+    for pset in psets:
+        doc = ifcopenshell.util.doc.get_property_set_doc(version, pset.Name) or {}
+        enum_items.append((pset.Name, pset.Name, doc.get("description", "")))
+    return enum_items
 
 
 def get_pset_names(self, context):

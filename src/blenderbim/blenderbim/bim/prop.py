@@ -141,27 +141,6 @@ def get_attribute_description(entity, attribute):
     return doc
 
 
-def get_property_set_docs(pset):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_property_set_doc(schema, pset)
-
-
-def get_property_set_description(pset):
-    docs = get_property_set_docs(pset)
-    return docs.get("description", "") if docs is not None else ""
-
-
-def get_property_set_properties(pset):
-    docs = get_property_set_docs(pset)
-    return docs.get("properties", {}) if docs is not None else {}
-
-
-def get_property_set_doc_url(pset):
-    docs = get_property_set_docs(pset)
-    return docs.get("spec_url", "") if docs is not None else ""
-
-
 def get_attribute_enum_values(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
