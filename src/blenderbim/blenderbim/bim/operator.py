@@ -19,6 +19,7 @@
 import os
 import bpy
 import json
+import textwrap
 import time
 import logging
 import webbrowser
@@ -683,3 +684,31 @@ class EditBlenderCollection(bpy.types.Operator):
         else:
             getattr(context.bim_prop_group, self.collection).remove(self.index)
         return {"FINISHED"}
+
+
+class BIM_OT_show_description(bpy.types.Operator):
+    bl_idname = "bim.show_description"
+    bl_label = "Description"
+    attr_name: bpy.props.StringProperty()
+    description: bpy.props.StringProperty()
+    url: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=80)
+        for line in wrapper.wrap(self.attr_name + " : " + self.description):
+            layout.label(text=line)
+        if self.url:
+            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
+            url_op.url = self.url
+
+    @classmethod
+    def description(cls, context, properties):
+        return properties.description

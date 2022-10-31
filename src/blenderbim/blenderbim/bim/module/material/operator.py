@@ -617,6 +617,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                 continue
             if attribute.name() in material_set_item_data:
                 new = self.props.material_set_item_attributes.add()
+                new.ifc_class = material_set_item.is_a()
                 new.name = attribute.name()
                 new.is_null = material_set_item_data[attribute.name()] is None
                 new.data_type = data_type
@@ -628,7 +629,8 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                     new.int_value = 0 if new.is_null else material_set_item_data[attribute.name()]
                 elif data_type == "boolean":
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
-
+                blenderbim.bim.helper.add_attribute_description(new)
+                
     def load_profile_attributes(self, material_set_item, material_set_item_data):
         self.props.material_set_item_profile_attributes.clear()
 
@@ -645,6 +647,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
             if attribute.name() in profile_data:
                 new = self.props.material_set_item_profile_attributes.add()
                 new.name = attribute.name()
+                new.ifc_class = profile.is_a()
                 new.is_null = profile_data[attribute.name()] is None
                 new.is_optional = attribute.optional()
                 new.data_type = data_type
@@ -660,6 +663,8 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                     new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                     if profile_data[attribute.name()]:
                         new.enum_value = profile_data[attribute.name()]
+
+                blenderbim.bim.helper.add_attribute_description(new)
 
                 # Force null to be false if the attribute is mandatory because when we first assign a profile, all of
                 # its fields are null (which is illegal).

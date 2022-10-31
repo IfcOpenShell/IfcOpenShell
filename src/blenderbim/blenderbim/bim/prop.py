@@ -106,40 +106,6 @@ def cache_string(s):
 cache_string.data = {}
 
 
-def get_ifc_entity_docs(ifc_entity):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_entity_doc(schema, ifc_entity)
-
-
-def get_ifc_entity_description(ifc_entity):
-    docs = get_ifc_entity_docs(ifc_entity)
-    return docs.get("description", "") if docs is not None else ""
-
-
-def get_ifc_entity_doc_url(ifc_entity):
-    docs = get_ifc_entity_docs(ifc_entity)
-    return docs.get("spec_url", "") if docs is not None else ""
-
-
-def get_predefined_type_description(entity, predefined_type):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_predefined_type_doc(schema, entity, predefined_type)
-
-
-def get_attribute_description(entity, attribute):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_attribute_doc(schema, entity, attribute)
-
-
-def get_property_set_description(pset):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_property_set_doc(schema, pset)
-
-
 def get_attribute_enum_values(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
@@ -163,6 +129,9 @@ def get_attribute_enum_values(prop, context):
                     "",
                 )
             )
+
+    if prop.enum_descriptions:
+        items = [(identifier, name, prop.enum_descriptions[i].name) for i, (identifier, name, _) in enumerate(items)]
 
     return items
 
@@ -227,13 +196,17 @@ def update_attribute_value(self, context):
 
 
 class Attribute(PropertyGroup):
+    tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    ifc_class: StringProperty(name="Ifc Class")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value", update=update_attribute_value)
-    bool_value: BoolProperty(name="Value", update=update_attribute_value)
-    int_value: IntProperty(name="Value", update=update_attribute_value)
-    float_value: FloatProperty(name="Value", update=update_attribute_value)
+    string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
+    bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
+    int_value: IntProperty(name="Value", update=update_attribute_value, description=tooltip)
+    float_value: FloatProperty(name="Value", update=update_attribute_value, description=tooltip)
     enum_items: StringProperty(name="Value")
+    enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
