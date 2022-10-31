@@ -181,7 +181,8 @@ def unregister():
     del bpy.types.Camera.BIMMeshProperties
     del bpy.types.PointLight.BIMMeshProperties
     bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
-    bpy.types.UI_MT_button_context_menu.remove(ui.draw_custom_context_menu)
+    if hasattr(bpy.types, "UI_MT_button_context_menu"):
+        bpy.types.UI_MT_button_context_menu.remove(ui.draw_custom_context_menu)
 
     for mod in reversed(list(modules.values())):
         mod.unregister()
