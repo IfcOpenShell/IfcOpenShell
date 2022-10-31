@@ -23,12 +23,11 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
-from ifcopenshell.util.doc import get_attribute_doc
+from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc
 from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import get_predefined_type_description
 
 
 def draw_attributes(props, layout, copy_operator=None):
@@ -116,10 +115,14 @@ def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
     attribute_blender.enum_descriptions.clear()
     if isinstance(enum_items, dict):
         enum_items = enum_items.keys()
+    version = tool.Ifc.get_schema()
     for enum_item in enum_items:
         new_enum_description = attribute_blender.enum_descriptions.add()
-        # TODO this only supports predefined type enums. Add support for other types of enums ?
-        new_enum_description.name = get_predefined_type_description(attribute_blender.ifc_class, enum_item) or ""
+        try:
+            description = get_predefined_type_doc(version, attribute_blender.ifc_class, enum_item)
+        except KeyError:  # TODO this only supports predefined type enums. Add support for other types of enums ?
+            description = ""
+        new_enum_description.name = description
 
 
 def add_attribute_description(attribute_blender):

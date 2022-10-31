@@ -106,15 +106,6 @@ def cache_string(s):
 cache_string.data = {}
 
 
-def get_predefined_type_description(entity, predefined_type):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        try:
-            return get_predefined_type_doc(schema, entity, predefined_type)
-        except KeyError:  # This entity doesn't have any predefined types
-            return ""
-
-
 def get_attribute_enum_values(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
