@@ -128,6 +128,9 @@ class EnablePsetEditing(bpy.types.Operator):
         elif metadata.data_type == "boolean":
             metadata.bool_value = False if metadata.is_null else data[prop_template.Name]
 
+        metadata.ifc_class = pset_template.Name
+        blenderbim.bim.helper.add_attribute_description(metadata)
+
     def get_data_type(self, prop_template):
         if prop_template.TemplateType in ["Q_LENGTH", "Q_AREA", "Q_VOLUME", "Q_WEIGHT", "Q_TIME"]:
             return "float"
