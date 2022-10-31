@@ -19,10 +19,9 @@
 from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
-from ifcopenshell.util.doc import get_entity_doc
+from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import get_predefined_type_description
 
 
 def refresh():
@@ -87,11 +86,12 @@ class IfcClassData:
         types_enum = []
         ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
         declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
+        version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
                 types_enum.extend(
                     [
-                        (e, e, get_predefined_type_description(ifc_class, e))
+                        (e, e, get_predefined_type_doc(version, ifc_class, e))
                         for e in attribute.type_of_attribute().declared_type().enumeration_items()
                     ]
                 )
