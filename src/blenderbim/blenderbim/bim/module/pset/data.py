@@ -19,7 +19,6 @@
 import bpy
 import ifcopenshell
 import blenderbim.tool as tool
-from blenderbim.bim.prop import get_ifc_entity_description
 
 
 # TODO: Should this cache belong here? Dunno. Maybe.
@@ -174,4 +173,8 @@ class AddEditCustomPropertiesData:
     @classmethod
     def primary_measure_type(cls):
         schema = tool.Ifc.schema()
-        return [(t, t, get_ifc_entity_description(t)) for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])]
+        version = tool.Ifc.get_schema()
+        return [
+            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description"))
+            for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
+        ]

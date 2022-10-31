@@ -21,6 +21,7 @@ import blenderbim.bim.schema
 from blenderbim.bim.prop import Attribute, StrProperty
 import ifcopenshell
 from ifcopenshell.api.pset.data import Data
+import blenderbim.tool as tool
 from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import get_property_set_description
@@ -138,6 +139,12 @@ def get_qto_names(self, context):
     return []
 
 
+def get_template_type(self, context):
+    version = tool.Ifc.get_schema()
+    for t in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue"):
+        yield (t, t, ifcopenshell.util.doc.get_entity_doc(version, t).get("description"))
+
+
 def get_primary_measure_type(self, context):
     if not AddEditCustomPropertiesData.is_loaded:
         AddEditCustomPropertiesData.load()
@@ -214,13 +221,7 @@ class AddEditProperties(PropertyGroup):
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
-    template_type: EnumProperty(
-        items=[
-            ("IfcPropertySingleValue", "IfcPropertySingleValue", "IfcPropertySingleValue"),
-            ("IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue"),
-        ],
-        name="Template Type",
-    )
+    template_type: EnumProperty(items=get_template_type, name="Template Type")
     enum_values: CollectionProperty(name="Enum Values", type=Attribute)
 
     def get_value_name(self):
