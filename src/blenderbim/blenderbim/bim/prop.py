@@ -147,6 +147,11 @@ def get_property_set_docs(pset):
         return get_property_set_doc(schema, pset)
 
 
+def get_property_set_description(pset):
+    docs = get_property_set_docs(pset)
+    return docs.get("description", "") if docs is not None else ""
+
+
 def get_property_set_properties(pset):
     docs = get_property_set_docs(pset)
     return docs.get("properties", {}) if docs is not None else {}
