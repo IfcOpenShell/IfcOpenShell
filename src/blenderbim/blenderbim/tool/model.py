@@ -17,16 +17,103 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import ifcopenshell
+import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
+from blenderbim.bim.module.geometry.helper import Helper
 
 
 class Model(blenderbim.core.tool.Model):
+    @classmethod
+    def convert_si_to_unit(cls, value):
+        if isinstance(value, (tuple, list)):
+            return [v / cls.unit_scale for v in value]
+        return value / cls.unit_scale
+
+    @classmethod
+    def convert_unit_to_si(cls, value):
+        if isinstance(value, (tuple, list)):
+            return [v * cls.unit_scale for v in value]
+        return value * cls.unit_scale
+
+    @classmethod
+    def export_curve(cls, position, edge_indices, points=None):
+        position_i = position.inverted()
+        if len(edge_indices) == 2:
+            diameter = edge_indices[0]
+            p1 = cls.bm.verts[diameter[0]].co
+            p2 = cls.bm.verts[diameter[1]].co
+            center = cls.convert_si_to_unit(list(position_i @ p1.lerp(p2, 0.5)))
+            radius = cls.convert_si_to_unit((p1 - p2).length / 2)
+            return tool.Ifc.get().createIfcCircle(
+                tool.Ifc.get().createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2])), radius
+            )
+        if tool.Ifc.get().schema == "IFC2X3":
+            points = []
+            for edge in edge_indices:
+                local_point = (position_i @ Vector(cls.bm.verts[edge[0]].co)).to_2d()
+                points.append(tool.Ifc.get().createIfcCartesianPoint(cls.convert_si_to_unit(local_point)))
+            points.append(points[0])
+            return tool.Ifc.get().createIfcPolyline(points)
+        segments = []
+        for segment in edge_indices:
+            if len(segment) == 2:
+                segments.append(tool.Ifc.get().createIfcLineIndex([i + 1 for i in segment]))
+            elif len(segment) == 3:
+                segments.append(tool.Ifc.get().createIfcArcIndex([i + 1 for i in segment]))
+        return tool.Ifc.get().createIfcIndexedPolyCurve(cls.points, segments, False)
+
+    @classmethod
+    def export_points(cls, position, indices):
+        position_i = position.inverted()
+        points = []
+        for point in indices:
+            local_point = (position_i @ point).to_2d()
+            points.append(cls.convert_si_to_unit(list(local_point)))
+        return tool.Ifc.get().createIfcCartesianPointList2D(points)
+
+    @classmethod
+    def export_profile(cls, obj, position=None):
+        if position is None:
+            position = Matrix()
+
+        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        helper = Helper(tool.Ifc.get())
+        indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
+
+        if isinstance(indices, tuple) and indices[0] is False:  # Ugly
+            return
+
+        cls.bm = bmesh.new()
+        cls.bm.from_mesh(obj.data)
+        cls.bm.verts.ensure_lookup_table()
+        cls.bm.edges.ensure_lookup_table()
+
+        if indices["inner_curves"]:
+            profile = tool.Ifc.get().createIfcArbitraryProfileDefWithVoids("AREA")
+        else:
+            profile = tool.Ifc.get().createIfcArbitraryClosedProfileDef("AREA")
+
+        if tool.Ifc.get().schema != "IFC2X3":
+            cls.points = cls.export_points(position, indices["points"])
+
+        profile.OuterCurve = cls.export_curve(position, indices["profile"])
+        if indices["inner_curves"]:
+            results = []
+            for inner_curve in indices["inner_curves"]:
+                results.append(cls.export_curve(position, inner_curve))
+            profile.InnerCurves = results
+
+        cls.bm.free()
+        return profile
+
     @classmethod
     def generate_occurrence_name(cls, element_type, ifc_class):
         props = bpy.context.scene.BIMModelProperties
@@ -51,6 +138,126 @@ class Model(blenderbim.core.tool.Model):
                 item = item.FirstOperand
             else:
                 break
+
+    @classmethod
+    def import_profile(cls, profile, obj=None, position=None):
+        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        if position is None:
+            position = Matrix()
+
+        cls.vertices = []
+        cls.edges = []
+        cls.arcs = []
+        cls.circles = []
+
+        if profile.is_a("IfcArbitraryClosedProfileDef"):
+            cls.import_curve(obj, position, profile.OuterCurve)
+            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                for inner_curve in profile.InnerCurves:
+                    cls.import_curve(obj, position, inner_curve)
+        elif profile.is_a() == "IfcRectangleProfileDef":
+            cls.import_rectangle(obj, position, profile)
+
+        mesh = bpy.data.meshes.new("Profile")
+        mesh.from_pydata(cls.vertices, cls.edges, [])
+        mesh.BIMMeshProperties.is_profile = True
+
+        if obj is None:
+            obj = bpy.data.objects.new("Profile", mesh)
+        else:
+            obj.data = mesh
+
+        for arc in cls.arcs:
+            group = obj.vertex_groups.new(name="IFCARCINDEX")
+            group.add(arc, 1, "REPLACE")
+
+        for circle in cls.circles:
+            group = obj.vertex_groups.new(name="IFCCIRCLE")
+            group.add(circle, 1, "REPLACE")
+
+        return obj
+
+    @classmethod
+    def import_curve(cls, obj, position, curve):
+        offset = len(cls.vertices)
+
+        if curve.is_a("IfcPolyline"):
+            total_points = len(curve.Points)
+            last_index = len(curve.Points) - 1
+            for i, point in enumerate(curve.Points):
+                if i == last_index:
+                    continue
+                global_point = position @ Vector(cls.convert_unit_to_si(point.Coordinates)).to_3d()
+                cls.vertices.append(global_point)
+            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices))])
+            cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+        elif curve.is_a("IfcIndexedPolyCurve"):
+            is_arc = False
+            if curve.Segments:
+                for segment in curve.Segments:
+                    if len(segment[0]) == 3:  # IfcArcIndex
+                        is_arc = True
+                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        cls.vertices.append(global_point)
+                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][1] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        cls.vertices.append(global_point)
+                        cls.arcs.append([len(cls.vertices) - 2, len(cls.vertices) - 1])
+                    else:
+                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        cls.vertices.append(global_point)
+                        if is_arc:
+                            cls.arcs[-1].append(len(cls.vertices) - 1)
+                            is_arc = False
+            else:
+                for local_point in curve.Points.CoordList:
+                    global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
+                    cls.vertices.append(global_point)
+                # Curves without segments are cls closing
+                del cls.vertices[-1]
+
+            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices))])
+            cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+        elif curve.is_a("IfcCircle"):
+            center = cls.convert_unit_to_si(
+                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
+            )
+            radius = cls.convert_unit_to_si(curve.Radius)
+            cls.vertices.extend(
+                [
+                    position @ Vector((center[0], center[1] - curve.Radius, 0.0)),
+                    position @ Vector((center[0], center[1] + curve.Radius, 0.0)),
+                ]
+            )
+            cls.circles.append([offset, offset + 1])
+            cls.edges.append((offset, offset + 1))
+
+    @classmethod
+    def import_rectangle(cls, obj, position, profile):
+        if profile.Position:
+            p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
+            p_position[0][3] *= cls.unit_scale
+            p_position[1][3] *= cls.unit_scale
+            p_position[2][3] *= cls.unit_scale
+        else:
+            p_position = Matrix()
+
+        x = cls.convert_unit_to_si(profile.XDim)
+        y = cls.convert_unit_to_si(profile.YDim)
+
+        cls.vertices.extend(
+            [
+                position @ p_position @ Vector((-x / 2, -y / 2, 0.0)),
+                position @ p_position @ Vector((x / 2, -y / 2, 0.0)),
+                position @ p_position @ Vector((x / 2, y / 2, 0.0)),
+                position @ p_position @ Vector((-x / 2, y / 2, 0.0)),
+            ]
+        )
+        cls.edges.extend([(i, i + 1) for i in range(0, len(cls.vertices))])
+        cls.edges[-1] = (len(cls.vertices) - 1, 0)  # Close the loop
 
     @classmethod
     def load_openings(cls, element, openings):
