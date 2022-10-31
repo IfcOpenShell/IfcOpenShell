@@ -702,9 +702,8 @@ class BIM_OT_show_description(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="  - " + self.attr_name + " :")
         wrapper = textwrap.TextWrapper(width=80)
-        for line in wrapper.wrap(self.description):
+        for line in wrapper.wrap(self.attr_name + " : " + self.description):
             layout.label(text=line)
         if self.url:
             url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
