@@ -1,5 +1,5 @@
 import bpy
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 import ifcopenshell
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
@@ -64,7 +64,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         
         self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
         self.descriptions = flatten_data(self.inputs["Descriptions"].sv_get(), target_level=1)
-        self.ifc_class = self.inputs["IfcClass"].sv_get()[0][0]
+        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[0]
         self.representations = flatten_data(self.inputs["Representations"].sv_get(), target_level=1)
         self.locations = flatten_data(self.inputs["Locations"].sv_get(default=[]), target_level=1)
         self.properties = self.inputs["Properties"].sv_get()
@@ -78,7 +78,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
         print("node_dict: ", self.node_dict)
         if not self.inputs["IfcClass"].sv_get()[0][0]:
-            raise Exception("Insert IfcClass")
+            raise Exception('Mandatory input "IfcClass" is missing.')
             return
 
         edit = False
@@ -109,7 +109,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
             self.descriptions = self.repeat_input_unique(self.descriptions, len(self.names))
 
         # print("REPRESENTATION: ", self.representations)
-        # print("IfcClass: ",self.ifc_class)
+        print("IfcClass: ", self.ifc_class)
         print("Names: ",self.names)
         print("Descriptions: ",self.descriptions)
         # print("\nrepresentations after convert: ", self.representations)
@@ -144,6 +144,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                 except IndexError:
                     pass
                 try:
+                    print("IS INSTANCE MATRIX: ", isinstance(self.locations[i], Matrix), isinstance(self.locations[i], Vector))
                     if isinstance(self.locations[i], Matrix):
                         print("LOCATION[i]: ", self.locations[i], type(self.locations[i]))
                         ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
@@ -177,8 +178,9 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
             except IndexError:
                 pass
             try:
-                print("LOCATION[i]: ", self.locations[i])
-                ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
+                if isinstance(self.locations[i], Matrix):
+                    print("LOCATION[i]: ", self.locations[i])
+                    ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
             except IndexError:
                 pass
             if entity.is_a() != self.ifc_class:
