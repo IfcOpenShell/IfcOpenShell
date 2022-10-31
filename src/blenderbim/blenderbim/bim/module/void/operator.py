@@ -67,6 +67,9 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 break
 
         body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
+        ifc_representation = context.scene.BIMModelProperties.opening_representation
+        if ifc_representation == "None":
+            ifc_representation = None
         element2 = blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -75,6 +78,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             ifc_class="IfcOpeningElement",
             should_add_representation=True,
             context=body_context,
+            ifc_representation_class=ifc_representation,
         )
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=element2, element=element1)
 

@@ -202,7 +202,9 @@ class BimToolUI:
             op.cardinal_point = int(cls.props.cardinal_point)
 
             row = cls.layout.row(align=True)
-            label = "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
+            label = (
+                "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
+            )
             row.prop(data=cls.props, property="extrusion_depth", text=label)
             op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
             op.depth = cls.props.extrusion_depth
@@ -261,6 +263,8 @@ class BimToolUI:
         row.label(text="", icon="EVENT_O")
         if len(context.selected_objects) == 2:
             row.operator("bim.add_opening", text="Apply Void")
+            row_opening_representation = cls.layout.row(align=True)
+            row_opening_representation.prop(context.scene.BIMModelProperties, "opening_representation")
         else:
             row.operator("bim.add_potential_opening", text="Add Void")
         if AuthoringData.data["is_voidable_element"]:
