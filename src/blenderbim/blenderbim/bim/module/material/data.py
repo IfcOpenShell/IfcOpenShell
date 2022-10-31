@@ -21,7 +21,6 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
-from blenderbim.bim.prop import get_ifc_entity_description
 
 
 def refresh():
@@ -66,9 +65,12 @@ class MaterialsData:
             "IfcMaterialProfileSet",
             "IfcMaterialList",
         ]
-        if tool.Ifc.get_schema() == "IFC2X3":
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
             material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialList"]
-        return [(m, m, get_ifc_entity_description(m)) for m in material_types]
+        return [
+            (m, m, ifcopenshell.util.doc.get_entity_doc(version, m).get("description", "")) for m in material_types
+        ]
 
 
 class ObjectMaterialData:

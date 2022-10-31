@@ -23,8 +23,10 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
+from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 from mathutils import geometry
 from mathutils import Vector
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -83,6 +85,7 @@ def import_attribute(attribute, props, data, callback=None):
     new.is_null = data[attribute.name()] is None
     new.is_optional = attribute.optional()
     new.data_type = data_type if isinstance(data_type, str) else ""
+    new.ifc_class = data["type"]
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
 
     if is_handled_by_callback:
@@ -100,9 +103,38 @@ def import_attribute(attribute, props, data, callback=None):
     elif data_type == "float":
         new.float_value = 0.0 if new.is_null else data[attribute.name()]
     elif data_type == "enum":
-        new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-        if data[attribute.name()]:
-            new.enum_value = data[attribute.name()]
+        enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
+        new.enum_items = json.dumps(enum_items)
+        add_attribute_enum_items_descriptions(new, enum_items)
+        if data[new.name]:
+            new.enum_value = data[new.name]
+    add_attribute_description(new)
+
+
+def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
+    attribute_blender.enum_descriptions.clear()
+    if isinstance(enum_items, dict):
+        enum_items = enum_items.keys()
+    version = tool.Ifc.get_schema()
+    for enum_item in enum_items:
+        new_enum_description = attribute_blender.enum_descriptions.add()
+        try:
+            description = get_predefined_type_doc(version, attribute_blender.ifc_class, enum_item)
+        except KeyError:  # TODO this only supports predefined type enums. Add support for other types of enums ?
+            description = ""
+        new_enum_description.name = description
+
+
+def add_attribute_description(attribute_blender):
+    if not attribute_blender.name:
+        return
+    version = tool.Ifc.get_schema()
+    try:
+        description = get_attribute_doc(version, attribute_blender.ifc_class, attribute_blender.name)
+    except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
+        description = get_property_doc(version, attribute_blender.ifc_class, attribute_blender.name).get("description")
+    if description:
+        attribute_blender.description = description
 
 
 def export_attributes(props, callback=None):
@@ -119,11 +151,14 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
-    if len(get_enum_items(data, prop_name)) > 10:
-        # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
-        row.context_pointer_set(name="data", data=data)
-        op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
-        op.prop_name = prop_name
+    try:
+        if len(get_enum_items(data, prop_name)) > 10:
+            # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
+            row.context_pointer_set(name="data", data=data)
+            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+            op.prop_name = prop_name
+    except TypeError:  # Prop is not iterable
+        pass
 
 
 def get_enum_items(data, prop_name, context=None):

@@ -17,7 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute, get_ifc_entity_description
+from ifcopenshell.util.doc import get_entity_doc
+import blenderbim.tool as tool
+from blenderbim.bim.prop import Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -32,7 +34,8 @@ from bpy.props import (
 
 
 def get_available_constraint_types(self, context):
-    return [(c, c, get_ifc_entity_description(c)) for c in ["IfcObjective"]]
+    version = tool.Ifc.get_schema()
+    return [(c, c, get_entity_doc(version, c).get("description", "")) for c in ["IfcObjective"]]
 
 
 class Constraint(PropertyGroup):
