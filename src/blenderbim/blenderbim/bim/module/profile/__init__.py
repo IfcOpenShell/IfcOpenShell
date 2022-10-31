@@ -20,16 +20,12 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.AddProfileDef,
-    operator.DisableEditingArbitraryProfile,
-    operator.DisableEditingProfile,
-    operator.DisableProfileEditingUI,
-    operator.EditArbitraryProfile,
-    operator.EditProfile,
-    operator.EnableEditingArbitraryProfile,
-    operator.EnableEditingProfile,
     operator.LoadProfiles,
+    operator.DisableProfileEditingUI,
     operator.RemoveProfileDef,
+    operator.EnableEditingProfile,
+    operator.DisableEditingProfile,
+    operator.EditProfile,
     prop.Profile,
     prop.BIMProfileProperties,
     ui.BIM_PT_profiles,

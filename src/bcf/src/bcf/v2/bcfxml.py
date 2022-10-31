@@ -223,10 +223,10 @@ class BcfXml:
 
     def edit_topic(self, topic):
         if not topic.creation_date:
-            topic.creation_date = datetime.utcnow().replace(microsecond=0).isoformat()
+            topic.creation_date = datetime.utcnow().isoformat()
             topic.creation_author = self.author
         else:
-            topic.modified_date = datetime.utcnow().replace(microsecond=0).isoformat()
+            topic.modified_date = datetime.utcnow().isoformat()
             topic.modified_author = self.author
 
         self.document = minidom.Document()
@@ -345,10 +345,10 @@ class BcfXml:
 
     def edit_comment(self, comment, topic):
         if not comment.date:
-            comment.date = datetime.utcnow().replace(microsecond=0).isoformat()
+            comment.date = datetime.utcnow().isoformat()
             comment.author = self.author
         else:
-            comment.modified_date = datetime.utcnow().replace(microsecond=0).isoformat()
+            comment.modified_date = datetime.utcnow().isoformat()
             comment.modified_author = self.author
         self.edit_topic(topic)
 
@@ -595,7 +595,7 @@ class BcfXml:
             copyfile(header_file.reference, os.path.join(topic_filepath, header_file.filename))
             header_file.reference = header_file.filename
             header_file.is_external = False
-        header_file.date = datetime.utcnow().replace(microsecond=0).isoformat()
+        header_file.date = datetime.utcnow().isoformat()
         if not topic.header:
             topic.header = bcf.v2.data.Header()
         topic.header.files.append(header_file)

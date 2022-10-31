@@ -173,9 +173,10 @@ class DumbSlabGenerator:
                 matrix_world[2][3] = self.collection_obj.location[2] - self.depth
             else:
                 matrix_world[2][3] -= self.depth
-            obj.matrix_world = Matrix.Rotation(self.x_angle, 4, 'X') @ matrix_world
+            obj.matrix_world = matrix_world
             bpy.context.view_layer.update()
             self.collection.objects.link(obj)
+            obj.matrix_world = Matrix.Rotation(self.x_angle, 4, 'X')
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -617,12 +618,121 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         else:
             position = Matrix()
 
-        tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position)
+        self.vertices = []
+        self.edges = []
+        self.arcs = []
+        self.circles = []
+
+        profile = extrusion.SweptArea
+        if profile.is_a("IfcArbitraryClosedProfileDef"):
+            self.process_curve(obj, position, profile.OuterCurve)
+            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                for inner_curve in profile.InnerCurves:
+                    self.process_curve(obj, position, inner_curve)
+        elif profile.is_a() == "IfcRectangleProfileDef":
+            self.process_rectangle(obj, position, profile)
+
+        mesh = bpy.data.meshes.new("Profile")
+        mesh.from_pydata(self.vertices, self.edges, [])
+        mesh.BIMMeshProperties.is_profile = True
+        obj.data = mesh
+
+        for arc in self.arcs:
+            group = obj.vertex_groups.new(name="IFCARCINDEX")
+            group.add(arc, 1, "REPLACE")
+
+        for circle in self.circles:
+            group = obj.vertex_groups.new(name="IFCCIRCLE")
+            group.add(circle, 1, "REPLACE")
 
         bpy.ops.object.mode_set(mode="EDIT")
         DecorationsHandler.install(context)
         bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
         return {"FINISHED"}
+
+    def process_curve(self, obj, position, curve):
+        offset = len(self.vertices)
+
+        if curve.is_a("IfcPolyline"):
+            total_points = len(curve.Points)
+            last_index = len(curve.Points) - 1
+            for i, point in enumerate(curve.Points):
+                if i == last_index:
+                    continue
+                global_point = position @ Vector(self.convert_unit_to_si(point.Coordinates)).to_3d()
+                self.vertices.append(global_point)
+            self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
+            self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
+        elif curve.is_a("IfcIndexedPolyCurve"):
+            is_arc = False
+            if curve.Segments:
+                for segment in curve.Segments:
+                    if len(segment[0]) == 3:  # IfcArcIndex
+                        is_arc = True
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        self.vertices.append(global_point)
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][1] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        self.vertices.append(global_point)
+                        self.arcs.append([len(self.vertices) - 2, len(self.vertices) - 1])
+                    else:
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        self.vertices.append(global_point)
+                        if is_arc:
+                            self.arcs[-1].append(len(self.vertices) - 1)
+                            is_arc = False
+            else:
+                for local_point in curve.Points.CoordList:
+                    global_point = position @ Vector(self.convert_unit_to_si(local_point)).to_3d()
+                    self.vertices.append(global_point)
+                # Curves without segments are self closing
+                del self.vertices[-1]
+
+            self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
+            self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
+        elif curve.is_a("IfcCircle"):
+            center = self.convert_unit_to_si(
+                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
+            )
+            radius = self.convert_unit_to_si(curve.Radius)
+            self.vertices.extend(
+                [
+                    position @ Vector((center[0], center[1] - curve.Radius, 0.0)),
+                    position @ Vector((center[0], center[1] + curve.Radius, 0.0)),
+                ]
+            )
+            self.circles.append([offset, offset + 1])
+            self.edges.append((offset, offset + 1))
+
+    def process_rectangle(self, obj, position, profile):
+        if profile.Position:
+            p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
+            p_position[0][3] *= self.unit_scale
+            p_position[1][3] *= self.unit_scale
+            p_position[2][3] *= self.unit_scale
+        else:
+            p_position = Matrix()
+
+        x = self.convert_unit_to_si(profile.XDim)
+        y = self.convert_unit_to_si(profile.YDim)
+
+        self.vertices.extend(
+            [
+                position @ p_position @ Vector((-x / 2, -y / 2, 0.0)),
+                position @ p_position @ Vector((x / 2, -y / 2, 0.0)),
+                position @ p_position @ Vector((x / 2, y / 2, 0.0)),
+                position @ p_position @ Vector((-x / 2, y / 2, 0.0)),
+            ]
+        )
+        self.edges.extend([(i, i + 1) for i in range(0, len(self.vertices))])
+        self.edges[-1] = (len(self.vertices) - 1, 0)  # Close the loop
+
+    def convert_unit_to_si(self, value):
+        if isinstance(value, (tuple, list)):
+            return [v * self.unit_scale for v in value]
+        return value * self.unit_scale
 
 
 class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -648,16 +758,40 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         else:
             position = Matrix()
 
-        profile = tool.Model.export_profile(obj, position=position)
+        helper = Helper(tool.Ifc.get())
+        indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
 
-        if not profile:
+        if isinstance(indices, tuple) and indices[0] is False:  # Ugly
+
             def msg(self, context):
                 self.layout.label(text="INVALID PROFILE: " + indices[1])
 
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             DecorationsHandler.install(context)
             bpy.ops.object.mode_set(mode="EDIT")
-            return
+            return {"FINISHED"}
+
+        self.bm = bmesh.new()
+        self.bm.from_mesh(obj.data)
+        self.bm.verts.ensure_lookup_table()
+        self.bm.edges.ensure_lookup_table()
+
+        if indices["inner_curves"]:
+            profile = tool.Ifc.get().createIfcArbitraryProfileDefWithVoids("AREA")
+        else:
+            profile = tool.Ifc.get().createIfcArbitraryClosedProfileDef("AREA")
+
+        if tool.Ifc.get().schema != "IFC2X3":
+            self.points = self.create_points(position, indices["points"])
+
+        profile.OuterCurve = self.create_curve(position, indices["profile"])
+        if indices["inner_curves"]:
+            results = []
+            for inner_curve in indices["inner_curves"]:
+                results.append(self.create_curve(position, inner_curve))
+            profile.InnerCurves = results
+
+        self.bm.free()
 
         old_profile = extrusion.SweptArea
         extrusion.SweptArea = profile
@@ -696,6 +830,45 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
                     "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_footprint
                 )
         return {"FINISHED"}
+
+    def create_points(self, position, indices):
+        position_i = position.inverted()
+        points = []
+        for point in indices:
+            local_point = (position_i @ point).to_2d()
+            points.append(self.convert_si_to_unit(list(local_point)))
+        return tool.Ifc.get().createIfcCartesianPointList2D(points)
+
+    def create_curve(self, position, edge_indices, points=None):
+        position_i = position.inverted()
+        if len(edge_indices) == 2:
+            diameter = edge_indices[0]
+            p1 = self.bm.verts[diameter[0]].co
+            p2 = self.bm.verts[diameter[1]].co
+            center = self.convert_si_to_unit(list(position_i @ p1.lerp(p2, 0.5)))
+            radius = self.convert_si_to_unit((p1 - p2).length / 2)
+            return tool.Ifc.get().createIfcCircle(
+                tool.Ifc.get().createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2])), radius
+            )
+        if tool.Ifc.get().schema == "IFC2X3":
+            points = []
+            for edge in edge_indices:
+                local_point = (position_i @ Vector(self.bm.verts[edge[0]].co)).to_2d()
+                points.append(tool.Ifc.get().createIfcCartesianPoint(self.convert_si_to_unit(local_point)))
+            points.append(points[0])
+            return tool.Ifc.get().createIfcPolyline(points)
+        segments = []
+        for segment in edge_indices:
+            if len(segment) == 2:
+                segments.append(tool.Ifc.get().createIfcLineIndex([i + 1 for i in segment]))
+            elif len(segment) == 3:
+                segments.append(tool.Ifc.get().createIfcArcIndex([i + 1 for i in segment]))
+        return tool.Ifc.get().createIfcIndexedPolyCurve(self.points, segments, False)
+
+    def convert_si_to_unit(self, value):
+        if isinstance(value, (tuple, list)):
+            return [v / self.unit_scale for v in value]
+        return value / self.unit_scale
 
 
 class ResetVertex(bpy.types.Operator):

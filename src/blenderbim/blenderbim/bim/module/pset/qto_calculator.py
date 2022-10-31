@@ -37,10 +37,7 @@ class QtoCalculator:
 
         for key in self.mapping_dict.keys():
             for item in self.mapping_dict[key].keys():
-                if self.mapping_dict[key][item]:
-                    self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item])
-                else:
-                    self.mapping_dict[key][item] = None
+                self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item])
 
     def calculate_quantity(self, qto_name, quantity_name, obj):
         return self.mapping_dict[qto_name][quantity_name](obj)
