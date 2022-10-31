@@ -146,7 +146,7 @@ def get_qto_names(self, context):
 def get_template_type(self, context):
     version = tool.Ifc.get_schema()
     for t in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue"):
-        yield (t, t, ifcopenshell.util.doc.get_entity_doc(version, t).get("description"))
+        yield (t, t, ifcopenshell.util.doc.get_entity_doc(version, t).get("description", ""))
 
 
 def get_primary_measure_type(self, context):

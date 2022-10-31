@@ -19,9 +19,10 @@
 from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
+from ifcopenshell.util.doc import get_entity_doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_description
+from blenderbim.bim.prop import get_predefined_type_description
 
 
 def refresh():
@@ -57,7 +58,8 @@ class IfcClassData:
             "IfcAnnotation",
             "IfcRelSpaceBoundary",
         ]
-        if tool.Ifc.get_schema() == "IFC2X3":
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
             products = [
                 "IfcElement",
                 "IfcElementType",
@@ -67,7 +69,7 @@ class IfcClassData:
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             ]
-        return [(e, e, get_ifc_entity_description(e)) for e in products]
+        return [(e, e, get_entity_doc(version, e).get("description", "")) for e in products]
 
     @classmethod
     def ifc_classes(cls):
@@ -77,7 +79,8 @@ class IfcClassData:
         names = [d.name() for d in declarations]
         if ifc_product == "IfcElementType":
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-        return [(c, c, get_ifc_entity_description(c)) for c in sorted(names)]
+        version = tool.Ifc.get_schema()
+        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def ifc_predefined_types(cls):

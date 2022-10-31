@@ -17,7 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute, get_ifc_entity_description
+from ifcopenshell.util.doc import get_entity_doc
+import blenderbim.tool as tool
+from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -65,17 +67,19 @@ def update_actor_class(self, context):
 
 
 def get_actor_class_enum(self, context):
+    version = tool.Ifc.get_schema()
     return [
-        ("IfcActor", "Actor", get_ifc_entity_description("IfcActor")),
-        ("IfcOccupant", "Occupant", get_ifc_entity_description("IfcOccupant")),
+        ("IfcActor", "Actor", get_entity_doc(version, "IfcActor").get("description", "")),
+        ("IfcOccupant", "Occupant", get_entity_doc(version, "IfcOccupant").get("description", "")),
     ]
 
 
 def get_actor_type_enum(self, context):
+    version = tool.Ifc.get_schema()
     return [
-        ("IfcPerson", "Person", get_ifc_entity_description("IfcPerson")),
-        ("IfcOrganization", "Organisation", get_ifc_entity_description("IfcOrganization")),
-        ("IfcPersonAndOrganization", "User", get_ifc_entity_description("IfcPersonAndOrganization")),
+        ("IfcPerson", "Person", get_entity_doc(version, "IfcPerson").get("description", "")),
+        ("IfcOrganization", "Organisation", get_entity_doc(version, "IfcOrganization").get("description", "")),
+        ("IfcPersonAndOrganization", "User", get_entity_doc(version, "IfcPersonAndOrganization").get("description", "")),
     ]
 
 

@@ -29,7 +29,7 @@ import blenderbim.tool as tool
 from . import schema
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, get_ifc_entity_doc_url
+from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
@@ -706,7 +706,9 @@ class BIM_OT_show_description(bpy.types.Operator):
         wrapper = textwrap.TextWrapper(width=80)
         for line in wrapper.wrap(self.description):
             layout.label(text=line)
-        url = get_ifc_entity_doc_url(self.ifc_class)
+        version = tool.Ifc.get_schema()
+        doc = ifcopenshell.util.doc.get_entity_doc(version, self.ifc_class)
+        url = doc.get("spec_url")
         if url:
             url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
             url_op.url = url

@@ -106,22 +106,6 @@ def cache_string(s):
 cache_string.data = {}
 
 
-def get_ifc_entity_docs(ifc_entity):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_entity_doc(schema, ifc_entity)
-
-
-def get_ifc_entity_description(ifc_entity):
-    docs = get_ifc_entity_docs(ifc_entity)
-    return docs.get("description", "") if docs is not None else ""
-
-
-def get_ifc_entity_doc_url(ifc_entity):
-    docs = get_ifc_entity_docs(ifc_entity)
-    return docs.get("spec_url", "") if docs is not None else ""
-
-
 def get_predefined_type_description(entity, predefined_type):
     schema = tool.Ifc.get_schema()
     if schema is not None:

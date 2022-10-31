@@ -175,6 +175,6 @@ class AddEditCustomPropertiesData:
         schema = tool.Ifc.schema()
         version = tool.Ifc.get_schema()
         return [
-            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description"))
+            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
             for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
         ]
