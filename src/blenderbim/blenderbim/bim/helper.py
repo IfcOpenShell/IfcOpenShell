@@ -23,10 +23,12 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
+from ifcopenshell.util.doc import get_attribute_doc
 from mathutils import geometry
 from mathutils import Vector
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import get_attribute_description, get_predefined_type_description
+from blenderbim.bim.prop import get_predefined_type_description
 
 
 def draw_attributes(props, layout, copy_operator=None):
@@ -123,7 +125,8 @@ def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
 def add_attribute_description(attribute_blender):
     if not attribute_blender.name:
         return
-    description = get_attribute_description(attribute_blender.ifc_class, attribute_blender.name)
+    version = tool.Ifc.get_schema()
+    description = get_attribute_doc(version, attribute_blender.ifc_class, attribute_blender.name)
     if description:
         attribute_blender.description = description
 

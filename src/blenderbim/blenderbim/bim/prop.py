@@ -115,16 +115,6 @@ def get_predefined_type_description(entity, predefined_type):
             return ""
 
 
-def get_attribute_description(entity, attribute):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        try:
-            doc = get_attribute_doc(schema, entity, attribute)
-        except KeyError:  # This entity doesn't have any attribute or doesn't implement this attribute
-            pass
-    return doc
-
-
 def get_attribute_enum_values(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
