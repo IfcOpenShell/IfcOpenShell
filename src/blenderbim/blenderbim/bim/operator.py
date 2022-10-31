@@ -689,9 +689,9 @@ class EditBlenderCollection(bpy.types.Operator):
 class BIM_OT_show_description(bpy.types.Operator):
     bl_idname = "bim.show_description"
     bl_label = "Description"
-    ifc_class: bpy.props.StringProperty()
     attr_name: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
+    url: bpy.props.StringProperty()
 
     def invoke(self, context, event):
         wm = context.window_manager
@@ -706,12 +706,9 @@ class BIM_OT_show_description(bpy.types.Operator):
         wrapper = textwrap.TextWrapper(width=80)
         for line in wrapper.wrap(self.description):
             layout.label(text=line)
-        version = tool.Ifc.get_schema()
-        doc = ifcopenshell.util.doc.get_entity_doc(version, self.ifc_class)
-        url = doc.get("spec_url")
-        if url:
+        if self.url:
             url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
-            url_op.url = url
+            url_op.url = self.url
 
     @classmethod
     def description(cls, context, properties):

@@ -23,7 +23,7 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
-from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc
+from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
@@ -129,7 +129,10 @@ def add_attribute_description(attribute_blender):
     if not attribute_blender.name:
         return
     version = tool.Ifc.get_schema()
-    description = get_attribute_doc(version, attribute_blender.ifc_class, attribute_blender.name)
+    try:
+        description = get_attribute_doc(version, attribute_blender.ifc_class, attribute_blender.name)
+    except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
+        description = get_property_doc(version, attribute_blender.ifc_class, attribute_blender.name).get("description")
     if description:
         attribute_blender.description = description
 
