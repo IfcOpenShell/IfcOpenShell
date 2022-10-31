@@ -690,6 +690,7 @@ class BIM_OT_show_description(bpy.types.Operator):
     bl_idname = "bim.show_description"
     bl_label = "Description"
     ifc_class: bpy.props.StringProperty()
+    attr_name: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 
     def invoke(self, context, event):
@@ -701,6 +702,7 @@ class BIM_OT_show_description(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
+        layout.label(text="  - " + self.attr_name + " :")
         wrapper = textwrap.TextWrapper(width=80)
         for line in wrapper.wrap(self.description):
             layout.label(text=line)
