@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,9 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
+import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.profile.data import Data
+from blenderbim.bim.module.profile.data import ProfileData
 
 
 class BIM_PT_profiles(Panel):
@@ -33,17 +33,15 @@ class BIM_PT_profiles(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
-        return file
+        return tool.Ifc.get()
 
     def draw(self, context):
-        self.file = IfcStore.get_file()
-        if not Data.is_loaded:
-            Data.load(self.file)
+        if not ProfileData.is_loaded:
+            ProfileData.load()
         self.props = context.scene.BIMProfileProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Profiles Found".format(len(Data.profiles)), icon="SNAP_GRID")
+        row.label(text="{} Profiles Found".format(ProfileData.data["total_profiles"]), icon="SNAP_GRID")
         if self.props.is_editing:
             row.operator("bim.disable_profile_editing_ui", text="", icon="CANCEL")
         else:
@@ -51,6 +49,10 @@ class BIM_PT_profiles(Panel):
 
         if not self.props.is_editing:
             return
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "profile_classes", text="")
+        row.operator("bim.add_profile_def", text="", icon="ADD")
 
         self.layout.template_list(
             "BIM_UL_profiles",
@@ -65,6 +67,14 @@ class BIM_PT_profiles(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
+        if ProfileData.data["is_arbitrary_profile"]:
+            if ProfileData.data["is_editing_arbitrary_profile"]:
+                row = self.layout.row(align=True)
+                row.operator("bim.edit_arbitrary_profile", text="Save Profile", icon="CHECKMARK")
+                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_arbitrary_profile", text="Edit Profile", icon="GREASEPENCIL")
         blenderbim.bim.helper.draw_attributes(self.props.profile_attributes, self.layout)
 
 
@@ -74,6 +84,7 @@ class BIM_UL_profiles(UIList):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name or "Unnamed")
+            row.label(text=item.ifc_class)
 
             if props.active_profile_id == item.ifc_definition_id:
                 row.operator("bim.edit_profile", text="", icon="CHECKMARK")

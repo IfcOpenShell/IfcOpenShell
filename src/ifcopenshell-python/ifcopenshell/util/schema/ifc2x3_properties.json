@@ -1,5 +1,6 @@
 {
     "Pset_ActionRequest": {
+        "description": "An action request is a request for an action to fulfill a need.",
         "properties": {
             "RequestComments": {
                 "description": "Comments that may be made on the request."
@@ -23,6 +24,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcFacilitiesMgmtDomain/Pset_ActionRequest.xml"
     },
     "Pset_ActorCommon": {
+        "description": "A property set that enables further classification of actors, including the ability to give a number of actors to be designated as a population, the number being specified as a property to be dealt with as a single value rather than having to aggregate a number of instances of IfcActor.",
         "properties": {
             "Category": {
                 "description": "Designation of the category into which the actors in the population belong."
@@ -37,6 +39,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcKernel/Pset_ActorCommon.xml"
     },
     "Pset_ActuatorTypeCommon": {
+        "description": "Actuator type common attributes.",
         "properties": {
             "FailPosition": {
                 "description": "Specifies the required fail-safe position of the actuator."
@@ -48,6 +51,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ActuatorTypeCommon.xml"
     },
     "Pset_ActuatorTypeElectricActuator": {
+        "description": "A device that electrically actuates a control element.",
         "properties": {
             "ActuatorInputPower": {
                 "description": "Maximum input power requirement"
@@ -59,6 +63,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ActuatorTypeElectricActuator.xml"
     },
     "Pset_ActuatorTypeHydraulicActuator": {
+        "description": "A device that hydraulically actuates a control element.",
         "properties": {
             "InputFlowrate": {
                 "description": "Maximum hydraulic flowrate requirement."
@@ -70,6 +75,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ActuatorTypeHydraulicActuator.xml"
     },
     "Pset_ActuatorTypeLinearActuation": {
+        "description": "Characteristics of linear actuation of an actuator History: Replaces Pset_LinearActuator",
         "properties": {
             "Force": {
                 "description": "Indicates the maximum close-off force for the actuator."
@@ -81,6 +87,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ActuatorTypeLinearActuation.xml"
     },
     "Pset_ActuatorTypePneumaticActuator": {
+        "description": "A device that pneumatically actuates a control element",
         "properties": {
             "InputFlowrate": {
                 "description": "Maximum input control air flowrate requirement"
@@ -92,6 +99,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ActuatorTypePneumaticActuator.xml"
     },
     "Pset_ActuatorTypeRotationalActuation": {
+        "description": "Characteristics of rotational actuation of an actuator History: Replaces Pset_RotationalActuator",
         "properties": {
             "RangeAngle": {
                 "description": "Indicates the maximum rotation the actuator must traverse."
@@ -103,6 +111,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ActuatorTypeRotationalActuation.xml"
     },
     "Pset_AirSideSystemInformation": {
+        "description": "Attributes that apply to an air side HVAC system.",
         "properties": {
             "AirSideSystemDistributionType": {
                 "description": "This enumeration defines the basic types of air side systems (e.g., SingleDuct, DualDuct, Multizone, etc.)"
@@ -162,6 +171,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_AirSideSystemInformation.xml"
     },
     "Pset_AirTerminalBoxPHistory": {
+        "description": "Air terminal box performance history attributes.",
         "properties": {
             "AirflowCurve": {
                 "description": "Air flowrate versus damper position relationship;airflow = f ( valve position)."
@@ -179,6 +189,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirTerminalBoxPHistory.xml"
     },
     "Pset_AirTerminalBoxTypeCommon": {
+        "description": "Air terminal box type common attributes.",
         "properties": {
             "AirPressureRange": {
                 "description": "Allowable air static pressure range at the entrance of the air terminal box."
@@ -229,6 +240,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirTerminalBoxTypeCommon.xml"
     },
     "Pset_AirTerminalPHistory": {
+        "description": "Air terminal performance history common attributes.",
         "properties": {
             "AirFlowRate": {
                 "description": "Volumetric flow rate."
@@ -255,6 +267,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirTerminalPHistory.xml"
     },
     "Pset_AirTerminalTypeCommon": {
+        "description": "Air terminal type common attributes. SoundLevel attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead.",
         "properties": {
             "AirDiffusionPerformanceIndex": {
                 "description": "The Air Diffusion Performance Index (ADPI) is used for cooling mode conditions. If several measurements of air velocity and air temperature are made throughout the occupied zone of a space, the ADPI is the percentage of locations where measurements were taken that meet the specifications for effective draft temperature and air velocity."
@@ -326,6 +339,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirTerminalTypeCommon.xml"
     },
     "Pset_AirTerminalTypeRectangular": {
+        "description": "Rectangular air terminal type attributes.",
         "properties": {
             "FaceType": {
                 "description": "Identifies how the terminal face of an AirTerminal is constructed."
@@ -334,6 +348,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirTerminalTypeRectangular.xml"
     },
     "Pset_AirTerminalTypeRound": {
+        "description": "Round air terminal type attributes.",
         "properties": {
             "FaceType": {
                 "description": "Identifies how the terminal face of an AirTerminal is constructed."
@@ -342,6 +357,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirTerminalTypeRound.xml"
     },
     "Pset_AirTerminalTypeSlot": {
+        "description": "Slot air terminal type attributes.",
         "properties": {
             "NumberOfSlots": {
                 "description": "Number of slots."
@@ -356,6 +372,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirTerminalTypeSlot.xml"
     },
     "Pset_AirTerminalTypeSquare": {
+        "description": "Square air terminal type attributes.",
         "properties": {
             "FaceType": {
                 "description": "Identifies how the terminal face of an AirTerminal is constructed."
@@ -364,6 +381,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirTerminalTypeSquare.xml"
     },
     "Pset_AirToAirHeatRecoveryPHist": {
+        "description": "Air to Air Heat Recovery performance history common attributes.",
         "properties": {
             "AirPressureDropCurves": {
                 "description": "Air pressure drop as function of air flow rate"
@@ -402,6 +420,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirToAirHeatRecoveryPHist.xml"
     },
     "Pset_AirToAirHeatRecoveryTypeCommon": {
+        "description": "Air to Air Heat Recovery type common attributes.",
         "properties": {
             "HasDefrost": {
                 "description": "has the heat exchanger has defrost function or not"
@@ -426,6 +445,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_AirToAirHeatRecoveryTypeCommon.xml"
     },
     "Pset_AnalogInput": {
+        "description": "Defines the characteristics of an analog input.",
         "properties": {
             "Deadband": {
                 "description": "The deadband value for the analog input."
@@ -452,6 +472,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_AnalogInput.xml"
     },
     "Pset_AnalogOutput": {
+        "description": "Defines the characteristics of an analog output.",
         "properties": {
             "Deadband": {
                 "description": "The deadband value for the analog output."
@@ -478,6 +499,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_AnalogOutput.xml"
     },
     "Pset_Asset": {
+        "description": "An asset is a uniquely identifiable element which has a financial value and against which maintenance actions are recorded.",
         "properties": {
             "AssetAccountingType": {
                 "description": "Identifies the predefined types of risk from which the type required may be set."
@@ -492,6 +514,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_Asset.xml"
     },
     "Pset_BeamCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcBeam.",
         "properties": {
             "FireRating": {
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
@@ -515,6 +538,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_BeamCommon.xml"
     },
     "Pset_BinaryInput": {
+        "description": "Defines the characteristics of a binary input.",
         "properties": {
             "AckedTransitions": {
                 "description": "Enumeration that defines the type of transition acknowledgement"
@@ -544,6 +568,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_BinaryInput.xml"
     },
     "Pset_BinaryOutput": {
+        "description": "Defines the characteristics of a binary output.",
         "properties": {
             "AckedTransitions": {
                 "description": "Enumeration that defines the type of transition acknowledgement"
@@ -567,6 +592,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_BinaryOutput.xml"
     },
     "Pset_BoilerPHistory": {
+        "description": "Boiler performance history common attributes. WaterQuality attribute deleted in IFC2x2 Pset Addendum: Use IfcWaterProperties instead. CombustionProductsMaximulLoad and CombustionProductsPartialLoad attributes deleted in IFC2x2 Pset Addendum: Use IfcProductsOfCombustionProperties instead.",
         "properties": {
             "AuxiliaryEnergyConsumption": {
                 "description": "Boiler secondary energy source consumption (i.e., the electricity consumed by electrical devices such as fans and pumps)."
@@ -599,6 +625,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_BoilerPHistory.xml"
     },
     "Pset_BoilerTypeCommon": {
+        "description": "Boiler type common attributes. SoundLevel attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead. PrimaryEnergySource and AuxiliaryEnergySource attributes deleted in IFC2x2 Pset Addendum: Use IfcEnergyProperties, IfcFuelProperties, etc. instead.",
         "properties": {
             "HeatOutput": {
                 "description": "Total nominal heat output as listed by the Boiler manufacturer. For water boilers, it is a function of inlet versus outlet temperature. For steam boilers, it is a function of inlet temperature versus steam pressure."
@@ -646,6 +673,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_BoilerTypeCommon.xml"
     },
     "Pset_BoilerTypeSteam": {
+        "description": "Steam boiler type common attributes.",
         "properties": {
             "MaximumOutletPressure": {
                 "description": "Maximum steam outlet pressure."
@@ -654,6 +682,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_BoilerTypeSteam.xml"
     },
     "Pset_BuildingCommon": {
+        "description": "Properties common to the definition of all instances of IfcBuilding. Please note that several building attributes are handled directly at the IfcBuilding instance, the building number (or short name) by IfcBuilding.Name, the building name (or long name) by IfcBuilding.LongName, and the description (or comments) by IfcBuilding.Description. Actual building quantities, like building perimeter, building area and building volume are provided by IfcElementQuantities, and the building classification according to national building code by IfcClassificationReference.",
         "properties": {
             "AncillaryFireUse": {
                 "description": "Ancillary fire use for the building which is assigned from the fire use classification table as given by the relevant national building code."
@@ -692,6 +721,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_BuildingCommon.xml"
     },
     "Pset_BuildingElementProxyCommon": {
+        "description": "Properties common to the definition of all instances of IfcBuildingElementProxy.",
         "properties": {
             "Reference": {
                 "description": "Reference ID for this specified type in this project (e.g. type 'A-1')"
@@ -700,6 +730,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_BuildingElementProxyCommon.xml"
     },
     "Pset_BuildingStoreyCommon": {
+        "description": "Properties common to the definition of all instances of IfcBuildingStorey. Please note that several building attributes are handled directly at the IfcBuildingStorey instance, the building storey number (or short name) by IfcBuildingStorey.Name, the building storey name (or long name) by IfcBuildingStorey.LongName, and the description (or comments) by IfcBuildingStorey.Description. Actual building storey quantities, like building storey perimeter, building storey area and building storey volume are provided by IfcElementQuantities, and the building storey classification according to national building code by IfcClassificationReference.",
         "properties": {
             "AboveGround": {
                 "description": "Indication whether this building storey is fully above ground (TRUE), or below ground (FALSE), or partially above and below ground (UNKNOWN) - as in sloped terrain."
@@ -723,6 +754,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_BuildingStoreyCommon.xml"
     },
     "Pset_BuildingUse": {
+        "description": "Provides information on on the real estate context of the building of interest both current and anticipated.",
         "properties": {
             "MarketCategory": {
                 "description": "Category of use e.g. residential, commercial, recreation etc."
@@ -764,6 +796,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_BuildingUse.xml"
     },
     "Pset_BuildingUseAdjacent": {
+        "description": "Provides information on adjacent buildings and their uses to enable their impact on the building of interest to be determined. Note that for each instance of the property set used, where there is an existence of risk, there will be an instance of the property set Pset_Risk (q.v)",
         "properties": {
             "MarketCategory": {
                 "description": "Category of use e.g. residential, commercial, recreation etc."
@@ -781,6 +814,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_BuildingUseAdjacent.xml"
     },
     "Pset_BuildingWaterStorage": {
+        "description": "The basic set of properties that are used for determining the water requirements for a building. Typically, this property set is expected to be used in conjunction with IfcBuilding.",
         "properties": {
             "OneDayCoolingTowerMakeupWater": {
                 "description": "The volume of water that needs to be stored to supply make up water to the cooling towers in a building for one day in the event of water supply failure."
@@ -801,6 +835,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_BuildingWaterStorage.xml"
     },
     "Pset_CableCarrierSegmentTypeCableLadderSegment": {
+        "description": "An open carrier segment on which cables are carried on a ladder structure.",
         "properties": {
             "LadderConfiguration": {
                 "description": "Description of the configuration of the ladder structure used."
@@ -818,6 +853,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_CableCarrierSegmentTypeCableLadderSegment.xml"
     },
     "Pset_CableCarrierSegmentTypeCableTraySegment": {
+        "description": "An (typically) open carrier segment onto which cables are laid.",
         "properties": {
             "HasCover": {
                 "description": "Indication of whether the cable tray has a cover (=TRUE) or not (= FALSE). By default, this value should be set to FALSE."
@@ -835,6 +871,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_CableCarrierSegmentTypeCableTraySegment.xml"
     },
     "Pset_CableCarrierSegmentTypeCableTrunkingSegment": {
+        "description": "An enclosed carrier segment with one or more compartments into which cables are placed.",
         "properties": {
             "NominalHeight": {
                 "description": "The nominal height of the segment"
@@ -852,6 +889,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_CableCarrierSegmentTypeCableTrunkingSegment.xml"
     },
     "Pset_CableCarrierSegmentTypeConduitSegment": {
+        "description": "An enclosed tubular carrier segment through which cables are pulled.",
         "properties": {
             "ConduitShapeType": {
                 "description": "The shape of the conduit segment"
@@ -872,6 +910,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_CableCarrierSegmentTypeConduitSegment.xml"
     },
     "Pset_CableSegmentTypeCableSegment": {
+        "description": "Electrical cable with a specific purpose to lead electric current within a circuit or any other electric construction. Includes all types of electric cables, mainly several electrical segments wrapped together, e.g. cable, tube, busbar. Note that the number of conductors within a cable is determined by an aggregation mechanism that aggregates the conductors within the cable.",
         "properties": {
             "CableInsulationMaterial": {
                 "description": "The material from which the insulation is constructed. Such as PVC, PEX, EPR,..."
@@ -901,6 +940,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_CableSegmentTypeCableSegment.xml"
     },
     "Pset_CableSegmentTypeConductorSegment": {
+        "description": "An electrical conductor is a single linear element with the specific purpose to lead electric current. The core of one lead is normally single wired or multiwired which are intertwined.",
         "properties": {
             "ConductorMaterial": {
                 "description": "Type of material from which the conductor is constructed. Such as Aluminium or Copper"
@@ -933,6 +973,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_CableSegmentTypeConductorSegment.xml"
     },
     "Pset_ChillerPHistory": {
+        "description": "Chiller performance history attributes.",
         "properties": {
             "Capacity": {
                 "description": "The product of the  ideal capacity and the overall volumetric efficiency of the compressor."
@@ -956,6 +997,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ChillerPHistory.xml"
     },
     "Pset_ChillerTypeCommon": {
+        "description": "Chiller type common attributes.",
         "properties": {
             "NominalCapacity": {
                 "description": "Nominal cooling capacity of chiller at standardized conditions per ARI Standards 550-92, Centrifugal and Rotary Screw Water-Chilling Packages, and ARI Standards 590-92, Positive Displacement Compressor."
@@ -979,6 +1021,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ChillerTypeCommon.xml"
     },
     "Pset_CoilPHistory": {
+        "description": "Coil performance history common attributes. Sound attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead.",
         "properties": {
             "AirPressureDropCurve": {
                 "description": "Air pressure drop curve, pressure drop \u2013 flow rate curve, AirPressureDrop = f (AirflowRate)."
@@ -996,6 +1039,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CoilPHistory.xml"
     },
     "Pset_CoilTypeCommon": {
+        "description": "Coil type common attributes.",
         "properties": {
             "AirflowRateRange": {
                 "description": "Possible range of airflow that can be delivered."
@@ -1016,6 +1060,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CoilTypeCommon.xml"
     },
     "Pset_CoilTypeHydronic": {
+        "description": "Hydronic coil type attributes.",
         "properties": {
             "BypassFactor": {
                 "description": "Fraction of air that is bypassed by the coil (0-1)."
@@ -1063,6 +1108,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CoilTypeHydronic.xml"
     },
     "Pset_ColumnCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcColumn.",
         "properties": {
             "FireRating": {
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
@@ -1083,6 +1129,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_ColumnCommon.xml"
     },
     "Pset_CompressorPHistory": {
+        "description": "Compressor performance history attributes.",
         "properties": {
             "CoefficientOfPerformance": {
                 "description": "Coefficient of performance (COP)."
@@ -1130,6 +1177,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CompressorPHistory.xml"
     },
     "Pset_CompressorTypeCommon": {
+        "description": "Compressor type common attributes.",
         "properties": {
             "CompressorSpeed": {
                 "description": "Compressor speed"
@@ -1165,6 +1213,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CompressorTypeCommon.xml"
     },
     "Pset_CondenserPHistory": {
+        "description": "Condenser performance history attributes.",
         "properties": {
             "CompressorCondenserHeatGain": {
                 "description": "Heat gain between condenser inlet to compressor outlet."
@@ -1203,6 +1252,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CondenserPHistory.xml"
     },
     "Pset_CondenserTypeCommon": {
+        "description": "Condenser type common attributes.",
         "properties": {
             "ExternalSurfaceArea": {
                 "description": "External surface area (both primary and secondary area)."
@@ -1232,6 +1282,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CondenserTypeCommon.xml"
     },
     "Pset_ControllerTypeCommon": {
+        "description": "Properties for signal handling for an analog controller taking disparate valued multiple inputs and creating a single valued output.",
         "properties": {
             "ControlType": {
                 "description": "The type of signal modification effected"
@@ -1249,6 +1300,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ControllerTypeCommon.xml"
     },
     "Pset_ControllerTypeProportional": {
+        "description": "Properties for signal handling for an proportional controller taking a single input and creating a single valued output",
         "properties": {
             "ControlType": {
                 "description": "The type of signal modification effected"
@@ -1269,6 +1321,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ControllerTypeProportional.xml"
     },
     "Pset_ControllerTypeTwoPosition": {
+        "description": "Properties for signal handling for an analog controller taking disparate valued multiple inputs and creating a single valued binary output.",
         "properties": {
             "BandWidth": {
                 "description": "Dead band for controller"
@@ -1280,6 +1333,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ControllerTypeTwoPosition.xml"
     },
     "Pset_CooledBeamPHistory": {
+        "description": "Common performance history attributes for a cooled beam.",
         "properties": {
             "BeamCoolingCapacity": {
                 "description": "Cooling capacity of beam. This excludes cooling capacity of supply air"
@@ -1324,6 +1378,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CooledBeamPHistory.xml"
     },
     "Pset_CooledBeamPHistoryActive": {
+        "description": "Performance history attributes for an active cooled beam.",
         "properties": {
             "AirFlowRate": {
                 "description": "Air flow rate"
@@ -1338,6 +1393,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CooledBeamPHistoryActive.xml"
     },
     "Pset_CooledBeamTypeActive": {
+        "description": "Active (ventilated) cooled beam common attributes.",
         "properties": {
             "AirFlowConfiguration": {
                 "description": "Air flow configuration type of cooled beam"
@@ -1355,6 +1411,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CooledBeamTypeActive.xml"
     },
     "Pset_CooledBeamTypeCommon": {
+        "description": "Cooled beam common attributes. SoundLevel and SoundAttenuation attributes deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead.",
         "properties": {
             "CoilLength": {
                 "description": "Length of coil"
@@ -1426,6 +1483,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CooledBeamTypeCommon.xml"
     },
     "Pset_CoolingTowerPHistory": {
+        "description": "Cooling tower performance history attributes.",
         "properties": {
             "Capacity": {
                 "description": "Cooling tower capacity in terms of heat transfer rate of the cooling tower between air stream and water stream."
@@ -1446,6 +1504,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CoolingTowerPHistory.xml"
     },
     "Pset_CoolingTowerTypeCommon": {
+        "description": "Cooling tower type common attributes. WaterRequirement attribute unit type modified in IFC2x2 Pset Addendum.",
         "properties": {
             "AmbientDesignDryBulbTemperature": {
                 "description": "Ambient design dry bulb temperature used for selecting the cooling tower."
@@ -1499,6 +1558,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CoolingTowerTypeCommon.xml"
     },
     "Pset_CoveringCeiling": {
+        "description": "Properties common to the definition of all occurrences of IfcCovering with the PredefinedType set to CEILING.",
         "properties": {
             "FragilityRating": {
                 "description": "The level of fragility of the ceiling. It is giving according to the national building code."
@@ -1516,6 +1576,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_CoveringCeiling.xml"
     },
     "Pset_CoveringCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcCovering.",
         "properties": {
             "AcousticRating": {
                 "description": "Acoustic rating for this object. It is giving according to the national building code. It indicates the sound transmission resistance of this object by an index ration (instead of providing full sound absorbtion values)."
@@ -1551,6 +1612,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_CoveringCommon.xml"
     },
     "Pset_CoveringFlooring": {
+        "description": "Properties common to the definition of all occurrences of IfcCovering with the PredefinedType set to FLOORING.",
         "properties": {
             "HasAntiStaticSurface": {
                 "description": "Indication whether the surface finish is designed to prevent electrostatic charge (TRUE) or not (FALSE)."
@@ -1562,6 +1624,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_CoveringFlooring.xml"
     },
     "Pset_CurtainWallCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcCurtainWall.",
         "properties": {
             "AcousticRating": {
                 "description": "Acoustic rating for this object. It is giving according to the national building code. It indicates the sound transmission resistance of this object by an index ration (instead of providing full sound absorbtion values)."
@@ -1588,6 +1651,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_CurtainWallCommon.xml"
     },
     "Pset_DamperPHistory": {
+        "description": "Damper performance history attributes.",
         "properties": {
             "AirFlowRate": {
                 "description": "Air flow rate."
@@ -1611,6 +1675,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DamperPHistory.xml"
     },
     "Pset_DamperTypeCommon": {
+        "description": "Damper type common attributes.",
         "properties": {
             "BladeAction": {
                 "description": "Blade action."
@@ -1694,6 +1759,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DamperTypeCommon.xml"
     },
     "Pset_DamperTypeControlDamper": {
+        "description": "Control damper type attributes. Pset renamed from Pset_DamperTypeControl to Pset_DamperTypeControlDamper in IFC2x2 Pset Addendum.",
         "properties": {
             "ControlDamperOperation": {
                 "description": "The inherent characteristic of the control damper operation."
@@ -1705,6 +1771,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DamperTypeControlDamper.xml"
     },
     "Pset_DamperTypeFireDamper": {
+        "description": "Fire damper type attributes. Pset renamed from Pset_DamperTypeFire to Pset_DamperTypeFireDamper in IFC2x2 Pset Addendum.",
         "properties": {
             "ActuationType": {
                 "description": "Enumeration that identifies the different types of dampers"
@@ -1722,6 +1789,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DamperTypeFireDamper.xml"
     },
     "Pset_DamperTypeFireSmokeDamper": {
+        "description": "Combination Fire and Smoke damper type attributes. New Pset in IFC2x2 Pset Addendum.",
         "properties": {
             "ControlType": {
                 "description": "The type of control used to operate the damper (e.g., Open/Closed Indicator, Resetable Temperature Sensor, Temperature Override, etc.)"
@@ -1730,6 +1798,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DamperTypeFireSmokeDamper.xml"
     },
     "Pset_DamperTypeSmokeDamper": {
+        "description": "Smoke damper type attributes. Pset renamed from Pset_DamperTypeSmoke to Pset_DamperTypeSmokeDamper in IFC2x2 Pset Addendum.",
         "properties": {
             "ControlType": {
                 "description": "The type of control used to operate the damper (e.g., Open/Closed Indicator, Resetable Temperature Sensor, Temperature Override, etc.)"
@@ -1738,6 +1807,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DamperTypeSmokeDamper.xml"
     },
     "Pset_DesignPoint": {
+        "description": "A point of connection taken as a reference for hydraulic calculations in sprinkler systems. The point is assigned to an instance of IfcDistributionPort and located according to circumstances as set out by local building codes. For instance, it may be either the last elbow, tee or branch downstream of which a sprinkler array is located (where ranges are directly connected to the distribution pipe without risers or drops) or the point of connection of the riser or drop nearest the installation valves in the sprinkler array (where ranges are connected to the distribution pipe with risers or drops). Other circumstances may be referenced in local codes and the assignment of the design point must be established by a user.",
         "properties": {
             "IsDesignPoint": {
                 "description": "Indicates whether an instance of IfcDistributionPort is to act as the design point for sprinkler hydraulic calculation (set TRUE) or not (either set FALSE or assumed to be FALSE where an instance of the property set is not assigned to an instance of IfcDistributionPort)."
@@ -1746,6 +1816,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_DesignPoint.xml"
     },
     "Pset_DiscreteAccessoryAnchorBolt": {
+        "description": "Properties common to different types of anchor bolts.",
         "properties": {
             "AnchorBoltDiameter": {
                 "description": "The nominal diameter of the anchor bolt bar(s)."
@@ -1763,6 +1834,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryAnchorBolt.xml"
     },
     "Pset_DiscreteAccessoryColumnShoe": {
+        "description": "Shape properties common to column shoes.",
         "properties": {
             "ColumnShoeBasePlateDepth": {
                 "description": "The depth of the column shoe base plate."
@@ -1786,6 +1858,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryColumnShoe.xml"
     },
     "Pset_DiscreteAccessoryCornerFixingPlate": {
+        "description": "Properties specific to corner fixing plates.",
         "properties": {
             "CornerFixingPlateFlangeWidthInPlaneX": {
                 "description": "The flange width of the L-shaped corner plate in plane X."
@@ -1803,6 +1876,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryCornerFixingPlate.xml"
     },
     "Pset_DiscreteAccessoryDiagonalTrussConnector": {
+        "description": "Shape properties specific to connecting accessories in truss form with diagonal cross-bars.",
         "properties": {
             "DiagonalTrussBaseBarDiameter": {
                 "description": "The nominal diameter of the base bar."
@@ -1826,6 +1900,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryDiagonalTrussConnector.xml"
     },
     "Pset_DiscreteAccessoryEdgeFixingPlate": {
+        "description": "Properties specific to edge fixing plates.",
         "properties": {
             "EdgeFixingPlateFlangeWidthInPlaneX": {
                 "description": "The flange width of the L-shaped edge plate in plane X."
@@ -1843,6 +1918,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryEdgeFixingPlate.xml"
     },
     "Pset_DiscreteAccessoryFixingSocket": {
+        "description": "Properties common to fixing sockets.",
         "properties": {
             "FixingSocketHeight": {
                 "description": "The overall height of the fixing socket."
@@ -1860,6 +1936,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryFixingSocket.xml"
     },
     "Pset_DiscreteAccessoryLadderTrussConnector": {
+        "description": "Shape properties specific to connecting accessories in truss form with straight cross-bars in ladder shape.",
         "properties": {
             "LadderTrussBaseBarDiameter": {
                 "description": "The nominal diameter of the base bar."
@@ -1883,6 +1960,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryLadderTrussConnector.xml"
     },
     "Pset_DiscreteAccessoryStandardFixingPlate": {
+        "description": "Properties specific to standard fixing plates.",
         "properties": {
             "StandardFixingPlateDepth": {
                 "description": "The depth of the standard fixing plate."
@@ -1897,6 +1975,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryStandardFixingPlate.xml"
     },
     "Pset_DiscreteAccessoryWireLoop": {
+        "description": "Shape properties common to wire loop joint connectors.",
         "properties": {
             "WireDiameter": {
                 "description": "The nominal diameter of the wire."
@@ -1920,6 +1999,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedComponentElements/Pset_DiscreteAccessoryWireLoop.xml"
     },
     "Pset_DistributionChamberElementTypeFormedDuct": {
+        "description": "Definition from BS6100 100 3410: Space formed in the ground for the passage of pipes, cables, ducts.",
         "properties": {
             "AccessCoverLoadRating": {
                 "description": "The load rating of the access cover (which may be a value or an alphanumerically defined class rating)"
@@ -1952,6 +2032,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionChamberElementTypeFormedDuct.xml"
     },
     "Pset_DistributionChamberElementTypeInspectionChamber": {
+        "description": "Chamber constructed on a drain, sewer or pipeline and with a removable cover, that permits visible inspection.",
         "properties": {
             "AccessCoverLoadRating": {
                 "description": "The load rating of the access cover (which may be a value or an alphanumerically defined class rating)"
@@ -1996,6 +2077,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionChamberElementTypeInspectionChamber.xml"
     },
     "Pset_DistributionChamberElementTypeInspectionPit": {
+        "description": "Recess or chamber formed to permit access for inspection of substructure and services (definition modified from BS6100 221 4128).",
         "properties": {
             "Depth": {
                 "description": "The depth of the pit."
@@ -2010,6 +2092,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionChamberElementTypeInspectionPit.xml"
     },
     "Pset_DistributionChamberElementTypeManhole": {
+        "description": "Chamber constructed on a drain, sewer or pipeline and with a removable cover, that permits the entry of a person.",
         "properties": {
             "AccessCoverLoadRating": {
                 "description": "The load rating of the access cover (which may be a value or an alphanumerically defined class rating)"
@@ -2054,6 +2137,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionChamberElementTypeManhole.xml"
     },
     "Pset_DistributionChamberElementTypeMeterChamber": {
+        "description": "Chamber that houses a meter(s) (definition modified from BS6100 250 6224).",
         "properties": {
             "AccessCoverMaterial": {
                 "description": "The material from which the access cover to the chamber is constructed. NOTE: It is assumed that chamber walls will be constructed of a single material."
@@ -2080,6 +2164,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionChamberElementTypeMeterChamber.xml"
     },
     "Pset_DistributionChamberElementTypeSump": {
+        "description": "Definition from BS6100 100 3431: Recess or small chamber into which liquid is drained to facilitate its removal.",
         "properties": {
             "InvertLevel": {
                 "description": "The lowest point in the cross section of the sump."
@@ -2094,6 +2179,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionChamberElementTypeSump.xml"
     },
     "Pset_DistributionChamberElementTypeTrench": {
+        "description": "Definition from BS6100 221 4118: Excavation, the length of which greatly exceeds the width.",
         "properties": {
             "Depth": {
                 "description": "The depth of the trench."
@@ -2108,6 +2194,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionChamberElementTypeTrench.xml"
     },
     "Pset_DistributionChamberElementTypeValveChamber": {
+        "description": "Definition from BS6100 250 6224: Chamber that houses a valve(s).",
         "properties": {
             "AccessCoverMaterial": {
                 "description": "The material from which the access cover to the chamber is constructed. NOTE: It is assumed that chamber walls will be constructed of a single material."
@@ -2134,6 +2221,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionChamberElementTypeValveChamber.xml"
     },
     "Pset_DistributionFlowElementCommon": {
+        "description": "Common properties of all occurrences of IfcDistributionFlowElement and their subtypes.",
         "properties": {
             "Reference": {
                 "description": "Reference ID for this specific instance (e.g.  'WWS/VS1/400/001', which indicates the occurrence belongs to system WWS, subsystems VSI/400, and has the component number 001)"
@@ -2142,6 +2230,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionFlowElementCommon.xml"
     },
     "Pset_DistributionPortDuct": {
+        "description": "Duct port occurrence attributes attached to an instance of IfcDistributionPort.",
         "properties": {
             "ConnectionType": {
                 "description": "The end-style treatment of the duct port: BEADEDSLEEVE: Beaded Sleeve.  COMPRESSION: Compression.  CRIMP: Crimp.  DRAWBAND: Drawband.  DRIVESLIP: Drive slip.  FLANGED: Flanged.  OUTSIDESLEEVE: Outside Sleeve.  SLIPON: Slipon.  SOLDERED: Soldered.  SSLIP: S-Slip.  STANDINGSEAM: Standing seam.  SWEDGE: Swedge.  WELDED: Welded.  OTHER: Another type of end-style has been applied. NONE: No end-style has been applied."
@@ -2153,6 +2242,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionPortDuct.xml"
     },
     "Pset_DistributionPortPipe": {
+        "description": "Pipe port occurrence attributes attached to an instance of IfcDistributionPort.",
         "properties": {
             "ConnectionType": {
                 "description": "The end-style treatment of the pipe port: BRAZED: Brazed.  COMPRESSION: Compression.  FLANGED: Flanged.  GROOVED: Grooved.  OUTSIDESLEEVE: Outside Sleeve.  SOLDERED: Soldered.  SWEDGE: Swedge.  THREADED: Threaded.  WELDED: Welded.  OTHER: Another type of end-style has been applied. NONE: No end-style has been applied. USERDEFINED: User-defined port connection type.  NOTDEFINED: Undefined port connection type."
@@ -2164,6 +2254,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionPortPipe.xml"
     },
     "Pset_DoorCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcDoor.",
         "properties": {
             "AcousticRating": {
                 "description": "Acoustic rating for this object. It is giving according to the national building code. It indicates the sound transmission resistance of this object by an index ration (instead of providing full sound absorbtion values)."
@@ -2205,6 +2296,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_DoorCommon.xml"
     },
     "Pset_DoorWindowGlazingType": {
+        "description": "Properties common to the definition of the glazing component of occurrences of IfcDoor and IfcWindow, used for thermal and lighting calculations.",
         "properties": {
             "BeamRadiationTransmittance": {
                 "description": "Direct solar radiation transmittance that passes the glazing at normal incidence. It is a value without unit, often referred to as (Tsol)."
@@ -2258,6 +2350,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_DoorWindowGlazingType.xml"
     },
     "Pset_DoorWindowShadingType": {
+        "description": "Properties common to the definition of the shading component of occurrences of IfcDoor and IfcWindow, used for static (simplified) shading calculations.",
         "properties": {
             "ExternalShadingCoefficient": {
                 "description": "Radiation transmission coefficient of the outside shading device. It is a value without unit."
@@ -2272,6 +2365,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_DoorWindowShadingType.xml"
     },
     "Pset_DrainageCatchment": {
+        "description": "Area of land that drains naturally to a given point (BS6100 modified). Used as a non type driven property set in conjunction with an appropriate instance of IfcSpatialStructureElement that is identified as a catchment using the inherited IfcRoot.Name attribute. Catchments may be nested using IfcRelNests so that subcatchment areas (as component parts of a catchment area) can be identified. A catchment area will be geometrically defined by a closed loop (closed polyline or polyloop) Note also that the boundary between catchment areas (watershed) is not currently identified.",
         "properties": {
             "AreaDrained": {
                 "description": "The area measure enclosed within the catchment"
@@ -2280,6 +2374,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_DrainageCatchment.xml"
     },
     "Pset_DrainageCulvert": {
+        "description": "Covered channel or large pipe that forms a watercourse below ground level, usually under a road or railway (BS6100). Used as a non type driven property set in conjunction with an instance of IfcSystem that is classified as a culvert.",
         "properties": {
             "ClearDepth": {
                 "description": "The clear depth of the culvert"
@@ -2291,6 +2386,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_DrainageCulvert.xml"
     },
     "Pset_DrainageOutfall": {
+        "description": "Structure through which water is discharged into a watercourse or body of water (BS6100). Used as a non type driven property set in conjunction with an instance of IfcProxy that is identified as an outfall using the inherited IfcRoot.Name attribute.",
         "properties": {
             "InvertLevel": {
                 "description": "The lowest point of the outfall"
@@ -2299,6 +2395,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_DrainageOutfall.xml"
     },
     "Pset_DrainageReserve": {
+        "description": "Area exclusively reserved for the routing of drainage services. Used as a non type driven property set in conjunction with an appropriate instance of IfcSpatialStructureElement that is identified as a drainage reserve using the inherited IfcRoot.Name attribute.",
         "properties": {
             "Width": {
                 "description": "The width of the drainage reserve"
@@ -2307,6 +2404,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_DrainageReserve.xml"
     },
     "Pset_Draughting": {
+        "description": "Property set to capture layer and colour as a quick win implementation within IFC2x platform to enable more efficient exchange of 3D building models. NOTE: With implementation of the IFC2x2 capabilities defined in the presentation resources (IfcPresentationLayerAssignment, IfcCurveStyle) the use of this property set may become obsolete.",
         "properties": {
             "Colour": {
                 "children": {
@@ -2329,6 +2427,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_Draughting.xml"
     },
     "Pset_DuctConnection": {
+        "description": "This property set is used to define the various types of duct connections. It is applied to occurrences of duct segments and fittings.",
         "properties": {
             "ConnectionType": {
                 "description": "The connection type between duct segments or fittings and other segments or fittings. If the list contains only one value, then this connection type value applies to all ports. For more than one value in the list, the connection type value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle.  BEADEDSLEEVE: Beaded Sleeve.  BRAZED: Brazed.  COMPRESSION: Compression.  CRIMP: Crimp.  DRAWBAND: Drawband.  DRIVESLIP: Drive slip.  FLANGED: Flanged.  OUTSIDESLEEVE: Outside Sleeve.  SLIPON: Slipon.  SOLDERED: Soldered.  SSLIP: S-Slip.  STANDINGSEAM: Standing seam.  SWEDGE: Swedge.  WELDED: Welded.  NONE: No connection type. NOTDEFINED: Undefined connection type."
@@ -2337,6 +2436,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctConnection.xml"
     },
     "Pset_DuctDesignCriteria": {
+        "description": "This property set is used to define the general characteristics of the duct design parameters. This property set is typically attached to an instance of an IfcSystem, however, it may also be attached to individual elements within a duct distribution system where individual design parameters overrule those of the system.",
         "properties": {
             "AspectRatio": {
                 "description": "The default aspect ratio"
@@ -2375,6 +2475,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctDesignCriteria.xml"
     },
     "Pset_DuctFittingPHistory": {
+        "description": "Duct fitting performance history common attributes.",
         "properties": {
             "AirFlowLeakage": {
                 "description": "Volumetric leakage flow rate."
@@ -2389,6 +2490,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctFittingPHistory.xml"
     },
     "Pset_DuctFittingTypeCommon": {
+        "description": "Duct fitting type common attributes.",
         "properties": {
             "EndStyleTreatment": {
                 "description": "The end-style treatment of the duct fitting manufactured. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle.  BEADEDSLEEVE: Beaded Sleeve.  BRAZED: Brazed.  COMPRESSION: Compression.  CRIMP: Crimp.  DRAWBAND: Drawband.  DRIVESLIP: Drive slip.  FLANGED: Flanged.  OUTSIDESLEEVE: Outside Sleeve.  SLIPON: Slipon.  SOLDERED: Soldered.  SSLIP: S-Slip.  STANDINGSEAM: Standing seam.  SWEDGE: Swedge.  WELDED: Welded.  NONE: No end-style treatment has been applied. NOTDEFINED: Undefined end-style type."
@@ -2424,6 +2526,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctFittingTypeCommon.xml"
     },
     "Pset_DuctSegmentPHistory": {
+        "description": "Duct segment performance history common attributes.",
         "properties": {
             "AtmosphericPressure": {
                 "description": "Ambient atmospheric pressure."
@@ -2441,6 +2544,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctSegmentPHistory.xml"
     },
     "Pset_DuctSegmentTypeCommon": {
+        "description": "Duct segment type common attributes.",
         "properties": {
             "EndStyleTreatment": {
                 "description": "The end-style treatment of the duct segment manufactured. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle.  BEADEDSLEEVE: Beaded Sleeve.  BRAZED: Brazed.  COMPRESSION: Compression.  CRIMP: Crimp.  DRAWBAND: Drawband.  DRIVESLIP: Drive slip.  FLANGED: Flanged.  OUTSIDESLEEVE: Outside Sleeve.  SLIPON: Slipon.  SOLDERED: Soldered.  SSLIP: S-Slip.  STANDINGSEAM: Standing seam.  SWEDGE: Swedge.  WELDED: Welded.  NONE: No end-style treatment has been applied. NOTDEFINED: Undefined end-style type."
@@ -2488,6 +2592,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctSegmentTypeCommon.xml"
     },
     "Pset_DuctSilencerPHistory": {
+        "description": "Duct silencer performance history common attributes.",
         "properties": {
             "AirFlowRate": {
                 "description": "Volumetric air flow rate."
@@ -2499,6 +2604,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctSilencerPHistory.xml"
     },
     "Pset_DuctSilencerTypeCommon": {
+        "description": "Duct silencer type common attributes. InsertionLoss and RegeneratedSound attributes deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead.",
         "properties": {
             "AirFlowrateRange": {
                 "description": "Possible range of airflow that can be delivered."
@@ -2528,6 +2634,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctSilencerTypeCommon.xml"
     },
     "Pset_ElectricDistributionPointCommon": {
+        "description": "A room or a place or a box where an electrical supply enters and is then further distributed via electrical circuits. A distribution point may be a main distribution point or a sub-main distribution point.",
         "properties": {
             "CaseMaterial": {
                 "description": "Material from which the casing surrounding the distribution point is constructed."
@@ -2548,6 +2655,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ElectricDistributionPointCommon.xml"
     },
     "Pset_ElectricGeneratorTypeCommon": {
+        "description": "Defines a particular type of engine that is a machine for converting mechanical energy into electrical energy.",
         "properties": {
             "ElectricGeneratorEfficiency": {
                 "description": "The ratio of output capacity to intake capacity."
@@ -2562,6 +2670,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ElectricGeneratorTypeCommon.xml"
     },
     "Pset_ElectricHeaterTypeElectricalCableHeater": {
+        "description": "An electrical device that outputs heat uniformly along its path.",
         "properties": {
             "HeatOutputPerUnitLength": {
                 "description": "The amount of heat output per unit length of heat emitter."
@@ -2570,6 +2679,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ElectricHeaterTypeElectricalCableHeater.xml"
     },
     "Pset_ElectricHeaterTypeElectricalMatHeater": {
+        "description": "An electrical device that outputs heat uniformly across its surface area.",
         "properties": {
             "HeatOutputPerUnitArea": {
                 "description": "The amount of heat output per unit area of heat emitter."
@@ -2578,6 +2688,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ElectricHeaterTypeElectricalMatHeater.xml"
     },
     "Pset_ElectricHeaterTypeElectricalPointHeater": {
+        "description": "An electrical device that outputs heat as a total quantity from a point or restricted area that can be considered as a point.",
         "properties": {
             "HeatOutput": {
                 "description": "The total amount of heat output by the heat emitter."
@@ -2586,6 +2697,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ElectricHeaterTypeElectricalPointHeater.xml"
     },
     "Pset_ElectricalCircuit": {
+        "description": "A circuit supplies electrical devices with voltage and current.",
         "properties": {
             "Diversity": {
                 "description": "A factor that is a means of reducing the cable size on the basis that not all the connected load will be drawing current simultaneously."
@@ -2603,6 +2715,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ElectricalCircuit.xml"
     },
     "Pset_ElectricalDeviceCommon": {
+        "description": "A means of collecting together all properties that are commonly used by electrical devices.",
         "properties": {
             "ElectricalDeviceNominalPower": {
                 "description": "The output power rating that is certified for a device."
@@ -2641,6 +2754,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ElectricalDeviceCommon.xml"
     },
     "Pset_ElementShading": {
+        "description": "Shading device properties associated with an element that represents a shading device, e.g. an IfcBuildingElementProxy or any other building element.",
         "properties": {
             "AverageSolarTransmittance": {
                 "description": "Overall or average ratio of the solar flux transmitted through a body to that incident upon it."
@@ -2673,6 +2787,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_ElementShading.xml"
     },
     "Pset_EnergyConsumptionPHistoryElectricity": {
+        "description": "Measured electrical energy consumption properties.",
         "properties": {
             "ApparentPower": {
                 "description": "Apparent power."
@@ -2696,6 +2811,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_EnergyConsumptionPHistoryElectricity.xml"
     },
     "Pset_EnergyConsumptionPHistoryFuel": {
+        "description": "Measured fuel energy consumption properties.",
         "properties": {
             "Flowrate": {
                 "description": "The flowrate of the fuel."
@@ -2710,6 +2826,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_EnergyConsumptionPHistoryFuel.xml"
     },
     "Pset_EnergyConsumptionPHistorySteam": {
+        "description": "Measured steam energy consumption properties.",
         "properties": {
             "Flowrate": {
                 "description": "The mass flowrate of the steam."
@@ -2727,6 +2844,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_EnergyConsumptionPHistorySteam.xml"
     },
     "Pset_EnergyConversionDeviceCoil": {
+        "description": "Coil occurrence attributes attached to an instance of IfcEnergyConversionDevice.",
         "properties": {
             "HasSoundAttentuation": {
                 "description": "TRUE if the coil has sound attenuation, FALSE if it does not."
@@ -2735,6 +2853,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_EnergyConversionDeviceCoil.xml"
     },
     "Pset_EnergyConversionDeviceSpaceHeaterPanel": {
+        "description": "Panel space heater type occurrence attributes.",
         "properties": {
             "NumberOfPanels": {
                 "description": "Number of panels."
@@ -2743,6 +2862,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_EnergyConversionDeviceSpaceHeaterPanel.xml"
     },
     "Pset_EnergyConversionDeviceSpaceHeaterSectional": {
+        "description": "Sectional space heater type occurrence attributes.",
         "properties": {
             "NumberOfSections": {
                 "description": "Number of vertical sections, measured in the direction of flow."
@@ -2751,6 +2871,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_EnergyConversionDeviceSpaceHeaterSectional.xml"
     },
     "Pset_EvaporativeCoolerPHistory": {
+        "description": "Evaporative cooler performance history attributes.",
         "properties": {
             "AirPressureDropCurve": {
                 "description": "Air pressure drop as function of air flow rate."
@@ -2780,6 +2901,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_EvaporativeCoolerPHistory.xml"
     },
     "Pset_EvaporativeCoolerTypeCommon": {
+        "description": "Evaporative cooler type common attributes. Sound attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead. WaterRequirement attribute unit type modified in IFC2x2 Pset Addendum.",
         "properties": {
             "FlowArrangement": {
                 "description": "CounterFlow: Air and water flow enter in different directions. CrossFlow: Air and water flow are perpendicular. ParallelFlow: Air and water flow enter in same directions."
@@ -2803,6 +2925,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_EvaporativeCoolerTypeCommon.xml"
     },
     "Pset_EvaporatorPHistory": {
+        "description": "Evaporator performance history attributes.",
         "properties": {
             "CompressorEvaporatorHeatGain": {
                 "description": "Heat gain between the evaporator outlet and the compressor inlet."
@@ -2841,6 +2964,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_EvaporatorPHistory.xml"
     },
     "Pset_EvaporatorTypeCommon": {
+        "description": "Evaporator type common attributes.",
         "properties": {
             "EvaporatorCoolant": {
                 "description": "The fluid used for the coolant in the evaporator."
@@ -2876,6 +3000,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_EvaporatorTypeCommon.xml"
     },
     "Pset_FanPHistory": {
+        "description": "Fan performance history attributes. Sound attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead.",
         "properties": {
             "DischargePressureLoss": {
                 "description": "Fan discharge pressure loss associated with the discharge arrangement."
@@ -2914,6 +3039,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FanPHistory.xml"
     },
     "Pset_FanTypeCommon": {
+        "description": "Fan type common attributes.",
         "properties": {
             "CapacityControlType": {
                 "description": "InletVane: Control by adjusting inlet vane VariableSpeedDrive: Control by variable speed drive  BladePitchAngle: Control by adjusting blade pitch angle TwoSpeed: Control by switch between high and low speed DischargeDamper: Control by modulating discharge damper"
@@ -2955,6 +3081,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FanTypeCommon.xml"
     },
     "Pset_FanTypeSmokeControl": {
+        "description": "Smoke control attributes of a fan participating as part of a smoke control system.",
         "properties": {
             "MaximumDesignTemperature": {
                 "description": "Maximum design operational temperature."
@@ -2969,6 +3096,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FanTypeSmokeControl.xml"
     },
     "Pset_FilterPHistory": {
+        "description": "Filter performance history attributes.",
         "properties": {
             "CountedEfficiency": {
                 "description": "Filter efficiency based the particle counts concentration before and after filter against particles with certain size distribution."
@@ -2983,6 +3111,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FilterPHistory.xml"
     },
     "Pset_FilterTypeAirParticleFilter": {
+        "description": "Air particle filter type attributes.",
         "properties": {
             "AirParticleFilterType": {
                 "description": "A panel dry type extended surface filter is a dry-type air filter with random fiber mats or blankets in the forms of pockets, V-shaped or radial pleats, and include the following: CoarseFilter: Filter with a efficiency lower than 30% for atmosphere dust-spot. CoarseMetalScreen: Filter made of metal screen. CoarseCellFoams: Filter made of cell foams. CoarseSpunGlass: Filter made of spun glass. MediumFilter: Filter with an efficiency between 30-98% for atmosphere dust-spot. MediumElectretFilter: Filter with fine electret synthetic fibers. MediumNaturalFiberFilter: Filter with natural fibers. HEPAFilter: High efficiency particulate air filter. ULPAFilter: Ultra low penetration air filter. MembraneFilters: Filter made of membrane for certain pore diameters in flat sheet and pleated form. A renewable media with a moving curtain viscous filter are random-fiber media coated with viscous substance in roll form or curtain where fresh media is fed across the face of the filter and the dirty media is rewound onto a roll at the bottom or to into a reservoir: RollForm: Viscous filter used in roll form. AdhesiveReservoir: Viscous filter used in moving curtain form. A renewable moving curtain dry media filter is a random-fiber dry media of relatively high porosity used in moving-curtain(roll) filters. An electrical filter uses electrostatic precipitation to remove and collect particulate contaminants."
@@ -3024,6 +3153,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FilterTypeAirParticleFilter.xml"
     },
     "Pset_FilterTypeCommon": {
+        "description": "Filter type common attributes.",
         "properties": {
             "FinalResistance": {
                 "description": "Filter fluid resistance when replacement is required (i.e., Pressure drop at the maximum air flowrate across the filter when the filter needs replacement per ASHRAE Standard 52.1)."
@@ -3065,6 +3195,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FilterTypeCommon.xml"
     },
     "Pset_FireRatingProperties": {
+        "description": "Properties related to the combustion of materials for purposes of assessing fire hazard.",
         "properties": {
             "FireResistanceRating": {
                 "description": "Fire rating identifying the entity's fire resistive value (e.g., 1-hour, 2-hour, etc.) so that its resistance to fire can be compared to that of the surrounding structure."
@@ -3079,6 +3210,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FireRatingProperties.xml"
     },
     "Pset_FireSuppressionTerminalTypeBreechingInlet": {
+        "description": "Symmetrical pipe fitting that unites two or more inlets into a single pipe (BS6100 330 114 adapted).",
         "properties": {
             "BreechingInletType": {
                 "description": "Defines the type of breeching inlet."
@@ -3102,6 +3234,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_FireSuppressionTerminalTypeBreechingInlet.xml"
     },
     "Pset_FireSuppressionTerminalTypeFireHydrant": {
+        "description": "Device, fitted to a pipe, through which a temporary supply of water may be provided (BS6100 330 6107)",
         "properties": {
             "BodyColor": {
                 "description": "Color of the body of the hydrant."
@@ -3137,6 +3270,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_FireSuppressionTerminalTypeFireHydrant.xml"
     },
     "Pset_FireSuppressionTerminalTypeHoseReel": {
+        "description": "A supporting framework on which a hose may be wound (BS6100 155 8201).",
         "properties": {
             "ClassOfService": {
                 "description": "A classification of usage of the hose reel that may be applied."
@@ -3166,6 +3300,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_FireSuppressionTerminalTypeHoseReel.xml"
     },
     "Pset_FireSuppressionTerminalTypeSprinkler": {
+        "description": "Device for sprinkling water from a pipe under pressure over an area (BS6100 100 3432)",
         "properties": {
             "Activation": {
                 "description": "Identifies the predefined methods of sprinkler activation from which that required may be set."
@@ -3213,6 +3348,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_FireSuppressionTerminalTypeSprinkler.xml"
     },
     "Pset_FlowControllerDamper": {
+        "description": "Damper occurrence attributes attached to an instance of IfcFlowController.",
         "properties": {
             "SizingMethod": {
                 "description": "Identifies whether the damper is sized nominally or with exact measurements: NOMINAL: Nominal sizing method.  EXACT: Exact sizing method."
@@ -3221,6 +3357,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowControllerDamper.xml"
     },
     "Pset_FlowControllerFlowMeter": {
+        "description": "Flow meter occurrence common attributes.",
         "properties": {
             "Purpose": {
                 "description": "Enumeration defining the purpose of the flow meter occurrence."
@@ -3229,6 +3366,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowControllerFlowMeter.xml"
     },
     "Pset_FlowFittingDuctFitting": {
+        "description": "Duct fitting occurrence attributes attached to an instance of IfcFlowFitting.",
         "properties": {
             "AbsoluteRoughnessFactor": {
                 "description": "The absolute roughness factor of the duct fitting."
@@ -3243,6 +3381,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowFittingDuctFitting.xml"
     },
     "Pset_FlowFittingPipeFitting": {
+        "description": "Pipe fitting occurrence attributes attached to an instance of IfcFlowFitting.",
         "properties": {
             "Color": {
                 "description": "The color of the pipe fitting."
@@ -3254,6 +3393,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowFittingPipeFitting.xml"
     },
     "Pset_FlowInstrumentTypePressureGauge": {
+        "description": "A device that reads and displays a pressure value at a point or the pressure difference between two points.",
         "properties": {
             "DisplaySize": {
                 "description": "The physical size of the display. For a dial pressure gauge it will be the diameter of the dial."
@@ -3265,6 +3405,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_FlowInstrumentTypePressureGauge.xml"
     },
     "Pset_FlowInstrumentTypeThermometer": {
+        "description": "A device that reads and displays a temperature value at a point.",
         "properties": {
             "DisplaySize": {
                 "description": "The physical size of the display. In the case of a stem thermometer, this will be the length of the stem. For a dial thermometer, it will be the diameter of the dial."
@@ -3276,6 +3417,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_FlowInstrumentTypeThermometer.xml"
     },
     "Pset_FlowMeterTypeCommon": {
+        "description": "Common attributes of a flow meter type",
         "properties": {
             "IsMain": {
                 "description": "Indicates whether the meter is the main meter on the system. If FALSE, it is a submeter."
@@ -3290,6 +3432,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FlowMeterTypeCommon.xml"
     },
     "Pset_FlowMeterTypeEnergyMeter": {
+        "description": "Device that measures, indicates and sometimes records, the energy usage in a system.",
         "properties": {
             "ConnectionSize": {
                 "description": "Defines the size of inlet and outlet pipe connections to the meter."
@@ -3298,6 +3441,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FlowMeterTypeEnergyMeter.xml"
     },
     "Pset_FlowMeterTypeGasMeter": {
+        "description": "Device that measures, indicates and sometimes records, the volume of gas that passes through it without interrupting the flow.",
         "properties": {
             "ConnectionSize": {
                 "description": "Defines the size of inlet and outlet pipe connections to the meter."
@@ -3315,6 +3459,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FlowMeterTypeGasMeter.xml"
     },
     "Pset_FlowMeterTypeOilMeter": {
+        "description": "Device that measures, indicates and sometimes records, the volume of oil that passes through it without interrupting the flow.",
         "properties": {
             "ConnectionSize": {
                 "description": "Defines the size of inlet and outlet pipe connections to the meter."
@@ -3326,6 +3471,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FlowMeterTypeOilMeter.xml"
     },
     "Pset_FlowMeterTypeWaterMeter": {
+        "description": "Device that measures, indicates and sometimes records, the volume of water that passes through it without interrupting the flow.",
         "properties": {
             "BackflowPreventerType": {
                 "description": "Identifies the type of backflow preventer installed to prevent the backflow of contaminated or polluted water from an irrigation/reticulation system to a potable water supply."
@@ -3346,6 +3492,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_FlowMeterTypeWaterMeter.xml"
     },
     "Pset_FlowMovingDeviceCompressor": {
+        "description": "Compressor occurrence attributes attached to an instance of IfcFlowMovingDevice.",
         "properties": {
             "ImpellerDiameter": {
                 "description": "Diameter of compressor impeller - used to scale performance of geometrically similar compressors."
@@ -3354,6 +3501,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowMovingDeviceCompressor.xml"
     },
     "Pset_FlowMovingDeviceFan": {
+        "description": "Fan occurrence attributes attached to an instance of IfcFlowMovingDevice.",
         "properties": {
             "ApplicationOfFan": {
                 "description": "The functional application of the fan: SUPPLYAIR: Supply air fan.  RETURNAIR: Return air fan.  EXHAUSTAIR: Exhaust air fan.  OTHER: Other type of application not defined above."
@@ -3380,6 +3528,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowMovingDeviceFan.xml"
     },
     "Pset_FlowMovingDeviceFanCentrifugal": {
+        "description": "Centrifugal fan occurrence attributes attached to an instance of IfcFlowMovingDevice.",
         "properties": {
             "Arrangement": {
                 "description": "Defines the fan and motor drive arrangement as defined by AMCA: ARRANGEMENT1: Arrangement 1.  ARRANGEMENT2: Arrangement 2.  ARRANGEMENT3: Arrangement 3.  ARRANGEMENT4: Arrangement 4.  ARRANGEMENT7: Arrangement 7.  ARRANGEMENT8: Arrangement 8.  ARRANGEMENT9: Arrangement 9.  ARRANGEMENT10: Arrangement 10.  OTHER: Other type of fan drive arrangement."
@@ -3394,6 +3543,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowMovingDeviceFanCentrifugal.xml"
     },
     "Pset_FlowMovingDevicePump": {
+        "description": "Pump occurrence attributes attached to an instance of IfcFlowMovingDevice.",
         "properties": {
             "BaseType": {
                 "description": "Defines general types of pump bases: FRAME: Frame.  BASE: Base.  NONE: There is no pump base, such as an inline pump.  OTHER: Other type of pump base."
@@ -3408,6 +3558,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowMovingDevicePump.xml"
     },
     "Pset_FlowSegmentDuctSegment": {
+        "description": "Duct segment occurrence attributes attached to an instance of IfcFlowSegment.",
         "properties": {
             "Color": {
                 "description": "The color of the duct segment."
@@ -3428,6 +3579,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowSegmentDuctSegment.xml"
     },
     "Pset_FlowSegmentPipeSegment": {
+        "description": "Pipe segment occurrence attributes attached to an instance of IfcFlowSegment.",
         "properties": {
             "Color": {
                 "description": "The color of the pipe segment."
@@ -3448,6 +3600,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowSegmentPipeSegment.xml"
     },
     "Pset_FlowStorageDeviceTank": {
+        "description": "Properties that relate to an instance of a flow storage device that is typed as a tank. Note that a partial tank may be considered as a compartment within a compartmentalized tank.",
         "properties": {
             "HasLadder": {
                 "description": "Indication of whether the tank is provided with a ladder (set TRUE) for access to the top. If no ladder is provided then value is set FALSE."
@@ -3462,6 +3615,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowStorageDeviceTank.xml"
     },
     "Pset_FlowTerminalAirTerminal": {
+        "description": "Air terminal occurrence attributes attached to an instance of IfcFlowTerminal.",
         "properties": {
             "AirflowType": {
                 "description": "Enumeration defining the functional type of air flow through the terminal."
@@ -3473,6 +3627,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowTerminalAirTerminal.xml"
     },
     "Pset_FurnitureTypeChair": {
+        "description": "A set of specific properties for furniture type chair.",
         "properties": {
             "HighestSeatingHeight": {
                 "description": "The value of seating height of high level if the chair height is adjustable."
@@ -3487,6 +3642,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_FurnitureTypeChair.xml"
     },
     "Pset_FurnitureTypeCommon": {
+        "description": "Common properties for all types of furniture such as chair, desk, table, and file cabinet.",
         "properties": {
             "Description": {
                 "description": "Specific description of this type of furniture."
@@ -3510,6 +3666,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_FurnitureTypeCommon.xml"
     },
     "Pset_FurnitureTypeDesk": {
+        "description": "A set of specific properties for furniture type desk.",
         "properties": {
             "WorksurfaceArea": {
                 "description": "The value of the work surface area of the desk."
@@ -3518,6 +3675,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_FurnitureTypeDesk.xml"
     },
     "Pset_FurnitureTypeFileCabinet": {
+        "description": "A set of specific properties for furniture type file cabinet",
         "properties": {
             "WithLock": {
                 "description": "Indicates whether the file cabinet is lockable (= TRUE) or not (= FALSE)."
@@ -3526,6 +3684,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_FurnitureTypeFileCabinet.xml"
     },
     "Pset_FurnitureTypeTable": {
+        "description": "A set of specific properties for furniture type table.",
         "properties": {
             "NumberOfChairs": {
                 "description": "Maximum number of chairs that can fit with the table for normal use."
@@ -3537,6 +3696,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_FurnitureTypeTable.xml"
     },
     "Pset_GasTerminalPHistory": {
+        "description": "Gas terminal performance history common attributes.",
         "properties": {
             "GasFlowRate": {
                 "description": "The volumetric flowrate of gas to the gas terminal."
@@ -3545,6 +3705,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_GasTerminalPHistory.xml"
     },
     "Pset_GasTerminalTypeCommon": {
+        "description": "Common attributes of gas terminal types.  GasProperties attribute deleted in IFC2x2 Pset Addendum: Use IfcFuelProperties instead.",
         "properties": {
             "GasFlowRateRange": {
                 "description": "Gas volumetric flowrate within which the gas  terminal is designed to operate."
@@ -3553,6 +3714,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_GasTerminalTypeCommon.xml"
     },
     "Pset_GasTerminalTypeGasAppliance": {
+        "description": "Piece of equipment for occupants use that is connected to a gas installation (definition is a modification from that found in BS6100).",
         "properties": {
             "FlueType": {
                 "description": "Defines the types of flue that may be specified for connection to gas appliances where:"
@@ -3564,6 +3726,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_GasTerminalTypeGasAppliance.xml"
     },
     "Pset_GasTerminalTypeGasBurner": {
+        "description": "A complete unit on which or in which a flame is maintained through the provision of a gas supply.",
         "properties": {
             "GasBurnerType": {
                 "description": "Selection of the type of gas burner from the enumerated list of types"
@@ -3572,6 +3735,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_GasTerminalTypeGasBurner.xml"
     },
     "Pset_HeatExchangerTypeCommon": {
+        "description": "Heat exchanger type common attributes.",
         "properties": {
             "Arrangement": {
                 "description": "Defines the basic flow arrangements for the heat exchanger: COUNTERFLOW: Counterflow heat exchanger arrangement.  CROSSFLOW: Crossflow heat exchanger arrangement.  PARALLELFLOW: Parallel flow heat exchanger arrangement.  MULTIPASS: Multipass flow heat exchanger arrangement.  OTHER: Other type of heat exchanger flow arrangement not defined above."
@@ -3583,6 +3747,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_HeatExchangerTypeCommon.xml"
     },
     "Pset_HeatExchangerTypePlate": {
+        "description": "Plate heat exchanger type common attributes.",
         "properties": {
             "NumberOfPlates": {
                 "description": "Number of plates used by the plate heat exchanger."
@@ -3591,6 +3756,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_HeatExchangerTypePlate.xml"
     },
     "Pset_HumidifierPHistory": {
+        "description": "Humidifier performance history attributes. Sound attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead.",
         "properties": {
             "AirPressureDropCurve": {
                 "description": "Air pressure drop versus air-flow rate."
@@ -3608,6 +3774,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_HumidifierPHistory.xml"
     },
     "Pset_HumidifierTypeCommon": {
+        "description": "Humidifier type common attributes. WaterProperties attribute renamed to WaterRequirement and unit type modified in IFC2x2 Pset Addendum.",
         "properties": {
             "Application": {
                 "description": "Humidifier application. Fixed: Humidifier installed in a ducted flow distribution system. Portable: Humidifier is not installed in a ducted flow distribution system."
@@ -3631,6 +3798,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_HumidifierTypeCommon.xml"
     },
     "Pset_LampTypeCommon": {
+        "description": "A lamp is a component within a light fixture that is designed to emit light.",
         "properties": {
             "ColorAppearance": {
                 "description": "In both the DIN and CIE standards, artificial light sources are classified in terms of their color appearance. To the human eye they all appear to be white; the difference can only be detected by direct comparison. Visual performance is not directly affected by differences in color appearance."
@@ -3663,6 +3831,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_LampTypeCommon.xml"
     },
     "Pset_LightFixtureTypeCommon": {
+        "description": "Common data for light fixtures.",
         "properties": {
             "ArticleNumber": {
                 "description": "The article number."
@@ -3689,6 +3858,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_LightFixtureTypeCommon.xml"
     },
     "Pset_LightFixtureTypeExitSign": {
+        "description": "Properties that characterize an illuminated exit sign",
         "properties": {
             "Addressablility": {
                 "description": "The type of addressability."
@@ -3709,6 +3879,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_LightFixtureTypeExitSign.xml"
     },
     "Pset_LightFixtureTypeThermal": {
+        "description": "Heat load data for a light fixture.",
         "properties": {
             "MaximumPlenumSensibleLoad": {
                 "description": "Maximum or Peak sensible thermal load contributed to the conditioned space by the light fixture."
@@ -3723,6 +3894,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_LightFixtureTypeThermal.xml"
     },
     "Pset_ManufacturerOccurrence": {
+        "description": "Defines properties of individual instances of manufactured products that may be given by the manufacturer.",
         "properties": {
             "AcquisitionDate": {
                 "description": "The date that the manufactured item was purchased."
@@ -3740,6 +3912,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_ManufacturerOccurrence.xml"
     },
     "Pset_ManufacturerTypeInformation": {
+        "description": "Defines characteristics of manufactured products that may be given by the manufacturer. Note that the term 'manufactured' may also be used to refer to products that are supplied and identified by the supplier or that are assembled off site by a third party provider.  This property set replaces the entity IfcManufacturerInformation from previous IFC releases.",
         "properties": {
             "ArticleNumber": {
                 "description": "Article number or reference that may be applied to a product according to a standard scheme for article number definition (e.g. UN, EAN)"
@@ -3760,6 +3933,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_ManufacturerTypeInformation.xml"
     },
     "Pset_MemberCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcMember.",
         "properties": {
             "FireRating": {
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
@@ -3783,6 +3957,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_MemberCommon.xml"
     },
     "Pset_MultiStateInput": {
+        "description": "Defines the characteristics of a multi-state input.",
         "properties": {
             "AlarmValues": {
                 "description": "Specifies any states the present value must equal before an EventEnable shall occur. Upper limit of the list is equal to the NumberOfStates."
@@ -3803,6 +3978,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_MultiStateInput.xml"
     },
     "Pset_MultiStateOutput": {
+        "description": "Defines the characteristics of a multi-state output.",
         "properties": {
             "AlarmValues": {
                 "description": "Specifies any states the present value must equal before an EventEnable shall occur. Upper limit of the list is equal to the NumberOfStates."
@@ -3823,6 +3999,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_MultiStateOutput.xml"
     },
     "Pset_OpeningElementCommon": {
+        "description": "Properties common to the definition of all instances of IfcOpeningElement.",
         "properties": {
             "FireExit": {
                 "description": "Indication whether this object is designed to serve as an exit in the case of fire (TRUE) or not (FALSE). Here whether the space (in case of e.g., a corridor) is designed to serve as an exit space, e.g., for fire escape purposes."
@@ -3843,6 +4020,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_OpeningElementCommon.xml"
     },
     "Pset_OutletTypeCommon": {
+        "description": "Common properties for different outlet types.",
         "properties": {
             "IsPluggableOutlet": {
                 "description": "Indication of whether the outlet accepts a loose plug connection (= TRUE) or whether it is directly connected (= FALSE) or whether the form of connection has not yet been determined (= UNKNOWN)"
@@ -3851,6 +4029,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_OutletTypeCommon.xml"
     },
     "Pset_OutsideDesignCriteria": {
+        "description": "Outside air conditions used as the basis for calculating thermal loads at peak conditions, as well as the weather data location from which these conditions were obtained.",
         "properties": {
             "BuildingThermalExposure": {
                 "description": "The thermal exposure expected by the building based on surrounding site conditions."
@@ -3889,6 +4068,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_OutsideDesignCriteria.xml"
     },
     "Pset_PackingInstructions": {
+        "description": "Packing instructions are specific instructions relating to the packing that is required for an artefact (instance of IfcProduct) in the event of a move (where the product is related to an instance of IfcMove).",
         "properties": {
             "ContainerMaterial": {
                 "description": "Special requirements for material used to contain an artefact."
@@ -3906,6 +4086,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcFacilitiesMgmtDomain/Pset_PackingInstructions.xml"
     },
     "Pset_Permit": {
+        "description": "A permit is a document that allows permission to gain access to an area or carry out work in a situation where security or other access restrictions apply.",
         "properties": {
             "EndTime": {
                 "description": "End time."
@@ -3932,6 +4113,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcFacilitiesMgmtDomain/Pset_Permit.xml"
     },
     "Pset_PipeConnection": {
+        "description": "This property set is used to define the various types of pipe connections. It is applied to occurrences of pipe segments and fittings.",
         "properties": {
             "ConnectionType": {
                 "description": "The connection type between pipe segments or fittings and other segments or fittings. If the list contains only one value, then this connection type value applies to all ports. For more than one value in the list, the connection type value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: BRAZED: Brazed connection type.  COMPRESSION: Compression connection type.  FLANGED: Flanged connection type including bolts and gasket.  GLANDJOINT: Gland-joint  connection type.  FLEXIBLEBOLTEDGLANDJOINT: Flexible bolted gland-joint  connection type.  FLEXIBLEBOLTEDGLANDJOINTWITHANODEENDCAP: Flexible bolted gland-joint with anode end-cap connection type. GROOVED: Grooved connection type.  SOLDERED: Soldered connection type.  SOLDERED_FEMALE: Female-soldered connection type.  SOLDERED_MALE: Male-soldered connection type.  SWEDGE: Swedge connection type. THREADED: Threaded connection type.  THREADED_FEMALE: Female-threaded connection type.  THREADED_MALE: Male-threaded connection type.  WELDED: Welded connection type.  WELDED_BUTT: Butt-welded connection type.  WELDED_BRANCH: Branch-welded connection type.  WELDED_FLANGE: Flange-welded connection type.  NONE: There is no connection. NOTDEFINED: Undefined connection type."
@@ -3940,6 +4122,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PipeConnection.xml"
     },
     "Pset_PipeConnectionFlanged": {
+        "description": "This property set is used to define the specifics of a flanged pipe connection used between occurrences of pipe segments and fittings.",
         "properties": {
             "BoltSize": {
                 "description": "Size of the bolts securing the flange"
@@ -3972,6 +4155,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PipeConnectionFlanged.xml"
     },
     "Pset_PipeFittingPHistory": {
+        "description": "Pipe fitting performance history common attributes.",
         "properties": {
             "FlowrateLeakage": {
                 "description": "Leakage flowrate versus pressure difference."
@@ -3983,6 +4167,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PipeFittingPHistory.xml"
     },
     "Pset_PipeFittingTypeCommon": {
+        "description": "Pipe fitting type common attributes.",
         "properties": {
             "EndStyleTreatment": {
                 "description": "The end-style treatment of the pipe fitting as made available from the manufacturer. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: FLANGED: Flanged.  GROOVED: Grooved.  THREADED: Threaded.  NONE: No end-style has been applied. NOTDEFINED: Undefined end-style type."
@@ -4021,6 +4206,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PipeFittingTypeCommon.xml"
     },
     "Pset_PipeSegmentPHistory": {
+        "description": "Pipe segment performance history common attributes.",
         "properties": {
             "FluidFlowLeakage": {
                 "description": "Volumetric leakage flow rate."
@@ -4032,6 +4218,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PipeSegmentPHistory.xml"
     },
     "Pset_PipeSegmentTypeCommon": {
+        "description": "Pipe segment type common attributes.",
         "properties": {
             "EndStyleTreatment": {
                 "description": "The end-style treatment of the pipe segment as made available from the manufacturer. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: FLANGED: Flanged.  GROOVED: Grooved.  THREADED: Threaded.  NONE: No end-style has been applied. NOTDEFINED: Undefined end-style type."
@@ -4064,6 +4251,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PipeSegmentTypeCommon.xml"
     },
     "Pset_PipeSegmentTypeGutter": {
+        "description": "Gutter segment type common attributes.",
         "properties": {
             "FlowRating": {
                 "description": "Actual flow capacity for the gutter. Value of 0.00 means this value has not been set."
@@ -4075,6 +4263,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PipeSegmentTypeGutter.xml"
     },
     "Pset_PlateCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcPlate.",
         "properties": {
             "AcousticRating": {
                 "description": "Acoustic rating for this object. It is giving according to the national building code. It indicates the sound transmission resistance of this object by an index ration (instead of providing full sound absorbtion values)."
@@ -4098,6 +4287,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_PlateCommon.xml"
     },
     "Pset_ProductRequirements": {
+        "description": "Categorization of the required properties of an entity that are used to determine what the level of the requirement is, to enable its performance/quality to be determined, assessed, or measured, and compared against the requirement, and then to analyze whether the entity is suitable for use within a given context..",
         "properties": {
             "Category": {
                 "description": "A reference to a classification of the degree of aggregation or granularity of topic data such as regional, local etc."
@@ -4133,6 +4323,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcKernel/Pset_ProductRequirements.xml"
     },
     "Pset_ProjectCommon": {
+        "description": "Common properties for a building project.",
         "properties": {
             "BuildingPermitId": {
                 "description": "The building permit identifier for the written authorization required by building authorities before construction on a specific project can begin."
@@ -4147,6 +4338,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcKernel/Pset_ProjectCommon.xml"
     },
     "Pset_ProjectOrderChangeOrder": {
+        "description": "A change order is an instruction to make a change to a product or work being undertake. Note that the change order status is defined in the same way as a work order status since a change order implies a work requirement.",
         "properties": {
             "BudgetSource": {
                 "description": "The budget source requested."
@@ -4161,6 +4353,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedMgmtElements/Pset_ProjectOrderChangeOrder.xml"
     },
     "Pset_ProjectOrderMaintenanceWorkOrder": {
+        "description": "A MaintenanceWorkOrder is a detailed description of maintenance work that is to be performed. Note that the Scheduled Frequency property of the maintenance work order is used when the order is required as an instance of a scheduled work order.",
         "properties": {
             "ContractualType": {
                 "description": "The contractual type of the work."
@@ -4196,6 +4389,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedMgmtElements/Pset_ProjectOrderMaintenanceWorkOrder.xml"
     },
     "Pset_ProjectOrderMoveOrder": {
+        "description": "Defines the requirements for move orders. Note that the move order status is defined in the same way as a work order status since a move order implies a work requirement.",
         "properties": {
             "MoveDescription": {
                 "description": "A textual description of the move required."
@@ -4207,6 +4401,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedMgmtElements/Pset_ProjectOrderMoveOrder.xml"
     },
     "Pset_ProjectOrderPurchaseOrder": {
+        "description": "Defines the requirements for purchase orders in a project.",
         "properties": {
             "IsFOB": {
                 "description": "Indication of whether contents of the purchase order are delivered 'Free on Board' (= True) or not (= False)."
@@ -4218,6 +4413,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedMgmtElements/Pset_ProjectOrderPurchaseOrder.xml"
     },
     "Pset_ProjectOrderWorkOrder": {
+        "description": "Defines the requirements for purchase orders in a project.",
         "properties": {
             "ContractualType": {
                 "description": "The contractual type of the work."
@@ -4241,6 +4437,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedMgmtElements/Pset_ProjectOrderWorkOrder.xml"
     },
     "Pset_ProjectionElementShadingDevicePHistory": {
+        "description": "Shading device performance history attributes.",
         "properties": {
             "Azimuth": {
                 "description": "The azimuth of the outward normal for the outward or upward facing surface."
@@ -4252,6 +4449,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ProjectionElementShadingDevicePHistory.xml"
     },
     "Pset_PropertyAgreement": {
+        "description": "A property agreement is an agreement that enables the occupation of a property for a period of time.",
         "properties": {
             "AgreementType": {
                 "description": "Identifies the predefined types of property agreement from which the type required may be set."
@@ -4293,6 +4491,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_PropertyAgreement.xml"
     },
     "Pset_ProtectiveDeviceTypeCircuitBreaker": {
+        "description": "Definition from IEC 441-14-20: A circuit breaker is a mechanical switching device capable of making, carrying, and breaking currents under normal circuit conditions and also making, carrying for a specified time and breaking, current under specified abnormal circuit conditions such as those of short circuit.",
         "properties": {
             "CircuitBreakerType": {
                 "description": "A list of the available types of circuit breaker from which that required may be selected where:"
@@ -4301,6 +4500,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeCircuitBreaker.xml"
     },
     "Pset_ProtectiveDeviceTypeCommon": {
+        "description": "Common properties for different protective device types.",
         "properties": {
             "CharacteristicTripCurve": {
                 "description": "A curve giving the time, e.g. prearcing time or operating time, as a function of the protective current under stated conditions of operation."
@@ -4330,6 +4530,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeCommon.xml"
     },
     "Pset_ProtectiveDeviceTypeEarthFailureDevice": {
+        "description": "An earth failure device acts to protect people and equipment from the effects of current leakage.",
         "properties": {
             "EarthFailureDeviceType": {
                 "description": "A list of the available types of circuit breaker from which that required may be selected where:"
@@ -4341,6 +4542,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeEarthFailureDevice.xml"
     },
     "Pset_ProtectiveDeviceTypeFuseDisconnector": {
+        "description": "A device that will electrically open the circuit after a period of prolonged, abnormal current flow.",
         "properties": {
             "FuseDisconnectorType": {
                 "description": "A list of the available types of fuse disconnector from which that required may be selected where:"
@@ -4349,6 +4551,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeFuseDisconnector.xml"
     },
     "Pset_ProtectiveDeviceTypeResidualCurrentCircuitBreaker": {
+        "description": "A residual current circuit breaker opens, closes or isolates a circuit and has short circuit and overload protection.",
         "properties": {
             "Sensitivity": {
                 "description": "Current leakage to an unwanted leading path during normal operation (IEC 151-14-49)"
@@ -4357,6 +4560,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeResidualCurrentCircuitBreaker.xml"
     },
     "Pset_ProtectiveDeviceTypeResidualCurrentSwitch": {
+        "description": "A residual current switch opens, closes or isolates a circuit and has no short circuit or overload protection.",
         "properties": {
             "Sensitivity": {
                 "description": "Current leakage to an unwanted leading path during normal operation (IEC 151-14-49)"
@@ -4365,6 +4569,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeResidualCurrentSwitch.xml"
     },
     "Pset_ProtectiveDeviceTypeVaristor": {
+        "description": "A high voltage surge protection device.",
         "properties": {
             "VaristorType": {
                 "description": "A list of the available types of varistor  from which that required may be selected."
@@ -4373,6 +4578,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeVaristor.xml"
     },
     "Pset_PumpPHistory": {
+        "description": "Pump performance history attributes.",
         "properties": {
             "Flowrate": {
                 "description": "The actual operational fluid flowrate."
@@ -4396,6 +4602,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PumpPHistory.xml"
     },
     "Pset_PumpTypeCommon": {
+        "description": "Common attributes of a pump type.",
         "properties": {
             "CasingMaterial": {
                 "description": "Material from which the casing of the pump is constructed"
@@ -4428,6 +4635,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PumpTypeCommon.xml"
     },
     "Pset_QuantityTakeOff": {
+        "description": "Description of quantities for work items to be exchanged in addition to the IfcElementQuantity",
         "properties": {
             "LayerQuantity": {
                 "children": {
@@ -4450,6 +4658,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_QuantityTakeOff.xml"
     },
     "Pset_RailingCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcRailing.",
         "properties": {
             "Diameter": {
                 "description": "Diameter of the object. It is the diameter of the handrail of the railing. The size information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the size properties, provided in the attached property set, the geometric parameters take precedence. Here the diameter of the hand or guardrail within the railing."
@@ -4467,6 +4676,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_RailingCommon.xml"
     },
     "Pset_RampCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcRamp.",
         "properties": {
             "FireExit": {
                 "description": "Indication whether this object is designed to serve as an exit in the case of fire (TRUE) or not (FALSE). Here it defines an exit ramp in accordance to the national building code."
@@ -4496,6 +4706,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_RampCommon.xml"
     },
     "Pset_RampFlightCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcRampFlight.",
         "properties": {
             "Headroom": {
                 "description": "Actual headroom clearance for the passageway according to the current design.  The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
@@ -4510,6 +4721,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_RampFlightCommon.xml"
     },
     "Pset_ReinforcementBarCountOfIndependentFooting": {
+        "description": "Reinforcement Concrete parameter [ST-2]: The amount number information of reinforcement  bar with the independent footing. The X and Y direction are based on the local coordinate system of building storey. The X and Y direction of the reinforcement bar are parallel to the X and Y axis of the IfcBuildingStorey's local coordinate system, respectively.",
         "properties": {
             "Description": {
                 "description": "Description of the reinforcement."
@@ -4533,6 +4745,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarCountOfIndependentFooting.xml"
     },
     "Pset_ReinforcementBarPitchOfBeam": {
+        "description": "The ptich length information of reinforcement  bar with the beam.",
         "properties": {
             "Description": {
                 "description": "Description of the reinforcement."
@@ -4550,6 +4763,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfBeam.xml"
     },
     "Pset_ReinforcementBarPitchOfColumn": {
+        "description": "The pitch length information of reinforcement  bar with the column. The X and Y direction are based on the local coordinate system of building storey. The X and Y direction of the reinforcement bar are parallel to the X and Y axis of the IfcBuildingStorey's local coordinate system, respectively.",
         "properties": {
             "Description": {
                 "description": "Description of the reinforcement."
@@ -4579,6 +4793,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfColumn.xml"
     },
     "Pset_ReinforcementBarPitchOfContinuousFooting": {
+        "description": "Reinforcement Concrete parameter [ST-2]: The pitch length information of reinforcement  bar with the continuous footing.",
         "properties": {
             "CrossingLowerBarPitch": {
                 "description": "The pitch length of the crossing lower bar."
@@ -4596,6 +4811,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfContinuousFooting.xml"
     },
     "Pset_ReinforcementBarPitchOfSlab": {
+        "description": "The pitch length information of reinforcement  bar with the slab.",
         "properties": {
             "Description": {
                 "description": "Description of the reinforcement."
@@ -4643,6 +4859,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfSlab.xml"
     },
     "Pset_ReinforcementBarPitchOfWall": {
+        "description": "The pitch length information of reinforcement  bar with the wall.",
         "properties": {
             "BarAllocationType": {
                 "description": "Defines the type of the reinforcement bar allocation."
@@ -4666,6 +4883,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfWall.xml"
     },
     "Pset_ReinforcingBarBendingsBECCommon": {
+        "description": "Properties expressing the bending information of non-prestressed reinforcing bars. The properties in this Pset are defined according to the local Finnish BEC standard with minor adjustements (only bar bending information is included). The bending shape property definitions apply to both reinforcing bars (IfcReinforcingBar) and reinforcing meshes (IfcReinforcingMesh). It is presumed that a single standard for defining the bar bending is used throughout the project and that this standard is referenced from the IfcProject object through the IfcDocumentReference mechanism.",
         "properties": {
             "BECBarShapeCode": {
                 "description": "The bending type code for the specific bending shape as defined in the BEC standard. Note: depending on the standardized shape different combinations of following parameters a...e (f...l), TD, u, v, u1, v1, aid_x, and aid_y are used."
@@ -4734,6 +4952,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcingBarBendingsBECCommon.xml"
     },
     "Pset_ReinforcingBarBendingsBS8666Common": {
+        "description": "Properties expressing the bending information of non-prestressed reinforcing bars. The properties in this Pset are largely defined according to BS8666. It is presumed that a single standard for defining the bar bending is used throughout the project and that this standard is referenced from the IfcProject object through the IfcDocumentReference mechanism.",
         "properties": {
             "BS8666ShapeCode": {
                 "description": "The bending type code for the specific bending shape as defined in the BS8666 standard. Note: depending on the standardized shape different combinations of following parameters A...E and r are used."
@@ -4760,6 +4979,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcingBarBendingsBS8666Common.xml"
     },
     "Pset_ReinforcingBarBendingsDIN135610Common": {
+        "description": "Properties expressing the bending information of non-prestressed reinforcing bars. The properties in this Pset are largely defined according to DIN 1356 Teil 10 with some minor omissions: the shape type X2 is not considered since it is better represented by the explicit shape geometry. It is presumed that a single standard for defining the bar bending is used throughout the project and that this standard is referenced from the IfcProject object through the IfcDocumentReference mechanism. Note: This bending standard is presumably to be replaced by the upcoming ISO 3766 standard.",
         "properties": {
             "DIN135610ShapeCode": {
                 "description": "The bending type code for the specific bending shape as defined in the DIN 1356 Teil 10 standard. Note: depending on the standardized shape different combinations of following parameters a...z are used."
@@ -4786,6 +5006,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcingBarBendingsDIN135610Common.xml"
     },
     "Pset_ReinforcingBarBendingsISOCD3766Common": {
+        "description": "Properties expressing the bending information of non-prestressed reinforcing bars. The properties in this Pset are largely defined according to ISO/CD 3766 with some minor changes in how the hooks are defined (explicit angle measures instead of coded parameters). It is presumed that a single standard for defining the bar bending is used throughout the project and that this standard is referenced from the IfcProject object through the IfcDocumentReference mechanism. Note: This standard is still under development and the Pset will be changed accordingly if so required.",
         "properties": {
             "ISOCD3766BendingEndHook": {
                 "description": "The angle of the hook at end of the bar. If the property is not included  the bar has no end hook. Note: this differs from how ISO/CD 3766 handles end hooks."
@@ -4818,6 +5039,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcingBarBendingsISOCD3766Common.xml"
     },
     "Pset_Reliability": {
+        "description": "Indication of the expected reliability of a product",
         "properties": {
             "MeanTimeBetweenFailure": {
                 "description": "The average time duration between instances of failure of a product."
@@ -4826,6 +5048,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_Reliability.xml"
     },
     "Pset_Risk": {
+        "description": "An indication of exposure to mischance, peril, menace, hazard or loss.",
         "properties": {
             "AffectsSurroundings": {
                 "description": "Indicates wether the risk affects only to the person assigned to that task (FALSE) or if it can also affect to the people in the surroundings (TRUE)."
@@ -4864,6 +5087,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_Risk.xml"
     },
     "Pset_RoofCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcRoof. Note: Properties for ProjectedArea and TotalArea added in IFC 2x3",
         "properties": {
             "FireRating": {
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
@@ -4884,6 +5108,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_RoofCommon.xml"
     },
     "Pset_SanitaryTerminalTypeBath": {
+        "description": "Sanitary appliance for immersion of the human body or parts of it (BS6100).",
         "properties": {
             "BathType": {
                 "description": "The property enumeration defines the types of bath that may be specified within the property set where:"
@@ -4916,6 +5141,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeBath.xml"
     },
     "Pset_SanitaryTerminalTypeBidet": {
+        "description": "Waste water appliance for washing the excretory organs while sitting astride the bowl (BS6100)",
         "properties": {
             "BidetMounting": {
                 "description": "The property enumeration Pset_SanitaryMountingEnum defines the forms of mounting or fixing of the sanitary terminal that may be specified within property sets used to define sanitary terminals (WC\u2019s, basins, sinks, etc.) where:-"
@@ -4945,6 +5171,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeBidet.xml"
     },
     "Pset_SanitaryTerminalTypeCistern": {
+        "description": "A water storage unit attached to a sanitary terminal that is fitted with a device, operated automatically or by the user, that discharges water to cleanse a water closet (toilet) pan, urinal or slop hopper. (BS6100 330 5008)",
         "properties": {
             "CisternCapacity": {
                 "description": "Volumetric capacity of the cistern"
@@ -4974,6 +5201,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeCistern.xml"
     },
     "Pset_SanitaryTerminalTypeSanitaryFountain": {
+        "description": "A sanitary terminal that provides a low pressure jet of water for a specific purpose (IAI).",
         "properties": {
             "Color": {
                 "description": "Color selection for this object"
@@ -5003,6 +5231,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeSanitaryFountain.xml"
     },
     "Pset_SanitaryTerminalTypeShower": {
+        "description": "Installation or waste water appliance that emits a spray of water to wash the human body (BS6100).",
         "properties": {
             "Color": {
                 "description": "Color selection for this object"
@@ -5038,6 +5267,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeShower.xml"
     },
     "Pset_SanitaryTerminalTypeSink": {
+        "description": "Waste water appliance for receiving, retaining or disposing of domestic, culinary, laboratory or industrial process liquids.",
         "properties": {
             "Color": {
                 "description": "Color selection for this object"
@@ -5067,6 +5297,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeSink.xml"
     },
     "Pset_SanitaryTerminalTypeToiletPan": {
+        "description": "Soil appliance for the disposal of excrement.",
         "properties": {
             "NominalDepth": {
                 "description": "Nominal or quoted depth of the object."
@@ -5099,6 +5330,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeToiletPan.xml"
     },
     "Pset_SanitaryTerminalTypeUrinal": {
+        "description": "Soil appliance that receives urine and directs it to a waste outlet (BS6100)",
         "properties": {
             "NominalDepth": {
                 "description": "Nominal or quoted depth of the object."
@@ -5125,6 +5357,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeUrinal.xml"
     },
     "Pset_SanitaryTerminalTypeWCSeat": {
+        "description": "Hinged seat that fits on the top of a water closet (WC) pan. (BS6100 330 1401)",
         "properties": {
             "SeatColor": {
                 "description": "Color of the object"
@@ -5142,6 +5375,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeWCSeat.xml"
     },
     "Pset_SanitaryTerminalTypeWashHandBasin": {
+        "description": "Waste water appliance for washing the upper parts of the body.",
         "properties": {
             "Color": {
                 "description": "Color of the object"
@@ -5171,6 +5405,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeWashHandBasin.xml"
     },
     "Pset_SensorTypeCO2Sensor": {
+        "description": "A device that senses or detects carbon dioxide.",
         "properties": {
             "AccuracyOfCO2Sensor": {
                 "description": "The accuracy of the sensor"
@@ -5191,6 +5426,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeCO2Sensor.xml"
     },
     "Pset_SensorTypeFireSensor": {
+        "description": "A device that senses or detects the presence of fire.",
         "properties": {
             "AccuracyOfFireSensor": {
                 "description": "The accuracy of the sensor"
@@ -5205,6 +5441,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeFireSensor.xml"
     },
     "Pset_SensorTypeGasSensor": {
+        "description": "A device that senses or detects gas.",
         "properties": {
             "AccuracyOfGasSensor": {
                 "description": "The accuracy of the sensor"
@@ -5225,6 +5462,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeGasSensor.xml"
     },
     "Pset_SensorTypeHeatSensor": {
+        "description": "A device that senses or detects heat.",
         "properties": {
             "CoverageArea": {
                 "description": "The area that is covered by the sensor (typically measured as a circle whose center is at the location of the sensor)"
@@ -5245,6 +5483,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeHeatSensor.xml"
     },
     "Pset_SensorTypeHumiditySensor": {
+        "description": "A device that senses or detects humidity.",
         "properties": {
             "AccuracyOfHumiditySensor": {
                 "description": "The accuracy of the sensor"
@@ -5262,6 +5501,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeHumiditySensor.xml"
     },
     "Pset_SensorTypeLightSensor": {
+        "description": "A device that senses or detects light.",
         "properties": {
             "LightSensorAccuracy": {
                 "description": "The accuracy of the sensor."
@@ -5279,6 +5519,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeLightSensor.xml"
     },
     "Pset_SensorTypeMovementSensor": {
+        "description": "A device that senses or detects movement.",
         "properties": {
             "MovementSensingType": {
                 "description": "Enumeration that identifies the type of movement sensing mechanism."
@@ -5290,6 +5531,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeMovementSensor.xml"
     },
     "Pset_SensorTypePressureSensor": {
+        "description": "A device that senses or detects pressure.",
         "properties": {
             "AccuracyOfPressureSensor": {
                 "description": "The accuracy of the sensor"
@@ -5310,6 +5552,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypePressureSensor.xml"
     },
     "Pset_SensorTypeSmokeSensor": {
+        "description": "A device that senses or detects smoke.",
         "properties": {
             "AccuracyOfSmokeSensor": {
                 "description": "The accuracy of the sensor"
@@ -5333,6 +5576,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeSmokeSensor.xml"
     },
     "Pset_SensorTypeSoundSensor": {
+        "description": "A device that senses or detects sound.",
         "properties": {
             "SoundSensorAccuracy": {
                 "description": "The accuracy of the sensor."
@@ -5350,6 +5594,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeSoundSensor.xml"
     },
     "Pset_SensorTypeTemperatureSensor": {
+        "description": "A device that senses or detects temperature.",
         "properties": {
             "AccuracyOfTemperatureSensor": {
                 "description": "The accuracy of the sensor"
@@ -5370,6 +5615,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_SensorTypeTemperatureSensor.xml"
     },
     "Pset_SiteCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcSite. Please note that several site attributes are handled directly at the IfcSite instance, the site number (or short name) by IfcSite.Name, the site name (or long name) by IfcSite.LongName, and the description (or comments) by IfcSite.Description. The land title number is also given as an explicit attribute IfcSite.LandTitleNumber. Actual site quantities, like site perimeter, site area and site volume are provided by IfcElementQuantities, and site classification according to national building code by IfcClassificationReference. The global positioning of the site in terms of Northing and Easting and height above sea level datum is given by IfcSite.RefLongitude, IfcSite.RefLatitude, IfcSite.RefElevation and the postal address by IfcSite.SiteAddress.",
         "properties": {
             "BuildableArea": {
                 "description": "The area of utilization expressed as a minimum value and a maximum value  - according to local building codes."
@@ -5384,6 +5630,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_SiteCommon.xml"
     },
     "Pset_SlabCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcSlab. Note: Properties for PitchAngle added in IFC 2x3",
         "properties": {
             "AcousticRating": {
                 "description": "Acoustic rating for this object. It is giving according to the national building code. It indicates the sound transmission resistance of this object by an index ration (instead of providing full sound absorbtion values"
@@ -5419,6 +5666,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_SlabCommon.xml"
     },
     "Pset_SpaceCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcSpace. Please note that several space attributes are handled directly at the IfcSpace instance, the space number (or short name) by IfcSpace.Name, the space name (or long name) by IfcSpace:LongName, and the description (or comments) by IfcSpace.Description. Actual space quantities, like space perimeter, space area and space volume are provided by IfcElementQuantities, and space classification according to national building code by IfcClassificationReference. The level above zero (relative to the building) for the slab row construction is provided by the IfcBuildingStorey.Elevation, the level above zero (relative to the building) for the floor finish is provided by the IfcSpace.ElevationWithFlooring.",
         "properties": {
             "Category": {
                 "description": "Category of space usage or utilization of the area. It is defined according to the presiding national building code."
@@ -5458,6 +5706,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_SpaceCommon.xml"
     },
     "Pset_SpaceFireSafetyRequirements": {
+        "description": "Properties related to fire protection of spaces that apply to the occurrences of IfcSpace or IfcZone.",
         "properties": {
             "AirPressurization": {
                 "description": "Indication whether the space is required to have pressurized air (TRUE) or not (FALSE)."
@@ -5490,6 +5739,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_SpaceFireSafetyRequirements.xml"
     },
     "Pset_SpaceHeaterPHistoryCommon": {
+        "description": "Space heater performance history common attributes.",
         "properties": {
             "AirResistanceCurve": {
                 "description": "Air resistance curve (w/ fan only); Pressure = f ( flow rate)."
@@ -5531,6 +5781,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_SpaceHeaterPHistoryCommon.xml"
     },
     "Pset_SpaceHeaterTypeCommon": {
+        "description": "Space heater type common attributes. SoundLevel attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead.",
         "properties": {
             "BodyMass": {
                 "description": "Overall body mass of the heater."
@@ -5557,6 +5808,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_SpaceHeaterTypeCommon.xml"
     },
     "Pset_SpaceHeaterTypeHydronic": {
+        "description": "Hydronic space heater type common attributes. WaterProperties attribute deleted in IFC2x2 Pset Addendum: Use IfcWaterProperties instead.",
         "properties": {
             "TubingLength": {
                 "description": "Water tube length inside the component."
@@ -5568,6 +5820,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_SpaceHeaterTypeHydronic.xml"
     },
     "Pset_SpaceLightingRequirements": {
+        "description": "Properties related to the lighting requirements that apply to the occurrences of IfcSpace or IfcZone. This includes the required artificial lighting, illuminance, etc.",
         "properties": {
             "ArtificialLighting": {
                 "description": "Indication whether this space  requires artificial lighting (as natural lighting would be not sufficient). (TRUE) indicates yes (FALSE) otherwise."
@@ -5579,6 +5832,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_SpaceLightingRequirements.xml"
     },
     "Pset_SpaceOccupancyRequirements": {
+        "description": "Properties concerning work activities occurring or expected to occur within one or a set of similar spatial structure elements.",
         "properties": {
             "AreaPerOccupant": {
                 "description": "Design occupancy loading for this type of usage assigned to this space."
@@ -5605,6 +5859,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_SpaceOccupancyRequirements.xml"
     },
     "Pset_SpaceParking": {
+        "description": "Properties common to the definition of all occurrences of IfcSpace which have an attribute value for ObjectType = 'Parking'. NOTE: Modified in IFC 2x3, properties ParkingUse and ParkingUnits added.",
         "properties": {
             "HandicapAccessible": {
                 "description": "Indication that this object is designed to be accessible by the handicapped.  It is giving according to the requirements of the national building code."
@@ -5619,6 +5874,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_SpaceParking.xml"
     },
     "Pset_SpaceParkingAisle": {
+        "description": "Properties common to the definition of all occurrences of IfcSpace which have an attribute value for ObjectType = 'ParkingAisle'.",
         "properties": {
             "IsOneWay": {
                 "description": "Indicates whether the parking aisle is designed for oneway traffic (TRUE) or twoway traffic (FALSE)."
@@ -5627,6 +5883,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_SpaceParkingAisle.xml"
     },
     "Pset_SpaceProgramCommon": {
+        "description": "Properties common to the definition of all instances of IfcSpaceProgram",
         "properties": {
             "EmployeeType": {
                 "description": "General description of the employee type that will occupy the space (e.g.  manager, programmer, secretary, etc.). The type classification depends on the company based terms for employee types."
@@ -5659,6 +5916,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcArchitectureDomain/Pset_SpaceProgramCommon.xml"
     },
     "Pset_SpaceThermalDesign": {
+        "description": "Space or zone HVAC design requirements.",
         "properties": {
             "BoundaryAreaHeatLoss": {
                 "description": "Heat loss per unit area for the boundary object. This is a design input value for use in the absence of calculated load data."
@@ -5703,6 +5961,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_SpaceThermalDesign.xml"
     },
     "Pset_SpaceThermalPHistory": {
+        "description": "Thermal and air flow conditions of a space or zone.",
         "properties": {
             "CoolingAirFlowRate": {
                 "description": "Cooling air flow rate in the space."
@@ -5726,6 +5985,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_SpaceThermalPHistory.xml"
     },
     "Pset_SpaceThermalRequirements": {
+        "description": "Properties related to the comfort requirements for thermal and other  thermal related performances of spaces that apply to the occurrences of IfcSpace or IfcZone. This includes the required design temperature, humidity, and air conditioning.",
         "properties": {
             "AirConditioning": {
                 "description": "Indication whether this space requires air conditioning provided (TRUE) or not (FALSE)."
@@ -5776,6 +6036,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_SpaceThermalRequirements.xml"
     },
     "Pset_StairCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcStair.",
         "properties": {
             "FireExit": {
                 "description": "Indication whether this object is designed to serve as an exit in the case of fire (TRUE) or not (FALSE). Here it defines an exit stair in accordance to the national building code."
@@ -5814,6 +6075,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_StairCommon.xml"
     },
     "Pset_StairFlightCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcStairFlight.",
         "properties": {
             "Headroom": {
                 "description": "Actual headroom clearance for the passageway according to the current design.  The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
@@ -5852,6 +6114,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_StairFlightCommon.xml"
     },
     "Pset_SwitchingDeviceTypeCommon": {
+        "description": "Definition from IEC 441-14-01: A switching device is a device designed to make or break the current in one or more electric circuits.",
         "properties": {
             "HasLock": {
                 "description": "Indication of whether a switching device has a key operated lock (=TRUE) or not (= FALSE)"
@@ -5866,6 +6129,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeCommon.xml"
     },
     "Pset_SwitchingDeviceTypeContactor": {
+        "description": "An electrical device used to control the flow of power in a circuit on or off.",
         "properties": {
             "ContactorType": {
                 "description": "A list of the available types of contactor from which that required may be selected where:"
@@ -5874,6 +6138,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeContactor.xml"
     },
     "Pset_SwitchingDeviceTypeEmergencyStop": {
+        "description": "Definition from IEC 826-08-03: An emergency stop device acts to remove as quickly as possible any danger that may have arisen unexpectedly.",
         "properties": {
             "SwitchOperation": {
                 "description": "Indicates operation of emergency stop switch."
@@ -5882,6 +6147,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeEmergencyStop.xml"
     },
     "Pset_SwitchingDeviceTypeStarter": {
+        "description": "A starter is a switch which in the closed position controls the application of power to an electrical device.",
         "properties": {
             "StarterType": {
                 "description": "A list of the available types of starter from which that required may be selected where:"
@@ -5890,6 +6156,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeStarter.xml"
     },
     "Pset_SwitchingDeviceTypeSwitchDisconnector": {
+        "description": "Definition from IEC 441-14-12: A switch disconnector is a switch which in the open position satisfies the isolating requirements specified for a disconnector.",
         "properties": {
             "HasVisualIndication": {
                 "description": "Indicates whether a means of being to visually ascertain whether the contacts are open or closed is fitted (= TRUE) or not (= FALSE)"
@@ -5904,6 +6171,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeSwitchDisconnector.xml"
     },
     "Pset_SwitchingDeviceTypeToggleSwitch": {
+        "description": "A toggle switch is a switch that enables or isolates electrical power through a two position on/off action..",
         "properties": {
             "IsIlluminated": {
                 "description": "An indication of whether there is an illuminated indicator to show that the switch is on (=TRUE) or not (= FALSE)."
@@ -5924,6 +6192,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeToggleSwitch.xml"
     },
     "Pset_SystemFurnitureElementTypeCommon": {
+        "description": "Common properties for all systems furniture (I.e. modular furniture) element types (e.g. vertical panels, work surfaces, and storage).",
         "properties": {
             "Finishing": {
                 "description": "The finishing applied to system furniture elements of this type e.g. walnut, fabric."
@@ -5944,6 +6213,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_SystemFurnitureElementTypeCommon.xml"
     },
     "Pset_SystemFurnitureElementTypePanel": {
+        "description": "A set of specific properties for vertical panels that assembly workstations..",
         "properties": {
             "FurniturePanelType": {
                 "description": "Available panel types from which that required may be selected."
@@ -5958,6 +6228,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_SystemFurnitureElementTypePanel.xml"
     },
     "Pset_SystemFurnitureElementTypeWorkSurface": {
+        "description": "A set of specific properties for work surfaces used in workstations.",
         "properties": {
             "HangingHeight": {
                 "description": "The hanging height of the worksurface."
@@ -5978,6 +6249,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_SystemFurnitureElementTypeWorkSurface.xml"
     },
     "Pset_TankTypeCommon": {
+        "description": "Common attributes of a tank type.",
         "properties": {
             "AccessType": {
                 "description": "Defines the types of access (or cover) to a tank that may be specified."
@@ -6013,6 +6285,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TankTypeCommon.xml"
     },
     "Pset_TankTypeExpansion": {
+        "description": "Common attributes of an expansion type tank.",
         "properties": {
             "ChargePressure": {
                 "description": "Nominal or design operating pressure of the tank."
@@ -6027,6 +6300,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TankTypeExpansion.xml"
     },
     "Pset_TankTypePreformed": {
+        "description": "Fixed vessel manufactured as a single unit with one or more compartments for storing a liquid.",
         "properties": {
             "EndShapeType": {
                 "description": "Defines the types of end shapes that can be used for preformed tanks. The convention for reading these enumerated values is that for a vertical cylinder, the first value is the base and the second is the top; for a horizontal cylinder, the order of reading should be left to right. For a speherical tank, the value UNSET should be used."
@@ -6044,6 +6318,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TankTypePreformed.xml"
     },
     "Pset_TankTypePressureVessel": {
+        "description": "Common attributes of a pressure vessel.",
         "properties": {
             "ChargePressure": {
                 "description": "Nominal or design operating pressure of the tank."
@@ -6058,6 +6333,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TankTypePressureVessel.xml"
     },
     "Pset_TankTypeSectional": {
+        "description": "Fixed vessel constructed from sectional parts with one or more compartments for storing a liquid.",
         "properties": {
             "NumberOfSections": {
                 "description": "Number of sections used in the construction of the tank"
@@ -6072,6 +6348,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TankTypeSectional.xml"
     },
     "Pset_ThermalLoadAggregate": {
+        "description": "The aggregated thermal loads experienced by one or many spaces, zones, or buildings. This aggregate thermal load information is typically addressed by a system or plant.",
         "properties": {
             "ApplianceDiversity": {
                 "description": "Diversity of appliance load."
@@ -6098,6 +6375,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_ThermalLoadAggregate.xml"
     },
     "Pset_ThermalLoadDesignCriteria": {
+        "description": "Building thermal load design data that are used for calculating thermal loads in a space or building.",
         "properties": {
             "AppliancePercentLoadToRadiant": {
                 "description": "Percent of sensible load to radiant heat."
@@ -6121,6 +6399,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_ThermalLoadDesignCriteria.xml"
     },
     "Pset_TransformerTypeCommon": {
+        "description": "An inductive stationary device that transfers electrical energy from one circuit to another.",
         "properties": {
             "MaximumApparentPower": {
                 "description": "Maximum apparent power/capacity in VA (volt ampere)."
@@ -6156,6 +6435,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_TransformerTypeCommon.xml"
     },
     "Pset_TransportElementCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcTransportElement.",
         "properties": {
             "FireExit": {
                 "description": "Indication whether this object is designed to serve as an exit in the case of fire (TRUE) or not (FALSE). Here whether the transport element (in case of e.g., a lift) is designed to serve as a fire exit, e.g., for fire escape purposes."
@@ -6167,6 +6447,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_TransportElementCommon.xml"
     },
     "Pset_TransportElementElevator": {
+        "description": "Properties common to the definition of all occurrences of IfcTransportElement with the predefined type =\"ELEVATOR\"",
         "properties": {
             "ClearDepth": {
                 "description": "Clear depth of the object (elevator). It indicates the distance from the inner surface of the elevator door to the opposite surface of the elevator car.  The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
@@ -6181,6 +6462,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_TransportElementElevator.xml"
     },
     "Pset_TubeBundleTypeCommon": {
+        "description": "Tube bundle type common attributes.",
         "properties": {
             "FoulingFactor": {
                 "description": "Fouling factor of the tubes in the tube bundle."
@@ -6231,6 +6513,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TubeBundleTypeCommon.xml"
     },
     "Pset_TubeBundleTypeFinned": {
+        "description": "Finned tube bundle type attributes. Contains the attributes related to the fins attached to a tube in a finned tube bundle such as is commonly found in coils.",
         "properties": {
             "Diameter": {
                 "description": "Actual diameter of a fin for circular fins only."
@@ -6263,6 +6546,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TubeBundleTypeFinned.xml"
     },
     "Pset_UnitaryEquipmentTypeAirConditioningUnit": {
+        "description": "Air conditioning unit equipment type attributes. Note that these attributes were formely Pset_PackagedACUnit prior to IFC2x2. HeatingEnergySource attribute deleted in IFC2x2 Pset Addendum: Use IfcEnergyProperties, IfcFuelProperties, etc. instead.",
         "properties": {
             "CondenserEnteringTemperature": {
                 "description": "Temperature of fluid entering condenser per manufacturer's listing (if available)"
@@ -6295,6 +6579,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_UnitaryEquipmentTypeAirConditioningUnit.xml"
     },
     "Pset_UnitaryEquipmentTypeAirHandler": {
+        "description": "Air handler unitary equipment type attributes. Note that these attributes were formerly Pset_AirHandler prior to IFC2x2.",
         "properties": {
             "AirHandlerConstruction": {
                 "description": "Enumeration defining how the air handler might be fabricated."
@@ -6309,6 +6594,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_UnitaryEquipmentTypeAirHandler.xml"
     },
     "Pset_UtilityConsumption": {
+        "description": "Consumption of utility resources, typically applied to the IfcBuilding instance, used to identify how much was consumed on I.e., a monthly basis.",
         "properties": {
             "Electricity": {
                 "description": "The amount of electricity consumed during the period specified in the time series."
@@ -6329,6 +6615,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_UtilityConsumption.xml"
     },
     "Pset_ValvePHistory": {
+        "description": "Valve performance history common attributes of a typical 2 port pattern type valve.",
         "properties": {
             "MeasuredFlowRate": {
                 "description": "The rate of flow of a fluid measured across the valve."
@@ -6343,6 +6630,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValvePHistory.xml"
     },
     "Pset_ValveTypeAirRelease": {
+        "description": "Valve used to release air from a pipe or fitting.  Note that an air release valve is constrained to have a single port pattern",
         "properties": {
             "IsAutomatic": {
                 "description": "Indication of whether the valve is automatically operated (TRUE) or manually operated (FALSE)"
@@ -6351,6 +6639,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeAirRelease.xml"
     },
     "Pset_ValveTypeCommon": {
+        "description": "Valve type common attributes.",
         "properties": {
             "BodyMaterial": {
                 "description": "Material from which the body of the valve is constructed"
@@ -6386,6 +6675,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeCommon.xml"
     },
     "Pset_ValveTypeDrawOffCock": {
+        "description": "Definition from BS6100 250 6223: A small diameter valve, used to drain water from a cistern or water filled system.",
         "properties": {
             "HasHoseUnion": {
                 "description": "Indicates whether the drawoff cock is fitted with a hose union connection (= TRUE) or not (= FALSE)"
@@ -6394,6 +6684,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeDrawOffCock.xml"
     },
     "Pset_ValveTypeFaucet": {
+        "description": "Definition from BS6100: A small diameter valve, with a free outlet, from which water is drawn.",
         "properties": {
             "FaucetFunction": {
                 "description": "Defines the operating temperature of a faucet that may be specified."
@@ -6414,6 +6705,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeFaucet.xml"
     },
     "Pset_ValveTypeFlushing": {
+        "description": "Valve that flushes a predetermined quantity of water to cleanse a WC, urinal or slop hopper. Note that a flushing valve is constrained to have a 2 port  pattern.",
         "properties": {
             "FlushingRate": {
                 "description": "The predetermined quantity of water to be flushed"
@@ -6428,6 +6720,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeFlushing.xml"
     },
     "Pset_ValveTypeGasTap": {
+        "description": "A small diameter valve, used to discharge gas from a system.",
         "properties": {
             "HasHoseUnion": {
                 "description": "Indicates whether the gas tap is fitted with a hose union connection (= TRUE) or not (= FALSE)"
@@ -6436,6 +6729,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeGasTap.xml"
     },
     "Pset_ValveTypeIsolating": {
+        "description": "Valve that is used to isolate system components. Note that an isolating valve is constrained to have a 2 port  pattern.",
         "properties": {
             "IsNormallyOpen": {
                 "description": "If TRUE, the valve is normally open. If FALSE is is normally closed."
@@ -6447,6 +6741,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeIsolating.xml"
     },
     "Pset_ValveTypeMixing": {
+        "description": "A valve where typically the temperature of the outlet is determined by mixing hot and cold water inlet flows.",
         "properties": {
             "MixerControl": {
                 "description": "Defines the form of control of the mixing valve."
@@ -6458,6 +6753,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeMixing.xml"
     },
     "Pset_ValveTypePressureReducing": {
+        "description": "Valve that reduces the pressure of a fluid immediately downstream of its position in a pipeline to a preselected value or by a predetermined ratio. Note that a pressure reducing valve is constrained to have a 2 port  pattern.",
         "properties": {
             "DownstreamPressure": {
                 "description": "The operating pressure of the fluid downstream of the pressure reducing valve"
@@ -6469,6 +6765,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypePressureReducing.xml"
     },
     "Pset_ValveTypePressureRelief": {
+        "description": "Spring or weight loaded valve that automatically discharges to a safe place fluid that has built up to excessive pressure in pipes or fittings. Note that a pressure relief valve is constrained to have a single port pattern.",
         "properties": {
             "ReliefPressure": {
                 "description": "The pressure at which the spring or weight in the valve is set to discharge fluid"
@@ -6477,6 +6774,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypePressureRelief.xml"
     },
     "Pset_VibrationIsolatorTypeCommon": {
+        "description": "Vibration isolator type common attributes.",
         "properties": {
             "Height": {
                 "description": "Height of the vibration isolator before tha application of load."
@@ -6500,6 +6798,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_VibrationIsolatorTypeCommon.xml"
     },
     "Pset_WallCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcWall and IfcWallStandardCase.",
         "properties": {
             "AcousticRating": {
                 "description": "Acoustic rating for this object. It is giving according to the national building code. It indicates the sound transmission resistance of this object by an index ration (instead of providing full sound absorbtion values)."
@@ -6535,6 +6834,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_WallCommon.xml"
     },
     "Pset_WasteTerminalTypeFloorTrap": {
+        "description": "Pipe fitting, set into the floor, that retains liquid to prevent the passage of foul air.",
         "properties": {
             "BodyMaterial": {
                 "description": "The primary material used to construct the object"
@@ -6582,6 +6882,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeFloorTrap.xml"
     },
     "Pset_WasteTerminalTypeFloorWaste": {
+        "description": "Pipe fitting, set into the floor, that collects waste water and discharges it to a separate trap.",
         "properties": {
             "BodyMaterial": {
                 "description": "The primary material used to construct the object"
@@ -6611,6 +6912,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeFloorWaste.xml"
     },
     "Pset_WasteTerminalTypeGreaseInterceptor": {
+        "description": "Chamber, on the line of a drain or discharge pipe, that prevents grease passing into a drainage system (BS6100 330 6205).",
         "properties": {
             "BodyDepth": {
                 "description": "Nominal or quoted length, measured along the z-axis of the local coordinate system of the object, of the body of the object."
@@ -6652,6 +6954,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeGreaseInterceptor.xml"
     },
     "Pset_WasteTerminalTypeGullySump": {
+        "description": "Pipe fitting or assembly of fittings to receive surface water or waste water, fitted with a grating or sealed cover.",
         "properties": {
             "BackInletPatternType": {
                 "description": "Identifies the pattern of inlet connections to a gully trap."
@@ -6693,6 +6996,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeGullySump.xml"
     },
     "Pset_WasteTerminalTypeGullyTrap": {
+        "description": "Pipe fitting or assembly of fittings to receive surface water or waste water, fitted with a grating or sealed cover and discharging through a trap (BS6100 330 3504 modified)",
         "properties": {
             "BackInletPatternType": {
                 "description": "Identifies the pattern of inlet connections to a gully trap."
@@ -6737,6 +7041,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeGullyTrap.xml"
     },
     "Pset_WasteTerminalTypeOilInterceptor": {
+        "description": "One or more chambers arranged to prevent the ingress of oil to a drain or sewer, that retain the oil for later removal (BS6100 330 67316).",
         "properties": {
             "BodyMaterial": {
                 "description": "The material from which the object is constructed."
@@ -6769,6 +7074,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeOilInterceptor.xml"
     },
     "Pset_WasteTerminalTypePetrolInterceptor": {
+        "description": "Two or more chambers with inlet and outlet pipes arranged to allow petrol/gasoline collected on the surface of water drained into them to evaporate through ventilating pipes.",
         "properties": {
             "BodyMaterial": {
                 "description": "The material from which the object is constructed."
@@ -6804,6 +7110,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypePetrolInterceptor.xml"
     },
     "Pset_WasteTerminalTypeRoofDrain": {
+        "description": "Pipe fitting, set into the roof, that collects rainwater for discharge into the rainwater system.",
         "properties": {
             "BodyMaterial": {
                 "description": "The primary material used to construct the object"
@@ -6833,6 +7140,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeRoofDrain.xml"
     },
     "Pset_WasteTerminalTypeWasteDisposalUnit": {
+        "description": "Electrically operated device that reduces kitchen or other waste into fragments small enough to be flushed into a drainage system.",
         "properties": {
             "DrainConnectionSize": {
                 "description": "Size of the drain connection inlet to the waste disposal unit."
@@ -6847,6 +7155,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeWasteDisposalUnit.xml"
     },
     "Pset_WasteTerminalTypeWasteTrap": {
+        "description": "Pipe fitting, set adjacent to a sanitary terminal, that retains liquid to prevent the passage of foul air.",
         "properties": {
             "InletConnectionSize": {
                 "description": "Size of the inlet connection(s), where used, of the inlet connections."
@@ -6861,6 +7170,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_WasteTerminalTypeWasteTrap.xml"
     },
     "Pset_WindowCommon": {
+        "description": "Properties common to the definition of all occurrences of Window.",
         "properties": {
             "AcousticRating": {
                 "description": "Acoustic rating for this object. It is giving according to the national building code. It indicates the sound transmission resistance of this object by an index ration (instead of providing full sound absorbtion values)."
@@ -6893,6 +7203,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_WindowCommon.xml"
     },
     "Pset_ZoneCommon": {
+        "description": "Properties common to the definition of all occurrences of IfcZone.",
         "properties": {
             "Category": {
                 "description": "Category of space usage or utilization of the area. It is defined according to the presiding national building code."

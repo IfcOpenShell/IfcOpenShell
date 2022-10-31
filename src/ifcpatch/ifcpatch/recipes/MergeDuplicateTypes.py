@@ -28,9 +28,13 @@ class Patcher:
         self.args = args
 
     def patch(self):
-        tags = {}
+        if self.args:
+            key = self.args[0]
+        else:
+            key = "Tag"
+        keys = {}
         for element_type in self.file.by_type("IfcTypeObject"):
-            original_type = tags.get(element_type.Tag, None)
+            original_type = keys.get(getattr(element_type, key), None)
             if original_type:
                 for element in ifcopenshell.util.element.get_types(element_type):
                     self.assign_type(element, original_type)
@@ -38,7 +42,7 @@ class Patcher:
                     ifcopenshell.util.element.replace_attribute(inverse, element_type, original_type)
                 self.file.remove(element_type)
             else:
-                tags[element_type.Tag] = element_type
+                keys[getattr(element_type, key)] = element_type
 
     def assign_type(self, related_object, relating_type):
         # This is basically a portion of the type.assign_type API which only

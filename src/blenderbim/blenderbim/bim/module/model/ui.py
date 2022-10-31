@@ -38,7 +38,7 @@ class LaunchTypeManager(bpy.types.Operator):
         props.type_page = 1
         if props.ifc_class:
             props.type_class = props.ifc_class
-            bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class)
+            bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class, offset=0, limit=9)
         if not AuthoringData.is_loaded:
             AuthoringData.load()
         return context.window_manager.invoke_popup(self, width=550)

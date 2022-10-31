@@ -42,7 +42,7 @@ class Project(blenderbim.core.tool.Project):
     def load_default_thumbnails(cls):
         if tool.Ifc.get().by_type("IfcElementType"):
             ifc_class = sorted(tool.Ifc.get().by_type("IfcElementType"), key=lambda e: e.is_a())[0].is_a()
-            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
+            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
 
     @classmethod
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None):

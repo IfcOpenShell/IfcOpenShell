@@ -413,7 +413,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.align_product(align_type="CENTERLINE")
 
     def hotkey_S_E(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if not bpy.context.selected_objects:
+            return
+        elif self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.join_wall(join_type="T")
         elif self.active_class in ("IfcSlab", "IfcSlabStandardCase", "IfcRamp", "IfcRoof"):
             if not bpy.context.active_object:
