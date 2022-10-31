@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell.api
 import blenderbim.bim.helper
 import blenderbim.tool as tool
+from blenderbim.bim.module.model.slab import DecorationsHandler
 
 
 class LoadProfiles(bpy.types.Operator):
@@ -35,6 +36,7 @@ class LoadProfiles(bpy.types.Operator):
             new = props.profiles.add()
             new.ifc_definition_id = profile.id()
             new.name = profile.ProfileName or "Unnamed"
+            new.ifc_class = profile.is_a()
 
         props.is_editing = True
         bpy.ops.bim.disable_editing_profile()
@@ -60,21 +62,19 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         ifcopenshell.api.run("profile.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
         bpy.ops.bim.load_profiles()
-        return {"FINISHED"}
 
 
-class EnableEditingProfile(bpy.types.Operator):
+class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_profile"
     bl_label = "Enable Editing Profile"
     bl_options = {"REGISTER", "UNDO"}
     profile: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMProfileProperties
         props.profile_attributes.clear()
         blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
         props.active_profile_id = self.profile
-        return {"FINISHED"}
 
 
 class DisableEditingProfile(bpy.types.Operator):
@@ -98,7 +98,6 @@ class EditProfile(bpy.types.Operator, tool.Ifc.Operator):
         profile = tool.Ifc.get().by_id(props.active_profile_id)
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
         bpy.ops.bim.load_profiles()
-        return {"FINISHED"}
 
 
 class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
@@ -110,9 +109,69 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMProfileProperties
         profile_class = props.profile_classes
         if profile_class == "IfcArbitraryClosedProfileDef":
-            points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1)]
-            ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+            points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
+            profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
         else:
-            ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
+            profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
+        profile.ProfileName = "New Profile"
         bpy.ops.bim.load_profiles()
-        return {"FINISHED"}
+
+
+class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_arbitrary_profile"
+    bl_label = "Enable Editing Arbitrary Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        profile = tool.Ifc.get().by_id(props.active_profile_id)
+        obj = tool.Model.import_profile(profile)
+        bpy.context.scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.mode_set(mode="EDIT")
+        DecorationsHandler.install(context)
+        bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
+
+
+class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_arbitrary_profile"
+    bl_label = "Disable Editing Arbitrary Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        DecorationsHandler.uninstall()
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.data.objects.remove(obj)
+
+
+class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_arbitrary_profile"
+    bl_label = "Edit Arbitrary Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        old_profile = tool.Ifc.get().by_id(props.active_profile_id)
+
+        obj = context.active_object
+
+        DecorationsHandler.uninstall()
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        profile = tool.Model.export_profile(obj)
+        if not profile:
+            def msg(self, context):
+                self.layout.label(text="INVALID PROFILE: " + indices[1])
+
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            DecorationsHandler.install(context)
+            bpy.ops.object.mode_set(mode="EDIT")
+            return
+
+        bpy.data.objects.remove(obj)
+        profile.ProfileType = old_profile.ProfileType
+        profile.ProfileName = old_profile.ProfileName
+        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
+        bpy.ops.bim.load_profiles()
+        props.active_profile_id = profile.id()

@@ -42,8 +42,8 @@ IfcOpenShell (using an IfcOpenBot build) for convenience. Instructions on how to
 compile IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
-choose between a ``PLATFORM`` of ``linux``, ``macos``, and ``win``. You can
-choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
+choose between a ``PLATFORM`` of ``linux``, ``macos``, ``macosm1``, and ``win``.
+You can choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
 ::
 
     $ cd src/blenderbim

@@ -31,7 +31,12 @@ class ProfileData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_profiles": cls.total_profiles(), "profile_classes": cls.profile_classes()}
+        cls.data = {
+            "total_profiles": cls.total_profiles(),
+            "profile_classes": cls.profile_classes(),
+            "is_arbitrary_profile": cls.is_arbitrary_profile(),
+            "is_editing_arbitrary_profile": cls.is_editing_arbitrary_profile(),
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -52,3 +57,16 @@ class ProfileData:
             (c, c, ifcopenshell.util.doc.get_entity_doc(schema_identifier, c)["description"] or "")
             for c in sorted(classes)
         ]
+
+    @classmethod
+    def is_arbitrary_profile(cls):
+        props = bpy.context.scene.BIMProfileProperties
+        if props.active_profile_id:
+            profile = tool.Ifc.get().by_id(props.active_profile_id)
+            if profile.is_a("IfcArbitraryClosedProfileDef"):
+                return True
+
+    @classmethod
+    def is_editing_arbitrary_profile(cls):
+        obj = bpy.context.active_object
+        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile
