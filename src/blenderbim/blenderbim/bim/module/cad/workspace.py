@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData
@@ -51,9 +52,14 @@ class CadTool(WorkSpaceTool):
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_Q")
-            row.operator("bim.edit_extrusion_profile", text="Save Profile")
-            row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
-            row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
+            if obj.BIMObjectProperties.ifc_definition_id:
+                row.operator("bim.edit_extrusion_profile", text="Save Profile")
+                row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
+                row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
+            else:
+                row.operator("bim.edit_arbitrary_profile", text="Save Profile")
+                row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
+                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -180,7 +186,10 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_offset(distance=self.props.distance)
 
     def hotkey_S_Q(self):
-        bpy.ops.bim.edit_extrusion_profile()
+        if tool.Ifc.get_entity(bpy.context.active_object):
+            bpy.ops.bim.edit_extrusion_profile()
+        else:
+            bpy.ops.bim.edit_arbitrary_profile()
 
     def hotkey_S_R(self):
         if self.is_profile():

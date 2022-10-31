@@ -388,6 +388,12 @@ def draw_custom_context_menu(self, context):
     if not hasattr(context, "button_pointer") or not hasattr(context, "button_prop"):
         return
     # https://blender.stackexchange.com/a/275555/86891
+    if (
+        not hasattr(context, "button_pointer")
+        or not hasattr(context, "button_prop")
+        or not hasattr(context.button_prop, "identifier")
+    ):
+        return
     prop = context.button_pointer
     prop_name = context.button_prop.identifier
     prop_value = getattr(prop, prop_name, None)
