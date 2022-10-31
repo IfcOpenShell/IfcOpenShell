@@ -92,19 +92,14 @@ class Model(blenderbim.core.tool.Model):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         offset = 0.0
         thickness = 0.0
-        direction_sense = "POSITIVE"
         material = ifcopenshell.util.element.get_material(element)
         if material:
             if material.is_a("IfcMaterialLayerSetUsage"):
                 offset = material.OffsetFromReferenceLine * unit_scale
-                direction_sense = material.DirectionSense
                 material = material.ForLayerSet
             if material.is_a("IfcMaterialLayerSet"):
                 thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
-        if direction_sense == "NEGATIVE":
-            thickness *= -1
-            offset *= -1
-        return {"thickness": thickness, "offset": offset, "direction_sense": direction_sense}
+        return {"thickness": thickness, "offset": offset}
 
     @classmethod
     def get_manual_booleans(cls, element):

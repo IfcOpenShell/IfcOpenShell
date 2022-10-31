@@ -22,7 +22,6 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.profile.data import ProfileData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -36,15 +35,8 @@ from bpy.props import (
 )
 
 
-def get_profile_classes(self, context):
-    if not ProfileData.is_loaded:
-        ProfileData.load()
-    return ProfileData.data["profile_classes"]
-
-
 class Profile(PropertyGroup):
     name: StringProperty(name="Name")
-    ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
@@ -54,4 +46,3 @@ class BIMProfileProperties(PropertyGroup):
     active_profile_index: IntProperty(name="Active Profile Index")
     active_profile_id: IntProperty(name="Active Profile Id")
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
-    profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
