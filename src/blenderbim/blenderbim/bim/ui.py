@@ -25,6 +25,7 @@ from ifcopenshell.util.doc import (
     get_entity_doc,
     get_property_set_doc,
     get_type_doc,
+    get_attribute_doc,
 )
 from . import ifc
 import blenderbim.tool as tool
@@ -406,7 +407,6 @@ def draw_custom_context_menu(self, context):
     layout = self.layout
 
     if isinstance(context.button_pointer, Attribute):
-        print(prop, prop_name, prop_value)
         description = getattr(context.button_pointer, "description", None)
         ifc_class = getattr(context.button_pointer, "ifc_class", "")
         if ifc_class:
