@@ -401,21 +401,21 @@ def draw_custom_context_menu(self, context):
     prop_value = getattr(prop, prop_name, None)
     if prop_value is None:
         return
-    schema = tool.Ifc.get_schema()
+    version = tool.Ifc.get_schema()
     
     docs = {}
     try:
-        docs = get_entity_doc(schema, prop_value)
+        docs = get_entity_doc(version, prop_value)
         if docs is None:
             raise RuntimeError
     except RuntimeError:
         try:
-            docs = get_type_doc(schema, prop_value)
+            docs = get_type_doc(version, prop_value)
             if docs is None:
                 raise RuntimeError
         except RuntimeError:
             try:
-                docs = get_property_set_doc(schema, prop_value)
+                docs = get_property_set_doc(version, prop_value)
                 if docs is None:
                     raise RuntimeError
             except RuntimeError:

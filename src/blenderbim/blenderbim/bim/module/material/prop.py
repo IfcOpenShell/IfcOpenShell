@@ -17,10 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from ifcopenshell.util.doc import get_entity_doc
 from ifcopenshell.api.material.data import Data
+import blenderbim.tool as tool
 from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute, get_ifc_entity_description
+from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -50,9 +52,11 @@ def purge():
 def get_profile_classes(self, context):
     global profileclasses_enum
     if len(profileclasses_enum) == 0 and IfcStore.get_schema():
+        version = tool.Ifc.get_schema()
         profileclasses_enum.clear()
         profileclasses_enum = [
-            (t.name(), t.name(), get_ifc_entity_description(t.name())) for t in IfcStore.get_schema().declaration_by_name("IfcProfileDef").subtypes()
+            (t.name(), t.name(), get_entity_doc(version, t.name()).get("description", ""))
+            for t in IfcStore.get_schema().declaration_by_name("IfcProfileDef").subtypes()
         ]
     return profileclasses_enum
 
@@ -60,15 +64,16 @@ def get_profile_classes(self, context):
 def get_parameterized_profile_classes(self, context):
     global parameterizedprofileclasses_enum
     if len(parameterizedprofileclasses_enum) == 0 and IfcStore.get_schema():
+        version = tool.Ifc.get_schema()
         parameterizedprofileclasses_enum.clear()
         parameterizedprofileclasses_enum = [
-            (t.name(), t.name(), get_ifc_entity_description(t.name()))
+            (t.name(), t.name(), get_entity_doc(version, t.name()).get("description", ""))
             for t in IfcStore.get_schema().declaration_by_name("IfcParameterizedProfileDef").subtypes()
         ]
         for ifc_class in parameterizedprofileclasses_enum:
             parameterizedprofileclasses_enum.extend(
                 [
-                    (t.name(), t.name(), get_ifc_entity_description(t.name()))
+                    (t.name(), t.name(), get_entity_doc(version, t.name()).get("description", ""))
                     for t in IfcStore.get_schema().declaration_by_name(ifc_class[0]).subtypes() or []
                 ]
             )
@@ -93,10 +98,11 @@ def get_object_material_types(self, context):
             "IfcMaterialProfileSetUsage",
             "IfcMaterialList",
         ]
-        if IfcStore.get_file().schema == "IFC2X3":
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
             material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialLayerSetUsage", "IfcMaterialList"]
         materialtypes_enum.clear()
-        materialtypes_enum = [(m, m, get_ifc_entity_description(m)) for m in material_types]
+        materialtypes_enum = [(m, m, get_entity_doc(version, m).get("description", "")) for m in material_types]
     return materialtypes_enum
 
 

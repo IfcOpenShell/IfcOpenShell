@@ -21,7 +21,6 @@ import bpy
 import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import get_ifc_entity_description
 
 
 def refresh():
@@ -46,7 +45,7 @@ class PsetTemplatesData:
         schema = tool.Ifc.schema()
         version = tool.Ifc.get_schema()
         return [
-            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description"))
+            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
             for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
         ]
 

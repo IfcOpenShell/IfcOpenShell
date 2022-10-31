@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-from blenderbim.bim.ifc import IfcStore
 from math import radians
-from blenderbim.bim.prop import StrProperty, Attribute, get_ifc_entity_description
+import bpy
 from ifcopenshell.api.structural.data import Data
+from ifcopenshell.util.doc import get_entity_doc
+import blenderbim.tool as tool
+from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -89,8 +91,12 @@ def get_structural_load_types(self, context):
     file = IfcStore.get_file()
     if len(structuralloadtypes_enum) < 1 and file:
         declaration = IfcStore.get_schema().declaration_by_name("IfcStructuralLoadStatic")
+        version = tool.Ifc.get_schema()
         structuralloadtypes_enum.extend(
-            [(d.name(), d.name(), get_ifc_entity_description(d.name())) for d in declaration.subtypes()]
+            [
+                (d.name(), d.name(), get_entity_doc(version, d.name()).get("description", ""))
+                for d in declaration.subtypes()
+            ]
         )
     return structuralloadtypes_enum
 
@@ -99,8 +105,10 @@ def get_boundary_condition_types(self, context):
     file = IfcStore.get_file()
     if file:
         declaration = IfcStore.get_schema().declaration_by_name("IfcBoundaryCondition")
+        version = tool.Ifc.get_schema()
         boundaryconditiontypes_enum = [
-            (d.name(), d.name(), get_ifc_entity_description(d.name())) for d in declaration.subtypes()
+            (d.name(), d.name(), get_entity_doc(version, d.name()).get("description", ""))
+            for d in declaration.subtypes()
         ]
         return boundaryconditiontypes_enum
     return []
