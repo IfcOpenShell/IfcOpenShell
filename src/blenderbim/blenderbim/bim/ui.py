@@ -19,11 +19,15 @@
 import os
 import bpy
 from pathlib import Path
+from ifcopenshell.util.doc import (
+    get_entity_doc,
+    get_property_set_doc,
+    get_type_doc,
+)
 from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from blenderbim.bim.helper import IfcHeaderExtractor
-from blenderbim.bim.prop import get_ifc_entity_doc_url, get_property_set_doc_url
 import blenderbim.tool as tool
 
 
@@ -385,8 +389,6 @@ class BIM_PT_misc_object(Panel):
 
 
 def draw_custom_context_menu(self, context):
-    if not hasattr(context, "button_pointer") or not hasattr(context, "button_prop"):
-        return
     # https://blender.stackexchange.com/a/275555/86891
     if (
         not hasattr(context, "button_pointer")
@@ -399,9 +401,29 @@ def draw_custom_context_menu(self, context):
     prop_value = getattr(prop, prop_name, None)
     if prop_value is None:
         return
-    url = get_ifc_entity_doc_url(prop_value)
-    if not bool(url):
-        url = get_property_set_doc_url(prop_value)
+    schema = tool.Ifc.get_schema()
+    
+    docs = {}
+    try:
+        docs = get_entity_doc(schema, prop_value)
+        if docs is None:
+            raise RuntimeError
+    except RuntimeError:
+        try:
+            docs = get_type_doc(schema, prop_value)
+            if docs is None:
+                raise RuntimeError
+        except RuntimeError:
+            try:
+                docs = get_property_set_doc(schema, prop_value)
+                if docs is None:
+                    raise RuntimeError
+            except RuntimeError:
+                pass
+    if docs:
+        url = docs.get("spec_url", "")
+    else:
+        url = ""
 
     description = getattr(context.button_pointer, "description", None)
     if not url and not description:
