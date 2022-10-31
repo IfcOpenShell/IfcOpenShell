@@ -121,6 +121,8 @@ def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
 
 
 def add_attribute_description(attribute_blender):
+    if not attribute_blender.name:
+        return
     description = get_attribute_description(attribute_blender.ifc_class, attribute_blender.name)
     if description:
         attribute_blender.description = description
