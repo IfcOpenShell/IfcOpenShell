@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell.api
 import blenderbim.bim.helper
 import blenderbim.tool as tool
+import blenderbim.bim.module.model.profile as model_profile
 from blenderbim.bim.module.model.slab import DecorationsHandler
 
 
@@ -84,6 +85,7 @@ class DisableEditingProfile(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMProfileProperties.active_profile_id = 0
+        bpy.ops.bim.disable_editing_arbitrary_profile()
         return {"FINISHED"}
 
 
@@ -123,6 +125,8 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        for obj in context.selected_objects:
+            obj.select_set(False)
         props = context.scene.BIMProfileProperties
         profile = tool.Ifc.get().by_id(props.active_profile_id)
         obj = tool.Model.import_profile(profile)
@@ -140,9 +144,10 @@ class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        DecorationsHandler.uninstall()
-        bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.data.objects.remove(obj)
+        if obj and obj.data and obj.data.BIMMeshProperties.is_profile:
+            DecorationsHandler.uninstall()
+            bpy.ops.object.mode_set(mode="OBJECT")
+            bpy.data.objects.remove(obj)
 
 
 class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -172,6 +177,10 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.data.objects.remove(obj)
         profile.ProfileType = old_profile.ProfileType
         profile.ProfileName = old_profile.ProfileName
+        for inverse in tool.Ifc.get().get_inverse(old_profile):
+            ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
         bpy.ops.bim.load_profiles()
         props.active_profile_id = profile.id()
+
+        model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)

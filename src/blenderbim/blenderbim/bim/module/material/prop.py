@@ -112,6 +112,12 @@ def get_material_types(self, context):
     return MaterialsData.data["material_types"]
 
 
+def get_profiles(self, context):
+    if not MaterialsData.is_loaded:
+        MaterialsData.load()
+    return MaterialsData.data["profiles"]
+
+
 class Material(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -125,6 +131,7 @@ class BIMMaterialProperties(PropertyGroup):
     material_type: EnumProperty(items=get_material_types, name="Material Type")
     materials: CollectionProperty(name="Materials", type=Material)
     active_material_index: IntProperty(name="Active Material Index")
+    profiles: EnumProperty(items=get_profiles, name="Profiles")
 
 
 class BIMObjectMaterialProperties(PropertyGroup):
@@ -135,9 +142,6 @@ class BIMObjectMaterialProperties(PropertyGroup):
     material_set_attributes: CollectionProperty(name="Material Set Attributes", type=Attribute)
     active_material_set_item_id: IntProperty(name="Active Material Set ID")
     material_set_item_attributes: CollectionProperty(name="Material Set Item Attributes", type=Attribute)
-    material_set_item_profile_attributes: CollectionProperty(
-        name="Material Set Item Profile Attributes", type=Attribute
-    )
     material_set_item_material: EnumProperty(items=get_materials, name="Material")
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
     parameterized_profile_classes: EnumProperty(
