@@ -23,6 +23,8 @@
 #ifndef IFCGEOMFILTER_H
 #define IFCGEOMFILTER_H
 
+#define BOOST_REGEX_NO_W32
+
 #include "Kernel.h"
 #include "../ifcparse/IfcFile.h"
 
