@@ -24,7 +24,7 @@ requirements:
 
   host:
     - python
-    - boost-cpp <=1.74.0
+    - boost-cpp
     - occt
     - libxml2
     - cgal-cpp
@@ -36,7 +36,7 @@ requirements:
 
   run:
     - python
-    - boost-cpp <=1.74.0
+    - boost-cpp
     - occt
     - libxml2
     - cgal-cpp
