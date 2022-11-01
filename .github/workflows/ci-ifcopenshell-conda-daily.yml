@@ -26,8 +26,9 @@ jobs:
       fail-fast: false
       matrix:
         pyver: [
-          { name: py39, distver: '3.9' },
-          { name: py310, distver: '3.10'}
+          # { name: py39, distver: '3.9' },
+          { name: py310, distver: '3.10'},
+          { name: py311, distver: '3.11'}
         ]
         platform: [
           { name: Windows, distver: windows-2022, upload: 'false' },
