@@ -1,7 +1,3 @@
-#ifdef _MSC_VER
-#include <windows.h>
-#endif
-
 #include "boolean_utils.h"
 
 #include "../ifcgeom_schema_agnostic/IfcGeomTree.h"

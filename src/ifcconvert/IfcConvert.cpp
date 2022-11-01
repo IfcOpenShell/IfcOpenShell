@@ -26,10 +26,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifdef _MSC_VER
-#include <windows.h>
-#endif
-
 #include "../serializers/ColladaSerializer.h"
 #include "../serializers/GltfSerializer.h"
 #include "../serializers/HdfSerializer.h"

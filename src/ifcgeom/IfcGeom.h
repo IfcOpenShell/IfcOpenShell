@@ -17,10 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifdef _MSC_VER
-#include <windows.h>
-#endif
-
 #ifndef IFCGEOM_H
 #define IFCGEOM_H
 
