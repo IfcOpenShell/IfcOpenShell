@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -20,14 +20,14 @@
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"profile": None, "attributes": {}, "profile_attributes": {}, "material": None}
+        self.settings = {"profile": None, "attributes": {}, "profile_def": None, "material": None}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        # TODO: don't also edit the profile def in this usecase
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["profile"], name, value)
-        self.settings["profile"].Material = self.settings["material"]
-        for name, value in self.settings["profile_attributes"].items():
-            setattr(self.settings["profile"].Profile, name, value)
+        if self.settings["material"]:
+            self.settings["profile"].Material = self.settings["material"]
+        if self.settings["profile_def"]:
+            self.settings["profile"].Profile = self.settings["profile_def"]

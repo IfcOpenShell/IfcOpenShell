@@ -28,7 +28,6 @@ import blenderbim.core.material as core
 from blenderbim.bim.module.material.prop import purge as material_prop_purge
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.material.data import Data
-from ifcopenshell.api.profile.data import Data as ProfileData
 
 
 class LoadMaterials(bpy.types.Operator, tool.Ifc.Operator):
@@ -84,7 +83,6 @@ class AssignParameterizedProfile(bpy.types.Operator):
             **{"material_profile": self.file.by_id(self.material_profile), "profile": profile},
         )
         Data.load_profiles()
-        ProfileData.load(self.file)
         bpy.ops.bim.enable_editing_material_set_item(obj=obj.name, material_set_item=self.material_profile)
         return {"FINISHED"}
 
@@ -256,13 +254,11 @@ class AddProfile(bpy.types.Operator):
         ifcopenshell.api.run(
             "material.add_profile",
             self.file,
-            **{
-                "profile_set": self.file.by_id(self.profile_set),
-                "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
-            },
+            profile_set=self.file.by_id(self.profile_set),
+            material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
+            profile=self.file.by_id(int(context.scene.BIMMaterialProperties.profiles)),
         )
         Data.load_profiles()
-        ProfileData.load(self.file)
         return {"FINISHED"}
 
 
@@ -281,7 +277,6 @@ class RemoveProfile(bpy.types.Operator):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("material.remove_profile", self.file, **{"profile": self.file.by_id(self.profile)})
         Data.load_profiles()
-        ProfileData.load(self.file)
         return {"FINISHED"}
 
 
@@ -341,7 +336,6 @@ class ReorderMaterialSetItem(bpy.types.Operator):
             Data.load_layers()
         elif material_set.is_a("IfcMaterialProfileSet"):
             Data.load_profiles()
-            ProfileData.load(self.file)
         elif material_set.is_a("IfcMaterialList"):
             Data.load_lists()
         return {"FINISHED"}
@@ -586,6 +580,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        self.mprops = context.scene.BIMMaterialProperties
         self.props = obj.BIMObjectMaterialProperties
         self.props.active_material_set_item_id = self.material_set_item
         product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
@@ -604,7 +599,8 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
 
         self.load_set_item_attributes(material_set_item, material_set_item_data)
         if material_set_item.is_a("IfcMaterialProfile"):
-            self.load_profile_attributes(material_set_item, material_set_item_data)
+            if material_set_item.Profile:
+                self.mprops.profiles = str(material_set_item.Profile.id())
 
         return {"FINISHED"}
 
@@ -630,47 +626,6 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                 elif data_type == "boolean":
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
                 blenderbim.bim.helper.add_attribute_description(new)
-                
-    def load_profile_attributes(self, material_set_item, material_set_item_data):
-        self.props.material_set_item_profile_attributes.clear()
-
-        if not material_set_item_data["Profile"]:
-            return
-
-        profile = self.file.by_id(material_set_item_data["Profile"])
-        profile_data = ProfileData.profiles[material_set_item_data["Profile"]]
-
-        for attribute in IfcStore.get_schema().declaration_by_name(profile.is_a()).all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            if attribute.name() in profile_data:
-                new = self.props.material_set_item_profile_attributes.add()
-                new.name = attribute.name()
-                new.ifc_class = profile.is_a()
-                new.is_null = profile_data[attribute.name()] is None
-                new.is_optional = attribute.optional()
-                new.data_type = data_type
-                if data_type == "string":
-                    new.string_value = "" if new.is_null else profile_data[attribute.name()]
-                elif data_type == "float":
-                    new.float_value = 0.0 if new.is_null else profile_data[attribute.name()]
-                elif data_type == "integer":
-                    new.int_value = 0 if new.is_null else profile_data[attribute.name()]
-                elif data_type == "boolean":
-                    new.bool_value = False if new.is_null else profile_data[attribute.name()]
-                elif data_type == "enum":
-                    new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                    if profile_data[attribute.name()]:
-                        new.enum_value = profile_data[attribute.name()]
-
-                blenderbim.bim.helper.add_attribute_description(new)
-
-                # Force null to be false if the attribute is mandatory because when we first assign a profile, all of
-                # its fields are null (which is illegal).
-                # TODO: find a better solution.
-                if not new.is_optional:
-                    new.is_null = False
 
 
 class DisableEditingMaterialSetItem(bpy.types.Operator):
@@ -700,6 +655,7 @@ class EditMaterialSetItem(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         props = obj.BIMObjectMaterialProperties
+        mprops = context.scene.BIMMaterialProperties
         product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
 
         attributes = blenderbim.bim.helper.export_attributes(props.material_set_item_attributes)
@@ -727,19 +683,19 @@ class EditMaterialSetItem(bpy.types.Operator):
             )
             Data.load_layers()
         elif product_data["type"] == "IfcMaterialProfileSet" or product_data["type"] == "IfcMaterialProfileSetUsage":
-            profile_attributes = blenderbim.bim.helper.export_attributes(props.material_set_item_profile_attributes)
+            profile_def = None
+            if mprops.profiles:
+                profile_def = tool.Ifc.get().by_id(int(mprops.profiles))
+
             ifcopenshell.api.run(
                 "material.edit_profile",
                 self.file,
-                **{
-                    "profile": self.file.by_id(self.material_set_item),
-                    "attributes": attributes,
-                    "profile_attributes": profile_attributes,
-                    "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
-                },
+                profile=self.file.by_id(self.material_set_item),
+                attributes=attributes,
+                profile_def=profile_def,
+                material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
             )
             Data.load_profiles()
-            ProfileData.load(self.file)
         else:
             pass
 

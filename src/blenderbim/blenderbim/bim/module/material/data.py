@@ -37,6 +37,7 @@ class MaterialsData:
         cls.data = {
             "total_materials": cls.total_materials(),
             "material_types": cls.material_types(),
+            "profiles": cls.profiles(),
         }
         cls.is_loaded = True
 
@@ -71,6 +72,10 @@ class MaterialsData:
         return [
             (m, m, ifcopenshell.util.doc.get_entity_doc(version, m).get("description", "")) for m in material_types
         ]
+
+    @classmethod
+    def profiles(cls):
+        return [(str(p.id()), p.ProfileName or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcProfileDef")]
 
 
 class ObjectMaterialData:

@@ -19,7 +19,6 @@
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from ifcopenshell.api.material.data import Data
-from ifcopenshell.api.profile.data import Data as ProfileData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
 from blenderbim.bim.helper import prop_with_search
@@ -128,12 +127,11 @@ class BIM_PT_object_material(Panel):
         self.file = IfcStore.get_file()
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMObjectMaterialProperties
+        self.mprops = context.scene.BIMMaterialProperties
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
         if self.oprops.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
-        if not ProfileData.is_loaded:
-            ProfileData.load(self.file)
         self.product_data = Data.products[self.oprops.ifc_definition_id]
 
         if not ObjectMaterialData.data["materials"]:
@@ -235,15 +233,13 @@ class BIM_PT_object_material(Panel):
         self.draw_read_only_set_ui()
 
     def draw_editable_set_ui(self):
+        blenderbim.bim.helper.draw_attributes(self.props.material_set_attributes, self.layout)
         blenderbim.bim.helper.draw_attributes(self.props.material_set_usage_attributes, self.layout)
 
-        for attribute in self.props.material_set_attributes:
-            row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
-            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
         row = self.layout.row(align=True)
-        prop_with_search(row, self.props, "material", text="")
-
+        if self.set_item_name == "profile":
+            row.prop(self.mprops, "profiles", icon="ITALIC", text="")
+        prop_with_search(row, self.props, "material", icon="MATERIAL", text="")
         op = row.operator(f"bim.add_{self.set_item_name}", icon="ADD", text="")
         setattr(op, f"{self.set_item_name}_set", self.material_set_id)
 
@@ -262,34 +258,18 @@ class BIM_PT_object_material(Panel):
 
         box = self.layout.box()
         row = box.row(align=True)
-        row.prop(self.props, "material_set_item_material", icon="MATERIAL")
-        op = row.operator("bim.edit_material_set_item", icon="CHECKMARK", text="")
+        op = row.operator("bim.edit_material_set_item", icon="CHECKMARK", text="Save Changes")
         op.material_set_item = set_item_id
         row.operator("bim.disable_editing_material_set_item", icon="CANCEL", text="")
 
-        draw_attributes(self.props.material_set_item_attributes, self.layout)
+        draw_attributes(self.props.material_set_item_attributes, box)
+
+        row = box.row()
+        row.prop(self.props, "material_set_item_material", icon="MATERIAL", text="Material")
 
         if self.set_item_name == "profile":
-            self.draw_assign_profile_ui(box, item)
-            self.draw_editable_profile_ui(box, item)
-
-    def draw_assign_profile_ui(self, layout, item):
-        row = layout.row(align=True)
-        row.prop(self.props, "profile_classes", text="")
-        if self.props.profile_classes == "IfcParameterizedProfileDef":
-            row.prop(self.props, "parameterized_profile_classes", text="")
-            op = row.operator(
-                "bim.assign_parameterized_profile", icon="GREASEPENCIL" if item["Profile"] else "ADD", text=""
-            )
-            op.ifc_class = self.props.parameterized_profile_classes
-            op.material_profile = item["id"]
-        else:
-            # TODO: support non parametric profiles by showing a list of named profiles to select from, or an
-            # eyedropper to pick profile geometry from the scene
-            row.operator("bim.disable_editing_material_set_item", icon="CANCEL", text="")
-
-    def draw_editable_profile_ui(self, layout, item):
-        draw_attributes(self.props.material_set_item_profile_attributes, self.layout)
+            row = box.row()
+            row.prop(self.mprops, "profiles", icon="ITALIC", text="Profile")
 
     def draw_read_only_set_item_ui(self, set_item_id, index, is_first=False, is_last=False):
         if self.product_data["type"] == "IfcMaterialList":
