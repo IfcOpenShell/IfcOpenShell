@@ -7,7 +7,7 @@ parsing support is provided for [IFC2x3 TC1], [IFC4 Add2 TC1], IFC4x1, IFC4x3, a
 is implemented for the IFC releases [IFC2x3 TC1] and [IFC4 Add2 TC1]. Extending with support for arbitrary IFC schemas
 is possible at compile-time when using C++ and at run-time when using Python.
 
-IfcOpenShell comes with an ecosystem of tools, notably including IfcConvert (an application to convert IFC models to
+In addition to a C++ and Python API, IfcOpenShell comes with an ecosystem of tools, notably including IfcConvert (an application to convert IFC models to
 other formats), the BlenderBIM Add-on (an add-on to Blender providing a graphical IFC authoring platform), and many
 other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF and IDS.
 
@@ -15,8 +15,13 @@ For more information, see:
 
 * [IfcOpenShell Website](http://ifcopenshell.org)
 * [IfcOpenShell Documentation](http://blenderbim.org/docs-python)
+  * [IfcOpenShell C++ Installation](https://blenderbim.org/docs-python/ifcopenshell/installation.html)
+  * [IfcOpenShell Python Installation](https://blenderbim.org/docs-python/ifcopenshell-python/installation.html)
+  * [IfcOpenShell Python Hello World Tutorial](https://blenderbim.org/docs-python/ifcopenshell-python/hello_world.html)
 * [BlenderBIM Add-on Website](https://blenderbim.org)
 * [BlenderBIM Add-on Documentation](http://blenderbim.org/docs)
+  * [Add-on Installation](https://blenderbim.org/docs/users/installation.html)
+  * [Exploring an IFC model](https://blenderbim.org/docs/users/exploring_an_ifc_model.html)
 
 | Service                                         | Status                                                                                                                                       |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
