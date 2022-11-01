@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
+
 #include <gp_Pln.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopTools_ListOfShape.hxx>

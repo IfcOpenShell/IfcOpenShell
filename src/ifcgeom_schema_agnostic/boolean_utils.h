@@ -20,6 +20,10 @@
 #ifndef BOOLEAN_UTILS_H
 #define BOOLEAN_UTILS_H
 
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
+
 #include <TopoDS_Shape.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <Geom_Surface.hxx>

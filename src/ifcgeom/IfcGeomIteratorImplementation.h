@@ -58,6 +58,10 @@
 #ifndef IFCGEOMITERATOR_H
 #define IFCGEOMITERATOR_H
 
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
+
 #include <map>
 #include <set>
 #include <vector>
