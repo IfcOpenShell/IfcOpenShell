@@ -660,7 +660,8 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         old_profile = extrusion.SweptArea
-        extrusion.SweptArea = profile
+        for inverse in tool.Ifc.get().get_inverse(old_profile):
+            ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
         blenderbim.core.geometry.switch_representation(
