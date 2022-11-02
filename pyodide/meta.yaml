@@ -7,7 +7,7 @@ source:
 
 build:
   script: |
-    USE_CURRENT_PYTHON_VERSION=1 python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm IfcOpenShell-Python
+    python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py310 IfcOpenShell-Python
 
 about:
   home: http://ifcopenshell.org

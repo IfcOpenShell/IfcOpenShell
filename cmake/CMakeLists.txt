@@ -54,6 +54,7 @@ OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only."
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
+OPTION(BOOST_NO_SYSROOT OFF)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
@@ -149,6 +150,11 @@ UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
 
+if(BOOST_NO_SYSROOT)
+    set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
+    set(CMAKE_FIND_ROOT_PATH "")
+endif()
+
 if (NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
 FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
@@ -199,7 +205,7 @@ ELSE()
     ENDIF()
 ENDIF()
 
-set(BOOST_COMPONENTS system program_options regex thread date_time)
+set(BOOST_COMPONENTS system program_options regex date_time)
 if(USE_MMAP)
     if(MSVC)
         # filesystem is necessary for the utf-16 wpath
@@ -210,6 +216,10 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
+MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+
 if (NOT MINIMAL_BUILD)
 # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
   find_package(LibXml2 REQUIRED)
@@ -219,11 +229,6 @@ if (NOT MINIMAL_BUILD AND IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
 	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
-
-FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
-MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
-
 
 # Usage:
 # set(SOME_LIRARIES foo bar)
@@ -341,6 +346,10 @@ endif()
 get_filename_component(libTKernelExt ${libTKernel} EXT)
 if("${libTKernelExt}" STREQUAL ".a")
     set(OCCT_STATIC ON)
+endif()
+
+if(BOOST_NO_SYSROOT)
+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
 endif()
 
 if(OCCT_STATIC)
@@ -620,7 +629,7 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
 endfunction()
 
 if(NOT SCHEMA_VERSIONS)
-    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3")
+    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc4" "4x3")
 endif()
 
 foreach(s ${SCHEMA_VERSIONS})

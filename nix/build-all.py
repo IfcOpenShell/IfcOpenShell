@@ -61,7 +61,6 @@ import sysconfig
 
 from urllib.request import urlretrieve
 
-
 logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
@@ -102,6 +101,9 @@ curl = "curl"
 wget = "wget"
 strip = "strip"
 
+explicit_targets = [s for s in sys.argv[1:] if not s.startswith("-")]
+flags = set(s.lstrip('-') for s in sys.argv[1:] if s.startswith("-"))
+
 # Helper function for coloured printing
 
 NO_COLOR = "\033[0m" # <ref>http://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux</ref>
@@ -134,9 +136,11 @@ if platform.system() == "Darwin":
 
 IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
 
-CMAKE_DIR = os.path.realpath(os.path.join("..", "cmake"))
+CMAKE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "cmake"))
 
-path = ["..", "build", platform.system(), platform.machine()]
+build_dir = os.environ.get("BUILD_DIR", os.path.join(os.path.dirname(__file__), "..", "build"))
+
+path = [build_dir, platform.system(), "wasm" if "wasm" in flags else platform.machine()]
 if TOOLSET:
     path.append(TOOLSET)
 DEFAULT_DEPS_DIR = os.path.realpath(os.path.join(*path))
@@ -199,9 +203,6 @@ def v(dep):
      for x in v(d):
        yield x
 
-tgts = [s for s in sys.argv[1:] if not s.startswith("-")]
-flags = set(s.lstrip('-') for s in sys.argv[1:] if s.startswith("-"))
-
 if "v" in flags:
     logger.setLevel(logging.DEBUG)
 else:
@@ -215,8 +216,11 @@ LINK_TYPE_UCFIRST = LINK_TYPE[0].upper() + LINK_TYPE[1:]
 LIBRARY_EXT = "a" if BUILD_STATIC else "so"
 PIC = "-fPIC" if BUILD_STATIC else ""
 
-if len(tgts):
-    targets = set(sum((list(v(target)) for target in tgts), []))
+if any(f.startswith("py-") for f in flags):
+    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if "py-%s" % "".join(pyv.split('.')[0:2]) in flags]
+
+if len(explicit_targets):
+    targets = set(sum((list(v(target)) for target in explicit_targets), []))
 else:
     targets = set(dependency_tree.keys())
     
@@ -528,7 +532,7 @@ if "freetype" in targets:
         build_tool_args=[
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/freetype"
         ],
-        download_url = "https://git.savannah.nongnu.org/git/freetype/freetype2.git",
+        download_url = "https://github.com/freetype/freetype",
         download_name = "freetype2",
         download_tool=download_tool_git,
     )
@@ -602,7 +606,7 @@ if "OpenCOLLADA" in targets:
         revision=OPENCOLLADA_VERSION
     )
 
-if "python" in targets and not USE_CURRENT_PYTHON_VERSION:
+if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flags:
     # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
     OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
     OLD_C_FLAGS = os.environ["CFLAGS"]
@@ -664,6 +668,9 @@ if "boost" in targets:
         patch="./patches/boost/boostorg_regex_62.patch",
         download_name=f"boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2"
     )
+    if "wasm" in flags:
+        # only supported on nix for now
+        run(("find", ".", "-name", "*.bc", "-exec", "bash", "-c", "emar q ${1%.bc}.a $1", "bash", "{}", ";"), cwd=f"{DEPS_DIR}/install/boost-{BOOST_VERSION}/lib")
     
 if "cgal" in targets:
     gmp_args = []
@@ -717,17 +724,7 @@ os.makedirs(IFCOS_DIR, exist_ok=True)
 executables_dir = os.path.join(IFCOS_DIR, "executables")
 os.makedirs(executables_dir, exist_ok=True)
 
-logger.info("\rConfiguring executables...")
-
 OFF_ON = ["OFF", "ON"]
-
-exec_args = [
-    "-DBUILD_IFCGEOM="                 +OFF_ON["IfcGeom" in targets],
-    "-DBUILD_GEOMSERVER="              +OFF_ON["IfcGeomServer" in targets],
-    "-DBUILD_CONVERT="                 +OFF_ON["IfcConvert" in targets],
-    "-DBUILD_IFCPYTHON="               "OFF",
-    "-DCMAKE_INSTALL_PREFIX="          f"{DEPS_DIR}/install/ifcopenshell",
-]
 
 cmake_args = [
     "-DUSE_MMAP="                      "OFF",
@@ -739,6 +736,11 @@ cmake_args = [
     "-DBoost_NO_BOOST_CMAKE="          "On",
     "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off")
 ]
+
+if "wasm" in flags:
+    # Boost is built by the build script so should not be found
+    # inside of the sysroot set by the emscriptem toolchain
+    cmake_args.append("-DBOOST_NO_SYSROOT=On")
 
 if "cgal" in targets:
     cmake_args.extend([
@@ -794,12 +796,23 @@ if "hdf5" in targets:
 else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
 
-run_cmake("", exec_args + cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
+if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets):
+    logger.info("\rConfiguring executables...")
 
-logger.info("\rBuilding executables...   ")
+    exec_args = [
+        "-DBUILD_IFCGEOM="                 +OFF_ON["IfcGeom" in targets],
+        "-DBUILD_GEOMSERVER="              +OFF_ON["IfcGeomServer" in targets],
+        "-DBUILD_CONVERT="                 +OFF_ON["IfcConvert" in targets],
+        "-DBUILD_IFCPYTHON="               "OFF",
+        "-DCMAKE_INSTALL_PREFIX="          f"{DEPS_DIR}/install/ifcopenshell",
+    ]
+    
+    run_cmake("", exec_args + cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
 
-run([make, f"-j{IFCOS_NUM_BUILD_PROCS}"], cwd=executables_dir)
-run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
+    logger.info("\rBuilding executables...   ")
+
+    run([make, f"-j{IFCOS_NUM_BUILD_PROCS}"], cwd=executables_dir)
+    run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
 
 if "IfcOpenShell-Python" in targets:
     # On OSX the actual Python library is not linked against.
@@ -830,10 +843,12 @@ if "IfcOpenShell-Python" in targets:
         run_cmake("",
             cmake_args + [
                 "-DPYTHON_LIBRARY="          +python_library,
-                "-DPYTHON_EXECUTABLE="       +python_executable,
+                *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
+                # *([f"-DPYTHON_MODULE_INSTALL_DIR={os.environ['PYTHONPATH']}/ifcopenshell"] if "wasm" in flags else []),
+                *(["-DPYTHON_MODULE_INSTALL_DIR="+os.path.realpath("dist")] if "wasm" in flags else []),
                 "-DPYTHON_INCLUDE_DIR="      +python_include,
                 "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
-                "-DUSERSPACE_PYTHON_PREFIX=" +["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}]
+                "-DUSERSPACE_PYTHON_PREFIX=" +["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
                 *swig_when_built],
             cmake_dir=CMAKE_DIR, cwd=python_dir)
 
@@ -842,21 +857,36 @@ if "IfcOpenShell-Python" in targets:
         run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
-        module_dir = os.path.dirname(run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
+        if python_executable:
+            module_dir = os.path.dirname(run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
 
-        if platform.system() != "Darwin":
-            # TODO: This symbol name depends on the Python version?
-            run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
-        return module_dir
+            if platform.system() != "Darwin":
+                # TODO: This symbol name depends on the Python version?
+                run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
 
+            return module_dir
 
-    if USE_CURRENT_PYTHON_VERSION:
-        python_info = sysconfig.get_paths()
-        python_lib = os.path.join(
-            sysconfig.get_config_var('LIBDIR'), 
-            sysconfig.get_config_var('multiarchsubdir').replace("/", ""), 
-            sysconfig.get_config_var("INSTSONAME")
+    if "wasm" in flags:
+        compile_python_wrapper(
+            f"{os.environ['PYMAJOR']}.{os.environ['PYMINOR']}.{os.environ['PYMICRO']}",
+            f"{os.environ['TARGETINSTALLDIR']}/lib/libpython{os.environ['PYMAJOR']}.{os.environ['PYMINOR']}.a",
+            os.environ['PYTHONINCLUDE'],
+            None
         )
+    
+    elif USE_CURRENT_PYTHON_VERSION:
+        python_info = sysconfig.get_paths()
+
+        py_path_components = [
+            sysconfig.get_config_var('LIBDIR'),
+            sysconfig.get_config_var("INSTSONAME")
+        ]
+
+        if sysconfig.get_config_var('multiarchsubdir'):
+            py_path_components.insert(1, sysconfig.get_config_var('multiarchsubdir').replace("/", ""))
+
+        python_lib = os.path.join(*py_path_components)
+
         compile_python_wrapper(platform.python_version(), python_lib, python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
