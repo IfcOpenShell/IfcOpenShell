@@ -626,7 +626,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                 elif data_type == "boolean":
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
                 blenderbim.bim.helper.add_attribute_description(new)
-
+                blenderbim.bim.helper.add_attribute_min_max(new)
 
 class DisableEditingMaterialSetItem(bpy.types.Operator):
     bl_idname = "bim.disable_editing_material_set_item"
