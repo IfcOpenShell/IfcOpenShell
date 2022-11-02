@@ -28,6 +28,7 @@ from bmesh.types import BMVert
 from mathutils import Vector
 from pprint import pprint
 
+
 def add_dumb_stair_object(self, context):
     if self.number_of_treads <= 0:
         self.number_of_treads = 1
@@ -76,6 +77,7 @@ class BIM_OT_add_object(Operator, AddObjectHelper):
     def execute(self, context):
         add_dumb_stair_object(self, context)
         return {"FINISHED"}
+
 
 def create_stair(
     operator,
@@ -236,4 +238,3 @@ class BIM_OT_add_clever_stair(Operator):
 def add_object_button(self, context):
     self.layout.operator(BIM_OT_add_object.bl_idname, icon="PLUGIN")
     self.layout.operator(BIM_OT_add_clever_stair.bl_idname, icon="PLUGIN")
-
