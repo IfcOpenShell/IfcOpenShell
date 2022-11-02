@@ -81,6 +81,7 @@ classes = (
     ui.BIM_MT_model,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_object,
+    stair.BIM_OT_add_clever_stair,
     pie.OpenPieClass,
     pie.PieUpdateContainer,
     pie.PieAddOpening,
