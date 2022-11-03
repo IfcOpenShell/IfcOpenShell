@@ -38,7 +38,7 @@ class IfcClassData:
         cls.data = {}
         cls.data["ifc_products"] = cls.ifc_products()
         cls.data["ifc_classes"] = cls.ifc_classes()
-        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()
+        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()  # Call AFTER cls.ifc_classes()
         cls.data["contexts"] = cls.contexts()
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
@@ -117,20 +117,11 @@ class IfcClassData:
                 "IfcUnitaryEquipment": ["Fan Coil Unit"],
             }
         )
-        file = IfcStore.get_file()
-        if file:
-            for ifc_class in cls.ifc_classes():
-                ifc_class = ifc_class[0]
-                declaration = IfcStore.get_schema().declaration_by_name(ifc_class)
-                for attribute in declaration.attributes():
-                    if attribute.name() == "PredefinedType":
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items():
-                            if e in (
-                                "NOTDEFINED",
-                                "USERDEFINED",
-                            ):
-                                continue
-                            suggestions[ifc_class].append(e.title())
+        version = tool.Ifc.get_schema()
+        for ifc_class, _, _ in cls.data["ifc_classes"]:
+            class_doc = get_entity_doc(version, ifc_class)
+            predefined_types = class_doc.get("predefined_types", {})
+            suggestions[ifc_class].extend(predefined_types.keys())
         return suggestions
 
     @classmethod
