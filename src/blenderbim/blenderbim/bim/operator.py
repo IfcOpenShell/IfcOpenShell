@@ -612,7 +612,10 @@ def update_enum_property_search_prop(self, context):
             setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
             predefined_type = self.collection_predefined_types[i].name
             if predefined_type:
-                setattr(context.data, "ifc_predefined_type", predefined_type)
+                try:
+                    setattr(context.data, "ifc_predefined_type", predefined_type)
+                except TypeError:  # User clicked on a suggestion, but it's not a predefined type
+                    pass
             break
 
 
