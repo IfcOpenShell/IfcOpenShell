@@ -93,7 +93,7 @@ def get_entity_doc(version, entity_name, recursive=True):
             parent_entity = get_entity_doc(version, ifc_supertype.name(), recursive=True)
             if "attributes" not in entity:
                 entity["attributes"] = dict()
-            for parent_attr in parent_entity["attributes"]:
+            for parent_attr in parent_entity.get("attributes", []):
                 entity["attributes"][parent_attr] = parent_entity["attributes"][parent_attr]
         return entity
 

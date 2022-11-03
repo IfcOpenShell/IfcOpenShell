@@ -376,6 +376,7 @@ def get_decomposition(element):
             results.append(rel.RelatedBuildingElement)
     return results
 
+
 def get_grouped_by(element):
     """
     Retrieves all subelements of an element based on the group.
@@ -396,7 +397,8 @@ def get_grouped_by(element):
             queue.extend(rel.RelatedObjects)
             results.extend(rel.RelatedObjects)
     return results
-    
+
+
 def get_aggregate(element):
     """
     Retrieves the aggregate of an element.
