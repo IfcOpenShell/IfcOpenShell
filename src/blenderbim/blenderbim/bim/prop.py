@@ -195,6 +195,23 @@ def update_attribute_value(self, context):
             self.is_null = False
 
 
+def get_numerical_value(self):
+    value_attr = self.get_value_name()
+    if value_attr == "int_value":
+        return int(self.get(value_attr) or 0)
+    elif value_attr == "float_value":
+        return float(self.get(value_attr) or 0)
+
+
+def set_numerical_value(self, new_value):
+    value_attr = self.get_value_name()
+    if new_value < self.value_min:
+        new_value = self.value_min
+    elif new_value > self.value_max:
+        new_value = self.value_max
+    self[value_attr] = new_value
+
+
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
@@ -203,8 +220,20 @@ class Attribute(PropertyGroup):
     data_type: StringProperty(name="Data Type")
     string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
     bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
-    int_value: IntProperty(name="Value", update=update_attribute_value, description=tooltip)
-    float_value: FloatProperty(name="Value", update=update_attribute_value, description=tooltip)
+    int_value: IntProperty(
+        name="Value",
+        description=tooltip,
+        update=update_attribute_value,
+        get=get_numerical_value,
+        set=set_numerical_value,
+    )
+    float_value: FloatProperty(
+        name="Value",
+        description=tooltip,
+        update=update_attribute_value,
+        get=get_numerical_value,
+        set=set_numerical_value,
+    )
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
@@ -213,6 +242,8 @@ class Attribute(PropertyGroup):
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
     has_calculator: BoolProperty(name="Has Calculator", default=False)
+    value_min: FloatProperty(default=-10e20, description="This is used to validate int_value and float_value")
+    value_max: FloatProperty(default=10e20, description="This is used to validate int_value and float_value")
 
     def get_value(self):
         if self.is_optional and self.is_null:

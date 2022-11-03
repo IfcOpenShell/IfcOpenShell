@@ -109,6 +109,17 @@ def import_attribute(attribute, props, data, callback=None):
         if data[new.name]:
             new.enum_value = data[new.name]
     add_attribute_description(new)
+    add_attribute_min_max(new)
+
+
+ATTRIBUTE_MIN_MAX_CONSTRAINTS = {"IfcMaterialLayer": {"Priority": {"value_min": 0, "value_max": 100}}}
+
+
+def add_attribute_min_max(attribute_blender):
+    if attribute_blender.ifc_class in ATTRIBUTE_MIN_MAX_CONSTRAINTS:
+        constraints = ATTRIBUTE_MIN_MAX_CONSTRAINTS[attribute_blender.ifc_class].get(attribute_blender.name, {})
+        for constraint, value in constraints.items():
+            setattr(attribute_blender, constraint, value)
 
 
 def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
