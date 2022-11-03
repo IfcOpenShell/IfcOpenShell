@@ -413,7 +413,11 @@ def draw_custom_context_menu(self, context):
             try:
                 url = get_entity_doc(version, context.button_pointer.ifc_class).get("spec_url", "")
             except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
-                url = get_property_set_doc(version, context.button_pointer.ifc_class).get("spec_url", "")
+                doc = get_property_set_doc(version, context.button_pointer.ifc_class)
+                if doc:
+                    url = doc.get("spec_url", "")
+                else:  # It's a custom property set. No URL available
+                    url = ""
         if description:
             layout.separator()
             op_description = layout.operator("bim.show_description", text="IFC Description", icon="INFO")

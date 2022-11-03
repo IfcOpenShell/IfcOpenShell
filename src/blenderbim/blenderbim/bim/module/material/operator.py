@@ -618,14 +618,14 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                 new.is_null = material_set_item_data[attribute.name()] is None
                 new.data_type = data_type
                 if data_type == "string":
-                    new.string_value = "" if new.is_null else material_set_item_data[attribute.name()]
+                    new.string_value = "" if new.is_null else str(material_set_item_data[attribute.name()])
                 elif data_type == "float":
-                    new.float_value = 0.0 if new.is_null else material_set_item_data[attribute.name()]
+                    new.float_value = 0.0 if new.is_null else float(material_set_item_data[attribute.name()])
                 elif data_type == "integer":
-                    new.int_value = 0 if new.is_null else material_set_item_data[attribute.name()]
+                    new.int_value = 0 if new.is_null else int(material_set_item_data[attribute.name()])
                 elif data_type == "boolean":
-                    new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
-                blenderbim.bim.helper.add_attribute_description(new)
+                    new.bool_value = False if new.is_null else bool(material_set_item_data[attribute.name()])
+                blenderbim.bim.helper.add_attribute_description(new, material_set_item_data)
                 blenderbim.bim.helper.add_attribute_min_max(new)
 
 
