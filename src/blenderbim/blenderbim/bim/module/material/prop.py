@@ -142,6 +142,9 @@ class BIMObjectMaterialProperties(PropertyGroup):
     material_set_attributes: CollectionProperty(name="Material Set Attributes", type=Attribute)
     active_material_set_item_id: IntProperty(name="Active Material Set ID")
     material_set_item_attributes: CollectionProperty(name="Material Set Item Attributes", type=Attribute)
+    material_set_item_profile_attributes: CollectionProperty(
+        name="Material Set Item Profile Attributes", type=Attribute
+    )
     material_set_item_material: EnumProperty(items=get_materials, name="Material")
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
     parameterized_profile_classes: EnumProperty(

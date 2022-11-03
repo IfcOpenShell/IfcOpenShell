@@ -25,6 +25,7 @@ import ifcopenshell.util.representation
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 import blenderbim.core.material as core
+import blenderbim.bim.module.model.profile as model_profile
 from blenderbim.bim.module.material.prop import purge as material_prop_purge
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.material.data import Data
@@ -516,6 +517,52 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
         elif material_set.is_a("IfcMaterialProfileSet"):
             Data.load_profiles()
         bpy.ops.bim.disable_editing_assigned_material(obj=obj.name)
+
+
+class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_material_set_item_profile"
+    bl_label = "Enable Editing Material Set Item"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    material_set_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        self.props = obj.BIMObjectMaterialProperties
+        self.props.material_set_item_profile_attributes.clear()
+        profile = tool.Ifc.get().by_id(self.material_set_item).Profile
+        blenderbim.bim.helper.import_attributes2(profile, self.props.material_set_item_profile_attributes)
+        return {"FINISHED"}
+
+
+class DisableEditingMaterialSetItemProfile(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_material_set_item_profile"
+    bl_label = "Disable Editing Material Set Item"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        self.props = obj.BIMObjectMaterialProperties
+        self.props.material_set_item_profile_attributes.clear()
+        return {"FINISHED"}
+
+
+class EditMaterialSetItemProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_material_set_item_profile"
+    bl_label = "Edit Material Set Item Profile"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    material_set_item: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        self.props = obj.BIMObjectMaterialProperties
+        attributes = blenderbim.bim.helper.export_attributes(self.props.material_set_item_profile_attributes)
+        profile = tool.Ifc.get().by_id(self.material_set_item).Profile
+        ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
+        self.props.material_set_item_profile_attributes.clear()
+        model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
 
 
 class EnableEditingMaterialSetItem(bpy.types.Operator):
