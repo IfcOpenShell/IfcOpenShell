@@ -99,6 +99,7 @@ class EditProfile(bpy.types.Operator, tool.Ifc.Operator):
         attributes = blenderbim.bim.helper.export_attributes(props.profile_attributes)
         profile = tool.Ifc.get().by_id(props.active_profile_id)
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
+        model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
         bpy.ops.bim.load_profiles()
 
 
