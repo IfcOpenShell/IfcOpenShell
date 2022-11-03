@@ -195,21 +195,12 @@ def update_attribute_value(self, context):
             self.is_null = False
 
 
-def get_numerical_value(self):
-    value_attr = self.get_value_name()
-    if value_attr == "int_value":
-        return int(self.get(value_attr) or 0)
-    elif value_attr == "float_value":
-        return float(self.get(value_attr) or 0)
-
-
 def set_numerical_value(self, new_value):
-    value_attr = self.get_value_name()
-    if new_value < self.value_min:
+    if self.value_min_constraint and new_value < self.value_min:
         new_value = self.value_min
-    elif new_value > self.value_max:
+    elif self.value_max_constraint and new_value > self.value_max:
         new_value = self.value_max
-    self[value_attr] = new_value
+    self[self.get_value_name()] = new_value
 
 
 class Attribute(PropertyGroup):
@@ -224,14 +215,14 @@ class Attribute(PropertyGroup):
         name="Value",
         description=tooltip,
         update=update_attribute_value,
-        get=get_numerical_value,
+        get=lambda self: int(self.get("int_value", 0)),
         set=set_numerical_value,
     )
     float_value: FloatProperty(
         name="Value",
         description=tooltip,
         update=update_attribute_value,
-        get=get_numerical_value,
+        get=lambda self: float(self.get("float_value", 0.0)),
         set=set_numerical_value,
     )
     enum_items: StringProperty(name="Value")
@@ -242,8 +233,10 @@ class Attribute(PropertyGroup):
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
     has_calculator: BoolProperty(name="Has Calculator", default=False)
-    value_min: FloatProperty(default=-10e20, description="This is used to validate int_value and float_value")
-    value_max: FloatProperty(default=10e20, description="This is used to validate int_value and float_value")
+    value_min: FloatProperty(description="This is used to validate int_value and float_value")
+    value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
+    value_max: FloatProperty(description="This is used to validate int_value and float_value")
+    value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
 
     def get_value(self):
         if self.is_optional and self.is_null:

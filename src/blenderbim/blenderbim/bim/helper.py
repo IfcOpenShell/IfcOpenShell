@@ -93,22 +93,22 @@ def import_attribute(attribute, props, data, callback=None):
     elif is_handled_by_callback is False:
         props.remove(len(props) - 1)
     elif data_type == "string":
-        new.string_value = "" if new.is_null else data[attribute.name()]
+        new.string_value = "" if new.is_null else str(data[attribute.name()])
         if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
             new.is_uri = True
     elif data_type == "boolean":
-        new.bool_value = False if new.is_null else data[attribute.name()]
+        new.bool_value = False if new.is_null else bool(data[attribute.name()])
     elif data_type == "integer":
-        new.int_value = 0 if new.is_null else data[attribute.name()]
+        new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
-        new.float_value = 0.0 if new.is_null else data[attribute.name()]
+        new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
         enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
         new.enum_items = json.dumps(enum_items)
         add_attribute_enum_items_descriptions(new, enum_items)
         if data[new.name]:
             new.enum_value = data[new.name]
-    add_attribute_description(new)
+    add_attribute_description(new, data)
     add_attribute_min_max(new)
 
 
@@ -120,6 +120,7 @@ def add_attribute_min_max(attribute_blender):
         constraints = ATTRIBUTE_MIN_MAX_CONSTRAINTS[attribute_blender.ifc_class].get(attribute_blender.name, {})
         for constraint, value in constraints.items():
             setattr(attribute_blender, constraint, value)
+            setattr(attribute_blender, constraint + "_constraint", True)
 
 
 def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
@@ -136,14 +137,20 @@ def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
         new_enum_description.name = description
 
 
-def add_attribute_description(attribute_blender):
+def add_attribute_description(attribute_blender, attribute_ifc=None):
     if not attribute_blender.name:
         return
     version = tool.Ifc.get_schema()
+    description = ""
     try:
         description = get_attribute_doc(version, attribute_blender.ifc_class, attribute_blender.name)
     except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
-        description = get_property_doc(version, attribute_blender.ifc_class, attribute_blender.name).get("description")
+        doc = get_property_doc(version, attribute_blender.ifc_class, attribute_blender.name)
+        if doc:
+            description = doc.get("description", "")
+        else:  # It's a custom property set. Check if this attribute has a description
+            if attribute_ifc is not None:
+                description = getattr(attribute_ifc, "Description", "")
     if description:
         attribute_blender.description = description
 
