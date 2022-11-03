@@ -195,12 +195,17 @@ class BIM_PT_object_material(Panel):
         blenderbim.bim.helper.draw_attributes(self.props.material_set_attributes, self.layout)
         blenderbim.bim.helper.draw_attributes(self.props.material_set_usage_attributes, self.layout)
 
-        row = self.layout.row(align=True)
-        if ObjectMaterialData.data["set_item_name"] == "profile":
-            row.prop(self.mprops, "profiles", icon="ITALIC", text="")
-        prop_with_search(row, self.props, "material", icon="MATERIAL", text="")
-        op = row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
-        setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
+        if ObjectMaterialData.data["set_item_name"] == "profile" and not self.mprops.profiles:
+            row = self.layout.row(align=True)
+            row.label(text="No Profiles Available")
+            row.operator("bim.add_profile_def", icon="ADD", text="")
+        else:
+            row = self.layout.row(align=True)
+            if ObjectMaterialData.data["set_item_name"] == "profile":
+                row.prop(self.mprops, "profiles", icon="ITALIC", text="")
+            prop_with_search(row, self.props, "material", icon="MATERIAL", text="")
+            op = row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
+            setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
 
         total_items = len(ObjectMaterialData.data["set_items"])
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):

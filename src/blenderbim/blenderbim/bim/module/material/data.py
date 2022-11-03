@@ -179,6 +179,8 @@ class ObjectMaterialData:
 
             for item in items or []:
                 data = {"id": item.id(), "name": item.Name or "Unnamed", "icon": icon}
+                if item.is_a("IfcMaterialProfile") and not item.Name:
+                    data["name"] = item.Profile.ProfileName or "Unnamed"
                 if item.is_a("IfcMaterialLayer"):
                     data["name"] += f" ({item.LayerThickness})"
                 if not item.is_a("IfcMaterialList"):
