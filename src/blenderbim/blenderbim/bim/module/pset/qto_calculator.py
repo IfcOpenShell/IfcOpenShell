@@ -196,6 +196,18 @@ class QtoCalculator:
             area += polygon.area
         return area
 
+    def get_gross_footprint_area(self, o):
+        """_summary_: Returns the area of the footprint of the object, without related opening and excluding any holes
+
+        :param blender-object o: blender object
+        :return float: footprint area"""
+        element = tool.Ifc.get_entity(o)
+        mesh = self.get_gross_element_mesh(element)
+        gross_obj = bpy.data.objects.new("GrossObj", mesh)
+        gross_footprint_area = self.get_net_footprint_area(gross_obj)
+        self.delete_obj(gross_obj)
+        return gross_footprint_area
+
     def get_net_roofprint_area(self, o):
         # Is roofprint the right word? Couldn't think of anything better - vulevukusej
         """_summary_: Returns the area of the net roofprint of the object, excluding any holes
@@ -238,7 +250,9 @@ class QtoCalculator:
     def get_net_volume(self, o):
         o_mesh = bmesh.new()
         o_mesh.from_mesh(o.data)
-        return o_mesh.calc_volume()
+        volume = o_mesh.calc_volume()
+        self.delete_bmesh(o_mesh)
+        return volume
 
     def get_gross_volume(self, o):
         element = tool.Ifc.get_entity(o)
@@ -246,40 +260,13 @@ class QtoCalculator:
             print(f"Object {o.name} hasn't an IFC instance so gross volume is equal to net volume")
             return self.get_net_volume
 
-        settings = ifcopenshell.geom.settings()
-        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
-        shape = ifcopenshell.geom.create_shape(settings, element)
-        faces = shape.geometry.faces
-        verts = shape.geometry.verts
-
-        mesh = bpy.data.meshes.new("myBeautifulMesh")
-
-        num_vertices = len(verts) // 3
-        total_faces = len(faces)
-        loop_start = range(0, total_faces, 3)
-        num_loops = total_faces // 3
-        loop_total = [3] * num_loops
-        num_vertex_indices = len(faces)
-
-        mesh.vertices.add(num_vertices)
-        mesh.vertices.foreach_set("co", verts)
-        mesh.loops.add(num_vertex_indices)
-        mesh.loops.foreach_set("vertex_index", faces)
-        mesh.polygons.add(num_loops)
-        mesh.polygons.foreach_set("loop_start", loop_start)
-        mesh.polygons.foreach_set("loop_total", loop_total)
-        mesh.update()
-
-        # An alternative to foreach is
-        # mesh.from_pydata(grouped_verts, edges, grouped_faces)
-        # look at import_ifc.py in blenderbim
-
-        bm = bmesh.new()
-        bm.from_mesh(mesh)
+        mesh = self.get_gross_element_mesh(element)
+        bm = self.get_bmesh_from_mesh(mesh)
 
         gross_volume = bm.calc_volume()
 
-        bm.free()
+        self.delete_bmesh(bm)
+        self.delete_mesh(mesh)
 
         return gross_volume
 
@@ -350,7 +337,11 @@ class QtoCalculator:
             for opening in openings:
                 opening_id = opening.RelatedOpeningElement.GlobalId
                 ifc_opening_element = ifc.by_guid(opening_id)
-                bl_opening_obj = tool.Ifc.get_object(ifc_opening_element)
+                #bl_opening_obj = tool.Ifc.get_object(ifc_opening_element)
+                #mesh = bpy.data.meshes.new('myMesh')
+                mesh = self.get_gross_element_mesh(ifc_opening_element)
+
+                bl_opening_obj = bpy.data.objects.new("MyObject", mesh)
 
                 opening_type = (
                     ifc_opening_element.PredefinedType
@@ -360,11 +351,18 @@ class QtoCalculator:
 
                 if ignore_recesses and opening_type == "RECESS":
                     continue
+
+                bl_OBB_opening_object = self.get_OBB_object(bl_opening_obj)
                 opening_area = self.get_lateral_area(
-                    self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
+                    #self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
+                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
                 )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
+
+                self.delete_obj(bl_opening_obj)
+                self.delete_mesh(mesh)
+                self.delete_obj(bl_OBB_opening_object)
 
         return total_opening_area
 
@@ -410,6 +408,26 @@ class QtoCalculator:
                     continue
             area += polygon.area
         return area + total_opening_area
+
+    def get_half_lateral_area(
+       self,
+        obj,
+        subtract_openings: bool = True,
+        exclude_end_areas: bool = False,
+        exclude_side_areas: bool = False,
+        angle_z1: int = 45,
+        angle_z2: int = 135,
+    ):
+        """_summary_:
+        :param blender-object obj: blender object, bpy.types.Object
+        :param bool subtract_openings: Toggle whether opening-areas should be subtracted, defaults to True
+        :param bool exclude_end_areas: , defaults to False
+        :param bool exclude_side_areas: , defaults to False
+        :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
+        :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector greater than this value will be ignored, defaults to 135
+        :return float: Lateral Area / 2
+        """
+        return self.get_lateral_area(obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2)/2
 
     def get_gross_top_area(self, obj, angle: int = 45):
         """_summary_: Returns the gross top area of the object.
@@ -792,6 +810,54 @@ class QtoCalculator:
             y = rotated_coords.y
             polygon_tuples.append((x, y))
         return Polygon(polygon_tuples)
+
+    def get_gross_element_mesh(self, element):
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        faces = shape.geometry.faces
+        verts = shape.geometry.verts
+
+        mesh = bpy.data.meshes.new("myBeautifulMesh")
+
+        num_vertices = len(verts) // 3
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.update()
+
+        # An alternative to foreach is
+        # mesh.from_pydata(grouped_verts, edges, grouped_faces)
+        # look at import_ifc.py in blenderbim
+
+        return mesh
+
+    def get_bmesh_from_mesh(self, mesh):
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        #bm.to_mesh(mesh)
+        return bm
+
+    def delete_mesh(self, mesh):
+        mesh.user_clear()
+        bpy.data.meshes.remove(mesh)
+
+    def delete_bmesh(self, bm):
+        bmesh.ops.delete(bm)
+        bm.free()
+
+    def delete_obj(self, obj):
+        bpy.data.objects.remove(obj, do_unlink = True)
 
 # # Following code is here temporarily to test newly created functions:
 
