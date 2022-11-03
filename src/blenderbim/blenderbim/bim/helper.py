@@ -130,7 +130,7 @@ def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
     for enum_item in enum_items:
         new_enum_description = attribute_blender.enum_descriptions.add()
         try:
-            description = get_predefined_type_doc(version, attribute_blender.ifc_class, enum_item)
+            description = get_predefined_type_doc(version, attribute_blender.ifc_class, enum_item) or ""
         except KeyError:  # TODO this only supports predefined type enums. Add support for other types of enums ?
             description = ""
         new_enum_description.name = description
