@@ -8,6 +8,7 @@ source:
 build:
   script: |
     python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py310 IfcOpenShell-Python
+    cp pyodide/setup.py .
 
 about:
   home: http://ifcopenshell.org

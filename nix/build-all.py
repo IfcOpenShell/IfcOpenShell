@@ -454,7 +454,7 @@ CFLAGS = os.environ.get("CFLAGS", "")
 LDFLAGS = os.environ.get("LDFLAGS", "")
 
 ADDITIONAL_ARGS_STR = " ".join(ADDITIONAL_ARGS)
-if sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
+if "wasm" not in flags and sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
     CXXFLAGS_MINIMAL = f"{CXXFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
     CFLAGS_MINIMAL = f"{CFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
     if BUILD_STATIC:
@@ -796,6 +796,9 @@ if "hdf5" in targets:
 else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
 
+if "wasm" in flags:
+    LDFLAGS=f"{LDFLAGS} -sSIDE_MODULE=1"
+
 if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets):
     logger.info("\rConfiguring executables...")
 
@@ -845,7 +848,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DPYTHON_LIBRARY="          +python_library,
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
                 # *([f"-DPYTHON_MODULE_INSTALL_DIR={os.environ['PYTHONPATH']}/ifcopenshell"] if "wasm" in flags else []),
-                *(["-DPYTHON_MODULE_INSTALL_DIR="+os.path.realpath("dist")] if "wasm" in flags else []),
+                *(["-DPYTHON_MODULE_INSTALL_DIR="+os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "package"))] if "wasm" in flags else []),
                 "-DPYTHON_INCLUDE_DIR="      +python_include,
                 "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
                 "-DUSERSPACE_PYTHON_PREFIX=" +["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
