@@ -68,7 +68,7 @@ Scenario: Unlink material
     When I press "bim.unlink_material"
     Then the material "Material" is not an IFC material
 
-Scenario: Assign material - Assign a material
+Scenario: Assign material - single material
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -79,7 +79,58 @@ Scenario: Assign material - Assign a material
     And I press "bim.assign_material"
     Then the object "IfcWall/Cube" has the material "Default"
 
-Scenario: Assign material - Assign a material layer set
+Scenario: Unassign material - single material
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
+    And I press "bim.assign_material"
+    When I press "bim.unassign_material"
+    Then nothing happens
+
+Scenario: Enable editing assigned material - single material
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
+    And I press "bim.assign_material"
+    When I press "bim.enable_editing_assigned_material"
+    Then nothing happens
+
+Scenario: Disable editing assigned material - single material
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    When I press "bim.disable_editing_assigned_material"
+    Then nothing happens
+
+Scenario: Edit assigned material - single material
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    And the variable "material_set" is "{ifc}.by_type('IfcMaterial')[0].id()"
+    When I press "bim.edit_assigned_material(material_set={material_set})"
+    Then nothing happens
+
+Scenario: Assign material - material layer set
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -95,7 +146,78 @@ Scenario: Assign material - Assign a material layer set
     And I press "bim.assign_material"
     Then nothing happens
 
-Scenario: Assign material - Assign a material profile set
+Scenario: Unassign material - material layer set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.assign_material"
+    When I press "bim.unassign_material"
+    Then nothing happens
+
+Scenario: Enable editing assigned material - material layer set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.assign_material"
+    When I press "bim.enable_editing_assigned_material"
+    Then nothing happens
+
+Scenario: Disable editing assigned material - material layer set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    When I press "bim.disable_editing_assigned_material"
+    Then nothing happens
+
+Scenario: Edit assigned material - material layer set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    And the variable "material_set" is "{ifc}.by_type('IfcMaterialLayerSet')[0].id()"
+    When I press "bim.edit_assigned_material(material_set={material_set})"
+    Then nothing happens
+
+Scenario: Assign material - material profile set
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -111,7 +233,78 @@ Scenario: Assign material - Assign a material profile set
     And I press "bim.assign_material"
     Then nothing happens
 
-Scenario: Assign material - Assign a material constituent set
+Scenario: Unassign material - material profile set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
+    And I press "bim.assign_material"
+    When I press "bim.unassign_material"
+    Then nothing happens
+
+Scenario: Enable editing assigned material - material profile set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
+    And I press "bim.assign_material"
+    When I press "bim.enable_editing_assigned_material"
+    Then nothing happens
+
+Scenario: Disable editing assigned material - material profile set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    When I press "bim.disable_editing_assigned_material"
+    Then nothing happens
+
+Scenario: Edit assigned material - material profile set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    And the variable "material_set" is "{ifc}.by_type('IfcMaterialProfileSet')[0].id()"
+    When I press "bim.edit_assigned_material(material_set={material_set})"
+    Then nothing happens
+
+Scenario: Assign material - material constituent set
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -120,6 +313,57 @@ Scenario: Assign material - Assign a material constituent set
     And I press "bim.add_material(obj='')"
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialConstituentSet"
     And I press "bim.assign_material"
+    Then nothing happens
+
+Scenario: Unassign material - material constituent set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialConstituentSet"
+    And I press "bim.assign_material"
+    When I press "bim.unassign_material"
+    Then nothing happens
+
+Scenario: Enable editing assigned material - material constituent set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialConstituentSet"
+    And I press "bim.assign_material"
+    When I press "bim.enable_editing_assigned_material"
+    Then nothing happens
+
+Scenario: Disable editing assigned material - material constituent set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialConstituentSet"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    When I press "bim.disable_editing_assigned_material"
+    Then nothing happens
+
+Scenario: Edit assigned material - material constituent set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialConstituentSet"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    And the variable "material_set" is "{ifc}.by_type('IfcMaterialConstituentSet')[0].id()"
+    When I press "bim.edit_assigned_material(material_set={material_set})"
     Then nothing happens
 
 Scenario: Select by material

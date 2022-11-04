@@ -44,9 +44,9 @@ def get_ifc_predefined_types(self, context):
 
 
 def refresh_classes(self, context):
-    IfcClassData.load()
     enum = get_ifc_classes(self, context)
     context.scene.BIMRootProperties.ifc_class = enum[0][0]
+    IfcClassData.load()
 
 
 def refresh_predefined_types(self, context):

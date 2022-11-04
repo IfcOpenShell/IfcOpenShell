@@ -35,6 +35,7 @@ def copy_class(ifc, collector, geometry, root, obj=None):
         geometry.change_object_data(obj, data, is_global=True)
         geometry.rename_object(data, geometry.get_representation_name(new_representation))
         geometry.link(new_representation, data)
+        root.assign_body_styles(new, obj)
     collector.assign(obj)
     if root.is_opening_element(new):
         root.add_tracked_opening(obj)

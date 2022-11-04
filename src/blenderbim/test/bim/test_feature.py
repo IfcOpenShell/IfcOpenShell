@@ -351,22 +351,6 @@ def the_object_name_should_display_as_mode(name, mode):
     assert obj.display_type == mode
 
 
-@then(parsers.parse('the object "{name1}" has a boolean difference by "{name2}"'))
-def the_object_name1_has_a_boolean_difference_by_name2(name1, name2):
-    obj = the_object_name_exists(name1)
-    has_mod = any((m for m in obj.modifiers if m.type == "BOOLEAN" and m.object and m.object.name == name2))
-    assert has_mod, "No boolean found"
-
-
-@then(parsers.parse('the object "{name1}" has no boolean difference by "{name2}"'))
-def the_object_name1_has_no_boolean_difference_by_name2(name1, name2):
-    try:
-        the_object_name1_has_a_boolean_difference_by_name2(name1, name2)
-    except AssertionError:
-        return
-    assert False, "A boolean was found"
-
-
 @then(parsers.parse('the object "{name}" is voided by "{void}"'))
 def the_object_name_is_voided_by_void(name, void):
     ifc = IfcStore.get_file()
@@ -390,7 +374,7 @@ def the_object_name_is_not_voided(name):
     assert not element.HasOpenings, "A void was found"
 
 
-@then(parsers.parse('the object "{name}" is not a void'))
+@then(parsers.parse('the object "{name}" is a void'))
 def the_object_name_is_a_void(name):
     ifc = IfcStore.get_file()
     obj = the_object_name_exists(name)
@@ -590,48 +574,6 @@ def the_file_name_should_contain_value(name, value):
 @then(parsers.parse('the object "{name}" has no modifiers'))
 def the_object_name_has_no_modifiers(name):
     assert len(the_object_name_exists(name).modifiers) == 0
-
-
-@then(parsers.parse('the construction type "{ifc_class}"/"{relating_type}" has a preview'))
-def the_construction_type_has_a_preview(ifc_class, relating_type):
-    if "preview_constr_types" not in AuthoringData.data:
-        assert False, "There are no previews loaded"
-    preview_constr_types = AuthoringData.data["preview_constr_types"]
-    if ifc_class not in preview_constr_types:
-        assert False, f"Construction class {ifc_class} has no available previews"
-    relating_type_id = AuthoringData.relating_type_id_by_name(ifc_class, relating_type)
-    if relating_type_id is None:
-        assert False, f"No construction type {ifc_class}/{relating_type} was found"
-    if relating_type_id not in preview_constr_types[ifc_class]:
-        assert False, f"Construction type {ifc_class}/{relating_type} has no available previews"
-    preview_data = preview_constr_types[ifc_class][relating_type_id]
-    if "icon_id" not in preview_data:
-        assert False, f"Construction type {ifc_class}/{relating_type} has a preview, but no assigned icon_id"
-    icon_id = preview_data["icon_id"]
-    if not isinstance(icon_id, int):
-        assert False, f"Construction type {ifc_class}/{relating_type} has an invalid icon_id {icon_id}"
-    # Note: icon_id must be > 0 in UI mode, but asset_generate_preview() doesn't work headlessly -> skipping for now
-    # if icon_id == 0:
-    #     assert False, f'Construction type {ifc_class}/{relating_type} has the default null value for icon_id'
-    assert True
-
-
-@then("there is a Construction Type preview")
-def there_is_a_construction_type_preview():
-    props = bpy.context.scene.BIMModelProperties
-    assert props.icon_id > 0, f"There isn't a Construction Type preview"
-
-
-@then(parsers.parse('all construction types for "{ifc_class}" have a preview'))
-def all_construction_types_have_a_preview(ifc_class):
-    if "preview_constr_types" not in AuthoringData.data:
-        assert False, "There are no previews loaded"
-    preview_constr_types = AuthoringData.data["preview_constr_types"]
-    if ifc_class not in preview_constr_types:
-        assert False, f"Construction class {ifc_class} has no available previews"
-    constr_class_occurrences = AuthoringData.constr_class_entities(ifc_class)
-    for constr_class_entity in constr_class_occurrences:
-        the_construction_type_has_a_preview(ifc_class, constr_class_entity.Name)
 
 
 @given("I load the demo construction library")

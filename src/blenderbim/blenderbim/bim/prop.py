@@ -195,12 +195,20 @@ def update_attribute_value(self, context):
             self.is_null = False
 
 
-def set_numerical_value(self, new_value):
+def set_int_value(self, new_value):
+    set_numerical_value(self, "int_value", new_value)
+
+
+def set_float_value(self, new_value):
+    set_numerical_value(self, "float_value", new_value)
+
+
+def set_numerical_value(self, value_name, new_value):
     if self.value_min_constraint and new_value < self.value_min:
         new_value = self.value_min
     elif self.value_max_constraint and new_value > self.value_max:
         new_value = self.value_max
-    self[self.get_value_name()] = new_value
+    self[value_name] = new_value
 
 
 class Attribute(PropertyGroup):
@@ -216,14 +224,14 @@ class Attribute(PropertyGroup):
         description=tooltip,
         update=update_attribute_value,
         get=lambda self: int(self.get("int_value", 0)),
-        set=set_numerical_value,
+        set=set_int_value,
     )
     float_value: FloatProperty(
         name="Value",
         description=tooltip,
         update=update_attribute_value,
         get=lambda self: float(self.get("float_value", 0.0)),
-        set=set_numerical_value,
+        set=set_float_value,
     )
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)

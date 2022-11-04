@@ -48,28 +48,10 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
-Scenario: Preview one type on the Construction Type Browser
-    Given an empty IFC project
-    And I load the demo construction library
-    When I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
-    And I set "scene.BIMModelProperties.relating_type" to "DEMO2"
-    Then construction type is DEMO2
-    And objects starting with "IfcColumn/" do not exist
-    And the construction type "IfcColumnType"/"DEMO2" has a preview
-
-Scenario: Preview one class on the construction type browser
-    Given an empty IFC project
-    And I load the demo construction library
-    When I display the construction type browser
-    And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcWallType"
-    Then objects starting with "IfcWall/" do not exist
-    And all construction types for "IfcWallType" have a preview
-
 Scenario: Add one type from the Construction Type Browser
     Given an empty IFC project
     And I load the demo construction library
     When I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
-    And I set "scene.BIMModelProperties.relating_type" to "DEMO2"
     And I add the construction type
     Then the object "IfcColumn/Column" exists
 

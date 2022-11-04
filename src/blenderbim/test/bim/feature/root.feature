@@ -119,19 +119,3 @@ Scenario: Copy a storey
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
     And the object "IfcBuildingStorey/My Storey.001" is in the collection "IfcBuildingStorey/My Storey.001"
     And the collection "IfcBuildingStorey/My Storey.001" is in the collection "IfcBuilding/My Building"
-
-Scenario: Copy an opening
-    Given an empty IFC project
-    And I add a cube
-    When the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And I add a cube
-    And the object "Cube" is selected
-    And additionally the object "IfcWall/Cube" is selected
-    And I press "bim.add_opening(opening='Cube', obj='IfcWall/Cube')"
-    And the object "IfcOpeningElement/Cube" is selected
-    And I duplicate the selected objects
-    Then the object "IfcOpeningElement/Cube" and "IfcOpeningElement/Cube.001" are different elements
-    And the object "IfcWall/Cube" has a boolean difference by "IfcOpeningElement/Cube"
-    And the object "IfcWall/Cube" has a boolean difference by "IfcOpeningElement/Cube.001"

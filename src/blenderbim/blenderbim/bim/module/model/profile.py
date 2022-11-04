@@ -844,7 +844,7 @@ class DumbProfileRecalculator:
                 queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
         joiner = DumbProfileJoiner()
         for element, profile in queue:
-            if element.is_a() in ("IfcColumn", "IfcBeam", "IfcMember") and profile:
+            if profile:
                 joiner.recreate_profile(element, profile)
 
 

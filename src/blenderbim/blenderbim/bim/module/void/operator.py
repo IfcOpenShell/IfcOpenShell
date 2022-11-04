@@ -52,8 +52,6 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             element1, element2 = element2, element1
         if element1.is_a("IfcOpeningElement"):
             return {"FINISHED"}
-        if obj2 not in [o.obj for o in props.openings]:
-            return {"FINISHED"}
         if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
             return {"FINISHED"}
 

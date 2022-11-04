@@ -447,6 +447,7 @@ class Resource:
 @interface
 class Root:
     def add_tracked_opening(cls, obj): pass
+    def assign_body_styles(cls, element, obj): pass
     def copy_representation(cls, source, dest): pass
     def does_type_have_representations(cls, element): pass
     def get_decomposition_relationships(cls, objs): pass
