@@ -538,6 +538,12 @@ if "freetype" in targets:
     )
 
 if USE_OCCT and "occ" in targets:
+    patch = []
+    if OCCT_VERSION < "7.4":
+        patch.append("./patches/occt/enable-exception-handling.patch")
+    if "wasm" in flags:
+        patch.append("./patches/occt/no_em_js.patch")
+
     build_dependency(
         name=f"occt-{OCCT_VERSION}",
         mode="cmake",
@@ -551,7 +557,7 @@ if USE_OCCT and "occ" in targets:
         download_url = "https://github.com/Open-Cascade-SAS/OCCT",
         download_name = "occt",
         download_tool=download_tool_git,
-        patch=None if OCCT_VERSION >= "7.4" else "./patches/occt/enable-exception-handling.patch",
+        patch=patch
         revision="V" + OCCT_VERSION.replace('.', '_')
     )
 elif "occ" in targets:
@@ -797,7 +803,7 @@ else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
 
 if "wasm" in flags:
-    LDFLAGS=f"{LDFLAGS} -sSIDE_MODULE=1"
+    LDFLAGS=f"{LDFLAGS} -s SIDE_MODULE=1 -s WASM_BIGINT"
 
 if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets):
     logger.info("\rConfiguring executables...")
@@ -822,6 +828,9 @@ if "IfcOpenShell-Python" in targets:
     ADDITIONAL_ARGS = ""
     if platform.system() == "Darwin":
         ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
+        
+    if "wasm" in flags:
+        ADDITIONAL_ARGS = "-Wl,-undefined,suppress"
 
     os.environ["CXXFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CFLAGS"] = f"{CFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
@@ -857,7 +866,7 @@ if "IfcOpenShell-Python" in targets:
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
+        run([make, "VERBOSE=1", f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
         if python_executable:
