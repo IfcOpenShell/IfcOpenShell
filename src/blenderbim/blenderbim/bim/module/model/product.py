@@ -324,6 +324,9 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         from PIL import Image, ImageDraw
 
+        if bpy.app.background:
+            return
+
         props = bpy.context.scene.BIMModelProperties
         processing = set()
         # Only process at most one paginated class at a time.
