@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import gpu
 import bgl
 import bmesh
@@ -24,6 +25,7 @@ import logging
 import blenderbim.bim.handler
 import ifcopenshell
 import ifcopenshell.util.representation
+from ifcopenshell.util.doc import get_entity_doc
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.bim.import_ifc as import_ifc
@@ -32,7 +34,7 @@ from math import pi
 from mathutils import Vector, Matrix
 from bpy.types import Operator
 from bpy.types import SpaceView3D
-from bpy.props import FloatProperty
+from bpy.props import FloatProperty, EnumProperty, StringProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
@@ -149,10 +151,10 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
         bmesh.ops.triangle_fill(bm, edges=bm.edges)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi, verts=bm.verts, edges=bm.edges)
 
-        bmesh.ops.translate(bm, vec=[0., -0.1, 0.], verts=bm.verts)
+        bmesh.ops.translate(bm, vec=[0.0, -0.1, 0.0], verts=bm.verts)
         extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
         extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0., voided_obj.dimensions[1] + 0.1 + 0.1, 0.], verts=extruded_verts)
+        bmesh.ops.translate(bm, vec=[0.0, voided_obj.dimensions[1] + 0.1 + 0.1, 0.0], verts=extruded_verts)
 
         mesh = bpy.data.meshes.new(name="Opening")
         bm.to_mesh(mesh)
@@ -235,7 +237,12 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
             for building_element in building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
                 if tool.Ifc.is_moved(building_obj):
-                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj)
+                    blenderbim.core.geometry.edit_object_placement(
+                        tool.Ifc,
+                        tool.Geometry,
+                        tool.Surveyor,
+                        obj=building_obj,
+                    )
             for opening in openings:
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 ifcopenshell.api.run(
@@ -295,6 +302,68 @@ class AddPotentialOpening(Operator, AddObjectHelper):
     x: FloatProperty(name="X", default=0.5)
     y: FloatProperty(name="Y", default=0.5)
     z: FloatProperty(name="Z", default=0.5)
+    representation: EnumProperty(
+        name="Void Representation",
+        items=(
+            ("None", "Arbitrary Mesh", ""),
+            (
+                "IfcExtrudedAreaSolid/IfcRectangleProfileDef",
+                "IfcRectangleProfileDef",
+                get_entity_doc("IFC4", "IfcRectangleProfileDef").get("description", ""),
+            ),
+            (
+                "IfcExtrudedAreaSolid/IfcCircleProfileDef",
+                "IfcCircleProfileDef",
+                get_entity_doc("IFC4", "IfcCircleProfileDef").get("description", ""),
+            ),
+            (
+                "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
+                "IfcArbitraryClosedProfileDef",
+                get_entity_doc("IFC4", "IfcArbitraryClosedProfileDef").get("description", ""),
+            ),
+            (
+                "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
+                "IfcArbitraryProfileDefWithVoids",
+                get_entity_doc("IFC4", "IfcArbitraryProfileDefWithVoids").get("description", ""),
+            ),
+            (
+                "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
+                "IfcMaterialProfileSetUsage",
+                get_entity_doc("IFC4", "IfcMaterialProfileSetUsage").get("description", ""),
+            ),
+            (
+                "IfcGeometricCurveSet/IfcTextLiteral",
+                "IfcGeometricCurveSet/IfcTextLiteral",
+                get_entity_doc("IFC4", "IfcTextLiteral").get("description", ""),
+            ),
+            ("IfcTextLiteral", "IfcTextLiteral", get_entity_doc("IFC4", "IfcTextLiteral").get("description", "")),
+        ),
+        default="None",
+    )
+    mesh_primitive: EnumProperty(
+        name="Primitive",
+        items=(
+            ("create_cube", "Cube", "Add an opening as a Cube", "MATCUBE", 1),
+            ("create_uvsphere", "UV Sphere", "Add an opening as an UV Sphere  Mesh", "MESH_UVSPHERE", 2),
+            ("create_icosphere", "Ico Sphere", "Add an opening as an Ico Sphere", "MESH_ICOSPHERE", 3),
+            ("create_cylinder", "Cylinder", "Add an opening as a Cylinder", "MESH_CYLINDER", 4),
+            ("create_cone", "Cone", "Add an opening as a Cone", "CONE", 5),
+            ("custom", "Custom", "Add an opening as a Custom Mesh", "MONKEY", 6),
+        ),
+    )
+    if bpy.app.version >= (3, 3, 0):
+        mesh_custom: StringProperty(
+            name="Mesh",
+            search=lambda self, context, edit_text: [
+                o.data.name for o in context.scene.objects if o.type == "MESH" and o != context.active_object
+            ],
+            search_options={"SORT"},
+        )
+    else:
+        mesh_custom: EnumProperty(
+            name="Mesh",
+            items=lambda self, context: [(o.data.name,) * 3 for o in context.scene.objects if o.type == "MESH"],
+        )
 
     def draw_settings(context, layout, tool):
         row = self.layout.row()
@@ -304,38 +373,64 @@ class AddPotentialOpening(Operator, AddObjectHelper):
         row = self.layout.row()
         row.prop(data=self, property="z")
 
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "representation")
+        if self.representation == "None":
+            layout.prop(self, "mesh_primitive")
+            if self.mesh_primitive == "custom":
+                layout.prop(self, "mesh_custom")
+
+    def invoke(self, context, event):
+        window_manager = context.window_manager
+        return window_manager.invoke_props_dialog(self)
+
     def execute(self, context):
         props = context.scene.BIMModelProperties
+        props.opening_representation = self.representation
 
         new_matrix = None
         if context.selected_objects and context.active_object:
             new_matrix = context.active_object.matrix_world.copy()
             new_matrix.col[3] = context.scene.cursor.location.to_4d()
 
-        x = self.x / 2
-        y = self.y / 2
-        z = self.z / 2
-        verts = [
-            Vector((-x, -y, -z)),
-            Vector((-x, -y, z)),
-            Vector((-x, y, -z)),
-            Vector((-x, y, z)),
-            Vector((x, -y, -z)),
-            Vector((x, -y, z)),
-            Vector((x, y, -z)),
-            Vector((x, y, z)),
-        ]
-        edges = []
-        faces = [
-            [0, 1, 3, 2],
-            [2, 3, 7, 6],
-            [6, 7, 5, 4],
-            [4, 5, 1, 0],
-            [2, 6, 4, 0],
-            [7, 3, 1, 5],
-        ]
-        mesh = bpy.data.meshes.new(name="Opening")
-        mesh.from_pydata(verts, edges, faces)
+        if self.representation == "None":
+            mesh_primitive = self.mesh_primitive
+            if mesh_primitive == "custom":
+                mesh = bpy.data.meshes[self.mesh_custom].copy()
+            else:
+                mesh = bpy.data.meshes.new("Opening")
+                bm = bmesh.new()
+                bm.from_mesh(mesh)
+                args = {}
+                if mesh_primitive == "create_cube":
+                    args.update({"size": 1})
+                elif mesh_primitive == "create_cylinder":
+                    mesh_primitive = "create_cone"
+                    args.update(
+                        {
+                            "cap_ends": True,
+                            "cap_tris": True,
+                            "segments": 16,
+                            "radius1": 0.5,
+                            "radius2": 0.5,
+                            "depth": 1,
+                        }
+                    )
+                elif mesh_primitive == "create_cone":
+                    args.update(
+                        {"cap_ends": True, "cap_tris": True, "segments": 16, "radius1": 0.5, "radius2": 0, "depth": 1}
+                    )
+                elif mesh_primitive == "create_uvsphere":
+                    args.update({"u_segments": 32, "v_segments": 16, "radius": 0.5})
+                elif mesh_primitive == "create_icosphere":
+                    args.update({"subdivisions": 2, "radius": 0.5})
+
+                op = getattr(bmesh.ops, mesh_primitive)
+                op(bm, **args)
+                # bmesh.ops.scale(bm, vec=(self.x, self.y, self.z))
+                bm.to_mesh(mesh)
+
         obj = object_data_add(context, mesh, operator=self)
         obj.name = "Opening"
 
@@ -400,17 +495,13 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
 
-        if not obj2.data or len(obj2.data.polygons) <= 4: # It takes 4 faces to create a closed solid
+        if not obj2.data or len(obj2.data.polygons) <= 4:  # It takes 4 faces to create a closed solid
             mesh_data = {"type": "IfcHalfSpaceSolid", "matrix": obj1.matrix_world.inverted() @ obj2.matrix_world}
         elif obj2.data:
             mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
 
         ifcopenshell.api.run(
-            "geometry.add_boolean",
-            tool.Ifc.get(),
-            representation=representation,
-            operator="DIFFERENCE",
-            **mesh_data
+            "geometry.add_boolean", tool.Ifc.get(), representation=representation, operator="DIFFERENCE", **mesh_data
         )
 
         tool.Model.clear_scene_openings()

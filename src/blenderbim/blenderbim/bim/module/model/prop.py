@@ -246,44 +246,7 @@ class BIMModelProperties(PropertyGroup):
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
 
-    opening_representation: bpy.props.EnumProperty(
-        name="Void Representation",
-        items=(
-            ("None", "Arbitrary Mesh", ""),
-            (
-                "IfcExtrudedAreaSolid/IfcRectangleProfileDef",
-                "IfcRectangleProfileDef",
-                get_entity_doc("IFC4", "IfcRectangleProfileDef").get("description", ""),
-            ),
-            (
-                "IfcExtrudedAreaSolid/IfcCircleProfileDef",
-                "IfcCircleProfileDef",
-                get_entity_doc("IFC4", "IfcCircleProfileDef").get("description", ""),
-            ),
-            (
-                "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
-                "IfcArbitraryClosedProfileDef",
-                get_entity_doc("IFC4", "IfcArbitraryClosedProfileDef").get("description", ""),
-            ),
-            (
-                "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
-                "IfcArbitraryProfileDefWithVoids",
-                get_entity_doc("IFC4", "IfcArbitraryProfileDefWithVoids").get("description", ""),
-            ),
-            (
-                "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
-                "IfcMaterialProfileSetUsage",
-                get_entity_doc("IFC4", "IfcMaterialProfileSetUsage").get("description", ""),
-            ),
-            (
-                "IfcGeometricCurveSet/IfcTextLiteral",
-                "IfcGeometricCurveSet/IfcTextLiteral",
-                get_entity_doc("IFC4", "IfcTextLiteral").get("description", ""),
-            ),
-            ("IfcTextLiteral", "IfcTextLiteral", get_entity_doc("IFC4", "IfcTextLiteral").get("description", "")),
-        ),
-        default="None",
-    )
+    opening_representation: bpy.props.StringProperty()
 
 
 class BIMArrayProperties(PropertyGroup):
