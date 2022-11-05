@@ -34,7 +34,7 @@ from math import pi
 from mathutils import Vector, Matrix
 from bpy.types import Operator
 from bpy.types import SpaceView3D
-from bpy.props import FloatProperty, EnumProperty, StringProperty
+from bpy.props import FloatProperty, EnumProperty, StringProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
@@ -364,6 +364,9 @@ class AddPotentialOpening(Operator, AddObjectHelper):
             name="Mesh",
             items=lambda self, context: [(o.data.name,) * 3 for o in context.scene.objects if o.type == "MESH"],
         )
+    circle_radius: FloatProperty(name="Circle Radius", min=0, default=0.5)
+    extrusion_resolution: IntProperty(name="Resolution", min=1, default=4)
+    extrusion_depth: FloatProperty(name="Extrusion Depth", default=1)
 
     def draw_settings(context, layout, tool):
         row = self.layout.row()
@@ -380,6 +383,10 @@ class AddPotentialOpening(Operator, AddObjectHelper):
             layout.prop(self, "mesh_primitive")
             if self.mesh_primitive == "custom":
                 layout.prop(self, "mesh_custom")
+        elif self.representation == "IfcExtrudedAreaSolid/IfcCircleProfileDef":
+            layout.prop(self, "extrusion_resolution")
+            layout.prop(self, "circle_radius")
+            layout.prop(self, "extrusion_depth")
 
     def invoke(self, context, event):
         window_manager = context.window_manager
@@ -430,6 +437,20 @@ class AddPotentialOpening(Operator, AddObjectHelper):
                 op(bm, **args)
                 # bmesh.ops.scale(bm, vec=(self.x, self.y, self.z))
                 bm.to_mesh(mesh)
+        elif self.representation == "IfcExtrudedAreaSolid/IfcCircleProfileDef":
+            mesh = bpy.data.meshes.new("Opening")
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bmesh.ops.create_cone(
+                bm,
+                cap_ends=True,
+                cap_tris=True,
+                segments=self.extrusion_resolution * 4,
+                radius1=self.circle_radius,
+                radius2=self.circle_radius,
+                depth=self.extrusion_depth,
+            )
+            bm.to_mesh(mesh)
 
         obj = object_data_add(context, mesh, operator=self)
         obj.name = "Opening"
