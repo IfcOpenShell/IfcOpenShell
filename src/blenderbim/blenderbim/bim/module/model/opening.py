@@ -367,6 +367,8 @@ class AddPotentialOpening(Operator, AddObjectHelper):
     circle_radius: FloatProperty(name="Circle Radius", min=0, default=0.5)
     extrusion_resolution: IntProperty(name="Resolution", min=1, default=4)
     extrusion_depth: FloatProperty(name="Extrusion Depth", default=1)
+    rectangle_dim_x: FloatProperty(name="X Dimension", default=1, min=0)
+    rectangle_dim_y: FloatProperty(name="Y Dimension", default=1, min=0)
 
     def draw_settings(context, layout, tool):
         row = self.layout.row()
@@ -386,6 +388,10 @@ class AddPotentialOpening(Operator, AddObjectHelper):
         elif self.representation == "IfcExtrudedAreaSolid/IfcCircleProfileDef":
             layout.prop(self, "extrusion_resolution")
             layout.prop(self, "circle_radius")
+            layout.prop(self, "extrusion_depth")
+        elif self.representation == "IfcExtrudedAreaSolid/IfcRectangleProfileDef":
+            layout.prop(self, "rectangle_dim_x")
+            layout.prop(self, "rectangle_dim_y")
             layout.prop(self, "extrusion_depth")
 
     def invoke(self, context, event):
@@ -450,6 +456,16 @@ class AddPotentialOpening(Operator, AddObjectHelper):
                 radius2=self.circle_radius,
                 depth=self.extrusion_depth,
             )
+            bm.to_mesh(mesh)
+        elif self.representation == "IfcExtrudedAreaSolid/IfcRectangleProfileDef":
+            mesh = bpy.data.meshes.new("Opening")
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bmesh.ops.create_cube(
+                bm,
+                size=1,
+            )
+            bmesh.ops.scale(bm, vec=(self.rectangle_dim_x, self.rectangle_dim_y, self.extrusion_depth), verts=bm.verts)
             bm.to_mesh(mesh)
 
         obj = object_data_add(context, mesh, operator=self)
