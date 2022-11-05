@@ -327,11 +327,6 @@ class AddPotentialOpening(Operator, AddObjectHelper):
                 get_entity_doc("IFC4", "IfcArbitraryProfileDefWithVoids").get("description", ""),
             ),
             (
-                "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
-                "IfcMaterialProfileSetUsage",
-                get_entity_doc("IFC4", "IfcMaterialProfileSetUsage").get("description", ""),
-            ),
-            (
                 "IfcGeometricCurveSet/IfcTextLiteral",
                 "IfcGeometricCurveSet/IfcTextLiteral",
                 get_entity_doc("IFC4", "IfcTextLiteral").get("description", ""),
