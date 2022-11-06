@@ -446,6 +446,9 @@ ADDITIONAL_ARGS = []
 if platform.system() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
+if "wasm" in flags:
+    ADDITIONAL_ARGS.append("-sWASM_BIGINT")
+
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
 
@@ -538,11 +541,12 @@ if "freetype" in targets:
     )
 
 if USE_OCCT and "occ" in targets:
-    patch = []
+    patches = []
     if OCCT_VERSION < "7.4":
-        patch.append("./patches/occt/enable-exception-handling.patch")
+        patches.append("./patches/occt/enable-exception-handling.patch")
+    
     if "wasm" in flags:
-        patch.append("./patches/occt/no_em_js.patch")
+        patches.append("./patches/occt/no_em_js.patch")
 
     build_dependency(
         name=f"occt-{OCCT_VERSION}",
@@ -557,7 +561,7 @@ if USE_OCCT and "occ" in targets:
         download_url = "https://github.com/Open-Cascade-SAS/OCCT",
         download_name = "occt",
         download_tool=download_tool_git,
-        patch=patch
+        patch=patches,
         revision="V" + OCCT_VERSION.replace('.', '_')
     )
 elif "occ" in targets:
@@ -802,9 +806,6 @@ if "hdf5" in targets:
 else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
 
-if "wasm" in flags:
-    LDFLAGS=f"{LDFLAGS} -s SIDE_MODULE=1 -s WASM_BIGINT"
-
 if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets):
     logger.info("\rConfiguring executables...")
 
@@ -830,8 +831,8 @@ if "IfcOpenShell-Python" in targets:
         ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
         
     if "wasm" in flags:
-        ADDITIONAL_ARGS = "-Wl,-undefined,suppress"
-
+        ADDITIONAL_ARGS = f"-Wl,-undefined,suppress -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper"
+        
     os.environ["CXXFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CFLAGS"] = f"{CFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["LDFLAGS"] = f"{LDFLAGS} {ADDITIONAL_ARGS}"
