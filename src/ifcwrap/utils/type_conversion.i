@@ -35,7 +35,7 @@
 			PyObject* element = PySequence_GetItem(aggregate, i);
 			// This is equivalent to the PyFloat_CheckExact macro. This means
 			// that direct instances of int, float, str, etc. need to be used.
-			bool b = element->ob_type != type_obj;
+			bool b = element->ob_type == type_obj;
 			Py_DECREF(element);
 			if (!b) {
 				return false;
