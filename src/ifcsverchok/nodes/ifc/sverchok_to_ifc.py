@@ -89,13 +89,11 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
 
-        print("node_dict: ", self.node_dict)
         edit = False
         for i in range(len(self.inputs)):
             input = self.inputs[i].sv_get(deepcopy=False)
             if isinstance(self.node_dict[hash(self)][self.inputs[i].name], list) and input != self.node_dict[hash(self)][self.inputs[i].name]:
                 edit = True
-                print("Edit = True")
             self.node_dict[hash(self)][self.inputs[i].name] = input
 
         self.vertices = self.inputs["Vertices"].sv_get(deepcopy=False)
@@ -107,14 +105,13 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
 
             representations = self.create(geo_data)
         else:
-            print("edit: ", edit)
             if edit is True:
                 self.edit()
                 representations = self.create(geo_data)
             else:
                 # representations = self.get_existing_element()
                 representations = SvIfcStore.id_map[self.node_id]["Representations"]
- 
+
         self.outputs["Representation(s)"].sv_set(representations)
     
     def create(self, geo_data):
@@ -133,7 +130,6 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
             if not representation:
                 raise Exception("Couldn't create representation. Possibly wrong context.")
             representations_ids.append(representation.id())
-            print("Representation: ", representation)
             SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(representation.id())
         return representations_ids
     
@@ -164,7 +160,6 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                 target_view=self.target_view,
                 parent=parent,
             )
-            print("context: ", context)
             SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Contexts", []).append(context.id())
         return context
  
