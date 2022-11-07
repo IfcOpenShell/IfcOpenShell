@@ -24,9 +24,7 @@ from bpy.props import StringProperty, EnumProperty
 from ifcsverchok.ifcstore import SvIfcStore
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
-from sverchok.utils.handle_blender_data import keep_enum_reference
 
-@keep_enum_reference
 def get_ifc_products(self, context):
     ifc_products = getattr(self, "ifc_products", [])
     file = SvIfcStore.get_file()
@@ -53,12 +51,12 @@ def get_ifc_products(self, context):
         ifc_products[2] = ("IfcSpatialStructureElement", "IfcSpatialStructureElement", "")
     return ifc_products
 
-@keep_enum_reference
+
 def update_ifc_products(self, context):
     if hasattr(self, "ifc_classes"):
         self.ifc_classes.clear()
 
-@keep_enum_reference
+
 def get_ifc_classes(self, context):
     ifc_classes = getattr(self, "ifc_classes", [])
     if ifc_classes:
@@ -98,7 +96,6 @@ class SvIfcPickIfcClass(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Ifc Class Picker"
 
     def process(self):
-        # ifc_product = self.inputs["ifc_product"].sv_get()
         ifc_class = self.inputs["ifc_class"].sv_get()[0][0]
         self.outputs["IfcClass"].sv_set([ifc_class])
 

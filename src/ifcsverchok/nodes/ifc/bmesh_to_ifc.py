@@ -142,7 +142,6 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                 bpy.ops.mesh.separate(type='LOOSE')
                 for obj in bpy.context.selected_objects:
                     representation = ifcopenshell.api.run("geometry.add_representation", self.file, should_run_listeners=False,blender_object = obj, geometry=obj.data, context = self.get_context())
-                    print("\n", "#"*30, "representation: ", representation)
                     if not representation:
                         raise Exception("Couldn't create representation. Possibly wrong context.")
                     representations_ids.append(representation.id())
@@ -174,7 +173,6 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             parent = ifcopenshell.util.representation.get_context(self.file, self.context_type)
             if not parent:
                 parent = ifcopenshell.api.run("context.add_context", self.file, context_type=self.context_type)
-            print("\nParent: ", parent)
             context = ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
