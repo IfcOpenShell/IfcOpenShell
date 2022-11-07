@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell.util.type
 import ifcopenshell.util.element
+from ifcopenshell.util.doc import get_entity_doc
 import blenderbim.tool as tool
 
 
@@ -53,8 +54,9 @@ class TypeData:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
-        types = ifcopenshell.util.type.get_applicable_types(element.is_a(), schema=tool.Ifc.get_schema())
-        results.extend((t, t, "") for t in types)
+        version = tool.Ifc.get_schema()
+        types = ifcopenshell.util.type.get_applicable_types(element.is_a(), schema=version)
+        results.extend((t, t, get_entity_doc(version, t).get("description", "")) for t in types)
         return results
 
     @classmethod
@@ -86,7 +88,4 @@ class TypeData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
-            return {
-                "id": element_type.id(),
-                "name":f"{element_type.is_a()}/{element_type.Name or 'Unnamed'}"
-            }
+            return {"id": element_type.id(), "name": f"{element_type.is_a()}/{element_type.Name or 'Unnamed'}"}

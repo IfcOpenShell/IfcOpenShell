@@ -19,9 +19,9 @@
 from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
+from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_descriptions
 
 
 def refresh():
@@ -38,7 +38,7 @@ class IfcClassData:
         cls.data = {}
         cls.data["ifc_products"] = cls.ifc_products()
         cls.data["ifc_classes"] = cls.ifc_classes()
-        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()
+        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()  # Call AFTER cls.ifc_classes()
         cls.data["contexts"] = cls.contexts()
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
@@ -57,7 +57,8 @@ class IfcClassData:
             "IfcAnnotation",
             "IfcRelSpaceBoundary",
         ]
-        if tool.Ifc.get_schema() == "IFC2X3":
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
             products = [
                 "IfcElement",
                 "IfcElementType",
@@ -67,7 +68,7 @@ class IfcClassData:
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             ]
-        return [(e, e, get_ifc_entity_description(e)) for e in products]
+        return [(e, e, get_entity_doc(version, e).get("description", "")) for e in products]
 
     @classmethod
     def ifc_classes(cls):
@@ -77,19 +78,23 @@ class IfcClassData:
         names = [d.name() for d in declarations]
         if ifc_product == "IfcElementType":
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-        
-        return [(c, c, get_ifc_entity_description(c)) for c in sorted(names)]
+        version = tool.Ifc.get_schema()
+        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def ifc_predefined_types(cls):
         types_enum = []
         ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
         declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
+        version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
-                declared_type = attribute.type_of_attribute().declared_type()
-                descriptions = get_predefined_type_descriptions(declared_type.name())
-                types_enum.extend([(e, e, descriptions.get(e, "")) for e in declared_type.enumeration_items()])
+                types_enum.extend(
+                    [
+                        (e, e, get_predefined_type_doc(version, ifc_class, e))
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                    ]
+                )
                 break
         return types_enum
 
@@ -112,20 +117,11 @@ class IfcClassData:
                 "IfcUnitaryEquipment": ["Fan Coil Unit"],
             }
         )
-        file = IfcStore.get_file()
-        if file:
-            for ifc_class in cls.ifc_classes():
-                ifc_class = ifc_class[0]
-                declaration = IfcStore.get_schema().declaration_by_name(ifc_class)
-                for attribute in declaration.attributes():
-                    if attribute.name() == "PredefinedType":
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items():
-                            if e in (
-                                "NOTDEFINED",
-                                "USERDEFINED",
-                            ):
-                                continue
-                            suggestions[ifc_class].append(e.title())
+        version = tool.Ifc.get_schema()
+        for ifc_class, _, _ in cls.data["ifc_classes"]:
+            class_doc = get_entity_doc(version, ifc_class)
+            predefined_types = class_doc.get("predefined_types", {})
+            suggestions[ifc_class].extend(predefined_types.keys())
         return suggestions
 
     @classmethod

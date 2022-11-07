@@ -242,7 +242,9 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
             extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
                 return
-            extrusion.Depth = self.depth
+            x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+            x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+            extrusion.Depth = self.depth * (1 / cos(x_angle))
             if element.is_a("IfcWall"):
                 for rel in element.ConnectedFrom:
                     if rel.is_a() == "IfcRelConnectsElements":
@@ -272,6 +274,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
         wall_objs = []
         other_objs = []
         x_angle = radians(self.x_angle)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -282,6 +285,10 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
                 return
+            x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+            existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+            perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
+            extrusion.Depth = perpendicular_depth * (1 / cos(x_angle))
             extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
             if element.is_a("IfcWall"):
                 wall_objs.append(obj)
@@ -631,9 +638,7 @@ class DumbWallGenerator:
             "geometry.add_wall_representation",
             tool.Ifc.get(),
             context=self.body_context,
-            thickness=self.layers["thickness"]
-            * 1
-            / cos(self.x_angle),  # 1/cos(self.x_angle) maintains the correct MaterialLayer thickness upon rotation
+            thickness=self.layers["thickness"],
             offset=self.layers["offset"],
             length=self.length,
             height=self.height,
@@ -1143,9 +1148,7 @@ class DumbWallJoiner:
             height=height,
             x_angle=x_angle,
             offset=layers["offset"],
-            thickness=layers["thickness"]
-            * 1
-            / cos(x_angle),  # 1/cos(x_angle) maintains the correct MaterialLayer thickness upon rotation
+            thickness=layers["thickness"],
             clippings=self.clippings,
             booleans=tool.Model.get_manual_booleans(element),
         )
@@ -1206,12 +1209,12 @@ class DumbWallJoiner:
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
                 results["item"] = item
-                results["height"] = item.Depth * self.unit_scale
                 x, y, z = item.ExtrudedDirection.DirectionRatios
                 if not tool.Cad.is_x(x, 0) or not tool.Cad.is_x(y, 0) or not tool.Cad.is_x(z, 1):
                     results["direction"] = Vector(item.ExtrudedDirection.DirectionRatios)
                     results["x_angle"] = Vector((0, 1)).angle_signed(Vector((y, z)))
                     results["is_sloped"] = True
+                results["height"] = (item.Depth * self.unit_scale) / (1 / cos(results["x_angle"]))
                 break
             elif item.is_a("IfcBooleanClippingResult"):
                 item = item.FirstOperand
@@ -1265,7 +1268,8 @@ class DumbWallJoiner:
         bp2 = wall2.matrix_world @ Vector(wall2.bound_box[0])
         tp1 = wall1.matrix_world @ Vector(wall1.bound_box[1])
 
-        # Axis lines on bottom, for base and side axes
+        # Axis lines on bottom, for reference, base, and side axes
+        bra1 = (Vector((*axis1["reference"][0], bp1[2])), Vector((*axis1["reference"][1], bp1[2])))
         bba1 = (Vector((*axis1["base"][0], bp1[2])), Vector((*axis1["base"][1], bp1[2])))
         bsa1 = (Vector((*axis1["side"][0], bp1[2])), Vector((*axis1["side"][1], bp1[2])))
         bba2 = (Vector((*axis2["base"][0], bp2[2])), Vector((*axis2["base"][1], bp2[2])))
@@ -1310,7 +1314,7 @@ class DumbWallJoiner:
             new_body = tool.Cad.furthest_vector(bba1[i], (bbf, bsf_)).copy()
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tbf_)).copy()
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tsf_)).copy()
-            self.body[j] = new_body.to_2d()
+            self.body[j] = tool.Cad.point_on_edge(new_body, bra1).to_2d()
 
             if connection1 == connection2:
                 if (connection1 == "ATEND" and angle > 0) or (connection1 != "ATEND" and angle < 0):
@@ -1351,9 +1355,9 @@ class DumbWallJoiner:
                 and not extrusion2["is_sloped"]
             ):
                 if is_relating:
-                    self.body[j] = bbf.to_2d()
+                    self.body[j] = tool.Cad.point_on_edge(bbf, bra1).to_2d()
                 else:
-                    self.body[j] = bbn.to_2d()
+                    self.body[j] = tool.Cad.point_on_edge(bbn, bra1).to_2d()
                 return True
 
             bsf_ = tool.Cad.point_on_edge(bsf, bba1)
@@ -1362,7 +1366,7 @@ class DumbWallJoiner:
             new_body = tool.Cad.furthest_vector(bba1[i], (bbf, bsf_)).copy()
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tbf_)).copy()
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tsf_)).copy()
-            self.body[j] = new_body.to_2d()
+            self.body[j] = tool.Cad.point_on_edge(new_body, bra1).to_2d()
 
             if is_relating:
                 pt = bbf.to_2d().to_3d()

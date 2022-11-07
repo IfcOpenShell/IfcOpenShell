@@ -59,7 +59,7 @@ class Usecase:
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             None,
             extrusion_direction,
-            self.convert_si_to_unit(self.settings["depth"]),
+            self.convert_si_to_unit(self.settings["depth"]) * 1 / cos(self.settings["x_angle"]),
         )
         if self.settings["clippings"]:
             return self.apply_clippings(extrusion)

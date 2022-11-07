@@ -8,7 +8,7 @@ authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
 ]
 description = "Python bindings, utility functions, and high-level API for IfcOpenShell"
-readme = "README.md"
+readme = "../../README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",

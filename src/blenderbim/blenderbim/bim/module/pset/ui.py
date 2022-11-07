@@ -139,6 +139,10 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
     draw_property(prop, row, copy_operator="bim.copy_property_to_selection")
+    if prop.metadata.has_calculator:
+        op = row.operator("bim.calculate_quantity", icon="MOD_EDGESPLIT", text="")
+        op.prop = prop.name
+    # Old "guess quantity" feature to be removed once new calculator is comprehensive
     if (
         "length" in prop.name.lower()
         or "width" in prop.name.lower()

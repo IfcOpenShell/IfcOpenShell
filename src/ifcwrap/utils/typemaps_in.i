@@ -80,6 +80,7 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
 			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__declaration, 0);
+			Py_DECREF(element);
 			auto decl = static_cast<const IfcParse::declaration*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
@@ -99,6 +100,7 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
 			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__entity, 0);
+			Py_DECREF(element);
 			auto decl = static_cast<const IfcParse::entity*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
@@ -118,6 +120,7 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
 			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__attribute, 0);
+			Py_DECREF(element);
 			auto decl = static_cast<const IfcParse::attribute*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
@@ -137,6 +140,7 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
 			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__inverse_attribute, 0);
+			Py_DECREF(element);
 			auto decl = static_cast<const IfcParse::inverse_attribute*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
@@ -155,6 +159,7 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			$1->push_back(PyObject_IsTrue(element));
+			Py_DECREF(element);
 		}
 	} else {
 		SWIG_exception(SWIG_TypeError, "Expected an sequence type");
@@ -167,6 +172,7 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element);
+			Py_DECREF(element);
 			if (inst) {
 				$1->push(inst);
 			} else {
@@ -183,23 +189,28 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		$1 = aggregate_of_aggregate_of_instance::ptr(new aggregate_of_aggregate_of_instance());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
+			bool b = false;
 			if (PySequence_Check(element)) {
+				b = true;
 				std::vector<IfcUtil::IfcBaseClass*> vector;
 				vector.reserve(PySequence_Size(element));
 				for(Py_ssize_t j = 0; j < PySequence_Size(element); ++j) {
 					PyObject* element_element = PySequence_GetItem(element, j);
 					IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element_element);
+					Py_DECREF(element_element);
 					if (inst) {
-						vector.push_back(cast_pyobject<IfcUtil::IfcBaseClass*>(element_element));
+						vector.push_back(inst);
 					} else {
 						SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF ENTITY INSTANCE needs a python sequence of sequence of entity instances");
-					} 
+					}
 				}
 				$1->push(vector);
-			} else {
+			}
+			Py_DECREF(element);
+			if (!b) {
 				SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF ENTITY INSTANCE needs a python sequence of sequence of entity instances");
 				break;
-			}			
+			}
 		}
 	} else {
 		SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF ENTITY INSTANCE needs a python sequence of sequence of entity instances");

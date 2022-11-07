@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,21 +16,25 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.api
+
 
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"profile_set": None, "material": None, "profile": None}
+        self.settings = {
+            "product": None,
+        }
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        profiles = list(self.settings["profile_set"].MaterialProfiles or [])
-        profile = self.file.create_entity("IfcMaterialProfile")
-        if self.settings["material"]:
-            profile.Material = self.settings["material"]
-        if self.settings["profile"]:
-            profile.Profile = self.settings["profile"]
-        profiles.append(profile)
-        self.settings["profile_set"].MaterialProfiles = profiles
-        return profile
+        for rel in self.settings["product"].ContainedInStructure or []:
+            related_elements = list(rel.RelatedElements)
+            related_elements.remove(self.settings["product"])
+            if related_elements:
+                rel.RelatedElements = related_elements
+                ifcopenshell.api.run("owner.update_owner_history", self.file, element=rel)
+            else:
+                self.file.remove(rel)

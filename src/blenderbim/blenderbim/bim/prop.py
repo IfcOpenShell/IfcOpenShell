@@ -23,7 +23,13 @@ import json
 import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
-from ifcopenshell.util.doc import get_entity_doc, get_attribute_doc, get_property_set_doc, get_property_doc
+from ifcopenshell.util.doc import (
+    get_entity_doc,
+    get_attribute_doc,
+    get_property_set_doc,
+    get_property_doc,
+    get_predefined_type_doc,
+)
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
@@ -42,11 +48,6 @@ from bpy.props import (
 )
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-
-BASE_MODULE_PATH = Path(__file__).parent
-DESCRIPTION_FILES = {
-    "PredefinedType": BASE_MODULE_PATH / "schema" / "enum_descriptions.json",
-}
 
 materialpsetnames_enum = []
 
@@ -105,29 +106,7 @@ def cache_string(s):
 cache_string.data = {}
 
 
-def get_ifc_entity_docs(ifc_entity):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_entity_doc(schema, ifc_entity)
-
-
-def get_ifc_entity_description(ifc_entity):
-    docs = get_ifc_entity_docs(ifc_entity)
-    return docs.get("description", "") if docs is not None else ""
-
-
-def get_ifc_entity_doc_url(ifc_entity):
-    docs = get_ifc_entity_docs(ifc_entity)
-    return docs.get("spec_url", "") if docs is not None else ""
-
-
-def get_predefined_type_descriptions(ifc_class_enum):
-    with open(DESCRIPTION_FILES["PredefinedType"], "r") as fi:
-        docs = json.load(fi)
-    return docs.get(ifc_class_enum, None) or {}
-
-
-def getAttributeEnumValues(prop, context):
+def get_attribute_enum_values(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
     data = json.loads(prop.enum_items)
@@ -150,6 +129,9 @@ def getAttributeEnumValues(prop, context):
                     "",
                 )
             )
+
+    if prop.enum_descriptions:
+        items = [(identifier, name, prop.enum_descriptions[i].name) for i, (identifier, name, _) in enumerate(items)]
 
     return items
 
@@ -199,7 +181,7 @@ class ObjProperty(PropertyGroup):
     obj: bpy.props.PointerProperty(type=bpy.types.Object)
 
 
-def updateAttributeValue(self, context):
+def update_attribute_value(self, context):
     value_name = self.get_value_name()
     if value_name:
         value_names = [value_name]
@@ -213,22 +195,59 @@ def updateAttributeValue(self, context):
             self.is_null = False
 
 
+def set_int_value(self, new_value):
+    set_numerical_value(self, "int_value", new_value)
+
+
+def set_float_value(self, new_value):
+    set_numerical_value(self, "float_value", new_value)
+
+
+def set_numerical_value(self, value_name, new_value):
+    if self.value_min_constraint and new_value < self.value_min:
+        new_value = self.value_min
+    elif self.value_max_constraint and new_value > self.value_max:
+        new_value = self.value_max
+    self[value_name] = new_value
+
+
 class Attribute(PropertyGroup):
+    tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    ifc_class: StringProperty(name="Ifc Class")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value", update=updateAttributeValue)
-    bool_value: BoolProperty(name="Value", update=updateAttributeValue)
-    int_value: IntProperty(name="Value", update=updateAttributeValue)
-    float_value: FloatProperty(name="Value", update=updateAttributeValue)
+    string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
+    bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
+    int_value: IntProperty(
+        name="Value",
+        description=tooltip,
+        update=update_attribute_value,
+        get=lambda self: int(self.get("int_value", 0)),
+        set=set_int_value,
+    )
+    float_value: FloatProperty(
+        name="Value",
+        description=tooltip,
+        update=update_attribute_value,
+        get=lambda self: float(self.get("float_value", 0.0)),
+        set=set_float_value,
+    )
     enum_items: StringProperty(name="Value")
-    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
+    enum_descriptions: CollectionProperty(type=StrProperty)
+    enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
+    has_calculator: BoolProperty(name="Has Calculator", default=False)
+    value_min: FloatProperty(description="This is used to validate int_value and float_value")
+    value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
+    value_max: FloatProperty(description="This is used to validate int_value and float_value")
+    value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
 
     def get_value(self):
-        if self.is_null:
+        if self.is_optional and self.is_null:
             return None
         return getattr(self, str(self.get_value_name()), None)
 

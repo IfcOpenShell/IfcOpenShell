@@ -19,6 +19,7 @@
 import os
 import bpy
 import json
+import textwrap
 import time
 import logging
 import webbrowser
@@ -609,6 +610,12 @@ def update_enum_property_search_prop(self, context):
     for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
             setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
+            predefined_type = self.collection_predefined_types[i].name
+            if predefined_type:
+                try:
+                    setattr(context.data, "ifc_predefined_type", predefined_type)
+                except TypeError:  # User clicked on a suggestion, but it's not a predefined type
+                    pass
             break
 
 
@@ -619,6 +626,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
     collection_names: bpy.props.CollectionProperty(type=StrProperty)
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
+    collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
 
     def invoke(self, context, event):
@@ -643,9 +651,10 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
         self.collection_names.clear()
         self.collection_identifiers.clear()
 
-    def add_item(self, identifier: str, name: str):
+    def add_item(self, identifier: str, name: str, predefined_type: str = ""):
         self.collection_identifiers.add().name = identifier
         self.collection_names.add().name = name
+        self.collection_predefined_types.add().name = predefined_type
 
     def add_items_regular(self, items):
         self.identifiers = []
@@ -666,7 +675,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                     if not isinstance(values, (tuple, list)):
                         values = [values]
                     for value in values:
-                        self.add_item(identifier=key, name=key + " (" + value + ")")
+                        self.add_item(identifier=key, name=key + " > " + value, predefined_type=value.upper())
 
 
 class EditBlenderCollection(bpy.types.Operator):
@@ -683,3 +692,31 @@ class EditBlenderCollection(bpy.types.Operator):
         else:
             getattr(context.bim_prop_group, self.collection).remove(self.index)
         return {"FINISHED"}
+
+
+class BIM_OT_show_description(bpy.types.Operator):
+    bl_idname = "bim.show_description"
+    bl_label = "Description"
+    attr_name: bpy.props.StringProperty()
+    description: bpy.props.StringProperty()
+    url: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=80)
+        for line in wrapper.wrap(self.attr_name + " : " + self.description):
+            layout.label(text=line)
+        if self.url:
+            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
+            url_op.url = self.url
+
+    @classmethod
+    def description(cls, context, properties):
+        return properties.description

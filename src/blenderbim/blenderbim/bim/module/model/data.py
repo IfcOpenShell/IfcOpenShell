@@ -18,16 +18,18 @@
 
 import bpy
 import math
+import json
 import functools
 import ifcopenshell
+import ifcopenshell.util.element
+from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
-from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_descriptions
-
 
 def refresh():
     AuthoringData.is_loaded = False
+    ArrayData.is_loaded = False
 
 
 class AuthoringData:
@@ -61,17 +63,22 @@ class AuthoringData:
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
         names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-        return [(c, c, get_ifc_entity_description(c)) for c in sorted(names)]
+        version = tool.Ifc.get_schema()
+        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def type_predefined_type(cls):
         results = []
         declaration = tool.Ifc().schema().declaration_by_name(cls.props.type_class)
+        version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
-                declared_type = attribute.type_of_attribute().declared_type()
-                descriptions = get_predefined_type_descriptions(declared_type.name())
-                results.extend([(e, e, descriptions.get(e, "")) for e in declared_type.enumeration_items()])
+                results.extend(
+                    [
+                        (e, e, get_predefined_type_doc(version, cls.props.type_class, e))
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                    ]
+                )
                 break
         return results
 
@@ -182,14 +189,17 @@ class AuthoringData:
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
         if ifc_class:
-            elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: s.Name)
+            elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: s.Name or "Unnamed")
             results.extend(elements)
             return results
         return []
 
     @classmethod
     def relating_types(cls, ifc_class=None):
-        return [(str(e.id()), e.Name, e.Description or "") for e in cls.constr_class_entities(ifc_class=ifc_class)]
+        return [
+            (str(e.id()), e.Name or "Unnamed", e.Description or "")
+            for e in cls.constr_class_entities(ifc_class=ifc_class)
+        ]
 
     @classmethod
     def relating_types_browser(cls):
@@ -316,3 +326,29 @@ class AuthoringData:
     def relating_type_id_by_name(cls, ifc_class, relating_type):
         relating_types = [ct[0] for ct in cls.relating_types(ifc_class=ifc_class) if ct[1] == relating_type]
         return None if len(relating_types) == 0 else relating_types[0]
+
+
+class ArrayData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Array", None)
+            if parameters:
+                try:
+                    parent = tool.Ifc.get().by_guid(parameters["Parent"])
+                    parameters["has_parent"] = True
+                    parameters["parent_name"] = parent.Name or "Unnamed"
+                    parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                except:
+                    parameters["has_parent"] = False
+                return parameters

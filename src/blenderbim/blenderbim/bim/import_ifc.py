@@ -158,6 +158,14 @@ class MaterialCreator:
         for item in representation.Items:
             if item.is_a("IfcMappedItem"):
                 items.extend(item.MappingSource.MappedRepresentation.Items)
+            if item.is_a("IfcBooleanResult"):
+                operand = item.FirstOperand
+                while True:
+                    items.append(operand)
+                    if operand.is_a("IfcBooleanResult"):
+                        operand = operand.FirstOperand
+                    else:
+                        break
             items.append(item)
         return items
 
@@ -329,11 +337,14 @@ class IfcImporter:
         if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
-            self.element_types = set(
-                self.file.by_type("IfcElementType")
-                + self.file.by_type("IfcDoorStyle")
-                + self.file.by_type("IfcWindowStyle")
-            )
+            if self.file.schema in ("IFC2X3", "IFC4"):
+                self.element_types = set(
+                    self.file.by_type("IfcElementType")
+                    + self.file.by_type("IfcDoorStyle")
+                    + self.file.by_type("IfcWindowStyle")
+                )
+            else:
+                self.element_types = set(self.file.by_type("IfcElementType"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)

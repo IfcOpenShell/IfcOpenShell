@@ -693,7 +693,7 @@ class Material(Facet):
             "All data with a material",
         ]
         self.requirement_templates = [
-            "Shall shall have a material of {value}",
+            "Shall have a material of {value}",
             "Shall have a material",
         ]
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
@@ -745,9 +745,9 @@ class Material(Facet):
 
 
 class Restriction:
-    def __init__(self, options={}, base="string"):
+    def __init__(self, options=None, base="string"):
         self.base = base
-        self.options = options
+        self.options = options or {}
 
     def parse(self, ids_dict):
         if not ids_dict:
@@ -882,10 +882,14 @@ class PropertyResult(Result):
             return "The property set does not contain the required property"
         elif self.reason["type"] == "MEASURE":
             return f"The data type \"{str(self.reason['actual'])}\" does not match the requirements"
-        elif self.reason["type"] == "VALUE" and len(self.reason["actual"]) == 1:
-            return f"The property value \"{str(self.reason['actual'][0])}\" does not match the requirements"
         elif self.reason["type"] == "VALUE":
-            return f"The property values \"{str(self.reason['actual'])}\" do not match the requirements"
+            if isinstance(self.reason["actual"], list):
+                if len(self.reason["actual"]) == 1:
+                    return f"The property value \"{str(self.reason['actual'][0])}\" does not match the requirements"
+                else:
+                    return f"The property values \"{str(self.reason['actual'])}\" do not match the requirements"
+            else:
+                return f"The property value \"{str(self.reason['actual'])}\" does not match the requirements"
         elif self.reason["type"] == "PROHIBITED":
             return f"The property should not have met the requirement"
 

@@ -325,17 +325,16 @@ class Parser:
                 if element.is_a("IfcDocumentInformation"):
                     continue
                 for related_object in rel.RelatedObjects:
-                    name = element.Name
                     worksheet_row = related_object.Name
                     if ifc.schema == "IFC2X3":
-                        submittal_id = element.ItemReference
                         referenced_document = element.ReferenceToDocument[0]
+                        identification = referenced_document.ItemReference
                         author_date = None
                         if referenced_document.CreationTime:
                             author_date = ifcopenshell.util.date.ifc2datetime(referenced_document.CreationTime).isoformat()
                     else:
-                        submittal_id = element.Identification
                         referenced_document = element.ReferencedDocument
+                        identification = referenced_document.Identification
                         author_date = referenced_document.CreationTime
 
                     worksheet_name = None
@@ -344,17 +343,17 @@ class Parser:
                     elif related_object.is_a("IfcTypeObject"):
                         worksheet_name = "Type"
 
-                    self.documents[element.Name + worksheet_name + worksheet_row] = {
-                        "Name": name,
+                    self.documents[identification + worksheet_name + worksheet_row] = {
+                        "Name": identification,
                         "AuthorOrganizationName": referenced_document.DocumentOwner.Name,
                         "AuthorDate": author_date,
                         "Category": referenced_document.Purpose,
                         "WorksheetName": worksheet_name,
                         "WorksheetRow": worksheet_row,
                         "Revision": referenced_document.Revision,
-                        "Location": referenced_document.Name,
-                        "Description": referenced_document.Description,
+                        "Location": referenced_document.Location,
+                        "Description": referenced_document.Name,
                         "SpecificationSection": None,
-                        "SubmittalID": submittal_id,
+                        "SubmittalID": None,
                         "SourceURL": None,
                     }

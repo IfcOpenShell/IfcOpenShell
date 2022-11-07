@@ -17,9 +17,15 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import handler, prop, ui, grid, product, wall, slab, stair, opening, pie, workspace, profile
+from . import handler, prop, ui, grid, array, product, wall, slab, stair, opening, pie, workspace, profile
 
 classes = (
+    array.AddArray,
+    array.DisableEditingArray,
+    array.EditArray,
+    array.EnableEditingArray,
+    array.RemoveArray,
+    array.SelectArrayParent,
     product.AddConstrTypeInstance,
     product.AddEmptyType,
     product.AlignProduct,
@@ -66,13 +72,16 @@ classes = (
     prop.ConstrClassInfo,
     prop.ConstrBrowserState,
     prop.BIMModelProperties,
+    prop.BIMArrayProperties,
     ui.BIM_PT_authoring,
+    ui.BIM_PT_array,
     ui.DisplayConstrTypesUI,
     ui.LaunchTypeManager,
     ui.HelpConstrTypes,
     ui.BIM_MT_model,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_object,
+    stair.BIM_OT_add_clever_stair,
     pie.OpenPieClass,
     pie.PieUpdateContainer,
     pie.PieAddOpening,
@@ -87,6 +96,7 @@ def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.BimTool, after={"builtin.scale_cage"}, separator=True, group=True)
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
+    bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
@@ -103,6 +113,7 @@ def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.BimTool)
     del bpy.types.Scene.BIMModelProperties
+    del bpy.types.Object.BIMArrayProperties
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)

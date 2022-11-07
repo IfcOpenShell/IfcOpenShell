@@ -18,6 +18,9 @@
 
 import json
 from pathlib import Path
+from pprint import pprint
+import copy
+import ifcopenshell
 
 try:
     import glob
@@ -39,14 +42,17 @@ SCHEMA_FILES = {
     "IFC2X3": {
         "entities": BASE_MODULE_PATH / "schema/ifc2x3_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc2x3_properties.json",
+        "types": BASE_MODULE_PATH / "schema/ifc2x3_types.json",
     },
     "IFC4": {
         "entities": BASE_MODULE_PATH / "schema/ifc4_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc4_properties.json",
+        "types": BASE_MODULE_PATH / "schema/ifc4_types.json",
     },
 }
 
 db = None
+schema_by_name = {"IFC2X3": None, "IFC4": None}
 
 
 def get_db(version):
@@ -66,18 +72,46 @@ def get_db(version):
     return db.get(version)
 
 
-def get_entity_doc(version, entity):
+def get_schema_by_name(version):
+    global schema_by_name
+    if not schema_by_name[version]:
+        schema_by_name[version] = ifcopenshell.ifcopenshell_wrapper.schema_by_name(version)
+    return schema_by_name[version]
+
+
+def get_entity_doc(version, entity_name, recursive=True):
     db = get_db(version)
     if db:
-        return db["entities"].get(entity)
+        entity = copy.deepcopy(db["entities"].get(entity_name))
+        if not recursive:
+            return entity
+
+        ifc_schema = get_schema_by_name(version)
+        ifc_entity = ifc_schema.declaration_by_name(entity_name)
+        ifc_supertype = ifc_entity.supertype()
+        if ifc_entity.supertype():
+            parent_entity = get_entity_doc(version, ifc_supertype.name(), recursive=True)
+            if "attributes" not in entity:
+                entity["attributes"] = dict()
+            for parent_attr in parent_entity.get("attributes", []):
+                entity["attributes"][parent_attr] = parent_entity["attributes"][parent_attr]
+        return entity
 
 
-def get_attribute_doc(version, entity, attribute):
+def get_attribute_doc(version, entity, attribute, recursive=True):
+    db = get_db(version)
+    if db:
+        entity = get_entity_doc(version, entity, recursive)
+        if entity:
+            return entity["attributes"].get(attribute)
+
+
+def get_predefined_type_doc(version, entity, predefined_type):
     db = get_db(version)
     if db:
         entity = db["entities"].get(entity)
         if entity:
-            return entity["attributes"].get(attribute)
+            return entity["predefined_types"].get(predefined_type)
 
 
 def get_property_set_doc(version, pset):
@@ -92,6 +126,12 @@ def get_property_doc(version, pset, prop):
         pset = db["properties"].get(pset)
         if pset:
             return pset["properties"].get(prop)
+
+
+def get_type_doc(version, ifc_type):
+    db = get_db(version)
+    if db:
+        return db["types"].get(ifc_type)
 
 
 class DocExtractor:
@@ -114,6 +154,7 @@ class DocExtractor:
         self.extract_ifc2x3_property_sets_site_domains()
         self.extract_ifc2x3_entities()
         self.extract_ifc2x3_property_sets()
+        self.extract_ifc2x3_types()
 
     def extract_ifc2x3_property_sets_site_domains(self):
         property_sets_domains = dict()
@@ -128,7 +169,23 @@ class DocExtractor:
             print(f"{len(property_sets_domains)} property sets domains were parsed from the website")
             json.dump(property_sets_domains, fo, sort_keys=True, indent=4)
 
+    def setup_ifc2x3_reference_lookup(self):
+        # setup references look up tables to convert property hrefs to actual data paths
+        references_paths_lookup = dict()
+        glob_query = f"{IFC2x3_DOCS_LOCATION}/Constants/*/*"
+        parsed_paths = [filepath for filepath in glob.iglob(f"{IFC2x3_DOCS_LOCATION}/Properties/*/*", recursive=False)]
+        parsed_paths += [filepath for filepath in glob.iglob(f"{IFC2x3_DOCS_LOCATION}/Constants/*/*", recursive=False)]
+        for parsed_path in parsed_paths:
+            parsed_path = Path(parsed_path)
+            # all references omit "$" character, I've checked it on 2_3
+            # need to check it if moving to next IFC version
+            property_reference = parsed_path.stem.replace("$", "")
+            references_paths_lookup[property_reference] = parsed_path
+        return references_paths_lookup
+
     def extract_ifc2x3_entities(self):
+        ifc2x3_references_paths_lookup = self.setup_ifc2x3_reference_lookup()
+        ifc4_references_paths_lookup = self.setup_ifc4_reference_lookup()
         entities_dict = dict()
 
         # search
@@ -156,14 +213,40 @@ class DocExtractor:
 
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
-                    entity_attrs = dict()
-                    # temporarily disable MarkupResemblesLocatorWarning
-                    # because BeautifulSoup wrongly assume we confused
-                    # html code for filepath and gives warnings
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
 
-                        for html_attr in bs_tree.find_all("docattribute"):
+                entity_attrs = dict()
+                predefined_types = dict()
+                # temporarily disable MarkupResemblesLocatorWarning
+                # because BeautifulSoup wrongly assume we confused
+                # html code for filepath and gives warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
+
+                    for html_attr in bs_tree.find_all("docattribute"):
+                        attr_name = html_attr["name"]
+                        if attr_name == "PredefinedType":
+                            # get references to all predefined types
+                            defined_type = html_attr["definedtype"]
+                            enum_path = xml_path.parents[2] / "Types" / defined_type / "DocEnumeration.xml"
+                            with open(enum_path, "r", encoding="utf-8") as fi:
+                                enum_bs_tree = BeautifulSoup(fi.read(), features="lxml")
+                            hrefs = [i["href"] for i in enum_bs_tree.find_all("docconstant")]
+
+                            # iterate over list of predefined types
+                            for href in hrefs:
+                                # in IFC2X3 all documentation for constants is empty
+                                # and as a temporary solution I'm trying to get constant's description from IFC4
+                                const_path = ifc4_references_paths_lookup.get(
+                                    href, ifc2x3_references_paths_lookup[href]
+                                )
+                                with open(const_path, "r", encoding="utf-8") as fi:
+                                    const_bs_tree = BeautifulSoup(fi.read(), features="lxml")
+                                const_name = const_bs_tree.find("docconstant")["name"]
+                                description_tag = const_bs_tree.find("documentation")
+                                const_description = "" if not description_tag else description_tag.text
+                                predefined_types[const_name] = const_description
+
+                        else:
                             html_description = BeautifulSoup(html_attr.text, features="lxml")
                             attr_description = html_description.get_text()
 
@@ -182,10 +265,13 @@ class DocExtractor:
                             attr_description = attr_description.split("IFC2x Edition3 CHANGE", 1)[0]
 
                             attr_description = attr_description.strip().rstrip(">").strip()
-                            entity_attrs[html_attr["name"]] = attr_description
+                            entity_attrs[attr_name] = attr_description
 
-                    if entity_attrs:
-                        entities_dict[entity_name]["attributes"] = entity_attrs
+                if entity_attrs:
+                    entities_dict[entity_name]["attributes"] = entity_attrs
+
+                if predefined_types:
+                    entities_dict[entity_name]["predefined_types"] = predefined_types
 
                 entities_dict[entity_name]["description"] = entity_description
                 spec_url = (
@@ -202,7 +288,6 @@ class DocExtractor:
     def extract_ifc2x3_property_sets(self):
         property_sets_dict = dict()
         property_sets_references = dict()
-        property_sets_spec_urls = dict()
 
         # extract lists of properties and theirs references for each property set
         parsed_paths = [
@@ -217,9 +302,27 @@ class DocExtractor:
             for property_set_path in glob.iglob(f"{parse_folder_path}/**/"):
                 property_set_path = Path(property_set_path)
                 property_set_name = property_set_path.stem
+                property_set_dict = dict()
 
                 property_references = list()
                 xml_path = property_set_path / "DocPropertySet.xml"
+                md_path = property_set_path / "Documentation.md"
+
+                if md_path.is_file():
+                    with open(md_path, "r", encoding="utf-8-sig") as fi:
+                        # convert markdown to html for easier parsing
+                        html = markdown(fi.read())
+                        property_set_description = BeautifulSoup(html, features="lxml").find("p").text
+                        property_set_description = property_set_description.replace("\n", " ")
+                        property_set_description = property_set_description.split("HISTORY:", 1)[0]
+                        property_set_description = property_set_description.strip()
+                        property_set_dict["description"] = property_set_description
+                else:
+                    print(
+                        f"WARNING. Property set {property_set_name} has no Documentation.md, "
+                        f"property set will be left without description."
+                    )
+
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
                     for html_attr in bs_tree.find_all("docproperty"):
@@ -231,17 +334,11 @@ class DocExtractor:
                     "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML"
                     f"/psd/{property_set_domain}/{property_set_name}.xml"
                 )
-                property_sets_spec_urls[property_set_name] = spec_url
+                property_set_dict["spec_url"] = spec_url
+                property_sets_dict[property_set_name] = property_set_dict
 
         # setup references look up tables to convert property hrefs to actual data paths
-        references_paths_lookup = dict()
-        glob_query = f"{IFC2x3_DOCS_LOCATION}/Properties/*/*"
-        for parsed_path in [filepath for filepath in glob.iglob(glob_query, recursive=False)]:
-            parsed_path = Path(parsed_path)
-            # all references omit "$" character, I've checked it on 2_3
-            # need to check it if moving to next IFC version
-            property_reference = parsed_path.name.replace("$", "")
-            references_paths_lookup[property_reference] = parsed_path
+        references_paths_lookup = self.setup_ifc2x3_reference_lookup()
 
         # setup a function because we'll need to check child properties recusively
         def get_property_info_by_href(href):
@@ -301,15 +398,51 @@ class DocExtractor:
             for property_reference in property_sets_references[property_set_name]:
                 property_name, property_dict = get_property_info_by_href(property_reference)
                 properties_dict[property_name] = property_dict
-            property_sets_dict[property_set_name] = {
-                "properties": properties_dict,
-                "spec_url": property_sets_spec_urls[property_set_name],
-            }
+            property_sets_dict[property_set_name]["properties"] = properties_dict
 
         # export property sets data
         with open(BASE_MODULE_PATH / "schema/ifc2x3_properties.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
+
+    def extract_ifc2x3_types(self):
+        types_dict = dict()
+        # search
+        types_paths = [filepath for filepath in glob.iglob(f"{IFC2x3_DOCS_LOCATION}/Sections/**/Types", recursive=True)]
+        for parse_folder_path in types_paths:
+            for type_path in glob.iglob(f"{parse_folder_path}/**/"):
+                type_path = Path(type_path)
+                type_name = type_path.stem
+                types_dict[type_name] = dict()
+                md_path = type_path / "Documentation.md"
+
+                # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
+                with open(md_path, "r", encoding="utf-8-sig") as fi:
+                    # convert markdown to html for easier parsing
+                    html = markdown(fi.read())
+                    type_description = BeautifulSoup(html, features="lxml").find("p").text
+                    type_description = type_description.replace("\n", " ")
+                    type_description = type_description.replace("\u00a0", " ")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-46:1992: ", "")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-42:1992 ", "")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-42:1992: ", "")
+                    type_description = type_description.replace("Definition from ISO/CD 10303-41:1992: ", "")
+
+                    type_description = type_description.strip()
+
+                if type_description:
+                    types_dict[type_name]["description"] = type_description
+
+                spec_url = (
+                    "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/"
+                    f"{md_path.parents[2].name.lower()}/lexical/{type_name.lower()}.htm"
+                )
+                types_dict[type_name]["spec_url"] = spec_url
+
+        # export entities data
+        with open(BASE_MODULE_PATH / "schema/ifc2x3_types.json", "w", encoding="utf-8") as fo:
+            print(f"{len(types_dict)} ifc types parsed")
+            json.dump(types_dict, fo, sort_keys=True, indent=4)
 
     def extract_ifc4(self):
         print("Parsing data for Ifc4.0.2.1")
@@ -330,6 +463,7 @@ class DocExtractor:
         self.extract_ifc4_property_sets_site_domains()
         self.extract_ifc4_entities()
         self.extract_ifc4_property_sets()
+        self.extract_ifc4_types()
 
     def extract_ifc4_property_sets_site_domains(self):
         property_sets_domains = dict()
@@ -360,7 +494,23 @@ class DocExtractor:
             print(f"{len(property_sets_domains)} property sets domains were parsed from the website")
             json.dump(property_sets_domains, fo, sort_keys=True, indent=4)
 
+    def setup_ifc4_reference_lookup(self):
+        references_paths_lookup = dict()
+        parsed_paths = [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Properties/*/*", recursive=False)]
+        parsed_paths += [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Quantities/*/*", recursive=False)]
+        parsed_paths += [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Constants/*/*", recursive=False)]
+        for parsed_path in parsed_paths:
+            parsed_path = Path(parsed_path)
+            # all references omit "$" character, I've checked it on 4_0
+            # need to check it if moving to next IFC version
+            # btw no reason to check if all references were used in properties
+            # because there are also child properties
+            property_reference = parsed_path.stem.replace("$", "")
+            references_paths_lookup[property_reference] = parsed_path
+        return references_paths_lookup
+
     def extract_ifc4_entities(self):
+        references_paths_lookup = self.setup_ifc4_reference_lookup()
         entities_dict = dict()
 
         # search
@@ -373,12 +523,12 @@ class DocExtractor:
                 entity_name = entity_path.stem
                 entities_dict[entity_name] = dict()
 
-                # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
                 md_path = entity_path / "Documentation.md"
                 xml_path = entity_path / "DocEntity.xml"
                 md_url_part = urllib.parse.quote(str(md_path.relative_to(Path(__file__).parent).as_posix()))
                 github_md_url = f"https://github.com/buildingSMART/IFC/blob/{md_url_part}"
 
+                # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
                 with open(md_path, "r", encoding="utf-8-sig") as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
@@ -390,13 +540,35 @@ class DocExtractor:
 
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
-                    entity_attrs = dict()
-                    # temporarily disable MarkupResemblesLocatorWarning
-                    # because BeautifulSoup wrongly assume we confused
-                    # html code for filepath and gives warnings
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
-                        for html_attr in bs_tree.find_all("docattribute"):
+
+                entity_attrs = dict()
+                predefined_types = dict()
+                # temporarily disable MarkupResemblesLocatorWarning
+                # because BeautifulSoup wrongly assume we confused
+                # html code for filepath and gives warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
+
+                    for html_attr in bs_tree.find_all("docattribute"):
+                        attr_name = html_attr["name"]
+                        if attr_name == "PredefinedType":
+                            # get references to all predefined types
+                            defined_type = html_attr["definedtype"]
+                            enum_path = xml_path.parents[2] / "Types" / defined_type / "DocEnumeration.xml"
+                            with open(enum_path, "r", encoding="utf-8") as fi:
+                                enum_bs_tree = BeautifulSoup(fi.read(), features="lxml")
+                            hrefs = [i["href"] for i in enum_bs_tree.find_all("docconstant")]
+
+                            # iterate over list of predefined types
+                            for href in hrefs:
+                                const_path = references_paths_lookup[href]
+                                with open(const_path, "r", encoding="utf-8") as fi:
+                                    const_bs_tree = BeautifulSoup(fi.read(), features="lxml")
+                                const_name = const_bs_tree.find("docconstant")["name"]
+                                description_tag = const_bs_tree.find("documentation")
+                                const_description = "" if not description_tag else description_tag.text
+                                predefined_types[const_name] = const_description
+                        else:
                             html_description = BeautifulSoup(html_attr.text, features="lxml")
                             attr_description = html_description.get_text()
                             attr_description = attr_description.replace("\n", " ")
@@ -413,10 +585,13 @@ class DocExtractor:
                             attr_description = attr_description.split("{ .history", 1)[0]
 
                             attr_description = attr_description.strip()
-                            entity_attrs[html_attr["name"]] = attr_description
+                            entity_attrs[attr_name] = attr_description
 
-                    if entity_attrs:
-                        entities_dict[entity_name]["attributes"] = entity_attrs
+                if entity_attrs:
+                    entities_dict[entity_name]["attributes"] = entity_attrs
+
+                if predefined_types:
+                    entities_dict[entity_name]["predefined_types"] = predefined_types
 
                 entities_dict[entity_name]["description"] = entity_description
                 spec_url = (
@@ -435,7 +610,6 @@ class DocExtractor:
         # function parses both property and quantity sets
         property_sets_dict = dict()
         property_sets_references = dict()
-        property_sets_spec_urls = dict()
 
         # extract lists of properties and theirs references for each property set
         parsed_paths = [
@@ -454,10 +628,27 @@ class DocExtractor:
             for property_set_path in glob.iglob(f"{parse_folder_path}/**/"):
                 property_set_path = Path(property_set_path)
                 property_set_name = property_set_path.stem
+                property_set_dict = dict()
 
                 property_references = list()
                 property_quantity = property_set_path.parents[0].name == "QuantitySets"
                 xml_path = property_set_path / ("DocQuantitySet.xml" if property_quantity else "DocPropertySet.xml")
+                md_path = property_set_path / "Documentation.md"
+
+                if md_path.is_file():
+                    with open(md_path, "r", encoding="utf-8-sig") as fi:
+                        # convert markdown to html for easier parsing
+                        html = markdown(fi.read())
+                        property_set_description = BeautifulSoup(html, features="lxml").find("p").text
+                        property_set_description = property_set_description.replace("\n", " ")
+                        property_set_description = property_set_description.split("HISTORY:", 1)[0]
+                        property_set_description = property_set_description.strip()
+                        property_set_dict["description"] = property_set_description
+                else:
+                    print(
+                        f"WARNING. Property set {property_set_name} has no Documentation.md, "
+                        f"property set will be left without description."
+                    )
 
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
@@ -476,23 +667,14 @@ class DocExtractor:
                     spec_url = (
                         "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML"
                         f"/schema/{property_set_domain}"
-                        f'/{"qset" if property_quantity else "pset"}'
+                        f"/{'qset' if property_quantity else 'pset'}"
                         f"/{property_set_name.lower()}.htm"
                     )
-                    property_sets_spec_urls[property_set_name] = spec_url
+                    property_set_dict["spec_url"] = spec_url
+                property_sets_dict[property_set_name] = property_set_dict
 
         # setup references look up tables to convert property hrefs to actual data paths
-        references_paths_lookup = dict()
-        parsed_paths = [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Properties/*/*", recursive=False)]
-        parsed_paths += [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Quantities/*/*", recursive=False)]
-        for parsed_path in parsed_paths:
-            parsed_path = Path(parsed_path)
-            # all references omit "$" character, I've checked it on 4_0
-            # need to check it if moving to next IFC version
-            # btw no reason to check if all references were used in properties
-            # because there are also child properties
-            property_reference = parsed_path.name.replace("$", "")
-            references_paths_lookup[property_reference] = parsed_path
+        references_paths_lookup = self.setup_ifc4_reference_lookup()
 
         # setup a function because we'll need to check child properties recusively
         def get_property_info_by_href(href):
@@ -554,25 +736,66 @@ class DocExtractor:
             for property_reference in property_sets_references[property_set_name]:
                 property_name, property_dict = get_property_info_by_href(property_reference)
                 properties_dict[property_name] = property_dict
-            property_sets_dict[property_set_name] = {"properties": properties_dict}
-            if property_set_name in property_sets_spec_urls:
-                spec_url = property_sets_spec_urls[property_set_name]
-                property_sets_dict[property_set_name]["spec_url"] = spec_url
+            property_sets_dict[property_set_name]["properties"] = properties_dict
 
         # export property sets data
         with open(BASE_MODULE_PATH / "schema/ifc4_properties.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
 
+    def extract_ifc4_types(self):
+        types_dict = dict()
+        # search
+        types_paths = [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Sections/**/Types", recursive=True)]
+        for parse_folder_path in types_paths:
+            for type_path in glob.iglob(f"{parse_folder_path}/**/"):
+                type_path = Path(type_path)
+                type_name = type_path.stem
+                types_dict[type_name] = dict()
+                md_path = type_path / "Documentation.md"
+
+                # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
+                with open(md_path, "r", encoding="utf-8-sig") as fi:
+                    # convert markdown to html for easier parsing
+                    html = markdown(fi.read().replace("{ .extDef}", ""))
+                    type_description = BeautifulSoup(html, features="lxml").find("p").text
+                    type_description = type_description.replace("\n", " ")
+                    type_description = type_description.replace("\u00a0", " ")
+                    type_description = type_description.replace("{ .extDef}", "")
+                    type_description = type_description.replace(
+                        "NOTE  Definition according to ISO/CD 10303-41:1992 ", ""
+                    )
+                    type_description = type_description.replace("Definition from ISO/CD 10303-41:1992: ", "")
+
+                    type_description = type_description.strip()
+
+                if type_description:
+                    types_dict[type_name]["description"] = type_description
+
+                spec_url = (
+                    "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/"
+                    f"{md_path.parents[2].name.lower()}/lexical/{type_name.lower()}.htm"
+                )
+                types_dict[type_name]["spec_url"] = spec_url
+
+        # export entities data
+        with open(BASE_MODULE_PATH / "schema/ifc4_types.json", "w", encoding="utf-8") as fo:
+            print(f"{len(types_dict)} ifc types parsed")
+            json.dump(types_dict, fo, sort_keys=True, indent=4)
+
 
 def run_doc_api_examples():
-    print("Entities:")
-    print(get_entity_doc("IFC2X3", "IfcActionRequest"))
-    print(get_entity_doc("IFC4", "IfcActionRequest"))
+    print("Entities (with parent entities attributes included):")
+    print(get_entity_doc("IFC2X3", "IfcWindow"))
+    print(get_entity_doc("IFC4", "IfcWindow"))
 
-    print("Entity attributes:")
-    print(get_attribute_doc("IFC2X3", "IfcActionRequest", "RequestID"))
-    print(get_attribute_doc("IFC4", "IfcActionRequest", "PredefinedType"))
+    print("Entity attributes (with parent entities attributes included):")
+    print(get_attribute_doc("IFC2X3", "IfcWindow", "OwnerHistory"))
+    print(get_attribute_doc("IFC4", "IfcWindow", "OwnerHistory"))
+
+    print("Entity predefined types:")
+    print(get_predefined_type_doc("IFC2X3", "IfcControllerType", "FLOATING"))
+    print(get_predefined_type_doc("IFC4", "IfcControllerType", "FLOATING"))
 
     print("Propety sets:")
     print(get_property_set_doc("IFC2X3", "Pset_ZoneCommon"))
@@ -581,6 +804,10 @@ def run_doc_api_examples():
     print("Propety sets attributes:")
     print(get_property_doc("IFC2X3", "Pset_ZoneCommon", "Category"))
     print(get_property_doc("IFC4", "Pset_ZoneCommon", "NetPlannedArea"))
+
+    print("Types:")
+    print(get_type_doc("IFC2X3", "IfcIsothermalMoistureCapacityMeasure"))
+    print(get_type_doc("IFC4", "IfcDuration"))
 
 
 if __name__ == "__main__":
