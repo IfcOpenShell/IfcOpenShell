@@ -24,9 +24,10 @@ from bpy.props import StringProperty, EnumProperty
 from ifcsverchok.ifcstore import SvIfcStore
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, flatten_data
-
+from sverchok.utils.handle_blender_data import keep_enum_reference
 
 def get_ifc_products(self, context):
+    print("#"*20, "\n running get_ifc_products PROCESS()... \n", "#"*20,)
     ifc_products = getattr(self, "ifc_products", [])
     file = SvIfcStore.get_file()
     if not file:
@@ -54,11 +55,12 @@ def get_ifc_products(self, context):
 
 
 def update_ifc_products(self, context):
+    print("#"*20, "\n by_type update_ifc_products()... \n", "#"*20,)
     if hasattr(self, "ifc_classes"):
         self.ifc_classes.clear()
 
-
 def get_ifc_classes(self, context):
+    print("#"*20, "\n by_type get_ifc_classes()... \n", "#"*20,)
     ifc_classes = getattr(self, "ifc_classes", [])
     if ifc_classes:
         return self.ifc_classes
@@ -103,26 +105,16 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         if self.file:
             self.ifc_products = get_ifc_products(self, bpy.context)
             self.ifc_classes = get_ifc_classes(self, bpy.context)
-        # self.sv_input_names = ["ifc_product", "ifc_class", "custom_ifc_class"]
-        self.ifc_product = flatten_data(self.inputs["ifc_product"].sv_get(), target_level=1)[0]
-        self.ifc_class = flatten_data(self.inputs["ifc_class"].sv_get(), target_level=1)[0]
-        self.custom_ifc_class = flatten_data(self.inputs["custom_ifc_class"].sv_get(), target_level=1)[0]
+        self.sv_input_names = ["ifc_product", "ifc_class", "custom_ifc_class"]
+        super().process()
 
-        # super().process()
-        if self.custom_ifc_class:
-            self.outputs["Entity"].sv_set([self.file.by_type(self.custom_ifc_class)])
-        elif self.ifc_class:
-            self.outputs["Entity"].sv_set([self.file.by_type(self.ifc_class)])
+    def process_ifc(self, ifc_product, ifc_class, custom_ifc_class):
+        if custom_ifc_class:
+            self.outputs["Entity"].sv_set([self.file.by_type(custom_ifc_class)])
+        elif ifc_class:
+            self.outputs["Entity"].sv_set([self.file.by_type(ifc_class)])
         else:
             self.outputs["Entity"].sv_set([])
-
-    # def process_ifc(self, ifc_product, ifc_class, custom_ifc_class):
-    #     if custom_ifc_class:
-    #         self.outputs["Entity"].sv_set([self.file.by_type(custom_ifc_class)])
-    #     elif ifc_class:
-    #         self.outputs["Entity"].sv_set([self.file.by_type(ifc_class)])
-    #     else:
-    #         self.outputs["Entity"].sv_set([])
 
 
 def register():
