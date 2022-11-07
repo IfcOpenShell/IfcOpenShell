@@ -50,7 +50,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
         
     def draw_buttons(self, context, layout):
         row = layout.row(align=True)
-        row.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Writes active Ifc file to path.\n It will overwrite an existing file."
+        row.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Writes active Ifc file to path.\n It will overwrite an existing file.\n N.B.! It's recommended to create a fresh IFC File using the 're-run all nodes' button in IfcSverchok panel before saving."
         row.prop(self, 'refresh_local', icon='FILE_REFRESH')
 
     def process(self):
@@ -63,8 +63,50 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
         if not ext:
             raise Exception("Bad path. Provide a path to a file.")
         if self.refresh_local and ext:
+            self.ensure_hirarchy(file)
             file.write(path)
         self.outputs["output"].sv_set(f"File written successfully to: {path}.")
+    
+    def ensure_hirarchy(self, file):
+        elements_in_buildings = []
+        if not 0 <= 0 < len(file.by_type("IfcBuilding")):
+            my_building = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcBuilding", name="My Building")
+            elements = ifcopenshell.util.element.get_decomposition(my_building)
+        else:
+            for building in file.by_type("IfcBuilding"):
+                elements = ifcopenshell.util.element.get_decomposition(building)
+                elements_in_buildings.extend(elements)
+
+        for spatial in (file.by_type("IfcSpatialElement") or file.by_type("IfcSpatialStructureElement")):
+            if (not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings)):
+                elements = ifcopenshell.util.element.get_decomposition(spatial)
+                ifcopenshell.api.run("aggregate.assign_object", file, product=spatial, relating_object=file.by_type("IfcBuilding")[0])
+
+        elements_in_buildings_after = []
+        for building in file.by_type("IfcBuilding"):
+            elements = ifcopenshell.util.element.get_decomposition(building)
+            elements_in_buildings_after.extend(elements)
+
+        elements = file.by_type("IfcElement")
+        for element in elements:
+            if element not in elements_in_buildings:
+                ifcopenshell.api.run("spatial.assign_container", file, product=element, relating_structure=file.by_type("IfcBuilding")[0])
+
+
+        for building in file.by_type("IfcBuilding"):
+            elements = ifcopenshell.util.element.get_decomposition(building)
+            if not building.Decomposes:
+                if not 0 <= 0 < len(file.by_type("IfcSite")):
+                    ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
+                ifcopenshell.api.run("aggregate.assign_object", file, product=building, relating_object=file.by_type("IfcSite")[0])
+                try:
+                    if file.by_type("IfcSite")[0].Decomposes[0].RelatingObject.is_a("IfcProject"):
+                        continue
+                except IndexError:
+                    pass
+                ifcopenshell.api.run("aggregate.assign_object", file, product=file.by_type("IfcSite")[0], relating_object=file.by_type("IfcProject")[0])
+        self.file = file
+        return
         
 
 
