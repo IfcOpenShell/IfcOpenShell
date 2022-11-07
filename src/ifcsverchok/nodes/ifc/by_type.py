@@ -27,7 +27,6 @@ from sverchok.data_structure import updateNode, flatten_data
 from sverchok.utils.handle_blender_data import keep_enum_reference
 
 def get_ifc_products(self, context):
-    print("#"*20, "\n running get_ifc_products PROCESS()... \n", "#"*20,)
     ifc_products = getattr(self, "ifc_products", [])
     file = SvIfcStore.get_file()
     if not file:
@@ -55,12 +54,10 @@ def get_ifc_products(self, context):
 
 
 def update_ifc_products(self, context):
-    print("#"*20, "\n by_type update_ifc_products()... \n", "#"*20,)
     if hasattr(self, "ifc_classes"):
         self.ifc_classes.clear()
 
 def get_ifc_classes(self, context):
-    print("#"*20, "\n by_type get_ifc_classes()... \n", "#"*20,)
     ifc_classes = getattr(self, "ifc_classes", [])
     if ifc_classes:
         return self.ifc_classes
