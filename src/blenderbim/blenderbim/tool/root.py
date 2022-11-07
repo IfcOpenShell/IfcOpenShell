@@ -54,13 +54,15 @@ class Root(blenderbim.core.tool.Root):
             if not source.Representation:
                 return
             dest.Representation = ifcopenshell.util.element.copy_deep(
-                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"]
+                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext", "IfcProfileDef"]
             )
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
                 return
             dest.RepresentationMaps = [
-                ifcopenshell.util.element.copy_deep(tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext"])
+                ifcopenshell.util.element.copy_deep(
+                    tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext", "IfcProfileDef"]
+                )
                 for m in source.RepresentationMaps
             ]
 
