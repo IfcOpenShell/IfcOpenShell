@@ -1,111 +1,185 @@
+import bpy
+from mathutils import Matrix, Vector
+import ifcopenshell
+import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 
-# IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
-#
-# This file is part of IfcSverchok.
-#
-# IfcSverchok is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# IfcSverchok is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
+# import ifcsverchok.ifc_store
+# from bpy.props import StringProperty
+# from sverchok.node_tree import SverchCustomTreeNode
+# from sverchok.data_structure import updateNode
 
 import bpy
 import ifcopenshell
-import ifcsverchok.helper
-from bpy.props import StringProperty
+
+from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
+from sverchok.data_structure import updateNode, flatten_data, repeat_last_for_length
 
 
 class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcCreateEntity"
     bl_label = "IFC Create Entity"
-    file: StringProperty(name="file", update=updateNode)
-    ifc_class: StringProperty(name="ifc_class", update=updateNode)
-    current_ifc_class: StringProperty(name="current_ifc_class")
+    node_dict = {}
+
+    is_scene_dependent = True  # if True and is_interactive then the node will be updated upon scene changes
+
+    def refresh_node(self, context):
+        if self.refresh_local:
+            self.process()
+            self.refresh_local = False
+
+    refresh_local: BoolProperty(name="Update Node", description="Update Node", update=refresh_node)
+
+    Names: StringProperty(name="Names", default="", update=updateNode)
+    Descriptions: StringProperty(name="Descriptions", default="", update=updateNode)
+    IfcClass: StringProperty(name="IfcClass", update=updateNode)
+    Representations: StringProperty(name="Representations", default="", update=updateNode)
+    # Locations: FloatVectorProperty(name="Locations", default="", update=updateNode)
+    Properties: StringProperty(name="properties", update=updateNode)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "file").prop_name = "file"
-        self.inputs.new("SvStringsSocket", "ifc_class").prop_name = "ifc_class"
-        self.outputs.new("SvStringsSocket", "file")
-        self.outputs.new("SvStringsSocket", "entity")
+        self.inputs.new("SvStringsSocket", "Names").prop_name = "Names"
+        self.inputs.new("SvStringsSocket", "Descriptions").prop_name = "Descriptions"
+        self.inputs.new("SvStringsSocket", "IfcClass").prop_name = "IfcClass"
+        self.inputs.new("SvStringsSocket", "Representations").prop_name = "Representations"
+        self.inputs.new("SvMatrixSocket", "Locations").is_mandatory=False
+        self.inputs.new("SvStringsSocket", "Properties").prop_name = "Properties"
+        self.outputs.new("SvStringsSocket", "Entities")
+        self.node_dict[hash(self)] = {}
+
+    def draw_buttons(self, context, layout):
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Create IFC Entity. Takes one or multiple inputs. \nIf 'Representation(s)' is given, that determines number of output entities. Otherwise, 'Names' is used."
+        
+        row = layout.row(align=True)
+        row.prop(self, 'is_interactive', icon='SCENE_DATA', icon_only=True)
+        row.prop(self, 'refresh_local', icon='FILE_REFRESH')
 
     def process(self):
-        self.sv_input_names = ["file", "ifc_class"]
-        ifc_class = self.inputs["ifc_class"].sv_get()[0][0]
-        if ifc_class:
-            file = self.inputs["file"].sv_get()[0][0]
-            if file:
-                schema_name = file.wrapped_data.schema
+        
+        self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
+        self.descriptions = flatten_data(self.inputs["Descriptions"].sv_get(), target_level=1)
+        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[0]
+        self.representations = flatten_data(self.inputs["Representations"].sv_get(), target_level=1)
+        self.locations = flatten_data(self.inputs["Locations"].sv_get(default=[]), target_level=1)
+        self.properties = self.inputs["Properties"].sv_get()
+    
+
+        self.sv_input_names = [i.name for i in self.inputs]
+
+        if hash(self) not in self.node_dict:
+            self.node_dict[hash(self)] = {} #happens if node is already on canvas when blender loads
+        if not self.node_dict[hash(self)]:
+            self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
+        if not self.inputs["IfcClass"].sv_get()[0][0]:
+            raise Exception('Mandatory input "IfcClass" is missing.')
+
+        edit = False
+        for i in range(len(self.inputs)):
+            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=True, default =[])
+            if isinstance(self.node_dict[hash(self)][self.inputs[i].name], list) and input != self.node_dict[hash(self)][self.inputs[i].name]:
+                edit = True
+            self.node_dict[hash(self)][self.inputs[i].name] = input.copy()
+
+        if self.refresh_local:
+            edit = True
+        
+        self.file = SvIfcStore.get_file()
+        if self.representations[0]:
+            try:
+                self.representations = [self.file.by_id(step_id) for step_id in self.representations]
+            except Exception as e:
+                raise
+            self.names = self.repeat_input_unique(self.names, len(self.representations))
+            self.descriptions = self.repeat_input_unique(self.descriptions, len(self.representations))
+        elif not self.representations[0]:
+            self.descriptions = self.repeat_input_unique(self.descriptions, len(self.names))
+
+        if self.node_id not in SvIfcStore.id_map:
+            entities = self.create()
+        else:
+            if edit is True:
+                entities = self.edit()
             else:
-                schema_name = "IFC4"
-            self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
-            self.entity_schema = self.schema.declaration_by_name(ifc_class)
+                entities = SvIfcStore.id_map[self.node_id]
+        
+        print("Entities: ", entities)
 
-            if ifc_class != self.current_ifc_class:
-                self.generate_inputs(ifc_class)
+        self.outputs["Entities"].sv_set(entities)
+
+    def create(self, index=None):
+        entities_ids = []
+        iterator = range(len(self.names))
+        if index is not None:
+            iterator = [index]
+        for i in iterator:
             try:
-                for i in range(0, len(self.inputs)):
-                    self.inputs[i].sv_get()
-            except:
-                # This occurs when a blender save file is reloaded
-                self.generate_inputs(ifc_class)
+                entity = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=self.ifc_class, name=self.names[i], description=self.descriptions[i])
+                try:
+                    if self.representations[i]:
+                        ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
+                except IndexError:
+                    pass
+                try:
+                    if isinstance(self.locations[i], Matrix):
+                        ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
+                except IndexError:
+                    pass
+                entities_ids.append(entity.id())
+                SvIfcStore.id_map.setdefault(self.node_id, []).append(entity.id())
+            except Exception as e: 
+                raise Exception("Something went wrong. Cannot create entity.", e)
+        return entities_ids
 
-            for i in range(0, self.entity_schema.attribute_count()):
-                self.sv_input_names.append(self.entity_schema.attribute_by_index(i).name())
-        super().process()
-
-    def generate_inputs(self, ifc_class):
-        while len(self.inputs) > 2:
-            self.inputs.remove(self.inputs[-1])
-        for i in range(0, self.entity_schema.attribute_count()):
-            name = self.entity_schema.attribute_by_index(i).name()
-            setattr(SvIfcCreateEntity, name, StringProperty(name=name))
-            self.inputs.new("SvStringsSocket", name).prop_name = name
-        self.current_ifc_class = ifc_class
-
-    def process_ifc(self, file, ifc_class, *attributes):
-        entity = file.create_entity(ifc_class)
-        for i in range(0, len(entity)):
+    def edit(self):
+        entities_ids = []
+        id_map_copy = SvIfcStore.id_map[self.node_id].copy()
+        for i, _ in enumerate(self.names):
             try:
-                value = attributes[i]
-                if isinstance(value, str) and value == "":
-                    value = None
-            except:
-                value = None
-            if value is None and entity.is_a("IfcRoot") and i == 0:
-                value = ifcopenshell.guid.new()
-            if value is not None:
-                value = self.cast_value(self.entity_schema.attribute_by_index(i), value)
+                step_id = id_map_copy[i]
+            except IndexError:
+                id = self.create(index=i)
+                entities_ids.append(id[0])
+                continue
+            entity = self.file.by_id(step_id)
+            entity.Name = self.names[i]
+            entity.Description = self.descriptions[i]
+
             try:
-                entity[i] = value
-            except:
-                raise Exception(
-                    "The IFC class {} requires a valid value for {} - you provided {}".format(
-                        ifc_class, entity.attribute_name(i), value
-                    )
-                )
-        self.outputs["file"].sv_set([[file]])
-        self.outputs["entity"].sv_set([[entity]])
+                if self.representations[i] and self.representations[i].is_a('IfcProductDefinitionShape'):
+                    entity.Representation = self.representations[i]
+                elif self.representations[i]:
+                    ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
+            except IndexError:
+                pass
+            try:
+                if isinstance(self.locations[i], Matrix):
+                    ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=self.locations[i])
+            except IndexError:
+                pass
+            if entity.is_a() != self.ifc_class:
+                SvIfcStore.id_map[self.node_id].remove(step_id)
+                entity = ifcopenshell.util.schema.reassign_class(self.file, entity, self.ifc_class)
+                SvIfcStore.id_map.setdefault(self.node_id, []).append(entity.id())
+            entities_ids.append(entity.id())
 
-    def cast_value(self, attribute, value):
-        data_type = self.get_attribute_data_type(attribute.type_of_attribute())
-        if data_type == "integer":
-            value = int(value)
-        return value
+        if id_map_copy>entities_ids:
+            SvIfcStore.id_map[self.node_id] = entities_ids
+        return entities_ids
 
-    def get_attribute_data_type(self, data_type):
-        if hasattr(data_type, "declared_type"):
-            return self.get_attribute_data_type(data_type.declared_type())
-        return data_type
+    def repeat_input_unique(self, input, count):
+        input = repeat_last_for_length(input, count, deepcopy=False)
+        if input[0]:
+            input = [a if not (s:=sum(j == a for j in input[:i])) else f'{a}-{s+1}' for i, a in enumerate(input)]  # add number to duplicates
+        return input
+    
+    def sv_free(self):
+        try:
+            del SvIfcStore.id_map[self.node_id]
+            del self.node_dict[hash(self)]
+            print('Node was deleted')
+        except KeyError or AttributeError:
+            pass
 
 
 def register():
