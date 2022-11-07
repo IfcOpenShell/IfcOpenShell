@@ -135,6 +135,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         locations = []
         for blender_object in blender_objects:
             if blender_object.type == 'MESH':
+                bpy.ops.object.mode_set(mode='OBJECT')
                 bpy.ops.object.select_all(action='DESELECT')
                 blender_object.select_set(True)
                 bpy.ops.object.mode_set(mode='EDIT')
@@ -147,7 +148,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                     representations_ids.append(representation.id())
                     SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(representation.id())
                     locations.append(blender_object.matrix_world)
-                    SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Locations", []).append(location)
+                    SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Locations", []).append(blender_object.matrix_world)
                 bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
         return representations_ids, locations
