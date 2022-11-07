@@ -96,10 +96,13 @@ class QtoCalculator:
         return max(x, y, z)
 
     def get_length(self, o, vg_index=None):
-        if vg_index is None:
+        if vg_index is None and not self.has_local_axes_rotated(o):
             x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
             y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
             return max(x, y)
+        if vg_index is None and self.has_local_axes_rotated(o):
+            return ((Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length)
+
         length = 0
         edges = [
             e
@@ -425,9 +428,16 @@ class QtoCalculator:
         :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector greater than this value will be ignored, defaults to 135
         :return float: Lateral Area
         """
-        x_axis = [1, 0, 0]
-        y_axis = [0, 1, 0]
-        z_axis = [0, 0, 1]
+
+        if not self.has_local_axes_rotated(obj):
+            x_axis = [1, 0, 0]
+            y_axis = [0, 1, 0]
+            z_axis = [0, 0, 1]
+        if self.has_local_axes_rotated(obj):
+            x_axis = [0, 0, 1]
+            y_axis = [1, 0, 0]
+            z_axis = [0, 1, 0]
+
         area = 0
         total_opening_area = (
             0 if subtract_openings else self.get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
@@ -447,10 +457,45 @@ class QtoCalculator:
                 if angle_to_y_axis < 45 or angle_to_y_axis > 135:
                     continue
             area += polygon.area
+
         return area + total_opening_area
 
+    def get_gross_lateral_area(
+        self,
+        obj,
+        subtract_openings: bool = True,
+        exclude_end_areas: bool = False,
+        exclude_side_areas: bool = False,
+        angle_z1: int = 45,
+        angle_z2: int = 135,
+    ):
+        """_summary_
+
+        :param blender-object obj: blender object, bpy.types.Object
+        :param bool subtract_openings: Toggle whether opening-areas should be subtracted, defaults to True
+        :param bool exclude_end_areas: , defaults to False
+        :param bool exclude_side_areas: , defaults to False
+        :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
+        :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector greater than this value will be ignored, defaults to 135
+        :return float: Lateral gross Area
+        """
+
+        element = tool.Ifc.get_entity(obj)
+
+        gross_mesh = self.get_gross_element_mesh(element)
+
+        gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
+
+        gross_lateral_area = self.get_lateral_area(gross_obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2 )
+
+        self.delete_obj(gross_obj)
+        self.delete_mesh(gross_mesh)
+
+        return gross_lateral_area
+
+
     def get_half_lateral_area(
-       self,
+        self,
         obj,
         subtract_openings: bool = True,
         exclude_end_areas: bool = False,
@@ -468,6 +513,29 @@ class QtoCalculator:
         :return float: Lateral Area / 2
         """
         return self.get_lateral_area(obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2)/2
+
+    def get_end_area(
+        self,
+        obj,
+        subtract_openings: bool = True,
+        exclude_end_areas: bool = False,
+        exclude_side_areas: bool = False,
+        angle_z1: int = 45,
+        angle_z2: int = 135,
+    ):
+
+        element = tool.Ifc.get_entity(obj)
+        gross_mesh = self.get_gross_element_mesh(element)
+
+        gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
+        gross_obj.matrix_world = obj.matrix_world
+
+        end_area = self.get_lateral_area(gross_obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2)/2
+
+        self.delete_obj(gross_obj)
+        self.delete_mesh(gross_mesh)
+
+        return end_area
 
     def get_gross_top_area(self, obj, angle: int = 45):
         """_summary_: Returns the gross top area of the object.
@@ -887,6 +955,13 @@ class QtoCalculator:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         return bm
+
+    def has_local_axes_rotated(self, o):
+        matrix = o.matrix_world
+        if matrix[0][0] == 1:
+            return False
+        if matrix[0][2] == 1:
+            return True
 
     def delete_mesh(self, mesh):
         mesh.user_clear()
