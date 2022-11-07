@@ -53,10 +53,6 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
 
     refresh_local: BoolProperty(name="Update Node", description="Update Node", update=refresh_node)
 
-    n_id: StringProperty()
-    flat_output: BoolProperty(
-    name="Flat output", description="Flatten output by list-joining level 1",
-    default=True, update=updateNode)
     context_types = [
         ('Model', 'Model', 'Context type: Model', 0),
         ('Plan', 'Plan', 'Context type: Plan', 1),
@@ -74,15 +70,10 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         ('GRAPH_VIEW', 'GRAPH_VIEW', 'Target View: GRAPH_VIEW', 2),
         ('SKETCH_VIEW', 'SKETCH_VIEW', 'Target View: SKETCH_VIEW', 3),
     ]
-    paradigms = [
-        ('Tessellation', 'Tessellation', 'Geometry paradigm: Tessellation', 0),
-        ('Extrusion', 'Extrusion', 'Geometry paradigm: Extrusion', 1),
-    ]
     blender_objects: PointerProperty(name="Blender Mesh(es)", description="Blender Mesh Object(s)",update=updateNode, type=bpy.types.Object)
     context_type: EnumProperty(name="Context Type", description="Default: Model", default="Model",items=context_types,update=updateNode)
     context_identifier: EnumProperty(name="Context Identifier", description="Default: Body", default="Body", items=context_identifiers, update=updateNode)
     target_view: EnumProperty(name="Target View", description="Default: MODEL VIEW", default="MODEL_VIEW",items=target_views, update=updateNode)
-    paradigm: EnumProperty(name="Paradigm", description="Which geometry type to convert to. Choose between tessellation or extrusion. Default: Tessellation.",default="Tessellation",items=paradigms, update=updateNode)
     tooltip: StringProperty(name="Tooltip")
 
 
@@ -90,7 +81,6 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         self.inputs.new("SvStringsSocket", "context_type").prop_name = "context_type"
         self.inputs.new("SvStringsSocket", "context_identifier").prop_name = "context_identifier"
         self.inputs.new("SvStringsSocket", "target_view").prop_name = "target_view"
-        self.inputs.new("SvStringsSocket", "paradigm").prop_name = "paradigm"
         self.inputs.new("SvObjectSocket", "blender_objects").prop_name = "blender_objects" #no prop for now
         self.outputs.new("SvVerticesSocket", "Representations")
         self.outputs.new("SvMatrixSocket", "Locations")
@@ -102,7 +92,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         row.prop(self, 'is_interactive', icon='SCENE_DATA', icon_only=True)
         row.prop(self, 'refresh_local', icon='FILE_REFRESH')
 
-    def process(self):        
+    def process(self):
         self.sv_input_names = [i.name for i in self.inputs]
 
         if hash(self) not in self.node_dict:
@@ -122,10 +112,6 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         blender_objects = self.inputs["blender_objects"].sv_get()
         self.file = SvIfcStore.get_file()
 
-        #temporary
-        if self.paradigm == "Extrusion":
-            raise Exception("Extrusion not yet implemented.")
-            return
         if self.refresh_local:
             edit = True
         if self.node_id not in SvIfcStore.id_map:
@@ -135,10 +121,9 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                 self.edit()
                 representations, locations = self.create(blender_objects)
             else:
-                # representations = self.get_existing_element()
                 representations = SvIfcStore.id_map[self.node_id]["Representations"]
                 locations = SvIfcStore.id_map[self.node_id]["Locations"]
-        
+
         print("representations: ", representations)
         print("locations: ", locations)
 
@@ -148,25 +133,29 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
     def create(self, blender_objects):
         representations_ids = []
         locations = []
-        add_matrix = locations.extend if self.flat_output else locations.append
         for blender_object in blender_objects:
-            representation = ifcopenshell.api.run("geometry.add_representation", self.file, should_run_listeners=False,blender_object = blender_object, geometry=blender_object.data, context = self.get_context())
-            if not representation:
-                raise Exception("Couldn't create representation. Possibly wrong context.")
-            representations_ids.append(representation.id())
-            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(representation.id())
-            location = blender_object.matrix_world
-            print("\n", "#"*30, "location: ", location)
-            add_matrix(location)
-            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Locations", []).append(location)
+            if blender_object.type == 'MESH':
+                bpy.ops.object.select_all(action='DESELECT')
+                blender_object.select_set(True)
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.separate(type='LOOSE')
+                for obj in bpy.context.selected_objects:
+                    representation = ifcopenshell.api.run("geometry.add_representation", self.file, should_run_listeners=False,blender_object = obj, geometry=obj.data, context = self.get_context())
+                    print("\n", "#"*30, "representation: ", representation)
+                    if not representation:
+                        raise Exception("Couldn't create representation. Possibly wrong context.")
+                    representations_ids.append(representation.id())
+                    SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(representation.id())
+                    locations.append(blender_object.matrix_world)
+                    SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Locations", []).append(location)
+                bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
         return representations_ids, locations
 
     def edit(self):
-        # results = self.get_existing_element()
         if "Representations" not in SvIfcStore.id_map[self.node_id]:
             return
         for step_id in SvIfcStore.id_map[self.node_id]["Representations"]:
-            #if self.file.by_id(step_id).is_a('IfcShapeRepresentation'):
             ifcopenshell.api.run("geometry.remove_representation", self.file, representation=self.file.by_id(step_id))
         del SvIfcStore.id_map[self.node_id]["Representations"]
         del SvIfcStore.id_map[self.node_id]["Locations"]
@@ -180,7 +169,6 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
 
     def get_context(self):
         context = ifcopenshell.util.representation.get_context(self.file, self.context_type, self.context_identifier, self.target_view)
-        
         if not context:
             parent = ifcopenshell.util.representation.get_context(self.file, self.context_type)
             if not parent:
@@ -194,11 +182,10 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                 target_view=self.target_view,
                 parent=parent,
             )
-            # SvIfcStore.id_map.setdefault(self.node_id, []).append(context.id())
             SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Contexts", []).append(context.id())
-
         return context
-    
+
+
     def sv_free(self):
         try:
             self.file = SvIfcStore.get_file()
@@ -223,11 +210,10 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             print('Node was deleted')
         except KeyError or AttributeError:
             pass
-        
+
 
 def register():
     bpy.utils.register_class(SvIfcBMeshToIfcRepr)
-    
 
 
 def unregister():
