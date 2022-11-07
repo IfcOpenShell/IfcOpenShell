@@ -65,7 +65,9 @@ class SvIfcStore:
         if bpy.context.scene.unit_settings.system == 'IMPERIAL':
             #TODO change units to imperial
             pass
-        model = ifcopenshell.api.run("context.add_context", file, context_type="Model")
+        # model = ifcopenshell.api.run("context.add_context", file, context_type="Model")
+        model = ifcopenshell.util.representation.get_context(file, context="Model")
+        print("model: ", model)
         context = ifcopenshell.api.run(
             "context.add_context",
             file,
@@ -74,17 +76,17 @@ class SvIfcStore:
             target_view="MODEL_VIEW",
             parent=model,
         )
-        site = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
-        building = ifcopenshell.api.run(
-            "root.create_entity", file, ifc_class="IfcBuilding", name="My Building"
-        )
-        building_storey = ifcopenshell.api.run(
-            "root.create_entity", file, ifc_class="IfcBuildingStorey", name="My Storey"
-        )
+        # site = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
+        # building = ifcopenshell.api.run(
+        #     "root.create_entity", file, ifc_class="IfcBuilding", name="My Building"
+        # )
+        # building_storey = ifcopenshell.api.run(
+        #     "root.create_entity", file, ifc_class="IfcBuildingStorey", name="My Storey"
+        # )
 
-        ifcopenshell.api.run("aggregate.assign_object", file, product=site, relating_object=file.by_type("IfcProject")[0])
-        ifcopenshell.api.run("aggregate.assign_object", file, product=building, relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", file, product=building_storey, relating_object=building)
+        # ifcopenshell.api.run("aggregate.assign_object", file, product=site, relating_object=file.by_type("IfcProject")[0])
+        # ifcopenshell.api.run("aggregate.assign_object", file, product=building, relating_object=site)
+        # ifcopenshell.api.run("aggregate.assign_object", file, product=building_storey, relating_object=building)
 
         SvIfcStore.file = file
         return SvIfcStore.file
