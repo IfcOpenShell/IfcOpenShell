@@ -48,7 +48,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
 
     def refresh_node(self, context):
         if self.refresh_local:
-            self.process()
+            updateNode(self, context)
             self.refresh_local = False
 
     refresh_local: BoolProperty(name="Update Node", description="Update Node", update=refresh_node)
@@ -114,10 +114,10 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             return
         edit = False
         for i in range(len(self.inputs)):
-            input = self.inputs[i].sv_get(deepcopy=False)
+            input = self.inputs[i].sv_get(deepcopy=True)
             if isinstance(self.node_dict[hash(self)][self.inputs[i].name], list) and input != self.node_dict[hash(self)][self.inputs[i].name]:
                 edit = True
-            self.node_dict[hash(self)][self.inputs[i].name] = input
+            self.node_dict[hash(self)][self.inputs[i].name] = input.copy()
         
         blender_objects = self.inputs["blender_objects"].sv_get()
         self.file = SvIfcStore.get_file()

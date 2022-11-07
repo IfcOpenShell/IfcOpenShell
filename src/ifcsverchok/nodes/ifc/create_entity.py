@@ -16,8 +16,6 @@ from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, flatten_data, repeat_last_for_length
 
-input_map = {}
-
 
 class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcCreateEntity"
@@ -48,7 +46,6 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         self.inputs.new("SvMatrixSocket", "Locations").is_mandatory=False
         self.inputs.new("SvStringsSocket", "Properties").prop_name = "Properties"
         self.outputs.new("SvStringsSocket", "Entities")
-        self.outputs.new("SvStringsSocket", "file")  # only for testing
         self.node_dict[hash(self)] = {}
 
     def draw_buttons(self, context, layout):
@@ -85,12 +82,12 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         for i in range(len(self.inputs)):
             # if self.sv_input_names[i] == "Locations":
             #     input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=False, default = [])
-            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=False, default =[])
+            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=True, default =[])
             # print("input: ", input)
             # print("self.node_dict[hash(self)][self.inputs[i].name]: ", self.node_dict[hash(self)][self.inputs[i].name])
             if isinstance(self.node_dict[hash(self)][self.inputs[i].name], list) and input != self.node_dict[hash(self)][self.inputs[i].name]:
                 edit = True
-            self.node_dict[hash(self)][self.inputs[i].name] = input
+            self.node_dict[hash(self)][self.inputs[i].name] = input.copy()
 
         if self.refresh_local:
             edit = True
@@ -127,7 +124,6 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         print("SvIfcStore.id_map: ", SvIfcStore.id_map)
 
         self.outputs["Entities"].sv_set(entities)
-        self.outputs["file"].sv_set([[self.file]])
 
     def create(self, index=None):
         entities_ids = []
@@ -171,10 +167,10 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
             entity.Description = self.descriptions[i]
 
             try:
-                if self.representations[i] and not self.file.by_type("IFCPRODUCTDEFINITIONSHAPE"):
-                    ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
-                elif self.representations[i]:
+                if self.representations[i] and self.representations[i].is_a('IfcProductDefinitionShape'):
                     entity.Representation = self.representations[i]
+                elif self.representations[i]:
+                    ifcopenshell.api.run("geometry.assign_representation", self.file, product=entity, representation=self.representations[i])
             except IndexError:
                 pass
             try:
