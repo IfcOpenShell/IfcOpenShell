@@ -67,15 +67,16 @@ class LibraryGenerator:
 
         self.material = ifcopenshell.api.run("material.add_material", self.file, name="Unknown")
 
+        # parameters could be optional (example: welded i-beams don't have FilletRadius)
         profiles_translation = {
-            "profile_i": ("IfcIShapeProfileDef", {"tw": "WebThickness", "tf": "FlangeThickness", "h": "OverallDepth", "b": "OverallWidth"}),
+            "profile_i": ("IfcIShapeProfileDef", {"tw": "WebThickness", "tf": "FlangeThickness", "h": "OverallDepth", "b": "OverallWidth", "r": "FilletRadius"}),
             "profile_z": ("IfcZShapeProfileDef", {"tw": "WebThickness", "tf": "FlangeThickness", "h": "Depth", "c1": "FlangeWidth"}),
-            "profile_c": ("IfcUShapeProfileDef", {"tw": "WebThickness", "tf": "FlangeThickness", "h": "Depth", "b": "FlangeWidth"}),
-            "profile_l*_equal": ("IfcLShapeProfileDef", {"a": "Depth", "t": "Thickness"}),
-            "profile_l*_unequal": ("IfcLShapeProfileDef", {"a": "Depth", "b": "Width", "t": "Thickness"}),
+            "profile_c": ("IfcUShapeProfileDef", {"tw": "WebThickness", "tf": "FlangeThickness", "h": "Depth", "b": "FlangeWidth", "r": "FilletRadius"}),
+            "profile_l*_equal": ("IfcLShapeProfileDef", {"a": "Depth", "t": "Thickness", "r1": "FilletRadius", "r2": "EdgeRadius"}),
+            "profile_l*_unequal": ("IfcLShapeProfileDef", {"a": "Depth", "b": "Width", "t": "Thickness", "r1": "FilletRadius", "r2": "EdgeRadius"}),
             "profile_hollow*_circle": ("IfcCircleHollowProfileDef", {"t": "WallThickness", "D": "Radius"}),
-            "profile_hollow*_square": ("IfcRectangleHollowProfileDef", {"t": "WallThickness", "b": "XDim"}),
-            "profile_hollow*_rectangular": ("IfcRectangleHollowProfileDef", {"t": "WallThickness", "b": "XDim", "h": "YDim"}),
+            "profile_hollow*_square": ("IfcRectangleHollowProfileDef", {"t": "WallThickness", "b": "XDim", "ri": "InnerFilletRadius", "ro": "OuterFilletRadius"}),
+            "profile_hollow*_rectangular": ("IfcRectangleHollowProfileDef", {"t": "WallThickness", "b": "XDim", "h": "YDim", "ri": "InnerFilletRadius", "ro": "OuterFilletRadius"}),
         }
 
         if parse_profiles_type == "AU":
@@ -119,7 +120,7 @@ class LibraryGenerator:
                     
                     # profile is setup by type of profile and by supplying it's parameters
                     # ProfileType stays AREA
-                    profile = self.file.create_entity(ifc_profile_name, ProfileType="AREA", **ifc_params)
+                    profile = self.file.create_entity(ifc_profile_name, ProfileName=prof_name, ProfileType="AREA", **ifc_params)
 
                     # building profiles for each of 3 types
                     self.create_profile_type("IfcBeamType", prof_name, profile)
@@ -196,5 +197,8 @@ class LibraryGenerator:
 
 
 if __name__ == "__main__":
-    LibraryGenerator().generate(parse_profiles_type="EU", output_filename="IFC4 EU Steel.ifc")
-    LibraryGenerator().generate(parse_profiles_type="AU", output_filename="IFC4 AU Steel.ifc")
+    LibraryGenerator().generate(parse_profiles_type="EU", output_filename="..\\blenderbim\\bim\\data\\libraries\\IFC4 EU Steel.ifc")
+    LibraryGenerator().generate(parse_profiles_type="AU", output_filename="..\\blenderbim\\bim\\data\\libraries\\IFC4 AU Steel.ifc")
+
+# C:\Projects\GitHub\IfcOpenShell\src\blenderbim\scripts\generate_steel_profiles_library.py
+# C:\Projects\GitHub\IfcOpenShell\src\blenderbimIFC4 AU Steel.ifc
