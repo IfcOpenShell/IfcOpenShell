@@ -130,11 +130,20 @@ class Entity(Facet):
 
     def filter(self, ifc_file, elements):
         if isinstance(self.name, str):
-            results = ifc_file.by_type(self.name, include_subtypes=False)
+            try:
+                results = ifc_file.by_type(self.name, include_subtypes=False)
+            except:
+                # If the user has specified a class that doesn't exist in the version
+                results = []
         else:
             results = []
             ifc_classes = [t for t in ifc_file.wrapped_data.types() if t.upper() == self.name]
-            [results.extend(ifc_file.by_type(ifc_class, include_subtypes=False)) for ifc_class in ifc_classes]
+            for ifc_class in ifc_classes:
+                try:
+                    results.extend(ifc_file.by_type(ifc_class, include_subtypes=False))
+                except:
+                    # If the user has specified a class that doesn't exist in the version
+                    continue
         if self.predefinedType:
             return [r for r in results if self(r)]
         return results
@@ -302,7 +311,15 @@ class Classification(Facet):
 
 
 class PartOf(Facet):
-    def __init__(self, entity=None, predefinedType=None, relation="IfcRelAggregates", minOccurs=None, maxOccurs=None, instructions=None):
+    def __init__(
+        self,
+        entity=None,
+        predefinedType=None,
+        relation="IfcRelAggregates",
+        minOccurs=None,
+        maxOccurs=None,
+        instructions=None,
+    ):
         self.parameters = ["entity", "predefinedType", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "An element with an {relation} relationship with an {entity}",
@@ -712,23 +729,34 @@ class Material(Facet):
 
         if is_pass and self.value:
             if material.is_a("IfcMaterial"):
-                values = {material.Name, getattr(material, "Category")}
+                values = {material.Name, getattr(material, "Category", None)}
             elif material.is_a("IfcMaterialList"):
                 values = set()
                 for mat in material.Materials or []:
-                    values.update([mat.Name, getattr(mat, "Category")])
+                    values.update([mat.Name, getattr(mat, "Category", None)])
             elif material.is_a("IfcMaterialLayerSet"):
                 values = {material.LayerSetName}
                 for item in material.MaterialLayers or []:
-                    values.update([item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category")])
+                    values.update(
+                        [
+                            getattr(item, "Name", None),
+                            getattr(item, "Category", None),
+                            item.Material.Name,
+                            getattr(item.Material, "Category", None),
+                        ]
+                    )
             elif material.is_a("IfcMaterialProfileSet"):
                 values = {material.Name}
                 for item in material.MaterialProfiles or []:
-                    values.update([item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category")])
+                    values.update(
+                        [item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category", None)]
+                    )
             elif material.is_a("IfcMaterialConstituentSet"):
                 values = {material.Name}
                 for item in material.MaterialConstituents or []:
-                    values.update([item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category")])
+                    values.update(
+                        [item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category", None)]
+                    )
 
             is_pass = False
             for value in values:
