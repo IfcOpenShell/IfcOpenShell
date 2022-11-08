@@ -66,7 +66,9 @@ class System(blenderbim.core.tool.System):
 
     @classmethod
     def import_system_attributes(cls, system):
-        blenderbim.bim.helper.import_attributes2(system, bpy.context.scene.BIMSystemProperties.system_attributes)
+        props = bpy.context.scene.BIMSystemProperties
+        props.system_attributes.clear()
+        blenderbim.bim.helper.import_attributes2(system, props.system_attributes)
 
     @classmethod
     def import_systems(cls):
