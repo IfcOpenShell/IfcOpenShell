@@ -69,7 +69,7 @@ class QtoCalculator:
         elif "height" in prop_name or "depth" in prop_name:
             return self.get_height(obj)
         elif "perimeter" in prop_name:
-            return self.get_perimeter(obj)
+            return self.get_net_perimeter(obj)
         elif "area" in prop_name and ("footprint" in prop_name or "section" in prop_name or "floor" in prop_name):
             return self.get_net_footprint_area(obj)
         elif "area" in prop_name and "side" in prop_name:
@@ -131,7 +131,7 @@ class QtoCalculator:
         """
         return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
-    def get_perimeter(self, o):
+    def get_net_perimeter(self, o):
         parsed_edges = []
         shared_edges = []
         perimeter = 0
@@ -145,6 +145,14 @@ class QtoCalculator:
         for edge_key in shared_edges:
             perimeter -= self.get_edge_key_distance(o, edge_key)
         return perimeter
+
+    def get_gross_perimeter(self, o):
+        element = tool.Ifc.get_entity(o)
+        mesh = self.get_gross_element_mesh(element)
+        gross_obj = bpy.data.objects.new("GrossObj", mesh)
+        gross_perimeter = self.get_net_perimeter(gross_obj)
+        self.delete_obj(gross_obj)
+        return gross_perimeter
 
     def get_lowest_polygons(self, o):
         lowest_polygons = []
