@@ -41,6 +41,20 @@ related information in ``shape.geometry``:
     # IfcShapeRepresentation.id{-layerset-LayerSet.id}{-material-Material.id}{-openings-[Opening n.id ...]}{-world-coords}
     print(shape.geometry.id())
 
+    # A 4x4 matrix representing the location and rotation of the element, in the form:
+    # [ [ x_x, y_x, z_x, x   ]
+    #   [ x_y, y_y, z_y, y   ]
+    #   [ x_z, y_z, z_z, z   ]
+    #   [ 0.0, 0.0, 0.0, 1.0 ] ]
+    # The position is given by the last column: (x, y, z)
+    # The rotation is described by the first three columns, by explicitly specifying the local X, Y, Z axes.
+    # The first column is a normalised vector of the local X axis: (x_x, x_y, x_z)
+    # The second column is a normalised vector of the local Y axis: (y_x, y_y, y_z)
+    # The third column is a normalised vector of the local Z axis: (z_x, z_y, z_z)
+    # The axes follow a right-handed coordinate system.
+    # Objects are never scaled, so the scale factor of the matrix is always 1.
+    matrix = shape.transformation.matrix.data
+
     # Indices of vertices per triangle face e.g. [f1v1, f1v2, f1v3, f2v1, f2v2, f2v3, ...]
     faces = shape.geometry.faces
 
@@ -163,6 +177,7 @@ Here is a simple example in Python:
     if iterator.initialize():
         while True:
             shape = iterator.get()
+            matrix = shape.transformation.matrix.data
             faces = shape.geometry.faces
             edges = shape.geometry.edges
             verts = shape.geometry.verts
