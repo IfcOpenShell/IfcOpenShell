@@ -1,0 +1,7 @@
+name: bcf-client
+channels:
+  - conda-forge
+dependencies:
+  - ifcopenshell
+  - xsdata
+  - numpy
