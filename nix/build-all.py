@@ -447,7 +447,7 @@ if platform.system() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 if "wasm" in flags:
-    ADDITIONAL_ARGS.append("-sWASM_BIGINT")
+    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fexceptions"))
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
