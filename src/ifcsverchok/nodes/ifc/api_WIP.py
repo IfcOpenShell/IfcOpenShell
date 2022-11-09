@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -21,11 +20,10 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcsverchok.helper
-from bpy.props import StringProperty, EnumProperty
+from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 import importlib
-
 
 
 class SvIfcTooltip(bpy.types.Operator):
@@ -43,12 +41,6 @@ class SvIfcTooltip(bpy.types.Operator):
 
 class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
 
-    # def update_usecase(self, context):
-    #     # update_usecase is not getting run rn
-#         module_usecase = self.get_module_usecase()
-#         if module_usecase:
-#             self.generate_node(*module_usecase)
-
     bl_idname = "SvIfcApiWIP"
     bl_label = "IFC API WIP"
     tooltip: StringProperty(name="Tooltip")
@@ -57,11 +49,13 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "usecase").prop_name = "usecase"
-        #input_socket.tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file'"
+        # input_socket.tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file'"
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
-        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file"
+        op = layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file"
         # op.tooltip = self.tooltip
 
     def process(self):
@@ -71,11 +65,9 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
             try:
                 module_usecase = self.get_module_usecase()
             except:
-                raise Exception(
-                    f"Couldn't run generate_node(). Module usecase: {module_usecase}"
-                )
-            if '.'.join(module_usecase) != self.current_usecase:
-                self.generate_node(*module_usecase)   
+                raise Exception(f"Couldn't run generate_node(). Module usecase: {module_usecase}")
+            if ".".join(module_usecase) != self.current_usecase:
+                self.generate_node(*module_usecase)
             try:
                 for i in range(0, len(self.inputs)):
                     input = self.inputs[i].sv_get()
@@ -85,8 +77,7 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
 
             self.sv_input_names = [i.name for i in self.inputs]
 
-            super().process() # super().process() uses zip_long_repeat() which doesn't take objects like bmesh
-            
+            super().process()  # super().process() uses zip_long_repeat() which doesn't take objects like bmesh
 
     def get_module_usecase(self):
         usecase = self.inputs["usecase"].sv_get()[0][0]
@@ -102,10 +93,10 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
             node_inputs["file"] = None
         node_inputs.update(getattr(local_module.Usecase(local_module), "settings", {}))
         # print("node inputs: ", node_inputs)
-        
+
         while len(self.inputs) > 1:
             self.inputs.remove(self.inputs[-1])
-        
+
         if node_inputs:
             self.tooltip = ""
             for name, data in node_inputs.items():
@@ -116,11 +107,10 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
                 else:
                     self.tooltip = f"{name}: None\n"
             self.tooltip = self.tooltip.strip()
-        self.current_usecase = '.'.join([module, usecase])
-
+        self.current_usecase = ".".join([module, usecase])
 
     def process_ifc(self, usecase, *setting_values):
-        
+
         if usecase and setting_values:
             settings = dict(zip(self.sv_input_names[1:], setting_values))
             settings = {k: v for k, v in settings.items() if v != ""}
@@ -133,8 +123,6 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
                     self.outputs["file"].sv_set([ifcopenshell.api.run(usecase, **settings)])
             except:
                 raise Exception(f"Couldn't run usecase.")
-                
-
 
 
 def register():
