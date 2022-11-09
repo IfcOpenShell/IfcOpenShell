@@ -28,3 +28,7 @@ class BcfStore:
         if not BcfStore.bcfxml:
             BcfStore.bcfxml = bcf.v2.bcfxml.BcfXml()
         return BcfStore.bcfxml
+
+    @classmethod
+    def set(cls, bcfxml):
+        cls.bcfxml = bcfxml
