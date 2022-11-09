@@ -314,6 +314,13 @@ endif
 
 	# Required by bcf
 	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/ad/c7/17c9d16320d8e2cfdb27d2fd298b5e8f7a3f211025b0c1bc7a39a85bd690/xsdata-22.11.tar.gz
+	cd dist/working && tar -xzvf xsdata*
+	cp -r dist/working/xsdata-22.11/xsdata dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by bcf
+	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/11/bc/5afb61dd5d863e5cf77cd952445c50c17e65953405986f19e97e4389692a/elementpath-3.0.2.tar.gz
 	cd dist/working && tar -xzvf elementpath*
 	cp -r dist/working/elementpath-3.0.2/elementpath dist/blenderbim/libs/site/packages/

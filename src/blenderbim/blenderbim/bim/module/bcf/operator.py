@@ -20,7 +20,6 @@ import os
 import bpy
 import bcf
 import bcf.bcfxml
-import bcf.v2.data
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
@@ -38,8 +37,8 @@ class NewBcfProject(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BCFProperties.is_loaded = False
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.new_project()
+        bcfxml = bcf.v2.bcfxml.BcfXml.create_new("New Project")
+        bcfstore.BcfStore.set(bcfxml)
         bpy.ops.bim.load_bcf_project()
         context.scene.BCFProperties.is_loaded = True
         return {"FINISHED"}
@@ -97,34 +96,34 @@ class LoadBcfTopic(bpy.types.Operator):
         new = context.scene.BCFProperties.topics[self.topic_index]
         data_map = {
             "name": topic.guid,
-            "title": topic.title,
-            "type": topic.topic_type,
-            "status": topic.topic_status,
-            "priority": topic.priority,
-            "stage": topic.stage,
-            "creation_date": topic.creation_date,
-            "creation_author": topic.creation_author,
-            "modified_date": topic.modified_date,
-            "modified_author": topic.modified_author,
-            "assigned_to": topic.assigned_to,
-            "due_date": topic.due_date,
-            "description": topic.description,
+            "title": topic.topic.title,
+            "type": topic.topic.topic_type,
+            "status": topic.topic.topic_status,
+            "priority": topic.topic.priority,
+            "stage": topic.topic.stage,
+            "creation_date": topic.topic.creation_date,
+            "creation_author": topic.topic.creation_author,
+            "modified_date": topic.topic.modified_date,
+            "modified_author": topic.topic.modified_author,
+            "assigned_to": topic.topic.assigned_to,
+            "due_date": topic.topic.due_date,
+            "description": topic.topic.description,
         }
         for key, value in data_map.items():
             if value is not None:
                 setattr(new, key, str(value))
 
         new.reference_links.clear()
-        for reference_link in topic.reference_links:
+        for reference_link in topic.topic.reference_link:
             new_reference_link = new.reference_links.add()
             new_reference_link.name = reference_link
 
         new.labels.clear()
-        for label in topic.labels:
+        for label in topic.topic.labels:
             new_label = new.labels.add()
             new_label.name = label
 
-        if topic.bim_snippet:
+        if topic.topic.bim_snippet:
             data_map = {
                 "type": topic.bim_snippet.snippet_type,
                 "is_external": topic.bim_snippet.is_external,
@@ -136,7 +135,7 @@ class LoadBcfTopic(bpy.types.Operator):
                     setattr(new.bim_snippet, key, value)
 
         new.document_references.clear()
-        for doc in topic.document_references:
+        for doc in topic.topic.document_reference:
             new_document_references = new.document_references.add()
             data_map = {
                 "reference": doc.referenced_document,
@@ -149,7 +148,7 @@ class LoadBcfTopic(bpy.types.Operator):
                     setattr(new_document_references, key, value)
 
         new.related_topics.clear()
-        for related_topic in topic.related_topics:
+        for related_topic in topic.topic.related_topic:
             new_related_topic = new.related_topics.add()
             new_related_topic.name = related_topic.guid
 
@@ -276,7 +275,7 @@ class AddBcfTopic(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.add_topic()
+        bcfxml.add_topic("New Topic", "", context.scene.BCFProperties.author)
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
 
