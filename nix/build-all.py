@@ -268,7 +268,7 @@ if platform.system() == "Darwin":
         PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
     if run(["sw_vers", "-productVersion"]) < "10.16":
         # Apparently not supported
-        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) <= (3, 10)]
+        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) < (3, 11)]
 
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
