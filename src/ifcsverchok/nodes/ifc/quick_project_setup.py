@@ -1,5 +1,5 @@
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from email.mime import application
 import bpy
 import ifcopenshell
@@ -25,6 +26,7 @@ from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 from ifcopenshell import template
 
+
 class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcQuickProjectSetup"
     bl_label = "IFC Quick Project Setup"
@@ -33,7 +35,6 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
     application: StringProperty(name="application", update=updateNode)
     application_version: StringProperty(name="application_version", update=updateNode)
     timestamp: StringProperty(name="timestamp", update=updateNode)
-    
 
     def sv_init(self, context):
         input_socket = self.inputs.new("SvStringsSocket", "filename")
@@ -59,8 +60,10 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
-        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Quick Project Setup: creates Ifc file and sets up a basic project"
-        #op.tooltip = self.tooltip
+        op = layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Quick Project Setup: creates Ifc file and sets up a basic project"
+        # op.tooltip = self.tooltip
 
     def process(self):
         self.sv_input_names = [i.name for i in self.inputs]
@@ -70,17 +73,17 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         settings = dict(zip(self.sv_input_names, setting_values))
         settings = {k: v for k, v in settings.items() if v != ""}
         file = template.create(
-                filename=settings['filename'],
-                timestring=settings['timestring'],
-                organization=settings['organization'],
-                creator=settings['creator'],
-                schema_identifier=settings['schema_identifier'],
-                application_version=settings['application_version'],
-                timestamp=settings['timestamp'],
-                application=settings['application'],
-                project_globalid=settings['project_globalid'],
-                project_name=settings['project_name'],
-            )
+            filename=settings["filename"],
+            timestring=settings["timestring"],
+            organization=settings["organization"],
+            creator=settings["creator"],
+            schema_identifier=settings["schema_identifier"],
+            application_version=settings["application_version"],
+            timestamp=settings["timestamp"],
+            application=settings["application"],
+            project_globalid=settings["project_globalid"],
+            project_name=settings["project_name"],
+        )
 
         self.outputs["file"].sv_set([[file]])
 

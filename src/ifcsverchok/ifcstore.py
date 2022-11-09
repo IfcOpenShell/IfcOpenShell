@@ -1,13 +1,25 @@
-# import os
+# IfcSverchok - IFC Sverchok extension
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
+#
+# This file is part of IfcSverchok.
+#
+# IfcSverchok is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcSverchok is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
-# import uuid
-# import hashlib
-# import zipfile
-# import tempfile
 import ifcopenshell
 from ifcopenshell import template
-# import blenderbim.bim.handler
-# from pathlib import Path
+
 
 class SvIfcStore:
     path = ""
@@ -52,7 +64,6 @@ class SvIfcStore:
         SvIfcStore.future = []
         SvIfcStore.schema_identifiers = ["IFC4", "IFC2X3"]
 
-
     @staticmethod
     def create_boilerplate():
 
@@ -61,11 +72,10 @@ class SvIfcStore:
             organization=None,
             creator=None,
             project_name="IfcSverchokDemoProject",
-            )
-        if bpy.context.scene.unit_settings.system == 'IMPERIAL':
-            #TODO change units to imperial
+        )
+        if bpy.context.scene.unit_settings.system == "IMPERIAL":
+            # TODO change units to imperial
             pass
-        # model = ifcopenshell.api.run("context.add_context", file, context_type="Model")
         model = ifcopenshell.util.representation.get_context(file, context="Model")
         print("model: ", model)
         context = ifcopenshell.api.run(
@@ -76,22 +86,9 @@ class SvIfcStore:
             target_view="MODEL_VIEW",
             parent=model,
         )
-        # site = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
-        # building = ifcopenshell.api.run(
-        #     "root.create_entity", file, ifc_class="IfcBuilding", name="My Building"
-        # )
-        # building_storey = ifcopenshell.api.run(
-        #     "root.create_entity", file, ifc_class="IfcBuildingStorey", name="My Storey"
-        # )
-
-        # ifcopenshell.api.run("aggregate.assign_object", file, product=site, relating_object=file.by_type("IfcProject")[0])
-        # ifcopenshell.api.run("aggregate.assign_object", file, product=building, relating_object=site)
-        # ifcopenshell.api.run("aggregate.assign_object", file, product=building_storey, relating_object=building)
 
         SvIfcStore.file = file
         return SvIfcStore.file
- 
-
 
     @staticmethod
     def get_file():
