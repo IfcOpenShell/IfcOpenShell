@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcSverchok.
 #
@@ -63,7 +62,7 @@ class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
             self.outputs.new("SvStringsSocket", name).prop_name = name
         self.current_ifc_class = ifc_class
 
-    def process_ifc(self, file, entity):
+    def process_ifc(self, entity):
         self.outputs["id"].sv_set([[entity.id()]])
         self.outputs["is_a"].sv_set([[entity.is_a()]])
         for i in range(0, self.entity_schema.attribute_count()):

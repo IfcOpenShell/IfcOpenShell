@@ -1,5 +1,5 @@
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -19,10 +19,8 @@
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
-from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
-# from ifcopenshell import template
+
 
 class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcCreateProject"
@@ -36,25 +34,26 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
-        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Adds project, unit and context to IFC file"
-        #op.tooltip = self.tooltip
+        op = layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Adds project, unit and context to IFC file"
+        # op.tooltip = self.tooltip
 
     def process(self):
-        #file
+        # file
         file = self.inputs["file"].sv_get()[0][0]
         if file:
             schema_name = file.wrapped_data.schema
         else:
             schema_name = "IFC4"
-        
-        #project name
+
+        # project name
         project_name = self.inputs["project_name"].sv_get()[0][0]
         self.process_ifc(file, project_name)
-        
 
     def process_ifc(self, file, project_name):
-        
-        # create project 
+
+        # create project
         project = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcProject", name=str(project_name))
         lengthunit = ifcopenshell.api.run("unit.add_si_unit", file, unit_type="LENGTHUNIT", name="METRE")
         ifcopenshell.api.run("unit.assign_unit", file, units=[lengthunit])

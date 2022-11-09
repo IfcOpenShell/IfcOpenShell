@@ -1,5 +1,5 @@
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -28,21 +28,18 @@ bl_info = {
     "warning": "",
 }
 
-import sys
 import importlib
 import nodeitems_utils
-import sverchok
-from sverchok.core import sv_registration_utils, make_node_list
+from sverchok.core import make_node_list
 from sverchok.utils import auto_gather_node_classes, get_node_class_reference
-from sverchok.menu import SverchNodeItem, SverchNodeCategory, register_node_panels
+from sverchok.menu import SverchNodeItem, SverchNodeCategory
 from sverchok.utils.extra_categories import (
     register_extra_category_provider,
     unregister_extra_category_provider,
 )
 from sverchok.ui.nodeview_space_menu import make_extra_category_menus
 from sverchok.utils.logging import info, debug
-import asyncio
-import time
+
 
 def nodes_index():
     return [
@@ -73,8 +70,7 @@ def nodes_index():
                 ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcRepr"),
                 ("ifc.sverchok_to_ifc", "SvIfcSverchokToIfcRepr"),
                 ("ifc.create_project", "SvIfcCreateProject"),
-                ("ifc.quick_project_setup", "SvIfcQuickProjectSetup")
-
+                ("ifc.quick_project_setup", "SvIfcQuickProjectSetup"),
             ],
         )
     ]
@@ -96,26 +92,23 @@ imported_modules = make_node_list()
 reload_event = False
 
 import bpy
-import os
-from os.path import abspath, splitext
+from os.path import splitext
 import ifcopenshell
 from ifcsverchok.ifcstore import SvIfcStore
-from sverchok.data_structure import flatten_data
+
 
 class IFC_Sv_UpdateCurrent(bpy.types.Operator):
     """Update current Sverchok node tree"""
+
     bl_idname = "ifc.sverchok_update_current"
     bl_label = "Update current node tree"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     node_group: bpy.props.StringProperty(default="")
     force_mode: bpy.props.BoolProperty(default=False)
 
     def execute(self, context):
-        print("#"*10, "Update current node tree")
         self.file = SvIfcStore.purge()
-        self.file = SvIfcStore.get_file()
-        self.file.write("/Users/martina/Documents/GSoC/CodeTests/IfcFileTest_7_11_purged.ifc")
         node_tree = context.space_data.node_tree
         if node_tree:
             if self.force_mode or node_tree.sv_process:
@@ -125,7 +118,8 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
                 finally:
                     bpy.context.window.cursor_set("DEFAULT")
         self.report({"INFO"}, "Node tree updated.")
-        return {'FINISHED'}
+        return {"FINISHED"}
+
 
 class IFC_Sv_write_file(bpy.types.Operator):
     bl_idname = "ifc.write_file_panel"
@@ -141,43 +135,52 @@ class IFC_Sv_write_file(bpy.types.Operator):
         return any("IFC" in n for n in context.space_data.edit_tree.nodes.keys())
 
     def ensure_hirarchy(self, file):
-        elements_in_buildings = []
-        if not 0 <= 0 < len(file.by_type("IfcBuilding")):
+        elements_in_buildings = set()
+        if len(file.by_type("IfcBuilding")) == 0:
             my_building = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcBuilding", name="My Building")
             elements = ifcopenshell.util.element.get_decomposition(my_building)
         else:
             for building in file.by_type("IfcBuilding"):
                 elements = ifcopenshell.util.element.get_decomposition(building)
-                elements_in_buildings.extend(elements)
+                elements_in_buildings.update(elements)
 
-        for spatial in (file.by_type("IfcSpatialElement") or file.by_type("IfcSpatialStructureElement")):
-            if (not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings)):
+        for spatial in file.by_type("IfcSpatialElement") or file.by_type("IfcSpatialStructureElement"):
+            if not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings):
                 elements = ifcopenshell.util.element.get_decomposition(spatial)
-                ifcopenshell.api.run("aggregate.assign_object", file, product=spatial, relating_object=file.by_type("IfcBuilding")[0])
+                ifcopenshell.api.run(
+                    "aggregate.assign_object", file, product=spatial, relating_object=file.by_type("IfcBuilding")[0]
+                )
 
-        elements_in_buildings_after = []
         for building in file.by_type("IfcBuilding"):
             elements = ifcopenshell.util.element.get_decomposition(building)
-            elements_in_buildings_after.extend(elements)
+            elements_in_buildings.update(elements)
 
         elements = file.by_type("IfcElement")
         for element in elements:
             if element not in elements_in_buildings:
-                ifcopenshell.api.run("spatial.assign_container", file, product=element, relating_structure=file.by_type("IfcBuilding")[0])
-
+                ifcopenshell.api.run(
+                    "spatial.assign_container", file, product=element, relating_structure=file.by_type("IfcBuilding")[0]
+                )
 
         for building in file.by_type("IfcBuilding"):
             elements = ifcopenshell.util.element.get_decomposition(building)
             if not building.Decomposes:
-                if not 0 <= 0 < len(file.by_type("IfcSite")):
+                if len(file.by_type("IfcSite")) == 0:
                     ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
-                ifcopenshell.api.run("aggregate.assign_object", file, product=building, relating_object=file.by_type("IfcSite")[0])
+                ifcopenshell.api.run(
+                    "aggregate.assign_object", file, product=building, relating_object=file.by_type("IfcSite")[0]
+                )
                 try:
                     if file.by_type("IfcSite")[0].Decomposes[0].RelatingObject.is_a("IfcProject"):
                         continue
                 except IndexError:
                     pass
-                ifcopenshell.api.run("aggregate.assign_object", file, product=file.by_type("IfcSite")[0], relating_object=file.by_type("IfcProject")[0])
+                ifcopenshell.api.run(
+                    "aggregate.assign_object",
+                    file,
+                    product=file.by_type("IfcSite")[0],
+                    relating_object=file.by_type("IfcProject")[0],
+                )
         self.file = file
         return
 
@@ -198,6 +201,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+
 class IFC_PT_write_file_panel(bpy.types.Panel):
     bl_idname = "IFC_PT_write_file_panel"
     bl_label = "Write IFC to file"
@@ -217,10 +221,12 @@ class IFC_PT_write_file_panel(bpy.types.Panel):
         row = layout.split(factor=0.2, align=True)
         row = layout.row()
         row2 = layout.row()
-        row.operator('ifc.sverchok_update_current', text='IFC Re-run all nodes')
+        row.operator("ifc.sverchok_update_current", text="IFC Re-run all nodes")
         row2.operator("ifc.write_file_panel")
 
-CLASSES = [IFC_Sv_UpdateCurrent,IFC_Sv_write_file, IFC_PT_write_file_panel]
+
+CLASSES = [IFC_Sv_UpdateCurrent, IFC_Sv_write_file, IFC_PT_write_file_panel]
+
 
 def register_nodes():
     node_modules = make_node_list()
@@ -281,9 +287,7 @@ def register():
     auto_gather_node_classes(extra_nodes)
     menu = make_menu()
     menu_category_provider = SvExCategoryProvider("IFCSVERCHOK", menu)
-    register_extra_category_provider(
-        menu_category_provider
-    )  # if 'IFCSVERCHOK' in nodeitems_utils._node_categories:
+    register_extra_category_provider(menu_category_provider)  # if 'IFCSVERCHOK' in nodeitems_utils._node_categories:
     nodeitems_utils.register_node_categories("IFCSVERCHOK", menu)
     our_menu_classes = make_extra_category_menus()
 

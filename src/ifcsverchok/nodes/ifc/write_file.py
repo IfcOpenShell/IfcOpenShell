@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -32,29 +31,31 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
     Triggers: Ifc write to file
     Tooltip: Write active Sverchok Ifc file to path
     """
+
     def refresh_node_local(self, context):
         if self.refresh_local:
             self.process()
             self.refresh_local = False
 
-    # out = ""
     refresh_local: BoolProperty(name="Write", description="Write to file", update=refresh_node_local)
 
     bl_idname = "SvIfcWriteFile"
     bl_label = "IFC Write File"
-    path: StringProperty(name="path", description="File path to write to. Can be relative.",  update=updateNode)
+    path: StringProperty(name="path", description="File path to write to. Can be relative.", update=updateNode)
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "path").prop_name = "path"
         self.outputs.new("SvStringsSocket", "output")
-        
+
     def draw_buttons(self, context, layout):
         row = layout.row(align=True)
-        row.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Writes active Ifc file to path.\n It will overwrite an existing file.\n N.B.! It's recommended to create a fresh IFC File using the 're-run all nodes' button in IfcSverchok panel before saving."
-        row.prop(self, 'refresh_local', icon='FILE_REFRESH')
+        row.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Writes active Ifc file to path.\n It will overwrite an existing file.\n N.B.! It's recommended to create a fresh IFC File using the 're-run all nodes' button in IfcSverchok panel before saving."
+        row.prop(self, "refresh_local", icon="FILE_REFRESH")
 
     def process(self):
-        path = flatten_data(self.inputs["path"].sv_get(), target_level = 1)[0]
+        path = flatten_data(self.inputs["path"].sv_get(), target_level=1)[0]
         if not path:
             return
         path = abspath(path)
@@ -66,7 +67,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
             self.ensure_hirarchy(file)
             file.write(path)
         self.outputs["output"].sv_set(f"File written successfully to: {path}.")
-    
+
     def ensure_hirarchy(self, file):
         elements_in_buildings = []
         if not 0 <= 0 < len(file.by_type("IfcBuilding")):
@@ -77,10 +78,12 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
                 elements = ifcopenshell.util.element.get_decomposition(building)
                 elements_in_buildings.extend(elements)
 
-        for spatial in (file.by_type("IfcSpatialElement") or file.by_type("IfcSpatialStructureElement")):
-            if (not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings)):
+        for spatial in file.by_type("IfcSpatialElement") or file.by_type("IfcSpatialStructureElement"):
+            if not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings):
                 elements = ifcopenshell.util.element.get_decomposition(spatial)
-                ifcopenshell.api.run("aggregate.assign_object", file, product=spatial, relating_object=file.by_type("IfcBuilding")[0])
+                ifcopenshell.api.run(
+                    "aggregate.assign_object", file, product=spatial, relating_object=file.by_type("IfcBuilding")[0]
+                )
 
         elements_in_buildings_after = []
         for building in file.by_type("IfcBuilding"):
@@ -90,24 +93,31 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
         elements = file.by_type("IfcElement")
         for element in elements:
             if element not in elements_in_buildings:
-                ifcopenshell.api.run("spatial.assign_container", file, product=element, relating_structure=file.by_type("IfcBuilding")[0])
-
+                ifcopenshell.api.run(
+                    "spatial.assign_container", file, product=element, relating_structure=file.by_type("IfcBuilding")[0]
+                )
 
         for building in file.by_type("IfcBuilding"):
             elements = ifcopenshell.util.element.get_decomposition(building)
             if not building.Decomposes:
                 if not 0 <= 0 < len(file.by_type("IfcSite")):
                     ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
-                ifcopenshell.api.run("aggregate.assign_object", file, product=building, relating_object=file.by_type("IfcSite")[0])
+                ifcopenshell.api.run(
+                    "aggregate.assign_object", file, product=building, relating_object=file.by_type("IfcSite")[0]
+                )
                 try:
                     if file.by_type("IfcSite")[0].Decomposes[0].RelatingObject.is_a("IfcProject"):
                         continue
                 except IndexError:
                     pass
-                ifcopenshell.api.run("aggregate.assign_object", file, product=file.by_type("IfcSite")[0], relating_object=file.by_type("IfcProject")[0])
+                ifcopenshell.api.run(
+                    "aggregate.assign_object",
+                    file,
+                    product=file.by_type("IfcSite")[0],
+                    relating_object=file.by_type("IfcProject")[0],
+                )
         self.file = file
         return
-        
 
 
 def register():

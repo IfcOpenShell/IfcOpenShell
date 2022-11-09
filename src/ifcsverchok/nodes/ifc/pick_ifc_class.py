@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -20,10 +19,11 @@
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
-from bpy.props import StringProperty, EnumProperty
+from bpy.props import EnumProperty
 from ifcsverchok.ifcstore import SvIfcStore
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+
 
 def get_ifc_products(self, context):
     ifc_products = getattr(self, "ifc_products", [])
@@ -83,15 +83,22 @@ def get_ifc_classes(self, context):
 class SvIfcPickIfcClass(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcPickIfcClass"
     bl_label = "IFC Class Picker"
-    ifc_product: EnumProperty(items=get_ifc_products, name="IfcProduct", description="Pick an IfcProduct from drop-down.", update=update_ifc_products)
-    ifc_class: EnumProperty(items=get_ifc_classes, name="IfcClass", description="Pick an IfcClass from drop-down.", update=updateNode)
+    ifc_product: EnumProperty(
+        items=get_ifc_products,
+        name="IfcProduct",
+        description="Pick an IfcProduct from drop-down.",
+        update=update_ifc_products,
+    )
+    ifc_class: EnumProperty(
+        items=get_ifc_classes, name="IfcClass", description="Pick an IfcClass from drop-down.", update=updateNode
+    )
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "ifc_product").prop_name = "ifc_product"
         self.inputs.new("SvStringsSocket", "ifc_class").prop_name = "ifc_class"
         self.outputs.new("SvStringsSocket", "IfcClass")
         self.width = 200
-    
+
     def draw_buttons(self, context, layout):
         layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Ifc Class Picker"
 
