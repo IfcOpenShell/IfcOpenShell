@@ -96,12 +96,16 @@ class QtoCalculator:
         return max(x, y, z)
 
     def get_length(self, o, vg_index=None):
-        if vg_index is None and not self.has_local_axes_rotated(o):
+        if vg_index is None:
             x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
             y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-            return max(x, y)
-        if vg_index is None and self.has_local_axes_rotated(o):
-            return ((Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length)
+            z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+            if self.get_object_main_axis(o) == "x":
+                return max(x, y)
+            if self.get_object_main_axis(o) == "z":
+                return max(z, x)
+            if self.get_object_main_axis(o) == "y":
+                return max(y, z)
 
         length = 0
         edges = [
@@ -398,7 +402,7 @@ class QtoCalculator:
                 bl_OBB_opening_object = self.get_OBB_object(bl_opening_obj)
                 opening_area = self.get_lateral_area(
                     #self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
-                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
+                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True,
                 )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
@@ -429,14 +433,22 @@ class QtoCalculator:
         :return float: Lateral Area
         """
 
-        if not self.has_local_axes_rotated(obj):
-            x_axis = [1, 0, 0]
-            y_axis = [0, 1, 0]
-            z_axis = [0, 0, 1]
-        if self.has_local_axes_rotated(obj):
-            x_axis = [0, 0, 1]
-            y_axis = [1, 0, 0]
-            z_axis = [0, 1, 0]
+        x_axis = [1, 0, 0]
+        y_axis = [0, 1, 0]
+        z_axis = [0, 0, 1]
+
+        if self.get_object_main_axis(obj) == "x":
+            main_axis = x_axis
+            side_axis = y_axis
+            top_axis = z_axis
+        if self.get_object_main_axis(obj) == "z":
+            main_axis = z_axis
+            side_axis = x_axis
+            top_axis = y_axis
+        if self.get_object_main_axis(obj) == "y":
+            main_axis = y_axis
+            side_axis = z_axis
+            top_axis = x_axis
 
         area = 0
         total_opening_area = (
@@ -445,19 +457,18 @@ class QtoCalculator:
         polygons = obj.data.polygons
 
         for polygon in polygons:
-            angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
-            if angle_to_z_axis < angle_z1 or angle_to_z_axis > angle_z2:
+            angle_to_top_axis = math.degrees(polygon.normal.rotation_difference(Vector(top_axis)).angle)
+            if angle_to_top_axis < angle_z1 or angle_to_top_axis > angle_z2:
                 continue
             if exclude_end_areas:
-                angle_to_x_axis = math.degrees(polygon.normal.rotation_difference(Vector(x_axis)).angle)
-                if angle_to_x_axis < 45 or angle_to_x_axis > 135:
+                angle_to_main_axis = math.degrees(polygon.normal.rotation_difference(Vector(main_axis)).angle)
+                if angle_to_main_axis < 45 or angle_to_main_axis > 135:
                     continue
             if exclude_side_areas:
-                angle_to_y_axis = math.degrees(polygon.normal.rotation_difference(Vector(y_axis)).angle)
-                if angle_to_y_axis < 45 or angle_to_y_axis > 135:
+                angle_to_side_axis = math.degrees(polygon.normal.rotation_difference(Vector(side_axis)).angle)
+                if angle_to_side_axis < 45 or angle_to_side_axis > 135:
                     continue
             area += polygon.area
-
         return area + total_opening_area
 
     def get_gross_lateral_area(
@@ -956,12 +967,24 @@ class QtoCalculator:
         bm.from_mesh(mesh)
         return bm
 
-    def has_local_axes_rotated(self, o):
-        matrix = o.matrix_world
-        if matrix[0][0] == 1:
-            return False
-        if matrix[0][2] == 1:
-            return True
+    def get_object_main_axis(self, o):
+        """_summary_: Returns the main object axis. Useful for profile-defined objects.
+
+        :param blender-object o: Blender Object
+        :return str: main axis x or y or z
+        """
+        x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
+        y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
+        z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+
+        if x >= y and x > z:
+            return "x"
+        if y > z and y > x:
+            return "y"
+        if z > x and z > y:
+            return "z"
+        else:
+            return "x"
 
     def delete_mesh(self, mesh):
         mesh.user_clear()
