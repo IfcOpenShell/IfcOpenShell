@@ -90,6 +90,7 @@ def update_active_task_index(self, context):
     bpy.ops.bim.load_task_inputs()
     bpy.ops.bim.load_task_resources()
     bpy.ops.bim.load_task_outputs()
+    bpy.ops.bim.load_nested_tasks_outputs()
     blenderbim.bim.module.pset.data.refresh()
 
 
@@ -350,7 +351,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_input_index: IntProperty(name="Active Task Input Index")
     task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
     active_task_output_index: IntProperty(name="Active Task Output Index")
-
+    nested_task_outputs: CollectionProperty(name="Nested Task Outputs", type=TaskProduct)
+    active_nested_task_output_index: IntProperty(name="Active Nested Tasks Output Index")
 
 class BIMDuration(PropertyGroup):
     duration_days: IntProperty(name="Days ")

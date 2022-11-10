@@ -461,14 +461,33 @@ class Sequence(blenderbim.core.tool.Sequence):
                 new.name = output.Name or "Unnamed"
 
     @classmethod
+    def load_nested_tasks_outputs(cls, outputs):
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        props.nested_task_outputs.clear()
+        if outputs:
+            for output in outputs:
+                new = props.nested_task_outputs.add()
+                new.ifc_definition_id = output.id()
+                new.name = output.Name or "Unnamed"
+    @classmethod
     def get_highlighted_task(cls):
         props = bpy.context.scene.BIMWorkScheduleProperties
         task_props = bpy.context.scene.BIMTaskTreeProperties
         return tool.Ifc.get().by_id(task_props.tasks[props.active_task_index].ifc_definition_id)
 
     @classmethod
+    def get_nested_tasks(cls, task):
+        return helper.get_nested_tasks(task)
+
+    @classmethod
     def get_task_outputs(cls, task):
         return [rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
+    @classmethod
+    def get_nested_tasks_outputs(cls, tasks):
+        outputs = []
+        for subtask in tasks:
+            [outputs.append(rel.RelatingProduct) for rel in subtask.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
+        return outputs            
 
     @classmethod
     def get_task_resources(cls, task):

@@ -427,7 +427,7 @@ class BIM_PT_task_icom(Panel):
         col = grid.column()
 
         row2 = col.row(align=True)
-        row2.label(text="Outputs")
+        row2.label(text="Task Outputs")
         total_task_outputs = len(self.props.task_outputs)
 
         if context.selected_objects:
@@ -440,14 +440,23 @@ class BIM_PT_task_icom(Panel):
                 output_id = self.props.task_outputs[self.props.active_task_output_index].ifc_definition_id
                 op.relating_product = output_id
 
-        op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="")
+        op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
         op.task = task.ifc_definition_id
-
+        op.type = 'CURRENT_TASK'
         row2 = col.row()
         row2.template_list(
             "BIM_UL_task_outputs", "", self.props, "task_outputs", self.props, "active_task_output_index"
         )
-
+        # Column3 // Row3
+        row3 = col.row()
+        row3.label(text="Nested Tasks Outputs")
+        op = row3.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
+        op.type = 'NESTED_TASKS'
+        op.task = task.ifc_definition_id
+        row3 = col.row()
+        row3.template_list(
+            "BIM_UL_nested_task_outputs", "", self.props, "nested_task_outputs", self.props, "active_nested_task_output_index"
+        )
 
 class BIM_UL_task_columns(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -462,7 +471,6 @@ class BIM_UL_task_columns(UIList):
 
 class BIM_UL_task_inputs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMWorkScheduleProperties
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
@@ -471,7 +479,6 @@ class BIM_UL_task_inputs(UIList):
 
 class BIM_UL_task_resources(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMWorkScheduleProperties
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
@@ -479,7 +486,13 @@ class BIM_UL_task_resources(UIList):
 
 class BIM_UL_task_outputs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMWorkScheduleProperties
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", emboss=False, text="")
+
+
+class BIM_UL_nested_task_outputs(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")

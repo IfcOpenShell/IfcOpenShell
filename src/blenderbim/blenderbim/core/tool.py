@@ -487,7 +487,9 @@ class Sequence:
     def get_active_work_schedule_id(cls): pass
     def get_selected_resource(cls): pass
     def expand_task(cls, task): pass
+    def expand_all_tasks(cls): pass
     def contract_task(cls, task): pass
+    def contract_all_tasks(cls): pass
     def disable_work_schedule(cls): pass
     def disable_selecting_deleted_task(cls): pass
     def get_checked_tasks(cls): pass
@@ -507,8 +509,10 @@ class Sequence:
     def get_task_inputs(cls, task): pass
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass
+    def load_nested_task_outputs(cls, outputs): pass
     def get_highlighted_task(cls): pass
     def get_task_outputs(cls, task): pass
+    def get_nested_task_outputs(cls, tasks): pass
     def get_task_resources(cls, task):pass
     def enable_editing_work_calendar_times(cls, work_calendar): pass
     def load_work_calendar_attributes(cls, work_calendar): pass
