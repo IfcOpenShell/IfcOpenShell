@@ -38,9 +38,16 @@
 	try {
 	const Argument& arg = *($1.second);
 	const IfcUtil::ArgumentType type = $1.first;
-	if (arg.isNull() || type == IfcUtil::Argument_DERIVED) {
+	if (arg.isNull()) {
 		Py_INCREF(Py_None);
 		$result = Py_None;
+	} else if (type == IfcUtil::Argument_DERIVED) {
+		if (feature_use_attribute_value_derived) {
+			$result = SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
+		} else {
+			Py_INCREF(Py_None);
+			$result = Py_None;
+		}
 	} else {
 	switch(type) {
 		case IfcUtil::Argument_INT: {
