@@ -309,7 +309,7 @@ mapper = {
     },
     'Qto_ColumnBaseQuantities' : {
         'Length' : "get_linear_length",
-        'CrossSectionArea' : None,
+        'CrossSectionArea' : "get_cross_section_area",
         'OuterSurfaceArea' : None,
         'GrossSurfaceArea' : "get_gross_surface_area",
         'NetSurfaceArea' : "get_net_surface_area",
