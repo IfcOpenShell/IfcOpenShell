@@ -6,13 +6,16 @@ without the related IFC opening.
 So, if an object is created lets say with a hole but without defining the opening, the hole is counted into net volume (so get volume and net volume are the same).
 This is in order to follow the native IFC approach.
 
-WALLS AND BEAM LENGTH, HEIGHT, WIDTH AND LATERAL AREA
-These dimensions are calculated with the convention that the object can have main axis along x or z. 
-The same with lateral area.
+WALLS 
+Walls quantities are calculated with the convention that the object main axis is the 'x'. 
 
 SLAB THICKNESS
 The slab thickness is defined as Width, following the IFC definition
 Also, note that these dimensions are calculated only if the slab is prismatic.
+
+LATERAL AREA
+All lateral areas are counted, so for example also the inside surfaces.
+It shouldn't be like that so we should find a method to only external lateral area.
 
 
 
