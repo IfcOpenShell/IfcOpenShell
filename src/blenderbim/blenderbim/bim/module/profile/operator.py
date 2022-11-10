@@ -34,6 +34,8 @@ class LoadProfiles(bpy.types.Operator):
         props.profiles.clear()
 
         for profile in tool.Ifc.get().by_type("IfcProfileDef"):
+            if not profile.ProfileName:
+                continue
             new = props.profiles.add()
             new.ifc_definition_id = profile.id()
             new.name = profile.ProfileName or "Unnamed"
