@@ -27,9 +27,11 @@ import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
 
+
 def refresh():
     AuthoringData.is_loaded = False
     ArrayData.is_loaded = False
+    StairData.is_loaded = False
 
 
 class AuthoringData:
@@ -351,4 +353,24 @@ class ArrayData:
                     parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
                 except:
                     parameters["has_parent"] = False
+                return parameters
+
+
+class StairData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Stair", None)
+            if parameters:
+                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
