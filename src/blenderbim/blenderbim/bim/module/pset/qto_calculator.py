@@ -75,7 +75,7 @@ class QtoCalculator:
         elif "area" in prop_name and "side" in prop_name:
             return self.get_side_area(obj)
         elif "area" in prop_name:
-            return self.get_total_surface_area(obj)
+            return self.get_gross_surface_area(obj)
         elif "volume" in prop_name and "gross" in prop_name:
             return self.get_gross_volume(obj)
         elif "volume" in prop_name :
@@ -236,17 +236,29 @@ class QtoCalculator:
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
         return max(x * z, y * z)
 
-    def get_total_surface_area(self, o, vg_index=None):
+    def get_gross_surface_area(self, o, vg_index=None):
         if vg_index is None:
+            if not self.has_openings(o):
+                return self.get_net_surface_area(o)
+
+            mesh = self.get_gross_element_mesh(element)
             area = 0
-            for polygon in o.data.polygons:
+            for polygon in mesh.polygons:
                 area += polygon.area
+            bpy.data.meshes.remove(mesh)
             return area
+
         area = 0
         vertices_in_vg = [v.index for v in o.data.vertices if vg_index in [g.group for g in v.groups]]
         for polygon in o.data.polygons:
             if self.is_polygon_in_vg(polygon, vertices_in_vg):
                 area += polygon.area
+        return area
+
+    def get_net_surface_area(self, o):
+        area = 0
+        for polygon in o.data.polygons:
+            area += polygon.area
         return area
 
     def is_polygon_in_vg(self, polygon, vertices_in_vg):
@@ -259,24 +271,27 @@ class QtoCalculator:
         o_mesh = bmesh.new()
         o_mesh.from_mesh(o.data)
         volume = o_mesh.calc_volume()
-        self.delete_bmesh(o_mesh)
+        bm.free()
         return volume
 
     def get_gross_volume(self, o):
-        element = tool.Ifc.get_entity(o)
-        if not element:
-            print(f"Object {o.name} hasn't an IFC instance so gross volume is equal to net volume")
-            return self.get_net_volume
+        if not self.has_openings(o):
+            return self.get_net_volume(o)
 
         mesh = self.get_gross_element_mesh(element)
         bm = self.get_bmesh_from_mesh(mesh)
 
         gross_volume = bm.calc_volume()
 
-        self.delete_bmesh(bm)
-        self.delete_mesh(mesh)
+        bm.free()
+        bpy.data.meshes.remove(mesh)
 
         return gross_volume
+
+    def has_openings(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        return element and getattr(element, "HasOpenings", [])
+
 
     # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
 
@@ -843,26 +858,16 @@ class QtoCalculator:
         mesh.polygons.foreach_set("loop_start", loop_start)
         mesh.polygons.foreach_set("loop_total", loop_total)
         mesh.update()
-
-        # An alternative to foreach is
-        # mesh.from_pydata(grouped_verts, edges, grouped_faces)
-        # look at import_ifc.py in blenderbim
-
         return mesh
 
     def get_bmesh_from_mesh(self, mesh):
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        #bm.to_mesh(mesh)
         return bm
 
     def delete_mesh(self, mesh):
         mesh.user_clear()
         bpy.data.meshes.remove(mesh)
-
-    def delete_bmesh(self, bm):
-        bmesh.ops.delete(bm)
-        bm.free()
 
     def delete_obj(self, obj):
         bpy.data.objects.remove(obj, do_unlink = True)
@@ -884,7 +889,7 @@ class QtoCalculator:
 #     f"get_net_footprint_area: {qto.get_net_footprint_area(o)}{nl}{nl}"
 #     f"get_net_roofprint_area: {qto.get_net_roofprint_area(o)}{nl}{nl}"
 #     f"get_side_area: {qto.get_side_area(o)}{nl}{nl}"
-#     f"get_total_surface_area: {qto.get_total_surface_area(o)}{nl}{nl}"
+#     f"get_gross_surface_area: {qto.get_gross_surface_area(o)}{nl}{nl}"
 #     f"get_volume: {qto.get_volume(o)}{nl}{nl}"
 #     f"get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False): {qto.get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False)}{nl}{nl}"
 #     f"get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135): {qto.get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135)}{nl}{nl}"
