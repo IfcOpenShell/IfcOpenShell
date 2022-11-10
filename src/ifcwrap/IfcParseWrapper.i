@@ -54,7 +54,41 @@ private:
 %rename("add") addEntity;
 %rename("remove") removeEntity;
 
+class attribute_value_derived {};
 %{
+class attribute_value_derived {};
+%}
+
+%extend attribute_value_derived {
+	%pythoncode %{
+		def __bool__(self): return False
+		def __repr__(self): return '*'
+	%}
+}
+
+%inline %{
+static bool feature_use_attribute_value_derived = false;
+
+void set_feature(const std::string& x, PyObject* v) {
+	if (PyBool_Check(v) && x == "use_attribute_value_derived") {
+		feature_use_attribute_value_derived = v == Py_True;
+	} else {
+		throw std::runtime_error("Invalid feature specification");
+	}
+}
+
+PyObject* get_feature(const std::string& x) {
+	if (x == "use_attribute_value_derived") {
+		return PyBool_FromLong(feature_use_attribute_value_derived);
+	} else {
+		throw std::runtime_error("Invalid feature specification");
+	}
+}
+
+%}
+
+%{
+
 static const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl) {
 	return decl->name();
 }
