@@ -236,15 +236,29 @@ class QtoCalculator:
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
         return max(x * z, y * z)
 
+    def get_cross_section_area(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                mesh = self.create_mesh_from_shape(item.SweptArea)
+                area = self.get_mesh_area(mesh)
+                bpy.data.meshes.remove(mesh)
+                return area
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                break
+        # TODO handle other types of sections, and then fall back to mesh parsing
+
     def get_gross_surface_area(self, o, vg_index=None):
         if vg_index is None:
             if not self.has_openings(o):
                 return self.get_net_surface_area(o)
 
             mesh = self.get_gross_element_mesh(element)
-            area = 0
-            for polygon in mesh.polygons:
-                area += polygon.area
+            area = self.get_mesh_area(mesh)
             bpy.data.meshes.remove(mesh)
             return area
 
@@ -255,9 +269,12 @@ class QtoCalculator:
                 area += polygon.area
         return area
 
-    def get_net_surface_area(self, o):
+    def get_net_surface_area(self, obj):
+        return self.get_mesh_area(obj.data)
+
+    def get_mesh_area(self, mesh):
         area = 0
-        for polygon in o.data.polygons:
+        for polygon in mesh.polygons:
             area += polygon.area
         return area
 
@@ -837,9 +854,15 @@ class QtoCalculator:
     def get_gross_element_mesh(self, element):
         settings = ifcopenshell.geom.settings()
         settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        return self.create_mesh_from_shape(element, settings)
+
+    def create_mesh_from_shape(self, element, settings=None):
+        if settings is None:
+            settings = ifcopenshell.geom.settings()
         shape = ifcopenshell.geom.create_shape(settings, element)
-        faces = shape.geometry.faces
-        verts = shape.geometry.verts
+        geometry = shape.geometry if element.is_a("IfcRoot") else shape
+        faces = geometry.faces
+        verts = geometry.verts
 
         mesh = bpy.data.meshes.new("myBeautifulMesh")
 
