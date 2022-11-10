@@ -41,7 +41,7 @@ class ProfileData:
 
     @classmethod
     def total_profiles(cls):
-        return len(tool.Ifc.get().by_type("IfcProfileDef"))
+        return len([p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName])
 
     @classmethod
     def profile_classes(cls):
