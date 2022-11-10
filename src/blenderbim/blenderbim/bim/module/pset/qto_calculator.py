@@ -95,12 +95,12 @@ class QtoCalculator:
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
         return max(x, y, z)
 
-    def get_length(self, o, vg_index=None):
+    def get_length(self, o, vg_index=None, main_axis: str = ""):
         if vg_index is None:
             x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
             y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
             z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
-            if self.get_object_main_axis(o) == "x":
+            if self.get_object_main_axis(o) == "x" or main_axis=="x":
                 return max(x, y)
             if self.get_object_main_axis(o) == "z":
                 return max(z, x)
@@ -423,6 +423,7 @@ class QtoCalculator:
         exclude_side_areas: bool = False,
         angle_z1: int = 45,
         angle_z2: int = 135,
+        main_axis: str = "",
     ):
         """_summary_
 
@@ -439,15 +440,15 @@ class QtoCalculator:
         y_axis = [0, 1, 0]
         z_axis = [0, 0, 1]
 
-        if self.get_object_main_axis(obj) == "x":
+        if self.get_object_main_axis(obj) == "x" or main_axis == "x":
             main_axis = x_axis
             side_axis = y_axis
             top_axis = z_axis
-        if self.get_object_main_axis(obj) == "z":
+        elif self.get_object_main_axis(obj) == "z":
             main_axis = z_axis
             side_axis = x_axis
             top_axis = y_axis
-        if self.get_object_main_axis(obj) == "y":
+        elif self.get_object_main_axis(obj) == "y":
             main_axis = y_axis
             side_axis = z_axis
             top_axis = x_axis
@@ -481,6 +482,7 @@ class QtoCalculator:
         exclude_side_areas: bool = False,
         angle_z1: int = 45,
         angle_z2: int = 135,
+        main_axis: str = "",
     ):
         """_summary_
 
@@ -499,7 +501,7 @@ class QtoCalculator:
 
         gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
 
-        gross_lateral_area = self.get_lateral_area(gross_obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2 )
+        gross_lateral_area = self.get_lateral_area(gross_obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2, main_axis )
 
         self.delete_obj(gross_obj)
         self.delete_mesh(gross_mesh)
@@ -515,6 +517,7 @@ class QtoCalculator:
         exclude_side_areas: bool = False,
         angle_z1: int = 45,
         angle_z2: int = 135,
+        main_axis: str = "",
     ):
         """_summary_:
         :param blender-object obj: blender object, bpy.types.Object
