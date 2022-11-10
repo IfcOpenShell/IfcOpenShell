@@ -251,12 +251,13 @@ class QtoCalculator:
             if item.is_a("IfcExtrudedAreaSolid"):
                 mesh = self.create_mesh_from_shape(item.SweptArea)
                 area = self.get_mesh_area(mesh)
-                bpy.data.meshes.remove(mesh)
+                self.delete_mesh(mesh)
                 return area
             elif item.is_a("IfcBooleanClippingResult"):
                 item = item.FirstOperand
             else:
-                break
+                area = self.get_end_area(obj, exclude_side_areas = True)
+                return area
         # TODO handle other types of sections, and then fall back to mesh parsing
 
     def get_gross_surface_area(self, o, vg_index=None):
@@ -295,20 +296,21 @@ class QtoCalculator:
         o_mesh = bmesh.new()
         o_mesh.from_mesh(o.data)
         volume = o_mesh.calc_volume()
-        bm.free()
+        o_mesh.free()
         return volume
 
     def get_gross_volume(self, o):
         if not self.has_openings(o):
             return self.get_net_volume(o)
 
+        element = tool.Ifc.get_entity(o)
         mesh = self.get_gross_element_mesh(element)
         bm = self.get_bmesh_from_mesh(mesh)
 
         gross_volume = bm.calc_volume()
 
         bm.free()
-        bpy.data.meshes.remove(mesh)
+        self.delete_mesh(mesh)
 
         return gross_volume
 
