@@ -47,9 +47,7 @@ class SvIfcReadEntity(
 
     def process(self):
         self.sv_input_names = ["entity"]
-        # ifc_class = ensure_min_nesting(self.inputs["entity"].sv_get(), 1)
         entity_id = flatten_data(self.inputs["entity"].sv_get(), target_level=1)
-        print("entity_id", entity_id)
         if not entity_id[0]:
             return
         if len(entity_id) > 1:
