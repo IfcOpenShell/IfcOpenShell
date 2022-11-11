@@ -256,18 +256,25 @@ class BIMArrayProperties(PropertyGroup):
 
 
 class BIMStairProperties(PropertyGroup):
+    stair_types = (
+        ("CONCRETE", "Concrete", ""),
+        ("WOOD/STEEL", "Wood / Steel", ""),
+    )
+
     is_editing: bpy.props.IntProperty(default=-1)
     width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01)
     height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01)
-    number_of_treads: bpy.props.IntProperty(name="Number of Treads (Goings)", default=6, soft_min=1)
+    number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
     tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01)
     tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01)
     base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0)
     top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0)
     has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
+    stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
 
     def get_props_kwargs(self):
         kwargs = {
+            "stair_type": self.stair_type,
             "width": self.width,
             "height": self.height,
             "number_of_treads": self.number_of_treads,
