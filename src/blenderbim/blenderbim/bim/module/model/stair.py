@@ -92,7 +92,7 @@ def generate_stair_2d_profile(
     has_top_nib,
     top_slab_depth,
     base_slab_depth,
-    stair_type="CONCRETE",
+    stair_type,
 ):
     vertices = []
     edges = []
@@ -162,7 +162,6 @@ def update_stair_modifier(context):
     props = obj.BIMStairProperties
 
     props_kwargs = props.get_props_kwargs()
-    props_kwargs["stair_type"] = "CONCRETE"
     vertices, edges, faces = generate_stair_2d_profile(**props_kwargs)
 
     obj = context.object
@@ -268,6 +267,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         element.NumberOfTreads = props.number_of_treads
         element.RiserHeight = props.height / element.NumberOfRisers
         element.TreadLength = props.tread_depth
+        element.PredefinedType = "STRAIGHT"
         return {"FINISHED"}
 
 
@@ -320,6 +320,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
             element.NumberOfTreads = props.number_of_treads
             element.RiserHeight = props.height / element.NumberOfRisers
             element.TreadLength = props.tread_depth
+            element.PredefinedType = "STRAIGHT"
         return {"FINISHED"}
 
 
