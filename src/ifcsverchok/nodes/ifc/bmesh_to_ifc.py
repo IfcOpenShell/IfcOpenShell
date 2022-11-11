@@ -58,7 +58,7 @@ class SvIfcBMeshToIfcRepr(
 
     def refresh_node(self, context):
         if self.refresh_local:
-            updateNode(self, context)
+            self.process()
             self.refresh_local = False
 
     refresh_local: BoolProperty(
@@ -181,14 +181,16 @@ class SvIfcBMeshToIfcRepr(
             if blender_object.type == "MESH":
                 try:
                     bpy.ops.object.mode_set(mode="OBJECT")
-                except:
+                except Exception as e:
+                    print(e)
                     pass
                 bpy.ops.object.select_all(action="DESELECT")
-                blender_object.select_set(True)
                 try:
                     bpy.ops.object.mode_set(mode="EDIT")
-                except:
+                except Exception as e:
+                    print(e)
                     pass
+                blender_object.select_set(True)
                 bpy.ops.mesh.separate(type="LOOSE")
                 representations_ids_obj = []
                 locations_obj = []
@@ -218,7 +220,8 @@ class SvIfcBMeshToIfcRepr(
                 ).append(locations_obj)
                 try:
                     bpy.ops.object.mode_set(mode="OBJECT")
-                except:
+                except Exception as e:
+                    print(e)
                     pass
         bpy.ops.object.select_all(action="DESELECT")
         return representations_ids, locations

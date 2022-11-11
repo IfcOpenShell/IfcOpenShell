@@ -180,11 +180,8 @@ class SvIfcCreateEntity(
                     name=self.names[i],
                     description=self.descriptions[i],
                 )
-                print("Entity: ", entity)
                 try:
-                    print("Representations: ", self.representations[i])
                     for repr in self.representations[i]:
-                        print("Representation: ", repr)
                         if repr:
                             ifcopenshell.api.run(
                                 "geometry.assign_representation",
@@ -196,7 +193,6 @@ class SvIfcCreateEntity(
                     pass
                 try:
                     for loc in self.locations[i]:
-                        print("Location: ", loc)
                         if isinstance(loc, Matrix):
                             ifcopenshell.api.run(
                                 "geometry.edit_object_placement",

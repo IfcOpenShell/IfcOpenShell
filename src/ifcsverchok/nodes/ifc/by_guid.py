@@ -44,14 +44,6 @@ class SvIfcByGuid(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         ).tooltip = "Get IFC element by guid. Takes one or multiple guids."
 
     def process(self):
-        print("\n\n", "#" * 30, "Running SvIfcByGuid node", "#" * 30)
-        print("self: ", self)
-        print("id(self): ", id(self))
-        print("hash(self): ", hash(self))
-        print("node_id: ", self.node_id)
-        self.id = next(self.id_iter)
-        print("self.id (itertool counter): ", self.id)
-
         self.guids = flatten_data(self.inputs["guid"].sv_get(), target_level=1)
         if not self.guids[0]:
             return

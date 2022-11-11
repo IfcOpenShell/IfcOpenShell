@@ -70,7 +70,6 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
         self.file = SvIfcStore.get_file()
         try:
             elements = [self.file.by_id(int(step_id)) for step_id in element_ids]
-            print(elements[0])
         except Exception as e:
             raise Exception("Instance ID not found", e)
 
@@ -84,7 +83,6 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
     def create(self, name, properties, elements):
         results = []
         for element in elements:
-            print("element: ", element)
             result = ifcopenshell.api.run(
                 "pset.add_pset", self.file, product=element, name=name
             )
@@ -94,7 +92,6 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
                 pset=result,
                 properties=json.loads(properties),
             )
-            print("result: ", result)
             SvIfcStore.id_map.setdefault(self.node_id, []).append(result.id())
             results.append(result)
         return results
@@ -113,11 +110,6 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
             )
             results.append(result)
         return results
-
-    # def get_existing_element(self):
-    # entity_id = list(SvIfcStore.id_map.keys())[list(SvIfcStore.id_map.values()).index(self.node_id)]
-
-    # return self.file.by_id(entity_id)
 
 
 def register():
