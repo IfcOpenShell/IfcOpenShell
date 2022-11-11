@@ -26,7 +26,13 @@ import ifcopenshell.api
 from ifcsverchok.ifcstore import SvIfcStore
 import blenderbim.tool as tool
 import blenderbim.core.geometry as core
-from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty, PointerProperty
+from bpy.props import (
+    StringProperty,
+    EnumProperty,
+    IntProperty,
+    BoolProperty,
+    PointerProperty,
+)
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, flatten_data, fixed_iter, flat_iter
 from blenderbim.bim.module.root.prop import get_contexts
@@ -36,7 +42,9 @@ from sverchok.core.socket_data import sv_get_socket
 from itertools import chain, cycle
 
 
-class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+class SvIfcBMeshToIfcRepr(
+    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
+):
     """
     Triggers: BMesh to Ifc Repr
     Tooltip: Blender mesh to Ifc Shape Representation
@@ -53,7 +61,9 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             updateNode(self, context)
             self.refresh_local = False
 
-    refresh_local: BoolProperty(name="Update Node", description="Update Node", update=refresh_node)
+    refresh_local: BoolProperty(
+        name="Update Node", description="Update Node", update=refresh_node
+    )
 
     context_types = [
         ("Model", "Model", "Context type: Model", 0),
@@ -73,10 +83,17 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         ("SKETCH_VIEW", "SKETCH_VIEW", "Target View: SKETCH_VIEW", 3),
     ]
     blender_objects: PointerProperty(
-        name="Blender Mesh(es)", description="Blender Mesh Object(s)", update=updateNode, type=bpy.types.Object
+        name="Blender Mesh(es)",
+        description="Blender Mesh Object(s)",
+        update=updateNode,
+        type=bpy.types.Object,
     )
     context_type: EnumProperty(
-        name="Context Type", description="Default: Model", default="Model", items=context_types, update=updateNode
+        name="Context Type",
+        description="Default: Model",
+        default="Model",
+        items=context_types,
+        update=updateNode,
     )
     context_identifier: EnumProperty(
         name="Context Identifier",
@@ -96,16 +113,20 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "context_type").prop_name = "context_type"
-        self.inputs.new("SvStringsSocket", "context_identifier").prop_name = "context_identifier"
+        self.inputs.new(
+            "SvStringsSocket", "context_identifier"
+        ).prop_name = "context_identifier"
         self.inputs.new("SvStringsSocket", "target_view").prop_name = "target_view"
-        self.inputs.new("SvObjectSocket", "blender_objects").prop_name = "blender_objects"  # no prop for now
+        self.inputs.new(
+            "SvObjectSocket", "blender_objects"
+        ).prop_name = "blender_objects"  # no prop for now
         self.outputs.new("SvVerticesSocket", "Representations")
         self.outputs.new("SvMatrixSocket", "Locations")
 
     def draw_buttons(self, context, layout):
         layout.operator(
             "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Blender mesh to Ifc Shape Representation. \nTakes one or multiple geometries."
+        ).tooltip = "Blender mesh to Ifc Shape Representation. \nTakes one or multiple geometries.\nDeconstructs joined geometries and creates a separate representation for each."
 
         row = layout.row(align=True)
         row.prop(self, "is_interactive", icon="SCENE_DATA", icon_only=True)
@@ -115,7 +136,9 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         self.sv_input_names = [i.name for i in self.inputs]
 
         if hash(self) not in self.node_dict:
-            self.node_dict[hash(self)] = {}  # happens if node is already on canvas when blender loads
+            self.node_dict[
+                hash(self)
+            ] = {}  # happens if node is already on canvas when blender loads
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
 
@@ -179,16 +202,20 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                         context=self.get_context(),
                     )
                     if not representation:
-                        raise Exception("Couldn't create representation. Possibly wrong context.")
+                        raise Exception(
+                            "Couldn't create representation. Possibly wrong context."
+                        )
 
                     representations_ids_obj.append(representation.id())
                     locations_obj.append(obj.matrix_world)
                 representations_ids.append(representations_ids_obj)
                 locations.append(locations_obj)
-                SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(
-                    representations_ids_obj
-                )
-                SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Locations", []).append(locations_obj)
+                SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
+                    "Representations", []
+                ).append(representations_ids_obj)
+                SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
+                    "Locations", []
+                ).append(locations_obj)
                 try:
                     bpy.ops.object.mode_set(mode="OBJECT")
                 except:
@@ -202,7 +229,9 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         for obj in SvIfcStore.id_map[self.node_id]["Representations"]:
             for step_id in obj:
                 ifcopenshell.api.run(
-                    "geometry.remove_representation", self.file, representation=self.file.by_id(step_id)
+                    "geometry.remove_representation",
+                    self.file,
+                    representation=self.file.by_id(step_id),
                 )
         del SvIfcStore.id_map[self.node_id]["Representations"]
         del SvIfcStore.id_map[self.node_id]["Locations"]
@@ -213,9 +242,13 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             self.file, self.context_type, self.context_identifier, self.target_view
         )
         if not context:
-            parent = ifcopenshell.util.representation.get_context(self.file, self.context_type)
+            parent = ifcopenshell.util.representation.get_context(
+                self.file, self.context_type
+            )
             if not parent:
-                parent = ifcopenshell.api.run("context.add_context", self.file, context_type=self.context_type)
+                parent = ifcopenshell.api.run(
+                    "context.add_context", self.file, context_type=self.context_type
+                )
             context = ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
@@ -224,7 +257,9 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                 target_view=self.target_view,
                 parent=parent,
             )
-            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Contexts", []).append(context.id())
+            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
+                "Contexts", []
+            ).append(context.id())
         return context
 
     def sv_free(self):
@@ -234,7 +269,9 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                 for obj in SvIfcStore.id_map[self.node_id]["Representations"]:
                     for step_id in obj:
                         ifcopenshell.api.run(
-                            "geometry.remove_representation", self.file, representation=self.file.by_id(step_id)
+                            "geometry.remove_representation",
+                            self.file,
+                            representation=self.file.by_id(step_id),
                         )
 
             if "Contexts" in SvIfcStore.id_map[self.node_id]:
@@ -243,10 +280,14 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                     if not self.file.get_inverse(context):
                         if self.file.by_id(context_id).ParentContext:
                             parent = self.file.by_id(context_id).ParentContext
-                        ifcopenshell.api.run("context.remove_context", self.file, context=context)
+                        ifcopenshell.api.run(
+                            "context.remove_context", self.file, context=context
+                        )
                         if parent:
                             if not self.file.get_inverse(parent):
-                                ifcopenshell.api.run("context.remove_context", self.file, context=parent)
+                                ifcopenshell.api.run(
+                                    "context.remove_context", self.file, context=parent
+                                )
                         # print("Removed context with step ID: ", context_id)
                         SvIfcStore.id_map[self.node_id]["Contexts"].remove(context_id)
             del SvIfcStore.id_map[self.node_id]

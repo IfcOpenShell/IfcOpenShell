@@ -48,7 +48,11 @@ def get_ifc_products(self, context):
         ]
     )
     if file.schema == "IFC2X3":
-        ifc_products[2] = ("IfcSpatialStructureElement", "IfcSpatialStructureElement", "")
+        ifc_products[2] = (
+            "IfcSpatialStructureElement",
+            "IfcSpatialStructureElement",
+            "",
+        )
     return ifc_products
 
 
@@ -90,25 +94,31 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         update=update_ifc_products,
     )
     ifc_class: EnumProperty(
-        items=get_ifc_classes, name="IfcClass", description="Pick an IfcClass from drop-down.", update=updateNode
+        items=get_ifc_classes,
+        name="IfcClass",
+        description="Pick an IfcClass from drop-down.",
+        update=updateNode,
     )
     custom_ifc_class: StringProperty(
-        name="Custom IfcClass", description="Give the name of your custom IfcClass.", update=updateNode
+        name="Custom IfcClass",
+        description="Give the name of your custom IfcClass.",
+        update=updateNode,
     )
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "ifc_product").prop_name = "ifc_product"
         self.inputs.new("SvStringsSocket", "ifc_class").prop_name = "ifc_class"
-        self.inputs.new("SvStringsSocket", "custom_ifc_class").prop_name = "custom_ifc_class"
-        self.outputs.new("SvStringsSocket", "Entity")
+        self.inputs.new(
+            "SvStringsSocket", "custom_ifc_class"
+        ).prop_name = "custom_ifc_class"
+        self.outputs.new("SvStringsSocket", "Entities")
+        self.outputs.new("SvStringsSocket", "Entity Ids")
         self.width = 200
 
     def draw_buttons(self, context, layout):
         layout.operator(
             "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = (
-            "Get IFC element(s) in file by type. \nPick an IfcProduct and an IfcClass or give a custom IfcClass."
-        )
+        ).tooltip = "Get IFC element(s) in file by type. \nPick an IfcProduct and an IfcClass or give a custom IfcClass."
 
     def process(self):
         self.file = SvIfcStore.get_file()
@@ -120,11 +130,16 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
 
     def process_ifc(self, ifc_product, ifc_class, custom_ifc_class):
         if custom_ifc_class:
-            self.outputs["Entity"].sv_set([self.file.by_type(custom_ifc_class)])
+            entities = self.file.by_type(custom_ifc_class)
+            self.outputs["Entities"].sv_set(entities)
+            self.outputs["Entity Ids"].sv_set([e.id() for e in entities])
         elif ifc_class:
-            self.outputs["Entity"].sv_set([self.file.by_type(ifc_class)])
+            entities = self.file.by_type(ifc_class)
+            self.outputs["Entities"].sv_set(self.file.by_type(ifc_class))
+            self.outputs["Entity Ids"].sv_set([e.id() for e in entities])
         else:
-            self.outputs["Entity"].sv_set([])
+            self.outputs["Entities"].sv_set([])
+            self.outputs["Entity Ids"].sv_set([])
 
 
 def register():
