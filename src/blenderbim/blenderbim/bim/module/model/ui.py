@@ -329,34 +329,39 @@ class BIM_PT_stair(bpy.types.Panel):
 
         if StairData.data["parameters"]:
             row = self.layout.row(align=True)
-            row.label(text="Stair", icon="IPO_CONSTANT")
+            row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
             stair_data = StairData.data["parameters"]["data"]
-            box = self.layout.box()
             if props.is_editing != -1:
-                row = box.row(align=True)
+                row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish editing")
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
-                row = box.row(align=True)
+                row = self.layout.row(align=True)
                 for prop_name in props.get_props_kwargs():
-                    box.prop(props, prop_name)
+                    self.layout.prop(props, prop_name)
                 update_stair_modifier(context)
             else:
-                row = box.row(align=True)
-                row.label(text=f"Parameters:", icon="MOD_ARRAY")
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_stair", icon="X", text="")
-                row = box.row(align=True)
+                row = self.layout.row(align=True)
                 for prop in props.get_props_kwargs():
                     prop_value = stair_data[prop]
                     prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
-                    box.label(text=f"{props.bl_rna.properties[prop].name}: {prop_value}")
+                    row = self.layout.row(align=True)
+                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=str(prop_value))
 
             # calculated properties
             number_of_rises = props.number_of_treads + 1
-            box.label(text=f"Number of risers: {number_of_rises}")
-            box.label(text=f"Tread rise: {round(props.height / number_of_rises, 5)}")
-            box.label(text=f"Length: {round(props.tread_run * number_of_rises, 5)}")
+            row = self.layout.row(align=True)
+            row.label(text="Number of risers")
+            row.label(text=str(number_of_rises))
+            row = self.layout.row(align=True)
+            row.label(text="Tread rise")
+            row.label(text=str(round(props.height / number_of_rises, 5)))
+            row = self.layout.row(align=True)
+            row.label(text="Length")
+            row.label(text=str(round(props.tread_run * number_of_rises, 5)))
         else:
             row = self.layout.row()
             row.label(text="No Stair Found")
