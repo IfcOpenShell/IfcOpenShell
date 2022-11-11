@@ -273,15 +273,24 @@ class BIMStairProperties(PropertyGroup):
     stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
 
     def get_props_kwargs(self):
-        kwargs = {
-            "stair_type": self.stair_type,
-            "width": self.width,
-            "height": self.height,
-            "number_of_treads": self.number_of_treads,
-            "tread_depth": self.tread_depth,
-            "tread_run": self.tread_run,
-            "base_slab_depth": self.base_slab_depth,
-            "top_slab_depth": self.top_slab_depth,
-            "has_top_nib": self.has_top_nib,
-        }
-        return kwargs
+        if self.stair_type == "CONCRETE":
+            return {
+                "stair_type": self.stair_type,
+                "width": self.width,
+                "height": self.height,
+                "number_of_treads": self.number_of_treads,
+                "tread_depth": self.tread_depth,
+                "tread_run": self.tread_run,
+                "base_slab_depth": self.base_slab_depth,
+                "top_slab_depth": self.top_slab_depth,
+                "has_top_nib": self.has_top_nib,
+            }
+        elif self.stair_type == "WOOD/STEEL":
+            return {
+                "stair_type": self.stair_type,
+                "width": self.width,
+                "height": self.height,
+                "number_of_treads": self.number_of_treads,
+                "tread_depth": self.tread_depth,
+                "tread_run": self.tread_run,
+            }

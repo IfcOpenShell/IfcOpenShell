@@ -89,72 +89,93 @@ def generate_stair_2d_profile(
     width,
     tread_run,
     tread_depth,
-    has_top_nib,
-    top_slab_depth,
-    base_slab_depth,
     stair_type,
+    # CONCRETE STAIR ARGUMENTS
+    has_top_nib=None,
+    top_slab_depth=None,
+    base_slab_depth=None,
 ):
     vertices = []
     edges = []
+    faces = []
 
     number_of_risers = number_of_treads + 1
     tread_rise = height / number_of_risers
     length = tread_run * number_of_risers
 
-    for i in range(number_of_risers):
-        vertices.extend([
-            Vector((tread_run*i, 0, tread_rise*i)),
-            Vector((tread_run*i, 0, tread_rise*(i+1)))
-        ])
-        cur_vertex = i * 2
-        if i != 0:
-            edges.append((cur_vertex - 1, cur_vertex))
-        edges.append((cur_vertex, cur_vertex + 1))
+    if stair_type == "WOOD/STEEL":
+        for i in range(number_of_risers):
+            v1 = Vector(((i + 1) * tread_run, 0, (i + 1) * tread_rise))
+            v0 = v1 - Vector((tread_run, 0, 0))
+            v2 = v1 - Vector((0, 0, tread_depth))
+            v3 = v0 - Vector((0, 0, tread_depth))
+            vertices.extend([v0, v1, v2, v3])
 
-    vertices.append(Vector((tread_run * number_of_risers, 0, tread_rise * number_of_risers)))
-    edges.append((number_of_risers * 2, number_of_risers * 2 - 1))
+            cur_vertex = i * 4
+            edges.extend([
+                (cur_vertex, cur_vertex+1),
+                (cur_vertex+1, cur_vertex+2),
+                (cur_vertex+2, cur_vertex+3),
+                (cur_vertex+3, cur_vertex),
+            ])
+            faces.append(list(range(4 * i, 4 * i + 1)))
 
-    td_vector = Vector((vertices[2][2], 0, -vertices[2][0])).normalized() * tread_depth
+        return (vertices, edges, faces)
+    elif stair_type == "CONCRETE":
+        for i in range(number_of_risers):
+            vertices.extend([
+                Vector((tread_run*i, 0, tread_rise*i)),
+                Vector((tread_run*i, 0, tread_rise*(i+1)))
+            ])
+            cur_vertex = i * 2
+            if i != 0:
+                edges.append((cur_vertex - 1, cur_vertex))
+            edges.append((cur_vertex, cur_vertex + 1))
 
-    k = tread_rise / tread_run
-    s0 = vertices[0] + td_vector
-    b = s0.z - k * s0.x  # comes from y = kx + b
-    # you could use td_vector as depth_vector
-    # but then stair won't be perpendicular to the X+
-    # b is kind of vertical tread_depth (along Z+)
-    depth_vector = Vector((0, 0, b))
+        vertices.append(Vector((tread_run * number_of_risers, 0, tread_rise * number_of_risers)))
+        edges.append((number_of_risers * 2, number_of_risers * 2 - 1))
 
-    # top nib
-    if has_top_nib:
-        vertices.append( vertices[number_of_risers * 2] + Vector((0, 0, -top_slab_depth)) )
-        vertices.append( vertices[number_of_risers * 2] + Vector(((-top_slab_depth - b) / k, 0, -top_slab_depth)) )
-        last_vertex_i = len(vertices) - 1
-        edges.append( (number_of_risers * 2, last_vertex_i - 1) )
-        edges.append( (last_vertex_i - 1, last_vertex_i) )
-    else:
-        vertices.append(vertices[number_of_risers * 2] + depth_vector)
-        last_vertex_i = len(vertices) - 1
-        edges.append((number_of_risers * 2, last_vertex_i))
+        td_vector = Vector((vertices[2][2], 0, -vertices[2][0])).normalized() * tread_depth
 
-    top_nib_end = len(vertices) - 1
+        k = tread_rise / tread_run
+        s0 = vertices[0] + td_vector
+        b = s0.z - k * s0.x  # comes from y = kx + b
+        # you could use td_vector as depth_vector
+        # but then stair won't be perpendicular to the X+
+        # b is kind of vertical tread_depth (along Z+)
+        depth_vector = Vector((0, 0, b))
 
-    # bottom nib
-    if abs(b) <= base_slab_depth:
-        vertices.append(vertices[0] + depth_vector)
-        edges.append((0, len(vertices) - 1))
-        bottom_nib_end = len(vertices) - 1
-    else:
-        vertices.append(vertices[0] + Vector(((-base_slab_depth - b) / k, 0, -base_slab_depth)))
-        vertices.append(vertices[0] + Vector((0, 0, -base_slab_depth)))
-        last_vertex_i = len(vertices) - 1
-        edges.append( (0, last_vertex_i) )
-        edges.append( (last_vertex_i - 1, last_vertex_i) )
-        bottom_nib_end = len(vertices) - 2
+        # top nib
+        if has_top_nib:
+            vertices.append( vertices[number_of_risers * 2] + Vector((0, 0, -top_slab_depth)) )
+            vertices.append( vertices[number_of_risers * 2] + Vector(((-top_slab_depth - b) / k, 0, -top_slab_depth)) )
+            last_vertex_i = len(vertices) - 1
+            edges.append( (number_of_risers * 2, last_vertex_i - 1) )
+            edges.append( (last_vertex_i - 1, last_vertex_i) )
+        else:
+            vertices.append(vertices[number_of_risers * 2] + depth_vector)
+            last_vertex_i = len(vertices) - 1
+            edges.append((number_of_risers * 2, last_vertex_i))
 
-    edges.append( (bottom_nib_end, top_nib_end) )
-    faces = [list(range(len(vertices)))]
+        top_nib_end = len(vertices) - 1
 
-    return (vertices, edges, faces)
+        # bottom nib
+        if abs(b) <= base_slab_depth:
+            vertices.append(vertices[0] + depth_vector)
+            edges.append((0, len(vertices) - 1))
+            bottom_nib_end = len(vertices) - 1
+        else:
+            vertices.append(vertices[0] + Vector(((-base_slab_depth - b) / k, 0, -base_slab_depth)))
+            vertices.append(vertices[0] + Vector((0, 0, -base_slab_depth)))
+            last_vertex_i = len(vertices) - 1
+            edges.append( (0, last_vertex_i) )
+            edges.append( (last_vertex_i - 1, last_vertex_i) )
+            bottom_nib_end = len(vertices) - 2
+
+        edges.append( (bottom_nib_end, top_nib_end) )
+        faces = [list(range(len(vertices)))]
+
+        return (vertices, edges, faces)
 
 
 def update_stair_modifier(context):
@@ -177,7 +198,7 @@ def update_stair_modifier(context):
     bmesh.ops.contextual_create(bm, geom=new_edges)
 
     bm.faces.ensure_lookup_table()
-    faces = [bm.faces[0]]
+    faces = bm.faces
     extruded = bmesh.ops.extrude_face_region(bm, geom=faces)
     extrusion_vector = Vector((0, 1, 0)) * props.width
     translate_verts = [v for v in extruded["geom"] if isinstance(v, BMVert)]
