@@ -28,22 +28,36 @@ import ifcopenshell
 
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
+from sverchok.data_structure import updateNode, flatten_data
 
 
 class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcAddPset"
     bl_label = "IFC Add Pset"
-    Name: StringProperty(name="Name", update=updateNode, default="My_Pset")
-    Properties: StringProperty(name="Properties", update=updateNode, default="{\"Foo\":\"Bar\"}")
-    Elements: StringProperty(name="Elements", update=updateNode)
+    Name: StringProperty(
+        name="Name",
+        description="Name of the property set. Eg. Pset_WallCommon.",
+        update=updateNode,
+        default="My_Pset",
+    )
+    Properties: StringProperty(
+        name="Properties",
+        description='Propertied in a JSON key:value format.Eg. {"IsExternal":"True"}',
+        update=updateNode,
+        default='{"Foo":"Bar"}',
+    )
+    Elements: StringProperty(name="Element Ids", update=updateNode)
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "Name").prop_name = "Name"
         self.inputs.new("SvTextSocket", "Properties").prop_name = "Properties"
         self.inputs.new("SvStringsSocket", "Elements").prop_name = "Elements"
-        self.outputs.new("SvStringsSocket", "entity")
-        self.outputs.new("SvStringsSocket", "file")
+        self.outputs.new("SvStringsSocket", "Entity")
+
+    def draw_buttons(self, context, layout):
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Add a property set and corresponding properties to IfcElements."
 
     def process(self):
         if not any(socket.is_linked for socket in self.outputs):
@@ -51,37 +65,59 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
 
         name = self.inputs["Name"].sv_get()[0][0]
         properties = self.inputs["Properties"].sv_get()[0][0]
-        elements = self.inputs["Elements"].sv_get()[0]
+        element_ids = flatten_data(self.inputs["Elements"].sv_get(), target_level=1)
 
-        if SvIfcStore.file is None:
-            SvIfcStore.file = SvIfcStore.create_boilerplate()
         self.file = SvIfcStore.get_file()
+        try:
+            elements = [self.file.by_id(int(step_id)) for step_id in element_ids]
+            print(elements[0])
+        except Exception as e:
+            raise Exception("Instance ID not found", e)
 
-        if self.node_id not in SvIfcStore.id_map.values():
+        if self.node_id not in SvIfcStore.id_map:
             element = self.create(name, properties, elements)
         else:
             element = self.edit(name, properties, elements)
 
-        self.outputs["entity"].sv_set([[element]])
-        self.outputs["file"].sv_set([[self.file]])
+        self.outputs["Entity"].sv_set([element])
 
     def create(self, name, properties, elements):
         results = []
         for element in elements:
-            result = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=name)
-            ifcopenshell.api.run("pset.edit_pset", self.file, pset=result, properties=json.loads(properties))
-            SvIfcStore.id_map[result.id()] = self.node_id
+            print("element: ", element)
+            result = ifcopenshell.api.run(
+                "pset.add_pset", self.file, product=element, name=name
+            )
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                self.file,
+                pset=result,
+                properties=json.loads(properties),
+            )
+            print("result: ", result)
+            SvIfcStore.id_map.setdefault(self.node_id, []).append(result.id())
             results.append(result)
-        return result
+        return results
 
     def edit(self, name, properties, elements):
-        result = self.get_existing_element()
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=result, name=name, properties=json.loads(properties))
-        return result
+        result_ids = SvIfcStore.id_map[self.node_id]
+        results = []
+        for result_id in result_ids:
+            result = self.file.by_id(result_id)
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                self.file,
+                pset=result,
+                name=name,
+                properties=json.loads(properties),
+            )
+            results.append(result)
+        return results
 
-    def get_existing_element(self):
-        entity_id = list(SvIfcStore.id_map.keys())[list(SvIfcStore.id_map.values()).index(self.node_id)]
-        return self.file.by_id(entity_id)
+    # def get_existing_element(self):
+    # entity_id = list(SvIfcStore.id_map.keys())[list(SvIfcStore.id_map.values()).index(self.node_id)]
+
+    # return self.file.by_id(entity_id)
 
 
 def register():

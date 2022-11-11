@@ -46,7 +46,7 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
 
     bl_idname = "SvIfcCreateShape"
     bl_label = "IFC Create Blender Shape"
-    entity: StringProperty(name="Entities", update=updateNode)
+    entity: StringProperty(name="Entity Id(s)", update=updateNode)
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "Entities").prop_name = "entity"
@@ -56,7 +56,7 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
         row = layout.row(align=True)
         row.operator(
             "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Create Blender shape from IfcEntity ID. Takes one or multiple IfcEntity IDs."
+        ).tooltip = "Create Blender shape from IfcEntity Id. Takes one or multiple IfcEntity IDs."
         row.prop(self, "refresh_local", icon="FILE_REFRESH")
 
     def process(self):

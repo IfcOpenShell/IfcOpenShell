@@ -24,10 +24,17 @@ from ifcsverchok.ifcstore import SvIfcStore
 
 from bpy.props import StringProperty, BoolProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, flatten_data, repeat_last_for_length, ensure_min_nesting
+from sverchok.data_structure import (
+    updateNode,
+    flatten_data,
+    repeat_last_for_length,
+    ensure_min_nesting,
+)
 
 
-class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+class SvIfcCreateEntity(
+    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
+):
     bl_idname = "SvIfcCreateEntity"
     bl_label = "IFC Create Entity"
     node_dict = {}
@@ -39,12 +46,29 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
             self.process()
             self.refresh_local = False
 
-    refresh_local: BoolProperty(name="Update Node", description="Update Node", update=refresh_node)
+    refresh_local: BoolProperty(
+        name="Update Node", description="Update Node", update=refresh_node
+    )
 
-    Names: StringProperty(name="Names", default="", update=updateNode)
-    Descriptions: StringProperty(name="Descriptions", default="", update=updateNode)
+    Names: StringProperty(
+        name="Names",
+        default="",
+        description="Entity name or list of names.",
+        update=updateNode,
+    )
+    Descriptions: StringProperty(
+        name="Descriptions",
+        default="",
+        description="Entity description or list of descriptions.",
+        update=updateNode,
+    )
     IfcClass: StringProperty(name="IfcClass", update=updateNode)
-    Representations: StringProperty(name="Representations", default="", update=updateNode)
+    Representations: StringProperty(
+        name="Representations",
+        description='IfcRepresentation(s). Use eg. "IFC BMesh to IFC" or "IFC Sverchok to IFC" nodes to create representations.',
+        default="",
+        update=updateNode,
+    )
     # Locations: FloatVectorProperty(name="Locations", default="", update=updateNode)
     Properties: StringProperty(name="properties", update=updateNode)
 
@@ -52,7 +76,9 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         self.inputs.new("SvStringsSocket", "Names").prop_name = "Names"
         self.inputs.new("SvStringsSocket", "Descriptions").prop_name = "Descriptions"
         self.inputs.new("SvStringsSocket", "IfcClass").prop_name = "IfcClass"
-        self.inputs.new("SvStringsSocket", "Representations").prop_name = "Representations"
+        self.inputs.new(
+            "SvStringsSocket", "Representations"
+        ).prop_name = "Representations"
         self.inputs.new("SvMatrixSocket", "Locations").is_mandatory = False
         self.inputs.new("SvStringsSocket", "Properties").prop_name = "Properties"
         self.outputs.new("SvStringsSocket", "Entities")
@@ -69,17 +95,27 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
 
     def process(self):
         self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
-        self.descriptions = flatten_data(self.inputs["Descriptions"].sv_get(), target_level=1)
-        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[0]
-        self.representations = ensure_min_nesting(self.inputs["Representations"].sv_get(), 2)
+        self.descriptions = flatten_data(
+            self.inputs["Descriptions"].sv_get(), target_level=1
+        )
+        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[
+            0
+        ]
+        self.representations = ensure_min_nesting(
+            self.inputs["Representations"].sv_get(), 2
+        )
         self.representations = flatten_data(self.representations, target_level=2)
-        self.locations = ensure_min_nesting(self.inputs["Locations"].sv_get(default=[]), 2)
+        self.locations = ensure_min_nesting(
+            self.inputs["Locations"].sv_get(default=[]), 2
+        )
         self.properties = self.inputs["Properties"].sv_get()
 
         self.sv_input_names = [i.name for i in self.inputs]
 
         if hash(self) not in self.node_dict:
-            self.node_dict[hash(self)] = {}  # happens if node is already on canvas when blender loads
+            self.node_dict[
+                hash(self)
+            ] = {}  # happens if node is already on canvas when blender loads
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
         if not self.inputs["IfcClass"].sv_get()[0][0]:
@@ -87,7 +123,9 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
 
         edit = False
         for i in range(len(self.inputs)):
-            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=True, default=[])
+            input = self.inputs[self.sv_input_names[i]].sv_get(
+                deepcopy=True, default=[]
+            )
             if (
                 isinstance(self.node_dict[hash(self)][self.inputs[i].name], list)
                 and input != self.node_dict[hash(self)][self.inputs[i].name]
@@ -103,14 +141,19 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
             try:
                 # self.representations = [self.file.by_id(step_id) for step_id in self.representations]
                 self.representations = [
-                    [self.file.by_id(step_id) for step_id in representation] for representation in self.representations
+                    [self.file.by_id(step_id) for step_id in representation]
+                    for representation in self.representations
                 ]
             except Exception as e:
                 raise
             self.names = self.repeat_input_unique(self.names, len(self.representations))
-            self.descriptions = self.repeat_input_unique(self.descriptions, len(self.representations))
-        elif not self.representations[0]:
-            self.descriptions = self.repeat_input_unique(self.descriptions, len(self.names))
+            self.descriptions = self.repeat_input_unique(
+                self.descriptions, len(self.representations)
+            )
+        elif not self.representations[0][0]:
+            self.descriptions = self.repeat_input_unique(
+                self.descriptions, len(self.names)
+            )
 
         if self.node_id not in SvIfcStore.id_map:
             entities = self.create()
@@ -137,19 +180,29 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                     name=self.names[i],
                     description=self.descriptions[i],
                 )
+                print("Entity: ", entity)
                 try:
+                    print("Representations: ", self.representations[i])
                     for repr in self.representations[i]:
-                        if self.representations[i]:
+                        print("Representation: ", repr)
+                        if repr:
                             ifcopenshell.api.run(
-                                "geometry.assign_representation", self.file, product=entity, representation=repr
+                                "geometry.assign_representation",
+                                self.file,
+                                product=entity,
+                                representation=repr,
                             )
                 except IndexError:
                     pass
                 try:
                     for loc in self.locations[i]:
-                        if isinstance(self.locations[i], Matrix):
+                        print("Location: ", loc)
+                        if isinstance(loc, Matrix):
                             ifcopenshell.api.run(
-                                "geometry.edit_object_placement", self.file, product=entity, matrix=loc
+                                "geometry.edit_object_placement",
+                                self.file,
+                                product=entity,
+                                matrix=loc,
                             )
                 except IndexError:
                     pass
@@ -179,19 +232,29 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                         entity.Representation = repr
                     elif repr:
                         ifcopenshell.api.run(
-                            "geometry.assign_representation", self.file, product=entity, representation=repr
+                            "geometry.assign_representation",
+                            self.file,
+                            product=entity,
+                            representation=repr,
                         )
             except IndexError:
                 pass
             try:
                 for loc in self.locations[i]:
                     if isinstance(loc, Matrix):
-                        ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=entity, matrix=loc)
+                        ifcopenshell.api.run(
+                            "geometry.edit_object_placement",
+                            self.file,
+                            product=entity,
+                            matrix=loc,
+                        )
             except IndexError:
                 pass
             if entity.is_a() != self.ifc_class:
                 SvIfcStore.id_map[self.node_id].remove(step_id)
-                entity = ifcopenshell.util.schema.reassign_class(self.file, entity, self.ifc_class)
+                entity = ifcopenshell.util.schema.reassign_class(
+                    self.file, entity, self.ifc_class
+                )
                 SvIfcStore.id_map.setdefault(self.node_id, []).append(entity.id())
             entities_ids.append(entity.id())
 
@@ -203,7 +266,8 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         input = repeat_last_for_length(input, count, deepcopy=False)
         if input[0]:
             input = [
-                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}" for i, a in enumerate(input)
+                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}"
+                for i, a in enumerate(input)
             ]  # add number to duplicates
         return input
 
