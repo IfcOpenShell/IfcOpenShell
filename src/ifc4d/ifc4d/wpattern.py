@@ -34,7 +34,6 @@ class AstaCalendarWorkPattern:
         }
         self.keys = self.get_keys(string)
         self.values = self.get_values(string)
-        self.dict_wp = {}
         self.dict_wp = []
         for d, m in zip(self.values[1:], self.keys):
             splt_data = d.strip().split(",")
@@ -55,15 +54,17 @@ class AstaCalendarWorkPattern:
             self.dict_wp.append({"DayOfWeek": m.replace('"', ""), "WorkTimes": workhours, "ifc": None})
 
             # Translate day names to english
-            for index, day in enumerate(self.Days["en"]):
-                d = self.dict_wp[-1]["DayOfWeek"]
-                for lang in self.Days.keys():
-                    if lang == "en":
-                        continue
-                    self.dict_wp[-1]["DayOfWeek"] = d.replace(self.Days[lang][index], self.Days["en"][index])
+            def translate_days(days, wp):
+                for index, day in enumerate(days["en"]):
+                    for lang in days.keys():
+                        if lang == "en":
+                            continue
+                        if wp["DayOfWeek"] == days[lang][index]:
+                            wp["DayOfWeek"] = days["en"][index]
+                            return
+            translate_days(self.Days, self.dict_wp[-1])
 
         for day in self.Days["en"]:
             if not len(list(filter(lambda d: d["DayOfWeek"] == day, self.dict_wp))) > 0:
                 print("MISSING", day)
                 self.dict_wp.append({"DayOfWeek": day, "WorkTimes": [], "ifc": None})
-        print("final", self.dict_wp)
