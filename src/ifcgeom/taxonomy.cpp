@@ -114,6 +114,10 @@ namespace {
 		return *it == -1;
 	}
 
+	bool compare(const node&, const node&) {
+		throw std::runtime_error("not implemented");
+	}
+
 	bool compare(const style& a, const style& b) {
 		const int order[5] = {
 			less_to_order(a.name, b.name),
@@ -246,4 +250,12 @@ namespace {
 			return a.children.size() < b.children.size();
 		}
 	}
+}
+
+ifcopenshell::geometry::taxonomy::collection * ifcopenshell::geometry::flatten(const taxonomy::collection * deep) {
+	auto flat = new taxonomy::collection;
+	visit(deep, [&flat](taxonomy::item* i) {
+		flat->children.push_back(i);
+	});
+	return flat;
 }

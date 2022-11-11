@@ -137,29 +137,6 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 	}
 }
 
-namespace {
-	template <typename T, typename Fn>
-	void visit(const taxonomy::collection* c, const Fn& fn) {
-		static_assert(std::is_same<T, taxonomy::point3>::value, "@todo Only implemented for point3");
-		for (auto& i : c->children) {
-			if (dynamic_cast<const taxonomy::collection*>(i)) {
-				visit<T>(dynamic_cast<const taxonomy::collection*>(i), fn);
-			} else if (i->kind() == taxonomy::POINT3) {
-				fn((const taxonomy::point3*) i);
-			} else if (i->kind() == taxonomy::EDGE) {
-				// @todo maybe make edge a collection then as well?
-				auto l = (const taxonomy::edge *) i;
-				if (l->start.which() == 0) {
-					fn(&boost::get<taxonomy::point3>(l->start));
-				}
-				if (l->end.which() == 0) {
-					fn(&boost::get<taxonomy::point3>(l->end));
-				}
-			}
-		}
-	}
-}
-
 bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 	auto faces = l->children_as<taxonomy::face>();
 
@@ -170,7 +147,7 @@ bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 			Eigen::Vector3d(-inf, -inf, -inf)
 		);
 		size_t num_points = 0;
-		visit<taxonomy::point3>(l, [&minmax, &num_points](const taxonomy::point3* p) {
+		visit_2<taxonomy::point3>(l, [&minmax, &num_points](const taxonomy::point3* p) {
 			auto& c = p->ccomponents();
 			++num_points;
 			for (int i = 0; i < 3; ++i) {

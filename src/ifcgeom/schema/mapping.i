@@ -24,18 +24,20 @@
  *                                                                              *
  ********************************************************************************/
 
+// @todo bring back return value for reduced casting, casting of vector is expensive?
+
 BIND(IfcProduct);
 
-BIND(IfcShellBasedSurfaceModel);
-BIND(IfcFaceBasedSurfaceModel);
-BIND(IfcRepresentation);
-BIND(IfcMappedItem);
+BIND(IfcShellBasedSurfaceModel); // -> collection
+BIND(IfcFaceBasedSurfaceModel); // -> collection
+BIND(IfcRepresentation); // -> collection
+BIND(IfcMappedItem); // -> collection
 // IfcFacetedBrep included
 // IfcAdvancedBrep included
 // IfcFacetedBrepWithVoids included
 // IfcAdvancedBrepWithVoids included
-BIND(IfcManifoldSolidBrep);
-BIND(IfcGeometricSet);
+BIND(IfcManifoldSolidBrep); // -> shell
+BIND(IfcGeometricSet); // -> collection
 
 #ifdef SCHEMA_HAS_IfcCylindricalSurface
 // BIND(IfcCylindricalSurface);
@@ -53,12 +55,12 @@ BIND(IfcGeometricSet);
 #ifdef SCHEMA_HAS_IfcExtrudedAreaSolidTapered
 // BIND(IfcExtrudedAreaSolidTapered);
 #endif
-BIND(IfcExtrudedAreaSolid);
+BIND(IfcExtrudedAreaSolid); // -> extrusion
 // BIND(IfcRevolvedAreaSolid);
-BIND(IfcConnectedFaceSet);
-BIND(IfcBooleanResult);
-BIND(IfcPolygonalBoundedHalfSpace);
-BIND(IfcHalfSpaceSolid);
+BIND(IfcConnectedFaceSet); // -> shell
+BIND(IfcBooleanResult); // -> boolean_result
+BIND(IfcPolygonalBoundedHalfSpace); // -> face
+BIND(IfcHalfSpaceSolid); // -> face
 // BIND(IfcSurfaceOfLinearExtrusion);
 // BIND(IfcSurfaceOfRevolution);
 // BIND(IfcBlock);
@@ -73,43 +75,43 @@ BIND(IfcHalfSpaceSolid);
 // BIND(IfcSweptDiskSolid);
 
 // IfcArbitraryProfileDefWithVoids included
-BIND(IfcArbitraryClosedProfileDef);
-BIND(IfcRectangleHollowProfileDef);
+BIND(IfcArbitraryClosedProfileDef); // -> face
+BIND(IfcRectangleHollowProfileDef); // -> face
 // IfcRoundedRectangleProfileDef included
-BIND(IfcRectangleProfileDef);
+BIND(IfcRectangleProfileDef); // -> face
 // BIND(IfcTrapeziumProfileDef)
 // BIND(IfcCShapeProfileDef);
 // IfcAsymmetricIShapeProfileDef included
-BIND(IfcIShapeProfileDef);
+BIND(IfcIShapeProfileDef); // -> face
 // BIND(IfcLShapeProfileDef);
 // BIND(IfcTShapeProfileDef);
 // BIND(IfcUShapeProfileDef);
 // BIND(IfcZShapeProfileDef);
 // IfcCircleHollowProfileDef included
-BIND(IfcCircleProfileDef);
+BIND(IfcCircleProfileDef); // -> face
 // BIND(IfcEllipseProfileDef);
 // BIND(IfcCenterLineProfileDef);
 // BIND(IfcCompositeProfileDef);
 // BIND(IfcDerivedProfileDef);
 // IfcFaceSurface included
 // IfcAdvancedFace included in case of IFC4
-BIND(IfcFace);
+BIND(IfcFace); // -> face
 
 // BIND(IfcEdgeCurve);
 // BIND(IfcSubedge);
 // BIND(IfcOrientedEdge);
 // BIND(IfcEdge);
 // BIND(IfcEdgeLoop);
-BIND(IfcPolyline);
-BIND(IfcPolyLoop);
-BIND(IfcCompositeCurve);
-BIND(IfcTrimmedCurve);
+BIND(IfcPolyline); // -> loop
+BIND(IfcPolyLoop); // -> loop
+BIND(IfcCompositeCurve); // -> loop
+BIND(IfcTrimmedCurve); // -> edge
 // BIND(IfcArbitraryOpenProfileDef);
 #ifdef SCHEMA_HAS_IfcIndexedPolyCurve
 // BIND(IfcIndexedPolyCurve)
 #endif
 
-BIND(IfcCircle);
+BIND(IfcCircle); // -> circle
 // BIND(IfcEllipse);
 // BIND(IfcLine);
 #ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
@@ -117,19 +119,19 @@ BIND(IfcCircle);
 // BIND(IfcBSplineCurveWithKnots);
 #endif
 
-BIND(IfcCartesianPoint);
-BIND(IfcDirection);
-BIND(IfcAxis2Placement2D);
-BIND(IfcAxis2Placement3D);
+BIND(IfcCartesianPoint); // -> point3
+BIND(IfcDirection); // -> direction3
+BIND(IfcAxis2Placement2D); // -> matrix4
+BIND(IfcAxis2Placement3D); // -> matrix4
 // BIND(IfcAxis1Placement);
 // IfcCartesianTransformationOperator2DnonUniform included
-BIND(IfcCartesianTransformationOperator2D);
+BIND(IfcCartesianTransformationOperator2D); // -> matrix4
 // IfcCartesianTransformationOperator3DnonUniform included
-BIND(IfcCartesianTransformationOperator3D);
-BIND(IfcLocalPlacement);
+BIND(IfcCartesianTransformationOperator3D); // -> matrix4
+BIND(IfcLocalPlacement); // -> matrix4
 // BIND(IfcVector);
 // BIND(IfcPlane);
 
 // BIND(IfcColourRgb);
-BIND(IfcMaterial);
-BIND(IfcStyledItem);
+BIND(IfcMaterial); // -> style
+BIND(IfcStyledItem); // -> style

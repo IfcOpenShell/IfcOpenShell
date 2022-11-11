@@ -12,6 +12,8 @@
 #include <tuple>
 #include <exception>
 
+// @todo don't do std::less but use hashing and cache hash values.
+
 namespace ifcopenshell {
 
 namespace geometry {
@@ -341,6 +343,7 @@ struct edge : public trimmed_curve {
 	virtual kinds kind() const { return EDGE; }
 };
 
+// template <typename T=item>
 struct collection : public geom_item {
 	std::vector<item*> children;
 
@@ -388,7 +391,7 @@ struct collection : public geom_item {
 	}
 };
 
-struct shell : public collection {
+struct shell : public collection /*<face>*/ {
 	boost::optional<bool> closed;
 
 	virtual item* clone() const { return new shell(*this); }
@@ -406,14 +409,14 @@ struct plane : public surface {
 	}
 };
 
-struct face : public collection {
+struct face : public collection /*<loop>*/ {
 	item* basis;
 
 	virtual item* clone() const { return new face(*this); }
 	virtual kinds kind() const { return FACE; }
 };
 
-struct loop : public collection {
+struct loop : public collection /*<edge>*/ {
 	boost::optional<bool> external, closed;
 
 	virtual item* clone() const { return new loop(*this); }
@@ -443,11 +446,13 @@ struct extrusion : public sweep {
 	}
 };
 
-struct node : public collection {
+struct node : public item {
 	std::map<std::string, geom_item*> representations;
 
 	virtual item* clone() const { return new node(*this); }
 	virtual kinds kind() const { return NODE; }
+
+	void print(std::ostream&, int = 0) const {}
 };
 
 struct boolean_result : public collection {
@@ -482,7 +487,81 @@ struct curves {
 
 }
 
+	template <typename Fn>
+	void visit(const taxonomy::collection* deep, Fn fn) {
+		for (auto& c : deep->children) {
+			if (c->kind() == taxonomy::COLLECTION) {
+				visit((taxonomy::collection*)c, fn);
+			} else {
+				fn(c);
+			}
+		}
+	}
 
+	template <typename T, typename Fn>
+	void visit_2(const taxonomy::collection* c, const Fn& fn) {
+		static_assert(std::is_same<T, taxonomy::point3>::value, "@todo Only implemented for point3");
+		for (auto& i : c->children) {
+			if (dynamic_cast<const taxonomy::collection*>(i)) {
+				visit_2<T>(dynamic_cast<const taxonomy::collection*>(i), fn);
+			} else if (i->kind() == taxonomy::POINT3) {
+				fn((const taxonomy::point3*) i);
+			} else if (i->kind() == taxonomy::EDGE) {
+				// @todo maybe make edge a collection then as well?
+				auto l = (const taxonomy::edge *) i;
+				if (l->start.which() == 0) {
+					fn(&boost::get<taxonomy::point3>(l->start));
+				}
+				if (l->end.which() == 0) {
+					fn(&boost::get<taxonomy::point3>(l->end));
+				}
+			}
+		}
+	}
+
+	taxonomy::collection* flatten(const taxonomy::collection* deep);
+
+	template <typename Fn>
+	bool apply_predicate_to_collection(taxonomy::item* i, Fn fn) {
+		if (i->kind() == taxonomy::COLLECTION) {
+			auto c = (taxonomy::collection*) i;
+			for (auto& child : c->children) {
+				if (apply_predicate_to_collection(child, fn)) {
+					return true;
+				}
+			}
+		} else {
+			return fn(i);
+		}
+	}
+
+	// @nb traverses nested collections
+	template <typename Fn>
+	taxonomy::collection* filter(taxonomy::collection* collection, Fn fn) {
+		auto filtered = new taxonomy::collection;
+		for (auto& child : collection->children) {
+			if (apply_predicate_to_collection(child, fn)) {
+				filtered->children.push_back(child->clone());
+			}
+		}
+		if (filtered->children.empty()) {
+			delete filtered;
+			return nullptr;
+		}
+		return filtered;
+	}
+
+	// @nb traverses nested collections
+	template <typename Fn>
+	taxonomy::collection* filter_in_place(taxonomy::collection* collection, Fn fn) {
+		for (auto it = --collection->children.end(); it >= collection->children.begin(); --it) {
+			if (!apply_predicate_to_collection(*it, fn)) {
+				delete *it;
+				collection->children.erase(it);
+			}
+		}
+		return collection;
+	}
 
 }
 

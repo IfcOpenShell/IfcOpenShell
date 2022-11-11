@@ -17,6 +17,7 @@ namespace ifcopenshell { namespace geometry {
 	public:
 		typedef boost::shared_ptr<ifcopenshell::geometry::Representation::BRep> brep_ptr;
 	private:
+		std::string geometry_library_;
 		abstract_mapping* mapping_;
 		kernels::AbstractKernel* kernel_;
 		ifcopenshell::geometry::settings settings_;

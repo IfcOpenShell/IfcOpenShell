@@ -59,7 +59,7 @@ namespace ifcopenshell {
 
 			virtual bool is_manifold() const;
 
-			virtual double bounding_box(void*& b) const {
+			virtual double bounding_box(void*&) const {
 				throw std::runtime_error("Not implemented");
 			}
 
@@ -67,7 +67,7 @@ namespace ifcopenshell {
 				throw std::runtime_error("Not implemented");
 			}
 
-			virtual void set_box(void* b) {
+			virtual void set_box(void*) {
 				throw std::runtime_error("Not implemented");
 			}
 

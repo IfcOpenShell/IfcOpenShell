@@ -3,7 +3,8 @@
 #include "../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 
 ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, settings& s)
-	: settings_(s)
+	: geometry_library_(boost::to_lower_copy(geometry_library))
+	, settings_(s)
 {
 	kernel_ = kernels::construct(geometry_library, file);
 	mapping_ = impl::mapping_implementations().construct(file, settings_);
@@ -65,7 +66,9 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 			total_geom_time += (geom_end - geom_start) / (double)CLOCKS_PER_SEC;
 
 			double d;
-			substitute_with_box_based_on_density(shapes, d);
+			if (geometry_library_ == "cgal") {
+				substitute_with_box_based_on_density(shapes, d);
+			}
 
 			shape = brep_ptr(new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes));
 		} catch (...) {

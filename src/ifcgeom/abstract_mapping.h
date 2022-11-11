@@ -47,7 +47,8 @@ namespace geometry {
 
 		MappingFactoryImplementation& mapping_implementations();
 	}
-    
+
+	void remove_duplicate_points_from_loop(std::vector<taxonomy::point3>& polygon, bool closed, double tol);    
 }
 
 }
