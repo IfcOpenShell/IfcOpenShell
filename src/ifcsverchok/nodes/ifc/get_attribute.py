@@ -64,7 +64,6 @@ class SvIfcGetAttribute(
             entity_nested_inputs = [
                 self.file.by_id(int(step_id)) for step_id in entity_nested_input_ids
             ]
-            print(entity_nested_inputs)
         except Exception as e:
             raise Exception("Instance ID not found", e)
         attribute_name = self.inputs["attribute_name"].sv_get()[0][0]
