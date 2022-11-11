@@ -24,17 +24,37 @@ from ifcsverchok.ifcstore import SvIfcStore
 
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, flatten_data, repeat_last_for_length, ensure_min_nesting
+from sverchok.data_structure import (
+    updateNode,
+    flatten_data,
+    repeat_last_for_length,
+    ensure_min_nesting,
+)
 
 
-class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+class SvIfcAddSpatialElement(
+    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
+):
     bl_idname = "SvIfcAddSpatialElement"
     bl_label = "IFC Add Spatial Element"
     node_dict = {}
 
-    Names: StringProperty(name="Name(s)", update=updateNode)
-    IfcClass: StringProperty(name="IFC Class", update=updateNode, default="IfcSpace")
-    Elements: StringProperty(name="Elements", update=updateNode)
+    Names: StringProperty(
+        name="Name(s)",
+        description="Name or list of names of the spacial element.",
+        update=updateNode,
+    )
+    IfcClass: StringProperty(
+        name="IFC Class",
+        description='IfcClass of the spacial element. Eg. "IfcSpace".\nYou can use the "IFC Class Picker" node to find a relevant class.',
+        update=updateNode,
+        default="IfcSpace",
+    )
+    Elements: StringProperty(
+        name="Elements",
+        description="The IfcElements you want to add to the spacial element.\nThis can also be a (list of) spacial elements. Eg. IfcSpaces aggregated to an IfcBuildingStorey.",
+        update=updateNode,
+    )
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "Names").prop_name = "Names"
@@ -44,12 +64,16 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         self.node_dict[hash(self)] = {}
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Ifc entity by type."
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Add IfcElements to an IfcSpatialElement."
 
     def process(self):
         self.sv_input_names = [i.name for i in self.inputs]
         if hash(self) not in self.node_dict:
-            self.node_dict[hash(self)] = {}  # happens if node is already on canvas when blender loads
+            self.node_dict[
+                hash(self)
+            ] = {}  # happens if node is already on canvas when blender loads
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
 
@@ -58,7 +82,9 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         edit = False
         edit_elements = False
         for i in range(len(self.inputs)):
-            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=True, default=[])
+            input = self.inputs[self.sv_input_names[i]].sv_get(
+                deepcopy=True, default=[]
+            )
             if (
                 isinstance(self.node_dict[hash(self)][self.inputs[i].name], list)
                 and input != self.node_dict[hash(self)][self.inputs[i].name]
@@ -69,20 +95,27 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
             self.node_dict[hash(self)][self.inputs[i].name] = input.copy()
 
         self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
-        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[0]
+        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[
+            0
+        ]
         self.elements = ensure_min_nesting(self.inputs["Elements"].sv_get(), 2)
         self.elements = flatten_data(self.elements, target_level=2)
         if not self.elements[0][0]:
             raise Exception('Mandatory input "Element(s)" is missing.')
             return
         self.file = SvIfcStore.get_file()
-        self.elements = [[self.file.by_id(step_id) for step_id in element] for element in self.elements]
+        self.elements = [
+            [self.file.by_id(step_id) for step_id in element]
+            for element in self.elements
+        ]
 
         if "len" not in self.node_dict[hash(self)]:
             self.node_dict[hash(self)]["len"] = 0
         self.names = self.repeat_input_unique(self.names, len(self.elements))
 
-        if (self.node_id not in SvIfcStore.id_map) or (len(self.elements) != self.node_dict[hash(self)]["len"]):
+        if (self.node_id not in SvIfcStore.id_map) or (
+            len(self.elements) != self.node_dict[hash(self)]["len"]
+        ):
             self.remove()
             elements = self.create()
             self.node_dict[hash(self)]["len"] = len(self.elements)
@@ -99,13 +132,28 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         if index is not None:
             iterator = [index]
         for i in iterator:
-            result = ifcopenshell.api.run("root.create_entity", self.file, name=self.names[i], ifc_class=self.ifc_class)
+            result = ifcopenshell.api.run(
+                "root.create_entity",
+                self.file,
+                name=self.names[i],
+                ifc_class=self.ifc_class,
+            )
             for items in self.elements[i]:
-                if items.is_a("IfcSpatialElement") or items.is_a("IfcSpatialStructureElement"):
-                    ifcopenshell.api.run("aggregate.assign_object", self.file, product=items, relating_object=result)
+                if items.is_a("IfcSpatialElement") or items.is_a(
+                    "IfcSpatialStructureElement"
+                ):
+                    ifcopenshell.api.run(
+                        "aggregate.assign_object",
+                        self.file,
+                        product=items,
+                        relating_object=result,
+                    )
                 else:
                     ifcopenshell.api.run(
-                        "spatial.assign_container", self.file, product=items, relating_structure=result
+                        "spatial.assign_container",
+                        self.file,
+                        product=items,
+                        relating_structure=result,
                     )
             SvIfcStore.id_map.setdefault(self.node_id, []).append(result.id())
             spatial_ids.append(result.id())
@@ -129,24 +177,38 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                 for element in self.elements[i]:
                     element_set = set([element])
                     for removed_element in subelements - element_set:
-                        if removed_element.is_a("IfcSpatialElement") or removed_element.is_a(
-                            "IfcSpatialStructureElement"
-                        ):
+                        if removed_element.is_a(
+                            "IfcSpatialElement"
+                        ) or removed_element.is_a("IfcSpatialStructureElement"):
                             ifcopenshell.api.run(
-                                "aggregate.unassign_object", self.file, product=removed_element, relating_object=result
+                                "aggregate.unassign_object",
+                                self.file,
+                                product=removed_element,
+                                relating_object=result,
                             )
                         else:
                             ifcopenshell.api.run(
-                                "spatial.unassign_container", self.file, product=removed_element, relating_object=result
+                                "spatial.unassign_container",
+                                self.file,
+                                product=removed_element,
+                                relating_object=result,
                             )
                     for added_element in element_set - subelements:
-                        if added_element.is_a("IfcSpatialElement") or added_element.is_a("IfcSpatialStructureElement"):
+                        if added_element.is_a(
+                            "IfcSpatialElement"
+                        ) or added_element.is_a("IfcSpatialStructureElement"):
                             ifcopenshell.api.run(
-                                "aggregate.assign_object", self.file, product=added_element, relating_object=result
+                                "aggregate.assign_object",
+                                self.file,
+                                product=added_element,
+                                relating_object=result,
                             )
                         else:
                             ifcopenshell.api.run(
-                                "spatial.assign_container", self.file, product=added_element, relating_structure=result
+                                "spatial.assign_container",
+                                self.file,
+                                product=added_element,
+                                relating_structure=result,
                             )
             spatial_ids.append(result.id())
         SvIfcStore.id_map[self.node_id] = spatial_ids
@@ -163,7 +225,8 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         input = repeat_last_for_length(input, count, deepcopy=False)
         if input[0]:
             input = [
-                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}" for i, a in enumerate(input)
+                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}"
+                for i, a in enumerate(input)
             ]  # add number to duplicates
         return input
 
