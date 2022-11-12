@@ -58,6 +58,7 @@ class draw_settings:
     profile_threshold: int = -1
     cells: bool = True
     merge_cells: bool = False
+    include_projection: bool = True
 
 
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
@@ -116,8 +117,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
     sr.setPolygonal(True)
     sr.setUseNamespace(True)
 
-    # sane default?
-    sr.setAlwaysProject(True)
+    sr.setAlwaysProject(settings.include_projection)
 
     sr.setProfileThreshold(settings.profile_threshold)
     sr.setBoundingRectangle(settings.width, settings.height)
