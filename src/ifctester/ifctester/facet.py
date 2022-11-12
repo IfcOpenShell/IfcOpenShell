@@ -348,7 +348,7 @@ class PartOf(Facet):
         if "entity" in xml:
             super().parse(xml["entity"])
             del xml["entity"]
-        super().parse(xml)
+        return super().parse(xml)
 
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
@@ -527,7 +527,8 @@ class Property(Facet):
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
-                        if unit:
+                        if unit and getattr(unit, "Name", None):
+                            # TODO support unnamed derived units
                             props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
                                 prop_entity.NominalValue.wrappedValue,
                                 getattr(unit, "Prefix", None),
@@ -782,7 +783,7 @@ class Restriction:
             return self
         self.base = ids_dict.get("@base", "xs:string")[3:]
         for key, value in ids_dict.items():
-            if key == "@base":
+            if key in ["@base", "annotation"]:
                 continue
             if isinstance(value, dict):
                 self.options[key.split(":")[-1]] = value["@value"]
@@ -826,16 +827,16 @@ class Restriction:
                 if len(str(other)) < int(value):
                     return False
             elif constraint == "maxExclusive":
-                if float(other) >= value:
+                if float(other) >= float(value):
                     return False
             elif constraint == "maxInclusive":
-                if float(other) > value:
+                if float(other) > float(value):
                     return False
             elif constraint == "minExclusive":
-                if float(other) <= value:
+                if float(other) <= float(value):
                     return False
             elif constraint == "minInclusive":
-                if float(other) < value:
+                if float(other) < float(value):
                     return False
         return True
 
