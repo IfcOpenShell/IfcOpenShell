@@ -31,11 +31,14 @@ import ifcopenshell.validate
 def test_file(file):
     logger = ifcopenshell.validate.json_logger()
     ifcopenshell.validate.validate(file, logger)
-    if file.startswith("fail-"):
+    print()
+    for x in logger.statements:
+        print(x['message'])
+    if os.path.basename(file).startswith("fail-"):
         assert len(logger.statements) > 0
-    if file.startswith("pass-"):
+    if os.path.basename(file).startswith("pass-"):
         assert len(logger.statements) == 0
 
 
 if __name__ == "__main__":
-    pytest.main(["-sx", __file__])
+    pytest.main(["-svx", __file__])
