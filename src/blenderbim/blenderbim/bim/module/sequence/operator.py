@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 import os
 import bpy
 import json
@@ -25,15 +24,10 @@ import calendar
 import isodate
 import pystache
 import webbrowser
-import ifcopenshell.api
-import ifcopenshell.util.date
-import ifcopenshell.util.sequence
 import blenderbim.core.sequence as core
 import blenderbim.tool as tool
-import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
-from datetime import timedelta
 from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
@@ -1022,10 +1016,10 @@ class SelectTaskRelatedProducts(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Select All Output Products"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
+    type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
-
+        core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task), type=self.type)
 
 class SelectTaskRelatedInputs(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_task_related_inputs"
@@ -1509,6 +1503,15 @@ class LoadTaskOutputs(bpy.types.Operator):
 
     def execute(self, context):
         core.load_task_outputs(tool.Sequence)
+        return {"FINISHED"}
+    
+class LoadNestedTasksOutputs(bpy.types.Operator):
+    bl_idname = "bim.load_nested_tasks_outputs"
+    bl_label = "Load Task Outputs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.load_nested_tasks_outputs(tool.Sequence)
         return {"FINISHED"}
 
 

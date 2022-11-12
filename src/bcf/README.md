@@ -1,64 +1,54 @@
 # bcf
 
-A simple Python implementation of BCF. The data model is described in `data.py`.
+A simple Python implementation of BCF.
 Manipulation of BCF-XML is available via `bcfxml.py` and manipulation of BCF-API
 is available via `bcfapi.py`.
 
-- BCF-XML version 2.1: Fully supported
-- BCF-API version 2.1: Not supported, will probably tackle this after BCF-API v3.0
-- BCF-XML version 3.0: Almost fully supported, except for the documents module
-- BCF-API version 3.0: Almost fully supported, except for two requests.
+It tries to support BCF-XML version 2.1 and 3.0, and BCF-API 3.0.
 
 ## bcfxml
 
-The `bcfxml` module lets you interact with the BCF-XML standard.
+The `bcfxml.load` function lets you read a BCF-XML file.
+It takes care of using the right version based on the "bcf.version" file contained in the BCF package.
+
+The BCF files are extracted and parsed on-demand, and edits are stored in memory until you call the `save` method.
 
 ```python
-from bcf import bcfxml
-
+from bcf.bcfxml import load
 
 # Load a project
-bcfxml = bcfxml.load("/path/to/file.bcf")
+with load("/path/to/file.bcf") as bcfxml:
+    project = bcfxml.project
+    print(project.name)
 
+    # To edit a project, just modify the object directly
+    bcfxml.project.name = "New name"
 
-# The project is also stored in the module
-# project == bcfxml.project
-project=bcfxml.get_project()
-print(project.name)
+    # Get a dictionary of topics
+    topics = bcfxml.topics
 
-# To edit a project, just modify the object directly
-bcfxml.project.name = "New name"
-bcfxml.edit_project()
+    for topic_handler in bcfxml.topics:
+        topic = topic_handler.topic
+        print("Topic guid is", topic.guid)
+        print("Topic title is", topic.title)
 
-# The BCF file is extracted to this temporary directory
-print(bcfxml.filepath)
+        # Fetch extra data about a topic
+        header = topic_handler.header
+        comments = topic_handler.comments
+        viewpoints = topic_handler.viewpoints
 
-# Get a dictionary of topics
-topics = bcfxml.get_topics()
+        for comment in comments:
+            print(comment.guid)
+            print(comment.comment)
+            print(comment.author)
 
-# Note: topics == bcfxml.topics
-for guid, topic in bcfxml.topics.items():
-    print("Topic guid is", guid)
-    print("Topic guid is", topic.guid)
-    print("Topic title is", topic.title)
+    # Get a particular topic
+    topic = bcfxml.get_topic(guid)
 
-    # Fetch extra data about a topic
-    header = bcfxml.get_header(guid)
-    comments = bcfxml.get_comments(guid)
-    viewpoints = bcfxml.get_viewpoints(guid)
+    # Modify a topic
+    topic.title = "New title"
 
-    # Note: comments == topic.comments, and so on
-    for comment_guid, comment in comments.items():
-        print(comment_guid)
-        print(comment.comment)
-        print(comment.author)
-
-# Get a particular topic
-topic = bcfxml.get_topic(guid)
-
-# Modify a topic
-topic.title = "New title"
-bcfxml.edit_topic(topic)
+    bcfxml.save()
 ```
 
 ## bcfapi
@@ -92,10 +82,3 @@ print(data)
 data = bcf_client.get_extensions(project_id)
 print(data)
 ```
-
-## Todo List
-
-The remaining work that needs to be completed in `bcfxml.py` and `bcfapi.py`.
-
-- For `bcfxml.py` two xsds support is remaining namely 'documents.xsd`and`extensions.xsd`.
-- For `bcfapi.py` two requests that are `get_topics` and `get_comments` are remaining.

@@ -73,3 +73,7 @@ _build/
 
 # IDS Docs
 src/ifcopenshell-python/test/build
+
+# tox cache
+.tox/
+*.egg-info/

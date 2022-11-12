@@ -228,8 +228,8 @@ class BIMModelProperties(PropertyGroup):
     x: bpy.props.FloatProperty(name="X", default=0.5)
     y: bpy.props.FloatProperty(name="Y", default=0.5)
     z: bpy.props.FloatProperty(name="Z", default=0.5)
-    rl1: bpy.props.FloatProperty(name="RL", default=1) # Used for things like walls, doors, flooring, skirting, etc
-    rl2: bpy.props.FloatProperty(name="RL", default=1) # Used for things like windows, other hosted furniture
+    rl1: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like walls, doors, flooring, skirting, etc
+    rl2: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like windows, other hosted furniture
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_template: bpy.props.EnumProperty(
@@ -253,3 +253,44 @@ class BIMArrayProperties(PropertyGroup):
     x: bpy.props.FloatProperty(name="X", default=0)
     y: bpy.props.FloatProperty(name="Y", default=0)
     z: bpy.props.FloatProperty(name="Z", default=0)
+
+
+class BIMStairProperties(PropertyGroup):
+    stair_types = (
+        ("CONCRETE", "Concrete", ""),
+        ("WOOD/STEEL", "Wood / Steel", ""),
+    )
+
+    is_editing: bpy.props.IntProperty(default=-1)
+    width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01)
+    height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01)
+    number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
+    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01)
+    tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01)
+    base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0)
+    top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0)
+    has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
+    stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
+
+    def get_props_kwargs(self):
+        if self.stair_type == "CONCRETE":
+            return {
+                "stair_type": self.stair_type,
+                "width": self.width,
+                "height": self.height,
+                "number_of_treads": self.number_of_treads,
+                "tread_depth": self.tread_depth,
+                "tread_run": self.tread_run,
+                "base_slab_depth": self.base_slab_depth,
+                "top_slab_depth": self.top_slab_depth,
+                "has_top_nib": self.has_top_nib,
+            }
+        elif self.stair_type == "WOOD/STEEL":
+            return {
+                "stair_type": self.stair_type,
+                "width": self.width,
+                "height": self.height,
+                "number_of_treads": self.number_of_treads,
+                "tread_depth": self.tread_depth,
+                "tread_run": self.tread_run,
+            }

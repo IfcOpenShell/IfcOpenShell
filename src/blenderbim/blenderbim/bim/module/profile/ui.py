@@ -41,7 +41,7 @@ class BIM_PT_profiles(Panel):
         self.props = context.scene.BIMProfileProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Profiles Found".format(ProfileData.data["total_profiles"]), icon="SNAP_GRID")
+        row.label(text=f"{ProfileData.data['total_profiles']} Named Profiles Found", icon="SNAP_GRID")
         if self.props.is_editing:
             row.operator("bim.disable_profile_editing_ui", text="", icon="CANCEL")
         else:
