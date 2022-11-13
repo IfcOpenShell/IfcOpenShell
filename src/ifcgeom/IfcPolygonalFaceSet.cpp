@@ -41,12 +41,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 	
 	for (auto& f : *polygonal_faces) {
 		loop_grouping.emplace_back();
-		loop_grouping.back().push_back(indices.size());
+		loop_grouping.back().push_back((int) indices.size());
 		indices.push_back(f->CoordIndex());
 		if (f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()) {
 			auto inner_coordinates = f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()->InnerCoordIndices();
 			for (auto& x : inner_coordinates) {
-				loop_grouping.back().push_back(indices.size());
+				loop_grouping.back().push_back((int) indices.size());
 				indices.push_back(x);
 			}
 		}

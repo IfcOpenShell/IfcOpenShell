@@ -20,6 +20,8 @@
 #include <TopoDS_Wire.hxx>
 #include <Standard_Version.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../ifcgeom_schema_agnostic/boolean_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -179,6 +181,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	
 	bool valid_result;
 
+	util::boolean_settings bst;
+	bst.attempt_2d = getValue(GV_BOOLEAN_ATTEMPT_2D) > 0.;
+	bst.debug = getValue(GV_DEBUG_BOOLEAN) > 0.;
+	bst.precision = getValue(GV_PRECISION);
+
 	if (s1.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s1).More() && util::is_nested_compound_of_solid(s1)) {
 		TopoDS_Compound C;
 		BRep_Builder B;
@@ -187,7 +194,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		valid_result = true;
 		for (; it.More(); it.Next()) {
 			TopoDS_Shape part;
-			if (boolean_operation(it.Value(), second_operand_shapes, occ_op, part)) {
+			if (util::boolean_operation(bst, it.Value(), second_operand_shapes, occ_op, part)) {
 				B.Add(C, part);
 			} else {
 				valid_result = false;
@@ -195,7 +202,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		}
 		shape = C;
 	} else {
-		valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape);
+		valid_result = util::boolean_operation(bst, s1, second_operand_shapes, occ_op, shape);
 	}
 
 #endif

@@ -37,6 +37,7 @@
 #include "../ifcgeom_schema_agnostic/sweep_utils.h"
 #include "../ifcgeom_schema_agnostic/wire_utils.h"
 #include "../ifcgeom_schema_agnostic/face_definition.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -81,7 +82,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	ep = l->EndParam();
 #endif
 
-	if (count(wire, TopAbs_EDGE) == 1 && sp && ep) {
+	if (util::count(wire, TopAbs_EDGE) == 1 && sp && ep) {
 		TopoDS_Vertex v0, v1;
 		TopExp::Vertices(wire, v0, v1);
 		if (v0.IsSame(v1)) {
@@ -153,11 +154,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 						gp_Pln plane(c1->Position().Location(), n);
 						auto face = BRepBuilderAPI_MakeFace(plane).Face();
 
-						TopoDS_Wire wire;
-						BB.MakeWire(wire);
-						BB.Add(wire, a);
-						BB.Add(wire, b);
-						BB.Add(face, wire);
+						{
+							TopoDS_Wire w;
+							BB.MakeWire(w);
+							BB.Add(w, a);
+							BB.Add(w, b);
+							BB.Add(face, w);
+						}
 						TopExp::CommonVertex(a, b, V);
 
 						BRepFilletAPI_MakeFillet2d mf2d(face);

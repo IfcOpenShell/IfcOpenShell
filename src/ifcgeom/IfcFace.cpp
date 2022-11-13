@@ -125,14 +125,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 				}
 			}
 
-			for (auto& wire : wires) {
+			for (auto& w : wires) {
 				if (!same_sense) {
-					wire.Reverse();
+					w.Reverse();
 				}
 
-				wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+				wire_senses.Bind(w.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
 
-				fd.wires().emplace_back(TopoDS::Wire(wire));
+				fd.wires().emplace_back(TopoDS::Wire(w));
 			}
 		}
 	}
