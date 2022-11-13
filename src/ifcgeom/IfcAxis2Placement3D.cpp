@@ -23,6 +23,7 @@
 #include <gp_Trsf.hxx>
 #include <gp_Ax3.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -66,7 +67,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement3D* l, gp_Trsf& 
 
 	gp_Ax3 ax3(o, axis, refDirection);
 
-	if (!axis_equal(ax3, (gp_Ax3) gp::XOY(), getValue(GV_PRECISION))) {
+	if (!util::axis_equal(ax3, (gp_Ax3) gp::XOY(), getValue(GV_PRECISION))) {
 		trsf.SetTransformation(ax3, gp::XOY());
 	}
 	

@@ -25,6 +25,7 @@
 #include <gp_Trsf2d.hxx>
 #include <gp_Ax2d.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -61,7 +62,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 	gtrsf.SetValue(2,2,scale2);
 	gtrsf.Multiply(trsf);
 
-	if (is_identity(gtrsf, getValue(GV_PRECISION))) {
+	if (util::is_identity(gtrsf, getValue(GV_PRECISION))) {
 		gtrsf = gp_GTrsf2d();
 	}
 

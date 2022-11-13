@@ -78,6 +78,7 @@
 #include <Extrema_ExtPElS.hxx>
 
 #include "../ifcparse/IfcGlobalId.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
@@ -439,7 +440,7 @@ namespace {
 			return boost::none;
 		}
 
-		if (IfcGeom::Kernel::count(shell, TopAbs_FACE) != 6) {
+		if (IfcGeom::util::count(shell, TopAbs_FACE) != 6) {
 			return boost::none;
 		}
 
@@ -1442,7 +1443,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				}
 				
-				if (file && data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
+				if (file && data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::util::count(wire, TopAbs_EDGE) == 1) {
 					
 					std::string elev_str;
 
