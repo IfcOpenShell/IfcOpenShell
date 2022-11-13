@@ -109,8 +109,6 @@ class SvIfcCreateEntity(
             self.inputs["Locations"].sv_get(default=[]), 3
         )
         self.locations = flatten_data(self.locations, target_level=3)
-        # self.properties = self.inputs["Properties"].sv_get()
-        print("#" * 80, "\nCreate Entity", "\n", "#" * 80)
         self.sv_input_names = [i.name for i in self.inputs]
 
         if hash(self) not in self.node_dict:
@@ -136,9 +134,8 @@ class SvIfcCreateEntity(
 
         if self.refresh_local:
             edit = True
-
         self.file = SvIfcStore.get_file()
-        if self.representations[0][0]:
+        if self.representations[0][0][0]:
             representations = []
             names = []
             descriptions = []
@@ -166,9 +163,8 @@ class SvIfcCreateEntity(
             self.descriptions = self.repeat_input_unique(
                 self.descriptions, len(self.names)
             )
-            self.names = ensure_min_nesting(self.names, 3)
-            self.descriptions = ensure_min_nesting(self.descriptions, 3)
-
+            self.names = ensure_min_nesting(self.names, 2)
+            self.descriptions = ensure_min_nesting(self.descriptions, 2)
         if self.node_id not in SvIfcStore.id_map:
             entities = self.create()
         else:
@@ -181,13 +177,16 @@ class SvIfcCreateEntity(
 
     def create(self, index=None):
         entities_ids = []
-        for i, group in enumerate(self.names):
+        iterator1 = range(len(self.names))
+        if index is not None:
+            iterator1 = [index[0]]
+        for i in iterator1:
+            group = self.names[i]
             group_entities_ids = []
-            iterator = range(len(group))
+            iterator2 = range(len(group))
             if index is not None:
-                iterator = [index]
-            for j in iterator:
-
+                iterator2 = [index[1]]
+            for j in iterator2:
                 try:
                     entity = ifcopenshell.api.run(
                         "root.create_entity",
@@ -209,7 +208,6 @@ class SvIfcCreateEntity(
                         pass
                     try:
                         for loc in self.locations[i][j]:
-                            print("Location: ", loc)
                             if isinstance(loc, Matrix):
                                 ifcopenshell.api.run(
                                     "geometry.edit_object_placement",
@@ -235,12 +233,13 @@ class SvIfcCreateEntity(
                 try:
                     step_id = id_map_copy[i][j]
                 except IndexError:
-                    id = self.create(index=j)
-                    group_entities_ids.append(id[0])
+                    id = self.create(index=[i, j])
+                    group_entities_ids.append(id[0][0])
                     continue
                 entity = self.file.by_id(step_id)
                 entity.Name = self.names[i][j]
-                entity.Description = self.descriptions[i][j]
+                if self.descriptions[i][j]:
+                    entity.Description = self.descriptions[i][j]
                 try:
                     for repr in self.representations[i][j]:
                         if repr and repr.is_a("IfcProductDefinitionShape"):
@@ -276,9 +275,14 @@ class SvIfcCreateEntity(
         SvIfcStore.id_map[self.node_id] = entities_ids
         return entities_ids
 
-    def repeat_input_unique(self, input, count):
+    def repeat_input_unique(self, input, count, flag=False):
         input = repeat_last_for_length(input, count, deepcopy=False)
         if input[0]:
+            if flag:
+                return [
+                    [a] if not (s := sum(j == a for j in input[:i])) else [f"{a}-{s+1}"]
+                    for i, a in enumerate(input)
+                ]
             input = [
                 a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}"
                 for i, a in enumerate(input)
