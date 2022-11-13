@@ -38,6 +38,7 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #include "../ifcparse/utils.h"
 
@@ -1632,7 +1633,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
 				latebound_access::set(quantity_count, "Name", std::string("Surface Genus"));
 				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
-				latebound_access::set(quantity_count, "CountValue", IfcGeom::Kernel::surface_genus(part.Shape()));
+				latebound_access::set(quantity_count, "CountValue", IfcGeom::util::surface_genus(part.Shape()));
 
 				quantities_2->push(quantity_count);				
 			}

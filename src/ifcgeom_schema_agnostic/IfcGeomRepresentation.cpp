@@ -29,6 +29,7 @@
 
 #include "../ifcparse/IfcLogger.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	: Representation(brep.settings())
@@ -214,7 +215,7 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 		volume = 0.;
 
 		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
-			if (Kernel::is_manifold(it->Shape())) {
+			if (util::is_manifold(it->Shape())) {
 				GProp_GProps prop;
 				BRepGProp::VolumeProperties(it->Shape(), prop);
 				volume += prop.Mass();
@@ -238,7 +239,7 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const gp_Ax
 			double x, y, z;
 			surface_area_along_direction(settings().deflection_tolerance(), it->Shape(), ax, x, y, z);
 
-			if (Kernel::is_manifold(it->Shape())) {
+			if (util::is_manifold(it->Shape())) {
 				x /= 2.;
 				y /= 2.;
 				z /= 2.;

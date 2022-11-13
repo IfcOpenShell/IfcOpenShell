@@ -2,6 +2,7 @@
 
 #include "../ifcparse/IfcLogger.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 #include <TopExp.hxx>
@@ -84,8 +85,8 @@ bool IfcGeom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_P
 
 	exp.Init(wire);
 	for (; exp.More(); exp.Next()) {
-		const TopoDS_Vertex& v = exp.CurrentVertex();
-		current = BRep_Tool::Pnt(v);
+		const TopoDS_Vertex& vrt = exp.CurrentVertex();
+		current = BRep_Tool::Pnt(vrt);
 		if (plane.SquareDistance(current) > eps2) {
 			return false;
 		}
@@ -355,7 +356,7 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfS
 		return false;
 	}
 
-	int n = IfcGeom::Kernel::count(wire, TopAbs_EDGE);
+	int n = util::count(wire, TopAbs_EDGE);
 	if (n < 3) {
 		wires.Append(wire);
 		return false;

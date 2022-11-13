@@ -410,7 +410,7 @@ namespace IfcGeom {
 					
 					// Assumption is that the number of styles is small, so the linear lookup time is not significant.
 					auto sit = std::find(styles_.begin(), styles_.end(), *adaptor);
-					int index;
+					size_t index;
 					if (sit == styles_.end()) {
 						index = styles_.size();
 						styles_.push_back(*adaptor);
@@ -420,7 +420,7 @@ namespace IfcGeom {
 
 					TopExp_Explorer exp(it.Value(), TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
-						face_styles_.Bind(exp.Current(), index);
+						face_styles_.Bind(exp.Current(), (int) index);
 					}
 				}
 			}
