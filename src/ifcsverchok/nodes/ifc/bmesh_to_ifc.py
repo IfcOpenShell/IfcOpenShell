@@ -142,7 +142,7 @@ class SvIfcBMeshToIfcRepr(
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
 
-        if not self.inputs["blender_objects"].sv_get()[0]:
+        if not self.inputs["blender_objects"].sv_get(deepcopy=True)[0]:
             return
         edit = False
         for i in range(len(self.inputs)):
@@ -154,7 +154,7 @@ class SvIfcBMeshToIfcRepr(
                 edit = True
             self.node_dict[hash(self)][self.inputs[i].name] = input.copy()
 
-        blender_objects = self.inputs["blender_objects"].sv_get()
+        blender_objects = self.inputs["blender_objects"].sv_get(deepcopy=True)
         self.file = SvIfcStore.get_file()
 
         if self.refresh_local:
@@ -169,60 +169,63 @@ class SvIfcBMeshToIfcRepr(
                 representations = SvIfcStore.id_map[self.node_id]["Representations"]
                 locations = SvIfcStore.id_map[self.node_id]["Locations"]
 
-        # print("representations: ", representations)
-
         self.outputs["Representations"].sv_set(representations)
         self.outputs["Locations"].sv_set(locations)
 
     def create(self, blender_objects):
         representations_ids = []
         locations = []
+        context = self.get_context()
         for blender_object in blender_objects:
-            if blender_object.type == "MESH":
-                try:
-                    bpy.ops.object.mode_set(mode="OBJECT")
-                except Exception as e:
-                    print(e)
-                    pass
-                bpy.ops.object.select_all(action="DESELECT")
-                try:
-                    bpy.ops.object.mode_set(mode="EDIT")
-                except Exception as e:
-                    print(e)
-                    pass
-                blender_object.select_set(True)
-                bpy.ops.mesh.separate(type="LOOSE")
-                representations_ids_obj = []
-                locations_obj = []
-                for obj in bpy.context.selected_objects:
+            bpy.context.view_layer.objects.active = blender_object
+            try:
+                bpy.ops.object.mode_set(mode="OBJECT")
+            except Exception as e:
+                print(e)
+                pass
+            bpy.ops.object.select_all(action="DESELECT")
+            blender_object.select_set(True)
+            try:
+                bpy.ops.object.mode_set(mode="EDIT")
+            except Exception as e:
+                print(e)
+                pass
+            bpy.ops.mesh.separate(
+                type="LOOSE"
+            )  # This isn't a great solution bc it creates new objects in the scene, thus changing the users model
+            representations_ids_obj = []
+            locations_obj = []
+            try:
+                bpy.ops.object.mode_set(mode="OBJECT")
+            except Exception as e:
+                print(e)
+                pass
+            for obj in bpy.context.selected_objects:
+                if blender_object.type == "MESH":
                     representation = ifcopenshell.api.run(
                         "geometry.add_representation",
                         self.file,
                         should_run_listeners=False,
                         blender_object=obj,
                         geometry=obj.data,
-                        context=self.get_context(),
+                        context=context,
                     )
                     if not representation:
                         raise Exception(
                             "Couldn't create representation. Possibly wrong context."
                         )
 
-                    representations_ids_obj.append(representation.id())
-                    locations_obj.append(obj.matrix_world)
-                representations_ids.append(representations_ids_obj)
-                locations.append(locations_obj)
-                SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
-                    "Representations", []
-                ).append(representations_ids_obj)
-                SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
-                    "Locations", []
-                ).append(locations_obj)
-                try:
-                    bpy.ops.object.mode_set(mode="OBJECT")
-                except Exception as e:
-                    print(e)
-                    pass
+                    representations_ids_obj.append([representation.id()])
+                    locations_obj.append([obj.matrix_world])
+            representations_ids.append(representations_ids_obj)
+            locations.append(locations_obj)
+
+            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
+                "Representations", []
+            ).append(representations_ids_obj)
+            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
+                "Locations", []
+            ).append(locations_obj)
         bpy.ops.object.select_all(action="DESELECT")
         return representations_ids, locations
 
@@ -234,7 +237,7 @@ class SvIfcBMeshToIfcRepr(
                 ifcopenshell.api.run(
                     "geometry.remove_representation",
                     self.file,
-                    representation=self.file.by_id(step_id),
+                    representation=self.file.by_id(step_id[0]),
                 )
         del SvIfcStore.id_map[self.node_id]["Representations"]
         del SvIfcStore.id_map[self.node_id]["Locations"]
@@ -291,7 +294,6 @@ class SvIfcBMeshToIfcRepr(
                                 ifcopenshell.api.run(
                                     "context.remove_context", self.file, context=parent
                                 )
-                        # print("Removed context with step ID: ", context_id)
                         SvIfcStore.id_map[self.node_id]["Contexts"].remove(context_id)
             del SvIfcStore.id_map[self.node_id]
             del self.node_dict[hash(self)]

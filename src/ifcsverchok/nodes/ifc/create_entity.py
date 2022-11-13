@@ -69,8 +69,8 @@ class SvIfcCreateEntity(
         default="",
         update=updateNode,
     )
-    # Locations: FloatVectorProperty(name="Locations", default="", update=updateNode)
-    Properties: StringProperty(name="properties", update=updateNode)
+    # Locations: FloatVectorProperty(name="Locations", default="", subtype='MATRIX', update=updateNode)
+    # Properties: StringProperty(name="properties", update=updateNode)
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "Names").prop_name = "Names"
@@ -80,7 +80,7 @@ class SvIfcCreateEntity(
             "SvStringsSocket", "Representations"
         ).prop_name = "Representations"
         self.inputs.new("SvMatrixSocket", "Locations").is_mandatory = False
-        self.inputs.new("SvStringsSocket", "Properties").prop_name = "Properties"
+        # self.inputs.new("SvStringsSocket", "Properties").prop_name = "Properties"
         self.outputs.new("SvStringsSocket", "Entities")
         self.node_dict[hash(self)] = {}
 
@@ -102,14 +102,15 @@ class SvIfcCreateEntity(
             0
         ]
         self.representations = ensure_min_nesting(
-            self.inputs["Representations"].sv_get(), 2
+            self.inputs["Representations"].sv_get(), 3
         )
-        self.representations = flatten_data(self.representations, target_level=2)
+        self.representations = flatten_data(self.representations, target_level=3)
         self.locations = ensure_min_nesting(
-            self.inputs["Locations"].sv_get(default=[]), 2
+            self.inputs["Locations"].sv_get(default=[]), 3
         )
-        self.properties = self.inputs["Properties"].sv_get()
-
+        self.locations = flatten_data(self.locations, target_level=3)
+        # self.properties = self.inputs["Properties"].sv_get()
+        print("#" * 80, "\nCreate Entity", "\n", "#" * 80)
         self.sv_input_names = [i.name for i in self.inputs]
 
         if hash(self) not in self.node_dict:
@@ -138,22 +139,35 @@ class SvIfcCreateEntity(
 
         self.file = SvIfcStore.get_file()
         if self.representations[0][0]:
-            try:
-                # self.representations = [self.file.by_id(step_id) for step_id in self.representations]
-                self.representations = [
-                    [self.file.by_id(step_id) for step_id in representation]
-                    for representation in self.representations
-                ]
-            except Exception as e:
-                raise
-            self.names = self.repeat_input_unique(self.names, len(self.representations))
-            self.descriptions = self.repeat_input_unique(
-                self.descriptions, len(self.representations)
-            )
-        elif not self.representations[0][0]:
+            representations = []
+            names = []
+            descriptions = []
+            for group in self.representations:
+                try:
+                    group_representations = [
+                        [self.file.by_id(step_id) for step_id in representation]
+                        for representation in group
+                    ]
+                    representations.append(group_representations)
+                except Exception as e:
+                    raise
+                names.append(
+                    self.repeat_input_unique(self.names, len(group_representations))
+                )
+                descriptions.append(
+                    self.repeat_input_unique(
+                        self.descriptions, len(group_representations)
+                    )
+                )
+            self.representations = representations
+            self.names = names
+            self.descriptions = descriptions
+        elif not self.representations[0][0][0]:
             self.descriptions = self.repeat_input_unique(
                 self.descriptions, len(self.names)
             )
+            self.names = ensure_min_nesting(self.names, 3)
+            self.descriptions = ensure_min_nesting(self.descriptions, 3)
 
         if self.node_id not in SvIfcStore.id_map:
             entities = self.create()
@@ -163,26 +177,75 @@ class SvIfcCreateEntity(
             else:
                 entities = SvIfcStore.id_map[self.node_id]
 
-        # print("Entities: ", entities)
         self.outputs["Entities"].sv_set(entities)
 
     def create(self, index=None):
         entities_ids = []
-        iterator = range(len(self.names))
-        if index is not None:
-            iterator = [index]
-        for i in iterator:
-            try:
-                entity = ifcopenshell.api.run(
-                    "root.create_entity",
-                    self.file,
-                    ifc_class=self.ifc_class,
-                    name=self.names[i],
-                    description=self.descriptions[i],
-                )
+        for i, group in enumerate(self.names):
+            group_entities_ids = []
+            iterator = range(len(group))
+            if index is not None:
+                iterator = [index]
+            for j in iterator:
+
                 try:
-                    for repr in self.representations[i]:
-                        if repr:
+                    entity = ifcopenshell.api.run(
+                        "root.create_entity",
+                        self.file,
+                        ifc_class=self.ifc_class,
+                        name=self.names[i][j],
+                        description=self.descriptions[i][j],
+                    )
+                    try:
+                        for repr in self.representations[i][j]:
+                            if repr:
+                                ifcopenshell.api.run(
+                                    "geometry.assign_representation",
+                                    self.file,
+                                    product=entity,
+                                    representation=repr,
+                                )
+                    except IndexError:
+                        pass
+                    try:
+                        for loc in self.locations[i][j]:
+                            print("Location: ", loc)
+                            if isinstance(loc, Matrix):
+                                ifcopenshell.api.run(
+                                    "geometry.edit_object_placement",
+                                    self.file,
+                                    product=entity,
+                                    matrix=loc,
+                                )
+                    except IndexError:
+                        pass
+                    group_entities_ids.append(entity.id())
+                except Exception as e:
+                    raise Exception("Something went wrong. Cannot create entity.", e)
+            SvIfcStore.id_map.setdefault(self.node_id, []).append(group_entities_ids)
+            entities_ids.append(group_entities_ids)
+        return entities_ids
+
+    def edit(self):
+        entities_ids = []
+        id_map_copy = SvIfcStore.id_map[self.node_id].copy()
+        for i, group in enumerate(self.names):
+            group_entities_ids = []
+            for j, _ in enumerate(group):
+                try:
+                    step_id = id_map_copy[i][j]
+                except IndexError:
+                    id = self.create(index=j)
+                    group_entities_ids.append(id[0])
+                    continue
+                entity = self.file.by_id(step_id)
+                entity.Name = self.names[i][j]
+                entity.Description = self.descriptions[i][j]
+                try:
+                    for repr in self.representations[i][j]:
+                        if repr and repr.is_a("IfcProductDefinitionShape"):
+                            entity.Representation = repr
+                        elif repr:
                             ifcopenshell.api.run(
                                 "geometry.assign_representation",
                                 self.file,
@@ -192,7 +255,7 @@ class SvIfcCreateEntity(
                 except IndexError:
                     pass
                 try:
-                    for loc in self.locations[i]:
+                    for loc in self.locations[i][j]:
                         if isinstance(loc, Matrix):
                             ifcopenshell.api.run(
                                 "geometry.edit_object_placement",
@@ -202,60 +265,15 @@ class SvIfcCreateEntity(
                             )
                 except IndexError:
                     pass
-                entities_ids.append(entity.id())
-                SvIfcStore.id_map.setdefault(self.node_id, []).append(entity.id())
-            except Exception as e:
-                raise Exception("Something went wrong. Cannot create entity.", e)
-        return entities_ids
+                if entity.is_a() != self.ifc_class:
+                    SvIfcStore.id_map[self.node_id][i].remove(step_id)
+                    entity = ifcopenshell.util.schema.reassign_class(
+                        self.file, entity, self.ifc_class
+                    )
+                group_entities_ids.append(entity.id())
+            entities_ids.append(group_entities_ids)
 
-    def edit(self):
-        entities_ids = []
-        id_map_copy = SvIfcStore.id_map[self.node_id].copy()
-        for i, _ in enumerate(self.names):
-            try:
-                step_id = id_map_copy[i]
-            except IndexError:
-                id = self.create(index=i)
-                entities_ids.append(id[0])
-                continue
-            entity = self.file.by_id(step_id)
-            entity.Name = self.names[i]
-            entity.Description = self.descriptions[i]
-
-            try:
-                for repr in self.representations[i]:
-                    if repr and repr.is_a("IfcProductDefinitionShape"):
-                        entity.Representation = repr
-                    elif repr:
-                        ifcopenshell.api.run(
-                            "geometry.assign_representation",
-                            self.file,
-                            product=entity,
-                            representation=repr,
-                        )
-            except IndexError:
-                pass
-            try:
-                for loc in self.locations[i]:
-                    if isinstance(loc, Matrix):
-                        ifcopenshell.api.run(
-                            "geometry.edit_object_placement",
-                            self.file,
-                            product=entity,
-                            matrix=loc,
-                        )
-            except IndexError:
-                pass
-            if entity.is_a() != self.ifc_class:
-                SvIfcStore.id_map[self.node_id].remove(step_id)
-                entity = ifcopenshell.util.schema.reassign_class(
-                    self.file, entity, self.ifc_class
-                )
-                SvIfcStore.id_map.setdefault(self.node_id, []).append(entity.id())
-            entities_ids.append(entity.id())
-
-        if id_map_copy > entities_ids:
-            SvIfcStore.id_map[self.node_id] = entities_ids
+        SvIfcStore.id_map[self.node_id] = entities_ids
         return entities_ids
 
     def repeat_input_unique(self, input, count):

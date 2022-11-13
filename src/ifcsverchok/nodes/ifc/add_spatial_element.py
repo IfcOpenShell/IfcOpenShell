@@ -18,6 +18,8 @@
 
 import bpy
 
+from itertools import chain
+
 import ifcopenshell
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
@@ -99,7 +101,8 @@ class SvIfcAddSpatialElement(
             0
         ]
         self.elements = ensure_min_nesting(self.inputs["Elements"].sv_get(), 2)
-        self.elements = flatten_data(self.elements, target_level=2)
+        if isinstance(self.elements[0][0], list):
+            self.elements = [list(chain.from_iterable(el)) for el in self.elements]
         if not self.elements[0][0]:
             raise Exception('Mandatory input "Element(s)" is missing.')
             return
