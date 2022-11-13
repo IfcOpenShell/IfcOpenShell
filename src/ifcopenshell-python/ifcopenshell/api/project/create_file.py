@@ -1,4 +1,6 @@
 # IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021, 2022 Dion Moult <dion@thinkmoult.com>
+#
 # This file is part of IfcOpenShell.
 #
 # IfcOpenShell is free software: you can redistribute it and/or modify
