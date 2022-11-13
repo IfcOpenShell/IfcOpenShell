@@ -162,7 +162,7 @@ class SvIfcSverchokToIfcRepr(
                     raise Exception(
                         "Couldn't create representation. Possibly wrong context."
                     )
-                representations_ids_obj.append(representation.id())
+                representations_ids_obj.append([representation.id()])
             representations_ids.append(representations_ids_obj)
             SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
                 "Representations", []
@@ -177,7 +177,7 @@ class SvIfcSverchokToIfcRepr(
                 ifcopenshell.api.run(
                     "geometry.remove_representation",
                     self.file,
-                    representation=self.file.by_id(step_id),
+                    representation=self.file.by_id(step_id[0]),
                 )
         del SvIfcStore.id_map[self.node_id]["Representations"]
         return
@@ -215,7 +215,7 @@ class SvIfcSverchokToIfcRepr(
                     ifcopenshell.api.run(
                         "geometry.remove_representation",
                         self.file,
-                        representation=self.file.by_id(step_id),
+                        representation=self.file.by_id(step_id[0]),
                     )
 
             if "Contexts" in SvIfcStore.id_map[self.node_id]:
