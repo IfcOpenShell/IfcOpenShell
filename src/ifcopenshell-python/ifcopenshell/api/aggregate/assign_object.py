@@ -26,9 +26,28 @@ class Usecase:
     def __init__(self, file, product=None, relating_object=None):
         """Assigns an object as an aggregate to a product
 
-        :param product: The part of the aggregate
-        :param relating_object: The whole of the aggregate
-        :return: entity: The aggregate relationship
+        Typically used when you want to describe how large spaces are made up of
+        smaller spaces. For example large spatial elements (e.g. sites,
+        buidings) can be made out of smaller spatial elements (e.g. storeys,
+        spaces).
+
+        The other common usecase is when larger physical products are made up of
+        smaller physical products. For example, a stair might be made out of a
+        flight, a landing, a railing and so on. Or a wall might be made out of
+        stud members, and coverings.
+
+        IFC placements follow a convention where the placement is relative to
+        its parent in the spatial hierarchy. If your product has a placement,
+        its placement will be recalculated to follow this convention.
+
+        :param product: The part of the aggregate, typically an IfcElement or
+            IfcSpatialStructureElement subclass
+        :type product: ifcopenshell.entity_instance
+        :param relating_object: The whole of the aggregate, typically an
+            IfcElement or IfcSpatialStructureElement subclass
+        :type relating_object: ifcopenshell.entity_instance
+        :return: The IfcRelAggregate relationship instance
+        :rtype: ifcopenshell.entity_instance.entity_instance
 
         Example::
 
