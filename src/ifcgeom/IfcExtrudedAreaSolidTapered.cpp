@@ -32,6 +32,7 @@
 #include <TopExp_Explorer.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -88,11 +89,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 		TopoDS_Shape result = builder.Shape();
 
 		TopTools_ListOfShape li;
-		shape_to_face_list(result, li);
+		util::shape_to_face_list(result, li);
 		li.Append(BRepBuilderAPI_MakeFace(w1).Face().Reversed());
 		li.Append(BRepBuilderAPI_MakeFace(w2).Face().Moved(end_profile));
 		
-		create_solid_from_faces(li, result, true);
+		util::create_solid_from_faces(li, result, true);
 
 		// @todo ugly hack
 

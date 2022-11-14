@@ -17,9 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "../ifcgeom_schema_agnostic/base_utils.h"
+
+#include "../ifcgeom/IfcGeom.h"
+
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
-#include "../ifcgeom/IfcGeom.h"
 #include <memory>
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
@@ -38,7 +41,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		points_,
 		loops_,
 		l->declaration().is(IfcSchema::IfcClosedShell::Class())
-	));
+		));
 
 	faceset_helper_ = helper_scope.get();
 
@@ -52,7 +55,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 	for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
 		bool success = false;
 		TopoDS_Face face;
-		
+
 		try {
 			success = convert_face(*it, face);
 		} catch (const std::exception& e) {
@@ -78,7 +81,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 				if (face_it.Value().ShapeType() == TopAbs_FACE) {
 					// This should really be the case. This is not asserted.
 					const TopoDS_Face& triangle = TopoDS::Face(face_it.Value());
-					if (face_area(triangle) > min_face_area) {
+					if (util::face_area(triangle) > min_face_area) {
 						face_list.Append(triangle);
 					} else {
 						Logger::Message(Logger::LOG_WARNING, "Degenerate face:", (*it));
@@ -86,7 +89,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 				}
 			}
 		} else {
-			if (face_area(face) > min_face_area) {
+			if (util::face_area(face) > min_face_area) {
 				face_list.Append(face);
 			} else {
 				Logger::Message(Logger::LOG_WARNING, "Degenerate face:", (*it));
@@ -98,11 +101,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		return false;
 	}
 
-	if (face_list.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !create_solid_from_faces(face_list, shape)) {
+	if (face_list.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !util::create_solid_from_faces(face_list, shape, getValue(GV_PRECISION))) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
-		
+
 		TopTools_ListIteratorOfListOfShape face_iterator;
 		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 			builder.Add(compound, face_iterator.Value());

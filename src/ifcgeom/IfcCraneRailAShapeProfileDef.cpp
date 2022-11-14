@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/profile_helper.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -60,6 +61,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCraneRailAShapeProfileDef* l, 
 		+hw / 2., +oh / 2.
 	};
 
-	return profile_helper(14, coords, 0, 0, 0, trsf2d, face);
+	return util::profile_helper(14, coords, 0, 0, 0, trsf2d, face);
 }
 #endif

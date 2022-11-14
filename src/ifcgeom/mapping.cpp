@@ -19,6 +19,7 @@
 
 #include "IfcGeom.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomShapeType.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #include <BRepCheck_Analyzer.hxx>
 
@@ -68,7 +69,7 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseInterface* l, TopoDS_Shape& r) 
 	if (st == ST_SHAPELIST) {
 		processed = true;
 		IfcRepresentationShapeItems items;
-		success = convert_shapes(l, items) && flatten_shape_list(items, r, false);
+		success = convert_shapes(l, items) && util::flatten_shape_list(items, r, false, getValue(GV_PRECISION));
 	} else if (st == ST_SHAPE && include_solids_and_surfaces) {
 #include "mapping_shape.i"
 	} else if (st == ST_FACE && include_solids_and_surfaces) {
@@ -85,22 +86,20 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseInterface* l, TopoDS_Shape& r) 
 		processed = true;
 		Handle(Geom_Curve) crv;
 		TopoDS_Wire w;
-		success = convert_curve(l, crv) && convert_curve_to_wire(crv, w);
+		success = convert_curve(l, crv) && util::convert_curve_to_wire(crv, w);
 		if (success) {
 			r = w;
 		}
 	}
 
 	if ( processed && success ) { 
-		const double precision = getValue(GV_PRECISION);
-		apply_tolerance(r, precision);
 #ifndef NO_CACHE
 		cache.Shape[id] = r;
 #endif
 
 		if (Logger::LOG_DEBUG >= Logger::Verbosity()) {
 			BRepCheck_Analyzer ana(r);
-			Logger::Notice("Valid: " + std::to_string(ana.IsValid()), l);
+			Logger::Notice("Valid: " + std::to_string((bool) ana.IsValid()), l);
 		}
 	} else if (!ignored) {
 		const char* const msg = processed
@@ -115,7 +114,7 @@ bool IfcGeom::Kernel::convert_wire(const IfcBaseInterface* l, TopoDS_Wire& r) {
 #include "mapping_wire.i"
 	Handle(Geom_Curve) curve;
 	if (IfcGeom::Kernel::convert_curve(l, curve)) {
-		return IfcGeom::Kernel::convert_curve_to_wire(curve, r);
+		return util::convert_curve_to_wire(curve, r);
 	}
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;

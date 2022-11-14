@@ -20,12 +20,15 @@
 #ifndef IFCSHAPELIST_H
 #define IFCSHAPELIST_H
 
+#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
+
 #include <gp_GTrsf.hxx>
 #include <TopoDS_Shape.hxx>
 
-#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
+#include <vector>
 
 namespace IfcGeom {	
+	
 	class IFC_GEOM_API IfcRepresentationShapeItem {
 	private:
 		int id;
@@ -51,6 +54,11 @@ namespace IfcGeom {
 		void setStyle(std::shared_ptr<const SurfaceStyle> newStyle) { style = newStyle; }
 		int ItemId() const { return id; }
 	};
+
 	typedef std::vector<IfcRepresentationShapeItem> IfcRepresentationShapeItems;
+
+	namespace util {
+		bool flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse, double tol);
+	}
 }
 #endif

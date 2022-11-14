@@ -22,6 +22,7 @@
 #include <TopoDS_Face.hxx>
 #include <ShapeFix_Shape.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -31,7 +32,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAnnotationFillArea* l, TopoDS_
 		return false;
 	}
 
-	assert_closed_wire(outer_boundary);
+	util::assert_closed_wire(outer_boundary, getValue(GV_PRECISION));
 
 	BRepBuilderAPI_MakeFace mf(outer_boundary);
 
@@ -41,7 +42,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAnnotationFillArea* l, TopoDS_
 		for(IfcSchema::IfcCurve::list::it it = inner_boundaries->begin(); it != inner_boundaries->end(); ++it) {
 			TopoDS_Wire hole;
 			if (convert_wire(*it, hole)) {
-				assert_closed_wire(hole);
+				util::assert_closed_wire(hole, getValue(GV_PRECISION));
 				mf.Add(hole);
 			}
 		}

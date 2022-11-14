@@ -19,6 +19,7 @@
 
 #include <TopoDS_Wire.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -28,10 +29,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, 
 		return false;
 	}
 
-	assert_closed_wire(wire);
+	util::assert_closed_wire(wire, getValue(GV_PRECISION));
 
 	TopoDS_Compound f;
-	bool success = convert_wire_to_faces(wire, f);
+	bool success = util::convert_wire_to_faces(wire, f, {getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0., getValue(GV_NO_WIRE_INTERSECTION_TOLERANCE) < 0., 0., getValue(GV_PRECISION)});
 	if (success) {
 		face = f;
 	}

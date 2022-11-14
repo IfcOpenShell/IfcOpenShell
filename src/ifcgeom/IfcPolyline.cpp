@@ -21,6 +21,7 @@
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <TopoDS_Wire.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define _USE_MATH_DEFINES
 #define Kernel MAKE_TYPE_NAME(Kernel)
@@ -45,7 +46,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 	}
 
 	// Remove points that are too close to one another
-	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
+	util::remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
 
 	if (polygon.Length() < 2) {
 		// We somehow need to signal we fail this curve on purpose not to trigger an error.

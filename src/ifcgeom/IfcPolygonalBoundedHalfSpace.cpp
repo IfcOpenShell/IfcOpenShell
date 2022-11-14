@@ -24,6 +24,7 @@
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepAlgoAPI_Common.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -38,17 +39,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 	if ( ! convert(l->Position(),trsf) ) return false;
 
 	TColgp_SequenceOfPnt points;
-	if (wire_to_sequence_of_point(wire, points)) {
+	if (util::wire_to_sequence_of_point(wire, points)) {
 		// Boolean subtractions not very robust for narrow operands, 
 		// increase minimal point spacing to eliminate such shapes.
 		const double t = getValue(GV_PRECISION) * 10.;
-		remove_duplicate_points_from_loop(points, wire.Closed() != 0, t); // Note: wire always closed, as per if statement above
-		remove_collinear_points_from_loop(points, wire.Closed() != 0, t);
+		util::remove_duplicate_points_from_loop(points, wire.Closed() != 0, t); // Note: wire always closed, as per if statement above
+		util::remove_collinear_points_from_loop(points, wire.Closed() != 0, t);
 		if (points.Length() < 3) {
 			Logger::Message(Logger::LOG_ERROR, "Not enough points retained from:", l->PolygonalBoundary());
 			return false;
 		}
-		sequence_of_point_to_wire(points, wire, wire.Closed() != 0);
+		util::sequence_of_point_to_wire(points, wire, wire.Closed() != 0);
 	}
 
 	TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200));
