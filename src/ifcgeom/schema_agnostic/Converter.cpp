@@ -8,6 +8,7 @@ ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library
 {
 	kernel_ = kernels::construct(geometry_library, file);
 	mapping_ = impl::mapping_implementations().construct(file, settings_);
+
 }
 
 namespace {
@@ -32,7 +33,7 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	auto product = (IfcUtil::IfcBaseEntity*) product_node->instance;
 	const std::string product_type = product->declaration().name();
 	// @todo
-	element_settings s(settings_, 1.0 /*getValue(GV_LENGTH_UNIT) */, product_type);
+	element_settings s(settings_, settings.getValue(ConversionSettings::GV_LENGTH_UNIT), product_type);
 
 	std::stringstream representation_id_builder;
 

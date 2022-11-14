@@ -5,6 +5,7 @@
 #include "../../ifcgeom/schema_agnostic/ifc_geom_api.h"
 #include "../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
 #include "../../ifcgeom/taxonomy.h"
+#include "../../ifcgeom/ConversionSettings.h"
 
 static const double ALMOST_ZERO = 1.e-9;
 
@@ -18,31 +19,15 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 	class IFC_GEOM_API AbstractKernel {
 	protected:
 		// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-		const IfcParse::declaration* placement_rel_to;
-
-		double deflection_tolerance;
-		double wire_creation_tolerance;
-		double point_equality_tolerance;
-		double max_faces_to_sew;
-		double ifc_length_unit;
-		double ifc_planeangle_unit;
-		double modelling_precision;
-		double dimensionality;
-
-		std::string geometry_library;
+		const IfcParse::declaration* placement_rel_to = nullptr;
+		std::string geometry_library_;
+		ConversionSettings settings_;
 
 	public:
-		AbstractKernel(const std::string& geometry_library)
-			: geometry_library(geometry_library)
-			, deflection_tolerance(0.001)
-			, wire_creation_tolerance(0.0001)
-			, point_equality_tolerance(0.00001)
-			, max_faces_to_sew(-1.0)
-			, ifc_length_unit(1.0)
-			, ifc_planeangle_unit(-1.0)
-			, modelling_precision(0.00001)
-			, dimensionality(1.)
-			, placement_rel_to(0) {}
+		AbstractKernel(const std::string& geometry_library, const ConversionSettings& settings)
+			: geometry_library_(geometry_library)
+			, settings_(settings)
+		{}
 
 		bool convert(const taxonomy::item*, ifcopenshell::geometry::ConversionResults&);
 

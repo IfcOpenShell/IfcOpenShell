@@ -52,6 +52,7 @@
 #include "../../../ifcgeom/schema_agnostic/ifc_geom_api.h"
 
 #include "../../../ifcgeom/taxonomy.h"
+#include "../../../ifcgeom/ConversionSettings.h"
 
 // Define this in case you want to conserve memory usage at all cost. This has been
 // benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
@@ -99,27 +100,7 @@ namespace kernels {
 			double eps_;
 			bool non_manifold_;
 
-			template <typename Fn>
-			void loop_(const taxonomy::loop* ps, const Fn& callback) {
-				if (ps->children.size() < 3) {
-					return;
-				}
-
-				auto a = boost::get<taxonomy::point3>(((taxonomy::edge*) ps->children.back())->start).instance;
-				auto A = a->data().id();
-				for (auto& b : ps->children) {
-					auto B = boost::get<taxonomy::point3>(((taxonomy::edge*) b)->start).instance->data().id();
-					auto C = vertex_mapping_[A], D = vertex_mapping_[B];
-					bool fwd = C < D;
-					if (!fwd) {
-						std::swap(C, D);
-					}
-					if (C != D) {
-						callback(C, D, fwd);
-						A = B;
-					}
-				}
-			}
+			void loop_(const taxonomy::loop* ps, const std::function<void(int, int, bool)>& callback);
 		public:
 			faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell* l);
 
@@ -128,60 +109,11 @@ namespace kernels {
 			bool non_manifold() const { return non_manifold_; }
 			bool& non_manifold() { return non_manifold_; }
 
-			bool edge(const taxonomy::point3& a, const taxonomy::point3& b, TopoDS_Edge& e) {
-				int A = vertex_mapping_[a.instance->data().id()];
-				int B = vertex_mapping_[b.instance->data().id()];
-				if (A == B) {
-					return false;
-				}
+			bool edge(int A, int B, TopoDS_Edge& e);
 
-				return edge(A, B, e);
-			}
+			bool wire(const taxonomy::loop* loop, TopoDS_Wire& wire);
 
-			bool edge(int A, int B, TopoDS_Edge& e) {
-				auto it = edges_.find({ A, B });
-				if (it == edges_.end()) {
-					return false;
-				}
-				e = it->second;
-				return true;
-			}
-
-			bool wire(const taxonomy::loop* loop, TopoDS_Wire& wire) {
-				if (duplicates_.find(loop->instance->data().id()) != duplicates_.end()) {
-					return false;
-				}
-				BRep_Builder builder;
-				builder.MakeWire(wire);
-				int count = 0;
-				loop_(loop, [this, &builder, &wire, &count](int A, int B, bool fwd) {
-					TopoDS_Edge e;
-					if (edge(A, B, e)) {
-						if (!fwd) {
-							e.Reverse();
-						}
-						builder.Add(wire, e);
-						count += 1;
-					}
-				});
-				if (count >= 3) {
-					wire.Closed(true);
-
-					/*
-					@todo
-					TopTools_ListOfShape results;
-					if (kernel_->wire_intersections(wire, results)) {
-						Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
-						kernel_->select_largest(results, wire);
-						non_manifold_ = true;
-					}
-					*/
-
-					return true;
-				} else {
-					return false;
-				}
-			}
+			bool wires(const taxonomy::loop* loop, TopTools_ListOfShape& wires);
 
 			double epsilon() const {
 				return eps_;
@@ -195,17 +127,15 @@ namespace kernels {
 */
 
 	faceset_helper* faceset_helper_;
-	double precision_;
 
 	public:
-		OpenCascadeKernel()
-			: AbstractKernel("opencascade")
+		OpenCascadeKernel(ConversionSettings& settings)
+			: AbstractKernel("opencascade", settings)
 			, faceset_helper_(nullptr)
-			// @todo
-			, precision_(1.e-5) {}
+		{}		
 
 		OpenCascadeKernel(const OpenCascadeKernel& other)
-			: AbstractKernel("opencascade") {
+			: AbstractKernel("opencascade", other.settings_) {
 			*this = other;
 		}
 
@@ -222,8 +152,6 @@ namespace kernels {
 		bool convert(const taxonomy::matrix4*, gp_GTrsf&);
 		bool convert(const taxonomy::shell*, TopoDS_Shape&);
 
-		bool approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps = -1.);
-		bool triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces);
 		bool boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness = -1.);
 		const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
 		bool flatten_shape_list(const ifcopenshell::geometry::ConversionResults& shapes, TopoDS_Shape& result, bool fuse);

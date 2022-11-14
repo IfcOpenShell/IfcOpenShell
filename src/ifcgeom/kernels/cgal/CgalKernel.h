@@ -81,14 +81,10 @@ namespace kernels {
 		}
 	public:
 
-		CgalKernel()
-			: AbstractKernel("cgal")
-			// @todo
-			, precision_(1.e-5)
+		CgalKernel(const ConversionSettings& settings)
+			: AbstractKernel("cgal", settings)
 			, circle_segments_(16)
-		{
-			
-		}
+		{}
 
 		void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
 

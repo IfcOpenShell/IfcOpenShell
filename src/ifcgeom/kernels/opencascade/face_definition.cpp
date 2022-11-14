@@ -6,7 +6,7 @@
 #include <TopoDS_Iterator.hxx>
 
 /* Returns whether wire conforms to a polyhedron, i.e. only edges with linear curves*/
-bool ifcopenshell::geometry::util::is_polyhedron(const TopoDS_Wire& wire) {
+bool IfcGeom::util::is_polyhedron(const TopoDS_Wire & wire) {
 	double a, b;
 	TopLoc_Location l;
 
@@ -18,17 +18,5 @@ bool ifcopenshell::geometry::util::is_polyhedron(const TopoDS_Wire& wire) {
 		}
 	}
 
-	return true;
-}
-
-/* Returns whether wire conforms to a polyhedron, i.e. only edges with linear curves*/
-bool ifcopenshell::geometry::util::is_polyhedron(const taxonomy::loop* wire) {
-	for (auto& edge : wire->children_as<taxonomy::edge>()) {
-		if (edge->basis) {
-			if (edge->basis->kind() != taxonomy::LINE) {
-				return false;
-			}
-		}
-	}
 	return true;
 }

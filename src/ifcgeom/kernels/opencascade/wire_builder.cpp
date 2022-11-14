@@ -1,7 +1,7 @@
 #include "wire_builder.h"
 
-#include "../../../ifcparse/IfcLogger.h"
-#include "../../exceptions.h"
+#include "../ifcparse/IfcLogger.h"
+#include "../ifcgeom_schema_agnostic/Kernel.h"
 
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
@@ -65,7 +65,7 @@ TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v
 
 		GC_MakeCircle mc(p1, p2, p3);
 		if (!mc.IsDone()) {
-			throw ifcopenshell::geometry::geometry_exception("Failed to adjust circle");
+			throw IfcGeom::geometry_exception("Failed to adjust circle");
 		}
 
 		TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(mc.Value(), p1, p3).Edge();
@@ -73,7 +73,7 @@ TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v
 		builder.Add(edge);
 		return builder.Wire();
 	} else {
-		throw ifcopenshell::geometry::geometry_exception("Unexpected wire to adjust");
+		throw IfcGeom::geometry_exception("Unexpected wire to adjust");
 	}
 }
 

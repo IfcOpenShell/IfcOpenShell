@@ -17,61 +17,42 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef FACE_DEFINITION_H
-#define FACE_DEFINITION_H
+#ifndef SWEEP_UTILS_H
+#define SWEEP_UTILS_H
 
 #include <TopoDS_Wire.hxx>
-#include <Geom_Surface.hxx>
+#include <TopoDS_Edge.hxx>
 
-#include <map>
 #include <vector>
 
 namespace IfcGeom {
 	namespace util {
 
-		/* Returns whether wire conforms to a polyhedron, i.e. only edges with linear curves*/
-		bool is_polyhedron(const TopoDS_Wire& wire);
+		bool wire_is_c1_continuous(const TopoDS_Wire& w, double tol);
 
-		/* A temporary structure to store the intermediate data for the face conversion */
-		class face_definition {
-		private:
-			Handle(Geom_Surface) surface_;
-			std::vector<TopoDS_Wire> wires_;
-			bool all_outer_;
-		public:
-			face_definition() : surface_(), all_outer_(false) {}
+		bool wire_to_ax(const TopoDS_Wire& wire, gp_Ax2& directrix);
 
-			typedef std::vector<TopoDS_Wire>::const_iterator wire_it;
+		bool is_single_linear_edge(const TopoDS_Wire& wire);
 
-			bool& all_outer() {
-				return all_outer_;
-			}
+		bool is_single_circular_edge(const TopoDS_Wire& wire);
 
-			bool all_outer() const {
-				return all_outer_;
-			}
+		void process_sweep_as_extrusion(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result);
 
-			Handle(Geom_Surface)& surface() {
-				return surface_;
-			}
+		void process_sweep_as_revolution(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result);
 
-			const Handle(Geom_Surface)& surface() const {
-				return surface_;
-			}
+		void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result, bool force_transformed = false);
 
-			std::vector<TopoDS_Wire>& wires() {
-				return wires_;
-			}
+		void sort_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Edge>& sorted_edges);
 
-			const TopoDS_Wire& outer_wire() const {
-				return wires_.front();
-			}
 
-			std::pair<wire_it, wire_it> inner_wires() const {
-				return { wires_.begin() + 1, wires_.end() };
-			}
-		};	
+		// #939: a closed loop causes failed triangulation in 7.3 and artefacts
+		// in 7.4 so we break up a closed wire into two equal parts.
+		void break_closed(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires);
 
+		void segment_adjacent_non_linear(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires);
+
+		// @todo make this generic for other sweeps not just swept disk
+		void process_sweep(const TopoDS_Wire& wire, double radius, TopoDS_Shape& result);
 	}
 }
 
