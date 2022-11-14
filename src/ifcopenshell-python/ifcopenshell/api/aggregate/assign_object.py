@@ -57,10 +57,10 @@ class Usecase:
 
         :param product: The part of the aggregate, typically an IfcElement or
             IfcSpatialStructureElement subclass
-        :type product: ifcopenshell.entity_instance
+        :type product: ifcopenshell.entity_instance.entity_instance
         :param relating_object: The whole of the aggregate, typically an
             IfcElement or IfcSpatialStructureElement subclass
-        :type relating_object: ifcopenshell.entity_instance
+        :type relating_object: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelAggregate relationship instance
         :rtype: ifcopenshell.entity_instance.entity_instance
 
