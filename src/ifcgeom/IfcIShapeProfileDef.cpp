@@ -19,6 +19,7 @@
 
 #include <gp_Trsf2d.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/profile_helper.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -67,5 +68,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	double coords[24] = {-x1,-y, x1,-y, x1,-y+dy1, d1,-y+dy1, d1,y-dy2, x2,y-dy2, x2,y, -x2,y, -x2,y-dy2, -d1,y-dy2, -d1,-y+dy1, -x1,-y+dy1};
 	int fillets[4] = {3,4,9,10};
 	double radii[4] = {f1,f2,f2,f1};
-	return profile_helper(12,coords,(doFillet1||doFillet2) ? 4 : 0,fillets,radii,trsf2d,face);
+	return util::profile_helper(12,coords,(doFillet1||doFillet2) ? 4 : 0,fillets,radii,trsf2d,face);
 }
