@@ -19,6 +19,7 @@
 
 #include <gp_Trsf2d.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/profile_helper.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -44,5 +45,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l,
 	double coords[8] = {-x,-y, x,-y, x,y, -x,y};
 	int fillets[4] = {0,1,2,3};
 	double radii[4] = {r,r,r,r};
-	return profile_helper(4,coords,4,fillets,radii,trsf2d,face);
+	return util::profile_helper(4,coords,4,fillets,radii,trsf2d,face);
 }

@@ -39,7 +39,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 		TopoDS_Shape s;
 		if (shape_type(element) == ST_SHAPELIST) {
 			IfcRepresentationShapeItems items;
-			if (!(convert_shapes(element, items) && flatten_shape_list(items, s, false))) {
+			if (!(convert_shapes(element, items) && util::flatten_shape_list(items, s, false, getValue(GV_PRECISION)))) {
 				continue;
 			}
 		} else if (shape_type(element) == ST_SHAPE && include_solids_and_surfaces) {

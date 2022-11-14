@@ -24,6 +24,7 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -60,7 +61,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipseProfileDef* l, TopoDS_S
 	w.Add(edge);
 
 	TopoDS_Face f;
-	bool success = convert_wire_to_face(w, f);
+	bool success = util::convert_wire_to_face(w, f, {false, false, 0., 0.});
 	if (success) face = f;
 	return success;
 }
