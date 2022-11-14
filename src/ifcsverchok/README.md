@@ -89,8 +89,10 @@ Now we can open the created IFC model with any IFC viewer or program. Here it is
 <b>Miscellaneous examples</b>
 </summary>
 Miscellaneous examples that showcase the "Add Pset", "Get Attribute", "Get Property", "By Guid", "By Type" and "Read Entity" nodes.
+
 ![Alt text](./assets/other_examples1.png?raw=true)
 </details>
+
 <details>
 <summary>
 <b>Multiple Blender Mesh Geometries</b>
@@ -101,14 +103,18 @@ The initial inputs are two Blender objects, one containing a single geometry, an
 
 The "Create Entity" node preserves the same shape. Notice that names and descriptions are (at least for now) only checked for uniqueness pr. object, so we have the name "testwall1" and description "descr1" repeating between the two objects. 
 
-The output of "Create Enity" would look identical if only one name and one description was given as input. 
+The output of "Create Enity" would look identical if only one name and one description was given as input.
+
 ![Alt text](./assets/other_examples2.png?raw=true)
 </details>
+
 <details>
 <summary>
 <b>Multiple Sverchok Geometries</b>
 </summary>
 Similarly, when we in this example convert two sets of three boxes ([[[box1], [box2], [box3]],[[box4], [box5], [box6]]]), we get six IfcRepresentations and entities with the original shape preserved.
 Notice that the "By Id" node doesn't preserve input shape (at this point), since it should only be used for viewing.
+
 ![Alt text](./assets/other_examples3.png?raw=true)
+
 </details>
