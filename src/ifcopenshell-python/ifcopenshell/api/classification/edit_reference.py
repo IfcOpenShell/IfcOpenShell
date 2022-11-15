@@ -18,11 +18,28 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, reference=None, attributes=None):
+        """Edits the attributes of an IfcClassificationReference
+
+        For more information about the attributes and data types of an
+        IfcClassificationReference, consult the IFC documentation.
+
+        :param reference: The IfcClassificationReference entity you want to edit
+        :type reference: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example::
+
+            reference = model.by_type("IfcClassification")[0]
+            # Change the name of the reference to "Foo"
+            ifcopenshell.api.run("classification.edit_reference", model,
+                reference=reference, attributes={"Name": "Foo"})
+        """
         self.file = file
-        self.settings = {"reference": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"reference": reference, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

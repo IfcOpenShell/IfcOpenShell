@@ -18,11 +18,28 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, classification=None, attributes=None):
+        """Edits the attributes of an IfcClassification
+
+        For more information about the attributes and data types of an
+        IfcClassification, consult the IFC documentation.
+
+        :param classification: The IfcClassification entity you want to edit
+        :type classification: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example::
+
+            classification = model.by_type("IfcClassification")[0]
+            # Change the name of the classification system to "Foo"
+            ifcopenshell.api.run("classification.edit_classification", model,
+                classification=classification, attributes={"Name": "Foo"})
+        """
         self.file = file
-        self.settings = {"classification": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"classification": classification, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():
