@@ -177,7 +177,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 dependency_tree = {
     'IfcParse': ('boost', 'libxml2', 'hdf5'),
-    'IfcGeom': ('IfcParse', 'occ', 'json', 'cgal'),
+    'IfcGeom': ('IfcParse', 'occ', 'json', 'cgal', 'eigen'),
     'IfcConvert': ('IfcGeom',),
     'OpenCOLLADA': ('libxml2', 'pcre'),
     'IfcGeomServer': ('IfcGeom',),
@@ -190,7 +190,8 @@ dependency_tree = {
     'pcre': (),
     'json': (),
     'hdf5': (),
-    'cgal': ()
+    'cgal': (),
+    'eigen': (),
 }
 
 def v(dep):
@@ -482,6 +483,9 @@ if "json" in targets:
         os.makedirs(os.path.dirname(json_install_path))
     if not os.path.exists(json_install_path):
         urlretrieve(json_url, json_install_path)
+        
+if "eigen" in targets:
+    git_clone_or_pull_repository("https://gitlab.com/libeigen/eigen.git", "{DEPS_DIR}/install/eigen-3.3.7".format(**locals()), revision="3.3.7")
 
 if "pcre" in targets:
     build_dependency(
@@ -698,6 +702,7 @@ cmake_args = [
     "-DBOOST_ROOT="                    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
+    "-DEIGEN_DIR="                     f"{DEPS_DIR}/install/eigen-3.3.7",
     "-DBoost_NO_BOOST_CMAKE="          "On",
     "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off")
 ]

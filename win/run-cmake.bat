@@ -109,6 +109,7 @@ set GMP_INCLUDE_DIR=%INSTALL_DIR%\mpir
 set GMP_LIBRARY_DIR=%INSTALL_DIR%\mpir
 set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
 set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
+set EIGEN_DIR=%INSTALL_DIR%\Eigen
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -141,6 +142,7 @@ echo    GMP_INCLUDE_DIR         = %GMP_INCLUDE_DIR%
 echo    GMP_LIBRARY_DIR         = %GMP_LIBRARY_DIR%
 echo    MPFR_INCLUDE_DIR        = %MPFR_INCLUDE_DIR%
 echo    MPFR_LIBRARY_DIR        = %MPFR_LIBRARY_DIR%
+echo    EIGEN_DIR               = %EIGEN_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.

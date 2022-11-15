@@ -473,6 +473,15 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
+:Eigen
+set DEPENDENCY_NAME=eigen
+call :DownloadFile http://bitbucket.org/eigen/eigen/get/3.3.7.zip "%DEPS_DIR%" eigen-eigen-323c052e1731.zip
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :ExtractArchive eigen-eigen-323c052e1731.zip "%DEPS_DIR%" "%DEPS_DIR%\eigen"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\Eigen\Eigen". mkdir "%INSTALL_DIR%\Eigen\Eigen"
+robocopy /MIR "%DEPS_DIR%\eigen-eigen-323c052e1731\Eigen" "%INSTALL_DIR%\Eigen\Eigen"
+
 :Successful
 echo.
 call "%~dp0\utils\cecho.cmd" 0 10 "%PROJECT_NAME% dependencies built."
