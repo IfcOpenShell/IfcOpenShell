@@ -18,7 +18,7 @@
 ################################################################################
 
 cmake_minimum_required(VERSION 3.1.3)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 
 project (IfcOpenShell VERSION 0.7.0)
@@ -149,6 +149,8 @@ UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
 
+UNIFY_ENVVARS_AND_CACHE(EIGEN_DIR)
+
 if (NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
 FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
@@ -159,6 +161,14 @@ ELSE()
 ENDIF()
 add_definitions(-DWITH_GLTF)
 set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
+endif()
+
+
+list(APPEND GEOMETRY_KERNELS opencascade)
+
+if (NOT MINIMAL_BUILD)
+add_definitions(-DIFOPSH_USE_CGAL)
+list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
 # Set INSTALL_RPATH for target
@@ -607,6 +617,7 @@ ENDIF()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
+    ${EIGEN_DIR}
 )
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
@@ -695,7 +706,7 @@ endif()
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 if (BUILD_IFCGEOM)
 	foreach(s ${SCHEMA_VERSIONS})
-		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom_ifc${s})
+		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} geometry_mapping_ifc${s})
 	endforeach()
 	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
@@ -739,36 +750,52 @@ endforeach()
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
-set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "0.6.0" SOVERSION "0.6")
+set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "0.8.0" SOVERSION "0.8")
 
 TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
 
 if (BUILD_IFCGEOM)
 
-# IfcGeom
-file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h ../src/ifcgeom/*.i)
-file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
+foreach(kernel ${GEOMETRY_KERNELS})
+
+string(TOUPPER ${kernel} KERNEL_UPPER)
+file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
+file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-foreach(s ${SCHEMA_VERSIONS})
-	add_library(IfcGeom_ifc${s} STATIC ${IFCGEOM_FILES})
-	set_target_properties(IfcGeom_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
-	TARGET_LINK_LIBRARIES(IfcGeom_ifc${s} IfcParse ${OPENCASCADE_LIBRARIES})
+add_library(geometry_kernel_${kernel} ${IFCGEOM_FILES})
+set_target_properties(geometry_kernel_${kernel} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
+target_link_libraries(geometry_kernel_${kernel} ${${KERNEL_UPPER}_LIBRARIES})
+list(APPEND kernel_libraries geometry_kernel_${kernel})
+
 endforeach()
 
-# IfcGeom (schema agnostic)
-file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom_schema_agnostic/*.h)
-file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom_schema_agnostic/*.cpp)
+foreach(schema ${SCHEMA_VERSIONS})
+
+file(GLOB IFCGEOM_I_FILES ../src/ifcgeom/mapping/*.i)
+file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/mapping/*.h)
+file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/mapping/*.cpp)
+set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
+
+add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
+set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
+target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
+list(APPEND mapping_libraries geometry_mapping_ifc${schema})
+
+endforeach()
+
+file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom/*.h)
+file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom/*.cpp)
 set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
 
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
-set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS VERSION "0.6.0" SOVERSION "0.6")
+set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS VERSION "0.8.0" SOVERSION "0.8")
 
 if (UNIX)
 find_package(Threads)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(IfcGeom ${kernel_libraries} ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT})
 
 endif(BUILD_IFCGEOM)
 
@@ -789,7 +816,7 @@ foreach(s ${SCHEMA_VERSIONS})
 endforeach()
 
 add_library(Serializers ${SERIALIZERS_FILES})
-set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}" VERSION "0.6.0" SOVERSION "0.6")
+set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}" VERSION "0.8.0" SOVERSION "0.8")
 
 TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
@@ -908,10 +935,6 @@ INSTALL(FILES ${IFCGEOM_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcgeom
 )
 
-INSTALL(FILES  ${SCHEMA_AGNOSTIC_H_FILES}
-	DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
-)
-
 INSTALL(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
@@ -928,10 +951,6 @@ INSTALL(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES}
 
 INSTALL(FILES  ${SERIALIZERS_FILES}
 	DESTINATION ${INCLUDEDIR}/serializers/
-)
-
-INSTALL(FILES  ${SERIALIZERS_S_FILES}
-	DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
 )
 endif()
 

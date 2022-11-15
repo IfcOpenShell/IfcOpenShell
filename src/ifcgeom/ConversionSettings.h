@@ -17,6 +17,7 @@
 // unroll the loop with at least the amount of schemas we'd like support
 // for and then overflow into an existing empty include file.
 
+/*
 #define INCLUDE_SCHEMA(n) \
 	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "empty.h")
 
@@ -30,6 +31,7 @@
 #include INCLUDE_SCHEMA(7)
 #include INCLUDE_SCHEMA(8)
 #include INCLUDE_SCHEMA(9)
+*/
 
 #include <boost/function.hpp>
 
