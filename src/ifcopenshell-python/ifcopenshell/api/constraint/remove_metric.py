@@ -18,11 +18,27 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, metric=None):
+        """Remove a metric benchmark
+
+        Removes a metric benchmark and all of its associations to any products
+        and objectives.
+
+        :param metric: The IfcMetric you want to remove.
+        :type metric: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example::
+
+            objective = ifcopenshell.api.run("constraint.add_objective", model)
+            metric = ifcopenshell.api.run("constraint.add_metric", model,
+                objective=objective)
+            ifcopenshell.api.run("constraint.remove_metric", model,
+                metric=metric)
+        """
         self.file = file
-        self.settings = {"metric": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"metric": metric}
 
     def execute(self):
         self.file.remove(self.settings["metric"])
