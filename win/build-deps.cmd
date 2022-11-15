@@ -474,13 +474,9 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Eigen
-set DEPENDENCY_NAME=eigen
-call :DownloadFile http://bitbucket.org/eigen/eigen/get/3.3.7.zip "%DEPS_DIR%" eigen-eigen-323c052e1731.zip
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive eigen-eigen-323c052e1731.zip "%DEPS_DIR%" "%DEPS_DIR%\eigen"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%INSTALL_DIR%\Eigen\Eigen". mkdir "%INSTALL_DIR%\Eigen\Eigen"
-robocopy /MIR "%DEPS_DIR%\eigen-eigen-323c052e1731\Eigen" "%INSTALL_DIR%\Eigen\Eigen"
+set DEPENDENCY_NAME=Eigen
+set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
+call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
 
 :Successful
 echo.

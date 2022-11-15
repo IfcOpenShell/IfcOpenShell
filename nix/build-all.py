@@ -485,7 +485,7 @@ if "json" in targets:
         urlretrieve(json_url, json_install_path)
         
 if "eigen" in targets:
-    git_clone_or_pull_repository("https://gitlab.com/libeigen/eigen.git", "{DEPS_DIR}/install/eigen-3.3.7".format(**locals()), revision="3.3.7")
+    git_clone_or_pull_repository("https://gitlab.com/libeigen/eigen.git", f"{DEPS_DIR}/install/eigen-3.3.9", revision="3.3.9")
 
 if "pcre" in targets:
     build_dependency(
