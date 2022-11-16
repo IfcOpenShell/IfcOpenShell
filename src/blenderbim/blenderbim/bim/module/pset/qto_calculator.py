@@ -462,7 +462,6 @@ class QtoCalculator:
         total_opening_area = (
             0 if subtract_openings else self.get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
         )
-        print(total_opening_area)
         polygons = obj.data.polygons
 
         for polygon in polygons:
