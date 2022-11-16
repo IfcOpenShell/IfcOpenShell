@@ -18,11 +18,33 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, context, attributes):
+        """Edits the attributes of an IfcGeometricRepresentationContext
+
+        For more information about the attributes and data types of an
+        IfcGeometricRepresentationContext, consult the IFC documentation.
+
+        :param context: The IfcGeometricRepresentationContext entity you want to edit
+        :type context: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example::
+
+            model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+            # Revit had a bug where they incorrectly called the body representation a "Facetation"
+            body = ifcopenshell.api.run("context.add_context", model,
+                context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
+            )
+
+            # Let's fix it!
+            ifcopenshell.api.run("context.edit_context", model,
+                context=body, attributes={"ContextIdentifier": "Body"})
+        """
         self.file = file
-        self.settings = {"context": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"context": context, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

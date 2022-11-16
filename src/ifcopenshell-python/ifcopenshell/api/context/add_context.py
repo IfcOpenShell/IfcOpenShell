@@ -18,16 +18,167 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, context_type=None, context_identifier=None, target_view=None, parent=None):
+        """Adds a new geometric representation context
+
+        In IFC, physical objects may have zero, one, or multiple geometric
+        representations associated with it. For example, a building storey might
+        not have any geometry, but simply be a coordinate in space.
+        Alternatively, a wall might have a 3D body representation in the form of
+        a cuboid. As a final example, a door might also have a 3D body
+        representation of a 3D door panel and door frame, but may additionally
+        have a 2D door plan view representation of the door swing, and even a 2D
+        elevation view of the door, a 3D box representing the disabled clearance
+        zone of the door, a 2D profile representing the profile of the door to
+        cut out in a wall, and so on. In this situation, a door will have
+        multiple geometric representations.
+
+        To distinguish between the different purposes of multiple geometric
+        representations, each geometric representation must belong to a
+        geometric representation "context". There are typically always 2
+        contexts, one for 3D representations and one for 2D representations.
+        These 2 contexts then have subcontexts for things like the 3D body
+        representation, clearance representations, annotation representations,
+        and so on. Each representation of a physical IFC product (e.g. a door)
+        must be assigned to one of these subcontexts. Therefore setting up
+        appropriate contexts is critical prior to authoring any IFC model which
+        contains geometry.
+
+        There are two steps to setting up appropriate subcontexts. First, a 2D
+        and/or 3D context must be added. These must be always called the "Model"
+        context for 3D and the "Plan" context for 2D (even if the 2D geometry is
+        not a plan view). Then, one or more subcontexts are added using either
+        the "Model" or "Plan" as their parent. These subcontexts are further
+        distinguished using an "identifier" and "target view". The "identifier"
+        describes the purpose of the representation, and the "target view"
+        describes the typical diagrammatic presentation that context's geometry
+        should be viewed in. The most common identifiers you might use are:
+
+        - Body: for the actual shape of the object
+        - Box: the bounding box of the object (useful for shape analytics)
+        - Axis: the parametric line determining the shape of the object
+        - Profile: the elevation silhouette of the object, useful for cutting
+              out holes for the object to fit into host elements
+        - Footprint: the plan view silhouette of the object, useful for certain
+              quantity take-off rules
+        - Clearance: the clearance zone of the object
+        - Annotation: symbolic annotations typically used in diagrams or
+              drawings
+
+        The most common "target views" you might use are:
+
+        - MODEL_VIEW: for 3D geometry you might see in a BIM viewer
+        - PLAN_VIEW: for 2D geometry you might see in a plan representation
+        - ELEVATION_VIEW: for 2D geometry you might see in an elevation representation
+        - SECTION_VIEW: for 2D geometry you might see in a section representation
+        - GRAPH_VIEW: for 2D or 3D line or frame or path connectivity diagrams
+              you might use for structural frame analysis, axis-based parametric
+              modeling
+        - SKETCH_VIEW: for viewing abstract high-level representations such as
+              in bubble diagrams of spatial topology
+
+        This may sound like a lot, but after a few typical contexts are set up
+        at the beginning, it becomes easy to navigate and isolate geometry for
+        different purposes. There is also the concept of a target scale, which
+        represents the zoom level detail of geometry, but this is not currently
+        supported by this API. Setting up all these contexts are also optional,
+        and you may only use a single Model context and Body subcontext for
+        simple models, but this simplification sacrifices the ability of more
+        parametric or analytical usecases.
+
+        :param context_type: The type of the context, must be one of "Model" or
+            "Plan" only.
+        :type context_type: str
+        :param context_identifier: The identifier of the context, chosen from
+            one of the common identifiers above or consult the IFC documentation
+            (under the IfcShapeRepresentation page) for more details. Optional
+            for contexts, but mandatory for subcontexts.
+        :type context_identifier: str, optional
+        :param target_view: the target view of the context, chosen from one of
+            the common target views above or consult the IFC documentation
+            (under the IfcShapeRepresentation page) for more details. Optional
+            for contexts, but mandatory for subcontexts.
+        :type target_view: str, optional
+        :param parent: the parent context. Must be left as None (the default)
+            for contexts, and only set for subcontexts. Note that there are only
+            contexts and subcontexts, a subcontext cannot have any children.
+        :type parent: ifcopenshell.entity_instance.entity_instance, optional
+        :return: the newly created IfcGeometricRepresentationContext or
+            IfcGeometricRepresentationSubContext entity
+        :rtype: ifcopenshell.entity_instance.entity_instance, optional
+
+        Example::
+
+            # If we plan to store 3D geometry in our IFC model, we have to setup
+            # a "Model" context.
+            model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+
+            # And/Or, if we plan to store 2D geometry, we need a "Plan" context
+            plan = ifcopenshell.api.run("context.add_context", model, context_type="Plan")
+
+            # Now we setup the subcontexts with each of the geometric "purposes"
+            # we plan to store in our model. "Body" is by far the most important
+            # and common context, as most IFC models are assumed to be viewable
+            # in 3D.
+            body = ifcopenshell.api.run("context.add_context", model,
+                context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+            )
+
+            # The 3D Axis subcontext is important if any "axis-based" parametric
+            # geometry is going to be created. For example, a beam, or column
+            # may be drawn using a single 3D axis line, and for this we need an
+            # Axis subcontext.
+            ifcopenshell.api.run("context.add_context", model,
+                context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent=model
+            )
+
+            # The 3D Box subcontext is useful for clash detection or shape
+            # analysis, or even lazy-loading of large models.
+            ifcopenshell.api.run("context.add_context", model,
+                context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model
+            )
+
+            # It's also important to have a 2D Axis subcontext for things like
+            # walls and claddings which can be drawn using a 2D axis line.
+            ifcopenshell.api.run("context.add_context", model,
+                context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent=plan
+            )
+
+            # A 2D annotation subcontext for plan views are important for door
+            # swings, window cuts, and symbols for equipment like GPOs, fire
+            # extinguishers, and so on.
+            ifcopenshell.api.run("context.add_context", model,
+                context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
+            )
+
+            # You may also create 2D annotation subcontexts for sections and
+            # elevation views.
+            ifcopenshell.api.run("context.add_context", model,
+                context_type="Plan", context_identifier="Annotation", target_view="SECTION_VIEW", parent=plan
+            )
+            ifcopenshell.api.run("context.add_context", model,
+                context_type="Plan", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent=plan
+            )
+
+            # Let's create a new wall. The wall does not have any geometry yet.
+            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+            # Let's use the "3D Body" representation we created earlier to add a
+            # new wall-like body geometry, 5 meters long, 3 meters high, and
+            # 200mm thick
+            representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+                context=body, length=5, height=3, thickness=0.2)
+
+            # Assign our new body geometry back to our wall
+            run("geometry.assign_representation", model, product=wall, representation=representation)
+        """
         self.file = file
         self.settings = {
-            "context_type": None,
-            "parent": None,
-            "context_identifier": None,
-            "target_view": None,
+            "context_type": context_type,
+            "parent": parent,
+            "context_identifier": context_identifier,
+            "target_view": target_view,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if not self.settings["parent"]:
