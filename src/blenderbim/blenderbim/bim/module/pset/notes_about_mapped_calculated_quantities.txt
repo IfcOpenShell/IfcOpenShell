@@ -18,6 +18,9 @@ LATERAL AREA
 All lateral areas are counted, so for example also the inside surfaces.
 It shouldn't be like that so we should find a method to only external lateral area.
 
+DOORS AND WINDOWS
+Doors and Windows have to have the main axis along 'x' and the height is measured along 'z' axis
+
 
 
 
