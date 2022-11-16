@@ -408,7 +408,7 @@ class QtoCalculator:
                 bl_OBB_opening_object = self.get_OBB_object(bl_opening_obj)
                 opening_area = self.get_lateral_area(
                     #self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
-                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True,
+                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True, main_axis = 'x',
                 )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
@@ -462,6 +462,7 @@ class QtoCalculator:
         total_opening_area = (
             0 if subtract_openings else self.get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
         )
+        print(total_opening_area)
         polygons = obj.data.polygons
 
         for polygon in polygons:
