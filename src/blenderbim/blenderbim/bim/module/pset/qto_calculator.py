@@ -161,6 +161,11 @@ class QtoCalculator:
         self.delete_obj(gross_obj)
         return gross_perimeter
 
+    def get_rectangular_perimeter(self, obj):
+        length = self.get_length(obj, main_axis='x')
+        height = self.get_height(obj)
+        return (length+height)*2
+
     def get_lowest_polygons(self, o):
         lowest_polygons = []
         lowest_z = None

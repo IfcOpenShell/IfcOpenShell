@@ -65,10 +65,10 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_DoorBaseQuantities' : {
-        'Width' : None,
-        'Height' : None,
-        'Perimeter' : None,
-        'Area' : None,
+        'Width' : { "function_name" : "get_length", "args" : ", main_axis = 'x'"},
+        'Height' : "get_height",
+        'Perimeter' : "get_rectangular_perimeter",
+        'Area' : "get_net_side_area",
     },
     'Qto_DuctSegmentBaseQuantities' : {
         'Length' : None,
@@ -506,10 +506,10 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_WindowBaseQuantities' : {
-        'Width' : None,
-        'Height' : None,
-        'Perimeter' : None,
-        'Area' : None,
+        'Width' : { "function_name" : "get_length", "args" : ", main_axis = 'x'"},
+        'Height' : "get_height",
+        'Perimeter' : "get_rectangular_perimeter",
+        'Area' : "get_net_side_area",
     },
     'Qto_SanitaryTerminalBaseQuantities' : {
         'GrossWeight' : None,
