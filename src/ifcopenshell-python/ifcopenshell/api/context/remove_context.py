@@ -20,11 +20,30 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, context=None):
+        """Removes an IfcGeometricRepresentationContext
+
+        Any representation geometry that is assigned to the context is also
+        removed. If a context is removed, then any subcontexts are also removed.
+
+        :param context: The IfcGeometricRepresentationContext entity to remove
+        :type context: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example::
+
+            model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+            # Revit had a bug where they incorrectly called the body representation a "Facetation"
+            body = ifcopenshell.api.run("context.add_context", model,
+                context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
+            )
+
+            # Let's just get rid of it completely
+            ifcopenshell.api.run("context.remove_context", model, context=body)
+        """
         self.file = file
-        self.settings = {"context": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"context": context}
 
     def execute(self):
         for subcontext in self.settings["context"].HasSubContexts:
