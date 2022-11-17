@@ -23,11 +23,25 @@ import ifcopenshell
 import ifcopenshell.api
 import boltspy as bolts
 from math import cos, pi
+from pathlib import Path
 
-# TODO: move to some utils module?
-# simple curve means that all filles are based on 90 degree angle
-# output: (2dpoints, segments, ifc_curve if ifc_file is supplied)
-def create_simple_curve_from_coords(coords, fillets, fillet_radius, closed=True, ifc_file=None):
+def create_simple_2dcurve(coords, fillets, fillet_radius, closed=True, ifc_file=None):
+    """
+    Creates simple 2D curve from set of 2d coords and list of points with fillets.
+    Simple curve means that all fillets are based on 90 degree angle.
+
+    > coords:        list of 2d coords. Example: ((x0,y0), (x1,y1), (x2, y2))
+    > fillets:       list of points from `coords` to base fillet on. Example: (1,)
+    > fillet_radius: list of fillet radius for each of corresponding point form `fillets`. Example: (5.,)
+                        Note: filler_radius could be just 1 float value if it's the same for all fillets.
+
+    Optional arguments:
+    > closed:        boolean whether curve should be closed (whether last point connected to first one). Default: True
+    > ifc_file:      ifc file to create IfcIndexedPolyCurve for the function output
+
+    < returns (points, segments, ifc_curve) for the created simple curve
+    if both points in e are equally far from pt, then v1 is returned."""
+    
     # option to use same fillet radius for all fillets
     if isinstance(fillet_radius, float):
         fillet_radius = [fillet_radius] * len(fillets)
@@ -87,7 +101,6 @@ def create_simple_curve_from_coords(coords, fillets, fillet_radius, closed=True,
         ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segements)
 
     return (points, segments, ifc_curve)
-    
 
 def create_z_profile_lips_curve(ifc_file, FirstFlangeWidth, SecondFlangeWidth, Depth, Girth, WallThickness, FilletRadius):
     x1 = FirstFlangeWidth
@@ -115,7 +128,7 @@ def create_z_profile_lips_curve(ifc_file, FirstFlangeWidth, SecondFlangeWidth, D
     # no additional thickness in outer radius option
     # points, segments, ifc_curve = create_curve_from_coords(coords, fillets = (0, 1, 4, 5, 6, 7, 10, 11), fillet_radius=r, closed=True, ifc_file=ifc_file)
 
-    points, segments, ifc_curve = create_simple_curve_from_coords(coords, 
+    points, segments, ifc_curve = create_simple_2dcurve(coords, 
         fillets =     (0,   1,   4, 5, 6,   7,   10, 11), 
         fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r), 
         closed=True, ifc_file=ifc_file)
@@ -300,5 +313,6 @@ class LibraryGenerator:
 
 
 if __name__ == "__main__":
-    LibraryGenerator().generate(parse_profiles_type="EU", output_filename="..\\blenderbim\\bim\\data\\libraries\\IFC4 EU Steel.ifc")
-    LibraryGenerator().generate(parse_profiles_type="AU", output_filename="..\\blenderbim\\bim\\data\\libraries\\IFC4 AU Steel.ifc")
+    path = Path(__file__).parents[1] / "blenderbim/bim/data/libraries"
+    LibraryGenerator().generate(parse_profiles_type="EU", output_filename=str(path / "IFC4 EU Steel.ifc"))
+    LibraryGenerator().generate(parse_profiles_type="AU", output_filename=str(path / "IFC4 AU Steel.ifc"))
