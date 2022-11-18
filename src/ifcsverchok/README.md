@@ -9,7 +9,7 @@ IfcSverchok is packaged like a regular Blender add-on, so installation is the sa
 
 Like all Blender add-ons, they can be installed using `Edit > Preferences > Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox`. You can enable add-ons permanently by using `Save User Settings` from the Addons menu.
 
-Before installing, you will also need to [install the BlenderBIM Add-on](https://blenderbim.org/download.html) and [install Sverchok](https://github.com/nortikin/sverchok/releases/tag/v1.1.0).
+Before installing, you will also need to [install the BlenderBIM Add-on](https://blenderbim.org/download.html) and [install Sverchok](https://github.com/nortikin/sverchok/releases/tag/v1.1.0) (v1.1.0).
 
 ## Nodes
 List of nodes that have been tested to the best of ability (nodes not listed here are not considered ready for use). If you find bugs/unexpected behaviour in any of them, please open an issue or get in touch otherwise.
