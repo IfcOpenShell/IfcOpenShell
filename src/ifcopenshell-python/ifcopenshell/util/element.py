@@ -100,7 +100,7 @@ def get_properties(properties):
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcPropertyEnumeratedValue"):
-            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] or None
+            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
         elif prop.is_a("IfcPropertyListValue"):
             results[prop.Name] = [v.wrappedValue for v in prop.ListValues] or None
         elif prop.is_a("IfcPropertyBoundedValue"):
