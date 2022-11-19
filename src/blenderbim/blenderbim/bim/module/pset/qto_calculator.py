@@ -161,6 +161,11 @@ class QtoCalculator:
         self.delete_obj(gross_obj)
         return gross_perimeter
 
+    def get_rectangular_perimeter(self, obj):
+        length = self.get_length(obj, main_axis='x')
+        height = self.get_height(obj)
+        return (length+height)*2
+
     def get_lowest_polygons(self, o):
         lowest_polygons = []
         lowest_z = None
@@ -408,7 +413,7 @@ class QtoCalculator:
                 bl_OBB_opening_object = self.get_OBB_object(bl_opening_obj)
                 opening_area = self.get_lateral_area(
                     #self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
-                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True,
+                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True, main_axis = 'x',
                 )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
