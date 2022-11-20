@@ -27,11 +27,12 @@ def get_system_elements(system):
 def get_element_systems(element):
     results = []
     for rel in element.HasAssignments:
-        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in [
+        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in (
             "IfcSystem",
             "IfcDistributionSystem",
             "IfcBuildingSystem",
-        ]:
+            "IfcZone",
+        ):
             results.append(rel.RelatingGroup)
     return results
 
