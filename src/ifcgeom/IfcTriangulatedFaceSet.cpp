@@ -21,6 +21,7 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -48,7 +49,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 		}
 	}
 	
-	if (faces.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !create_solid_from_faces(faces, shape)) {
+	if (faces.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !util::create_solid_from_faces(faces, shape, getValue(GV_PRECISION))) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);

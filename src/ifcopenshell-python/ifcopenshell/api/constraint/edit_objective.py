@@ -18,11 +18,27 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, objective=None, attributes=None):
+        """Edit the attributes of a objective
+
+        For more information about the attributes and data types of an
+        IfcObjective, consult the IFC documentation.
+
+        :param objective: The IfcObjective you want to edit.
+        :type objective: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example::
+
+            objective = ifcopenshell.api.run("constraint.add_objective", model)
+            ifcopenshell.api.run("constraint.edit_objective", model,
+                objective=objective, attributes={"ConstraintGrade": "HARD"})
+        """
         self.file = file
-        self.settings = {"objective": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"objective": objective, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

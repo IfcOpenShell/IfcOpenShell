@@ -33,9 +33,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 				TopoDS_Shape s;
 				if (convert_shape(representation_item, s)) {
 					if (s.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s).More() && TopoDS_Iterator(s).Value().ShapeType() == TopAbs_SOLID) {
-						TopoDS_Iterator it(s);
-						for (; it.More(); it.Next()) {
-							shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), it.Value(), get_style(representation_item)));
+						TopoDS_Iterator topo_it(s);
+						for (; topo_it.More(); topo_it.Next()) {
+							shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), topo_it.Value(), get_style(representation_item)));
 						}
 					} else {
 						shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), s, get_style(representation_item)));

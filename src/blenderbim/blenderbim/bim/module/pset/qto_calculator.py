@@ -161,6 +161,11 @@ class QtoCalculator:
         self.delete_obj(gross_obj)
         return gross_perimeter
 
+    def get_rectangular_perimeter(self, obj):
+        length = self.get_length(obj, main_axis='x')
+        height = self.get_height(obj)
+        return (length+height)*2
+
     def get_lowest_polygons(self, o):
         lowest_polygons = []
         lowest_z = None
@@ -216,11 +221,15 @@ class QtoCalculator:
 
         :param blender-object o: blender object
         :return float: footprint area"""
+        if not self.has_openings(o):
+            return self.get_net_footprint_area(o)
+
         element = tool.Ifc.get_entity(o)
         mesh = self.get_gross_element_mesh(element)
         gross_obj = bpy.data.objects.new("GrossObj", mesh)
         gross_footprint_area = self.get_net_footprint_area(gross_obj)
         self.delete_obj(gross_obj)
+        self.delete_mesh(mesh)
         return gross_footprint_area
 
     def get_net_roofprint_area(self, o):
@@ -404,7 +413,7 @@ class QtoCalculator:
                 bl_OBB_opening_object = self.get_OBB_object(bl_opening_obj)
                 opening_area = self.get_lateral_area(
                     #self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
-                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True,
+                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True, main_axis = 'x',
                 )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
@@ -433,6 +442,7 @@ class QtoCalculator:
         :param bool exclude_side_areas: , defaults to False
         :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
         :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector greater than this value will be ignored, defaults to 135
+        :param str main_axis: set main axis, for example a wall must have x main axis default 'x'
         :return float: Lateral Area
         """
 
@@ -474,79 +484,30 @@ class QtoCalculator:
             area += polygon.area
         return area + total_opening_area
 
-    def get_gross_lateral_area(
-        self,
-        obj,
-        subtract_openings: bool = True,
-        exclude_end_areas: bool = False,
-        exclude_side_areas: bool = False,
-        angle_z1: int = 45,
-        angle_z2: int = 135,
-        main_axis: str = "",
-    ):
-        """_summary_
+    def get_gross_side_area(self, obj):
+        if not self.has_openings(obj):
+            return self.get_net_side_area(obj)
 
-        :param blender-object obj: blender object, bpy.types.Object
-        :param bool subtract_openings: Toggle whether opening-areas should be subtracted, defaults to True
-        :param bool exclude_end_areas: , defaults to False
-        :param bool exclude_side_areas: , defaults to False
-        :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
-        :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector greater than this value will be ignored, defaults to 135
-        :return float: Lateral gross Area
-        """
+        gross_side_area = self.get_lateral_area(obj, exclude_end_areas = True, subtract_openings = False, main_axis = 'x') / 2
 
-        element = tool.Ifc.get_entity(obj)
+        return gross_side_area
 
-        gross_mesh = self.get_gross_element_mesh(element)
+    def get_net_side_area(self, obj):
+        net_side_area = self.get_lateral_area(obj, exclude_end_areas = True, main_axis = 'x') / 2
+        return net_side_area
 
-        gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
+    def get_outer_surface_area(self, obj):
+        outer_surface_area = self.get_lateral_area(obj, exclude_end_areas = True, angle_z1 = 0, angle_z2 = 360)
+        return outer_surface_area
 
-        gross_lateral_area = self.get_lateral_area(gross_obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2, main_axis )
-
-        self.delete_obj(gross_obj)
-        self.delete_mesh(gross_mesh)
-
-        return gross_lateral_area
-
-
-    def get_half_lateral_area(
-        self,
-        obj,
-        subtract_openings: bool = True,
-        exclude_end_areas: bool = False,
-        exclude_side_areas: bool = False,
-        angle_z1: int = 45,
-        angle_z2: int = 135,
-        main_axis: str = "",
-    ):
-        """_summary_:
-        :param blender-object obj: blender object, bpy.types.Object
-        :param bool subtract_openings: Toggle whether opening-areas should be subtracted, defaults to True
-        :param bool exclude_end_areas: , defaults to False
-        :param bool exclude_side_areas: , defaults to False
-        :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
-        :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector greater than this value will be ignored, defaults to 135
-        :return float: Lateral Area / 2
-        """
-        return self.get_lateral_area(obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2)/2
-
-    def get_end_area(
-        self,
-        obj,
-        subtract_openings: bool = True,
-        exclude_end_areas: bool = False,
-        exclude_side_areas: bool = False,
-        angle_z1: int = 45,
-        angle_z2: int = 135,
-    ):
-
+    def get_end_area(self, obj):
         element = tool.Ifc.get_entity(obj)
         gross_mesh = self.get_gross_element_mesh(element)
-
         gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
+
         gross_obj.matrix_world = obj.matrix_world
 
-        end_area = self.get_lateral_area(gross_obj, subtract_openings, exclude_end_areas, exclude_side_areas, angle_z1, angle_z2)/2
+        end_area = self.get_lateral_area(gross_obj, exclude_side_areas = True) / 2
 
         self.delete_obj(gross_obj)
         self.delete_mesh(gross_mesh)

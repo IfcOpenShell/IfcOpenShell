@@ -20,19 +20,64 @@ import ifcopenshell.util.unit
 
 
 class Usecase:
-    def __init__(self, file, **kwargs):
-        """location, axis and ref_direction defines the plane"""
+    def __init__(self, file, rel_space_boundary=None, outer_boundary=None, inner_boundaries=None, location=None, axis=None, ref_direction=None, unit_scale=None):
+        """Create and assign a connection geometry to a space boundary relationship
+
+        A space boundary may optionally have a plane that represents how that
+        space is adjacent to another space, known as the connection geometry.
+        You may specify this plane in terms of an outer boundary polyline, zero
+        or more inner boundaries (such as for windows), and a positional matrix
+        for the orientation of the plane.
+
+        :param rel_space_bounary: The space boundary relationship to assign the
+            connection geometry to.
+        :type rel_space_bounary: ifcopenshell.entity_instance.entity_instance
+        :param outer_boundary: A list of 2D points representing an open
+            polyline.  The last point will connect to the first point. Each
+            point is represented by an interable of 2 floats. The coordinates of
+            the points are relative to the positional matrix arguments.
+        :type outer_boundary: list[list[float]]
+        :param inner_boundaries: A list of zero or more inner boundaries to use
+            for the plane. Each boundary is represented by an open polyline, as
+            defined by the outer_boundary argument.
+        :type inner_boundaries: list[list[list[float]]], optional
+        :param location: The local origin of the connection geometry, defined as
+            an XYZ coordinate relative to the placement of the space that is
+            being bounded.
+        :type location: list[float]
+        :param axis: The local X axis of the connection geometry, defined as an
+            XYZ vector relative to the placement of the space that is being
+            bounded.
+        :type axis: list[float]
+        :param ref_direction: The local Z axis of the connection geometry,
+            defined as an XYZ vector relative to the placement of the space that
+            is being bounded. The Y vector is automatically derived using the
+            right hand rule.
+        :type ref_direction: list[float]
+        :param unit_scale: The unit scale as calculated by
+            ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
+            will be automatically calculated for you.
+        :type unit_scale: float, optional
+        :return: None
+        :rtype: None
+
+        Example::
+
+            ifcopenshell.api.run("boundary.assign_connection_geometry", model,
+                rel_space_boundary=element,
+                outer_boundary=[(0., 0.), (1., 0.), (1., 1.), (0., 1.)],
+                location=[0., 0., 0.], axis=[1., 0., 0.], ref_direction=[0., 0., 1.],
+                )
+        """
         self.file = file
-        self.rel_space_boundary = None
-        self.outer_boundary = None
-        self.inner_boundaries = ()
-        self.location = None
-        self.axis = None
-        self.ref_direction = None
-        self.unit_scale = None
+        self.rel_space_boundary = rel_space_boundary
+        self.outer_boundary = outer_bounary
+        self.inner_boundaries = inner_boundaries or ()
+        self.location = location
+        self.axis = axis
+        self.ref_direction = ref_direction
+        self.unit_scale = unit_scale
         self.ifc_vertices = []
-        for key, value in kwargs.items():
-            setattr(self, key, value)
 
     def execute(self):
         if self.unit_scale is None:

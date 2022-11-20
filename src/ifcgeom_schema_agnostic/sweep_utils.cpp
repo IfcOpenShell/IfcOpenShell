@@ -1,8 +1,5 @@
 #include "sweep_utils.h"
 
-#include "../ifcparse/IfcLogger.h"
-#include "../ifcgeom_schema_agnostic/Kernel.h"
-
 #include <gp_Ax2.hxx>
 #include <Geom_Line.hxx>
 #include <Geom_Circle.hxx>
@@ -23,6 +20,10 @@
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepOffsetAPI_MakePipeShell.hxx>
+
+#include "../ifcparse/IfcLogger.h"
+#include "../ifcgeom_schema_agnostic/Kernel.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 bool IfcGeom::util::wire_is_c1_continuous(const TopoDS_Wire & w, double tol) {
 	// NB Note that c0 continuity is NOT checked!
@@ -193,7 +194,7 @@ void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge
 
 	std::set<TopoDS_TShape*> seen;
 
-	auto num_edges = IfcGeom::Kernel::count(wire, TopAbs_EDGE);
+	auto num_edges = count(wire, TopAbs_EDGE);
 
 	TopoDS_Vertex v0, v1;
 	// @todo this creates the ancestor map twice

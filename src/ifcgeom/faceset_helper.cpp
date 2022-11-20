@@ -275,7 +275,7 @@ bool IfcGeom::Kernel::faceset_helper<CP, LP>::wires(const LP& loop, TopTools_Lis
 		wire.Closed(true);
 
 		TopTools_ListOfShape results;
-		if (kernel_->getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(wire, results, kernel_->get_wire_intersection_tolerance(wire), kernel_->getValue(IfcGeom::Kernel::GV_PRECISION))) {
+		if (kernel_->getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(wire, results, {kernel_->getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0., kernel_->getValue(GV_NO_WIRE_INTERSECTION_TOLERANCE) < 0., 0., kernel_->getValue(GV_PRECISION)})) {
 			Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 			non_manifold_ = true;
 			wires = results;

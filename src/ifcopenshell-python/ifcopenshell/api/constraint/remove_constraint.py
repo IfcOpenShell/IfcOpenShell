@@ -18,11 +18,27 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, constraint=None):
+        """Remove a constraint (typically an objective)
+
+        Removes a constraint definition and all of its associations to any
+        products. Typically this would be an IfcObjective, although technically
+        you can associate IfcMetrics ith products too, though the meaning may be
+        unclear.
+
+        :param constraint: The IfcObjective you want to remove.
+        :type constraint: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example::
+
+            objective = ifcopenshell.api.run("constraint.add_objective", model)
+            ifcopenshell.api.run("constraint.remove_constraint", model,
+                constraint=objective)
+        """
         self.file = file
-        self.settings = {"constraint": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"constraint": constraint}
 
     def execute(self):
         self.file.remove(self.settings["constraint"])
