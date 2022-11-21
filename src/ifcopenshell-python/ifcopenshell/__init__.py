@@ -91,7 +91,17 @@ def guess_format(path):
         return ".ifcXML"
 
 
-def open_path(path: os.PathLike | str, format: str = None) -> file:
+def open(path: os.PathLike | str, format: str = None) -> file:
+    """Loads an IFC dataset from a filepath
+
+    You can specify a file format. If no format is given, it is guessed from its extension.
+    Currently supported specified format : .ifc | .ifcZIP | .ifcXML
+
+    Examples:
+        model = ifcopenshell.open("/path/to/model.ifc")
+        model = ifcopenshell.open("/path/to/model.ifcXML")
+        model = ifcopenshell.open("/path/to/model.any_extension", ".ifc")
+    """
     path = Path(path)
     if format is None:
         format = guess_format(path)
@@ -105,7 +115,7 @@ def open_path(path: os.PathLike | str, format: str = None) -> file:
             with zipfile.ZipFile(path) as zf:
                 for name in zf.namelist():
                     if Path(name).suffix.lower() in (".ifc", ".ifcxml"):
-                        return open_path(zf.extract(name, unzipped_path))
+                        return open(zf.extract(name, unzipped_path))
                 else:
                     raise LookupError(f"No .ifc or .ifcXML file found in {path}")
     f = ifcopenshell_wrapper.open(str(path.absolute()))
@@ -122,20 +132,6 @@ def open_path(path: os.PathLike | str, format: str = None) -> file:
             ),
         }[f.good().value()]
         raise exc(msg)
-
-
-def open(path: os.PathLike | str, format: str = None) -> file:
-    """Loads an IFC dataset from a filepath
-
-    You can specify a file format. If no format is given, it is guessed from its extension.
-    Currently supported specified format : .ifc | .ifcZIP | .ifcXML
-
-    Examples:
-        model = ifcopenshell.open("/path/to/model.ifc")
-        model = ifcopenshell.open("/path/to/model.ifcXML")
-        model = ifcopenshell.open("/path/to/model.any_extension", ".ifc")
-    """
-    return open_path(path)
 
 
 def create_entity(type, schema="IFC4", *args, **kwargs):
