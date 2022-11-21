@@ -18,7 +18,7 @@
 
 
 class Usecase:
-    def __init__(self, file, classifcation=None):
+    def __init__(self, file, classification=None):
         """Removes an IfcClassification from the project and all references
 
         The classification and all of its relationships, children references,
@@ -36,7 +36,6 @@ class Usecase:
             ifcopenshell.api.run("classification.remove_classification", model,
                 classification=classification)
         """
-
         self.file = file
         self.settings = {"classification": classification}
 
