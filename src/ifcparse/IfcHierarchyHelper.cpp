@@ -568,6 +568,14 @@ Ifc4x3::IfcStyledItem* create_styled_item(Ifc4x3::IfcRepresentationItem* item, I
 }
 #endif
 
+#ifdef HAS_SCHEMA_4x3_add1
+Ifc4x3_add1::IfcStyledItem* create_styled_item(Ifc4x3_add1::IfcRepresentationItem* item, Ifc4x3_add1::IfcPresentationStyle* style) {
+	boost::shared_ptr<aggregate_of<Ifc4x3_add1::IfcPresentationStyle>> styles(new aggregate_of<Ifc4x3_add1::IfcPresentationStyle>());
+	styles->push(style);
+	return new Ifc4x3_add1::IfcStyledItem(item, styles, boost::none);
+}
+#endif
+
 template <typename Schema>
 void setSurfaceColour_2x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcRepresentation* rep, typename Schema::IfcPresentationStyleAssignment* style_assignment)
 {
@@ -830,6 +838,33 @@ void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcProductRepres
 }
 
 void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcRepresentation* shape, Ifc4x3::IfcPresentationStyle* style)
+{
+	setSurfaceColour_4x3(file, shape, style);
+}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_add1
+Ifc4x3_add1::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_add1>& file, double r, double g, double b, double a)
+{
+	return addStyleAssignment_4x3(file, r, g, b, a);
+}
+
+Ifc4x3_add1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+	return setSurfaceColour_4x3(file, shape, r, g, b, a);
+}
+
+Ifc4x3_add1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+	return setSurfaceColour_4x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation* shape, Ifc4x3_add1::IfcPresentationStyle* style)
+{
+	setSurfaceColour_4x3(file, shape, style);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcRepresentation* shape, Ifc4x3_add1::IfcPresentationStyle* style)
 {
 	setSurfaceColour_4x3(file, shape, style);
 }
