@@ -19,6 +19,8 @@
 
 #include "../ifcparse/IfcSchema.h"
 
+#include "ifc_parse_api.h"
+
 #ifndef ARGUMENTTYPE_H
 #define ARGUMENTTYPE_H
 
@@ -29,6 +31,7 @@ namespace IfcUtil {
 		Argument_DERIVED,
 		Argument_INT,
 		Argument_BOOL,
+		Argument_LOGICAL,
 		Argument_DOUBLE,
 		Argument_STRING,
 		Argument_BINARY,
@@ -50,8 +53,8 @@ namespace IfcUtil {
 		Argument_UNKNOWN
 	};
 
-	ArgumentType from_parameter_type(const IfcParse::parameter_type*);
-	ArgumentType make_aggregate(ArgumentType elem_type);
+	IFC_PARSE_API ArgumentType from_parameter_type(const IfcParse::parameter_type*);
+	IFC_PARSE_API ArgumentType make_aggregate(ArgumentType elem_type);
 }
 
 #endif

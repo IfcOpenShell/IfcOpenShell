@@ -1,18 +1,17 @@
 # language: fr
 
-Fonctionnalité: Base setup
+Fonctionnalité: Configuration primaire
 
-In order to view the BIM data
-As any interested stakeholder
-We need an IFC file
+Pour permettre la visualisation des données BIM
+Comme tout participant intéressé
+Ceci requiert un fichier IFCe
 
 
 Scénario: Recevoir e fichier
 
- * The IFC file has been provided through an argument
- * Les données IFC doivent utiliser le schéma IFC2X3
+ * Les données IFC doivent utiliser le schéma "IFC2X3"
 
- 
-Scénario: Project information
 
- * The project name, code, or short identifier must be "BIMTester Example 1 - IFC2X3"
+Scénario: Informations concernant le projet
+
+ * Nom du projet, son code ou un identifiant sommaire du type "BIMTester Example 1 - IFC2X3"

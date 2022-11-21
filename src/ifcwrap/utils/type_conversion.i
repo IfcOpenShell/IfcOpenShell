@@ -35,7 +35,11 @@
 			PyObject* element = PySequence_GetItem(aggregate, i);
 			// This is equivalent to the PyFloat_CheckExact macro. This means
 			// that direct instances of int, float, str, etc. need to be used.
-			if (element->ob_type != type_obj) return false;
+			bool b = element->ob_type == type_obj;
+			Py_DECREF(element);
+			if (!b) {
+				return false;
+			}
 		}
 		return true;		
 	}
@@ -44,7 +48,9 @@
 		if (!PySequence_Check(aggregate)) return false;
 		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
 			PyObject* element = PySequence_GetItem(aggregate, i);
-			if (!check_aggregate_of_type(element, type_obj)) {
+			bool b = check_aggregate_of_type(element, type_obj);
+			Py_DECREF(element);
+			if (!b) {
 				return false;
 			}
 		}
@@ -99,6 +105,7 @@
 			PyObject* element = PySequence_GetItem(aggregate, i);
 			std::vector<T> t = python_sequence_as_vector<T>(element);
 			result_vector.push_back(t);
+			Py_DECREF(element);
 		}
 		return result_vector;
 	}
@@ -123,6 +130,7 @@
 	PyObject* pythonize(const int& t)                   { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const bool& t)                  { return PyBool_FromLong(t);                                                                 }
+	PyObject* pythonize(const boost::logic::tribool& t) { return boost::logic::indeterminate(t) ? PyUnicode_FromString("UNKNOWN") : PyBool_FromLong((bool)t) ;}
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyUnicode_FromString(t.c_str());                                                    }
 	PyObject* pythonize(const IfcUtil::IfcBaseClass* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);        }
@@ -139,10 +147,10 @@
 		return pythonize(bitstring);
 	}
 
-	PyObject* pythonize(const IfcEntityList::ptr& t) { 
+	PyObject* pythonize(const aggregate_of_instance::ptr& t) { 
 		unsigned int i = 0;
 		PyObject* pyobj = PyTuple_New(t->size());
-		for (IfcEntityList::it it = t->begin(); it != t->end(); ++it, ++i) {
+		for (aggregate_of_instance::it it = t->begin(); it != t->end(); ++it, ++i) {
 			PyTuple_SetItem(pyobj, i, pythonize(*it));
 		}
 		return pyobj;
@@ -168,10 +176,10 @@
 		return pyobj;
 	}
 
-	PyObject* pythonize(const IfcEntityListList::ptr& t) {
+	PyObject* pythonize(const aggregate_of_aggregate_of_instance::ptr& t) {
 		unsigned int i = 0;
 		PyObject* pyobj = PyTuple_New(t->size());
-		for (IfcEntityListList::outer_it it = t->begin(); it != t->end(); ++it, ++i) {
+		for (aggregate_of_aggregate_of_instance::outer_it it = t->begin(); it != t->end(); ++it, ++i) {
 			PyTuple_SetItem(pyobj, i, pythonize_vector(*it));
 		}
 		return pyobj;

@@ -5,6 +5,20 @@
     </g>
     <g id="door-tag">
         <circle cy="1.75" r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
-        <line x1="-5" y1="1.75" x2="5" y2="1.75" style="stroke:black; stroke-width: 0.25;" />
+        <line x1="-5" y1="1.75" x2="5" y2="1.75" style="stroke: black; stroke-width: 0.25;" />
+    </g>
+    <g id="elevation-arrow">
+        <path style="fill: black;" d="M -7.07106 0 0 -7.07106 7.07106 0" />
+    </g>
+    <g id="elevation-tag">
+        <circle r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+        <line x1="-5" y1="0" x2="5" y2="0" style="stroke: black; stroke-width: 0.25;" />
+    </g>
+    <g id="section-arrow">
+        <path style="fill: black;" d="M -7.07106 0 0 -7.07106 7.07106 0" />
+    </g>
+    <g id="section-tag">
+        <circle r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+        <line x1="-5" y1="0" x2="5" y2="0" style="stroke: black; stroke-width: 0.25;" />
     </g>
 </svg>

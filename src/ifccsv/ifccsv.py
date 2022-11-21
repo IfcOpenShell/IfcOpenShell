@@ -47,7 +47,7 @@ class IfcAttributeSetter:
         pset_name, prop = key.split(".", 1)
         pset = IfcAttributeSetter.get_element_pset(element, pset_name)
         if pset:
-            IfcAttributeSetter.set_pset_property(pset, prop, value)
+            IfcAttributeSetter.set_pset_property(ifc_file, pset, prop, value)
             return element
         return element
 
@@ -85,11 +85,31 @@ class IfcAttributeSetter:
                     return relationship.RelatingPropertyDefinition
 
     @staticmethod
-    def set_pset_property(pset, name, value):
+    def set_pset_property(ifc_file, pset, name, value):
         for property in pset.HasProperties:
-            if property.Name == name:
-                # In lieu of loading a map for data casting, we only have four
-                # options, which this ugly method will determine.
+            if property.Name != name:
+                continue
+
+            if value.lower() in ["null", "none"]:
+                property.NominalValue = None
+                continue
+
+            # In lieu of loading a map for data casting, we only have four
+            # options, which this ugly method will determine.
+            if property.NominalValue is None:
+                if value.isnumeric():
+                    property.NominalValue = ifc_file.createIfcInteger(int(value))
+                elif value.lower() in ["1", "true", "yes", "uh-huh"]:
+                    property.NominalValue = ifc_file.createIfcBoolean(True)
+                elif value.lower() in ["0", "false", "no", "nope"]:
+                    property.NominalValue = ifc_file.createIfcBoolean(False)
+                else:
+                    try:
+                        value = float(value)
+                        property.NominalValue = ifc_file.createIfcReal(value)
+                    except:
+                        property.NominalValue = ifc_file.createIfcLabel(str(value))
+            else:
                 try:
                     property.NominalValue.wrappedValue = str(value)
                 except:
@@ -100,7 +120,7 @@ class IfcAttributeSetter:
                             property.NominalValue.wrappedValue = int(value)
                         except:
                             property.NominalValue.wrappedValue = (
-                                True if value.lower() in ["1", "t", "true", "yes", "y", "uh-huh"] else False
+                                True if value.lower() in ["1", "true", "yes", "uh-huh"] else False
                             )
 
 
@@ -109,7 +129,7 @@ class IfcCsv:
         self.results = []
         self.attributes = []
         self.output = ""
-        self.selector = None
+        self.selector = ifcopenshell.util.selector.Selector()
         self.delimiter = ","
 
     def export(self, ifc_file, elements):

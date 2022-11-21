@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
 from __future__ import division
@@ -53,7 +53,12 @@ if has_occ:
 
 # Subclass the settings module to provide an additional
 # setting to enable pythonOCC when available
-class settings(ifcopenshell_wrapper.settings):
+
+# nb: we just subclass serializer settings, so in python
+# we do not differentiate between the two setting types
+
+
+class settings(ifcopenshell_wrapper.SerializerSettings):
     if has_occ:
         USE_PYTHON_OPENCASCADE = -1
 
@@ -65,15 +70,11 @@ class settings(ifcopenshell_wrapper.settings):
                 self.set(settings.DISABLE_TRIANGULATION, value)
                 self.use_python_opencascade = value
             else:
-                ifcopenshell_wrapper.settings.set(self, *args)
+                ifcopenshell_wrapper.SerializerSettings.set(self, *args)
 
-
-# Assert templated precision to match Python's internal float type
-assert ifcopenshell_wrapper.iterator_double_precision.mantissa_size() == sys.float_info.mant_dig
-_iterator = ifcopenshell_wrapper.iterator_double_precision
 
 # Make sure people are able to use python's platform agnostic paths
-class iterator(_iterator):
+class iterator(ifcopenshell_wrapper.Iterator):
     def __init__(self, settings, file_or_filename, num_threads=1, include=None, exclude=None):
         self.settings = settings
         if isinstance(file_or_filename, file):
@@ -97,23 +98,22 @@ class iterator(_iterator):
                 if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
                     raise ValueError("include and exclude need to be an aggregate of IfcProduct")
 
-                initializer = ifcopenshell_wrapper.construct_iterator_double_precision_with_include_exclude_globalid
+                initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_id
 
-                decode_unicode = lambda x: x.encode("ascii") if x.__class__.__name__ == "unicode" else x
-                include_or_exclude = list(map(decode_unicode, map(operator.attrgetter("GlobalId"), include_or_exclude)))
+                include_or_exclude = [i.id() for i in include_or_exclude]
             else:
-                initializer = ifcopenshell_wrapper.construct_iterator_double_precision_with_include_exclude
+                initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude
 
             self.this = initializer(
                 self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
             )
         else:
-            _iterator.__init__(self, settings, file_or_filename, num_threads)
+            ifcopenshell_wrapper.Iterator.__init__(self, settings, file_or_filename, num_threads)
 
     if has_occ:
 
         def get(self):
-            return wrap_shape_creation(self.settings, _iterator.get(self))
+            return wrap_shape_creation(self.settings, ifcopenshell_wrapper.Iterator.get(self))
 
     def __iter__(self):
         if self.initialize():
@@ -134,7 +134,7 @@ class tree(ifcopenshell_wrapper.tree):
 
     def add_file(self, file, settings):
         ifcopenshell_wrapper.tree.add_file(self, file.wrapped_data, settings)
-        
+
     def add_iterator(self, iterator):
         ifcopenshell_wrapper.tree.add_file(self, iterator)
 
@@ -147,7 +147,7 @@ class tree(ifcopenshell_wrapper.tree):
             return value
 
         args = [self, unwrap(value)]
-        if isinstance(value, entity_instance):
+        if isinstance(value, (entity_instance, ifcopenshell_wrapper.BRepElement)):
             args.append(kwargs.get("completely_within", False))
             if "extend" in kwargs:
                 args.append(kwargs["extend"])
@@ -211,13 +211,23 @@ def create_shape(settings, inst, repr=None):
     )
 
 
-def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None):
-    it = iterator(settings, file_or_filename, num_threads, include, exclude)
+def consume_iterator(it, with_progress=False):
     if it.initialize():
         while True:
-            yield it.get()
+            if with_progress:
+                yield it.progress(), it.get()
+            else:
+                yield it.get()
             if not it.next():
                 break
+
+
+def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None, with_progress=False, cache=None):
+    it = iterator(settings, file_or_filename, num_threads, include, exclude)
+    if cache:
+        hdf5_cache = serializers.hdf5(cache, settings)
+        it.set_cache(hdf5_cache)
+    yield from consume_iterator(it, with_progress=with_progress)
 
 
 def make_shape_function(fn):
@@ -241,3 +251,43 @@ def make_shape_function(fn):
 
 serialise = make_shape_function(ifcopenshell_wrapper.serialise)
 tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)
+
+
+def wrap_buffer_creation(fn):
+    """
+    Python does not have automatic casts. The C++ serializers accept a stream_or_filename
+    which in C++ can be automatically constructed from a filename string. In Python we
+    have to implement this cast/construction explicitly.
+    """
+
+    def transform_string(v):
+        if isinstance(v, str):
+            return ifcopenshell_wrapper.buffer(v)
+        else:
+            return v
+
+    def inner(*args):
+        return fn(*map(transform_string, args))
+
+    return inner
+
+
+# Hdf- Xml- and glTF- serializers don't support writing to a buffer, only to filename
+# so no wrap_buffer_creation() for these serializers
+serializer_dict = {}
+serializer_dict["obj"] = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
+serializer_dict["svg"] = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
+serializer_dict["xml"] = ifcopenshell_wrapper.XmlSerializer
+serializer_dict["buffer"] = ifcopenshell_wrapper.buffer
+
+# gltf and hdf5 availability depend on IfcOpenShell configuration settings
+try:
+    serializer_dict["gltf"] = ifcopenshell_wrapper.GltfSerializer
+except: pass
+
+try:
+    serializer_dict["hdf5"] = ifcopenshell_wrapper.HdfSerializer
+except:
+    pass
+
+serializers = type("serializers", (), serializer_dict)

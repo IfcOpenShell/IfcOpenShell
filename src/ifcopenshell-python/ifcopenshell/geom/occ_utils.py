@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
 from __future__ import division
@@ -31,6 +31,8 @@ try:  # python 3.3+
     from collections.abc import Iterable
 except ImportError:  # python 2
     from collections import Iterable
+
+import OCC
 
 try:
     from OCC.Core import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
@@ -90,8 +92,11 @@ def initialize_display():
             dirs = [(3, 2, 1), (-1, -2, -3)]
 
         for dir in dirs:
-            light = V3d.V3d_DirectionalLight(viewer_handle)
-            light.SetDirection(*dir)
+            if OCC.VERSION < "7.5":
+                light = V3d.V3d_DirectionalLight(viewer_handle)
+                light.SetDirection(*dir)
+            else:
+                light = V3d.V3d_DirectionalLight(*dir)
             viewer.SetLightOn(light.GetHandle() if USE_OCCT_HANDLE else light)
 
     setup()

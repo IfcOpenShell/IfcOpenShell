@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell.api
 
 
@@ -6,7 +24,7 @@ class Usecase:
         self.file = file
         self.settings = {
             "application_developer": None,
-            "version": "0.6.0",
+            "version": ifcopenshell.version,
             "application_full_name": "IfcOpenShell",
             "application_identifier": "IfcOpenShell",
         }
@@ -27,11 +45,11 @@ class Usecase:
         )
 
     def create_application_organisation(self):
-        return self.file.create_entity(
+        result = self.file.create_entity(
             "IfcOrganization",
             **{
                 "Name": "IfcOpenShell",
-                "Description": "IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
+                "Description": "IfcOpenShell is an open source software library that helps users and software developers to work with IFC data.",
                 "Roles": [
                     self.file.create_entity("IfcActorRole", **{"Role": "USERDEFINED", "UserDefinedRole": "CONTRIBUTOR"})
                 ],
@@ -41,28 +59,11 @@ class Usecase:
                         **{
                             "Purpose": "USERDEFINED",
                             "UserDefinedPurpose": "WEBPAGE",
-                            "Description": "The main webpage of the software collection.",
                             "WWWHomePageURL": "https://ifcopenshell.org",
-                        },
-                    ),
-                    self.file.create_entity(
-                        "IfcTelecomAddress",
-                        **{
-                            "Purpose": "USERDEFINED",
-                            "UserDefinedPurpose": "WEBPAGE",
-                            "Description": "The BlenderBIM Add-on webpage of the software collection.",
-                            "WWWHomePageURL": "https://blenderbim.org",
-                        },
-                    ),
-                    self.file.create_entity(
-                        "IfcTelecomAddress",
-                        **{
-                            "Purpose": "USERDEFINED",
-                            "UserDefinedPurpose": "REPOSITORY",
-                            "Description": "The source code repository of the software collection.",
-                            "WWWHomePageURL": "https://github.com/IfcOpenShell/IfcOpenShell.git",
                         },
                     ),
                 ],
             },
         )
+        result[0] = "IfcOpenShell"
+        return result

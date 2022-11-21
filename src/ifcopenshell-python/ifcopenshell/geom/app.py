@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -10,7 +28,7 @@ import functools
 import multiprocessing
 
 try:
-    from OCC.Core import  AIS
+    from OCC.Core import AIS
 
     USE_OCCT_HANDLE = False
 except ImportError:
@@ -382,7 +400,7 @@ class application(QtWidgets.QApplication):
 
                 self.scrollLayout.addStretch()
             else:
-                label = QtWidgets.QLabel("No IfcPropertySets asscociated with selected entity instance")
+                label = QtWidgets.QLabel("No IfcPropertySets associated with selected entity instance")
                 self.scrollLayout.addWidget(label)
 
         def load_file(self, f, **kwargs):
@@ -433,30 +451,30 @@ class application(QtWidgets.QApplication):
 
         instanceSelected = QtCore.pyqtSignal([object])
 
-#         @staticmethod
-#         def ais_to_key(ais_handle):
-#             def yield_shapes():
-#                 ais = ais_handle.GetObject()
-#                 if hasattr(ais, "Shape"):
-#                     yield ais.Shape()
-#                     return
-#                 shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
-#                 if not shp.IsNull():
-#                     yield shp.Shape()
-#                 return
-#                 mult = ais_handle
-#                 if mult.IsNull():
-#                     shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
-#                     if not shp.IsNull():
-#                         yield shp
-#                 else:
-#                     li = mult.GetObject().ConnectedTo()
-#                     for i in range(li.Length()):
-#                         shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i + 1))
-#                         if not shp.IsNull():
-#                             yield shp
+        #         @staticmethod
+        #         def ais_to_key(ais_handle):
+        #             def yield_shapes():
+        #                 ais = ais_handle.GetObject()
+        #                 if hasattr(ais, "Shape"):
+        #                     yield ais.Shape()
+        #                     return
+        #                 shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
+        #                 if not shp.IsNull():
+        #                     yield shp.Shape()
+        #                 return
+        #                 mult = ais_handle
+        #                 if mult.IsNull():
+        #                     shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
+        #                     if not shp.IsNull():
+        #                         yield shp
+        #                 else:
+        #                     li = mult.GetObject().ConnectedTo()
+        #                     for i in range(li.Length()):
+        #                         shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i + 1))
+        #                         if not shp.IsNull():
+        #                             yield shp
 
-#             return tuple(shp.HashCode(1 << 24) for shp in yield_shapes())
+        #             return tuple(shp.HashCode(1 << 24) for shp in yield_shapes())
 
         def __init__(self, widget):
             qtViewer3d.__init__(self, widget)
@@ -486,8 +504,8 @@ class application(QtWidgets.QApplication):
             for shape in shapes:
                 ais = display_shape(shape, viewer_handle=v)
                 product = f[shape.data.id]
-                
-                if USE_OCCT_HANDLE: 
+
+                if USE_OCCT_HANDLE:
                     ais.GetObject().SetSelectionPriority(self.counter)
                 self.ais_to_product[self.counter] = product
                 self.product_to_ais[product] = ais

@@ -1,9 +1,29 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
+import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.sequence.data import Data
 from ifcopenshell.api.resource.data import Data as ResourceData
+from blenderbim.bim.module.sequence.data import SequenceData
+import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from dateutil import parser
 from bpy.types import PropertyGroup
@@ -59,11 +79,19 @@ def getTaskTimeColumns(self, context):
 
 
 def getWorkSchedules(self, context):
-    return [(str(k), v["Name"], "") for k, v in Data.work_schedules.items()]
+    return [(str(k), v["Name"], "") for k, v in SequenceData.data["work_schedules"].items()]
 
 
 def getWorkCalendars(self, context):
-    return [(str(k), v["Name"], "") for k, v in Data.work_calendars.items()]
+    return [(str(k), v["Name"], "") for k, v in SequenceData.data["work_calendars"].items()]
+
+
+def update_active_task_index(self, context):
+    bpy.ops.bim.load_task_inputs()
+    bpy.ops.bim.load_task_resources()
+    bpy.ops.bim.load_task_outputs()
+    bpy.ops.bim.load_nested_tasks_outputs()
+    blenderbim.bim.module.pset.data.refresh()
 
 
 def updateTaskName(self, context):
@@ -76,7 +104,7 @@ def updateTaskName(self, context):
         self.file,
         **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
     )
-    Data.load(IfcStore.get_file())
+    SequenceData.load()
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_attributes.get("Name")
         attribute.string_value = self.name
@@ -92,7 +120,7 @@ def updateTaskIdentification(self, context):
         self.file,
         **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
     )
-    Data.load(self.file)
+    SequenceData.load()
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_attributes.get("Identification")
         attribute.string_value = self.identification
@@ -138,10 +166,10 @@ def updateTaskTimeDateTime(self, context, startfinish):
         task_time = task.TaskTime
     else:
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        Data.load(IfcStore.get_file())
+        SequenceData.load()
 
     startfinish_key = "Schedule" + startfinish.capitalize()
-    if Data.task_times[task_time.id()][startfinish_key] == startfinish_datetime:
+    if SequenceData.data["task_times"][task_time.id()][startfinish_key] == startfinish_datetime:
         canonical_startfinish_value = canonicalise_time(startfinish_datetime)
         if startfinish_value != canonical_startfinish_value:
             setattr(self, startfinish, canonical_startfinish_value)
@@ -152,7 +180,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
         self.file,
         **{"task_time": task_time, "attributes": {startfinish_key: startfinish_datetime}},
     )
-    Data.load(IfcStore.get_file())
+    SequenceData.load()
     bpy.ops.bim.load_task_properties()
 
 
@@ -160,19 +188,29 @@ def updateTaskDuration(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled:
         return
+
+    if self.duration == "-":
+        return
+
+    try:
+        isodate.parse_duration(self.duration),
+    except:
+        self.duration = "-"
+        return
+
     self.file = IfcStore.get_file()
     task = self.file.by_id(self.ifc_definition_id)
     if task.TaskTime:
         task_time = task.TaskTime
     else:
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        Data.load(IfcStore.get_file())
+        SequenceData.load()
     ifcopenshell.api.run(
         "sequence.edit_task_time",
         self.file,
         **{"task_time": task_time, "attributes": {"ScheduleDuration": self.duration}},
     )
-    Data.load(IfcStore.get_file())
+    SequenceData.load()
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_time_attributes.get("Duration")
         if attribute:
@@ -180,15 +218,15 @@ def updateTaskDuration(self, context):
     bpy.ops.bim.load_task_properties()
 
 
-def updateVisualisationStart(self, context):
-    updateVisualisationStartFinish(self, context, "visualisation_start")
+def update_visualisation_start(self, context):
+    update_visualisation_start_finish(self, context, "visualisation_start")
 
 
-def updateVisualisationFinish(self, context):
-    updateVisualisationStartFinish(self, context, "visualisation_finish")
+def update_visualisation_finish(self, context):
+    update_visualisation_start_finish(self, context, "visualisation_finish")
 
 
-def updateVisualisationStartFinish(self, context, startfinish):
+def update_visualisation_start_finish(self, context, startfinish):
     def canonicalise_time(time):
         if not time:
             return "-"
@@ -206,13 +244,6 @@ def updateVisualisationStartFinish(self, context, startfinish):
     canonical_value = canonicalise_time(startfinish_datetime)
     if startfinish_value != canonical_value:
         setattr(self, startfinish, canonical_value)
-
-
-def getResources(self, context):
-    self.file = IfcStore.get_file()
-    return [(str(k), v["Name"], "") for k, v in ResourceData.resources.items()
-    if self.file.by_id(k).Nests and self.file.by_id(k).Nests[0].RelatingObject.HasContext
-    ]
 
 
 class Task(PropertyGroup):
@@ -240,6 +271,16 @@ class WorkPlan(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+class TaskResource(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
+class TaskProduct(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
 class BIMWorkPlanProperties(PropertyGroup):
     work_plan_attributes: CollectionProperty(name="Work Plan Attributes", type=Attribute)
     editing_type: StringProperty(name="Editing Type")
@@ -256,7 +297,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     editing_task_type: StringProperty(name="Editing Task Type")
     active_work_schedule_index: IntProperty(name="Active Work Schedules Index")
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
-    active_task_index: IntProperty(name="Active Task Index")
+    active_task_index: IntProperty(name="Active Task Index", update=update_active_task_index)
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
@@ -288,9 +329,9 @@ class BIMWorkScheduleProperties(PropertyGroup):
     editing_sequence_type: StringProperty(name="Editing Sequence Type")
     active_sequence_id: IntProperty(name="Active Sequence Id")
     sequence_attributes: CollectionProperty(name="Sequence Attributes", type=Attribute)
-    time_lag_attributes: CollectionProperty(name="Time Lag Attributes", type=Attribute)
-    visualisation_start: StringProperty(name="Visualisation Start", update=updateVisualisationStart)
-    visualisation_finish: StringProperty(name="Visualisation Finish", update=updateVisualisationFinish)
+    lag_time_attributes: CollectionProperty(name="Time Lag Attributes", type=Attribute)
+    visualisation_start: StringProperty(name="Visualisation Start", update=update_visualisation_start)
+    visualisation_finish: StringProperty(name="Visualisation Finish", update=update_visualisation_finish)
     speed_multiplier: FloatProperty(name="Speed Multiplier", default=10000)
     speed_animation_duration: StringProperty(name="Speed Animation Duration", default="PT1S")
     speed_animation_frames: IntProperty(name="Speed Animation Frames", default=24)
@@ -304,7 +345,19 @@ class BIMWorkScheduleProperties(PropertyGroup):
         name="Speed Type",
         default="FRAME_SPEED",
     )
-    resources: EnumProperty(items=getResources, name="Resources")
+    task_resources: CollectionProperty(name="Task Resources", type=TaskResource)
+    active_task_resource_index: IntProperty(name="Active Task Resource Index")
+    task_inputs: CollectionProperty(name="Task Inputs", type=TaskProduct)
+    active_task_input_index: IntProperty(name="Active Task Input Index")
+    task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
+    active_task_output_index: IntProperty(name="Active Task Output Index")
+    nested_task_outputs: CollectionProperty(name="Nested Task Outputs", type=TaskProduct)
+    active_nested_task_output_index: IntProperty(name="Active Nested Tasks Output Index")
+
+class BIMDuration(PropertyGroup):
+    duration_days: IntProperty(name="Days ")
+    duration_hours: IntProperty(name="Hours")
+    duration_minutes: IntProperty(name="Minutes")
 
 
 class BIMTaskTreeProperties(PropertyGroup):
@@ -354,5 +407,12 @@ class BIMWorkCalendarProperties(PropertyGroup):
 
 
 class DatePickerProperties(PropertyGroup):
-    display_date: StringProperty()
-    selected_date: StringProperty()
+    display_date: StringProperty(name="Display Date")
+    selected_date: StringProperty(name="Selected Date")
+
+
+class BIMDateTextProperties(PropertyGroup):
+    start_frame: IntProperty(name="Start Frame")
+    total_frames: IntProperty(name="Total Frames")
+    start: StringProperty(name="Start")
+    finish: StringProperty(name="Finish")

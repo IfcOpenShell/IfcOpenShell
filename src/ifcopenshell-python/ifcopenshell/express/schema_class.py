@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import operator
 
@@ -283,10 +283,22 @@ __attribute__((optnone))
 
         self.statements.extend(
             (
-                "const schema_definition& %s::get_schema() {" % schema_name_title,
+                "static std::unique_ptr<schema_definition> schema;",
                 "",
-                "    static const schema_definition* s = %(schema_name)s_populate_schema();" % locals(),
-                "    return *s;",
+                "void %s::clear_schema() {" % schema_name_title,
+                "    schema.reset();",
+                "}",
+                "",
+            )
+        )
+
+        self.statements.extend(
+            (
+                "const schema_definition& %s::get_schema() {" % schema_name_title,
+                "    if (!schema) {",
+                "        schema.reset(%(schema_name)s_populate_schema());" % locals(),
+                "    }",
+                "    return *schema;",
                 "}",
                 "",
                 "",
@@ -488,10 +500,12 @@ class SchemaClass(codegen.Base):
         for name, tys in subtypes.items():
             x.entity_subtypes(name, tys)
 
-        can_be_instantiated_set = set(list(mapping.schema.entities.keys()) + \
-            list(mapping.schema.simpletypes.keys()) + \
-            list(mapping.schema.enumerations.keys()))
-            
+        can_be_instantiated_set = set(
+            list(mapping.schema.entities.keys())
+            + list(mapping.schema.simpletypes.keys())
+            + list(mapping.schema.enumerations.keys())
+        )
+
         x.finalize(can_be_instantiated_set)
 
         self.str = str(x)

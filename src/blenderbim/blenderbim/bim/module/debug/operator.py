@@ -1,16 +1,40 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
 import bpy
+import time
 import logging
 import ifcopenshell
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import blenderbim.tool as tool
+import blenderbim.core.debug as core
 import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
 class PrintIfcFile(bpy.types.Operator):
     bl_idname = "bim.print_ifc_file"
     bl_label = "Print IFC File"
+    bl_description = "Prints the file contents in the system console.\nAccess it with Window > Toggle System Console"
 
     @classmethod
     def poll(cls, context):
@@ -24,6 +48,7 @@ class PrintIfcFile(bpy.types.Operator):
 class PurgeIfcLinks(bpy.types.Operator):
     bl_idname = "bim.purge_ifc_links"
     bl_label = "Purge IFC Links"
+    bl_description = "Purge all definitions and references from the file.\nWarning : Cannot be undone."
 
     def execute(self, context):
         for obj in bpy.data.objects:
@@ -69,10 +94,7 @@ class ProfileImportIFC(bpy.types.Operator):
         import cProfile
         import pstats
 
-        # For Windows
-        filepath = context.scene.BIMProperties.ifc_file.replace("\\", "\\\\")
-
-        cProfile.run(f"import bpy; bpy.ops.import_ifc.bim(filepath='{filepath}')", "blender.prof")
+        cProfile.run("import bpy; bpy.ops.bim.load_project_elements()", "blender.prof")
         p = pstats.Stats("blender.prof")
         p.sort_stats("cumulative").print_stats(50)
         return {"FINISHED"}
@@ -80,7 +102,8 @@ class ProfileImportIFC(bpy.types.Operator):
 
 class CreateAllShapes(bpy.types.Operator):
     bl_idname = "bim.create_all_shapes"
-    bl_label = "Create All Shapes"
+    bl_label = "Test All Shapes"
+    bl_description = "Look for errors in all the shapes contained in the file"
 
     @classmethod
     def poll(cls, context):
@@ -89,6 +112,7 @@ class CreateAllShapes(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
+
         total = len(elements)
         settings = ifcopenshell.geom.settings()
         failures = []
@@ -97,13 +121,20 @@ class CreateAllShapes(bpy.types.Operator):
             if element.GlobalId in excludes:
                 continue
             print(f"{i}/{total}:", element)
+            start = time.time()
             try:
                 shape = ifcopenshell.geom.create_shape(settings, element)
-                print("Success", len(shape.geometry.verts), len(shape.geometry.edges), len(shape.geometry.faces))
+                print(
+                    "Success",
+                    time.time() - start,
+                    len(shape.geometry.verts),
+                    len(shape.geometry.edges),
+                    len(shape.geometry.faces),
+                )
             except:
                 failures.append(element)
                 print("***** FAILURE *****")
-        print("Failures:")
+        print(f"Failures: {len(failures)}")
         for failure in failures:
             print(failure)
         return {"FINISHED"}
@@ -112,6 +143,7 @@ class CreateAllShapes(bpy.types.Operator):
 class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
+    bl_description = "Recreate a mesh object from a STEP ID"
     bl_options = {"REGISTER", "UNDO"}
     should_include_curves: bpy.props.BoolProperty()
 
@@ -131,9 +163,12 @@ class CreateShapeFromStepId(bpy.types.Operator):
         if self.should_include_curves:
             settings.set(settings.INCLUDE_CURVES, True)
         shape = ifcopenshell.geom.create_shape(settings, element)
-        ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
-        ifc_importer.file = self.file
-        mesh = ifc_importer.create_mesh(element, shape)
+        if shape:
+            ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
+            ifc_importer.file = self.file
+            mesh = ifc_importer.create_mesh(element, shape)
+        else:
+            mesh = None
         obj = bpy.data.objects.new("Debug", mesh)
         context.scene.collection.objects.link(obj)
         return {"FINISHED"}
@@ -142,18 +177,37 @@ class CreateShapeFromStepId(bpy.types.Operator):
 class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_idname = "bim.select_high_polygon_meshes"
     bl_label = "Select High Polygon Meshes"
+    bl_description = "Select objects containing more polygons than the specified number"
     bl_options = {"REGISTER", "UNDO"}
+    threshold: bpy.props.IntProperty()
 
     def execute(self, context):
-        [o.select_set(True) for o in context.view_layer.objects
-            if o.type == 'MESH'
-            and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons]
+        for obj in context.view_layer.objects:
+            if obj.type == "MESH" and len(obj.data.polygons) > self.threshold:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
+class SelectHighestPolygonMeshes(bpy.types.Operator):
+    bl_idname = "bim.select_highest_polygon_meshes"
+    bl_label = "Select Highest Polygon Meshes"
+    bl_description = "Select objects with a number of polygons superior to the specified percentile"
+    bl_options = {"REGISTER", "UNDO"}
+    percentile: bpy.props.IntProperty()
+
+    def execute(self, context):
+        objects = [obj for obj in context.view_layer.objects if obj.type == "MESH"]
+        if objects:
+            percentile = len(max(objects, key=lambda o: len(o.data.polygons)).data.polygons) * self.percentile / 100
+            print(f"Selected all Meshes with more than {int(percentile)} polygons")
+            [obj.select_set(True) for obj in objects if len(obj.data.polygons) > percentile]
         return {"FINISHED"}
 
 
 class RewindInspector(bpy.types.Operator):
     bl_idname = "bim.rewind_inspector"
     bl_label = "Rewind Inspector"
+    bl_description = "Rewind the Inspector to the previously inspected element"
 
     def execute(self, context):
         props = context.scene.BIMDebugProperties
@@ -170,6 +224,7 @@ class RewindInspector(bpy.types.Operator):
 class InspectFromStepId(bpy.types.Operator):
     bl_idname = "bim.inspect_from_step_id"
     bl_label = "Inspect From STEP ID"
+    bl_description = "Inspect the attributes and references by looking up the specified STEP ID"
     step_id: bpy.props.IntProperty()
 
     @classmethod
@@ -178,18 +233,16 @@ class InspectFromStepId(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        context.scene.BIMDebugProperties.active_step_id = self.step_id
+        debug_props = context.scene.BIMDebugProperties
+        debug_props.active_step_id = self.step_id
         crumb = context.scene.BIMDebugProperties.step_id_breadcrumb.add()
         crumb.name = str(self.step_id)
         element = self.file.by_id(self.step_id)
-        while len(context.scene.BIMDebugProperties.attributes) > 0:
-            context.scene.BIMDebugProperties.attributes.remove(0)
-        while len(context.scene.BIMDebugProperties.inverse_attributes) > 0:
-            context.scene.BIMDebugProperties.inverse_attributes.remove(0)
-        while len(context.scene.BIMDebugProperties.inverse_references) > 0:
-            context.scene.BIMDebugProperties.inverse_references.remove(0)
+        debug_props.attributes.clear()
+        debug_props.inverse_attributes.clear()
+        debug_props.inverse_references.clear()
         for key, value in element.get_info().items():
-            self.add_attribute(context.scene.BIMDebugProperties.attributes, key, value)
+            self.add_attribute(debug_props.attributes, key, value)
         for key in dir(element):
             if (
                 not key[0].isalpha()
@@ -198,9 +251,9 @@ class InspectFromStepId(bpy.types.Operator):
                 or not getattr(element, key)
             ):
                 continue
-            self.add_attribute(context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
+            self.add_attribute(debug_props.inverse_attributes, key, getattr(element, key))
         for inverse in self.file.get_inverse(element):
-            new = context.scene.BIMDebugProperties.inverse_references.add()
+            new = debug_props.inverse_references.add()
             new.string_value = str(inverse)
             new.int_value = inverse.id()
         return {"FINISHED"}
@@ -222,12 +275,21 @@ class InspectFromStepId(bpy.types.Operator):
 class InspectFromObject(bpy.types.Operator):
     bl_idname = "bim.inspect_from_object"
     bl_label = "Inspect From Object"
+    bl_description = "Inspect the Active Object's attributes and references"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            if bpy.app.version >= (3, 0, 0):
+                cls.poll_message_set("No Active Object")
+        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
+            if bpy.app.version >= (3, 0, 0):
+                cls.poll_message_set("Active Object doesn't have an IFC definition")
+        else:
+            return True
 
     def execute(self, context):
-        ifc_definition_id = context.active_object.BIMObjectProperties.ifc_definition_id
-        if not ifc_definition_id:
-            return {"FINISHED"}
-        bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)
+        bpy.ops.bim.inspect_from_step_id(step_id=context.active_object.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -238,4 +300,41 @@ class PrintObjectPlacement(bpy.types.Operator):
 
     def execute(self, context):
         print(ifcopenshell.util.placement.get_local_placement(IfcStore.get_file().by_id(self.step_id)))
+        return {"FINISHED"}
+
+
+class ParseExpress(bpy.types.Operator):
+    bl_idname = "bim.parse_express"
+    bl_label = "Parse Express"
+
+    def execute(self, context):
+        core.parse_express(tool.Debug, context.scene.BIMDebugProperties.express_file)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+
+class SelectExpressFile(bpy.types.Operator):
+    bl_idname = "bim.select_express_file"
+    bl_label = "Select Express File"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select an IFC EXPRESS definition"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.exp", options={"HIDDEN"})
+
+    def execute(self, context):
+        if os.path.exists(self.filepath) and "exp" in os.path.splitext(self.filepath)[1]:
+            context.scene.BIMDebugProperties.express_file = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class PurgeHdf5Cache(bpy.types.Operator):
+    bl_idname = "bim.purge_hdf5_cache"
+    bl_label = "Purge HDF5 Cache"
+
+    def execute(self, context):
+        core.purge_hdf5_cache(tool.Debug)
         return {"FINISHED"}

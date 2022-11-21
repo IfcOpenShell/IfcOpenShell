@@ -1,4 +1,3 @@
-
 # ifccityjson - Python CityJSON to IFC converter
 # Copyright (C) 2021 Laurens J.N. Oostwegel <l.oostwegel@gmail.com>
 #
@@ -19,10 +18,9 @@
 
 import argparse
 from cjio import cityjson
-from cityjson2ifc import Cityjson2ifc
+from cityjson2ifc.cityjson2ifc import Cityjson2ifc
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+def cmdline():
     # Example:
     # python ifccityjson.py -i example/3DBAG_example.json -o example/output.ifc -n identificatie
     # python ifccityjson.py -i example/geometries.json -o example/geometry_output.ifc
@@ -30,15 +28,27 @@ if __name__ == '__main__':
     parser.add_argument("-i", "--input", type=str, help="input CityJSON file", required=True)
     parser.add_argument("-o", "--output", type=str, help="output IFC file. Standard is output.ifc")
     parser.add_argument("-n", "--name", type=str, help="Attribute containing the name")
+    parser.add_argument('--split-lod', dest='split', action='store_true',
+                        help="Split the file in multiple LoDs")
+    parser.add_argument('--no-split-lod', dest='split', action='store_false',
+                        help="Do not split the file in multiple LoDs")
+    parser.add_argument("--lod", type=str, help="extract LOD value (example: 1.2)")
+    parser.set_defaults(split=True)
     args = parser.parse_args()
 
-    city_model = cityjson.load(args.input)
+    city_model = cityjson.load(args.input, transform=False)
     data = {}
     if args.name:
         data["name_attribute"] = args.name
     if args.output:
         data["file_destination"] = args.output
+    if args.lod:
+        data["lod"] = args.lod
+    data["split"] = args.split
 
     converter = Cityjson2ifc()
     converter.configuration(**data)
     converter.convert(city_model)
+
+if __name__ == '__main__':
+    cmdline()

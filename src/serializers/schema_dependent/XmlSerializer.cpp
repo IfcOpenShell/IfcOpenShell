@@ -105,7 +105,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 		case IfcUtil::Argument_ENTITY_INSTANCE: {
 			IfcUtil::IfcBaseClass* e = *argument;
 			if (!e->declaration().as_entity()) {
-				IfcUtil::IfcBaseType* f = (IfcUtil::IfcBaseType*) e;
+				IfcUtil::IfcBaseType* f = e->as<IfcUtil::IfcBaseType>();
 				value = format_attribute(f->data().getArgument(0), f->data().getArgument(0)->type(), argument_name);
 			} else if (e->declaration().is(IfcSchema::IfcSIUnit::Class()) || e->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
 				// Some string concatenation to have a unit name as a XML attribute.
@@ -113,13 +113,13 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				std::string unit_name;
 
 				if (e->declaration().is(IfcSchema::IfcSIUnit::Class())) {
-					IfcSchema::IfcSIUnit* unit = (IfcSchema::IfcSIUnit*) e;
+					IfcSchema::IfcSIUnit* unit = e->as<IfcSchema::IfcSIUnit>();
 					unit_name = IfcSchema::IfcSIUnitName::ToString(unit->Name());
-					if (unit->hasPrefix()) {
-						unit_name = IfcSchema::IfcSIPrefix::ToString(unit->Prefix()) + unit_name;
+					if (unit->Prefix()) {
+						unit_name = IfcSchema::IfcSIPrefix::ToString(*unit->Prefix()) + unit_name;
 					}
 				} else {
-					IfcSchema::IfcConversionBasedUnit* unit = (IfcSchema::IfcConversionBasedUnit*) e;
+					IfcSchema::IfcConversionBasedUnit* unit = e->as<IfcSchema::IfcConversionBasedUnit>();
 					unit_name = unit->Name();
 				}
 
@@ -201,7 +201,7 @@ ptree* format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, boo
     return format_entity_instance(instance, child, tree, as_link);
 }
 
-std::string qualify_unrooted_instance(IfcUtil::IfcBaseClass* inst) {
+std::string qualify_unrooted_instance(IfcUtil::IfcBaseInterface* inst) {
 	return inst->declaration().name() + "_" + boost::lexical_cast<std::string>(inst->data().id());
 }
 
@@ -224,7 +224,11 @@ typename V::list::ptr get_related(T* t, F f, G g) {
 	typename V::list::ptr acc(new typename V::list);
 	for (typename U::list::it it = li->begin(); it != li->end(); ++it) {
 		U* u = *it;
-		acc->push((*u.*g)()->template as<V>());
+		try {
+			acc->push((*u.*g)()->template as<V>());
+		} catch (IfcParse::IfcException& e) {
+			Logger::Error(e);
+		}
 	}
 	return acc;
 }
@@ -244,7 +248,7 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 	ptree& child = *format_entity_instance(product, tree);
 
 	if (product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
-		IfcSchema::IfcOpeningElement* opening = static_cast<IfcSchema::IfcOpeningElement*>(product);
+		IfcSchema::IfcOpeningElement* opening = product->as<IfcSchema::IfcOpeningElement>();
 		IfcSchema::IfcElement::list::ptr fills = get_related<IfcSchema::IfcOpeningElement, IfcSchema::IfcRelFillsElement, IfcSchema::IfcElement>(
 			opening, &IfcSchema::IfcOpeningElement::HasFillings, &IfcSchema::IfcRelFillsElement::RelatedBuildingElement);
 
@@ -254,7 +258,7 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 	}
 	
 	if (product->declaration().is(IfcSchema::IfcSpatialStructureElement::Class())) {
-		IfcSchema::IfcSpatialStructureElement* structure = (IfcSchema::IfcSpatialStructureElement*) product;
+		IfcSchema::IfcSpatialStructureElement* structure = product->as<IfcSchema::IfcSpatialStructureElement>();
 
 		IfcSchema::IfcObjectDefinition::list::ptr elements = get_related
 			<IfcSchema::IfcSpatialStructureElement, IfcSchema::IfcRelContainedInSpatialStructure, IfcSchema::IfcObjectDefinition>
@@ -343,7 +347,7 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 				IfcSchema::IfcMaterialSelect* mat = (*it)->as<IfcSchema::IfcRelAssociatesMaterial>()->RelatingMaterial();
 				ptree node;
 				node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(mat));
-				format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, child, true);
+				format_entity_instance(mat->as<IfcUtil::IfcBaseEntity>(), node, child, true);
 			}
 		}
     }
@@ -356,12 +360,45 @@ void format_properties(IfcSchema::IfcProperty::list::ptr properties, ptree& node
 	for (IfcSchema::IfcProperty::list::it it = properties->begin(); it != properties->end(); ++it) {
 		IfcSchema::IfcProperty* p = *it;
 		if (p->declaration().is(IfcSchema::IfcComplexProperty::Class())) {
-			IfcSchema::IfcComplexProperty* complex = (IfcSchema::IfcComplexProperty*) p;
+			IfcSchema::IfcComplexProperty* complex = p->as<IfcSchema::IfcComplexProperty>();
 			format_properties(complex->HasProperties(), node);
 		} else {
 			format_entity_instance(p, node);
 		}
 	}
+}
+
+void writeGroupToNode(IfcSchema::IfcGroup* group, ptree& node, std::set<std::string>notRootGroups) {
+	// @todo tfk: instead of a set<string> shouldn't we just have a set<IfcGroup>, the current approach
+	// might not work with non-unique or NIL group names.
+
+	// @todo tfk: should the set be a passed as a reference?
+	if (!group->Name()) {
+		return;
+	}
+
+    if (notRootGroups.find(*group->Name()) != notRootGroups.end()) {
+        return;
+    }
+    // Write one group to root
+    ptree* node2 = descend(group, node);
+    auto father = group->IsGroupedBy();
+    for (auto iter = father->begin(); iter != father->end(); iter++)
+    {
+        IfcSchema::IfcRelAssigns* ii = *iter;
+        auto objs = ii->RelatedObjects();
+        for (auto objit = objs->begin(); objit != objs->end(); objit++) {
+            auto entity = *objit;
+            if (entity->declaration().is(IfcSchema::IfcGroup::Class()) && entity->Name()) {
+                writeGroupToNode(entity->as<IfcSchema::IfcGroup>(), *node2, notRootGroups);
+                notRootGroups.emplace(*entity->Name());
+            }
+            else {
+                // Write child to father group
+                descend(entity, *node2);
+            }
+        }
+    }
 }
 
 // Format IfcElementQuantity instances and insert into the DOM.
@@ -370,9 +407,124 @@ void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptr
 		IfcSchema::IfcPhysicalQuantity* p = *it;
 		ptree* node2 = format_entity_instance(p, node);
 		if (node2 && p->declaration().is(IfcSchema::IfcPhysicalComplexQuantity::Class())) {
-			IfcSchema::IfcPhysicalComplexQuantity* complex = (IfcSchema::IfcPhysicalComplexQuantity*)p;
+			IfcSchema::IfcPhysicalComplexQuantity* complex = p->as<IfcSchema::IfcPhysicalComplexQuantity>();
 			format_quantities(complex->HasQuantities(), *node2);
 		}
+	}
+}
+
+// Format IfcTask instances and insert into the DOM.
+void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
+	ptree* ntask = format_entity_instance(task, node);
+
+	if (ntask) {
+#ifdef SCHEMA_IfcTask_HAS_TaskTime
+		IfcSchema::IfcTaskTime* task_time = task->TaskTime();
+		if (task_time)
+		{
+			format_entity_instance(task_time, *ntask);
+		}
+#endif
+
+#ifdef SCHEMA_IfcProcess_HAS_IsSuccessorFrom
+		IfcSchema::IfcRelSequence::list::ptr successor_from = task->IsSuccessorFrom();
+		for (IfcSchema::IfcRelSequence::list::it it = successor_from->begin(); it != successor_from->end(); ++it)
+		{
+			IfcSchema::IfcProcess* relating_process = (*it)->RelatingProcess();
+			ptree nobject;
+			nobject.put("<xmlattr>.id", relating_process->GlobalId());
+			ntask->add_child("IsSuccessorFrom", nobject);
+		}
+#endif
+
+#ifdef SCHEMA_IfcProcess_HAS_IsPredecessorTo
+		IfcSchema::IfcRelSequence::list::ptr predecessor_to = task->IsPredecessorTo();
+		for (IfcSchema::IfcRelSequence::list::it it = predecessor_to->begin(); it != predecessor_to->end(); ++it)
+		{
+			IfcSchema::IfcProcess* relating_process = (*it)->RelatedProcess();
+			ptree nobject;
+			nobject.put("<xmlattr>.id", relating_process->GlobalId());
+			ntask->add_child("IsPredecessorTo", nobject);
+		}
+#endif
+
+		IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = get_related
+			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
+			(task, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+
+		for (IfcSchema::IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
+			IfcSchema::IfcPropertySetDefinition* pset = *it;
+			if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
+				format_entity_instance(pset, *ntask, true);
+			}
+			else if (pset->declaration().is(IfcSchema::IfcElementQuantity::Class())) {
+				format_entity_instance(pset, *ntask, true);
+			}
+		}
+
+#ifdef SCHEMA_IfcProcess_HAS_OperatesOn
+		IfcSchema::IfcRelAssignsToProcess::list::ptr operates = task->OperatesOn();
+		if (operates->size() > 0)
+		{
+			for (IfcSchema::IfcRelAssignsToProcess::list::it i = operates->begin(); i != operates->end(); ++i)
+			{
+				IfcSchema::IfcRelAssignsToProcess* operation = (*i);
+				IfcSchema::IfcObjectDefinition::list::ptr objects = operation->RelatedObjects();
+				for (IfcSchema::IfcObjectDefinition::list::it it2 = objects->begin(); it2 != objects->end(); ++it2)
+				{
+					IfcSchema::IfcObjectDefinition* object = *it2;
+					ptree nobject;
+					nobject.put("<xmlattr>.id", object->GlobalId());
+					if (object->declaration().is(IfcSchema::IfcProduct::Class()))
+					{
+						ntask->add_child("Input", nobject);
+					}
+					else if (object->declaration().is(IfcSchema::IfcResource::Class()))
+					{
+						ntask->add_child("Resource", nobject);
+					}
+					else if (object->declaration().is(IfcSchema::IfcControl::Class()))
+					{
+						ntask->add_child("Control", nobject);
+					}
+					else
+					{
+						nobject.put("<xmlattr>.Type", object->declaration().name());
+						ntask->add_child("OperatesOn", nobject);
+					}
+				}
+			}
+		}
+#endif
+
+		IfcSchema::IfcRelAssigns::list::ptr assignments = task->HasAssignments();
+		for (IfcSchema::IfcRelAssigns::list::it i = assignments->begin(); i != assignments->end(); ++i)
+		{
+			IfcSchema::IfcRelAssigns* assignment = *i;
+			if (assignment->declaration().is(IfcSchema::IfcRelAssignsToProduct::Class())) {
+				IfcSchema::IfcRelAssignsToProduct* assign_to_product = assignment->as<IfcSchema::IfcRelAssignsToProduct>();
+				IfcSchema::IfcProduct* product = assign_to_product->RelatingProduct()->as<IfcSchema::IfcProduct>();
+				ptree nobject;
+				nobject.put("<xmlattr>.id", product->GlobalId());
+				ntask->add_child("Output", nobject);
+			}
+		}
+
+#ifdef SCHEMA_IfcObjectDefinition_HAS_IsNestedBy
+		IfcSchema::IfcRelNests::list::ptr nested_by = task->IsNestedBy();
+		for (IfcSchema::IfcRelNests::list::it it = nested_by->begin(); it != nested_by->end(); ++it)
+		{
+			IfcSchema::IfcObjectDefinition::list::ptr related_objects = (*it)->RelatedObjects();
+			for (IfcSchema::IfcObjectDefinition::list::it it2 = related_objects->begin(); it2 != related_objects->end(); ++it2)
+			{
+				if (!(*it2)->declaration().is(IfcSchema::IfcTask::Class())) {
+					continue;
+				}
+				IfcSchema::IfcTask* task2 = (*it2)->as<IfcSchema::IfcTask>();
+				format_tasks(task2, *ntask);
+			}
+		}
+#endif
 	}
 }
 
@@ -388,8 +540,8 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
-	
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections, groups;
+
 	// Write the SPF header as XML nodes.
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
@@ -464,7 +616,21 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 			format_properties(pset->HasProperties(), *node);
 		}
 	}
-	
+
+	// Write all group sets and values as XML nodes.
+	IfcSchema::IfcGroup::list::ptr gsets = file->instances_by_type<IfcSchema::IfcGroup>();
+	std::set<std::string> notRootGroups; //selfname, fathername
+	for (IfcSchema::IfcGroup::list::it it = gsets->begin(); it != gsets->end(); ++it) {
+		writeGroupToNode(*it, groups, notRootGroups);
+	}
+	for (auto it = groups.begin(); it != groups.end();) {
+		if (notRootGroups.find(it->second.get<std::string>("<xmlattr>.Name")) != notRootGroups.end()) {
+			it = groups.erase(it);
+		} else {
+			it++;
+		}
+	}
+
 	// Write all quantities and values as XML nodes.
 	IfcSchema::IfcElementQuantity::list::ptr qtosets = file->instances_by_type<IfcSchema::IfcElementQuantity>();
 	for (IfcSchema::IfcElementQuantity::list::it it = qtosets->begin(); it != qtosets->end(); ++it) {
@@ -475,6 +641,93 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		}
 	}
 
+	// Write all work schedules and values as XML nodes.
+	ptree pwork_schedules;
+	IfcSchema::IfcWorkSchedule::list::ptr pschedules = file->instances_by_type<IfcSchema::IfcWorkSchedule>();
+	for (IfcSchema::IfcWorkSchedule::list::it it = pschedules->begin(); it != pschedules->end(); ++it) {
+		IfcSchema::IfcWorkSchedule* schedule = *it;
+		ptree* nschedule = format_entity_instance(schedule, pwork_schedules);
+		
+		if(nschedule) {
+			IfcSchema::IfcRelAssignsToControl::list::ptr controls = schedule->Controls();
+			for(IfcSchema::IfcRelAssignsToControl::list::it it2 = controls->begin(); it2 != controls->end(); ++it2) {
+				IfcSchema::IfcRelAssignsToControl* control = *it2;
+				
+				IfcSchema::IfcObjectDefinition::list::ptr objects = control->RelatedObjects();
+				for(IfcSchema::IfcObjectDefinition::list::it it3 = objects->begin(); it3 != objects->end(); ++it3) {
+					IfcSchema::IfcObjectDefinition* object = *it3;
+					
+					if (object && object->declaration().is(IfcSchema::IfcTask::Class())) {
+						IfcSchema::IfcTask* task = object->as<IfcSchema::IfcTask>();
+						format_tasks(task, *nschedule);
+					}
+				}
+			}
+		}
+	}
+	work.add_child("schedules", pwork_schedules);
+
+	// Write all work plans and values as XML nodes.
+	ptree pwork_plans;
+	IfcSchema::IfcWorkPlan::list::ptr pplans = file->instances_by_type<IfcSchema::IfcWorkPlan>();
+	for (IfcSchema::IfcWorkPlan::list::it it = pplans->begin(); it != pplans->end(); ++it) {
+		IfcSchema::IfcWorkPlan* plan = *it;
+		ptree* nschedule = format_entity_instance(plan, pwork_plans);
+
+		if (nschedule) {
+#ifdef SCHEMA_IfcObjectDefinition_HAS_IsDecomposedBy
+			auto decomposed_by = plan->IsDecomposedBy();
+			for (auto it2 = decomposed_by->begin(); it2 != decomposed_by->end(); ++it2)
+			{
+				IfcSchema::IfcObjectDefinition::list::ptr related_objects = (*it2)->RelatedObjects();
+				for (IfcSchema::IfcObjectDefinition::list::it it3 = related_objects->begin(); it3 != related_objects->end(); ++it3)
+				{
+					IfcSchema::IfcObjectDefinition* work_schedule = *it3;
+					ptree pwork_schedule;
+					pwork_schedule.put("<xmlattr>.id", work_schedule->GlobalId());
+					nschedule->add_child("IfcWorkSchedule", pwork_schedule);
+				}
+			}
+#endif
+		}
+	}
+	work.add_child("plans", pwork_plans);
+	
+	// Write all work calendars and values as XML nodes.
+#ifdef SCHEMA_HAS_IfcWorkCalendar
+	IfcSchema::IfcWorkCalendar::list::ptr pcalendars = file->instances_by_type<IfcSchema::IfcWorkCalendar>();
+	for (IfcSchema::IfcWorkCalendar::list::it it = pcalendars->begin(); it != pcalendars->end(); ++it) {
+		IfcSchema::IfcWorkCalendar* calendar = *it;
+		ptree* ncalendar = format_entity_instance(calendar, calendars);
+		
+		if (ncalendar) {
+			IfcSchema::IfcWorkTime::list::ptr working_times = calendar->WorkingTimes().value_or(nullptr);
+			if (working_times != nullptr) {
+				for (IfcSchema::IfcWorkTime::list::it it2 = working_times->begin(); it2 != working_times->end(); ++it2)
+				{
+					IfcSchema::IfcWorkTime* working_time = *it2;
+					format_entity_instance(working_time, *ncalendar);
+				}
+			}
+		}
+	}
+#endif
+	
+	IfcSchema::IfcRelConnectsElements::list::ptr pconnections = file->instances_by_type<IfcSchema::IfcRelConnectsElements>();
+	for (IfcSchema::IfcRelConnectsElements::list::it it = pconnections->begin(); it != pconnections->end(); ++it) {
+		IfcSchema::IfcRelConnectsElements* connection = *it;
+
+		ptree* nconnection = format_entity_instance(connection, connections);
+
+		ptree nrelatedElement;
+		ptree nrelatingElement;
+
+		format_entity_instance(connection->RelatedElement(), nrelatedElement, true);
+		format_entity_instance(connection->RelatingElement(), nrelatingElement, true);
+		
+		nconnection->add_child("RelatedElement",  nrelatedElement);
+		nconnection->add_child("RelatingElement", nrelatingElement);
+	}
 
 	// Write all type objects as XML nodes.
 	IfcSchema::IfcTypeObject::list::ptr type_objects = file->instances_by_type<IfcSchema::IfcTypeObject>();
@@ -482,8 +735,8 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		IfcSchema::IfcTypeObject* type_object = *it;
 		ptree* node = descend(type_object, types);
 		
-		if (node && type_object->hasHasPropertySets()) {
-			IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
+		if (node && type_object->HasPropertySets()) {
+			IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = *type_object->HasPropertySets();
 			for (IfcSchema::IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
 				IfcSchema::IfcPropertySetDefinition* pset = *jt;
 				if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
@@ -494,8 +747,8 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 
 	// Write all assigned units as XML nodes.
-	IfcEntityList::ptr unit_assignments = project->UnitsInContext()->Units();
-	for (IfcEntityList::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
+	aggregate_of_instance::ptr unit_assignments = project->UnitsInContext()->Units();
+	for (aggregate_of_instance::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
 		if ((*it)->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
 			IfcSchema::IfcNamedUnit* named_unit = (*it)->as<IfcSchema::IfcNamedUnit>();
 			ptree* node = format_entity_instance(named_unit, units);
@@ -535,13 +788,13 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 				if (!layerset) {
 					layerset = mat->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
 				}				
-				if (layerset->hasLayerSetName()) {
-					node.put("<xmlattr>.LayerSetName", layerset->LayerSetName());
+				if (layerset->LayerSetName()) {
+					node.put("<xmlattr>.LayerSetName", *layerset->LayerSetName());
 				}
 				IfcSchema::IfcMaterialLayer::list::ptr ls = layerset->MaterialLayers();
 				for (IfcSchema::IfcMaterialLayer::list::it jt = ls->begin(); jt != ls->end(); ++jt) {
 					ptree subnode;
-					if ((*jt)->hasMaterial()) {
+					if ((*jt)->Material()) {
 						subnode.put("<xmlattr>.Name", (*jt)->Material()->Name());
 					}
 					format_entity_instance(*jt, subnode, node);
@@ -553,16 +806,20 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 					format_entity_instance(*jt, subnode, node);
 				}
 			}
-			format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, materials);
+			format_entity_instance(mat->as<IfcUtil::IfcBaseEntity>(), node, materials);
 		}
 	}
 
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
+	root.add_child("ifc.connections",   connections);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.quantities",    quantities);
+	root.add_child("ifc.work",			work);
+	root.add_child("ifc.calendars",		calendars);
 	root.add_child("ifc.types",         types);
-    	root.add_child("ifc.layers",        layers);
+	root.add_child("ifc.layers",        layers);
+    root.add_child("ifc.groups",        groups);
 	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 

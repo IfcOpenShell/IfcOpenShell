@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -29,6 +28,8 @@ class Patcher:
         self.args = args
 
     def patch(self):
+        if self.file.schema == "IFC2X3":
+            return
         curve_map = {}
 
         for curve in self.file.by_type("IfcIndexedPolyCurve"):

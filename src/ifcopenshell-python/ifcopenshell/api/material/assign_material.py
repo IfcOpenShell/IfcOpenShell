@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -73,11 +91,23 @@ class Usecase:
                 subelement.SweptArea = profile
 
     def create_layer_set_usage(self, material_set):
+        if self.settings["product"].is_a() in [
+            "IfcSlab",
+            "IfcSlabStandardCase",
+            "IfcSlabElementedCase",
+            "IfcRoof",
+            "IfcRamp",
+            "IfcPlate",
+            "IfcPlateStandardCase",
+        ]:
+            layer_set_direction = "AXIS3"
+        else:
+            layer_set_direction = "AXIS2"
         return self.file.create_entity(
             "IfcMaterialLayerSetUsage",
             **{
                 "ForLayerSet": material_set,
-                "LayerSetDirection": "AXIS2" if self.settings["product"].is_a("IfcWall") else "AXIS3",
+                "LayerSetDirection": layer_set_direction,
                 "DirectionSense": "POSITIVE",
                 "OffsetFromReferenceLine": 0,
             }
@@ -106,7 +136,7 @@ class Usecase:
         )
 
     def get_rel_associates_material(self, material):
-        if self.file.schema == "IFC2X3":
+        if self.file.schema == "IFC2X3" or material.is_a("IfcMaterialList"):
             rel = [
                 r
                 for r in self.file.by_type("IfcRelAssociatesMaterial")

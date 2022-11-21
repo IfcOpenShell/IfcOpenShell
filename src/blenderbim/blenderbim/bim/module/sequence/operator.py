@@ -1,4 +1,21 @@
-import re
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>, 2022 Yassine Oualid <yassine@sigmadimensions.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import bpy
 import json
@@ -7,13 +24,10 @@ import calendar
 import isodate
 import pystache
 import webbrowser
-import ifcopenshell.api
-import ifcopenshell.util.date
-import ifcopenshell.util.sequence
-import blenderbim.bim.helper
+import blenderbim.core.sequence as core
+import blenderbim.tool as tool
 import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
-from datetime import timedelta
 from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
@@ -21,99 +35,68 @@ from ifcopenshell.api.sequence.data import Data
 from ifcopenshell.api.resource.data import Data as ResourceData
 
 
-class AddWorkPlan(bpy.types.Operator):
+def animate_text(scene, context):
+    data = bpy.data.curves.get("Timeline")
+    if not data or not bpy.data.objects.get("Timeline"):
+        self.remove_text_animation_handler()
+        scene.frame_current
+    props = data.BIMDateTextProperties
+    start = parser.parse(props.start, dayfirst=True, fuzzy=True)
+    finish = parser.parse(props.finish, dayfirst=True, fuzzy=True)
+    duration = finish - start
+    frame_date = (((scene.frame_current - props.start_frame) / props.total_frames) * duration) + start
+    data.body = frame_date.date().isoformat()
+
+
+class AddWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_work_plan"
     bl_label = "Add Work Plan"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        ifcopenshell.api.run("sequence.add_work_plan", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_work_plan(tool.Ifc)
 
 
-class EditWorkPlan(bpy.types.Operator):
+class EditWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_work_plan"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Edit Work Plan"
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkPlanProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.work_plan_attributes, self.export_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_work_plan",
-            self.file,
-            **{"work_plan": self.file.by_id(props.active_work_plan_id), "attributes": attributes},
+        core.edit_work_plan(
+            tool.Ifc,
+            tool.Sequence,
+            work_plan=tool.Ifc.get().by_id(context.scene.BIMWorkPlanProperties.active_work_plan_id),
         )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_work_plan()
-        return {"FINISHED"}
-
-    def export_attributes(self, attributes, prop):
-        if "Date" in prop.name or "Time" in prop.name:
-            attributes[prop.name] = helper.parse_datetime(prop.string_value)
-            return True
-        elif prop.name == "Duration" or prop.name == "TotalFloat":
-            attributes[prop.name] = helper.parse_duration(prop.string_value)
-            return True
 
 
-class RemoveWorkPlan(bpy.types.Operator):
+class RemoveWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_work_plan"
     bl_label = "Remove Work Plan"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.remove_work_plan", self.file, **{"work_plan": self.file.by_id(self.work_plan)})
-        Data.load(self.file)
-        return {"FINISHED"}
+        core.remove_work_plan(tool.Ifc, work_plan=tool.Ifc.get().by_id(self.work_plan))
 
 
-class EnableEditingWorkPlan(bpy.types.Operator):
+class EnableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_work_plan"
     bl_label = "Enable Editing Work Plan"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def execute(self, context):
-        props = context.scene.BIMWorkPlanProperties
-        while len(props.work_plan_attributes) > 0:
-            props.work_plan_attributes.remove(0)
-
-        data = Data.work_plans[self.work_plan]
-
-        blenderbim.bim.helper.import_attributes("IfcWorkPlan", props.work_plan_attributes, data, self.import_attributes)
-
-        props.active_work_plan_id = self.work_plan
-        props.editing_type = "ATTRIBUTES"
-        return {"FINISHED"}
-
-    def import_attributes(self, name, prop, data):
-        if name in ["CreationDate", "StartTime", "FinishTime"]:
-            prop.string_value = "" if prop.is_null else data[name].isoformat()
-            return True
+    def _execute(self, context):
+        core.enable_editing_work_plan(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
 
 
-class DisableEditingWorkPlan(bpy.types.Operator):
+class DisableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_work_plan"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Disable Editing Work Plan"
 
-    def execute(self, context):
-        context.scene.BIMWorkPlanProperties.active_work_plan_id = 0
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_editing_work_plan(tool.Sequence)
 
 
 class EnableEditingWorkPlanSchedules(bpy.types.Operator):
@@ -123,120 +106,71 @@ class EnableEditingWorkPlanSchedules(bpy.types.Operator):
     work_plan: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkPlanProperties
-        props.active_work_plan_id = self.work_plan
-        props.editing_type = "SCHEDULES"
+        core.enable_editing_work_plan_schedules(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
         return {"FINISHED"}
 
 
-class AssignWorkSchedule(bpy.types.Operator):
+class AssignWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_work_schedule"
     bl_label = "Assign Work Schedule"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
     work_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
-            self.file,
-            **{
-                "relating_object": self.file.by_id(self.work_plan),
-                "product": self.file.by_id(self.work_schedule),
-            },
+        core.assign_work_schedule(
+            tool.Ifc,
+            tool.Sequence,
+            work_plan=tool.Ifc.get().by_id(self.work_plan),
+            work_schedule=tool.Ifc.get().by_id(self.work_schedule),
         )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
 
 
-class UnassignWorkSchedule(bpy.types.Operator):
+class UnassignWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_work_schedule"
     bl_label = "Unassign Work Schedule"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
     work_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "aggregate.unassign_object",
-            self.file,
-            **{
-                "relating_object": self.file.by_id(self.work_plan),
-                "product": self.file.by_id(self.work_schedule),
-            },
+        core.unassign_work_schedule(
+            tool.Ifc,
+            work_plan=tool.Ifc.get().by_id(self.work_plan),
+            work_schedule=tool.Ifc.get().by_id(self.work_schedule),
         )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
 
 
-class AddWorkSchedule(bpy.types.Operator):
+class AddWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_work_schedule"
     bl_label = "Add Work Schedule"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        ifcopenshell.api.run("sequence.add_work_schedule", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_work_schedule(tool.Ifc)
 
 
-class EditWorkSchedule(bpy.types.Operator):
+class EditWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_work_schedule"
     bl_label = "Edit Work Schedule"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.work_schedule_attributes, self.export_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_work_schedule",
-            self.file,
-            **{"work_schedule": self.file.by_id(props.active_work_schedule_id), "attributes": attributes},
+        core.edit_work_schedule(
+            tool.Ifc,
+            tool.Sequence,
+            work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id),
         )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_work_schedule()
-        return {"FINISHED"}
-
-    def export_attributes(self, attributes, prop):
-        if "Date" in prop.name or "Time" in prop.name:
-            attributes[prop.name] = helper.parse_datetime(prop.string_value)
-            return True
-        elif prop.name == "Duration" or prop.name == "TotalFloat":
-            attributes[prop.name] = helper.parse_duration(prop.string_value)
-            return True
 
 
-class RemoveWorkSchedule(bpy.types.Operator):
+class RemoveWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_work_schedule"
     bl_label = "Remove Work Schedule"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.remove_work_schedule", self.file, work_schedule=self.file.by_id(self.work_schedule)
-        )
-        Data.load(self.file)
-        return {"FINISHED"}
+        core.remove_work_schedule(tool.Ifc, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
 
 
 class EnableEditingWorkSchedule(bpy.types.Operator):
@@ -246,152 +180,29 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
     work_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.props.active_work_schedule_id = self.work_schedule
-        while len(self.props.work_schedule_attributes) > 0:
-            self.props.work_schedule_attributes.remove(0)
-        self.enable_editing_work_schedule()
-        self.props.editing_type = "WORK_SCHEDULE"
+        core.enable_editing_work_schedule(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
         return {"FINISHED"}
 
-    def enable_editing_work_schedule(self):
-        data = Data.work_schedules[self.work_schedule]
 
-        blenderbim.bim.helper.import_attributes(
-            "IfcWorkSchedule", self.props.work_schedule_attributes, data, self.import_attributes
-        )
-
-    def import_attributes(self, name, prop, data):
-        if name in ["CreationDate", "StartTime", "FinishTime"]:
-            prop.string_value = "" if prop.is_null else data[name].isoformat()
-            return True
-
-
-class EnableEditingTasks(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_tasks"
+class EnableEditingWorkScheduleTasks(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_work_schedule_tasks"
     bl_label = "Enable Editing Tasks"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.tprops = context.scene.BIMTaskTreeProperties
-        self.props.active_work_schedule_id = self.work_schedule
-        while len(self.tprops.tasks) > 0:
-            self.tprops.tasks.remove(0)
-
-        self.contracted_tasks = json.loads(self.props.contracted_tasks)
-        self.sort_keys = {
-            i: self.get_sort_key(Data.tasks[i]) for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
-        }
-
-        related_object_ids = sorted(self.sort_keys, key=self.natural_sort_key)
-        if self.props.is_sort_reversed:
-            related_object_ids.reverse()
-
-        for related_object_id in related_object_ids:
-            self.create_new_task_li(related_object_id, 0)
-        bpy.ops.bim.load_task_properties()
-        self.props.editing_type = "TASKS"
+        core.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
         return {"FINISHED"}
-
-    def create_new_task_li(self, related_object_id, level_index):
-        task = Data.tasks[related_object_id]
-        new = self.tprops.tasks.add()
-        new.ifc_definition_id = related_object_id
-        new.is_expanded = related_object_id not in self.contracted_tasks
-        new.level_index = level_index
-        if task["RelatedObjects"]:
-            new.has_children = True
-            if new.is_expanded:
-                self.sort_keys = {i: self.get_sort_key(Data.tasks[i]) for i in task["RelatedObjects"]}
-                related_object_ids = sorted(self.sort_keys, key=self.natural_sort_key)
-                if self.props.is_sort_reversed:
-                    related_object_ids.reverse()
-                for related_object_id in related_object_ids:
-                    self.create_new_task_li(related_object_id, level_index + 1)
-
-    def get_sort_key(self, task):
-        # Sorting only applies to actual tasks, not the WBS
-        if task["RelatedObjects"]:
-            # Sorry for the hack
-            return "0000000000" + (task["Identification"] or "")
-        if not self.props.sort_column:
-            return task["Identification"] or ""
-        column_type, name = self.props.sort_column.split(".")
-        if column_type == "IfcTask":
-            return task.get(name)
-        elif column_type == "IfcTaskTime" and task.get("TaskTime"):
-            task_time = Data.task_times[task.get("TaskTime")].get(name)
-        return task["Identification"] or ""
-
-    def natural_sort_key(self, i, _nsre=re.compile("([0-9]+)")):
-        s = self.sort_keys[i]
-        return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
 
 class LoadTaskProperties(bpy.types.Operator):
     bl_idname = "bim.load_task_properties"
     bl_label = "Load Task Properties"
     bl_options = {"REGISTER", "UNDO"}
-    task: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.tprops = context.scene.BIMTaskTreeProperties
-        self.props.is_task_update_enabled = False
-        for item in self.tprops.tasks:
-            if self.task and item.ifc_definition_id != self.task:
-                continue
-            task = Data.tasks[item.ifc_definition_id]
-            item.name = task["Name"] or "Unnamed"
-            item.identification = task["Identification"] or "XXX"
-            if self.props.active_task_id:
-                item.is_predecessor = self.props.active_task_id in [
-                    Data.sequences[r]["RelatedProcess"] for r in task["IsPredecessorTo"]
-                ]
-                item.is_successor = self.props.active_task_id in [
-                    Data.sequences[r]["RelatingProcess"] for r in task["IsSuccessorFrom"]
-                ]
-
-            calendar = ifcopenshell.util.sequence.derive_calendar(self.file.by_id(item.ifc_definition_id))
-            if calendar:
-                calendar = Data.work_calendars[calendar.id()]
-            if task["HasAssignmentsWorkCalendar"]:
-                item.calendar = calendar["Name"] or "Unnamed"
-            else:
-                item.calendar = ""
-                item.derived_calendar = calendar["Name"] or "Unnamed" if calendar else ""
-
-            if task["TaskTime"]:
-                task_time = Data.task_times[task["TaskTime"]]
-                item.start = self.canonicalise_time(task_time["ScheduleStart"])
-                item.finish = self.canonicalise_time(task_time["ScheduleFinish"])
-                item.duration = (
-                    isodate.duration_isoformat(task_time["ScheduleDuration"]) if task_time["ScheduleDuration"] else "-"
-                )
-            else:
-                derived_start = helper.derive_date(item.ifc_definition_id, "ScheduleStart", is_earliest=True)
-                derived_finish = helper.derive_date(item.ifc_definition_id, "ScheduleFinish", is_latest=True)
-                item.derived_start = self.canonicalise_time(derived_start) if derived_start else ""
-                item.derived_finish = self.canonicalise_time(derived_finish) if derived_finish else ""
-                if derived_start and derived_finish and calendar:
-                    derived_duration = ifcopenshell.util.sequence.count_working_days(
-                        derived_start, derived_finish, self.file.by_id(calendar["id"])
-                    )
-                    item.derived_duration = f"P{derived_duration}D"
-                item.start = "-"
-                item.finish = "-"
-                item.duration = "-"
-
-        self.props.is_task_update_enabled = True
+        core.load_task_properties(tool.Sequence)
         return {"FINISHED"}
-
-    def canonicalise_time(self, time):
-        if not time:
-            return "-"
-        return time.strftime("%d/%m/%y")
 
 
 class DisableEditingWorkSchedule(bpy.types.Operator):
@@ -400,44 +211,28 @@ class DisableEditingWorkSchedule(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMWorkScheduleProperties.active_work_schedule_id = 0
+        core.disable_editing_work_schedule(tool.Sequence)
         return {"FINISHED"}
 
 
-class AddTask(bpy.types.Operator):
+class AddTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_task"
     bl_label = "Add Task"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.add_task", self.file, **{"parent_task": self.file.by_id(self.task)})
-        Data.load(self.file)
-        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
-        return {"FINISHED"}
+        core.add_task(tool.Ifc, tool.Sequence, parent_task=tool.Ifc.get().by_id(self.task))
 
 
-class AddSummaryTask(bpy.types.Operator):
+class AddSummaryTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_summary_task"
     bl_label = "Add Task"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.add_task", self.file, **{"work_schedule": self.file.by_id(self.work_schedule)})
-        Data.load(self.file)
-        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
-        return {"FINISHED"}
+        core.add_summary_task(tool.Ifc, tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
 
 
 class ExpandTask(bpy.types.Operator):
@@ -447,13 +242,7 @@ class ExpandTask(bpy.types.Operator):
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        contracted_tasks = json.loads(props.contracted_tasks)
-        contracted_tasks.remove(self.task)
-        props.contracted_tasks = json.dumps(contracted_tasks)
-        Data.load(self.file)
-        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
+        core.expand_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         return {"FINISHED"}
 
 
@@ -464,111 +253,41 @@ class ContractTask(bpy.types.Operator):
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        contracted_tasks = json.loads(props.contracted_tasks)
-        contracted_tasks.append(self.task)
-        props.contracted_tasks = json.dumps(contracted_tasks)
-        Data.load(self.file)
-        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
+        core.contract_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         return {"FINISHED"}
 
 
-class RemoveTask(bpy.types.Operator):
+class RemoveTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_task"
     bl_label = "Remove Task"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.remove_task",
-            self.file,
-            task=IfcStore.get_file().by_id(self.task),
-        )
-        Data.load(self.file)
-        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
-        return {"FINISHED"}
+        core.remove_task(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class EnableEditingTaskTime(bpy.types.Operator):
+class EnableEditingTaskTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_task_time"
     bl_label = "Enable Editing Task Time"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-
-        task_time_id = Data.tasks[self.task]["TaskTime"] or self.add_task_time().id()
-
-        while len(props.task_time_attributes) > 0:
-            props.task_time_attributes.remove(0)
-
-        data = Data.task_times[task_time_id]
-
-        blenderbim.bim.helper.import_attributes("IfcTaskTime", props.task_time_attributes, data, self.import_attributes)
-        props.active_task_time_id = task_time_id
-        props.active_task_id = self.task
-        props.editing_task_type = "TASKTIME"
-        return {"FINISHED"}
-
-    def import_attributes(self, name, prop, data):
-        if prop.data_type == "string":
-            if isinstance(data[name], datetime):
-                prop.string_value = "" if prop.is_null else data[name].isoformat()
-                return True
-            elif isinstance(data[name], isodate.Duration):
-                prop.string_value = (
-                    "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
-                )
-                return True
-
-    def add_task_time(self):
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.by_id(self.task))
-        Data.load(self.file)
-        return task_time
+        core.enable_editing_task_time(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class EditTaskTime(bpy.types.Operator):
+class EditTaskTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_task_time"
     bl_label = "Edit Task Time"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.task_time_attributes, self.export_attributes)
-
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
-            self.file,
-            **{"task_time": self.file.by_id(props.active_task_time_id), "attributes": attributes},
+        core.edit_task_time(
+            tool.Ifc,
+            tool.Sequence,
+            task_time=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_task_time_id),
         )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_task_time()
-        bpy.ops.bim.load_task_properties(task=props.active_task_id)
-        return {"FINISHED"}
-
-    def export_attributes(self, attributes, prop):
-        if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
-            attributes[prop.name] = helper.parse_datetime(prop.string_value)
-            return True
-        elif prop.name == "ScheduleDuration":
-            attributes[prop.name] = helper.parse_duration(prop.string_value)
-            return True
 
 
 class EnableEditingTask(bpy.types.Operator):
@@ -578,15 +297,7 @@ class EnableEditingTask(bpy.types.Operator):
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        while len(props.task_attributes) > 0:
-            props.task_attributes.remove(0)
-
-        data = Data.tasks[self.task]
-
-        blenderbim.bim.helper.import_attributes("IfcTask", props.task_attributes, data)
-        props.active_task_id = self.task
-        props.editing_task_type = "ATTRIBUTES"
+        core.enable_editing_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         return {"FINISHED"}
 
 
@@ -596,228 +307,132 @@ class DisableEditingTask(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMWorkScheduleProperties.active_task_id = 0
-        context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
+        core.disable_editing_task(tool.Sequence)
         return {"FINISHED"}
 
 
-class EditTask(bpy.types.Operator):
+class EditTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_task"
     bl_label = "Edit Task"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.task_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_task", self.file, **{"task": self.file.by_id(props.active_task_id), "attributes": attributes}
+        core.edit_task(
+            tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_task_id)
         )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_task()
-        bpy.ops.bim.load_task_properties(task=props.active_task_id)
-        return {"FINISHED"}
 
 
-class CopyTaskAttribute(bpy.types.Operator):
+class CopyTaskAttribute(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_task_attribute"
     bl_label = "Copy Task Attribute"
     bl_options = {"REGISTER", "UNDO"}
-    data: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        data = json.loads(self.data)
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMTaskTreeProperties
-        for task in props.tasks:
-            if task.is_selected:
-                ifcopenshell.api.run(
-                    "sequence.edit_task",
-                    self.file,
-                    **{
-                        "task": self.file.by_id(task.ifc_definition_id),
-                        "attributes": {data["name"]: None if data["is_null"] else data["value"]},
-                    },
-                )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
+        core.copy_task_attribute(tool.Ifc, tool.Sequence, attribute_name=self.name)
 
 
-class AssignPredecessor(bpy.types.Operator):
+class AssignPredecessor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_predecessor"
     bl_label = "Assign Predecessor"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        rel = ifcopenshell.api.run(
-            "sequence.assign_sequence",
-            self.file,
-            relating_process=IfcStore.get_file().by_id(self.task),
-            related_process=IfcStore.get_file().by_id(props.active_task_id),
-        )
-        Data.load(self.file)
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
+        core.assign_predecessor(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class AssignSuccessor(bpy.types.Operator):
+class AssignSuccessor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_successor"
     bl_label = "Assign Successor"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        rel = ifcopenshell.api.run(
-            "sequence.assign_sequence",
-            self.file,
-            relating_process=IfcStore.get_file().by_id(props.active_task_id),
-            related_process=IfcStore.get_file().by_id(self.task),
-        )
-        Data.load(self.file)
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
+        core.assign_successor(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class UnassignPredecessor(bpy.types.Operator):
+class UnassignPredecessor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_predecessor"
     bl_label = "Unassign Predecessor"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.unassign_sequence",
-            self.file,
-            relating_process=IfcStore.get_file().by_id(self.task),
-            related_process=IfcStore.get_file().by_id(props.active_task_id),
-        )
-        Data.load(self.file)
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
+        core.unassign_predecessor(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class UnassignSuccessor(bpy.types.Operator):
+class UnassignSuccessor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_successor"
     bl_label = "Unassign Successor"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.unassign_sequence",
-            self.file,
-            relating_process=self.file.by_id(props.active_task_id),
-            related_process=self.file.by_id(self.task),
-        )
-        Data.load(self.file)
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
+        core.unassign_successor(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class AssignProduct(bpy.types.Operator):
+class AssignProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_product"
     bl_label = "Assign Product"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    relating_product: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    relating_product: bpy.props.IntProperty()
 
     def _execute(self, context):
-        relating_products = (
-            [bpy.data.objects.get(self.relating_product)] if self.relating_product else context.selected_objects
-        )
-        for relating_product in relating_products:
-            self.file = IfcStore.get_file()
-            ifcopenshell.api.run(
-                "sequence.assign_product",
-                self.file,
-                relating_product=self.file.by_id(relating_product.BIMObjectProperties.ifc_definition_id),
-                related_object=self.file.by_id(self.task),
+        if self.relating_product:
+            core.assign_products(
+                tool.Ifc,
+                tool.Sequence,
+                task=tool.Ifc.get().by_id(self.task),
+                products=[tool.Ifc.get().by_id(self.relating_product)],
             )
-        Data.load(self.file)
-        return {"FINISHED"}
+        else:
+            core.assign_products(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class UnassignProduct(bpy.types.Operator):
+class UnassignProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_product"
     bl_label = "Unassign Product"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    relating_product: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    relating_product: bpy.props.IntProperty()
 
     def _execute(self, context):
-        relating_products = (
-            [bpy.data.objects.get(self.relating_product)] if self.relating_product else context.selected_objects
-        )
-        for relating_product in relating_products:
-            self.file = IfcStore.get_file()
-            ifcopenshell.api.run(
-                "sequence.unassign_product",
-                self.file,
-                relating_product=self.file.by_id(relating_product.BIMObjectProperties.ifc_definition_id),
-                related_object=self.file.by_id(self.task),
+        if self.relating_product:
+            core.unassign_products(
+                tool.Ifc,
+                tool.Sequence,
+                task=tool.Ifc.get().by_id(self.task),
+                products=[tool.Ifc.get().by_id(self.relating_product)],
             )
-        Data.load(self.file)
-        return {"FINISHED"}
+        else:
+            core.unassign_products(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class AssignProcess(bpy.types.Operator):
+class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_process"
     bl_label = "Assign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    related_object_type: bpy.props.StringProperty()
+    related_object: bpy.props.IntProperty()
 
     def _execute(self, context):
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        )
-        for related_object in related_objects:
-            self.file = IfcStore.get_file()
-            ifcopenshell.api.run(
-                "sequence.assign_process",
-                self.file,
-                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
-                relating_process=self.file.by_id(self.task),
-            )
-        Data.load(self.file)
-        return {"FINISHED"}
+        if self.related_object_type == "RESOURCE":
+            core.assign_resource(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        elif self.related_object_type == "PRODUCT":
+            if self.related_object:
+                core.assign_input_products(
+                    tool.Ifc,
+                    tool.Sequence,
+                    task=tool.Ifc.get().by_id(self.task),
+                    products=[tool.Ifc.get().by_id(self.related_object)],
+                )
+            else:
+                core.assign_input_products(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        elif self.related_object_type == "CONTROL":
+            pass  # TODO
 
 
 class UnassignProcess(bpy.types.Operator):
@@ -825,24 +440,34 @@ class UnassignProcess(bpy.types.Operator):
     bl_label = "Unassign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object: bpy.props.StringProperty()
+    related_object_type: bpy.props.StringProperty()
+    related_object: bpy.props.IntProperty()
+    resource: bpy.props.IntProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        )
-        for related_object in related_objects:
-            self.file = IfcStore.get_file()
-            ifcopenshell.api.run(
-                "sequence.unassign_process",
-                self.file,
-                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
-                relating_process=self.file.by_id(self.task),
+        if self.related_object_type == "RESOURCE":
+            core.unassign_resource(
+                tool.Ifc,
+                tool.Sequence,
+                task=tool.Ifc.get().by_id(self.task),
+                resource=tool.Ifc.get().by_id(self.resource),
             )
-        Data.load(self.file)
+
+        elif self.related_object_type == "PRODUCT":
+            if self.related_object:
+                core.unassign_input_products(
+                    tool.Ifc,
+                    tool.Sequence,
+                    task=tool.Ifc.get().by_id(self.task),
+                    products=[tool.Ifc.get().by_id(self.related_object)],
+                )
+            else:
+                core.unassign_input_products(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        elif self.related_object_type == "CONTROL":
+            pass  # TODO
         return {"FINISHED"}
 
 
@@ -863,6 +488,7 @@ class GenerateGanttChart(bpy.types.Operator):
             "USERDEFINED": "FS",
             "NOTDEFINED": "FS",
         }
+        Data.load(self.file)
         for task_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
             self.create_new_task_json(task_id)
         with open(os.path.join(context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
@@ -876,6 +502,7 @@ class GenerateGanttChart(bpy.types.Operator):
         data = {
             "pID": task.id(),
             "pName": task.Name,
+            "pCaption": task.Name,
             "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
             "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
             "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
@@ -886,6 +513,7 @@ class GenerateGanttChart(bpy.types.Operator):
             "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
             "pOpen": 1,
             "pCost": 1,
+            "ifcduration": task.TaskTime.ScheduleDuration if task.TaskTime else "",
         }
         if task.TaskTime and task.TaskTime.IsCritical:
             data["pClass"] = "gtaskred"
@@ -906,58 +534,36 @@ class GenerateGanttChart(bpy.types.Operator):
             self.create_new_task_json(task_id)
 
 
-class AddWorkCalendar(bpy.types.Operator):
+class AddWorkCalendar(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_work_calendar"
     bl_label = "Add Work Calendar"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        ifcopenshell.api.run("sequence.add_work_calendar", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_work_calendar(tool.Ifc)
 
 
-class EditWorkCalendar(bpy.types.Operator):
+class EditWorkCalendar(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_work_calendar"
     bl_label = "Edit Work Calendar"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkCalendarProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.work_calendar_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_work_calendar",
-            self.file,
-            **{"work_calendar": self.file.by_id(props.active_work_calendar_id), "attributes": attributes},
+        core.edit_work_calendar(
+            tool.Ifc,
+            tool.Sequence,
+            work_calendar=tool.Ifc.get().by_id(context.scene.BIMWorkCalendarProperties.active_work_calendar_id),
         )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_work_calendar()
-        return {"FINISHED"}
 
 
-class RemoveWorkCalendar(bpy.types.Operator):
+class RemoveWorkCalendar(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_work_calendar"
     bl_label = "Remove Work Plan"
     bl_options = {"REGISTER", "UNDO"}
     work_calendar: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.remove_work_calendar", self.file, **{"work_calendar": self.file.by_id(self.work_calendar)}
-        )
-        Data.load(self.file)
-        return {"FINISHED"}
+        core.remove_work_calendar(tool.Ifc, work_calendar=tool.Ifc.get().by_id(self.work_calendar))
 
 
 class EnableEditingWorkCalendar(bpy.types.Operator):
@@ -967,15 +573,7 @@ class EnableEditingWorkCalendar(bpy.types.Operator):
     work_calendar: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkCalendarProperties
-        while len(self.props.work_calendar_attributes) > 0:
-            self.props.work_calendar_attributes.remove(0)
-
-        data = Data.work_calendars[self.work_calendar]
-
-        blenderbim.bim.helper.import_attributes("IfcWorkCalendar", self.props.work_calendar_attributes, data)
-        self.props.active_work_calendar_id = self.work_calendar
-        self.props.editing_type = "ATTRIBUTES"
+        core.enable_editing_work_calendar(tool.Sequence, work_calendar=tool.Ifc.get().by_id(self.work_calendar))
         return {"FINISHED"}
 
 
@@ -985,7 +583,7 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMWorkCalendarProperties.active_work_calendar_id = 0
+        core.disable_editing_work_calendar(tool.Sequence)
         return {"FINISHED"}
 
 
@@ -995,6 +593,11 @@ class ImportP6(bpy.types.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
 
     def execute(self, context):
         from ifc4d.p62ifc import P62Ifc
@@ -1011,12 +614,71 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
+class ImportP6XER(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_p6xer.bim"
+    bl_label = "Import P6 XER"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xer"
+    filter_glob: bpy.props.StringProperty(default="*.xer", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.p6xer2ifc import P6XER2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        p6xer2ifc = P6XER2Ifc()
+        p6xer2ifc.xer = self.filepath
+        p6xer2ifc.file = self.file
+        p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
+        p6xer2ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
+class ImportPP(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_pp.bim"
+    bl_label = "Import Powerproject pp"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".pp"
+    filter_glob: bpy.props.StringProperty(default="*.pp", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.pp2ifc import PP2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        pp2ifc = PP2Ifc()
+        pp2ifc.pp = self.filepath
+        pp2ifc.file = self.file
+        pp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
+        pp2ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
 class ImportMSP(bpy.types.Operator, ImportHelper):
     bl_idname = "import_msp.bim"
     bl_label = "Import MSP"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
 
     def execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
@@ -1033,6 +695,65 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
+class ExportMSP(bpy.types.Operator, ImportHelper):
+    bl_idname = "export_msp.bim"
+    bl_label = "Export MSP"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xml"
+    filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+    holiday_start_date: bpy.props.StringProperty(default="2022-01-01", name="Holiday Start Date")
+    holiday_finish_date: bpy.props.StringProperty(default="2023-01-01", name="Holiday Finish Date")
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.ifc2msp import Ifc2Msp
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        ifc2msp = Ifc2Msp()
+        ifc2msp.work_schedule = self.file.by_type("IfcWorkSchedule")[0]
+        ifc2msp.xml = bpy.path.ensure_ext(self.filepath, ".xml")
+        ifc2msp.file = self.file
+        ifc2msp.holiday_start_date = parser.parse(self.holiday_start_date).date()
+        ifc2msp.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
+        ifc2msp.execute()
+        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
+class ExportP6(bpy.types.Operator, ImportHelper):
+    bl_idname = "export_p6.bim"
+    bl_label = "Export P6"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xml"
+    filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+    holiday_start_date: bpy.props.StringProperty(default="2022-01-01", name="Holiday Start Date")
+    holiday_finish_date: bpy.props.StringProperty(default="2023-01-01", name="Holiday Finish Date")
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.ifc2p6 import Ifc2P6
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        ifc2p6 = Ifc2P6()
+        ifc2p6.xml = bpy.path.ensure_ext(self.filepath, ".xml")
+        ifc2p6.file = self.file
+        ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
+        ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
+        ifc2p6.execute()
+        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
 class EnableEditingWorkCalendarTimes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_calendar_times"
     bl_label = "Enable Editing Work Calendar Times"
@@ -1040,31 +761,19 @@ class EnableEditingWorkCalendarTimes(bpy.types.Operator):
     work_calendar: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkCalendarProperties
-        props.active_work_calendar_id = self.work_calendar
-        props.editing_type = "WORKTIMES"
+        core.enable_editing_work_calendar_times(tool.Sequence, work_calendar=tool.Ifc.get().by_id(self.work_calendar))
         return {"FINISHED"}
 
 
-class AddWorkTime(bpy.types.Operator):
+class AddWorkTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_work_time"
     bl_label = "Add Work Time"
     bl_options = {"REGISTER", "UNDO"}
     work_calendar: bpy.props.IntProperty()
     time_type: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.add_work_time",
-            self.file,
-            **{"work_calendar": self.file.by_id(self.work_calendar), "time_type": self.time_type},
-        )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_work_time(tool.Ifc, work_calendar=tool.Ifc.get().by_id(self.work_calendar), time_type=self.time_type)
 
 
 class EnableEditingWorkTime(bpy.types.Operator):
@@ -1074,64 +783,8 @@ class EnableEditingWorkTime(bpy.types.Operator):
     work_time: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkCalendarProperties
-        while len(self.props.work_time_attributes) > 0:
-            self.props.work_time_attributes.remove(0)
-
-        data = Data.work_times[self.work_time]
-
-        blenderbim.bim.helper.import_attributes(
-            "IfcWorkTime", self.props.work_time_attributes, data, self.import_attributes
-        )
-
-        self.initialise_recurrence_components()
-        self.load_recurrence_pattern_data(data)
-        self.props.active_work_time_id = self.work_time
+        core.enable_editing_work_time(tool.Sequence, work_time=tool.Ifc.get().by_id(self.work_time))
         return {"FINISHED"}
-
-    def import_attributes(self, name, prop, data):
-        if name in ["Start", "Finish"]:
-            prop.string_value = "" if prop.is_null else data[name].isoformat()
-            return True
-
-    def initialise_recurrence_components(self):
-        if len(self.props.day_components) == 0:
-            for i in range(0, 31):
-                new = self.props.day_components.add()
-                new.name = str(i + 1)
-        if len(self.props.weekday_components) == 0:
-            for d in ["M", "T", "W", "T", "F", "S", "S"]:
-                new = self.props.weekday_components.add()
-                new.name = d
-        if len(self.props.month_components) == 0:
-            for m in ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]:
-                new = self.props.month_components.add()
-                new.name = m
-
-    def load_recurrence_pattern_data(self, work_time):
-        self.props.position = 0
-        self.props.interval = 0
-        self.props.occurrences = 0
-        self.props.start_time = ""
-        self.props.end_time = ""
-        for component in self.props.day_components:
-            component.is_specified = False
-        for component in self.props.weekday_components:
-            component.is_specified = False
-        for component in self.props.month_components:
-            component.is_specified = False
-        if not work_time["RecurrencePattern"]:
-            return
-        recurrence_pattern = Data.recurrence_patterns[work_time["RecurrencePattern"]]
-        for attribute in ["Position", "Interval", "Occurrences"]:
-            if recurrence_pattern[attribute]:
-                setattr(self.props, attribute.lower(), recurrence_pattern[attribute])
-        for component in recurrence_pattern["DayComponent"] or []:
-            self.props.day_components[component - 1].is_specified = True
-        for component in recurrence_pattern["WeekdayComponent"] or []:
-            self.props.weekday_components[component - 1].is_specified = True
-        for component in recurrence_pattern["MonthComponent"] or []:
-            self.props.month_components[component - 1].is_specified = True
 
 
 class DisableEditingWorkTime(bpy.types.Operator):
@@ -1140,82 +793,27 @@ class DisableEditingWorkTime(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMWorkCalendarProperties.active_work_time_id = 0
+        core.disable_editing_work_time(tool.Sequence)
         return {"FINISHED"}
 
 
-class EditWorkTime(bpy.types.Operator):
+class EditWorkTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_work_time"
     bl_label = "Edit Work Time"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.props = context.scene.BIMWorkCalendarProperties
-        attributes = blenderbim.bim.helper.export_attributes(self.props.work_time_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_work_time",
-            self.file,
-            **{"work_time": self.file.by_id(self.props.active_work_time_id), "attributes": attributes},
-        )
-
-        work_time = Data.work_times[self.props.active_work_time_id]
-        if work_time["RecurrencePattern"]:
-            self.edit_recurrence_pattern(work_time["RecurrencePattern"])
-
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_work_time()
-        return {"FINISHED"}
-
-    def edit_recurrence_pattern(self, recurrence_pattern_id):
-        recurrence_pattern = self.file.by_id(recurrence_pattern_id)
-        attributes = {
-            "Interval": self.props.interval if self.props.interval > 0 else None,
-            "Occurrences": self.props.occurrences if self.props.occurrences > 0 else None,
-        }
-        applicable_data = {
-            "DAILY": ["Interval", "Occurrences"],
-            "WEEKLY": ["WeekdayComponent", "Interval", "Occurrences"],
-            "MONTHLY_BY_DAY_OF_MONTH": ["DayComponent", "Interval", "Occurrences"],
-            "MONTHLY_BY_POSITION": ["WeekdayComponent", "Position", "Interval", "Occurrences"],
-            "BY_DAY_COUNT": ["Interval", "Occurrences"],
-            "BY_WEEKDAY_COUNT": ["WeekdayComponent", "Interval", "Occurrences"],
-            "YEARLY_BY_DAY_OF_MONTH": ["DayComponent", "MonthComponent", "Interval", "Occurrences"],
-            "YEARLY_BY_POSITION": ["WeekdayComponent", "MonthComponent", "Position", "Interval", "Occurrences"],
-        }
-        if "Position" in applicable_data[recurrence_pattern.RecurrenceType]:
-            attributes["Position"] = self.props.position if self.props.position != 0 else None
-        if "DayComponent" in applicable_data[recurrence_pattern.RecurrenceType]:
-            attributes["DayComponent"] = [i + 1 for i, c in enumerate(self.props.day_components) if c.is_specified]
-        if "WeekdayComponent" in applicable_data[recurrence_pattern.RecurrenceType]:
-            attributes["WeekdayComponent"] = [
-                i + 1 for i, c in enumerate(self.props.weekday_components) if c.is_specified
-            ]
-        if "MonthComponent" in applicable_data[recurrence_pattern.RecurrenceType]:
-            attributes["MonthComponent"] = [i + 1 for i, c in enumerate(self.props.month_components) if c.is_specified]
-        ifcopenshell.api.run(
-            "sequence.edit_recurrence_pattern",
-            self.file,
-            **{"recurrence_pattern": recurrence_pattern, "attributes": attributes},
-        )
+        core.edit_work_time(tool.Ifc, tool.Sequence)
 
 
-class RemoveWorkTime(bpy.types.Operator):
+class RemoveWorkTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_work_time"
     bl_label = "Remove Work Plan"
     bl_options = {"REGISTER", "UNDO"}
     work_time: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.remove_work_time", self.file, **{"work_time": self.file.by_id(self.work_time)})
-        Data.load(self.file)
+        core.remove_work_time(tool.Ifc, work_time=tool.Ifc.get().by_id(self.work_time))
         return {"FINISHED"}
 
 
@@ -1230,13 +828,9 @@ class AssignRecurrencePattern(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.assign_recurrence_pattern",
-            self.file,
-            **{"parent": self.file.by_id(self.work_time), "recurrence_type": self.recurrence_type},
+        core.assign_recurrence_pattern(
+            tool.Ifc, work_time=tool.Ifc.get().by_id(self.work_time), recurrence_type=self.recurrence_type
         )
-        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -1250,66 +844,28 @@ class UnassignRecurrencePattern(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.unassign_recurrence_pattern",
-            self.file,
-            **{"recurrence_pattern": self.file.by_id(self.recurrence_pattern)},
-        )
-        Data.load(self.file)
+        core.unassign_recurrence_pattern(tool.Ifc, recurrence_pattern=tool.Ifc.get().by_id(self.recurrence_pattern))
         return {"FINISHED"}
 
 
-class AddTimePeriod(bpy.types.Operator):
+class AddTimePeriod(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_time_period"
     bl_label = "Add Time Period"
     bl_options = {"REGISTER", "UNDO"}
     recurrence_pattern: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.props = context.scene.BIMWorkCalendarProperties
-        self.file = IfcStore.get_file()
-        try:
-            start_time = parser.parse(self.props.start_time)
-            end_time = parser.parse(self.props.end_time)
-        except:
-            return {"FINISHED"}
-        ifcopenshell.api.run(
-            "sequence.add_time_period",
-            self.file,
-            **{
-                "recurrence_pattern": self.file.by_id(self.recurrence_pattern),
-                "start_time": start_time,
-                "end_time": end_time,
-            },
-        )
-        self.props.start_time = ""
-        self.props.end_time = ""
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_time_period(tool.Ifc, tool.Sequence, recurrence_pattern=tool.Ifc.get().by_id(self.recurrence_pattern))
 
 
-class RemoveTimePeriod(bpy.types.Operator):
+class RemoveTimePeriod(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_time_period"
     bl_label = "Remove Time Period"
     bl_options = {"REGISTER", "UNDO"}
     time_period: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.remove_time_period",
-            self.file,
-            **{"time_period": self.file.by_id(self.time_period)},
-        )
-        Data.load(self.file)
-        return {"FINISHED"}
+        core.remove_time_period(tool.Ifc, time_period=tool.Ifc.get().by_id(self.time_period))
 
 
 class EnableEditingTaskCalendar(bpy.types.Operator):
@@ -1319,64 +875,40 @@ class EnableEditingTaskCalendar(bpy.types.Operator):
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        props.active_task_id = self.task
-        props.editing_task_type = "CALENDAR"
+        core.enable_editing_task_calendar(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         return {"FINISHED"}
 
 
-class EditTaskCalendar(bpy.types.Operator):
+class EditTaskCalendar(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_task_calendar"
     bl_label = "Edit Task Calendar"
     bl_options = {"REGISTER", "UNDO"}
     work_calendar: bpy.props.IntProperty()
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        task = self.file.by_id(self.task)
-        ifcopenshell.api.run(
-            "control.assign_control",
-            self.file,
-            **{
-                "relating_control": self.file.by_id(self.work_calendar),
-                "related_object": task,
-            },
+        core.edit_task_calendar(
+            tool.Ifc,
+            tool.Sequence,
+            task=tool.Ifc.get().by_id(self.task),
+            work_calendar=tool.Ifc.get().by_id(self.work_calendar),
         )
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
 
 
-class RemoveTaskCalendar(bpy.types.Operator):
+class RemoveTaskCalendar(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_task_calendar"
     bl_label = "Remove Task Calendar"
     bl_options = {"REGISTER", "UNDO"}
     work_calendar: bpy.props.IntProperty()
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        task = self.file.by_id(self.task)
-        ifcopenshell.api.run(
-            "control.unassign_control",
-            self.file,
-            **{
-                "relating_control": self.file.by_id(self.work_calendar),
-                "related_object": task,
-            },
+        core.remove_task_calendar(
+            tool.Ifc,
+            tool.Sequence,
+            task=tool.Ifc.get().by_id(self.task),
+            work_calendar=tool.Ifc.get().by_id(self.work_calendar),
         )
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
 
 
 class EnableEditingTaskSequence(bpy.types.Operator):
@@ -1385,10 +917,7 @@ class EnableEditingTaskSequence(bpy.types.Operator):
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        props.active_task_id = self.task
-        props.editing_task_type = "SEQUENCE"
-        bpy.ops.bim.load_task_properties()
+        core.enable_editing_task_sequence(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         return {"FINISHED"}
 
 
@@ -1398,8 +927,7 @@ class DisableEditingTaskTime(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
-        bpy.ops.bim.disable_editing_task()
+        core.disable_editing_task_time(tool.Sequence)
         return {"FINISHED"}
 
 
@@ -1410,139 +938,67 @@ class EnableEditingSequenceAttributes(bpy.types.Operator):
     sequence: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.props.active_sequence_id = self.sequence
-        self.props.editing_sequence_type = "ATTRIBUTES"
-        while len(self.props.sequence_attributes) > 0:
-            self.props.sequence_attributes.remove(0)
-        self.enable_editing_sequence_attributes()
+        core.enable_editing_sequence_attributes(tool.Sequence, rel_sequence=tool.Ifc.get().by_id(self.sequence))
         return {"FINISHED"}
-
-    def enable_editing_sequence_attributes(self):
-        data = Data.sequences[self.sequence]
-        blenderbim.bim.helper.import_attributes("IfcRelSequence", self.props.sequence_attributes, data)
 
 
 class EnableEditingSequenceTimeLag(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_sequence_time_lag"
+    bl_idname = "bim.enable_editing_sequence_lag_time"
     bl_label = "Enable Editing Sequence Time Lag"
     bl_options = {"REGISTER", "UNDO"}
     sequence: bpy.props.IntProperty()
     lag_time: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.props.active_sequence_id = self.sequence
-        self.props.editing_sequence_type = "TIME_LAG"
-        while len(self.props.time_lag_attributes) > 0:
-            self.props.time_lag_attributes.remove(0)
-        self.enable_editing_attributes()
+        core.enable_editing_sequence_lag_time(
+            tool.Sequence,
+            rel_sequence=tool.Ifc.get().by_id(self.sequence),
+            lag_time=tool.Ifc.get().by_id(self.lag_time),
+        )
         return {"FINISHED"}
 
-    def enable_editing_attributes(self):
-        data = Data.lag_times[self.lag_time]
-        blenderbim.bim.helper.import_attributes(
-            "IfcLagTime", self.props.time_lag_attributes, data, self.import_attributes
-        )
 
-    def import_attributes(self, name, prop, data):
-        if name == "LagValue":
-            if isinstance(data[name], isodate.Duration):
-                prop.data_type = "string"
-                prop.string_value = (
-                    "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
-                )
-                return True
-            else:
-                prop.data_type = "float"
-                prop.float_value = 0.0 if prop.is_null else data[name]
-                return True
-
-
-class UnassignLagTime(bpy.types.Operator):
+class UnassignLagTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_lag_time"
     bl_label = "Unassign Time Lag"
     bl_options = {"REGISTER", "UNDO"}
     sequence: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.unassign_lag_time", self.file, **{"rel_sequence": self.file.by_id(self.sequence)}
-        )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
+        core.unassign_lag_time(tool.Ifc, tool.Sequence, rel_sequence=tool.Ifc.get().by_id(self.sequence))
 
 
-class AssignLagTime(bpy.types.Operator):
+class AssignLagTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_lag_time"
     bl_label = "Assign Time Lag"
     bl_options = {"REGISTER", "UNDO"}
     sequence: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.assign_lag_time",
-            self.file,
-            **{"rel_sequence": self.file.by_id(self.sequence), "lag_value": "P0D"},
-        )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.assign_lag_time(tool.Ifc, rel_sequence=tool.Ifc.get().by_id(self.sequence))
 
 
-class EditSequenceAttributes(bpy.types.Operator):
+class EditSequenceAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_sequence_attributes"
     bl_label = "Edit Sequence"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.sequence_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_sequence",
-            self.file,
-            **{"rel_sequence": self.file.by_id(props.active_sequence_id), "attributes": attributes},
+        core.edit_sequence_attributes(
+            tool.Ifc,
+            tool.Sequence,
+            rel_sequence=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_sequence_id),
         )
-        Data.load(self.file)
-        bpy.ops.bim.disable_editing_sequence()
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
 
 
-class EditSequenceTimeLag(bpy.types.Operator):
-    bl_idname = "bim.edit_sequence_time_lag"
+class EditSequenceTimeLag(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_sequence_lag_time"
     bl_label = "Edit Time Lag"
     bl_options = {"REGISTER", "UNDO"}
     lag_time: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.time_lag_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_lag_time",
-            self.file,
-            **{"lag_time": self.file.by_id(self.lag_time), "attributes": attributes},
-        )
-        Data.load(self.file)
-        bpy.ops.bim.disable_editing_sequence()
-        bpy.ops.bim.load_task_properties()
-        return {"FINISHED"}
+        core.edit_sequence_lag_time(tool.Ifc, tool.Sequence, lag_time=tool.Ifc.get().by_id(self.lag_time))
 
 
 class DisableEditingSequence(bpy.types.Operator):
@@ -1551,29 +1007,28 @@ class DisableEditingSequence(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMWorkScheduleProperties.active_sequence_id = 0
+        core.disable_editing_rel_sequence(tool.Sequence)
         return {"FINISHED"}
 
 
-class SelectTaskRelatedProducts(bpy.types.Operator):
+class SelectTaskRelatedProducts(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_task_related_products"
-    bl_label = "Select Similar Type"
+    bl_label = "Select All Output Products"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+    type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task), type=self.type)
+
+class SelectTaskRelatedInputs(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_task_related_inputs"
+    bl_label = "Select All Input Products"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        related_products = ifcopenshell.api.run(
-            "sequence.get_related_products", self.file, **{"related_object": self.file.by_id(self.task)}
-        )
-        for obj in context.visible_objects:
-            obj.select_set(False)
-            if obj.BIMObjectProperties.ifc_definition_id in related_products:
-                obj.select_set(True)
-        return {"FINISHED"}
+        core.select_task_inputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
 class VisualiseWorkScheduleDate(bpy.types.Operator):
@@ -1617,8 +1072,8 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
         for rel in task.IsNestedBy or []:
             for related_object in rel.RelatedObjects:
                 self.preprocess_task(related_object)
-        start = helper.derive_date(task.id(), "ScheduleStart", is_earliest=True)
-        finish = helper.derive_date(task.id(), "ScheduleFinish", is_latest=True)
+        start = helper.derive_date(task, "ScheduleStart", is_earliest=True)
+        finish = helper.derive_date(task, "ScheduleFinish", is_latest=True)
         if not start or not finish:
             return
         products = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
@@ -1647,33 +1102,58 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         self.start_frame = 1
         self.total_frames = self.calculate_total_frames(context)
         self.preprocess_tasks()
+
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
+            self.earliest_frame = None
             product_frames = self.product_frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
             for product_frame in product_frames:
                 if product_frame["relationship"] == "input":
                     self.animate_input(obj, product_frame)
                 elif product_frame["relationship"] == "output":
                     self.animate_output(obj, product_frame)
+        self.add_text_animation_handler()
 
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         context.scene.frame_start = self.start_frame
-        context.scene.frame_end = self.start_frame + self.total_frames
+        context.scene.frame_end = int(self.start_frame + self.total_frames)
+        # with open("/home/dion/animation.json", "w") as json_file:
+        #    guid_frames = {}
+        #    for k, v in self.product_frames.items():
+        #        guid_frames[self.file.by_id(k).GlobalId] = v
+        #    json.dump(guid_frames, json_file)
         return {"FINISHED"}
+
+    def add_text_animation_handler(self):
+        data = bpy.data.curves.get("Timeline")
+        if not data:
+            data = bpy.data.curves.new(type="FONT", name="Timeline")
+        obj = bpy.data.objects.get("Timeline")
+        if not obj:
+            obj = bpy.data.objects.new(name="Timeline", object_data=data)
+            bpy.context.scene.collection.objects.link(obj)
+        obj.data.BIMDateTextProperties.start_frame = self.start_frame
+        obj.data.BIMDateTextProperties.total_frames = int(self.total_frames)
+        obj.data.BIMDateTextProperties.start = self.props.visualisation_start
+        obj.data.BIMDateTextProperties.finish = self.props.visualisation_finish
+        bpy.app.handlers.frame_change_post.append(animate_text)
+
+    def remove_text_animation_handler(self):
+        bpy.app.handlers.frame_change_post.remove(animate_text)
 
     def animate_input(self, obj, product_frame):
         if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
             self.animate_movement_from(obj, product_frame)
+        elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
+            self.animate_destruction(obj, product_frame)
         else:
             self.animate_consumption(obj, product_frame)
 
     def animate_output(self, obj, product_frame):
-        if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION"]:
+        if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             self.animate_creation(obj, product_frame)
-        elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
-            self.animate_destruction(obj, product_frame)
         elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
             self.animate_operation(obj, product_frame)
         elif product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
@@ -1682,29 +1162,45 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
             self.animate_operation(obj, product_frame)
 
     def animate_creation(self, obj, product_frame):
-        obj.hide_viewport = True
-        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+            obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.hide_viewport = False
+        obj.hide_render = False
         obj.color = (0.0, 1.0, 0.0, 1)
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"])
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_destruction(self, obj, product_frame):
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.hide_viewport = False
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="color", frame=self.start_frame)
+            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+            obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def animate_operation(self, obj, product_frame):
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.keyframe_insert(data_path="color", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (0.0, 0.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
@@ -1712,36 +1208,58 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_movement_to(self, obj, product_frame):
-        obj.hide_viewport = True
-        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+            obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.hide_viewport = False
+        obj.hide_render = False
         obj.color = (1.0, 1.0, 0.0, 1)
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"])
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_movement_from(self, obj, product_frame):
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.keyframe_insert(data_path="color", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
+        obj.hide_viewport = False
+        obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.5, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def animate_consumption(self, obj, product_frame):
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.keyframe_insert(data_path="color", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
+        obj.hide_viewport = False
+        obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"] - 1)
         obj.color = (0.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def calculate_total_frames(self, context):
         if self.props.speed_types == "FRAME_SPEED":
@@ -1788,17 +1306,15 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         for rel in task.IsNestedBy or []:
             for related_object in rel.RelatedObjects:
                 self.preprocess_task(related_object)
-        start = helper.derive_date(task.id(), "ScheduleStart", is_earliest=True)
-        finish = helper.derive_date(task.id(), "ScheduleFinish", is_latest=True)
+        start = helper.derive_date(task, "ScheduleStart", is_earliest=True)
+        finish = helper.derive_date(task, "ScheduleFinish", is_latest=True)
         if not start or not finish:
             return
-        output_ids = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
-        for output_id in output_ids:
+        if not Data.is_loaded:
+            Data.load(self.file)  # TO DO: REFACTOR OPERATOR
+        for output_id in Data.tasks[task.id()]["Outputs"]:
             self.add_product_frame(output_id, task, start, finish, "output")
-
-        input_ids = []
-        [input_ids.extend([o.id() for o in r.RelatedObjects]) for r in task.OperatesOn or []]
-        for input_id in input_ids:
+        for input_id in Data.tasks[task.id()]["Inputs"]:
             self.add_product_frame(input_id, task, start, finish, "input")
 
     def add_product_frame(self, product_id, task, start, finish, relationship):
@@ -1817,17 +1333,17 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
     bl_idname = "bim.datepicker"
     bl_options = {"REGISTER", "UNDO"}
     display_date: bpy.props.StringProperty(name="Display Date")
-    selected_date: bpy.props.StringProperty(name="Selected Date")
     target_prop: bpy.props.StringProperty(name="Target date prop to set")
 
     def execute(self, context):
-        helper.set_scene_prop(self.target_prop, self.selected_date)
+        try:
+            value = parser.parse(context.scene.DatePickerProperties.selected_date, dayfirst=True, fuzzy=True)
+            self.set_scene_prop(self.target_prop, helper.canonicalise_time(value))
+        except:
+            pass
         return {"FINISHED"}
 
     def draw(self, context):
-        self.selected_date = helper.get_scene_prop("DatePickerProperties.selected_date") or helper.canonicalise_time(
-            datetime.now()
-        )
         current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
         current_month = (current_date.year, current_date.month)
         lines = calendar.monthcalendar(*current_month)
@@ -1835,7 +1351,7 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
 
         layout = self.layout
         row = layout.row()
-        row.prop(self, "selected_date")
+        row.prop(context.scene.DatePickerProperties, "selected_date")
 
         split = layout.split()
         col = split.row()
@@ -1867,10 +1383,22 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
                     op.selected_date = helper.canonicalise_time(selected_date)
 
     def invoke(self, context, event):
-        self.display_date = helper.get_scene_prop(self.target_prop) or helper.canonicalise_time(datetime.now())
+        self.display_date = self.get_scene_prop(self.target_prop) or helper.canonicalise_time(datetime.now())
         context.scene.DatePickerProperties.display_date = self.display_date
         context.scene.DatePickerProperties.selected_date = self.display_date
         return context.window_manager.invoke_props_dialog(self)
+
+    def get_scene_prop(self, prop_path):
+        prop = bpy.context.scene.get(prop_path.split(".")[0])
+        for part in prop_path.split(".")[1:]:
+            if part:
+                prop = prop.get(part)
+        return prop
+
+    def set_scene_prop(self, prop_path, value):
+        parent = self.get_scene_prop(prop_path[: prop_path.rfind(".")])
+        prop = prop_path.split(".")[-1]
+        parent[prop] = value
 
 
 class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
@@ -1903,22 +1431,14 @@ class BlenderBIM_RedrawDatePicker(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RecalculateSchedule(bpy.types.Operator):
+class RecalculateSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.recalculate_schedule"
     bl_label = "Recalculate Schedule"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.recalculate_schedule", self.file, work_schedule=self.file.by_id(self.work_schedule)
-        )
-        Data.load(self.file)
-        return {"FINISHED"}
+        core.recalculate_schedule(tool.Ifc, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
 
 
 class AddTaskColumn(bpy.types.Operator):
@@ -1930,10 +1450,7 @@ class AddTaskColumn(bpy.types.Operator):
     data_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        new = self.props.columns.add()
-        new.name = f"{self.column_type}.{self.name}"
-        new.data_type = self.data_type
+        core.add_task_column(tool.Sequence, self.column_type, self.name, self.data_type)
         return {"FINISHED"}
 
 
@@ -1944,8 +1461,7 @@ class RemoveTaskColumn(bpy.types.Operator):
     name: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.props.columns.remove(self.props.columns.find(self.name))
+        core.remove_task_column(tool.Sequence, self.name)
         return {"FINISHED"}
 
 
@@ -1956,83 +1472,87 @@ class SetTaskSortColumn(bpy.types.Operator):
     column: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.props.sort_column = self.column
-        bpy.ops.bim.enable_editing_tasks(work_schedule=self.props.active_work_schedule_id)
+        core.set_task_sort_column(tool.Sequence, self.column)
         return {"FINISHED"}
 
 
-class EnableAssigningResources(bpy.types.Operator):
-    bl_idname = "bim.enable_assigning_resources"
-    bl_label = "Enable Assigning Resources To Tasks"
+class LoadTaskResources(bpy.types.Operator):
+    bl_idname = "bim.load_task_resources"
+    bl_label = "Load Task Resources"
     bl_options = {"REGISTER", "UNDO"}
-    task: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.props.active_task_id = self.task
-        self.props.editing_task_type = "RESOURCES"
+        core.load_task_resources(tool.Sequence)
         return {"FINISHED"}
 
 
-class AssignResource(bpy.types.Operator):
-    bl_idname = "bim.assign_resource"
-    bl_label = "Assign Resource"
+class LoadTaskInputs(bpy.types.Operator):
+    bl_idname = "bim.load_task_inputs"
+    bl_label = "Load Task Inputs"
     bl_options = {"REGISTER", "UNDO"}
-    task: bpy.props.IntProperty()
-    parent_resource: bpy.props.IntProperty()
 
     def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+        core.load_task_inputs(tool.Sequence)
+        return {"FINISHED"}
+
+
+class LoadTaskOutputs(bpy.types.Operator):
+    bl_idname = "bim.load_task_outputs"
+    bl_label = "Load Task Outputs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.load_task_outputs(tool.Sequence)
+        return {"FINISHED"}
+    
+class LoadNestedTasksOutputs(bpy.types.Operator):
+    bl_idname = "bim.load_nested_tasks_outputs"
+    bl_label = "Load Task Outputs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.load_nested_tasks_outputs(tool.Sequence)
+        return {"FINISHED"}
+
+
+class CalculateTaskDuration(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_task_duration"
+    bl_label = "Calculate Task Duration"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        resource = ifcopenshell.api.run(
-            "resource.add_resource",
-            self.file,
-            **{
-                "parent_resource": self.file.by_id(self.parent_resource),
-                "ifc_class": self.file.by_id(self.parent_resource).is_a(),
-                "name": self.file.by_id(self.parent_resource).Name + ": " + self.file.by_id(self.task).Name,
-            },
-        )
-        ifcopenshell.api.run(
-            "sequence.assign_process",
-            self.file,
-            **{
-                "related_object": resource,
-                "relating_process": self.file.by_id(self.task),
-            },
-        )
-        Data.load(self.file)
-        ResourceData.load(self.file)
-        bpy.ops.bim.load_resources()
-        return {"FINISHED"}
+        core.calculate_task_duration(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
-class UnassignResource(bpy.types.Operator):
-    bl_idname = "bim.unassign_resource"
-    bl_label = "Unassign Resource"
+
+class HighlightProductRelatedTask(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.highlight_product_related_task"
+    bl_label = "Highlights the related task"
     bl_options = {"REGISTER", "UNDO"}
-    task: bpy.props.IntProperty()
-    resource: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    bl_description = "Finds the related Task"
+    product_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.unassign_process",
-            self.file,
-            related_object=self.file.by_id(self.resource),
-            relating_process=self.file.by_id(self.task),
-        )
-        ifcopenshell.api.run(
-            "resource.remove_resource",
-            self.file,
-            resource=self.file.by_id(self.resource),
-        )
-        Data.load(self.file)
-        ResourceData.load(self.file)
-        bpy.ops.bim.load_resources()
-        return {"FINISHED"}
+        core.highlight_product_related_task(tool.Sequence, product_type=self.product_type)
+
+
+class ExpandAllTasks(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.expand_all_tasks"
+    bl_label = "Expands all tasks"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Finds the related Task"
+    product_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.expand_all_tasks(tool.Sequence)
+
+
+class ContractAllTasks(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.contract_all_tasks"
+    bl_label = "Expands all tasks"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Finds the related Task"
+    product_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.contract_all_tasks(tool.Sequence)

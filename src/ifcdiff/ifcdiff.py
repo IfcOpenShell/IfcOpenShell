@@ -20,64 +20,219 @@
 
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifcdiff.py`
 
-import ifcopenshell
-from deepdiff import DeepDiff
 import time
 import json
+import logging
 import argparse
-import decimal
+import numpy as np
+import multiprocessing
+import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.classification
+import ifcopenshell.util.selector
+from deepdiff import DeepDiff
 
 
 class IfcDiff:
-    def __init__(self, old_file, new_file, output_file, inverse_classes=None):
-        self.old_file = old_file
-        self.new_file = new_file
-        self.output_file = output_file
+    """Main IfcDiff application
+
+    If you are using IfcDiff as a library, this is the class you should use.
+
+    :param old: IFC file object for the old model
+    :type old: ifcopenshell.file.file
+    :param new: IFC file object for the old model
+    :type new: ifcopenshell.file.file
+    :param relationships: List of relationships to check. None means that only
+        geometry is compared.
+    :type relationships: list[string]
+    :param is_shallow: True if you want only the first difference to be listed.
+        False if you want all differences to be checked. Choosing False means
+        that comparisons will take longer.
+    :type is_shallow: bool
+    :param filter_elements: An IFC filter query if you only want to compare a
+        subset of elements. For example: ``.IfcWall`` to only compare walls.
+    :type filter_elements: string
+
+    Example::
+
+        from ifcdiff import IfcDiff
+
+        ifc_diff = IfcDiff("/path/to/old.ifc", "/path/to/new.ifc", "/path/to/diff.json")
+        ifc_diff.diff()
+        print(ifc_diff.change_register)
+        ifc_diff.export()
+    """
+
+    def __init__(self, old, new, relationships=None, is_shallow=True, filter_elements=None):
+        self.old = old
+        self.new = new
         self.change_register = {}
-        self.representation_ids = []
-        self.inverse_classes = inverse_classes
-        self.precision = 2
+        self.representation_ids = {}
+        self.relationships = relationships or ["geometry"]
+        self.precision = 1e-4
+        self.is_shallow = is_shallow
+        self.filter_elements = filter_elements
 
     def diff(self):
-        print("# IFC Diff")
-        self.load()
+        logging.disable(logging.CRITICAL)
 
         self.precision = self.get_precision()
 
-        old_elements = set(e.GlobalId for e in self.old.by_type("IfcProduct"))
-        new_elements = set(e.GlobalId for e in self.new.by_type("IfcProduct"))
+        if self.filter_elements:
+            selector = ifcopenshell.util.selector.Selector()
+            old_elements = set(e.GlobalId for e in selector.parse(self.old, self.filter_elements))
+            new_elements = set(e.GlobalId for e in selector.parse(self.new, self.filter_elements))
+        else:
+            old_elements = self.old.by_type("IfcElement")
+            if self.old.schema == "IFC2X3":
+                old_elements += self.old.by_type("IfcSpatialStructureElement")
+            else:
+                old_elements += self.old.by_type("IfcSpatialElement")
+            old_elements = set(e.GlobalId for e in old_elements if not e.is_a("IfcFeatureElement"))
+            new_elements = self.new.by_type("IfcElement")
+            if self.new.schema == "IFC2X3":
+                new_elements += self.new.by_type("IfcSpatialStructureElement")
+            else:
+                new_elements += self.new.by_type("IfcSpatialElement")
+            new_elements = set(e.GlobalId for e in new_elements if not e.is_a("IfcFeatureElement"))
+
+        print(" - {} item(s) are in the old model".format(len(old_elements)))
+        print(" - {} item(s) are in the new model".format(len(new_elements)))
 
         self.deleted_elements = old_elements - new_elements
         self.added_elements = new_elements - old_elements
         same_elements = new_elements - self.added_elements
         total_same_elements = len(same_elements)
 
-        print(" - {} item(s) were deleted".format(len(self.deleted_elements)))
         print(" - {} item(s) were added".format(len(self.added_elements)))
-        print(" - {} item(s) were retained between the old and new IFC file".format(total_same_elements))
+        print(" - {} item(s) were deleted".format(len(self.deleted_elements)))
+        print(" - {} item(s) are common to both models".format(total_same_elements))
 
-        start = time.time()
         total_diffed = 0
+
+        potential_old_changes = []
+        potential_new_changes = []
+
+        should_check_attributes = False
+        should_check_geometry = False
+        should_check_other = False
+
+        for relationship in self.relationships:
+            if relationship == "attributes":
+                should_check_attributes = True
+            elif relationship == "geometry":
+                should_check_geometry = True
+            else:
+                should_check_other = True
 
         for global_id in same_elements:
             total_diffed += 1
-            print("{}/{} diffed ...".format(total_diffed, total_same_elements), end="\r", flush=True)
-            old_element = self.old.by_id(global_id)
-            new_element = self.new.by_id(global_id)
-            self.diff_element(old_element, new_element)
-            self.diff_element_inverse_relationships(old_element, new_element)
+            if total_diffed % 250 == 0:
+                print("{}/{} diffed ...".format(total_diffed, total_same_elements), end="\r", flush=True)
+            old = self.old.by_id(global_id)
+            new = self.new.by_id(global_id)
+            if should_check_attributes:
+                if self.diff_element(old, new) and self.is_shallow:
+                    continue
+            if should_check_other:
+                if self.diff_element_relationships(old, new) and self.is_shallow:
+                    continue
+            if should_check_geometry:
+                # Option 1: check everything heuristically using the iterator (seems faster)
+                potential_old_changes.append(old)
+                potential_new_changes.append(new)
+                # Option 2: check first using Python, then fallback to iterator (twice as slow)
+                # diff = self.diff_element_basic_geometry(old, new)
+                # if diff:
+                #    self.change_register.setdefault(new.GlobalId, {}).update({"geometry_changed": True})
+                # else:
+                #    potential_old_changes.append(old)
+                #    potential_new_changes.append(new)
 
-            representation_id = self.get_representation_id(new_element)
-            if representation_id in self.representation_ids:
-                continue
-            self.representation_ids.append(representation_id)
-            self.diff_element_geometry(old_element, new_element)
+        print(" - {} item(s) had simple changes".format(len(self.change_register.keys())))
 
-        print(" - {} item(s) were changed either geometrically or with data".format(len(self.change_register.keys())))
-        print("# Diff finished in {:.2f} seconds".format(time.time() - start))
+        if potential_old_changes:
+            print(" - {} item(s) are queued for a detailed geometry check".format(len(potential_old_changes)))
+            print("... processing old shapes ...")
+            old_shapes = self.summarise_shapes(self.old, potential_old_changes)
+            print("... processing new shapes ...")
+            new_shapes = self.summarise_shapes(self.new, potential_new_changes)
+            print("... comparing shapes ...")
+            for global_id, old_shape in old_shapes.items():
+                new_shape = new_shapes.get(global_id, None)
+                if not new_shape:
+                    self.change_register.setdefault(global_id, {}).update({"geometry_changed": True})
+                    continue
+                del new_shapes[global_id]
+                diff = DeepDiff(old_shape, new_shape, math_epsilon=1e-5)
+                if diff:
+                    self.change_register.setdefault(global_id, {}).update({"geometry_changed": True})
+                    continue
 
-    def export(self):
-        with open(self.output_file, "w", encoding="utf-8") as diff_file:
+            for global_id in new_shapes.keys():
+                self.change_register.setdefault(global_id, {}).update({"geometry_changed": True})
+
+        print(" - {} item(s) were changed".format(len(self.change_register.keys())))
+
+        logging.disable(logging.NOTSET)
+
+    def summarise_shapes(self, ifc, elements):
+        shapes = {}
+        iterator = ifcopenshell.geom.iterator(
+            self.get_settings(ifc), ifc, multiprocessing.cpu_count(), include=elements
+        )
+        valid_file = iterator.initialize()
+        while True:
+            shape = iterator.get()
+            element = ifc.by_id(shape.id)
+            geometry = shape.geometry
+            shapes[element.GlobalId] = {
+                "total_verts": len(geometry.verts),
+                "sum_verts": sum(geometry.verts),
+                "min_vert": min(geometry.verts),
+                "max_vert": max(geometry.verts),
+                "matrix": tuple(shape.transformation.matrix.data),
+                "openings": sorted(
+                    [o.RelatedOpeningElement.GlobalId for o in getattr(element, "HasOpenings", []) or []]
+                ),
+                "projections": sorted(
+                    [o.RelatedFeatureElement.GlobalId for o in getattr(element, "HasProjections", []) or []]
+                ),
+            }
+            if not iterator.next():
+                break
+        return shapes
+
+    def get_settings(self, ifc):
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.STRICT_TOLERANCE, True)
+        # Are you feeling lucky?
+        settings.set(settings.DISABLE_BOOLEAN_RESULT, True)
+        # Are you feeling very lucky?
+        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        # Facetation is to accommodate broken Revit files
+        # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
+        body_contexts = [
+            c.id()
+            for c in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if c.ContextIdentifier in ["Body", "Facetation"]
+        ]
+        # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
+        body_contexts.extend(
+            [
+                c.id()
+                for c in ifc.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
+                if c.ContextType == "Model"
+            ]
+        )
+        if body_contexts:
+            settings.set_context_ids(body_contexts)
+        return settings
+
+    def export(self, path):
+        with open(path, "w", encoding="utf-8") as diff_file:
             json.dump(
                 {
                     "added": list(self.added_elements),
@@ -86,121 +241,127 @@ class IfcDiff:
                 },
                 diff_file,
                 indent=4,
-                cls=DiffEncoder,
             )
-
-    def load(self):
-        print("Loading old file ...")
-        self.old = ifcopenshell.open(self.old_file)
-        print("Loading new file ...")
-        self.new = ifcopenshell.open(self.new_file)
 
     def get_precision(self):
-        try:
-            precision = [c for c in self.new.by_type("IfcGeometricRepresentationContext") if c.ContextType == "Model"][
-                0
-            ].Precision
-            exponent = decimal.Decimal(str(precision)).as_tuple().exponent
-            if exponent < 0:
-                return abs(exponent)
-            return 0
-        except:
-            return 2
+        contexts = [c for c in self.new.by_type("IfcGeometricRepresentationContext") if c.ContextType == "Model"]
+        if contexts:
+            return contexts[0].Precision or 1e-4
+        return 1e-4
 
-    def diff_element(self, old_element, new_element):
+    def diff_element(self, old, new):
         diff = DeepDiff(
-            old_element,
-            new_element,
-            significant_digits=self.precision,
+            [a for a in old if not isinstance(a, (ifcopenshell.entity_instance, tuple))],
+            [a for a in new if not isinstance(a, (ifcopenshell.entity_instance, tuple))],
+            math_epsilon=self.precision,
             ignore_string_type_changes=True,
             ignore_numeric_type_changes=True,
-            exclude_regex_paths=[
-                r"root.*id$",
-                r".*Representation.*",
-                r".*OwnerHistory.*",
-                r".*ObjectPlacement.*",
-            ],
         )
-        if diff and new_element.GlobalId:
-            self.change_register.setdefault(new_element.GlobalId, {}).update(diff)
+        if diff and new.GlobalId:
+            self.change_register.setdefault(new.GlobalId, {}).update({"attributes_changed": True})
+            return True
 
-    def diff_element_inverse_relationships(self, old_element, new_element):
-        if not self.inverse_classes:
+    def diff_element_relationships(self, old, new):
+        if not self.relationships:
             return
-        old_relationships_all = self.old.get_inverse(old_element)
-        new_relationships_all = self.new.get_inverse(new_element)
-        if self.inverse_classes[0] == "all":
-            old_relationships = old_relationships_all
-            new_relationships = new_relationships_all
-        else:
-            old_relationships = [x for x in old_relationships_all if x.is_a() in self.inverse_classes]
-            new_relationships = [x for x in new_relationships_all if x.is_a() in self.inverse_classes]
+        for relationship in self.relationships:
+            if relationship == "type":
+                if ifcopenshell.util.element.get_type(old) != ifcopenshell.util.element.get_type(new):
+                    self.change_register.setdefault(new.GlobalId, {}).update({"type_changed": True})
+                    return True
+            elif relationship == "property":
+                old_psets = ifcopenshell.util.element.get_psets(old)
+                new_psets = ifcopenshell.util.element.get_psets(new)
+                try:
+                    diff = DeepDiff(
+                        old_psets,
+                        new_psets,
+                        math_epsilon=self.precision,
+                        ignore_string_type_changes=True,
+                        ignore_numeric_type_changes=True,
+                        exclude_regex_paths=[r".*id$"],
+                    )
+                except:
+                    diff = True
+                if diff and new.GlobalId:
+                    self.change_register.setdefault(new.GlobalId, {}).update({"properties_changed": diff})
+                    return True
+            elif relationship == "container":
+                if ifcopenshell.util.element.get_container(old) != ifcopenshell.util.element.get_container(new):
+                    self.change_register.setdefault(new.GlobalId, {}).update({"container_changed": True})
+                    return True
+            elif relationship == "aggregate":
+                if ifcopenshell.util.element.get_aggregate(old) != ifcopenshell.util.element.get_aggregate(new):
+                    self.change_register.setdefault(new.GlobalId, {}).update({"aggregate_changed": True})
+                    return True
+            elif relationship == "classification":
+                old_id = "ItemReference" if self.old.schema == "IFC2X3" else "Identification"
+                new_id = "ItemReference" if self.new.schema == "IFC2X3" else "Identification"
+                old_refs = [getattr(r, old_id) for r in ifcopenshell.util.classification.get_references(old)]
+                new_refs = [getattr(r, new_id) for r in ifcopenshell.util.classification.get_references(new)]
+                if old_refs != new_refs:
+                    self.change_register.setdefault(new.GlobalId, {}).update({"classification_changed": True})
+                    return True
 
-        diff = DeepDiff(
-            old_relationships,
-            new_relationships,
-            significant_digits=self.precision,
-            ignore_string_type_changes=True,
-            ignore_numeric_type_changes=True,
-            exclude_regex_paths=[
-                r"root.*id$",
-                r".*GlobalId.*",
-                r".*OwnerHistory.*",
-                r".*RelatedObjects.*",
-                r".*RelatingObject.*",
-                r".*RelatingDefinitions.*",
-                r".*RelatedObjectsType.*",  # Deprecated in IFC4 anyway
-            ],
-        )
-        if diff and new_element.GlobalId:
-            self.change_register.setdefault(new_element.GlobalId, {}).update(diff)
+    def diff_element_basic_geometry(self, old, new):
+        old_placement = ifcopenshell.util.placement.get_local_placement(old.ObjectPlacement)
+        new_placement = ifcopenshell.util.placement.get_local_placement(new.ObjectPlacement)
+        if not np.allclose(old_placement[:, 3], new_placement[:, 3], atol=self.precision):
+            return True
+        if not np.allclose(old_placement[0:3, 0:3], new_placement[0:3, 0:3], atol=1e-2):
+            return True
+        old_openings = sorted([o.RelatedOpeningElement.GlobalId for o in getattr(old, "HasOpenings", []) or []])
+        new_openings = sorted([o.RelatedOpeningElement.GlobalId for o in getattr(new, "HasOpenings", []) or []])
+        if old_openings != new_openings:
+            return True
+        old_projections = sorted([o.RelatedFeatureElement.GlobalId for o in getattr(old, "HasProjections", []) or []])
+        new_projections = sorted([o.RelatedFeatureElement.GlobalId for o in getattr(new, "HasProjections", []) or []])
+        if old_projections != new_projections:
+            return True
+        # Option 3: check completely using Python with get_info_2 (extremely slow, not worth it)
+        # old_rep_id = self.get_representation_id(old)
+        # new_rep_id = self.get_representation_id(new)
+        # rep_result = self.representation_ids.get(new_rep_id, None)
+        # if rep_result is not None:
+        #    return rep_result
+        # if type(old_rep_id) != type(new_rep_id):
+        #    self.representation_ids[new_rep_id] = True
+        #    return True
+        # if new_rep_id is None:
+        #    return
+        # result = self.diff_representation(old_rep_id, new_rep_id) or False
+        # self.representation_ids[new_rep_id] = result
+        # return result
 
-    def diff_element_geometry(self, old_element, new_element):
+    def diff_representation(self, old_rep_id, new_rep_id):
+        old_rep = self.old.by_id(old_rep_id)
+        new_rep = self.new.by_id(new_rep_id)
+        if len(old_rep.Items) != len(new_rep.Items):
+            return True
+        for i, old_item in enumerate(old_rep.Items):
+            result = self.diff_representation_item(old_item, new_rep.Items[i])
+            if result is True:
+                return True
+
+    def diff_representation_item(self, old_item, new_item):
+        if old_item.is_a() != new_item.is_a():
+            return True
         try:
-            DeepDiff(
-                old_element.ObjectPlacement,
-                new_element.ObjectPlacement,
-                terminate_on_first=True,
-                significant_digits=self.precision,
-                ignore_string_type_changes=True,
-                ignore_numeric_type_changes=True,
-                exclude_regex_paths=r"root.*id$",
-            )
-            DeepDiff(
-                old_element.Representation,
-                new_element.Representation,
-                terminate_on_first=True,
-                skip_after_n=1000,  # Arbitrary value to "skim" check
-                significant_digits=self.precision,
-                ignore_string_type_changes=True,
-                ignore_numeric_type_changes=True,
-                exclude_regex_paths=r"root.*id$",
-            )
-            DeepDiff(
-                old_element.HasOpenings,
-                new_element.HasOpenings,
-                terminate_on_first=True,
-                significant_digits=self.precision,
-                ignore_string_type_changes=True,
-                ignore_numeric_type_changes=True,
-                exclude_regex_paths=r"root.*id$",
-            )
-            DeepDiff(
-                old_element.HasProjections,
-                new_element.HasProjections,
-                terminate_on_first=True,
-                significant_digits=self.precision,
-                ignore_string_type_changes=True,
-                ignore_numeric_type_changes=True,
-                exclude_regex_paths=r"root.*id$",
+            diff = DeepDiff(
+                old_item.get_info_2(recursive=True),
+                new_item.get_info_2(recursive=True),
+                custom_operators=[DiffTerminator()] if self.is_shallow else [],
+                math_epsilon=self.precision,
+                exclude_regex_paths=[r".*id']$"],
             )
         except:
-            if new_element.GlobalId:
-                return self.change_register.setdefault(new_element.GlobalId, {}).update({"has_geometry_change": True})
+            return True
+        if diff:
+            return True
 
     def get_representation_id(self, element):
         if not element.Representation:
-            return None
+            return
         for representation in element.Representation.Representations:
             if not representation.is_a("IfcShapeRepresentation"):
                 continue
@@ -213,12 +374,13 @@ class IfcDiff:
                 return representation.Items[0].MappingSource.MappedRepresentation.id()
 
 
-class DiffEncoder(json.JSONEncoder):
-    def default(self, obj):
-        try:
-            return json.JSONEncoder.default(self, obj)
-        except:
-            return str(obj)
+class DiffTerminator:
+    def match(self, level) -> bool:
+        return True
+
+    def give_up_diffing(self, level, diff_instance) -> bool:
+        if any(diff_instance.tree.values()):
+            raise Exception("Terminated")
 
 
 if __name__ == "__main__":
@@ -232,11 +394,25 @@ if __name__ == "__main__":
         "-r",
         "--relationships",
         type=str,
-        help='A list of IFC classes to check in inverse relationships, like "IfcRelDefinesByProperties", or "all".',
+        help='A list of space-separated relationships, chosen from "type", "property", "container", "aggregate", "classification"',
         default="",
     )
     args = parser.parse_args()
 
-    ifc_diff = IfcDiff(args.old, args.new, args.output, args.relationships.split())
+    print("# IFC Diff")
+
+    start = time.time()
+    print("Loading old file ...")
+    old = ifcopenshell.open(args.old)
+    print("Loading new file ...")
+    new = ifcopenshell.open(args.new)
+
+    print("# Loading finished in {:.2f} seconds".format(time.time() - start))
+    start = time.time()
+
+    ifc_diff = IfcDiff(old, new, args.relationships.split())
     ifc_diff.diff()
-    ifc_diff.export()
+
+    print("# Diff finished in {:.2f} seconds".format(time.time() - start))
+
+    ifc_diff.export(args.output)

@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -54,33 +72,15 @@ class Usecase:
                 }
             )
 
-        self.map_representations()
+        if getattr(self.settings["relating_type"], "RepresentationMaps", None):
+            ifcopenshell.api.run(
+                "type.map_type_representations",
+                self.file,
+                related_object=self.settings["related_object"],
+                relating_type=self.settings["relating_type"],
+            )
         self.map_material_usages()
-
-    def map_representations(self):
-        if not self.settings["relating_type"].RepresentationMaps:
-            return
-        representations = []
-        if self.settings["related_object"].Representation:
-            representations = self.settings["related_object"].Representation.Representations
-        for representation in representations:
-            # TODO: check if this is right? Surely this can be a single usecase?
-            ifcopenshell.api.run(
-                "geometry.unassign_representation",
-                self.file,
-                **{"product": self.settings["related_object"], "representation": representation}
-            )
-            ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
-        for representation_map in self.settings["relating_type"].RepresentationMaps:
-            representation = representation_map.MappedRepresentation
-            mapped_representation = ifcopenshell.api.run(
-                "geometry.map_representation", self.file, **{"representation": representation}
-            )
-            ifcopenshell.api.run(
-                "geometry.assign_representation",
-                self.file,
-                **{"product": self.settings["related_object"], "representation": mapped_representation}
-            )
+        return types
 
     def map_material_usages(self):
         type_material = ifcopenshell.util.element.get_material(self.settings["relating_type"])

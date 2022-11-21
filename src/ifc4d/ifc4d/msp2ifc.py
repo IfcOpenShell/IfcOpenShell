@@ -1,4 +1,3 @@
-
 # Ifc4D - IFC scheduling utility
 # Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -33,10 +32,9 @@ class MSP2Ifc:
         self.work_plan = None
         self.project = {}
         self.calendars = {}
-        self.wbs = {}
-        self.root_activites = []
         self.tasks = {}
-        self.relationships = {}
+        self.resources = {}
+        self.RESOURCE_TYPES_MAPPING = {"1": "LABOR", "0": "MATERIAL", "2": None}
 
     def execute(self):
         self.parse_xml()
@@ -46,11 +44,15 @@ class MSP2Ifc:
         tree = ET.parse(self.xml)
         project = tree.getroot()
         self.ns = {"pr": project.tag[1:].partition("}")[0]}
-        self.project["Name"] = project.find("pr:Name", self.ns).text
+        self.project["Name"] = project.findtext("pr:Name", namespaces=self.ns) or "Unnamed"
+        self.project["CalendarUID"] = project.findtext("pr:CalendarUID", namespaces=self.ns) or None
+        self.project["MinutesPerDay"] = project.findtext("pr:MinutesPerDay", namespaces=self.ns) or None
         self.outline_level = 0
         self.outline_parents = {}
         self.parse_task_xml(project)
         self.parse_calendar_xml(project)
+        # TODO Doesn't do anything right now
+        # self.parse_resources_xml(project)
 
     def parse_relationship_xml(self, task):
         relationships = {}
@@ -65,6 +67,11 @@ class MSP2Ifc:
         return relationships
 
     def parse_task_xml(self, project):
+        if self.project["MinutesPerDay"]:
+            hours_per_day = int(self.project["MinutesPerDay"]) / 60
+        else:
+            hours_per_day = 8
+
         for task in project.find("pr:Tasks", self.ns):
             task_id = task.find("pr:UID", self.ns).text
             task_index_level = task.find("pr:OutlineLevel", self.ns).text
@@ -78,13 +85,20 @@ class MSP2Ifc:
             self.outline_level = outline_level
             self.outline_parents[outline_level] = task_id
 
+            # Microsoft Project stores durations in terms of hours.
+            duration = ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text)
+            hours = duration.days * 24
+            hours += duration.seconds / 60 / 60
+            # Let's convert it into days, where days is the appropriate hours per day
+            duration = timedelta(days=hours / float(hours_per_day))
+
             self.tasks[task_id] = {
                 "Name": task.find("pr:Name", self.ns).text,
                 "OutlineNumber": task.find("pr:OutlineNumber", self.ns).text,
                 "OutlineLevel": outline_level,
                 "Start": datetime.datetime.fromisoformat(task.find("pr:Start", self.ns).text),
                 "Finish": datetime.datetime.fromisoformat(task.find("pr:Finish", self.ns).text),
-                "Duration": ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text),
+                "Duration": duration,
                 "Priority": task.find("pr:Priority", self.ns).text,
                 "CalendarUID": task.find("pr:CalendarUID", self.ns).text,
                 "PredecessorTasks": relationships if relationships else None,
@@ -96,7 +110,9 @@ class MSP2Ifc:
         for calendar in project.find("pr:Calendars", self.ns).findall("pr:Calendar", self.ns):
             calendar_id = calendar.find("pr:UID", self.ns).text
             week_days = []
-            for week_day in calendar.find("pr:WeekDays", self.ns).findall("pr:WeekDay", self.ns):
+            week_days_element = calendar.find("pr:WeekDays", self.ns)
+            week_day_elements = week_days_element.findall("pr:WeekDay", self.ns) if week_days_element else []
+            for week_day in week_day_elements:
                 working_times = []
                 if week_day.find("pr:WorkingTimes", self.ns):
                     for working_time in week_day.find("pr:WorkingTimes", self.ns).findall("pr:WorkingTime", self.ns):
@@ -127,8 +143,8 @@ class MSP2Ifc:
         if not self.work_plan:
             self.work_plan = ifcopenshell.api.run("sequence.add_work_plan", self.file)
         work_schedule = self.create_work_schedule()
-        self.create_tasks(work_schedule)
         self.create_calendars()
+        self.create_tasks(work_schedule)
         self.create_rel_sequences()
 
     def create_boilerplate_ifc(self):
@@ -158,6 +174,23 @@ class MSP2Ifc:
             work_schedule=work_schedule if work_schedule else None,
             parent_task=parent_task["ifc"] if parent_task else None,
         )
+
+        calendar = None
+        if task["CalendarUID"] != "-1":
+            calendar = self.calendars[task["CalendarUID"]]["ifc"]
+        elif not parent_task and self.project["CalendarUID"]:
+            calendar = self.calendars[self.project["CalendarUID"]]["ifc"]
+
+        if calendar:
+            ifcopenshell.api.run(
+                "control.assign_control",
+                self.file,
+                **{
+                    "relating_control": calendar,
+                    "related_object": task["ifc"],
+                },
+            )
+
         ifcopenshell.api.run(
             "sequence.edit_task",
             self.file,
@@ -184,6 +217,15 @@ class MSP2Ifc:
             self.create_task(self.tasks[subtask_id], parent_task=task)
 
     def process_working_week(self, week, calendar):
+        day_map = {
+            "1": 7, # Sunday
+            "2": 1, # Monday
+            "3": 2, # Tuesday
+            "4": 3, # Wednesday
+            "5": 4, # Thursday
+            "6": 5, # Friday
+            "7": 6, # Saturday
+        }
         for day in week:
             if day["ifc"]:
                 continue
@@ -192,12 +234,12 @@ class MSP2Ifc:
                 "sequence.add_work_time", self.file, work_calendar=calendar, time_type="WorkingTimes"
             )
 
-            weekday_component = [int(day["DayType"])]
+            weekday_component = [day_map[day["DayType"]]]
             for day2 in week:
                 if day["DayType"] == day2["DayType"]:
                     continue
                 if day["WorkingTimes"] == day2["WorkingTimes"]:
-                    weekday_component.append(int(day2["DayType"]))
+                    weekday_component.append(day_map[day2["DayType"]])
                     # Don't process the next day, as we can group it
                     day2["ifc"] = day["ifc"]
 
@@ -229,11 +271,10 @@ class MSP2Ifc:
 
     def create_rel_sequences(self):
         self.sequence_type_map = {
-            "1": "START_START",
+            "0": "FINISH_FINISH",
+            "1": "FINISH_START",
             "2": "START_FINISH",
-            "3": "FINISH_START",
-            "4": "FINISH_FINISH",
-            "0": "NOTDEFINED",
+            "3": "START_START",
         }
         for task in self.tasks.values():
             if not task["PredecessorTasks"]:
@@ -252,3 +293,25 @@ class MSP2Ifc:
                         rel_sequence=rel_sequence,
                         attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]},
                     )
+
+    def parse_resources_xml(self, project):
+        resources_lst = project.find("pr:Resources", self.ns)
+        resources = resources_lst.findall("pr:Resource", self.ns)
+        # print("Resource text", resources[4].find("pr:Name", self.ns).text)
+        for resource in resources:
+            name = resource.find("pr:Name", self.ns)
+            id = resource.find("pr:ID", self.ns).text
+            if name is not None:
+                name = name.text
+            else:
+                # print("- No Name")
+                name = None
+            self.resources[id] = {
+                "Name": name,
+                "Code": resource.find("pr:UID", self.ns).text,
+                "ParentObjectId": None,
+                "Type": self.RESOURCE_TYPES_MAPPING[resource.find("pr:Type", self.ns).text],
+                "ifc": None,
+                "rel": None,
+            }
+        print("Resource found", self.resources)

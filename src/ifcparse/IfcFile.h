@@ -23,7 +23,12 @@
 #include <map>
 #include <set>
 #include <iterator>
+
 #include <boost/unordered_map.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/random_access_index.hpp>
 
 #include "ifc_parse_api.h"
 
@@ -67,11 +72,14 @@ public:
 /// and provide access to the entities in an IFC file
 class IFC_PARSE_API IfcFile {
 public:
-	typedef std::map<const IfcParse::declaration*, IfcEntityList::ptr> entities_by_type_t;
+	typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
 	typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
-	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
-	typedef std::map<unsigned int, IfcEntityList::ptr> ref_map_t;
+	typedef std::tuple<int, int, int> inverse_attr_record;
+	enum INVERSE_ATTR { INSTANCE_ID, INSTANCE_TYPE, ATTRIBUTE_INDEX };
+	typedef std::map<inverse_attr_record, std::vector<int> > entities_by_ref_t;
+	typedef std::map<int, std::vector<int> > entities_by_ref_excl_t;
+	typedef std::map<unsigned int, aggregate_of_instance::ptr> ref_map_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 
 	class type_iterator : private entities_by_type_t::const_iterator {
@@ -105,8 +113,16 @@ public:
 		}
 	};
 
+	static bool lazy_load_;
+	static bool lazy_load() { return lazy_load_; }
+	static void lazy_load(bool b) { lazy_load_ = b; }
+
+	static bool guid_map_;
+	static bool guid_map() { return guid_map_; }
+	static void guid_map(bool b) { guid_map_ = b; }
+
 private:
-	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
+	typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
 	bool parsing_complete_;
 	file_open_status good_ = file_open_status::SUCCESS;
@@ -114,11 +130,13 @@ private:
 	const IfcParse::schema_definition* schema_;
 	const IfcParse::declaration* ifcroot_type_;
 
+	std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
+
 	entity_by_id_t byid;
 	entities_by_type_t bytype;
 	entities_by_type_t bytype_excl;
 	entities_by_ref_t byref;
-	ref_map_t by_ref_cached_;
+	entities_by_ref_excl_t byref_excl;
 	entity_by_guid_t byguid;
 	entity_entity_map_t entity_file_map;
 
@@ -132,7 +150,16 @@ private:
 
 	void build_inverses_(IfcUtil::IfcBaseClass*);
 
-	std::set<int> batch_deletion_ids_;
+	typedef boost::multi_index_container<
+		int,
+		boost::multi_index::indexed_by<
+			boost::multi_index::sequenced<>,
+			boost::multi_index::ordered_unique<
+				boost::multi_index::identity<int>
+			>
+		>
+	> batch_deletion_ids_t;
+	batch_deletion_ids_t batch_deletion_ids_;
 	bool batch_mode_ = false;
 	void process_deletion_();
 
@@ -150,6 +177,7 @@ public:
 	IfcFile(IfcParse::IfcSpfStream* f);
 	IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"));
 
+	/// Deleting the file will also delete all new instances that were added to the file (via memory allocation)
 	virtual ~IfcFile();
 
 	file_open_status good() const { return good_; }
@@ -172,7 +200,7 @@ public:
 	/// IfcWall will also return IfcWallStandardCase entities
 	template <class T>
 	typename T::list::ptr instances_by_type() {
-		IfcEntityList::ptr untyped_list = instances_by_type(&T::Class());
+		aggregate_of_instance::ptr untyped_list = instances_by_type(&T::Class());
 		if (untyped_list) {
 			return untyped_list->as<T>();
 		} else {
@@ -182,7 +210,7 @@ public:
 
 	template <class T>
 	typename T::list::ptr instances_by_type_excl_subtypes() {
-		IfcEntityList::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
+		aggregate_of_instance::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
 		if (untyped_list) {
 			return untyped_list->as<T>();
 		} else {
@@ -193,21 +221,21 @@ public:
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr instances_by_type(const IfcParse::declaration*);
+	aggregate_of_instance::ptr instances_by_type(const IfcParse::declaration*);
 
 	/// Returns all entities in the file that match the positional argument.
-	IfcEntityList::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
+	aggregate_of_instance::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
 
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr instances_by_type(const std::string& t);
+	aggregate_of_instance::ptr instances_by_type(const std::string& t);
 
 	/// Returns all entities in the file that match the positional argument.
-	IfcEntityList::ptr instances_by_type_excl_subtypes(const std::string& t);
+	aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& t);
 	
 	/// Returns all entities in the file that reference the id
-	IfcEntityList::ptr instances_by_reference(int id);
+	aggregate_of_instance::ptr instances_by_reference(int id);
 
 	/// Returns the entity with the specified id
 	IfcUtil::IfcBaseClass* instance_by_id(int id);
@@ -218,20 +246,42 @@ public:
 	/// Performs a depth-first traversal, returning all entity instance
 	/// attributes as a flat list. NB: includes the root instance specified
 	/// in the first function argument.
-	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
+	aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
-	IfcEntityList::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
+	/// Same as traverse() but maintains topological order by using a
+	/// breadth-first search
+	aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
-	/// Marks entity as modified so that potential cache for it is invalidated.
-	/// @todo Currently the whole cache is invalidated. Implement more fine-grained invalidation.
-	void mark_entity_as_modified(int id);
+	/// Get the attribute indices corresponding to the list of entity instances
+	/// returned by getInverse().
+	std::vector<int> get_inverse_indices(int instance_id);
+
+	aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
+	
+	int getTotalInverses(int instance_id);
+
+	template <class T>
+	typename T::list::ptr getInverse(int instance_id, int attribute_index) {
+		aggregate_of_instance::ptr return_value(new aggregate_of_instance);
+		auto it = byref.find({ instance_id, T::Class().index_in_schema(), attribute_index });
+		if (it != byref.end()) {
+			for (auto& i : it->second) {
+				return_value->push((T*)instance_by_id(i));
+			}
+		}
+		return return_value;
+	}
 
 	unsigned int FreshId() { return ++MaxId; }
+
+	unsigned int getMaxId() const { return MaxId; }
+
+	const IfcParse::declaration* const ifcroot_type() const { return ifcroot_type_; }
 
 	void recalculate_id_counter();
 
 	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id=-1);
-	void addEntities(IfcEntityList::ptr es);
+	void addEntities(aggregate_of_instance::ptr es);
 
 	void batch() { batch_mode_ = true; }
 	void unbatch() { process_deletion_(); batch_mode_ = false; 	}
@@ -240,7 +290,7 @@ public:
 	///
 	/// Attention when running removeEntity inside a loop over a list of entities to be removed. 
 	/// This invalidates the iterator. A workaround is to reverse the loop:
-	/// boost::shared_ptr<IfcEntityList> entities = ...;
+	/// boost::shared_ptr<aggregate_of_instance> entities = ...;
 	/// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
 	///    IfcUtil::IfcBaseClass *const inst = *it;
 	///    model->removeEntity(inst);
@@ -252,13 +302,13 @@ public:
 
 	std::string createTimestamp() const;
 
-	size_t load(unsigned entity_instance_name, Argument**& attributes, size_t num_attributes);
+	size_t load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes, int attribute_index=-1);
 	void seek_to(const IfcEntityInstanceData& data);
 	void try_read_semicolon();
 
-	void register_inverse(unsigned, Token);
-	void register_inverse(unsigned, IfcUtil::IfcBaseClass*);
-	void unregister_inverse(unsigned, IfcUtil::IfcBaseClass*);
+	void register_inverse(unsigned, const IfcParse::entity* from_entity, Token, int attribute_index);
+	void register_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
+	void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
     
 	const IfcParse::schema_definition* schema() const { return schema_; }
 
@@ -268,6 +318,8 @@ public:
 	bool& parsing_complete() { return parsing_complete_; }
 
 	void build_inverses();
+
+	entity_by_guid_t& internal_guid_map() { return byguid; };
 };
 
 #ifdef WITH_IFCXML

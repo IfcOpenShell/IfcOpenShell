@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 
@@ -9,6 +27,7 @@ class BIM_PT_ifccsv(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_collaboration"
 
     def draw(self, context):
         layout = self.layout
@@ -28,14 +47,28 @@ class BIM_PT_ifccsv(Panel):
         row = layout.row(align=True)
         row.prop(props, "ifc_selector")
         row.operator("bim.eyedrop_ifccsv", icon="EYEDROPPER", text="")
+        layout.separator()
 
         row = layout.row()
-        row.operator("bim.add_csv_attribute")
+        split = row.split(factor=0.7)
+        c = split.column()
+        c.operator("bim.add_csv_attribute")
+        c = split.column()
+        c.operator("bim.import_csv_attributes", icon="IMPORT", text="Load Template")
 
         for index, attribute in enumerate(props.csv_attributes):
             row = layout.row(align=True)
             row.prop(attribute, "name", text="")
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
+
+        if props.csv_attributes:
+            row = layout.row()
+            row.label()
+            row.operator("bim.remove_all_csv_attributes", icon="CANCEL", text="")
+            row = layout.row()
+            row.operator("bim.export_csv_attributes", icon="EXPORT", text="Create Template")
+
+        layout.separator()
 
         row = layout.row(align=True)
         row.prop(props, "csv_delimiter")
@@ -44,6 +77,9 @@ class BIM_PT_ifccsv(Panel):
             row = layout.row(align=True)
             row.prop(props, "csv_custom_delimiter")
 
-        row = layout.row(align=True)
-        row.operator("bim.export_ifccsv", icon="EXPORT")
-        row.operator("bim.import_ifccsv", icon="IMPORT")
+        row = layout.row()
+        split = row.split(factor=0.7)
+        c = split.column()
+        c.operator("bim.export_ifccsv", icon="EXPORT")
+        c = split.column()
+        c.operator("bim.import_ifccsv", icon="IMPORT")

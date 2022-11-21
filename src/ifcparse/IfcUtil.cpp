@@ -55,7 +55,7 @@
 #include "../ifcparse/Argument.h"
 #include "../ifcparse/utils.h"
 #include "../ifcparse/IfcException.h"
-#include "../ifcparse/IfcEntityList.h"
+#include "../ifcparse/aggregate_of_instance.h"
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
@@ -64,37 +64,37 @@
 #include <algorithm>
 
 
-void IfcEntityList::push(IfcUtil::IfcBaseClass* l) {
+void aggregate_of_instance::push(IfcUtil::IfcBaseClass* l) {
 	if (l) {
 		ls.push_back(l);
 	}
 }
-void IfcEntityList::push(const IfcEntityList::ptr& l) {
+void aggregate_of_instance::push(const aggregate_of_instance::ptr& l) {
 	if (l) {
 		for( it i = l->begin(); i != l->end(); ++i  ) {
 			if ( *i ) ls.push_back(*i);
 		}
 	}
 }
-unsigned int IfcEntityList::size() const { return (unsigned int) ls.size(); }
-void IfcEntityList::reserve(unsigned capacity) { ls.reserve((size_t)capacity); }
-IfcEntityList::it IfcEntityList::begin() { return ls.begin(); }
-IfcEntityList::it IfcEntityList::end() { return ls.end(); }
-IfcUtil::IfcBaseClass* IfcEntityList::operator[] (int i) {
+unsigned int aggregate_of_instance::size() const { return (unsigned int) ls.size(); }
+void aggregate_of_instance::reserve(unsigned capacity) { ls.reserve((size_t)capacity); }
+aggregate_of_instance::it aggregate_of_instance::begin() { return ls.begin(); }
+aggregate_of_instance::it aggregate_of_instance::end() { return ls.end(); }
+IfcUtil::IfcBaseClass* aggregate_of_instance::operator[] (int i) {
 	return ls[i];
 }
-bool IfcEntityList::contains(IfcUtil::IfcBaseClass* instance) const {
+bool aggregate_of_instance::contains(IfcUtil::IfcBaseClass* instance) const {
 	return std::find(ls.begin(), ls.end(), instance) != ls.end();
 }
-void IfcEntityList::remove(IfcUtil::IfcBaseClass* instance) {
+void aggregate_of_instance::remove(IfcUtil::IfcBaseClass* instance) {
 	std::vector<IfcUtil::IfcBaseClass*>::iterator it;
 	while ((it = std::find(ls.begin(), ls.end(), instance)) != ls.end()) {
 		ls.erase(it);
 	}
 }
 
-IfcEntityList::ptr IfcEntityList::filtered(const std::set<const IfcParse::declaration*>& entities) {
-	IfcEntityList::ptr return_value(new IfcEntityList);
+aggregate_of_instance::ptr aggregate_of_instance::filtered(const std::set<const IfcParse::declaration*>& entities) {
+	aggregate_of_instance::ptr return_value(new aggregate_of_instance);
 	for (it it = begin(); it != end(); ++it) {
 		bool contained = false;
 		for (std::set<const IfcParse::declaration*>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
@@ -110,9 +110,9 @@ IfcEntityList::ptr IfcEntityList::filtered(const std::set<const IfcParse::declar
 	return return_value;
 }
 
-IfcEntityList::ptr IfcEntityList::unique() {
+aggregate_of_instance::ptr aggregate_of_instance::unique() {
 	std::set<IfcUtil::IfcBaseClass*> encountered;
-	IfcEntityList::ptr return_value(new IfcEntityList);
+	aggregate_of_instance::ptr return_value(new aggregate_of_instance);
 	for (it it = begin(); it != end(); ++it) {
 		if (encountered.find(*it) == encountered.end()) {
 			return_value->push(*it);
@@ -125,6 +125,7 @@ IfcEntityList::ptr IfcEntityList::unique() {
 //Note: some of these methods are overloaded in derived classes
 Argument::operator int() const { throw IfcParse::IfcException("Argument is not an integer"); }
 Argument::operator bool() const { throw IfcParse::IfcException("Argument is not a boolean"); }
+Argument::operator boost::logic::tribool() const { throw IfcParse::IfcException("Argument is not a logical"); }
 Argument::operator double() const { throw IfcParse::IfcException("Argument is not a number"); }
 Argument::operator std::string() const { throw IfcParse::IfcException("Argument is not a string"); }
 Argument::operator boost::dynamic_bitset<>() const { throw IfcParse::IfcException("Argument is not a binary"); }
@@ -133,10 +134,10 @@ Argument::operator std::vector<double>() const { throw IfcParse::IfcException("A
 Argument::operator std::vector<int>() const { throw IfcParse::IfcException("Argument is not a list of ints"); }
 Argument::operator std::vector<std::string>() const { throw IfcParse::IfcException("Argument is not a list of strings"); }
 Argument::operator std::vector<boost::dynamic_bitset<> >() const { throw IfcParse::IfcException("Argument is not a list of binaries"); }
-Argument::operator IfcEntityList::ptr() const { throw IfcParse::IfcException("Argument is not a list of entity instances"); }
+Argument::operator aggregate_of_instance::ptr() const { throw IfcParse::IfcException("Argument is not a list of entity instances"); }
 Argument::operator std::vector< std::vector<int> >() const { throw IfcParse::IfcException("Argument is not a list of list of ints"); }
 Argument::operator std::vector< std::vector<double> >() const { throw IfcParse::IfcException("Argument is not a list of list of floats"); }
-Argument::operator IfcEntityListList::ptr() const { throw IfcParse::IfcException("Argument is not a list of list of entity instances"); }
+Argument::operator aggregate_of_aggregate_of_instance::ptr() const { throw IfcParse::IfcException("Argument is not a list of list of entity instances"); }
 
 
 static const char* const argument_type_string[] = {
@@ -144,6 +145,7 @@ static const char* const argument_type_string[] = {
 	"DERIVED",
 	"INT",
 	"BOOL",
+	"LOGICAL",
 	"DOUBLE",
 	"STRING",
 	"BINARY",
@@ -205,14 +207,14 @@ Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
 	return data().getArgument(declaration().attribute_index(name));
 }
 
-IfcEntityList::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string& name) const {
+aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string& name) const {
 	const std::vector<const IfcParse::inverse_attribute*> attrs = declaration().as_entity()->all_inverse_attributes();
 	std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
 	for (; it != attrs.end(); ++it) {
 		if ((*it)->name() == name) {
 			return data().getInverse(
 				(*it)->entity_reference(),
-				(*it)->entity_reference()->attribute_index((*it)->attribute_reference()));
+				(int) (*it)->entity_reference()->attribute_index((*it)->attribute_reference()));
 		}
 	}
 	throw IfcParse::IfcException(name + " not found on " + declaration().name());
@@ -275,7 +277,7 @@ IfcUtil::ArgumentType IfcUtil::from_parameter_type(const IfcParse::parameter_typ
 		case IfcParse::simple_type::integer_type:
 			return IfcUtil::Argument_INT;
 		case IfcParse::simple_type::logical_type:
-			return IfcUtil::Argument_BOOL;
+			return IfcUtil::Argument_LOGICAL;
 		case IfcParse::simple_type::number_type:
 			return IfcUtil::Argument_DOUBLE;
 		case IfcParse::simple_type::real_type:

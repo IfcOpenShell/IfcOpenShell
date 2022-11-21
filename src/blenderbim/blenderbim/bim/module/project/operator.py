@@ -1,74 +1,61 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
 import bpy
+import time
 import logging
+import tempfile
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.selector
 import ifcopenshell.util.representation
-import bpy
 import blenderbim.bim.handler
+import blenderbim.tool as tool
+import blenderbim.core.project as core
+import blenderbim.core.context
+import blenderbim.core.owner
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
+from blenderbim.bim import export_ifc
+from ifcopenshell.api.context.data import Data as ContextData
 
 
 class CreateProject(bpy.types.Operator):
     bl_idname = "bim.create_project"
     bl_label = "Create Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create a new IFC project"
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
         IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
-        result = self._execute(context)
-        self.transaction_data = {"file": self.file}
+        self._execute(context)
+        self.transaction_data = {"file": tool.Ifc.get()}
         IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
         IfcStore.end_transaction(self)
-        return result
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.file:
-            return {"FINISHED"}
-
-        IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": context.scene.BIMProperties.export_schema}
-        )
-        self.file = IfcStore.get_file()
-
-        bpy.ops.bim.add_person()
-        bpy.ops.bim.add_organisation()
-
-        project = bpy.data.objects.new(self.get_name("IfcProject", "My Project"), None)
-        site = bpy.data.objects.new(self.get_name("IfcSite", "My Site"), None)
-        building = bpy.data.objects.new(self.get_name("IfcBuilding", "My Building"), None)
-        building_storey = bpy.data.objects.new(self.get_name("IfcBuildingStorey", "My Storey"), None)
-
-        bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
-        bpy.ops.bim.assign_unit()
-        bpy.ops.bim.add_subcontext(context="Model")
-        bpy.ops.bim.add_subcontext(context="Model", subcontext="Body", target_view="MODEL_VIEW")
-        bpy.ops.bim.add_subcontext(context="Model", subcontext="Box", target_view="MODEL_VIEW")
-        bpy.ops.bim.add_subcontext(context="Plan")
-        bpy.ops.bim.add_subcontext(context="Plan", subcontext="Annotation", target_view="PLAN_VIEW")
-
-        context.scene.BIMProperties.contexts = str(
-            ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW").id()
-        )
-
-        bpy.ops.bim.assign_class(obj=site.name, ifc_class="IfcSite")
-        bpy.ops.bim.assign_class(obj=building.name, ifc_class="IfcBuilding")
-        bpy.ops.bim.assign_class(obj=building_storey.name, ifc_class="IfcBuildingStorey")
-        bpy.ops.bim.assign_object(related_object=site.name, relating_object=project.name)
-        bpy.ops.bim.assign_object(related_object=building.name, relating_object=site.name)
-        bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
-
         return {"FINISHED"}
 
-    def get_name(self, ifc_class, name):
-        if not bpy.data.objects.get(f"{ifc_class}/{name}"):
-            return name
-        i = 2
-        while bpy.data.objects.get(f"{ifc_class}/{name} {i}"):
-            i += 1
-        return f"{name} {i}"
+    def _execute(self, context):
+        props = context.scene.BIMProjectProperties
+        template = None if props.template_file == "0" else props.template_file
+        core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
 
     def rollback(self, data):
         IfcStore.file = None
@@ -77,52 +64,14 @@ class CreateProject(bpy.types.Operator):
         IfcStore.file = data["file"]
 
 
-class CreateProjectLibrary(bpy.types.Operator):
-    bl_idname = "bim.create_project_library"
-    bl_label = "Create Project Library"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        IfcStore.begin_transaction(self)
-        IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
-        result = self._execute(context)
-        self.transaction_data = {"file": self.file}
-        IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
-        IfcStore.end_transaction(self)
-        return result
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.file:
-            return {"FINISHED"}
-
-        IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": context.scene.BIMProperties.export_schema}
-        )
-        self.file = IfcStore.get_file()
-
-        if self.file.schema == "IFC2X3":
-            bpy.ops.bim.add_person()
-            bpy.ops.bim.add_organisation()
-
-        project_library = bpy.data.objects.new("My Project Library", None)
-        bpy.ops.bim.assign_class(obj=project_library.name, ifc_class="IfcProjectLibrary")
-        bpy.ops.bim.assign_unit()
-        return {"FINISHED"}
-
-    def rollback(self, data):
-        IfcStore.file = None
-
-    def commit(self, data):
-        IfcStore.file = data["file"]
-
-
-class SelectLibraryFile(bpy.types.Operator):
+class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select an IFC file that can be used as a library"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    append_all: bpy.props.BoolProperty(default=False)
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -137,6 +86,10 @@ class SelectLibraryFile(bpy.types.Operator):
         IfcStore.library_path = self.filepath
         IfcStore.library_file = ifcopenshell.open(self.filepath)
         bpy.ops.bim.refresh_library()
+        if context.area:
+            context.area.tag_redraw()
+        if self.append_all:
+            bpy.ops.bim.append_entire_library()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -155,6 +108,9 @@ class SelectLibraryFile(bpy.types.Operator):
         IfcStore.library_path = data["filepath"]
         IfcStore.library_file = ifcopenshell.open(data["filepath"])
 
+    def draw(self, context):
+        self.layout.prop(self, "append_all", text="Append Entire Library")
+
 
 class RefreshLibrary(bpy.types.Operator):
     bl_idname = "bim.refresh_library"
@@ -163,16 +119,13 @@ class RefreshLibrary(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
 
-        while len(self.props.library_elements) > 0:
-            self.props.library_elements.remove(0)
-
-        while len(self.props.library_breadcrumb) > 0:
-            self.props.library_breadcrumb.remove(0)
+        self.props.library_elements.clear()
+        self.props.library_breadcrumb.clear()
 
         self.props.active_library_element = ""
 
         types = IfcStore.library_file.wrapped_data.types_with_super()
-        for importable_type in ["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule"]:
+        for importable_type in sorted(["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]):
             if importable_type in types:
                 new = self.props.library_elements.add()
                 new.name = importable_type
@@ -187,30 +140,53 @@ class ChangeLibraryElement(bpy.types.Operator):
 
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
+        self.file = IfcStore.get_file()
+        self.library_file = IfcStore.library_file
         ifc_classes = set()
         self.props.active_library_element = self.element_name
         crumb = self.props.library_breadcrumb.add()
         crumb.name = self.element_name
-        elements = IfcStore.library_file.by_type(self.element_name)
+        elements = self.library_file.by_type(self.element_name)
         [ifc_classes.add(e.is_a()) for e in elements]
-        while len(self.props.library_elements) > 0:
-            self.props.library_elements.remove(0)
+        self.props.library_elements.clear()
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
-            for element in elements:
-                new = self.props.library_elements.add()
-                new.name = element.Name or "Unnamed"
-                new.ifc_definition_id = element.id()
-                if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
-                    new.is_declared = False
-                elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a(
-                    "IfcProjectLibrary"
-                ):
-                    new.is_declared = True
+            for name, ifc_definition_id in sorted([(self.get_name(e), e.id()) for e in elements]):
+                self.add_library_asset(name, ifc_definition_id)
         else:
-            for ifc_class in ifc_classes:
+            for ifc_class in sorted(ifc_classes):
+                if ifc_class == self.element_name:
+                    continue
                 new = self.props.library_elements.add()
                 new.name = ifc_class
+            for name, ifc_definition_id, ifc_class in sorted([(self.get_name(e), e.id(), e.is_a()) for e in elements]):
+                if ifc_class == self.element_name:
+                    self.add_library_asset(name, ifc_definition_id)
         return {"FINISHED"}
+
+    def get_name(self, element):
+        if element.is_a("IfcProfileDef"):
+            return element.ProfileName or "Unnamed"
+        return element.Name or "Unnamed"
+
+    def add_library_asset(self, name, ifc_definition_id):
+        new = self.props.library_elements.add()
+        new.name = name
+        new.ifc_definition_id = ifc_definition_id
+        element = self.library_file.by_id(ifc_definition_id)
+        if self.library_file.schema == "IFC2X3" or not self.library_file.by_type("IfcProjectLibrary"):
+            new.is_declared = False
+        elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a("IfcProjectLibrary"):
+            new.is_declared = True
+        try:
+            if element.is_a("IfcMaterial"):
+                next(e for e in self.file.by_type("IfcMaterial") if e.Name == name)
+            elif element.is_a("IfcProfileDef"):
+                next(e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == name)
+            else:
+                self.file.by_guid(element.GlobalId)
+            new.is_appended = True
+        except (AttributeError, RuntimeError, StopIteration):
+            new.is_appended = False
 
 
 class RewindLibrary(bpy.types.Operator):
@@ -312,11 +288,43 @@ class SaveLibraryFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AppendEntireLibrary(bpy.types.Operator):
+    bl_idname = "bim.append_entire_library"
+    bl_label = "Append Entiry Library"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        self.library = IfcStore.library_file
+
+        lib_elements = ifcopenshell.util.selector.Selector().parse(
+            self.library, ".IfcTypeProduct | .IfcMaterial | .IfcCostSchedule| .IfcProfileDef"
+        )
+        for element in lib_elements:
+            bpy.ops.bim.append_library_element(definition=element.id())
+        return {"FINISHED"}
+
+
 class AppendLibraryElement(bpy.types.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Append element to the current project"
     definition: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        poll = bool(IfcStore.get_file())
+        if bpy.app.version > (3, 0, 0) and not poll:
+            cls.poll_message_set("Please create or load a project first.")
+        return poll
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -335,6 +343,11 @@ class AppendLibraryElement(bpy.types.Operator):
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
+        try:
+            context.scene.BIMProjectProperties.library_elements[self.prop_index].is_appended = True
+        except:
+            # TODO Remove this terrible code when I refactor this into the core
+            pass
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
@@ -355,18 +368,20 @@ class AppendLibraryElement(bpy.types.Operator):
         type_collection = bpy.data.collections.get("Types")
         if not type_collection:
             type_collection = bpy.data.collections.new("Types")
-            for collection in bpy.data.collections:
+            for collection in bpy.context.view_layer.layer_collection.children:
                 if "IfcProject/" in collection.name:
-                    collection.children.link(type_collection)
+                    collection.collection.children.link(type_collection)
+                    collection.children["Types"].hide_viewport = True
                     break
 
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
+        ifc_importer.material_creator.load_existing_materials()
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
-        ifc_importer.create_type_product(element)
-        ifc_importer.place_objects_in_spatial_tree()
+        ifc_importer.create_element_type(element)
+        ifc_importer.place_objects_in_collections()
 
     def import_type_materials(self, element, ifc_importer):
         for rel in element.HasAssociations:
@@ -399,6 +414,11 @@ class EnableEditingHeader(bpy.types.Operator):
     bl_idname = "bim.enable_editing_header"
     bl_label = "Enable Editing Header"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Edit the IFC header file such as Author, Organization, ..."
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -431,6 +451,11 @@ class EditHeader(bpy.types.Operator):
     bl_idname = "bim.edit_header"
     bl_label = "Edit Header"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Save header information"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -482,7 +507,389 @@ class DisableEditingHeader(bpy.types.Operator):
     bl_idname = "bim.disable_editing_header"
     bl_label = "Disable Editing Header"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Cancel unsaved header information"
 
     def execute(self, context):
         context.scene.BIMProjectProperties.is_editing = False
+        return {"FINISHED"}
+
+
+class LoadProject(bpy.types.Operator, IFCFileSelector):
+    bl_idname = "bim.load_project"
+    bl_label = "Load Project"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Load an existing IFC project"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
+
+    def execute(self, context):
+        if not self.is_existing_ifc_file():
+            return {"FINISHED"}
+        context.scene.BIMProperties.ifc_file = self.filepath
+        context.scene.BIMProjectProperties.is_loading = True
+        context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
+        if not self.is_advanced:
+            bpy.ops.bim.load_project_elements()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def draw(self, context):
+        self.layout.prop(self, "is_advanced")
+        IFCFileSelector.draw(self, context)
+
+
+class UnloadProject(bpy.types.Operator):
+    bl_idname = "bim.unload_project"
+    bl_label = "Unload Project"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.purge()
+        context.scene.BIMProperties.ifc_file = ""
+        context.scene.BIMProjectProperties.is_loading = False
+        return {"FINISHED"}
+
+
+class LoadProjectElements(bpy.types.Operator):
+    bl_idname = "bim.load_project_elements"
+    bl_label = "Load Project Elements"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        self.props = context.scene.BIMProjectProperties
+        self.file = IfcStore.get_file()
+        start = time.time()
+        logger = logging.getLogger("ImportIFC")
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+        logging.basicConfig(
+            filename=path_log,
+            filemode="a",
+            level=logging.DEBUG,
+        )
+        settings = import_ifc.IfcImportSettings.factory(context, context.scene.BIMProperties.ifc_file, logger)
+        settings.has_filter = self.props.filter_mode != "NONE"
+        settings.should_filter_spatial_elements = self.props.should_filter_spatial_elements
+        if self.props.filter_mode == "DECOMPOSITION":
+            settings.elements = self.get_decomposition_elements()
+        elif self.props.filter_mode == "IFC_CLASS":
+            settings.elements = self.get_ifc_class_elements()
+        elif self.props.filter_mode == "IFC_TYPE":
+            settings.elements = self.get_ifc_type_elements()
+        elif self.props.filter_mode == "WHITELIST":
+            settings.elements = self.get_whitelist_elements()
+        elif self.props.filter_mode == "BLACKLIST":
+            settings.elements = self.get_blacklist_elements()
+        settings.logger.info("Starting import")
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        context.scene.BIMProjectProperties.is_loading = False
+
+        tool.Project.load_default_thumbnails()
+        tool.Project.set_default_context()
+        tool.Project.set_default_modeling_dimensions()
+        return {"FINISHED"}
+
+    def get_decomposition_elements(self):
+        containers = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            container = self.file.by_id(filter_category.ifc_definition_id)
+            while container:
+                containers.add(container)
+                container = ifcopenshell.util.element.get_aggregate(container)
+                if self.file.schema == "IFC2X3" and container.is_a("IfcProject"):
+                    container = None
+                elif self.file.schema != "IFC2X3" and container.is_a("IfcContext"):
+                    container = None
+        elements = set()
+        for container in containers:
+            for rel in container.ContainsElements:
+                elements.update(rel.RelatedElements)
+        self.append_decomposed_elements(elements)
+        return elements
+
+    def append_decomposed_elements(self, elements):
+        decomposed_elements = set()
+        for element in elements:
+            if element.IsDecomposedBy:
+                for subelement in element.IsDecomposedBy[0].RelatedObjects:
+                    decomposed_elements.add(subelement)
+        if decomposed_elements:
+            self.append_decomposed_elements(decomposed_elements)
+        elements.update(decomposed_elements)
+
+    def get_ifc_class_elements(self):
+        elements = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            elements.update(self.file.by_type(filter_category.name, include_subtypes=False))
+        return elements
+
+    def get_ifc_type_elements(self):
+        elements = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            elements.update(ifcopenshell.util.element.get_types(self.file.by_id(filter_category.ifc_definition_id)))
+        return elements
+
+    def get_whitelist_elements(self):
+        selector = ifcopenshell.util.selector.Selector()
+        return set(selector.parse(self.file, self.props.filter_query))
+
+    def get_blacklist_elements(self):
+        selector = ifcopenshell.util.selector.Selector()
+        return set(self.file.by_type("IfcElement")) - set(selector.parse(self.file, self.props.filter_query))
+
+
+class ToggleFilterCategories(bpy.types.Operator):
+    bl_idname = "bim.toggle_filter_categories"
+    bl_label = "Toggle Filter Categories"
+    bl_options = {"REGISTER", "UNDO"}
+    should_select: bpy.props.BoolProperty(name="Should Select", default=True)
+
+    def execute(self, context):
+        for filter_category in context.scene.BIMProjectProperties.filter_categories:
+            filter_category.is_selected = self.should_select
+        return {"FINISHED"}
+
+
+class LinkIfc(bpy.types.Operator):
+    bl_idname = "bim.link_ifc"
+    bl_label = "Link IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Link a Blender file"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+
+    def execute(self, context):
+        files = [f.name for f in self.files] if self.files else [self.filepath]
+        for filename in files:
+            filepath = os.path.join(self.directory, filename)
+            new = context.scene.BIMProjectProperties.links.add()
+            if self.use_relative_path:
+                filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
+            new.name = filepath
+            bpy.ops.bim.load_link(filepath=filepath)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class UnlinkIfc(bpy.types.Operator):
+    bl_idname = "bim.unlink_ifc"
+    bl_label = "UnLink IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove the selected file from the link list"
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bpy.ops.bim.unload_link(filepath=self.filepath)
+        index = context.scene.BIMProjectProperties.links.find(self.filepath)
+        if index != -1:
+            context.scene.BIMProjectProperties.links.remove(index)
+        return {"FINISHED"}
+
+
+class UnloadLink(bpy.types.Operator):
+    bl_idname = "bim.unload_link"
+    bl_label = "Unload Link"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Unload the selected linked file"
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        filepath = self.filepath
+        if not os.path.isabs(filepath):
+            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
+        for collection in context.scene.collection.children:
+            if collection.library and collection.library.filepath == filepath:
+                context.scene.collection.children.unlink(collection)
+        for scene in bpy.data.scenes:
+            if scene.library and scene.library.filepath == filepath:
+                bpy.data.scenes.remove(scene)
+        link = context.scene.BIMProjectProperties.links.get(filepath)
+        link.is_loaded = False
+        return {"FINISHED"}
+
+
+class LoadLink(bpy.types.Operator):
+    bl_idname = "bim.load_link"
+    bl_label = "Load Link"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Load the selected file"
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        filepath = self.filepath
+        if not os.path.isabs(filepath):
+            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
+        with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
+            data_to.scenes = data_from.scenes
+        for scene in bpy.data.scenes:
+            if not scene.library or scene.library.filepath != filepath:
+                continue
+            for child in scene.collection.children:
+                if "IfcProject" not in child.name:
+                    continue
+                bpy.data.scenes[0].collection.children.link(child)
+        link = context.scene.BIMProjectProperties.links.get(filepath)
+        link.is_loaded = True
+        return {"FINISHED"}
+
+
+class ToggleLinkVisibility(bpy.types.Operator):
+    bl_idname = "bim.toggle_link_visibility"
+    bl_label = "Toggle Link Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Toggle visibility between SOLID and WIREFRAME"
+    link: bpy.props.StringProperty()
+    mode: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMProjectProperties
+        link = props.links.get(self.link)
+        if self.mode == "WIREFRAME":
+            self.toggle_wireframe(link)
+        elif self.mode == "VISIBLE":
+            self.toggle_visibility(link)
+        return {"FINISHED"}
+
+    def toggle_wireframe(self, link):
+        for collection in self.get_linked_collections():
+            objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, collection.all_objects)
+            for i, obj in enumerate(objs):
+                if i == 0:
+                    if obj.display_type == "WIRE":
+                        display_type = "TEXTURED"
+                    else:
+                        display_type = "WIRE"
+                obj.display_type = display_type
+            link.is_wireframe = display_type == "WIRE"
+
+    def toggle_visibility(self, link):
+        linked_collections = self.get_linked_collections()
+        queue = [bpy.context.view_layer.layer_collection]
+        layer_collection = None
+
+        while queue:
+            layer = queue.pop()
+            if layer.collection in linked_collections:
+                layer_collection = layer
+                break
+            queue.extend(list(layer.children))
+
+        if layer_collection:
+            layer_collection.exclude = not layer_collection.exclude
+            link.is_hidden = layer_collection.exclude
+
+    def get_linked_collections(self):
+        return [
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+        ]
+
+
+class ExportIFC(bpy.types.Operator):
+    bl_idname = "export_ifc.bim"
+    bl_label = "Export IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".ifc"
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
+    json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
+    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+
+    def invoke(self, context, event):
+        if not IfcStore.get_file():
+            self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
+            return {"FINISHED"}
+        if context.scene.BIMProperties.ifc_file and not self.should_save_as:
+            self.filepath = context.scene.BIMProperties.ifc_file
+            if not os.path.isabs(self.filepath):
+                self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
+            return self.execute(context)
+        if not self.filepath:
+            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+            old_history_size = tool.Ifc.get().history_size
+            old_undo_steps = context.preferences.edit.undo_steps
+            tool.Ifc.get().history_size = 0
+            context.preferences.edit.undo_steps = 0
+        IfcStore.execute_ifc_operator(self, context)
+        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+            tool.Ifc.get().history_size = old_history_size
+            context.preferences.edit.undo_steps = old_undo_steps
+        return {"FINISHED"}
+
+    def _execute(self, context):
+        start = time.time()
+        logger = logging.getLogger("ExportIFC")
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+        logging.basicConfig(
+            filename=path_log,
+            filemode="a",
+            level=logging.DEBUG,
+        )
+        extension = self.filepath.split(".")[-1]
+        if extension == "ifczip":
+            output_file = bpy.path.ensure_ext(self.filepath, ".ifczip")
+        elif extension == "ifcjson":
+            output_file = bpy.path.ensure_ext(self.filepath, ".ifcjson")
+        else:
+            output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
+
+        settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
+        settings.json_version = self.json_version
+        settings.json_compact = self.json_compact
+
+        ifc_exporter = export_ifc.IfcExporter(settings)
+        settings.logger.info("Starting export")
+        ifc_exporter.export()
+        settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
+        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        scene = context.scene
+        if not scene.DocProperties.ifc_files:
+            new = scene.DocProperties.ifc_files.add()
+            new.name = output_file
+        if self.use_relative_path and bpy.data.is_saved:
+            output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
+        if scene.BIMProperties.ifc_file != output_file and extension not in ["ifczip", "ifcjson"]:
+            scene.BIMProperties.ifc_file = output_file
+        if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
+            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+        blenderbim.bim.handler.purge_module_data()
+        return {"FINISHED"}
+
+
+class ImportIFC(bpy.types.Operator):
+    bl_idname = "import_ifc.bim"
+    bl_label = "Import IFC"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bpy.ops.bim.load_project("INVOKE_DEFAULT")
         return {"FINISHED"}

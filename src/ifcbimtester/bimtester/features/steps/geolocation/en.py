@@ -1,10 +1,30 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 import math
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
+
 from behave import step
+
 from bimtester import util
 from bimtester.ifc import IfcStore
 from bimtester.lang import _
@@ -242,6 +262,6 @@ def step_impl(context, guid):
     util.assert_type(site, "IfcSite")
     if not site.ObjectPlacement:
         assert False, _("The site has no object placement")
-    site_placement = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)[:,3][0:3]
+    site_placement = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)[:, 3][0:3]
     origin = np.array([0, 0, 0])
     assert np.allclose(origin, site_placement), _('The site location is at "{}" instead of "{}"')

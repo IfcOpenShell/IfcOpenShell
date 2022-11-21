@@ -28,6 +28,8 @@ class Csv2Ifc:
         self.file = None
         self.cost_items = []
         self.cost_schedule = None
+        self.is_schedule_of_rates = False
+        self.units = {}
 
     def execute(self):
         self.parse_csv()
@@ -60,21 +62,23 @@ class Csv2Ifc:
 
     def get_row_cost_data(self, row):
         name = row[self.headers["Name"]]
-        cost_quantities = row[self.headers["Quantity"]]
-        cost_quantities_unit = row[self.headers["Unit"]]
+        identification = row[self.headers["Identification"]] if "Identification" in self.headers else None
+        quantity = row[self.headers["Quantity"]]
+        unit = row[self.headers["Unit"]]
         if self.has_categories:
             cost_values = {
                 k: float(row[v])
                 for k, v in self.headers.items()
-                if k not in ["Hierarchy", "Name", "Quantity", "Unit", "Subtotal"] and row[v]
+                if k not in ["Hierarchy", "Identification", "Name", "Quantity", "Unit", "Subtotal"] and row[v]
             }
         else:
             cost_values = row[self.headers["Value"]]
             cost_values = float(cost_values) if cost_values else None
         return {
+            "Identification": str(identification) if identification else None,
             "Name": str(name) if name else None,
-            "CostQuantities": float(cost_quantities) if cost_quantities else None,
-            "CostQuantitiesUnit": str(cost_quantities_unit) if cost_quantities_unit else None,
+            "Quantity": float(quantity) if quantity else None,
+            "Unit": str(unit) if unit else None,
             "CostValues": cost_values,
             "children": [],
         }
@@ -84,6 +88,8 @@ class Csv2Ifc:
             self.create_boilerplate_ifc()
         if not self.cost_schedule:
             self.cost_schedule = ifcopenshell.api.run("cost.add_cost_schedule", self.file, name="CSV Import")
+            if self.is_schedule_of_rates:
+                self.cost_schedule.PredefinedType = "SCHEDULEOFRATES"
         self.create_cost_items(self.cost_items)
 
     def create_cost_items(self, cost_items, parent=None):
@@ -92,17 +98,17 @@ class Csv2Ifc:
 
     def create_cost_item(self, cost_item, parent):
         if parent is None:
-            cost_item["ifc"] = ifcopenshell.api.run(
-                "cost.add_cost_item", self.file, cost_schedule=self.cost_schedule
-            )
+            cost_item["ifc"] = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=self.cost_schedule)
         else:
             cost_item["ifc"] = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_item=parent)
 
         cost_item["ifc"].Name = cost_item["Name"]
+        cost_item["ifc"].Identification = cost_item["Identification"]
 
         if not cost_item["CostValues"]:
-            cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
-            cost_value.Category = "*"
+            if not self.is_schedule_of_rates:
+                cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
+                cost_value.Category = "*"
         elif self.has_categories:
             for category, value in cost_item["CostValues"].items():
                 cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
@@ -111,14 +117,42 @@ class Csv2Ifc:
         else:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(cost_item["CostValues"])
+            if self.is_schedule_of_rates:
+                measure_class = ifcopenshell.util.unit.get_symbol_measure_class(cost_item["Unit"])
+                value_component = self.file.create_entity(measure_class, cost_item["Quantity"])
+                unit_component = None
 
-        if cost_item["CostQuantities"]:
-            quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["CostQuantitiesUnit"])
+                if measure_class == "IfcNumericMeasure":
+                    unit_component = self.create_unit(cost_item["Unit"])
+                else:
+                    unit_type = ifcopenshell.util.unit.get_measure_unit_type(measure_class)
+                    unit_assignment = ifcopenshell.util.unit.get_unit_assignment(self.file)
+                    if unit_assignment:
+                        units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
+                        if units:
+                            unit_component = units[0]
+                    if not unit_component:
+                        unit_component = self.create_unit(cost_item["Unit"])
+
+                cost_value.UnitBasis = self.file.createIfcMeasureWithUnit(value_component, unit_component)
+
+        if not self.is_schedule_of_rates and cost_item["Quantity"]:
+            quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["Unit"])
             quantity = ifcopenshell.api.run(
                 "cost.add_cost_item_quantity", self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
             )
-            quantity[3] = cost_item["CostQuantities"]
+            quantity[3] = cost_item["Quantity"]
         self.create_cost_items(cost_item["children"], cost_item["ifc"])
+
+    def create_unit(self, symbol):
+        unit = self.units.get(symbol, None)
+        if unit:
+            return unit
+        unit = self.file.createIfcContextDependentUnit(
+            self.file.createIfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0), "USERDEFINED", symbol
+        )
+        self.units[symbol] = unit
+        return unit
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")

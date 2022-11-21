@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 cobie_type_classes = [
     "IfcDoorStyle",
     "IfcBuildingElementProxyType",
@@ -54,23 +72,41 @@ cobie_component_classes = [
     "IfcTransportElement",
 ]
 
-fmhem_classes = [
-    "IfcDoorStyle",
-    "IfcWindowStyle",
+fmhem_classes_ifc4 = [
     "IfcDoorType",
     "IfcWindowType",
-    "IfcRoofType",
     "IfcShadingDeviceType",
     "IfcDistributionControlElementType",
     "IfcEnergyConversionDeviceType",
     "IfcFlowControllerType",
-    "IfcJunctionBoxType",
     "IfcFlowMovingDeviceType",
     "IfcFlowStorageDeviceType",
     "IfcFlowTerminalType",
     "IfcFlowTreatmentDeviceType",
     "IfcFurnishingElementType",
     "IfcTransportElementType",
+]
+
+fmhem_classes_ifc2x3 = [
+    "IfcDoorStyle",
+    "IfcWindowStyle",
+    "IfcShadingDeviceType",
+    "IfcDistributionControlElementType",
+    "IfcEnergyConversionDeviceType",
+    "IfcFlowControllerType",
+    "IfcFlowMovingDeviceType",
+    "IfcFlowStorageDeviceType",
+    "IfcFlowTerminalType",
+    "IfcFlowTreatmentDeviceType",
+    "IfcFurnishingElementType",
+    "IfcTransportElementType",
+]
+
+fmhem_excluded_classes = [
+    "IfcCooledBeamType",
+    "IfcBurnerType",
+    "IfcCoilType",
+    "IfcLampType",
 ]
 
 
@@ -96,6 +132,10 @@ def get_cobie_components(ifc_file):
 
 def get_fmhem_types(ifc_file):
     elements = []
+    if ifc_file.schema == "IFC2X3":
+        fmhem_classes = fmhem_classes_ifc2x3
+    else:
+        fmhem_classes = fmhem_classes_ifc4
     for ifc_class in fmhem_classes:
         try:
             if ifc_class == "IfcEnergyConversionDeviceType":

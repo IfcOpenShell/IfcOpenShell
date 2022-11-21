@@ -1,3 +1,22 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+
 class Data:
     products = {}
     openings = {}
@@ -40,9 +59,9 @@ class Data:
             cls.fillings[filling_id] = {"Name": filling.Name, "FillsVoid": opening_id}
             cls.openings[opening_id]["HasFillings"].add(filling_id)
         return  # See bug #1224
-        #if not hasattr(product, "HasOpenings") or not product.HasOpenings:
+        # if not hasattr(product, "HasOpenings") or not product.HasOpenings:
         #    return
-        #for rel_voids_element in product.HasOpenings:
+        # for rel_voids_element in product.HasOpenings:
         #    opening = rel_voids_element.RelatedOpeningElement
         #    opening_id = int(opening.id())
         #    fillings = []

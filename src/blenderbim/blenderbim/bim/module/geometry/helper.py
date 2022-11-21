@@ -1,10 +1,28 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import bmesh
 import mathutils
 import ifcopenshell
 import ifcopenshell.util.unit
-from math import pi
-from mathutils import Vector, Matrix
+from math import pi, pow
+from mathutils import Vector, Matrix, geometry
 
 
 class Helper:
@@ -93,6 +111,167 @@ class Helper:
         bm.free()
 
         return {"profile": profile, "extrusion": extrusion}
+
+    def auto_detect_arbitrary_profile_with_voids(self, obj, mesh):
+        groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCARCINDEX" in group.name:
+                groups["IFCARCINDEX"].append(i)
+            elif "IFCCIRCLE" in group.name:
+                groups["IFCCIRCLE"].append(i)
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
+
+        # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
+        # This is how we access vertex groups via bmesh, apparently, it's not very intuitive
+        deform_layer = bm.verts.layers.deform.active
+
+        # Sanity check
+        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
+        for vert in bm.verts:
+            total_groups = 0
+            is_circle = False
+            for group_type, group_indices in groups.items():
+                for group_index in group_indices:
+                    if group_index in vert[deform_layer]:
+                        if group_type == "IFCCIRCLE":
+                            is_circle = True
+                        group_verts[group_type].setdefault(group_index, 0)
+                        group_verts[group_type][group_index] += 1
+                        total_groups += 0
+            if total_groups > 1:  # A vert can only belong to one group
+                return (False, "AMBIGUOUS_SPECIAL_VERTEX")
+            elif is_circle:
+                pass # Circles are allowed to be unclosed
+            elif total_groups == 0 and len(vert.link_edges) != 2:  # Unclosed loop or forked loop
+                return (False, "UNCLOSED_LOOP")
+
+        for group_type, group_counts in group_verts.items():
+            if group_type == "IFCARCINDEX":
+                for group_count in group_counts.values():
+                    if group_count != 3: # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+            elif group_type == "IFCCIRCLE":
+                for group_count in group_counts.values():
+                    if group_count != 2: # Each circle needs 2 verts
+                        return (False, "CIRCLE")
+
+        loop_edges = set(bm.edges)
+
+        # Create loops from edges
+        loops = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        # Determine outer loop
+        max_area = 0
+        outer_loop = None
+        inner_loops = []
+
+        for loop in loops:
+            loop_vertices = []
+            total_edges = len(loop)
+
+            if total_edges == 1:
+                loop_vertices = [loop[0].verts[0], loop[0].verts[1]]
+            else:
+                for i, edge in enumerate(loop):
+                    if i + 1 == total_edges and edge.verts[0] in loop[i - 1].verts:
+                        loop_vertices.append(edge.verts[0])
+                    elif i + 1 == total_edges and edge.verts[1] in loop[i - 1].verts:
+                        loop_vertices.append(edge.verts[1])
+                    elif edge.verts[0] in loop[i + 1].verts:
+                        loop_vertices.append(edge.verts[1])
+                    elif edge.verts[1] in loop[i + 1].verts:
+                        loop_vertices.append(edge.verts[0])
+
+            if len(loop_vertices) == 2:
+                # Unofficial convention right now that a loop of 2 verts always is a circle
+                radius = (loop_vertices[0].co - loop_vertices[1].co).length / 2
+                face_area = pi * pow(radius, 2)
+            else:
+                loop_bm = bmesh.new()
+                for vert in loop_vertices:
+                    loop_bm.verts.new(vert.co)
+                face = loop_bm.faces.new(loop_bm.verts)
+                face_area = face.calc_area()
+                loop_bm.free()
+
+            loop_vertex_indices = []
+            active_arc_id = None
+            arc_stack = []
+            last_index = len(loop_vertices) - 1
+
+            # It is possible to loop through loop_vertices halfway through an arc.
+            # If that is the case, we store it in incomplete_arc
+            incomplete_arc = []
+            for i, v in enumerate(loop_vertices):
+                if len(arc_stack) == 3:
+                    loop_vertex_indices.append(arc_stack)
+                    loop_vertex_indices.append((arc_stack[-1], v.index))
+                    arc_stack = []
+                    active_arc_id = None
+
+                is_arc = False
+                for group_index in groups["IFCARCINDEX"]:
+                    if group_index in v[deform_layer]:
+                        if active_arc_id is not None and active_arc_id != group_index:
+                            incomplete_arc = arc_stack
+                            arc_stack = []
+                        active_arc_id = group_index
+                        is_arc = True
+                        break
+
+                if i == last_index and not is_arc:
+                    continue
+
+                if is_arc:
+                    arc_stack.append(v.index)
+                else:
+                    if active_arc_id is not None:
+                        incomplete_arc = arc_stack
+                        active_arc_id = None
+                        arc_stack = []
+                    loop_vertex_indices.append((v.index, loop_vertices[i + 1].index))
+
+            if active_arc_id is not None:
+                arc_stack.extend(incomplete_arc)
+                loop_vertex_indices.append(arc_stack)
+
+            loop_vertex_indices.append((loop_vertex_indices[-1][-1], loop_vertex_indices[0][0]))
+
+            if face_area > max_area:
+                max_area = face_area
+                outer_loop = loop_vertex_indices
+            inner_loops.append(loop_vertex_indices)
+
+        inner_loops.remove(outer_loop)
+
+        points = [v.co for v in bm.verts]
+
+        bm.to_mesh(mesh)
+        mesh.update()
+        bm.free()
+
+        return {"points": points, "profile": outer_loop, "inner_curves": inner_loops}
 
     # An arbitrary closed profile with voids is similar to one without voids.
     # We start the same way with any ngon (no tri), but instead of being the entire
@@ -197,6 +376,95 @@ class Helper:
 
         return {"profile": outer_loop, "inner_curves": inner_loops, "extrusion": extrusion}
 
+    # An arbitrary face with voids is similar to a profile with voids for extrusion.
+    # Before we begin we check that all faces are coplanar instead of finding suitable face.
+    # Then we process the same way.
+    # Only 2 parameters are returned as there is no extrusion.
+    def auto_detect_curve_bounded_plane(self, mesh, tolerance=0.001):
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+
+        bm.faces.ensure_lookup_table()
+        faces = bm.faces
+        normal = faces[0].normal
+        point = faces[0].verts[0].co
+        for face in faces:
+            pt_f = face.verts[0].co
+            if (
+                normal.dot(face.normal) < 1 - tolerance
+                or abs(geometry.distance_point_to_plane(pt_f, point, normal)) > tolerance
+            ):
+                raise ValueError("All faces must be coplanar and have same orientation")
+
+        loop_edges = set()
+        for face in faces:
+            potential_edges = set(face.edges)
+            for face2 in faces:
+                if face == face2:
+                    continue
+                potential_edges -= set(face2.edges)
+            loop_edges |= potential_edges
+
+        # Create loops from edges
+        loops = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        # Determine outer loop
+        max_area = 0
+        outer_loop = None
+        inner_loops = []
+
+        for loop in loops:
+            loop_vertices = []
+            total_edges = len(loop)
+            for i, edge in enumerate(loop):
+                if i + 1 == total_edges and edge.verts[0] in loop[i - 1].verts:
+                    loop_vertices.append(edge.verts[0])
+                elif i + 1 == total_edges and edge.verts[1] in loop[i - 1].verts:
+                    loop_vertices.append(edge.verts[1])
+                elif edge.verts[0] in loop[i + 1].verts:
+                    loop_vertices.append(edge.verts[1])
+                elif edge.verts[1] in loop[i + 1].verts:
+                    loop_vertices.append(edge.verts[0])
+
+            loop_bm = bmesh.new()
+            for vert in loop_vertices:
+                loop_bm.verts.new(vert.co)
+            face = loop_bm.faces.new(loop_bm.verts)
+
+            loop_vertex_indices = [v.index for v in loop_vertices]
+            face_area = face.calc_area()
+            if face_area > max_area:
+                max_area = face_area
+                outer_loop = loop_vertex_indices
+            inner_loops.append(loop_vertex_indices)
+            loop_bm.free()
+
+        inner_loops.remove(outer_loop)
+
+        bm.to_mesh(mesh)
+        mesh.update()
+        bm.free()
+
+        return {"outer_curve": outer_loop, "inner_curves": inner_loops}
+
     # An extrusion edge is an edge that shares a single vertex with a profile
     # face and is not on the plane of the face.
     def detect_extrusion_edge(self, bm, profile_face):
@@ -213,7 +481,7 @@ class Helper:
                             unshared_vert.co, profile_face.verts[0].co, profile_face.normal
                         )
                     )
-                    > 0.001
+                    > 1e-6
                 ):
                     if unshared_vert == edge.verts[1]:
                         return [edge.verts[0].index, edge.verts[1].index]

@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 header = """
 #ifndef %(schema_name_upper)s_H
@@ -28,7 +28,7 @@ header = """
 
 #include "../ifcparse/ifc_parse_api.h"
 
-#include "../ifcparse/IfcEntityList.h"
+#include "../ifcparse/aggregate_of_instance.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
@@ -36,7 +36,9 @@ header = """
 
 struct %(schema_name)s {
 
-static const IfcParse::schema_definition& get_schema();
+IFC_PARSE_API static const IfcParse::schema_definition& get_schema();
+
+IFC_PARSE_API static void clear_schema();
 
 static const char* const Identifier;
 
@@ -107,7 +109,7 @@ derived_field_statement = "    {std::set<int> idxs; %(statements)sderived_map[Ty
 derived_field_statement_attrs = "idxs.insert(%d); "
 
 simpletype = """%(documentation)s
-class IFC_PARSE_API %(name)s : public %(superclass)s {
+class IFC_PARSE_API %(name)s : %(superclass)s {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -132,12 +134,15 @@ simpletype_impl_constructor = (
 simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(class_name)s_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);}"
 simpletype_impl_cast = "return *data_->getArgument(0);"
 simpletype_impl_cast_templated = (
-    "IfcEntityList::ptr es = *data_->getArgument(0); return es->as< %(underlying_type)s >();"
+    "aggregate_of_instance::ptr es = *data_->getArgument(0); return es->as< %(underlying_type)s >();"
 )
 simpletype_impl_declaration = "return *%(schema_name_upper)s_%(class_name)s_type;"
 
 select = """%(documentation)s
-typedef IfcUtil::IfcBaseClass %(name)s;
+class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 """
 
 enumeration = """class IFC_PARSE_API %(name)s : public IfcUtil::IfcBaseType {
@@ -157,14 +162,18 @@ public:
 """
 
 entity = """%(documentation)s
-class IFC_PARSE_API %(name)s %(superclass)s{
+class IFC_PARSE_API %(name)s : %(superclass)s {
 public:
 %(attributes)s    %(inverse)s    virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     %(name)s (IfcEntityInstanceData* e);
     %(name)s (%(constructor_arguments)s);
-    typedef IfcTemplatedEntityList< %(name)s > list;
+    typedef aggregate_of< %(name)s > list;
 };
+"""
+
+select_function = """
+const IfcParse::select_type& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
 """
 
 enumeration_function = """
@@ -190,14 +199,14 @@ const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *%
 }
 
 const char* %(schema_name)s::%(name)s::ToString(Value v) {
-    if ( v < 0 || v >= %(max_id)d ) throw IfcException("Unable to find find keyword in schema");
+    if ( v < 0 || v >= %(max_id)d ) throw IfcException("Unable to find keyword in schema");
     const char* names[] = { %(values)s };
     return names[v];
 }
 
 %(schema_name)s::%(name)s::Value %(schema_name)s::%(name)s::FromString(const std::string& s) {
 %(from_string_statements)s
-    throw IfcException("Unable to find find keyword in schema");
+    throw IfcException("Unable to find keyword in schema: " + s);
 }
 
 %(schema_name)s::%(name)s::operator %(schema_name)s::%(name)s::Value() const {
@@ -210,7 +219,7 @@ entity_implementation = """// Function implementations for %(name)s
 %(inverse)s
 const IfcParse::entity& %(schema_name)s::%(name)s::declaration() const { return *%(schema_name_upper)s_%(name)s_type; }
 const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
-%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != %(schema_name_upper)s_%(name)s_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != %(schema_name_upper)s_%(name)s_type) throw IfcException("Unable to find keyword in schema"); data_ = e; }
 %(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s {data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(name)s_type); %(constructor_implementation)s }
 """
 
@@ -226,10 +235,10 @@ cast_function = "%(schema_name)s::%(class_name)s::operator %(return_type)s() con
 
 array_type = "std::vector< %(instance_type)s > /*[%(lower)s:%(upper)s]*/"
 nested_array_type = "std::vector< std::vector< %(instance_type)s > >"
-list_type = "IfcTemplatedEntityList< %(instance_type)s >::ptr"
-list_list_type = "IfcTemplatedEntityListList< %(instance_type)s >::ptr"
-untyped_list = "IfcEntityList::ptr"
-inverse_attr = "IfcTemplatedEntityList< %(entity)s >::ptr %(name)s() const; // INVERSE %(entity)s::%(attribute)s"
+list_type = "aggregate_of< %(instance_type)s >::ptr"
+list_list_type = "aggregate_of_aggregate_of< %(instance_type)s >::ptr"
+untyped_list = "aggregate_of_instance::ptr"
+inverse_attr = "aggregate_of< %(entity)s >::ptr %(name)s() const; // INVERSE %(entity)s::%(attribute)s"
 
 enum_from_string_stmt = '    if (s == "%(value)s") return ::%(schema_name)s::%(name)s::%(short_name)s_%(value)s;'
 
@@ -241,26 +250,22 @@ parent_type_test = " || %s::is(v)"
 
 optional_attr_stmt = "return !data_->getArgument(%(index)d)->isNull();"
 
-get_attr_stmt = "return *data_->getArgument(%(index)d);"
-get_attr_stmt_enum = "return %(type)s::FromString(*data_->getArgument(%(index)d));"
-get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)));"
-get_attr_stmt_array = (
-    "IfcEntityList::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
-)
-get_attr_stmt_nested_array = (
-    "IfcEntityListList::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
-)
+get_attr_stmt = "%(null_check)s %(non_optional_type)s v = *data_->getArgument(%(index)d); return v;"
+get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(*data_->getArgument(%(index)d));"
+get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)))->as<%(non_optional_type_no_pointer)s>(true);"
+get_attr_stmt_array = "%(null_check)s aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
+get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 
 get_inverse = "return data_->getInverse(%(schema_name_upper)s_%(type)s_type, %(index)d)->as<%(type)s>();"
 
 set_attr_stmt = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(%(star_if_optional)sv"
+    + ");%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 )
-set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,%(type)s::ToString(v)));data_->setArgument(%(index)d,attr);}"
+set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 set_attr_stmt_array = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize()"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set((%(star_if_optional)sv)->generalize()"
+    + ");%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 )
 
 constructor_stmt = (

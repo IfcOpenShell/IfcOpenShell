@@ -1,7 +1,24 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+
 class Data:
     is_loaded = False
-    products = {}
-    structural_analysis_models = {}
     connections = {}
     boundary_conditions = {}
     connects_structural_members = {}
@@ -17,8 +34,6 @@ class Data:
     @classmethod
     def purge(cls):
         cls.is_loaded = False
-        cls.products = {}
-        cls.structural_analysis_models = {}
         cls.connections = {}
         cls.boundary_conditions = {}
         cls.connects_structural_members = {}
@@ -44,7 +59,6 @@ class Data:
                 return cls.load_structural_member(product_id)
             # if product.is_a("IfcStructuralAction"):
             #     return cls.load_structural_action(product_id)
-        cls.load_structural_analysis_models()
         cls.load_structural_load_cases()
         cls.load_structural_load_case_combinations()
         cls.load_structural_load_groups()
@@ -52,34 +66,6 @@ class Data:
         cls.load_structural_loads()
         cls.load_boundary_conditions()
         cls.is_loaded = True
-
-    @classmethod
-    def load_structural_analysis_models(cls):
-        cls.products = {}
-        cls.structural_analysis_models = {}
-
-        for model in cls._file.by_type("IfcStructuralAnalysisModel"):
-            if model.IsGroupedBy:
-                for rel in model.IsGroupedBy:
-                    for product in rel.RelatedObjects:
-                        cls.products.setdefault(product.id(), []).append(model.id())
-            data = model.get_info()
-            del data["OwnerHistory"]
-
-            loaded_by = []
-            for load_group in model.LoadedBy or []:
-                loaded_by.append(load_group.id())
-            data["LoadedBy"] = loaded_by
-
-            has_results = []
-            for result_group in model.HasResults or []:
-                has_results.append(result_group.id())
-            data["HasResults"] = has_results
-
-            data["OrientationOf2DPlane"] = model.OrientationOf2DPlane.id() if model.OrientationOf2DPlane else None
-            data["SharedPlacement"] = model.SharedPlacement.id() if model.SharedPlacement else None
-
-            cls.structural_analysis_models[model.id()] = data
 
     @classmethod
     def load_structural_load_cases(cls):
@@ -144,8 +130,6 @@ class Data:
 
     @classmethod
     def load_structural_connection(cls, product_id):
-        cls.connects_structural_members = {}
-
         connection = cls._file.by_id(product_id)
         data = connection.get_info()
         del data["OwnerHistory"]
@@ -155,7 +139,9 @@ class Data:
         if connection.is_a("IfcStructuralCurveConnection"):
             data["Axis"] = data["Axis"].id() if data["Axis"] is not None else None
         if connection.is_a("IfcStructuralPointConnection"):
-            data["ConditionCoordinateSystem"] = data["ConditionCoordinateSystem"].id() if data["ConditionCoordinateSystem"] is not None else None
+            data["ConditionCoordinateSystem"] = (
+                data["ConditionCoordinateSystem"].id() if data["ConditionCoordinateSystem"] is not None else None
+            )
 
         data["ConnectsStructuralMembers"] = []
 
@@ -184,7 +170,9 @@ class Data:
         del rel_data["OwnerHistory"]
         rel_data["RelatingStructuralMember"] = rel.RelatingStructuralMember.id()
         rel_data["RelatedStructuralConnection"] = rel.RelatedStructuralConnection.id()
-        del rel_data["ConditionCoordinateSystem"]  # TODO: consider orientation
+        rel_data["ConditionCoordinateSystem"] = (
+            rel_data["ConditionCoordinateSystem"].id() if rel_data["ConditionCoordinateSystem"] is not None else None
+        )  # TODO: consider orientation
 
         if rel.is_a("IfcRelConnectsWithEccentricity"):
             rel_data["ConnectionConstraint"] = rel.ConnectionConstraint.id()  # TODO
@@ -226,9 +214,6 @@ class Data:
 
     @classmethod
     def load_structural_member(cls, product_id):
-        cls.connects_structural_activities = {}
-        cls.connects_structural_members = {}
-
         member = cls._file.by_id(product_id)
         data = member.get_info()
 
@@ -238,7 +223,7 @@ class Data:
         data["Representation"] = data["Representation"].id() if data["Representation"] is not None else None
         if member.is_a("IfcStructuralCurveMember"):
             data["Axis"] = data["Axis"].id() if data["Axis"] is not None else None
-        
+
         data["ConnectsStructuralActivities"] = []
         data["ConnectedBy"] = []
 
@@ -249,6 +234,5 @@ class Data:
         for rel in member.ConnectedBy or []:
             cls.load_connects_structural_member(rel)
             data["ConnectedBy"].append(rel.id())
-        
 
         cls.members[member.id()] = data

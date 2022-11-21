@@ -23,6 +23,11 @@
 #ifndef IFCGEOMFILTER_H
 #define IFCGEOMFILTER_H
 
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 107800 && defined(_MSC_VER)
+#define BOOST_REGEX_NO_W32
+#endif
+
 #include "Kernel.h"
 #include "../ifcparse/IfcFile.h"
 
@@ -230,6 +235,32 @@ namespace IfcGeom {
             description = ss.str();
         }
     };
+
+	struct instance_id_filter : public filter {
+		std::set<int> instance_ids_;
+
+		instance_id_filter() {}
+		instance_id_filter(bool include, bool traverse, const std::set<int>& instance_ids)
+			: filter(include, traverse)
+			, instance_ids_(instance_ids) {}
+
+		bool match(IfcUtil::IfcBaseEntity* prod) const {
+			return instance_ids_.find(prod->data().id()) != instance_ids_.end();
+		}
+
+		bool operator()(IfcUtil::IfcBaseEntity* prod) const {
+			return filter::match(prod, std::bind(&instance_id_filter::match, this, std::placeholders::_1));
+		}
+
+		void update_description() {
+			std::stringstream ss;
+			ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " ids";
+			for (auto& id : instance_ids_) {
+				ss << " " << id;
+			}
+			description = ss.str();
+		}
+	};
 }
 
 #endif

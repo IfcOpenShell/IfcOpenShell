@@ -1,4 +1,3 @@
-
 # Ifc2CA - IFC Code_Aster utility
 # Copyright (C) 2020, 2021 Ioannis P. Christovasilis <ipc@aethereng.com>
 #
@@ -20,9 +19,11 @@
 import json
 import numpy as np
 import itertools
+from pathlib import Path
 
 flatten = itertools.chain.from_iterable
 
+includeZeroLength1DSprings = True
 
 class COMMANDFILE:
     def __init__(self, dataFilename, asterFilename):
@@ -31,9 +32,12 @@ class COMMANDFILE:
         self.create()
 
     def getGroupName(self, name):
-        info = name.split("|")
-        sortName = "".join(c for c in info[0] if c.isupper())
-        return str(sortName + "_" + info[1])
+        if "|" in name:
+            info = name.split("|")
+            sortName = "".join(c for c in info[0] if c.isupper())
+            return f"{sortName[2:]}_{info[1]}"
+        else:
+            return name
 
     def create(self):
 
@@ -53,7 +57,7 @@ class COMMANDFILE:
         for el in elements:
             for rel in el["connections"]:
                 conn = [
-                    c for c in connections if c["ifcName"] == rel["relatedConnection"]
+                    c for c in connections if c["referenceName"] == rel["relatedConnection"]
                 ][0]
                 rel["conn_string"] = None
                 if conn["geometryType"] == "point":
@@ -97,40 +101,41 @@ class COMMANDFILE:
 
         edgeGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"])
+                self.getGroupName(el["referenceName"])
                 for el in elements
                 if el["geometryType"] == "line"
             ]
         )
         faceGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"])
+                self.getGroupName(el["referenceName"])
                 for el in elements
                 if el["geometryType"] == "surface"
             ]
         )
         point0DGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"]) + "_0D"
+                self.getGroupName(el["referenceName"]) + "_0D"
                 for el in connections
                 if el["geometryType"] == "point"
             ]
         )
-        spring1DGroupNames = tuple(
-            flatten(
-                [
+        if includeZeroLength1DSprings:
+            spring1DGroupNames = tuple(
+                flatten(
                     [
-                        rel["springGroupName"]
-                        for rel in el["connections"]
-                        if rel["springGroupName"]
+                        [
+                            rel["springGroupName"]
+                            for rel in el["connections"]
+                            if rel["springGroupName"]
+                        ]
+                        for el in elements
                     ]
-                    for el in elements
-                ]
+                )
             )
-        )
         point1DGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"]) + "_0D"
+                self.getGroupName(el["referenceName"]) + "_0D"
                 for el in connections
                 if el["geometryType"] == "line"
             ]
@@ -151,14 +156,14 @@ class COMMANDFILE:
             #         'dz': True
             #     }
             if len(conn["unifiedGroupNames"]) >= 1:
-                conn["unifiedGroupNames"].insert(0, self.getGroupName(conn["ifcName"]))
+                conn["unifiedGroupNames"].insert(0, self.getGroupName(conn["referenceName"]))
                 conn["unifiedGroupNames"] = tuple(conn["unifiedGroupNames"])
                 unifiedConnection = True
             rigidLinkGroupNames.extend(
                 [
                     self.getGroupName(rel["relatingElement"])
                     + "_1DR_"
-                    + self.getGroupName(conn["ifcName"])
+                    + self.getGroupName(conn["referenceName"])
                     for rel in conn["relatedElements"]
                     if rel["eccentricity"]
                 ]
@@ -238,7 +243,14 @@ model = AFFE_MODELE(
         ),"""
 
             context = {
-                "groupNames": tuple(flatten([point0DGroupNames, spring1DGroupNames]))
+                "groupNames": tuple(
+                    flatten(
+                        [
+                            point0DGroupNames,
+                            spring1DGroupNames if includeZeroLength1DSprings else [],
+                        ]
+                    )
+                )
             }
 
             f.write(template.format(**context))
@@ -433,7 +445,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(el["ifcName"]),
+                "groupName": self.getGroupName(el["referenceName"]),
                 "thickness": el["thickness"],
                 "localAxisX": tuple(el["orientation"][0]),
             }
@@ -460,15 +472,16 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(conn["ifcName"]) + "_0D",
+                "groupName": self.getGroupName(conn["referenceName"]) + "_0D",
                 "stiffnesses": conn["stiffnesses"],
             }
 
             f.write(template.format(**context))
 
-            for rel in conn["relatedElements"]:
+            if includeZeroLength1DSprings:
+                for rel in conn["relatedElements"]:
 
-                template = """
+                    template = """
         _F(
             GROUP_MA = '{groupName}',
             CARA = 'K_TR_D_L',
@@ -476,12 +489,12 @@ element = AFFE_CARA_ELEM(
             REPERE = 'LOCAL'
         ),"""
 
-                context = {
-                    "groupName": rel["springGroupName"],
-                    "stiffnesses": rel["stiffnesses"],
-                }
+                    context = {
+                        "groupName": rel["springGroupName"],
+                        "stiffnesses": rel["stiffnesses"],
+                    }
 
-                f.write(template.format(**context))
+                    f.write(template.format(**context))
 
         for conn in [conn for conn in connections if conn["geometryType"] == "line"]:
 
@@ -494,7 +507,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(conn["ifcName"]) + "_0D",
+                "groupName": self.getGroupName(conn["referenceName"]) + "_0D",
                 "stiffnesses": conn["stiffnesses"],
             }
 
@@ -520,7 +533,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(el["ifcName"]),
+                "groupName": self.getGroupName(el["referenceName"]),
                 "localAxisY": tuple(el["orientation"][1]),
             }
 
@@ -536,27 +549,30 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(conn["ifcName"]) + "_0D",
+                "groupName": self.getGroupName(conn["referenceName"]) + "_0D",
                 "localAxesXY": tuple(conn["orientation"][0] + conn["orientation"][1]),
             }
 
             f.write(template.format(**context))
 
-            for rel in conn["relatedElements"]:
+            if includeZeroLength1DSprings:
+                for rel in conn["relatedElements"]:
 
-                template = """
+                    template = """
         _F(
             GROUP_MA = '{groupName}',
             CARA = 'VECT_X_Y',
             VALE = {localAxesXY}
         ),"""
 
-                context = {
-                    "groupName": rel["springGroupName"],
-                    "localAxesXY": tuple(rel["orientation"][0] + rel["orientation"][1]),
-                }
+                    context = {
+                        "groupName": rel["springGroupName"],
+                        "localAxesXY": tuple(
+                            rel["orientation"][0] + rel["orientation"][1]
+                        ),
+                    }
 
-                f.write(template.format(**context))
+                    f.write(template.format(**context))
 
         for conn in [conn for conn in connections if conn["geometryType"] == "line"]:
 
@@ -568,7 +584,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(conn["ifcName"]) + "_0D",
+                "groupName": self.getGroupName(conn["referenceName"]) + "_0D",
                 "localAxesXY": tuple(conn["orientation"][0] + conn["orientation"][1]),
             }
 
@@ -986,7 +1002,7 @@ FIN()
         rel["stiffnesses"] = tuple(stiffnesses)
 
     def calculateRestraints(self, conn):
-        group = self.getGroupName(conn["ifcName"])
+        group = self.getGroupName(conn["referenceName"])
         o = np.array(conn["orientation"]).transpose().tolist()
         liaisons = {"groupNames": (group, group, group), "coeffs": [], "dofs": []}
         stiffnesses = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -1083,7 +1099,9 @@ if __name__ == "__main__":
     files = fileNames
 
     for fileName in files:
-        BASE_PATH = "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/"
-        DATAFILENAME = BASE_PATH + fileName + "/" + fileName + ".json"
-        ASTERFILENAME = BASE_PATH + fileName + "/" + fileName + ".comm"
+        BASE_PATH = Path(
+            "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/"
+        )
+        DATAFILENAME = BASE_PATH / fileName / f"{fileName}.json"
+        ASTERFILENAME = BASE_PATH / fileName / f"{fileName}.comm"
         COMMANDFILE(DATAFILENAME, ASTERFILENAME)

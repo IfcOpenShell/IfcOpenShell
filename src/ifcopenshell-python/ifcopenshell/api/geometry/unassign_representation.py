@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell.api
 import ifcopenshell.util.element
 
@@ -34,9 +52,8 @@ class Usecase:
         self.settings["product"].RepresentationMaps = self.settings["product"].RepresentationMaps or None
 
     def remove_representation_map_only(self, representation_map):
-        dummy_representation = self.file.createIfcShapeRepresentation()
-        representation_map.MappedRepresentation = dummy_representation
-        ifcopenshell.util.element.remove_deep(self.file, representation_map)
+        representation_map.MappedRepresentation = self.file.createIfcShapeRepresentation()
+        ifcopenshell.util.element.remove_deep2(self.file, representation_map)
         self.file.remove(representation_map)
 
     def unassign_products_using_mapped_representation(self, representation_map):

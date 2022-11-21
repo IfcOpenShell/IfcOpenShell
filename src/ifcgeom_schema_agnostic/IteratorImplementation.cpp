@@ -1,87 +1,43 @@
 #include "IteratorImplementation.h"
 
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
-template <typename P, typename PP>
-IteratorFactoryImplementation<P, PP>& iterator_implementations() {
-	static IteratorFactoryImplementation<P, PP> impl;
+// Declares the schema-based external iterator initialization routines:
+// - extern void init_IteratorImplementation_Ifc2x3(IteratorFactoryImplementation*);
+// - ...
+#define EXTERNAL_DEFS(r, data, elem) \
+	extern void BOOST_PP_CAT(init_IteratorImplementation_Ifc, elem)(IteratorFactoryImplementation*);
+
+// Declares the schema-based external iterator initialization routines:
+// - init_IteratorImplementation_Ifc2x3(this);
+// - ...
+#define CALL_DEFS(r, data, elem) \
+	BOOST_PP_CAT(init_IteratorImplementation_Ifc, elem)(this);
+
+IFC_GEOM_API IteratorFactoryImplementation& iterator_implementations() {
+	static IteratorFactoryImplementation impl;
 	return impl;
 }
 
-template IFC_GEOM_API IteratorFactoryImplementation<float, float>& iterator_implementations<float, float>();
-template IFC_GEOM_API IteratorFactoryImplementation<float, double>& iterator_implementations<float, double>();
-template IFC_GEOM_API IteratorFactoryImplementation<double, double>& iterator_implementations<double, double>();
+BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 
-#ifdef HAS_SCHEMA_2x3
-template <typename P, typename PP>
-extern void init_IteratorImplementation_Ifc2x3(IteratorFactoryImplementation<P, PP>*);
-#endif
-
-#ifdef HAS_SCHEMA_4
-template <typename P, typename PP>
-extern void init_IteratorImplementation_Ifc4(IteratorFactoryImplementation<P, PP>*);
-#endif
-
-#ifdef HAS_SCHEMA_4x1
-template <typename P, typename PP>
-extern void init_IteratorImplementation_Ifc4x1(IteratorFactoryImplementation<P, PP>*);
-#endif
-
-#ifdef HAS_SCHEMA_4x2
-template <typename P, typename PP>
-extern void init_IteratorImplementation_Ifc4x2(IteratorFactoryImplementation<P, PP>*);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc1
-template <typename P, typename PP>
-extern void init_IteratorImplementation_Ifc4x3_rc1(IteratorFactoryImplementation<P, PP>*);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc2
-template <typename P, typename PP>
-extern void init_IteratorImplementation_Ifc4x3_rc2(IteratorFactoryImplementation<P, PP>*);
-#endif
-
-template <typename P, typename PP>
-IteratorFactoryImplementation<P, PP>::IteratorFactoryImplementation() {
-#ifdef HAS_SCHEMA_2x3
-	init_IteratorImplementation_Ifc2x3(this);
-#endif
-#ifdef HAS_SCHEMA_4
-	init_IteratorImplementation_Ifc4(this);
-#endif
-#ifdef HAS_SCHEMA_4x1
-	init_IteratorImplementation_Ifc4x1(this);
-#endif
-#ifdef HAS_SCHEMA_4x2
-	init_IteratorImplementation_Ifc4x2(this);
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	init_IteratorImplementation_Ifc4x3_rc1(this);
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	init_IteratorImplementation_Ifc4x3_rc2(this);
-#endif
+IteratorFactoryImplementation::IteratorFactoryImplementation() {
+	BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
 }
 
-template <typename P, typename PP>
-void IteratorFactoryImplementation<P, PP>::bind(const std::string& schema_name, typename get_factory_type<P, PP>::type fn) {
+void IteratorFactoryImplementation::bind(const std::string& schema_name, iterator_fn fn) {
 	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
 	this->insert(std::make_pair(schema_name_lower, fn));
 }
 
-template <typename P, typename PP>
-IfcGeom::IteratorImplementation<P, PP>* IteratorFactoryImplementation<P, PP>::construct(const std::string& schema_name, const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads) {
+IfcGeom::IteratorImplementation* IteratorFactoryImplementation::construct(const std::string& schema_name, const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads) {
 	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-	typename std::map<std::string, typename get_factory_type<P, PP>::type>::const_iterator it;
+	typename std::map<std::string, iterator_fn>::const_iterator it;
 	it = this->find(schema_name_lower);
 	if (it == this->end()) {
 		throw IfcParse::IfcException("No geometry iterator registered for " + schema_name);
 	}
 	return it->second(settings, file, filters, num_threads);
 }
-
-
-template class IteratorFactoryImplementation<float, float>;
-template class IteratorFactoryImplementation<float, double>;
-template class IteratorFactoryImplementation<double, double>;

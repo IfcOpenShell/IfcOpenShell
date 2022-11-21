@@ -1,5 +1,24 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Maxim Vasilyev <qwiglydee@gmail.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import os
+import blenderbim.tool as tool
 from mathutils import Vector
 
 
@@ -16,13 +35,13 @@ class Annotator:
         return float(sizes[str(size)])
 
     @staticmethod
-    def add_text(context, related_element=None):
+    def add_text(related_element=None):
         curve = bpy.data.curves.new(type="FONT", name="Text")
         curve.body = "TEXT"
         obj = bpy.data.objects.new("Text", curve)
-        obj.matrix_world = context.scene.camera.matrix_world
+        obj.matrix_world = bpy.context.scene.camera.matrix_world
         if related_element is None:
-            location, _, _, _ = Annotator.get_placeholder_coords(context)
+            location, _, _, _ = Annotator.get_placeholder_coords(bpy.context)
         else:
             obj.data.BIMTextProperties.related_element = related_element
             location = related_element.location
@@ -31,12 +50,12 @@ class Annotator:
         font = bpy.data.fonts.get("OpenGost TypeB TT")
         if not font:
             font = bpy.data.fonts.load(
-                os.path.join(context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
+                os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
             )
             font.name = "OpenGost Type B TT"
         obj.data.font = font
         obj.data.BIMTextProperties.font_size = "2.5"
-        collection = context.scene.camera.users_collection[0]
+        collection = bpy.context.scene.camera.users_collection[0]
         collection.objects.link(obj)
         Annotator.resize_text(obj)
         return obj
@@ -64,9 +83,9 @@ class Annotator:
         text_obj.data.size = font_size
 
     @staticmethod
-    def add_line_to_annotation(obj, context, co1=None, co2=None):
+    def add_line_to_annotation(obj, co1=None, co2=None):
         if co1 is None:
-            co1, co2, _, _ = Annotator.get_placeholder_coords(context)
+            co1, co2, _, _ = Annotator.get_placeholder_coords()
         co1 = obj.matrix_world.inverted() @ co1
         co2 = obj.matrix_world.inverted() @ co2
         if isinstance(obj.data, bpy.types.Mesh):
@@ -83,8 +102,8 @@ class Annotator:
         return obj
 
     @staticmethod
-    def add_plane_to_annotation(obj, context):
-        co1, co2, co3, co4 = Annotator.get_placeholder_coords(context)
+    def add_plane_to_annotation(obj):
+        co1, co2, co3, co4 = Annotator.get_placeholder_coords()
         co1 = obj.matrix_world.inverted() @ co1  # bot left
         co2 = obj.matrix_world.inverted() @ co2  # top left
         co3 = obj.matrix_world.inverted() @ co3  # bot right
@@ -132,36 +151,61 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_annotation_obj(name, data_type, context):
-        collection = context.scene.camera.users_collection[0]
-        for obj in collection.objects:
-            if name in obj.name:
-                return obj
-        if data_type == "mesh":
-            data = bpy.data.meshes.new(name)
-        elif data_type == "curve":
-            data = bpy.data.curves.new(name, type="CURVE")
+    def get_annotation_obj(drawing, object_type, data_type):
+        camera = tool.Ifc.get_object(drawing)
+        co1, _, _, _ = Annotator.get_placeholder_coords(camera)
+        matrix_world = camera.matrix_world.copy()
+        matrix_world[0][3] = co1.x
+        matrix_world[1][3] = co1.y
+        matrix_world[2][3] = co1.z
+        collection = camera.users_collection[0]
+        if object_type == "TEXT":
+            obj = bpy.data.objects.new(object_type, None)
+            obj.matrix_world = matrix_world
+            collection.objects.link(obj)
+            return obj
+        elif object_type in ("TEXT_LEADER", "SECTION_LEVEL"):
+            data = bpy.data.curves.new(object_type, type="CURVE")
             data.dimensions = "3D"
             data.resolution_u = 2
-        obj = bpy.data.objects.new(name, data)
+            obj = bpy.data.objects.new(object_type, data)
+            obj.matrix_world = matrix_world
+            collection.objects.link(obj)
+            return obj
+        if object_type != "ANGLE":
+            for obj in collection.objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.ObjectType == object_type:
+                    return obj
+        if data_type == "mesh":
+            data = bpy.data.meshes.new(object_type)
+        elif data_type == "curve":
+            data = bpy.data.curves.new(object_type, type="CURVE")
+            data.dimensions = "3D"
+            data.resolution_u = 2
+        obj = bpy.data.objects.new(object_type, data)
+        obj.matrix_world = matrix_world
         collection.objects.link(obj)
         return obj
 
     @staticmethod
-    def get_placeholder_coords(context):
-        camera = context.scene.camera
+    def get_placeholder_coords(camera=None):
+        if not camera:
+            camera = bpy.context.scene.camera
         z_offset = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        if context.scene.render.resolution_x > context.scene.render.resolution_y:
+        if bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y:
             y = (
                 camera.data.ortho_scale
-                * (context.scene.render.resolution_y / context.scene.render.resolution_x)
+                * (bpy.context.scene.render.resolution_y / bpy.context.scene.render.resolution_x)
                 / 4
             )
         else:
             y = camera.data.ortho_scale / 4
         y_offset = camera.matrix_world.to_quaternion() @ Vector((0, y, 0))
-        x_offset = camera.matrix_world.to_quaternion() @ Vector((y/2, 0, 0))
-        return (camera.location + z_offset,
-                camera.location + z_offset + y_offset,
-                camera.location + z_offset + x_offset,
-                camera.location + z_offset + x_offset + y_offset)
+        x_offset = camera.matrix_world.to_quaternion() @ Vector((y / 2, 0, 0))
+        return (
+            camera.location + z_offset,
+            camera.location + z_offset + y_offset,
+            camera.location + z_offset + x_offset,
+            camera.location + z_offset + x_offset + y_offset,
+        )

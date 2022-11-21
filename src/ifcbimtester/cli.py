@@ -1,5 +1,24 @@
 #!/usr/bin/env python3
 
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import os
 import argparse
 import bimtester.clean
@@ -10,7 +29,7 @@ parser = argparse.ArgumentParser(description="Runs unit tests for BIM data")
 parser.add_argument("-a", "--action", type=str, help="Action to perform, from run/purge", default="run")
 parser.add_argument("--advanced-arguments", type=str, help="Specify arguments to Behave", default="")
 parser.add_argument("-c", "--console", action="store_true", help="Show results in the console")
-parser.add_argument("-f", "--feature", type=str, help="Specify a feature file or IDS to test", required=True)
+parser.add_argument("-f", "--feature", type=str, help="Specify a feature file to test", required=True)
 parser.add_argument("-i", "--ifc", type=str, help="Specify an IFC file to test", required=True)
 parser.add_argument("-p", "--path", type=str, help="Define a path for use in test steps that use relative paths")
 parser.add_argument("-r", "--report", type=str, help="Specify an output file for a HTML report")

@@ -1,7 +1,26 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import bpy
 from . import bcfstore
 from bpy.types import Panel
+
 
 class BIM_PT_bcf(Panel):
     bl_label = "BCF Project"
@@ -10,6 +29,7 @@ class BIM_PT_bcf(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_collaboration"
 
     def draw(self, context):
         layout = self.layout
@@ -39,12 +59,13 @@ class BIM_PT_bcf(Panel):
         row.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")
         col = row.column(align=True)
         col.operator("bim.add_bcf_topic", icon="ADD", text="")
+        col.operator("bim.remove_bcf_topic", icon="REMOVE", text="")
         if props.active_topic_index < len(props.topics):
-            topic = props.topics[props.active_topic_index]
+            topic = props.active_topic
             col.prop(topic, "is_editable", icon="CHECKMARK" if topic.is_editable else "GREASEPENCIL", icon_only=True)
 
         if props.active_topic_index < len(props.topics):
-            topic = props.topics[props.active_topic_index]
+            topic = props.active_topic
             row = layout.row()
             row.enabled = topic.is_editable
             row.prop(topic, "description", text="")
@@ -99,7 +120,7 @@ class BIM_PT_bcf_metadata(Panel):
             layout.label(text="No BCF project is loaded")
             return
 
-        topic = props.topics[props.active_topic_index]
+        topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcf_topic = bcfxml.topics[topic.name]
 
@@ -132,12 +153,12 @@ class BIM_PT_bcf_metadata(Panel):
                     row.label(text=f.ifc_spatial_structure_element)
 
         row = layout.row(align=True)
-        row.prop(topic, "file_reference")
+        row.prop(props, "file_reference")
         row.operator("bim.select_bcf_header_file", icon="FILE_FOLDER", text="")
         row = layout.row()
-        row.prop(topic, "file_ifc_project")
+        row.prop(props, "file_ifc_project")
         row = layout.row()
-        row.prop(topic, "file_ifc_spatial_structure_element")
+        row.prop(props, "file_ifc_spatial_structure_element")
 
         row = layout.row()
         row.operator("bim.add_bcf_header_file")
@@ -149,7 +170,7 @@ class BIM_PT_bcf_metadata(Panel):
             row.operator("bim.open_uri", icon="URL", text="").uri = link.name
             row.operator("bim.remove_bcf_reference_link", icon="X", text="").index = index
         row = layout.row()
-        row.prop(topic, "reference_link")
+        row.prop(props, "reference_link")
         row = layout.row()
         row.operator("bim.add_bcf_reference_link")
 
@@ -159,7 +180,7 @@ class BIM_PT_bcf_metadata(Panel):
             row.prop(label, "name", text="")
             row.operator("bim.remove_bcf_label", icon="X", text="").index = index
         row = layout.row()
-        row.prop(topic, "label")
+        row.prop(props, "label")
         row = layout.row()
         row.operator("bim.add_bcf_label")
 
@@ -180,12 +201,12 @@ class BIM_PT_bcf_metadata(Panel):
             row.operator("bim.remove_bcf_bim_snippet", icon="X", text="")
         else:
             row = layout.row(align=True)
-            row.prop(topic, "bim_snippet_reference")
+            row.prop(props, "bim_snippet_reference")
             row.operator("bim.select_bcf_bim_snippet_reference", icon="FILE_FOLDER", text="")
             row = layout.row()
-            row.prop(topic, "bim_snippet_type")
+            row.prop(props, "bim_snippet_type")
             row = layout.row()
-            row.prop(topic, "bim_snippet_schema")
+            row.prop(props, "bim_snippet_schema")
             row = layout.row()
             row.operator("bim.add_bcf_bim_snippet")
 
@@ -203,20 +224,26 @@ class BIM_PT_bcf_metadata(Panel):
             row = box.row(align=True)
             row.prop(doc, "description")
         row = layout.row(align=True)
-        row.prop(topic, "document_reference")
+        row.prop(props, "document_reference")
         row.operator("bim.select_bcf_document_reference", icon="FILE_FOLDER", text="")
         row = layout.row()
-        row.prop(topic, "document_reference_description")
+        row.prop(props, "document_reference_description")
         row = layout.row()
         row.operator("bim.add_bcf_document_reference")
 
         layout.label(text="Related Topics:")
         for index, related_topic in enumerate(topic.related_topics):
-            row = layout.row(align=True)
-            row.operator("bim.view_bcf_topic", text=bcfxml.topics[related_topic.name.lower()].title).topic_guid = related_topic.name
-            row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index
+            try:
+                row = layout.row(align=True)
+                op = row.operator(
+                    "bim.view_bcf_topic", text=f"Select {bcfxml.topics[related_topic.name.lower()].title}"
+                )
+                op.topic_guid = related_topic.name
+                row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index
+            except KeyError:
+                pass
         row = layout.row()
-        row.prop(topic, "related_topic")
+        row.prop(props, "related_topic")
         row = layout.row()
         row.operator("bim.add_bcf_related_topic")
 
@@ -245,7 +272,7 @@ class BIM_PT_bcf_comments(Panel):
         row = layout.row()
         row.prop(props, "comment_text_width")
 
-        topic = props.topics[props.active_topic_index]
+        topic = props.active_topic
         for comment in topic.comments:
             box = self.layout.box()
 
@@ -276,8 +303,8 @@ class BIM_PT_bcf_comments(Panel):
                     col.label(text=" ".join(line_words))
 
         row = layout.row()
-        row.prop(topic, "comment")
+        row.prop(props, "comment")
         row = layout.row()
-        row.prop(topic, "has_related_viewpoint")
+        row.prop(props, "has_related_viewpoint")
         row = layout.row()
         row.operator("bim.add_bcf_comment")

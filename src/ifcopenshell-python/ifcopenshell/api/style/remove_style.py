@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell.util.element
 
 
@@ -10,7 +28,9 @@ class Usecase:
 
     def execute(self):
         self.purge_styled_items(self.settings["style"])
-        ifcopenshell.util.element.remove_deep(self.file, self.settings["style"])
+        for style in self.settings["style"].Styles or []:
+            ifcopenshell.api.run("style.remove_surface_style", self.file, style=style)
+        self.file.remove(self.settings["style"])
 
     def purge_styled_items(self, style):
         for inverse in self.file.get_inverse(style):

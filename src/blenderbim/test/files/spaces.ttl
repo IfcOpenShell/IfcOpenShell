@@ -1,0 +1,26 @@
+@prefix digitaltwin: <https://example.org/digitaltwin#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+digitaltwin:site a brick:Site ;
+    brick:buildingPrimaryFunction [ brick:value "Library" ] ;
+    brick:hasPart digitaltwin:bldg .
+
+digitaltwin:bldg a brick:Building ;
+    rdfs:label "My Building" ;
+    brick:hasPart digitaltwin:floor .
+
+digitaltwin:floor a brick:Floor ;
+    brick:area [ brick:value 5000 ; brick:hasUnit unit:M_2 ] ;
+    brick:hasPart digitaltwin:space, digitaltwin:hvac_zone, digitaltwin:lighting_zone_1, digitaltwin:lighting_zone_2 .
+
+digitaltwin:space a brick:Space ;
+    brick:netArea [ brick:value 500 ; brick:hasUnit unit:M_2 ] ;
+    brick:grossArea [ brick:value 650 ; brick:hasUnit unit:M_2 ] ;
+    brick:isPartOf digitaltwin:hvac_zone ;
+    brick:hasPart digitaltwin:lighting_zone_1, digitaltwin:lighting_zone_2 .
+
+digitaltwin:hvac_zone a brick:HVAC_Zone .
+digitaltwin:lighting_zone_1 a brick:Lighting_Zone .
+digitaltwin:lighting_zone_2 a brick:Lighting_Zone .

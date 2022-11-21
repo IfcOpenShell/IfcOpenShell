@@ -24,6 +24,7 @@ addons:
     - python3-all-dev
     - python3-pip
     - swig
+    - libhdf5-dev
 
 before_script:
   - if [ $TRAVIS_OS_NAME == "linux" ]; then ccache -z; fi
@@ -47,6 +48,7 @@ script:
     "-DSCHEMA_VERSIONS=2x3;4" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include \
+    -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
     ../cmake
 
   # TODO: Drop sudo

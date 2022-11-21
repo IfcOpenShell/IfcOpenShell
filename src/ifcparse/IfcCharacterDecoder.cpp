@@ -27,13 +27,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ < 5
-#include <boost/locale/encoding_utf.hpp>
-using boost::locale::conv::utf_to_utf;
-#define CODECVT_BOOST_FALLBACK
-#else
 #include <codecvt>
-#endif
 
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcException.h"
@@ -52,7 +46,6 @@ using boost::locale::conv::utf_to_utf;
 #define THIRD_SOLIDUS						(1 << 18)
 #define ENDEXTENDED_X						(1 << 19)
 #define ENDEXTENDED_0						(1 << 20)
-#define FOURTH_SOLIDUS						(1 << 21)
 #define IGNORED_DIRECTIVE					(1 << 22)
 #define ENCOUNTERED_HEX                     (1 << 23) 
 
@@ -69,7 +62,7 @@ using boost::locale::conv::utf_to_utf;
 #define EXPECTS_ENDEXTENDED_X(S)			(S & THIRD_SOLIDUS)
 #define EXPECTS_ENDEXTENDED_0(S)			(S & ENDEXTENDED_X)
 
-#define IS_VALID_ALPHABET_DEFINITION(C)		(C >= 0x40 && C <= 0x4A)
+#define IS_VALID_ALPHABET_DEFINITION(C)		(C >= 0x41 && C <= 0x49)
 #define IS_HEXADECIMAL(C)					((C >= 0x30 && C <= 0x39 ) || (C >= 0x41 && C <= 0x46 ))
 #define HEX_TO_INT(C)						((C >= 0x30 && C <= 0x39 ) ? C - 0x30 : (C+10) - 0x41)
 #define CLEAR_HEX(C)						(C &= ~(HEX(1)|HEX(2)|HEX(3)|HEX(4)|HEX(5)|HEX(6)|HEX(7)|HEX(8)))
@@ -202,7 +195,18 @@ namespace {
 			builder_.push_back('\'');
 
 			if (mode == IfcParse::IfcCharacterDecoder::UTF8) {
-				return IfcUtil::convert_utf8(builder_);
+				if (builder_.empty()) {
+					static std::string empty;
+					return empty;
+				} else {
+					auto it = std::max_element(builder_.begin(), builder_.end());
+					if (*it <= 0x7e) {
+						std::string r(builder_.begin(), builder_.end());
+						return r;
+					} else {
+						return IfcUtil::convert_utf8(builder_);
+					}
+				}				
 			} else if (mode == IfcParse::IfcCharacterDecoder::SUBSTITUTE) {
 				std::string r;
 				r.reserve(builder_.size());
@@ -308,7 +312,7 @@ IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDeco
 char IfcCharacterDecoder::substitution_character = '_';
 
 IfcCharacterEncoder::IfcCharacterEncoder(const std::string& input)
-	: str(IfcUtil::convert_utf8(input)) {}
+	: str(IfcUtil::convert_utf8_to_utf32(input)) {}
 	
 IfcCharacterEncoder::operator std::string() {
 	std::ostringstream oss;
@@ -391,16 +395,6 @@ std::wstring::value_type IfcUtil::convert_codepage(int codepage, int c) {
 	return r;
 }
 
-#ifdef CODECVT_BOOST_FALLBACK
-std::string IfcUtil::convert_utf8(const std::wstring& s) {
-    return utf_to_utf<char>(s.c_str(), s.c_str() + s.size());
-}
-
-std::wstring IfcUtil::convert_utf8(const std::string& s)
-{
-    return utf_to_utf<wchar_t>(s.c_str(), s.c_str() + s.size());
-}
-#else
 std::string IfcUtil::convert_utf8(const std::wstring& s) {
 	return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().to_bytes(s);
 }
@@ -408,4 +402,20 @@ std::string IfcUtil::convert_utf8(const std::wstring& s) {
 std::wstring IfcUtil::convert_utf8(const std::string& s) {
 	return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().from_bytes(s);
 }
+
+#ifdef _MSC_VER
+
+// bug in msvc 2015 and 2017, unsure if fixed in later versions
+
+std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& s) {
+	auto converted = std::wstring_convert<std::codecvt_utf8<int32_t>, int32_t>().from_bytes(s);
+	return std::u32string(reinterpret_cast<char32_t const *>(converted.data()));
+}
+
+#else
+
+std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& s) {
+	return std::wstring_convert<std::codecvt_utf8<std::u32string::value_type>, std::u32string::value_type>().from_bytes(s);
+}
+
 #endif

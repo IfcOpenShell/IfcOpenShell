@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -19,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.pset
 import ifcopenshell.util.element
 
@@ -33,12 +33,16 @@ class Patcher:
     def patch(self):
         unit = {"is_metric": "METERS" in self.args[0], "raw": self.args[0]}
         self.file_patched = ifcopenshell.api.run("project.create_file", version=self.file.schema)
+        if self.file.schema == "IFC2X3":
+            user = self.file_patched.add(self.file.by_type("IfcProject")[0].OwnerHistory.OwningUser)
+            old_get_user = ifcopenshell.api.owner.settings.get_user
+            ifcopenshell.api.owner.settings.get_user = lambda ifc: user
         project = ifcopenshell.api.run("root.create_entity", self.file_patched, ifc_class="IfcProject")
         unit_assignment = ifcopenshell.api.run("unit.assign_unit", self.file_patched, **{"length": unit})
 
         # Is there a better way?
         for element in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
-            element.Precision = 1E-8
+            element.Precision = 1e-8
 
         # If we don't add openings first, they don't get converted
         for element in self.file.by_type("IfcOpeningElement"):
@@ -57,3 +61,6 @@ class Patcher:
 
         self.file_patched.remove(old_length)
         self.file_patched.remove(project)
+
+        if self.file.schema == "IFC2X3":
+            ifcopenshell.api.owner.settings.get_user = old_get_user

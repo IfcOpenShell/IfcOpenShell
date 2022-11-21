@@ -1,191 +1,163 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
+import json
 import ifcopenshell.api
+import ifcopenshell.util.unit
 import blenderbim.bim.helper
+import blenderbim.bim.handler
+import blenderbim.tool as tool
+import blenderbim.core.unit as core
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.unit.data import Data
 
 
-class AssignUnit(bpy.types.Operator):
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data
+        return {"FINISHED"}
+
+
+class AssignSceneUnits(bpy.types.Operator, Operator):
+    bl_idname = "bim.assign_scene_units"
+    bl_label = "Assign Scene Units"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.assign_scene_units(tool.Ifc, tool.Unit)
+
+
+class AssignUnit(bpy.types.Operator, Operator):
     bl_idname = "bim.assign_unit"
     bl_label = "Assign Unit"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    unit: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifcopenshell.api.run("unit.assign_unit", IfcStore.get_file(), **self.get_units(context))
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
-
-    def get_units(self, context):
-        scene = context.scene
-        units = {
-            "length": {
-                "ifc": None,
-                "is_metric": scene.unit_settings.system != "IMPERIAL",
-                "raw": scene.unit_settings.length_unit,
-            },
-            "area": {
-                "ifc": None,
-                "is_metric": scene.unit_settings.system != "IMPERIAL",
-                "raw": scene.unit_settings.length_unit,
-            },
-            "volume": {
-                "ifc": None,
-                "is_metric": scene.unit_settings.system != "IMPERIAL",
-                "raw": scene.unit_settings.length_unit,
-            },
-        }
-        for data in units.values():
-            if data["raw"] == "ADAPTIVE":
-                if data["is_metric"]:
-                    data["raw"] = "METERS"
-                else:
-                    data["raw"] = "FEET"
-        return units
+        core.assign_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
 
 
-class LoadUnits(bpy.types.Operator):
+class UnassignUnit(bpy.types.Operator, Operator):
+    bl_idname = "bim.unassign_unit"
+    bl_label = "Unassign Unit"
+    bl_options = {"REGISTER", "UNDO"}
+    unit: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.unassign_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
+
+
+class LoadUnits(bpy.types.Operator, Operator):
     bl_idname = "bim.load_units"
     bl_label = "Load Units"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Open the loaded units"
 
-    def execute(self, context):
-        props = context.scene.BIMUnitProperties
-        while len(props.units) > 0:
-            props.units.remove(0)
-
-        for ifc_definition_id in Data.unit_assignment:
-            unit = Data.units[ifc_definition_id]
-            name = unit.get("Name", "")
-
-            if unit["type"] == "IfcMonetaryUnit":
-                name = unit["Currency"]
-
-            if unit["type"] == "IfcSIUnit" and unit["Prefix"]:
-                if "_" in name:
-                    name_components = name.split("_")
-                    name = f"{name_components[0]} {unit['Prefix']}{name_components[1]}"
-                else:
-                    name = f"{unit['Prefix']}{name}"
-
-            icon = "MOD_MESHDEFORM"
-            if unit["type"] == "IfcSIUnit":
-                icon = "SNAP_GRID"
-            elif unit["type"] == "IfcMonetaryUnit":
-                icon = "COPY_ID"
-
-            unit_type = unit.get("UserDefinedType", None)
-            if not unit_type:
-                unit_type = unit.get("UnitType", None)
-            if unit["type"] == "IfcMonetaryUnit":
-                unit_type = "CURRENCY"
-
-            new = props.units.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = name
-            new.unit_type = unit_type
-            new.icon = icon
-
-        props.is_editing = True
-        bpy.ops.bim.disable_editing_unit()
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.load_units(tool.Unit)
 
 
-class DisableUnitEditingUI(bpy.types.Operator):
+class DisableUnitEditingUI(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_unit_editing_ui"
     bl_label = "Disable Unit Editing UI"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Close the editing units mode"
 
-    def execute(self, context):
-        context.scene.BIMUnitProperties.is_editing = False
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_unit_editing_ui(tool.Unit)
 
 
-class RemoveUnit(bpy.types.Operator):
+class RemoveUnit(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_unit"
     bl_label = "Remove Unit"
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    def _execute(self, context):
+        core.remove_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
+
+
+class AddConversionBasedUnit(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_conversion_based_unit"
+    bl_label = "Add Conversion Based Unit"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMUnitProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("unit.remove_unit", self.file, **{"unit": self.file.by_id(self.unit)})
-        Data.load(self.file)
-        bpy.ops.bim.load_units()
-        return {"FINISHED"}
+        core.add_conversion_based_unit(tool.Ifc, tool.Unit, name=self.name)
 
 
-class AddMonetaryUnit(bpy.types.Operator):
+class AddMonetaryUnit(bpy.types.Operator, Operator):
     bl_idname = "bim.add_monetary_unit"
     bl_label = "Add Monetary Unit"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    def _execute(self, context):
+        core.add_monetary_unit(tool.Ifc, tool.Unit)
+
+
+class AddSIUnit(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_si_unit"
+    bl_label = "Add SI Unit"
+    bl_options = {"REGISTER", "UNDO"}
+    unit_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMUnitProperties
-        self.file = IfcStore.get_file()
-        unit = ifcopenshell.api.run("unit.add_monetary_unit", self.file)
-        ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
-        Data.load(self.file)
-        bpy.ops.bim.load_units()
-        return {"FINISHED"}
+        core.add_si_unit(tool.Ifc, tool.Unit, unit_type=self.unit_type)
 
 
-class EnableEditingUnit(bpy.types.Operator):
+class AddContextDependentUnit(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_context_dependent_unit"
+    bl_label = "Add Context Dependent Unit"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+    unit_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.add_context_dependent_unit(tool.Ifc, tool.Unit, unit_type=self.unit_type, name=self.name)
+
+
+class EnableEditingUnit(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_unit"
     bl_label = "Enable Editing Unit"
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
-    def execute(self, context):
-        props = context.scene.BIMUnitProperties
-        while len(props.unit_attributes) > 0:
-            props.unit_attributes.remove(0)
-
-        data = Data.units[self.unit]
-
-        blenderbim.bim.helper.import_attributes(data["type"], props.unit_attributes, data)
-        props.active_unit_id = self.unit
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.enable_editing_unit(tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
 
 
-class DisableEditingUnit(bpy.types.Operator):
+class DisableEditingUnit(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_unit"
     bl_label = "Disable Editing Unit"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.BIMUnitProperties.active_unit_id = 0
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_editing_unit(tool.Unit)
 
 
-class EditUnit(bpy.types.Operator):
+class EditUnit(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_unit"
     bl_label = "Edit Unit"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    unit: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMUnitProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.unit_attributes)
-        self.file = IfcStore.get_file()
-        unit = self.file.by_id(props.active_unit_id)
-        if unit.is_a("IfcMonetaryUnit"):
-            ifcopenshell.api.run("unit.edit_monetary_unit", self.file, **{"unit": unit, "attributes": attributes})
-        elif unit.is_a("IfcDerivedUnit"):
-            ifcopenshell.api.run("unit.edit_derived_unit", self.file, **{"unit": unit, "attributes": attributes})
-        elif unit.is_a("IfcNamedUnit"):
-            ifcopenshell.api.run("unit.edit_named_unit", self.file, **{"unit": unit, "attributes": attributes})
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_units()
-        return {"FINISHED"}
+        core.edit_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))

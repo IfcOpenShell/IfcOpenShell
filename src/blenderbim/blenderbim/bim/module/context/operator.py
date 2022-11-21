@@ -1,48 +1,89 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
-import ifcopenshell.api
+import blenderbim.tool as tool
+import blenderbim.core.context as core
+import blenderbim.bim.module.context.data
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.context.data import Data
 
 
-class AddSubcontext(bpy.types.Operator):
-    bl_idname = "bim.add_subcontext"
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+
+class AddContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_context"
     bl_label = "Add Subcontext"
     bl_options = {"REGISTER", "UNDO"}
-    context: bpy.props.StringProperty()
-    subcontext: bpy.props.StringProperty()
+    context_type: bpy.props.StringProperty()
+    context_identifier: bpy.props.StringProperty()
     target_view: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    parent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "context.add_context",
-            self.file,
-            **{
-                "context": self.context or context.scene.BIMProperties.available_contexts,
-                "subcontext": self.subcontext or context.scene.BIMProperties.available_subcontexts,
-                "target_view": self.target_view or context.scene.BIMProperties.available_target_views,
-            },
+        core.add_context(
+            tool.Ifc,
+            context_type=self.context_type,
+            context_identifier=self.context_identifier,
+            target_view=self.target_view,
+            parent=tool.Ifc.get().by_id(self.parent) if self.parent else None,
         )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
 
 
-class RemoveSubcontext(bpy.types.Operator):
-    bl_idname = "bim.remove_subcontext"
+class RemoveContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_context"
     bl_label = "Remove Context"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_definition_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    context: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "context.remove_context", self.file, **{"context": self.file.by_id(self.ifc_definition_id)}
-        )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.remove_context(tool.Ifc, context=tool.Ifc.get().by_id(self.context))
+
+
+class EnableEditingContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_context"
+    bl_label = "Enable Editing Context"
+    bl_options = {"REGISTER", "UNDO"}
+    context: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.enable_editing_context(tool.Context, context=tool.Ifc.get().by_id(self.context))
+
+
+class DisableEditingContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_context"
+    bl_label = "Disable Editing Context"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_context(tool.Context)
+
+
+class EditContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_context"
+    bl_label = "Edit Context"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.edit_context(tool.Ifc, tool.Context)

@@ -22,14 +22,15 @@
 
 #ifdef WITH_GLTF
 
-#include "../serializers/GeometrySerializer.h"
+#include "../serializers/serializers_api.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 #include <map>
 
-class GltfSerializer : public GeometrySerializer {
+class SERIALIZERS_API GltfSerializer : public WriteOnlyGeometrySerializer {
 private:
 	std::string filename_, tmp_filename1_, tmp_filename2_;
 	std::ofstream fstream_, tmp_fstream1_, tmp_fstream2_;
@@ -42,8 +43,8 @@ public:
 	virtual ~GltfSerializer();
 	bool ready();
 	void writeHeader();
-	void write(const IfcGeom::TriangulationElement<real_t>* o);
-	void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
+	void write(const IfcGeom::TriangulationElement* o);
+	void write(const IfcGeom::BRepElement* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}

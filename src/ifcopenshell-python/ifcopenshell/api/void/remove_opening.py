@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell.api
 
 
@@ -9,15 +27,8 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        to_remove = [] # See bug #1224
-        for rel in self.file.by_type("IfcRelVoidsElement"):
-            if rel.RelatedOpeningElement == self.settings["opening"]:
-                to_remove.append(rel)
-                break
-        for rel in self.file.by_type("IfcRelFillsElement"):
-            if rel.RelatingOpeningElement == self.settings["opening"]:
-                to_remove.append(rel)
-                break
+        for rel in self.settings["opening"].VoidsElements:
+            self.file.remove(rel)
+        for rel in self.settings["opening"].HasFillings:
+            self.file.remove(rel)
         ifcopenshell.api.run("root.remove_product", self.file, product=self.settings["opening"])
-        for element in to_remove:
-            self.file.remove(element)

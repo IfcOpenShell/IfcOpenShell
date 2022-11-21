@@ -20,13 +20,14 @@
 #ifndef IFCGEOMRENDERSTYLES_H
 #define IFCGEOMRENDERSTYLES_H
 
-#include "../ifcgeom/ifc_geom_api.h"
+#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
 
 #include <sstream>
+#include <memory>
 
 namespace IfcGeom {
 	class IFC_GEOM_API SurfaceStyle {
@@ -99,7 +100,7 @@ namespace IfcGeom {
 		boost::optional<int>& Id() { return id; }
 	};
 
-	IFC_GEOM_API const SurfaceStyle* get_default_style(const std::string& ifc_type);
+	IFC_GEOM_API std::shared_ptr<const IfcGeom::SurfaceStyle> get_default_style(const std::string& ifc_type);
 
 	IFC_GEOM_API SurfaceStyle& update_default_style(const std::string& ifc_type);
 

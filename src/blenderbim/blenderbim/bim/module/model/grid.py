@@ -1,5 +1,25 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import ifcopenshell.api
+import blenderbim.core.spatial
+import blenderbim.tool as tool
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from mathutils import Vector
@@ -33,8 +53,8 @@ def add_object(self, context):
         if has_site_collection:
             site_obj = bpy.data.objects.get(grandchild.name)
             if site_obj and site_obj.BIMObjectProperties.ifc_definition_id:
-                bpy.ops.bim.assign_container(
-                    relating_structure=site_obj.BIMObjectProperties.ifc_definition_id, related_element=obj.name
+                blenderbim.core.spatial.assign_container(
+                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=site_obj, element_obj=obj
                 )
 
     axes_collection = bpy.data.collections.new("UAxes")
@@ -92,13 +112,17 @@ def add_object(self, context):
 
 class BIM_OT_add_object(Operator):
     bl_idname = "mesh.add_grid"
-    bl_label = "Grid"
+    bl_label = "IFC Grid"
     bl_options = {"REGISTER", "UNDO"}
 
     u_spacing: FloatProperty(name="U Spacing", default=10)
     total_u: IntProperty(name="Number of U Grids", default=3)
     v_spacing: FloatProperty(name="V Spacing", default=10)
     total_v: IntProperty(name="Number of V Grids", default=3)
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)

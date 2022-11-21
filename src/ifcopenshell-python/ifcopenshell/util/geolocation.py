@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import math
 import numpy as np
 
@@ -53,7 +71,7 @@ def local2global(matrix, eastings, northings, orthogonal_height, x_axis_abscissa
     x /= np.linalg.norm(x)
     y = np.cross(np.array([0, 0, 1]), x)
     intermediate = (
-        np.matrix(
+        np.array(
             [
                 [x[0], y[0], 0, 0],
                 [x[1], y[1], 0, 0],
@@ -81,7 +99,7 @@ def global2local(matrix, eastings, northings, orthogonal_height, x_axis_abscissa
     result[2, 3] = (result[2, 3] - orthogonal_height) / scale
     return (
         np.linalg.inv(
-            np.matrix(
+            np.array(
                 [
                     [x[0], y[0], 0, 0],
                     [x[1], y[1], 0, 0],
@@ -96,7 +114,7 @@ def global2local(matrix, eastings, northings, orthogonal_height, x_axis_abscissa
 
 # Used for converting the X and Y vectors of the X Axis in IFC grid north geolocation
 def xaxis2angle(x, y):
-    return math.degrees(math.atan2(y, x))
+    return math.degrees(math.atan2(y, x)) * -1
 
 
 # Used for converting the X and Y vectors of the Y Axis in IFC true north geolocation

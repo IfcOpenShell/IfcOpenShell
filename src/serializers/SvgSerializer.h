@@ -22,7 +22,8 @@
 #ifndef SVGSERIALIZER_H
 #define SVGSERIALIZER_H
 
-#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../serializers/serializers_api.h"
 #include "../serializers/util.h"
 
 #include "../ifcparse/utils.h"
@@ -123,13 +124,19 @@ struct drawing_meta {
 	std::array<std::array<double, 3>, 3> matrix_3;
 };
 
+enum subtract_before_project {
+	ON_SLABS_AT_FLOORPLANS,
+	ON_SLABS_AND_WALLS,
+	ALWAYS
+};
+
 typedef boost::variant<
 	boost::blank,
 	Handle(HLRBRep_Algo),
 	Handle(HLRBRep_PolyAlgo)
 > hlr_t;
 
-class SvgSerializer : public GeometrySerializer {
+class SERIALIZERS_API SvgSerializer : public WriteOnlyGeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
 	typedef std::vector< boost::shared_ptr<util::string_buffer::float_item> > float_item_list;
@@ -137,7 +144,7 @@ public:
 		SH_NONE, SH_FULL, SH_LEFT
 	};
 protected:
-	std::ofstream svg_file;
+	stream_or_filename svg_file;
 	double xmin, ymin, xmax, ymax;
 	boost::optional<std::vector<section_data>> section_data_;
 	boost::optional<std::vector<section_data>> deferred_section_data_;
@@ -158,6 +165,8 @@ protected:
 	bool use_namespace_, use_hlr_poly_, always_project_, polygonal_;
 	bool emit_building_storeys_;
 	bool no_css_;
+
+	int profile_threshold_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
@@ -182,10 +191,12 @@ protected:
 
 	void draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name);
 
+	subtract_before_project subtraction_settings_;
+
 public:
-	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
-		: GeometrySerializer(settings)
-		, svg_file(IfcUtil::path::from_utf8(out_filename).c_str())
+	SvgSerializer(const stream_or_filename& out_filename, const SerializerSettings& settings)
+		: WriteOnlyGeometrySerializer(settings)
+		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())
 		, xmax(-std::numeric_limits<double>::infinity())
@@ -193,6 +204,7 @@ public:
 		, with_section_heights_from_storey_(false)
 		, print_space_names_(false)
 		, print_space_areas_(false)
+		, storey_height_display_(SH_NONE)
 		, draw_door_arcs_(false)
 		, is_floor_plan_(true)
 		, auto_section_(false)
@@ -203,12 +215,14 @@ public:
 		, polygonal_(false)
 		, emit_building_storeys_(true)
 		, no_css_(false)
+		, profile_threshold_(-1)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
 		, ycoords_begin(0)
 		, radii_begin(0)
 		, namespace_prefix_("data-")
+		, subtraction_settings_(ON_SLABS_AT_FLOORPLANS)
 	{}
     void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
     void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
@@ -217,9 +231,9 @@ public:
     void writeHeader();
 	void doWriteHeader();
     bool ready();
-    void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
-    void write(const IfcGeom::BRepElement<real_t>* o);
-    void write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array=boost::none);
+    void write(const IfcGeom::TriangulationElement* /*o*/) {}
+    void write(const IfcGeom::BRepElement* o);
+    void write(path_object& p, const TopoDS_Shape& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
@@ -229,7 +243,7 @@ public:
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
 	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0);
-	void setSectionHeightsFromStoreys(double offset=1.);
+	void setSectionHeightsFromStoreys(double offset=1.2);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
 	void setDrawStoreyHeights(storey_height_display_types sh) { storey_height_display_ = sh; }
@@ -292,15 +306,36 @@ public:
 	void setDrawingCenter(double x, double y) {
 		center_x_ = x; center_y_ = y;
 	}
-    std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem);
+    std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element* elem);
 	std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 	std::string idElement(const IfcUtil::IfcBaseEntity* elem);
-	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* o) {
+	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element* o) {
 		if (storey) {
 			return idElement(storey) + "-" + GeometrySerializer::object_id(o);
 		} else {
 			return GeometrySerializer::object_id(o);
 		}
+	}
+
+	void addDrawing(const gp_Pnt& pos, const gp_Dir& dir, const gp_Dir& ref, const std::string& name, bool include_projection) {
+		deferred_section_data_.emplace();
+		deferred_section_data_->push_back(vertical_section{ gp_Pln(gp_Ax3(pos, dir, ref)), name, include_projection });
+	}
+
+	void setSubtractionSettings(subtract_before_project sbp) {
+		subtraction_settings_ = sbp;
+	}
+
+	subtract_before_project getSubtractionSettings() const {
+		return subtraction_settings_;
+	}
+
+	void setProfileThreshold(int i) {
+		profile_threshold_ = i;
+	}
+
+	int getProfileThreshold() const {
+		return profile_threshold_;
 	}
 
 protected:

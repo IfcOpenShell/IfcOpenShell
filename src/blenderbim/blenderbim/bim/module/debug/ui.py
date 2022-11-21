@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from bpy.types import Panel
 
@@ -9,6 +27,7 @@ class BIM_PT_debug(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_quality_control"
 
     def draw(self, context):
         layout = self.layout
@@ -20,8 +39,16 @@ class BIM_PT_debug(Panel):
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
+        row = self.layout.row(align=True)
+        row.prop(props, "express_file", text="")
+        row.operator("bim.parse_express", icon="IMPORT", text="")
+        row.operator("bim.select_express_file", icon="FILE_FOLDER", text="")
+
         row = layout.row()
         row.operator("bim.print_ifc_file")
+
+        row = layout.row()
+        row.operator("bim.purge_hdf5_cache")
 
         row = layout.row()
         row.operator("bim.purge_ifc_links")
@@ -38,8 +65,13 @@ class BIM_PT_debug(Panel):
         row.prop(props, "step_id", text="")
 
         row = layout.split(factor=0.7, align=True)
-        row.operator("bim.select_high_polygon_meshes")
+        row.operator("bim.select_high_polygon_meshes").threshold = context.scene.BIMDebugProperties.number_of_polygons
         row.prop(props, "number_of_polygons", text="")
+        row = layout.split(factor=0.7, align=True)
+        row.operator(
+            "bim.select_highest_polygon_meshes"
+        ).percentile = context.scene.BIMDebugProperties.percentile_of_polygons
+        row.prop(props, "percentile_of_polygons", text="")
 
         layout.label(text="Inspector:")
 
@@ -62,7 +94,7 @@ class BIM_PT_debug(Panel):
                 op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
                 op.global_id = attribute.string_value
             if attribute.name == "ObjectPlacement":
-                op = row.operator("bim.print_object_placement", icon="TRACKER", text="")
+                op = row.operator("bim.print_object_placement", icon="OBJECT_ORIGIN", text="")
                 op.step_id = attribute.int_value
             if attribute.int_value:
                 row.operator(

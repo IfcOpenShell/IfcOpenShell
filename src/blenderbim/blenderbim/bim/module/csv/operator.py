@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import ifccsv
 import ifcopenshell
@@ -29,6 +47,65 @@ class RemoveCsvAttribute(bpy.types.Operator):
     def execute(self, context):
         context.scene.CsvProperties.csv_attributes.remove(self.index)
         return {"FINISHED"}
+
+
+class RemoveAllCsvAttributes(bpy.types.Operator):
+    bl_idname = "bim.remove_all_csv_attributes"
+    bl_label = "Remove all CSV Attributes"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        context.scene.CsvProperties.csv_attributes.clear()
+        return {"FINISHED"}
+
+
+class ImportCsvAttributes(bpy.types.Operator):
+    bl_idname = "bim.import_csv_attributes"
+    bl_label = "Import CSV Attributes"
+    bl_options = {"REGISTER", "UNDO"}
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        csv_attributes = context.scene.CsvProperties.csv_attributes
+        csv_attributes.clear()
+        csv_json = json.load(open(self.filepath))
+        i = 0
+        for attribute in csv_json:
+            csv_attributes.add()
+            csv_attributes[i].name = attribute
+            i += 1
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class ExportCsvAttributes(bpy.types.Operator):
+    bl_idname = "bim.export_csv_attributes"
+    bl_label = "Export CSV Attributes"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".json"
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        csv_attributes = []
+        with open(self.filepath, "w") as outfile:
+            for attribute in context.scene.CsvProperties.csv_attributes:
+                csv_attributes.append(attribute.name)
+
+            json.dump(csv_attributes, outfile)
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class ExportIfcCsv(bpy.types.Operator):
@@ -93,6 +170,8 @@ class ImportIfcCsv(bpy.types.Operator):
         else:
             ifc_csv.delimiter = props.csv_delimiter
         ifc_csv.Import(ifc_file)
+        if not props.should_load_from_memory:
+            ifc_file.write(props.csv_ifc_file)
         purge_module_data()
         return {"FINISHED"}
 

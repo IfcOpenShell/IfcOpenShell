@@ -45,7 +45,7 @@ static const uint32_t PRIM_TRIANGLE_STRIP = 5;
 static const uint32_t PRIM_TRIANGLE_FAN = 6;
 
 GltfSerializer::GltfSerializer(const std::string& filename, const SerializerSettings& settings)
-	: GeometrySerializer(settings)
+	: WriteOnlyGeometrySerializer(settings)
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
 	, tmp_filename2_(filename + ".vertices.tmp")
@@ -157,7 +157,7 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 	return j["accessors"].size() - 1;
 }
 
-void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
+void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	if (o->geometry().material_ids().empty()) {
 		return;
 	}

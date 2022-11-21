@@ -1,0 +1,12 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((),'2;1');
+FILE_NAME('Qto_TaskBaseQuantities.ifc','2020-01-01T00:00:00',(),(),'Qto_TaskBaseQuantities','Qto_TaskBaseQuantities',$);
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROPERTYSETTEMPLATE('3uZCoCxrr8MA2yVRLzH6P4',$,'Qto_TaskBaseQuantities','',.QTO_OCCURRENCEDRIVEN.,'IfcTask',(#2,#3));
+#2=IFCSIMPLEPROPERTYTEMPLATE('0q8nByVuP4cv46Pm4wfGpf',$,'StandardWork','',.Q_TIME.,$,$,$,$,$,$,.READWRITE.);
+#3=IFCSIMPLEPROPERTYTEMPLATE('2uf5oHjAz4pRmtn9ihJiAs',$,'OvertimeWork','',.Q_TIME.,$,$,$,$,$,$,.READWRITE.);
+ENDSEC;
+END-ISO-10303-21;

@@ -1,32 +1,41 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import operator
+import itertools
 
 import codegen
 import templates
 import documentation
 
+from collections import defaultdict
+
 
 class Header(codegen.Base):
     def __init__(self, mapping):
         declarations = []
+
+        case_lookup = lambda nm: [k for k in mapping.schema.keys if k.lower() == nm.lower()][0]
+        case_normalize = lambda nm: nm if nm.startswith("IfcUtil::") else case_lookup(nm)
+        create_supertype_statement = lambda nms: ", ".join(
+            "public %s %s" % ("" if c.startswith("IfcUtil::") else "", c) for c in nms
+        )
 
         write = lambda str, **kwargs: declarations.append(
             str
@@ -36,8 +45,18 @@ class Header(codegen.Base):
         forward_names = list(mapping.schema.entities.keys()) + list(mapping.schema.simpletypes.keys())
         forward_definitions = "".join(["class %s; " % n for n in forward_names])
 
+        select_super_types = defaultdict(list)
+
         for name, type in mapping.schema.selects.items():
+            for nm in type.values:
+                select_super_types[str(nm).lower()].append(name)
             write(templates.select, name=name)
+
+        def get_select_super_types(nm, bases=[]):
+            x = list(select_super_types[nm.lower()])
+            for y in x:
+                x.extend(get_select_super_types(y))
+            return sorted(set(x) - set(itertools.chain.from_iterable(map(get_select_super_types, bases))))
 
         for name, type in mapping.schema.enumerations.items():
             short_name = name[:-4] if name.endswith("Enum") else name
@@ -46,20 +65,42 @@ class Header(codegen.Base):
         emitted_simpletypes = set()
         while len(emitted_simpletypes) < len(mapping.schema.simpletypes):
             for name, type in mapping.schema.simpletypes.items():
+
                 if name.lower() in emitted_simpletypes:
                     continue
+
                 type_str = mapping.make_type_string(mapping.flatten_type_string(type))
                 attr_type = mapping.make_argument_type(type)
                 superclass = mapping.simple_type_parent(name)
-                if superclass is None:
-                    superclass = "IfcUtil::IfcBaseType"
-                elif superclass.lower() not in emitted_simpletypes:
-                    continue
+
+                superclasses = []
+                all_superclasses = []
+                if superclass is not None:
+                    superclasses.append(superclass)
+                    while superclass:
+                        all_superclasses.append(superclass)
+                        superclass = mapping.simple_type_parent(superclass)
                 else:
-                    # Case normalize
-                    superclass = [k for k in mapping.schema.simpletypes.keys() if k.lower() == superclass.lower()][0]
+                    superclasses.append("IfcUtil::IfcBaseType")
+                superclasses.extend(get_select_super_types(name, bases=all_superclasses))
+
+                is_emitted = (
+                    lambda nm: nm == "IfcUtil::IfcBaseType"
+                    or nm in mapping.schema.selects
+                    or nm.lower() in emitted_simpletypes
+                )
+                if not all(map(is_emitted, superclasses)):
+                    continue
+
+                superclasses = list(map(case_normalize, superclasses))
+
                 emitted_simpletypes.add(name.lower())
-                write(templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass)
+
+                superclass_statement = create_supertype_statement(superclasses)
+
+                write(
+                    templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement
+                )
 
         class_definitions = []
 
@@ -73,17 +114,15 @@ class Header(codegen.Base):
             for name, type in mapping.schema.entities.items():
                 if name.lower() in emitted_entities:
                     continue
+
                 if len(type.supertypes) == 0 or set(map(str.lower, type.supertypes)) <= emitted_entities:
                     attr_lines = []
 
                     def write_method(attr):
-                        if attr.optional:
-                            attr_lines.append(templates.optional_attribute_description % (attr.name, name))
-                            attr_lines.append("bool has%s() const;" % (attr.name))
                         attr_lines.extend(
                             ["/// %s" % d for d in documentation.description(".".join((name, attr.name)))]
                         )
-                        type_str = mapping.get_parameter_type(attr, allow_optional=False, allow_entities=False)
+                        type_str = mapping.get_parameter_type(attr)
                         if mapping.make_argument_type(attr) != "IfcUtil::Argument_UNKNOWN":
                             attr_lines.append("%s %s() const;" % (type_str, attr.name))
                             attr_lines.append("void set%s(%s v);" % (attr.name, type_str))
@@ -109,12 +148,16 @@ class Header(codegen.Base):
                     if len(inverse):
                         inverse += "\n"
 
-                    def case_norm(n):
-                        n = n.lower()
-                        return [k for k in mapping.schema.entities.keys() if k.lower() == n][0]
+                    all_supertypes = []
+                    tt = type
+                    while len(tt.supertypes):
+                        all_supertypes.append(tt.supertypes[0])
+                        tt = mapping.schema.entities[tt.supertypes[0]]
 
-                    supertypes = map(case_norm, type.supertypes) if len(type.supertypes) else ["IfcUtil::IfcBaseEntity"]
-                    superclass = ": %s " % (", ".join(["public %s" % c for c in supertypes]))
+                    supertypes = list(type.supertypes) if len(type.supertypes) else ["IfcUtil::IfcBaseEntity"]
+                    supertypes.extend(get_select_super_types(name, bases=all_supertypes))
+                    supertypes = list(map(case_normalize, supertypes))
+                    superclass = create_supertype_statement(supertypes)
 
                     argument_count = mapping.argument_count(type)
 

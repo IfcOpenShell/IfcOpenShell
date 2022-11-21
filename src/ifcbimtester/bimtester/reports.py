@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 import datetime
 import json
 import os
@@ -41,13 +59,23 @@ class ReportGenerator:
             return
 
         for scenario in feature["elements"]:
-            scenario_data = self.process_scenario(scenario)
+            scenario_data = self.process_scenario(scenario, feature)
             if scenario_data:
                 data["scenarios"].append(scenario_data)
 
         data["total_passes"] = sum([s["total_passes"] for s in data["scenarios"]])
         data["total_steps"] = sum([s["total_steps"] for s in data["scenarios"]])
-        data["pass_rate"] = round((data["total_passes"] / data["total_steps"]) * 100)
+        try:
+            data["pass_rate"] = round((data["total_passes"] / data["total_steps"]) * 100)
+        except ZeroDivisionError:
+            data["pass_rate"] = 0
+
+        # get language and switch locale
+        the_lang = self.get_feature_lang(feature.get("keyword", None))
+        from bimtester.lang import switch_locale
+
+        switch_locale(os.path.join(self.base_path, "locale"), the_lang)
+        data["_lang"] = the_lang
 
         data.update(self.get_template_strings())
 
@@ -57,7 +85,7 @@ class ReportGenerator:
             ) as template:
                 out.write(pystache.render(template.read(), data))
 
-    def process_scenario(self, scenario):
+    def process_scenario(self, scenario, feature):
         if len(scenario["steps"]) == 0:
             print("Scenario '{}' in feature '{}' has no steps.".format(scenario["name"], feature["name"]))
             return
@@ -117,7 +145,7 @@ class ReportGenerator:
 
     def get_template_strings(self):
         return {
-            "_lang": _("en"),
+            # "_lang": _("en"),
             "_success": _("Success"),
             "_failure": _("Failure"),
             "_tests_passed": _("Tests passed"),
@@ -125,3 +153,17 @@ class ReportGenerator:
             "_auditing": _("OpenBIM auditing is a feature of"),
             "_and": _("and"),
         }
+
+    def get_feature_lang(self, feature_key):
+        # I do not know any better ATM
+        if feature_key == "Feature":
+            return "en"
+        elif feature_key == "Funktionalität":
+            return "de"
+        elif feature_key == "Fonctionnalité":
+            return "fr"
+        elif feature_key == "Funzionalità":
+            return "it"
+        elif feature_key == "Functionaliteit":
+            return "nl"
+        return "en"

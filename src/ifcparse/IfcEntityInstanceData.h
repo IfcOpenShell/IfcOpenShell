@@ -28,7 +28,7 @@
 #include <vector>
 
 class Argument;
-class IfcEntityList;
+class aggregate_of_instance;
 namespace IfcParse {
 	class IfcFile;
 }
@@ -62,12 +62,12 @@ public:
 
 	virtual ~IfcEntityInstanceData();
 
-	boost::shared_ptr<IfcEntityList> getInverse (const IfcParse::declaration* type, int attribute_index) const;
+	boost::shared_ptr<aggregate_of_instance> getInverse (const IfcParse::declaration* type, int attribute_index) const;
 
 	Argument* getArgument(size_t i) const;
 
-	// NB: This makes a copy of the argument
-	void setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN);
+	// NB: This makes a copy of the argument if make_copy is set
+	void setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN, bool make_copy = false);
 
 	virtual size_t getArgumentCount() const {
 		if (type_ == 0) {
@@ -79,6 +79,8 @@ public:
 			return 1;
 		}
 	}
+
+	void clearArguments();
 
 	const IfcParse::declaration* type() const {
 		return type_;

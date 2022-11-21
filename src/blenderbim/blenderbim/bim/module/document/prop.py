@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -16,6 +34,7 @@ from bpy.props import (
 class Document(PropertyGroup):
     name: StringProperty(name="Name")
     identification: StringProperty(name="Identification")
+    is_information: BoolProperty(name="Is Information")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
@@ -23,12 +42,6 @@ class BIMDocumentProperties(PropertyGroup):
     document_attributes: CollectionProperty(name="Document Attributes", type=Attribute)
     active_document_id: IntProperty(name="Active Document Id")
     documents: CollectionProperty(name="Documents", type=Document)
+    breadcrumbs: CollectionProperty(name="Breadcrumbs", type=StrProperty)
     active_document_index: IntProperty(name="Active Document Index")
-    is_editing: StringProperty(name="Is Editing")
-
-
-class BIMObjectDocumentProperties(PropertyGroup):
-    is_adding: StringProperty(name="Is Adding")
-    available_document_types: EnumProperty(
-        items=[(d, d, "") for d in ["IfcDocumentInformation", "IfcDocumentReference"]], name="Available Document Types"
-    )
+    is_editing: BoolProperty(name="Is Editing", default=False)

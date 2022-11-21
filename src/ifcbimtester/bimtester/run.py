@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import sys
 import json
@@ -19,41 +37,6 @@ from behave.__main__ import main as behave_main
 # TODO: refactor when this isn't super experimental
 from logging import StreamHandler
 
-class IDSHandler(StreamHandler):
-    def __init__(self):
-        StreamHandler.__init__(self)
-        self.results = {
-            "name": "Specification name",
-            "status": "passed",
-            "location": "filename.xml",
-            "elements": [
-                {
-                    "keyword": "Scenario",
-                    "name": "Checking IDS specifications",
-                    "status": "passed",
-                    "steps": []
-                }
-            ]
-        }
-
-    def emit(self, record):
-        msg = self.format(record)
-        # Obviously, not a final product
-        is_fail = "is compliant" not in msg
-        if is_fail:
-            self.results["status"] = "failed"
-            self.results["elements"][0]["status"] = "failed"
-        self.results["elements"][0]["steps"].append({
-            "keyword": "*",
-            "match": {},
-            "name": msg,
-            "result": {
-                "duration": 0.0,
-                "error_message": "Assertion Failed",
-                "status": "failed" if is_fail else "passed"
-            },
-            "step_type": "given"
-        })
 
 
 class TestRunner:
@@ -76,25 +59,7 @@ class TestRunner:
         self.locale_path = os.path.join(self.base_path, "locale")
 
     def run(self, args):
-        if args["feature"][-4:].lower() == ".xml":
-            return self.test_ids(args)
         return self.test_feature(args)
-
-    def test_ids(self, args):
-        # Local import whilst this is experimental
-        import ifcopenshell.ids
-
-        logger = logging.getLogger("IDS")
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
-        ids_handler = IDSHandler()
-        logger.addHandler(ids_handler)
-        ids_file = ifcopenshell.ids.ids(args["feature"])
-        ids_file.validate(IfcStore.file, logger)
-
-        tmpdir = tempfile.mkdtemp()
-        report_json = os.path.join(tmpdir, "report.json")
-        json.dump([ids_handler.results], open(report_json, "w"))
-        return report_json
 
     def test_feature(self, args):
         tmpdir = tempfile.mkdtemp()

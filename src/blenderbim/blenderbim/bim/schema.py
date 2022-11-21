@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import json
 import ifcopenshell
@@ -26,26 +44,28 @@ class IfcSchema:
             "IfcAnnotation",
         ]
         self.elements = {}
-
-        self.property_files = []
-        property_paths = self.data_dir.joinpath("pset").glob("*.ifc")
-        # TODO: add IFC2X3 PsetQto template support
-        self.psetqto = ifcopenshell.util.pset.PsetQto("IFC4")
-        for path in property_paths:
-            self.psetqto.templates.append(ifcopenshell.open(path))
-
         self.classification_files = {}
         self.classifications = {}
+        self.load_pset_templates()
         self.load()
+
+    def load_pset_templates(self):
+        property_paths = self.data_dir.joinpath("pset").glob("*.ifc")
+        # TODO: add IFC2X3 PsetQto template support
+        self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+        # Keep only the first template, which is the official buildingSMART one
+        self.psetqto.templates = self.psetqto.templates[0:1]
+        self.psetqto.get_applicable.cache_clear()
+        self.psetqto.get_applicable_names.cache_clear()
+        self.psetqto.get_by_name.cache_clear()
+        for path in property_paths:
+            self.psetqto.templates.append(ifcopenshell.open(path))
 
     def load(self):
         for product in self.products:
             with open(os.path.join(self.schema_dir, f"{product}_IFC4.json")) as f:
                 setattr(self, product, json.load(f))
                 self.elements.update(getattr(self, product))
-
-        with open(os.path.join(self.schema_dir, "ifc_types_IFC4.json")) as f:
-            self.type_map = json.load(f)
 
     def load_classification(self, name, classification_index=None):
         if name not in self.classifications:
@@ -77,6 +97,7 @@ class IfcSchema:
 
 
 ifc = IfcSchema()
+
 
 def reload():
     global ifc

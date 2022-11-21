@@ -1,43 +1,29 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {
-            "name": "Name",
-            "surface_colour": [],  # RGB
-            "diffuse_colour": [],  # RGB
-            "transparency": 0,
-            "external_definition": {"location": None, "identification": None, "name": "Name"},
-        }
+        self.settings = {"name": None}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        styles = [self.create_surface_style_rendering()]
-        if self.settings["external_definition"]:
-            styles.append(self.create_externally_defined_surface_style())
         # Name is filled out because Revit treats this incorrectly as the material name
-        return self.file.createIfcSurfaceStyle(self.settings["name"], "BOTH", styles)
-
-    def create_surface_style_rendering(self):
-        return self.file.create_entity(
-            "IfcSurfaceStyleRendering",
-            **{
-                "SurfaceColour": self.create_colour_rgb(self.settings["surface_colour"]),
-                "Transparency": self.settings["transparency"],
-                "ReflectanceMethod": "NOTDEFINED",
-                "DiffuseColour": self.create_colour_rgb(self.settings["diffuse_colour"]),
-            }
-        )
-
-    def create_externally_defined_surface_style(self):
-        self.file.create_entity(
-            "IfcExternallyDefinedSurfaceStyle",
-            **{
-                "Location": self.settings["location"],
-                "Identification": self.settings["identification"],
-                "Name": self.settings["name"],
-            }
-        )
-
-    def create_colour_rgb(self, colour):
-        return self.file.createIfcColourRgb(None, colour[0], colour[1], colour[2])
+        return self.file.createIfcSurfaceStyle(self.settings["name"], "BOTH")

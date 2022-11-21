@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import json
 
@@ -17,9 +35,12 @@ for schema in ["IFC2X3", "IFC4"]:
     for element, element_types in entity_to_type_map[schema].items():
         for element_type in element_types:
             type_to_entity_map[schema].setdefault(element_type, []).append(element)
-    # TODO: this method just fails for IFC2X3 because 2X3 type mapping is just so broken.
-    # Uncomment the following line to see how bad it is.
-    # print(type_to_entity_map[schema])
+    if schema == "IFC2X3":
+        # There is no official mapping for IFC2X3 but this method gets us something that looks correct
+        for element_type, elements in type_to_entity_map[schema].items():
+            guessed_element = element_type[0:-len("Type")]
+            if guessed_element in elements:
+                type_to_entity_map[schema][element_type] = [e for e in elements if guessed_element in e]
 
 
 def get_applicable_types(ifc_class, schema="IFC4"):

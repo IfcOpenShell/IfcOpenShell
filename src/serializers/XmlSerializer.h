@@ -1,13 +1,14 @@
 #define SCHEMA_METHOD
 
-#include "../serializers/Serializer.h"
+#include "../serializers/serializers_api.h"
+#include "../ifcgeom_schema_agnostic/Serializer.h"
 #include "../ifcparse/IfcFile.h"
 
 #include <boost/function.hpp>
 
 #include <map>
 
-class XmlSerializer : public Serializer {
+class SERIALIZERS_API XmlSerializer : public Serializer {
 private:
 	XmlSerializer* implementation_;
 
@@ -26,7 +27,7 @@ public:
 	void setFile(IfcParse::IfcFile*) { throw IfcParse::IfcException("Should be supplied on construction"); }
 };
 
-struct XmlSerializerFactory {
+struct SERIALIZERS_API XmlSerializerFactory {
 	typedef boost::function2<XmlSerializer*, IfcParse::IfcFile*, std::string> fn;
 
 	class Factory : public std::map<std::string, fn> {

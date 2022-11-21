@@ -43,7 +43,7 @@ ENDIF()
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-SET(CMAKE_SWIG_FLAGS "")
+SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
 # Python 3.5 intaller and onwards will have an option to install the debug libraries too.
 # NOTE PYTHON_DEBUG_LIBRARIES appears to be a deprecated variable
@@ -53,12 +53,12 @@ IF (WIN32 AND NOT PYTHON_DEBUG_LIBRARIES)
 ENDIF()
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
-SWIG_ADD_MODULE(ifcopenshell_wrapper python IfcPython.i)
+swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} libsvgfill)
 else()
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} libsvgfill)
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
@@ -98,6 +98,9 @@ IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
                 DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(TARGETS _ifcopenshell_wrapper
                 DESTINATION "${python_package_dir}/ifcopenshell")
+	if (MSVC)
+	    install(FILES $<TARGET_PDB_FILE:_ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
+	endif()
     ENDIF()
 ELSE()
     MESSAGE(WARNING "No Python interpreter found, unable to install the Python wrapper")
