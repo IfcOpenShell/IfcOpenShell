@@ -83,7 +83,7 @@ class SchemaError(Error):
     pass
 
 
-def guess_format(path):
+def guess_format(path: Path) -> "str | None":
     """Try to guess format using file extension"""
     if path.suffix.lower() in (".ifczip", ".zip"):
         return ".ifcZIP"
@@ -91,7 +91,7 @@ def guess_format(path):
         return ".ifcXML"
 
 
-def open(path: os.PathLike | str, format: str = None) -> file:
+def open(path: "os.PathLike | str", format: str = None) -> file:
     """Loads an IFC dataset from a filepath
 
     You can specify a file format. If no format is given, it is guessed from its extension.
