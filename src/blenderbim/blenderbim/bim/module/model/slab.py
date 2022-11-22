@@ -173,7 +173,7 @@ class DumbSlabGenerator:
                 matrix_world[2][3] = self.collection_obj.location[2] - self.depth
             else:
                 matrix_world[2][3] -= self.depth
-            obj.matrix_world = Matrix.Rotation(self.x_angle, 4, 'X') @ matrix_world
+            obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
             bpy.context.view_layer.update()
             self.collection.objects.link(obj)
 
@@ -651,6 +651,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         profile = tool.Model.export_profile(obj, position=position)
 
         if not profile:
+
             def msg(self, context):
                 self.layout.label(text="INVALID PROFILE: " + indices[1])
 
@@ -784,7 +785,7 @@ class DecorationsHandler:
         special_vertex_indices = {}
         selected_edges = []
         unselected_edges = []
-        special_edges = []
+        special_edges = []  # edges that have a circle or an arc associated with them
 
         arc_groups = []
         circle_groups = []

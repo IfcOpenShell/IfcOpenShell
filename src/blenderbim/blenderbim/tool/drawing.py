@@ -38,7 +38,8 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def create_annotation_object(cls, drawing, object_type):
         data_type = {
-            "ANGLE": "mesh",
+            "ANGLE": "curve",
+            "ANGLE_OLD": "mesh",
             "BREAKLINE": "mesh",
             "DIAMETER": "curve",
             "DIMENSION": "curve",
