@@ -1,13 +1,10 @@
-bl_info = {
-    "name": "BlenderBIM spreadsheet",
-    "author": "C. Claus",
-    "version": (1, 0, 3),
-    "blender": (3, 3, 3),
-    "location": "Tools",
-    "description": "BlenderBIM spreadsheet for .xlsx and .ods",
-    "support": "COMMUNITY",
-    }
-  
+import os
+import bpy
+import time
+import site
+import collections 
+import subprocess 
+
 import os
 import sys
 import time
@@ -642,142 +639,7 @@ class UnhideIFCElements(bpy.types.Operator):
             obj.hide_viewport = False 
         
         return {'FINISHED'}  
-    
-class BlenderBIMSpreadSheetPanel(bpy.types.Panel):
-    """Creates a Panel in the Object properties window"""  
 
-    bl_label = "BlenderBIM spreadsheet"
-    bl_idname = "OBJECT_PT_blenderbimxlsxpanel"  # this is not strictly necessary
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Tools"
- 
-    def draw(self, context):
-        
-        layout = self.layout
-        blenderbim_spreadsheet_properties = context.scene.blenderbim_spreadsheet_properties
-        
-        layout.label(text="General")
-        box = layout.box()
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_ifcproduct")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_ifcbuildingstorey")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_ifcproduct_name")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_type")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_ifcclassification")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_ifcmaterial")
-        
-        layout.label(text="Common Properties")
-        box = layout.box()
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_isexternal")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_loadbearing")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_firerating")
-        
-        layout.label(text="BaseQuantities")
-        box = layout.box()
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_length")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_width")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_height")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_area")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_netarea")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_netsidearea")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_volume")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_netvolume")
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_perimeter")
-        
-        layout.label(text="Custom Properties")
-        my_collection = context.scene.my_collection
-       
-        row = layout.row(align=True)
-        row.operator("my.collection_actions", text="Add", icon="ADD").action = "add"
-        row.operator("my.collection_actions", text="Remove Last", icon="REMOVE").action = "remove"
-
-        for item in my_collection.items:
-            layout.prop(item, "name")
-        
-        layout.label(text="Write to spreadsheet")
-        self.layout.operator(WriteToXLSX.bl_idname, text="Write IFC data to .xlsx", icon="FILE")
-        self.layout.operator(WriteToODS.bl_idname, text="Write IFC data to .ods", icon="FILE")
-        
-        layout.label(text="Filter IFC elements")
-  
-        box = layout.box()
-        row = box.row()
-        row.prop(blenderbim_spreadsheet_properties, "my_file_path")
-        self.layout.operator(FilterIFCElements.bl_idname, text="Filter IFC elements", icon="FILTER")
-        self.layout.operator(UnhideIFCElements.bl_idname, text="Unhide IFC elements", icon="LIGHT")
-        
-        
-class BlenderBIMSpreadSheetProperties(bpy.types.PropertyGroup):
-    ###############################################
-    ################# General #####################
-    ############################################### 
-    my_ifcproduct: bpy.props.BoolProperty(name="IfcProduct",description="Export IfcProduct",default=True)
-    my_ifcbuildingstorey: bpy.props.BoolProperty(name="IfcBuildingStorey",description="Export IfcBuildingStorey",default = True)     
-    my_ifcproduct_name: bpy.props.BoolProperty(name="Name",description="Export IfcProduct Name",default = True)
-    my_type: bpy.props.BoolProperty(name="Type",description="Export IfcObjectType Name",default = True)
-    my_ifcclassification: bpy.props.BoolProperty(name="IfcClassification",description="Export Classification",default = True)
-    my_ifcmaterial: bpy.props.BoolProperty(name="IfcMaterial",description="Export Materials",default = True)
-     
-    ###############################################
-    ############ Common Properties ################
-    ###############################################
-    my_isexternal: bpy.props.BoolProperty(name="IsExternal",description="Export IsExternal",default = True)
-    my_loadbearing: bpy.props.BoolProperty(name="LoadBearing",description="Export LoadBearing",default = True)
-    my_firerating: bpy.props.BoolProperty(name="FireRating",description="Export FireRating",default = True)
-    
-    ###############################################
-    ############# BaseQuantities ##################
-    ###############################################
-    my_length: bpy.props.BoolProperty(name="Length",description="Export Length from BaseQuantities",default = True)  
-    my_width: bpy.props.BoolProperty(name="Width",description="Export Width from BaseQuantities",default = True)   
-    my_height: bpy.props.BoolProperty(name="Height",description="Export Height from BaseQuantities",default = True) 
-   
-    my_area: bpy.props.BoolProperty(name="Area",description="Gets each possible defintion of Area",default = True)  
-    my_netarea: bpy.props.BoolProperty(name="NetArea",description="Export NetArea from BaseQuantities",default = True)
-    my_netsidearea: bpy.props.BoolProperty(name="NetSideArea",description="Export NetSideArea from BaseQuantities",default = True)
-    
-    my_volume: bpy.props.BoolProperty(name="Volume",description="Export Volume from BaseQuantities",default = True) 
-    my_netvolume: bpy.props.BoolProperty(name="NetVolume",description="Export NetVolume from BaseQuantities",default = True)
-    
-    my_perimeter: bpy.props.BoolProperty(name="Perimeter",description="Export Perimeter from BaseQuantities",default = True)      
-  
-    ###############################################
-    ####### Spreadsheet Properties ################
-    ###############################################
-    my_workbook: bpy.props.StringProperty(name="my_workbook")
-    my_xlsx_file: bpy.props.StringProperty(name="my_xlsx_file")
-    my_ods_file: bpy.props.StringProperty(name="my_ods_file")
-    
-    my_file_path: bpy.props.StringProperty(name="Spreadsheet",
-                                        description="your .ods or .xlsx file",
-                                        default="",
-                                        maxlen=1024,
-                                        subtype="FILE_PATH")
-
-    
-class MyItem(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty(name="Property",description="Use the PropertySet name and Property name divided by a .",default = "[PropertySet.Property]") 
-
-class MyCollection(bpy.types.PropertyGroup):
-    items: bpy.props.CollectionProperty(type=MyItem)
 
 class MyCollectionActions(bpy.types.Operator):
     bl_idname = "my.collection_actions"
@@ -794,32 +656,4 @@ class MyCollectionActions(bpy.types.Operator):
             item = my_collection.items.add()  
         if self.action == "remove":
             my_collection.items.remove(len(my_collection.items) - 1)
-        return {"FINISHED"}
-
-def register():
-    bpy.utils.register_class(MyItem)
-    bpy.utils.register_class(MyCollection)
-    bpy.types.Scene.my_collection = bpy.props.PointerProperty(type=MyCollection)
-    bpy.utils.register_class(MyCollectionActions) 
-    bpy.utils.register_class(BlenderBIMSpreadSheetProperties)
-    bpy.types.Scene.blenderbim_spreadsheet_properties = bpy.props.PointerProperty(type=BlenderBIMSpreadSheetProperties)     
-    bpy.utils.register_class(WriteToXLSX)
-    bpy.utils.register_class(WriteToODS) 
-    bpy.utils.register_class(FilterIFCElements)
-    bpy.utils.register_class(UnhideIFCElements)
-    bpy.utils.register_class(BlenderBIMSpreadSheetPanel)
-    
-def unregister(): 
-    
-    bpy.utils.unregister_class(MyItem)
-    bpy.utils.unregister_class(MyCollection)
-    bpy.utils.unregister_class(MyCollectionActions) 
-    bpy.utils.unregister_class(BlenderBIMSpreadSheetProperties)
-    bpy.utils.unregister_class(WriteToXLSX)
-    bpy.utils.unregister_class(WriteToODS)
-    bpy.utils.unregister_class(FilterIFCElements)
-    bpy.utils.unregister_class(UnhideIFCElements)
-    bpy.utils.unregister_class(BlenderBIMSpreadSheetPanel)
-    
-if __name__ == "__main__":
-    register()
+        return {"FINISHED"}        
