@@ -601,6 +601,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			return helper_fn_create_shape<Ifc4x3>(settings, instance, representation);
 		}
 		#endif
+		#ifdef HAS_SCHEMA_4x3_tc1
+		if (schema_name == "IFC4X3_TC1") {
+			return helper_fn_create_shape<Ifc4x3_tc1>(settings, instance, representation);
+		}
+		#endif
         #ifdef HAS_SCHEMA_4x3_add1
 		if (schema_name == "IFC4X3_ADD1") {
 			return helper_fn_create_shape<Ifc4x3_add1>(settings, instance, representation);
@@ -668,4 +673,3 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		}
 	}
 %}
-
