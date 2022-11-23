@@ -50,7 +50,7 @@ class SystemData:
         return [
             (c, c, get_entity_doc(version, c).get("description", ""))
             for c in sorted([d.name() for d in declarations])
-            if c not in ("IfcZone", "IfcStructuralAnalysisModel")
+            if c not in ("IfcStructuralAnalysisModel")
         ]
 
     @classmethod

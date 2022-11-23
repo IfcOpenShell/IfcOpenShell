@@ -41,7 +41,7 @@ class Usecase:
         aggregate = ifcopenshell.util.element.get_aggregate(self.settings["product"])
         if aggregate:
             ifcopenshell.api.run(
-                "aggregate.unassign_object", self.file, relating_object=aggregate, product=self.settings["product"]
+                "aggregate.unassign_object", self.file, product=self.settings["product"]
             )
 
         if contained_in_structure:

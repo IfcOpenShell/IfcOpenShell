@@ -75,7 +75,7 @@ class System(blenderbim.core.tool.System):
         props = bpy.context.scene.BIMSystemProperties
         props.systems.clear()
         for system in tool.Ifc.get().by_type("IfcSystem"):
-            if system.is_a() in ["IfcZone", "IfcStructuralAnalysisModel"]:
+            if system.is_a() in ["IfcStructuralAnalysisModel"]:
                 continue
             new = props.systems.add()
             new.ifc_definition_id = system.id()
