@@ -1,9 +1,4 @@
-import os
-import bpy
-import time
-import site
-import collections 
-import subprocess 
+ 
 
 import os
 import sys
@@ -15,9 +10,9 @@ import subprocess
 site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
 
 import bpy
-from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
-from bpy_extras.io_utils import ImportHelper 
-from bpy.types import (Operator, PropertyGroup)
+#from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
+#from bpy_extras.io_utils import ImportHelper 
+#from bpy.types import (Operator, PropertyGroup)
 
 import blenderbim.bim.import_ifc
 from blenderbim.bim.ifc import IfcStore
@@ -28,16 +23,16 @@ import openpyxl
 from openpyxl import load_workbook
 import pandas as pd
 import xlsxwriter
-import zipfile
+#import zipfile
 import xml.parsers.expat
 
 from collections import defaultdict
 from collections import OrderedDict
 
 
-print ('openpyxl', openpyxl.__version__, openpyxl.__file__)
-print ('pandas',pd.__version__, pd.__file__)
-print ('xlsxwriter',xlsxwriter.__version__, xlsxwriter.__file__)
+#print ('openpyxl', openpyxl.__version__, openpyxl.__file__)
+#print ('pandas',pd.__version__, pd.__file__)
+#print ('xlsxwriter',xlsxwriter.__version__, xlsxwriter.__file__)
 
 #https://stackoverflow.com/questions/72657415/fix-futurewarning-related-to-the-pandas-append-function
 
