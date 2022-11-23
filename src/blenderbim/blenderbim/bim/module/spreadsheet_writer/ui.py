@@ -1,7 +1,7 @@
 import bpy
 from bpy.types import Panel 
 from blenderbim.bim.ifc import IfcStore
-
+from . import operator
 
 class BlenderBIMSpreadSheetPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""  
@@ -73,16 +73,16 @@ class BlenderBIMSpreadSheetPanel(bpy.types.Panel):
             layout.prop(item, "name")
         
         layout.label(text="Write to spreadsheet")
-        self.layout.operator(WriteToXLSX.bl_idname, text="Write IFC data to .xlsx", icon="FILE")
-        self.layout.operator(WriteToODS.bl_idname, text="Write IFC data to .ods", icon="FILE")
+        self.layout.operator(operator.WriteToXLSX.bl_idname, text="Write IFC data to .xlsx", icon="FILE")
+        self.layout.operator(operator.WriteToODS.bl_idname, text="Write IFC data to .ods", icon="FILE")
         
         layout.label(text="Filter IFC elements")
   
         box = layout.box()
         row = box.row()
         row.prop(blenderbim_spreadsheet_properties, "my_file_path")
-        self.layout.operator(FilterIFCElements.bl_idname, text="Filter IFC elements", icon="FILTER")
-        self.layout.operator(UnhideIFCElements.bl_idname, text="Unhide IFC elements", icon="LIGHT")
+        self.layout.operator(operator.FilterIFCElements.bl_idname, text="Filter IFC elements", icon="FILTER")
+        self.layout.operator(operator.UnhideIFCElements.bl_idname, text="Unhide IFC elements", icon="LIGHT")
 
 class MyItem(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name="Property",description="Use the PropertySet name and Property name divided by a .",default = "[PropertySet.Property]") 
