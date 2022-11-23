@@ -3,6 +3,8 @@ from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 from . import operator
 
+
+
 class BlenderBIMSpreadSheetPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""  
 
@@ -10,7 +12,7 @@ class BlenderBIMSpreadSheetPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_blenderbim_spreadsheet"  # this is not strictly necessary
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Tools"
+    bl_category = "BlenderBIM"
  
     def draw(self, context):
         

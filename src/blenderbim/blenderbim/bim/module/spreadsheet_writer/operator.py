@@ -7,7 +7,7 @@ import site
 import collections
 import subprocess
 
-site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
+#site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
 
 import bpy
 #from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
