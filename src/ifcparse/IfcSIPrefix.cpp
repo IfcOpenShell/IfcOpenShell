@@ -46,6 +46,9 @@
 #ifdef HAS_SCHEMA_4x3
 #include "../ifcparse/Ifc4x3.h"
 #endif
+#ifdef HAS_SCHEMA_4x3_tc1
+#include "../ifcparse/Ifc4x3_tc1.h"
+#endif
 #ifdef HAS_SCHEMA_4x3_add1
 #include "../ifcparse/Ifc4x3_add1.h"
 #endif
@@ -159,6 +162,9 @@ template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc4>(typename I
 #endif
 #ifdef HAS_SCHEMA_4x3
 template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3>(typename Ifc4x3::IfcNamedUnit* named_unit);
+#endif
+#ifdef HAS_SCHEMA_4x3_tc1
+template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_tc1>(typename Ifc4x3_tc1::IfcNamedUnit* named_unit);
 #endif
 #ifdef HAS_SCHEMA_4x3_add1
 template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_add1>(typename Ifc4x3_add1::IfcNamedUnit* named_unit);

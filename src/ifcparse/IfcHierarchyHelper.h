@@ -59,6 +59,9 @@
 #ifdef HAS_SCHEMA_4x3
 #include "../ifcparse/Ifc4x3.h"
 #endif
+#ifdef HAS_SCHEMA_4x3_tc1
+#include "../ifcparse/Ifc4x3_tc1.h"
+#endif
 #ifdef HAS_SCHEMA_4x3_add1
 #include "../ifcparse/Ifc4x3_add1.h"
 #endif
@@ -263,6 +266,28 @@ namespace {
 
    void set_children_of_relation(Ifc4x3::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
 	   t->setRelatedObjects(cs->as<Ifc4x3::IfcObjectDefinition>());
+   }
+#endif
+
+#ifdef HAS_SCHEMA_4x3_tc1
+   Ifc4x3_tc1::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_tc1::IfcRelContainedInSpatialStructure* t) {
+	   return t->RelatingStructure();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_tc1::IfcRelContainedInSpatialStructure* t) {
+	   return t->RelatedElements()->generalize();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_tc1::IfcRelAggregates* t) {
+	   return t->RelatedObjects()->generalize();
+   }
+
+   void set_children_of_relation(Ifc4x3_tc1::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+	   t->setRelatedElements(cs->as<Ifc4x3_tc1::IfcProduct>());
+   }
+
+   void set_children_of_relation(Ifc4x3_tc1::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+	   t->setRelatedObjects(cs->as<Ifc4x3_tc1::IfcObjectDefinition>());
    }
 #endif
 
@@ -523,6 +548,14 @@ IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::If
 IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcRepresentation* shape, Ifc4x3::IfcPresentationStyle* style);
 #endif
 
+#ifdef HAS_SCHEMA_4x3_tc1
+IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_tc1>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcProductRepresentation* shape, Ifc4x3_tc1::IfcPresentationStyle* style);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcRepresentation* shape, Ifc4x3_tc1::IfcPresentationStyle* style);
+#endif
+
 #ifdef HAS_SCHEMA_4x3_add1
 IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_add1>& file, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
@@ -530,7 +563,6 @@ IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHe
 IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation* shape, Ifc4x3_add1::IfcPresentationStyle* style);
 IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcRepresentation* shape, Ifc4x3_add1::IfcPresentationStyle* style);
 #endif
-
 
 /*
 template <>
