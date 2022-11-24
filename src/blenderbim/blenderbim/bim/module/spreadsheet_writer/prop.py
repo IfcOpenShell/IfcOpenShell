@@ -1,7 +1,5 @@
 
 import bpy
-
-
 from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
 from bpy_extras.io_utils import ImportHelper 
 from bpy.types import (Operator, PropertyGroup)

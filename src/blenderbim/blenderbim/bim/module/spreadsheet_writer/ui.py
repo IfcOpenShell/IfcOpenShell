@@ -5,11 +5,12 @@ from . import operator
 
 
 
-class BlenderBIMSpreadSheetPanel(bpy.types.Panel):
+class BlenderBIMSpreadSheetPanel(Panel):
     """Creates a Panel in the Object properties window"""  
 
+    bl_idname = "BlenderBIMSpreadSheetPanel"  # this is not strictly necessary
     bl_label = "BlenderBIM spreadsheet"
-    bl_idname = "OBJECT_PT_blenderbim_spreadsheet"  # this is not strictly necessary
+    
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
