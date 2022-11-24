@@ -12,7 +12,7 @@ classes  = (
     operator.WriteToODS,
     operator.FilterIFCElements,
     operator.UnhideIFCElements,
-    ui.BlenderBIMSpreadSheetPanel,
+    ui.BlenderBIMSpreadSheet,
     ui.MyItem,
     ui.MyCollection,
     ui.MyCollectionActions
@@ -30,7 +30,7 @@ def register():
     bpy.utils.register_class(operator.WriteToODS) 
     bpy.utils.register_class(operator.FilterIFCElements)
     bpy.utils.register_class(operator.UnhideIFCElements)
-    bpy.utils.register_class(ui.BlenderBIMSpreadSheetPanel)
+    bpy.utils.register_class(ui.BlenderBIMSpreadSheet)
     
 def unregister(): 
     
@@ -42,5 +42,5 @@ def unregister():
     bpy.utils.unregister_class(operator.WriteToODS)
     bpy.utils.unregister_class(operator.FilterIFCElements)
     bpy.utils.unregister_class(operator.UnhideIFCElements)
-    bpy.utils.unregister_class(prop.BlenderBIMSpreadSheetPanel)
+    bpy.utils.unregister_class(prop.BlenderBIMSpreadSheet)
 
