@@ -5,10 +5,10 @@ from . import operator
 
 
 
-class BlenderBIMSpreadSheetPanel(Panel):
+class BlenderBIMSpreadSheet(Panel):
     """Creates a Panel in the Object properties window"""  
 
-    bl_idname = "BlenderBIMSpreadSheetPanel"  # this is not strictly necessary
+    bl_idname = "BlenderBIMSpreadSheet"  # this is not strictly necessary
     bl_label = "BlenderBIM spreadsheet"
     
     bl_space_type = "VIEW_3D"
