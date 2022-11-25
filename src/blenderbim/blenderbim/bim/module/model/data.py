@@ -177,6 +177,7 @@ class AuthoringData:
             for e in tool.Ifc.get().by_type("IfcElementType")
             + tool.Ifc.get().by_type("IfcDoorStyle")
             + tool.Ifc.get().by_type("IfcWindowStyle")
+            + tool.Ifc.get().by_type("IfcSpaceType")
         }
         results.extend([(c, c, "") for c in sorted(classes)])
         return results
