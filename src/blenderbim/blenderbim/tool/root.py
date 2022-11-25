@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.core.geometry
 import blenderbim.tool as tool
@@ -31,18 +32,37 @@ class Root(blenderbim.core.tool.Root):
         new.obj = obj
 
     @classmethod
+    def assign_body_styles(cls, element, obj):
+        # Should this even be here? Should it be in the geometry tool?
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if body:
+            [
+                tool.Geometry.run_style_add_style(obj=mat)
+                for mat in tool.Geometry.get_object_materials_without_styles(obj)
+            ]
+            ifcopenshell.api.run(
+                "style.assign_representation_styles",
+                tool.Ifc.get(),
+                shape_representation=body,
+                styles=tool.Geometry.get_styles(obj),
+                should_use_presentation_style_assignment=bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+            )
+
+    @classmethod
     def copy_representation(cls, source, dest):
         if dest.is_a("IfcProduct"):
             if not source.Representation:
                 return
             dest.Representation = ifcopenshell.util.element.copy_deep(
-                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"]
+                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext", "IfcProfileDef"]
             )
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
                 return
             dest.RepresentationMaps = [
-                ifcopenshell.util.element.copy_deep(tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext"])
+                ifcopenshell.util.element.copy_deep(
+                    tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext", "IfcProfileDef"]
+                )
                 for m in source.RepresentationMaps
             ]
 

@@ -1,12 +1,126 @@
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=61",
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "bcf-client"
+# author = "IfcOpenShell"
+description = "BCF-XML file handler."
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["IFC", "BCF", "BIM", "eingineering"]
+dependencies = [
+    "xsdata",
+    "numpy",
+]
+version = "0.0.1"
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Source = "https://github.com/IfcOpenShell/IfcOpenShell"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
 [tool.black]
 line-length = 120
+extend-exclude = "model"
 
 [tool.isort]
 profile = "black"
+extend_skip_glob = ["src/bcf/*/model/*"]
+
+[tool.coverage.paths]
+source = ["src"]
+
+[tool.coverage.run]
+branch = true
+source = ["bcf"]
+omit = ["*/model/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 65
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING",
+    "if __name__ == .__main__.:",
+    "Protocol",
+]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py310
+isolated_build = true
+skip_missing_interpreters = true
+requires = tox-conda
+
+[testenv]
+conda_deps =
+    pytest
+    pytest-cov
+    coverage
+conda_channels =
+    conda-forge
+conda_env = environment.yml
+commands = pytest --cov --cov-report=term tests
+"""
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+#no_implicit_reexport = true
+show_column_numbers = true
+show_error_codes = true
+show_error_context = true
+strict_equality = true
+strict_optional = true
+warn_redundant_casts = true
+#warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+exclude= "src/bcf/v(2|3)/model"
+plugins = "numpy.typing.mypy_plugin"
+
+[[tool.mypy.overrides]]
+module = "tests"
+disallow_untyped_decorators = false
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "pytest",
+    "pytest_mock",
+    "ifcopenshell",
+    "ifcopenshell.*",
+]
+ignore_missing_imports = true
+
+[tool.pylint.main]
+ignore = ["model"]
+ignored-modules = ["bcf.v2.model", "bcf.v3.model", "xsdata"]
+jobs = 0
+disable="all"
+enable="E" # B,B9,BLK,C,D,E,F,I,N,S,W
+
+[tool.pylint.design]
+max-args = 10
+max-attributes = 10
+
+[tool.pylint.format]
+expected-line-ending-format = "LF"
+max-line-length = 120

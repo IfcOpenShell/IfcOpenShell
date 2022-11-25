@@ -303,7 +303,7 @@ namespace IfcGeom {
 				task_result_ptr_initialized = true;
 			}
 
-			progress_ = ++processed_ * 100 / tasks_.size();
+			progress_ = (int) (++processed_ * 100 / tasks_.size());
 		}
 
 		void process_concurrently() {

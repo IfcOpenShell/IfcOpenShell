@@ -1,0 +1,7 @@
+black
+mypy
+pylint
+isort
+xsdata
+tox
+tox-conda

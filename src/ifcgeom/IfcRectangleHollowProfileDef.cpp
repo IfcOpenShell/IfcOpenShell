@@ -25,6 +25,7 @@
 #include <TopExp_Explorer.hxx>
 #include <ShapeFix_Shape.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/profile_helper.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -62,8 +63,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, 
 	double radii2[4] = {r2,r2,r2,r2};
 	int fillets[4] = {0,1,2,3};
 
-	bool s1 = profile_helper(4,coords1,fr1 ? 4 : 0,fillets,radii1,trsf2d,f1);
-	bool s2 = profile_helper(4,coords2,fr2 ? 4 : 0,fillets,radii2,trsf2d,f2);
+	bool s1 = util::profile_helper(4,coords1,fr1 ? 4 : 0,fillets,radii1,trsf2d,f1);
+	bool s2 = util::profile_helper(4,coords2,fr2 ? 4 : 0,fillets,radii2,trsf2d,f2);
 
 	if (!s1 || !s2) return false;
 

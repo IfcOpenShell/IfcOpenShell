@@ -125,14 +125,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 				}
 			}
 
-			for (auto& wire : wires) {
+			for (auto& w : wires) {
 				if (!same_sense) {
-					wire.Reverse();
+					w.Reverse();
 				}
 
-				wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+				wire_senses.Bind(w.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
 
-				fd.wires().emplace_back(TopoDS::Wire(wire));
+				fd.wires().emplace_back(TopoDS::Wire(w));
 			}
 		}
 	}
@@ -201,6 +201,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 			for (const auto& w : fd.wires()) {
 				TopTools_ListOfShape fl;
 				auto r = util::triangulate_wire({ w }, fl);
+				if (r == util::TRIANGULATE_WIRE_FAIL) {
+					continue;
+				}
 				face_list.Append(fl);
 				if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
 					faceset_helper_->non_manifold() = true;
@@ -208,8 +211,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 			}
 		} else {
 			auto r = util::triangulate_wire(fd.wires(), face_list);
-			if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
-				faceset_helper_->non_manifold() = true;
+			if (r != util::TRIANGULATE_WIRE_FAIL) {
+				if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
+					faceset_helper_->non_manifold() = true;
+				}
 			}
 		}
 	} else if (!fd.all_outer()) {
@@ -313,7 +318,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 		}
 	}
 
-	if (face_list.Extent() > 1) {
+	if (face_list.Extent() == 0) {
+		return false;
+	}  else if (face_list.Extent() > 1) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);

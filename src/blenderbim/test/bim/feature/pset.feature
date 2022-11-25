@@ -59,22 +59,8 @@ Scenario: Enable pset editing - material
 
 Scenario: Enable pset editing - profile
     Given an empty IFC project
-    And I add an empty
-    And the object "Empty" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
-    And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
-    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
-    And I press "bim.assign_material"
-    And I press "bim.enable_editing_assigned_material()"
-    And the variable "profile_set" is "{ifc}.by_type('IfcMaterialProfileSet')[-1].id()"
-    And I press "bim.add_profile(profile_set={profile_set})"
-    And the variable "material_profile" is "{ifc}.by_type('IfcMaterialProfile')[-1].id()"
-    And I press "bim.enable_editing_material_set_item(material_set_item={material_profile})"
-    And I set "active_object.BIMObjectMaterialProperties.profile_classes" to "IfcParameterizedProfileDef"
-    And I press "bim.assign_parameterized_profile(ifc_class="IfcIShapeProfileDef", material_profile={material_profile})"
     And I press "bim.load_profiles"
+    And I press "bim.add_profile_def"
     And I set "scene.ProfilePsetProperties.pset_name" to "Pset_ProfileMechanical"
     And I press "bim.add_pset(obj_type='Profile')"
     And the variable "pset" is "{ifc}.by_type('IfcProfileProperties')[-1].id()"

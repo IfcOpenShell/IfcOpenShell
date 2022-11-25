@@ -38,12 +38,22 @@ class QtoCalculator:
         for key in self.mapping_dict.keys():
             for item in self.mapping_dict[key].keys():
                 if self.mapping_dict[key][item]:
-                    self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item])
+                    if isinstance(self.mapping_dict[key][item], str):
+                        self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item])
+                    if isinstance(self.mapping_dict[key][item], dict):
+                        self.mapping_dict[key][item] = eval("self." + self.mapping_dict[key][item]["function_name"])
                 else:
                     self.mapping_dict[key][item] = None
 
     def calculate_quantity(self, qto_name, quantity_name, obj):
-        return self.mapping_dict[qto_name][quantity_name](obj)
+        string = "self.mapping_dict[qto_name][quantity_name](obj"
+        if isinstance(mapper[qto_name][quantity_name], dict):
+            args = mapper[qto_name][quantity_name]["args"]
+        else:
+            args = ""
+        string += args
+        string += ")"
+        return eval(string)
 
     def guess_quantity(self, prop_name, alternative_prop_names, obj):
         prop_name = prop_name.lower()
@@ -59,13 +69,13 @@ class QtoCalculator:
         elif "height" in prop_name or "depth" in prop_name:
             return self.get_height(obj)
         elif "perimeter" in prop_name:
-            return self.get_perimeter(obj)
+            return self.get_net_perimeter(obj)
         elif "area" in prop_name and ("footprint" in prop_name or "section" in prop_name or "floor" in prop_name):
             return self.get_net_footprint_area(obj)
         elif "area" in prop_name and "side" in prop_name:
             return self.get_side_area(obj)
         elif "area" in prop_name:
-            return self.get_total_surface_area(obj)
+            return self.get_gross_surface_area(obj)
         elif "volume" in prop_name and "gross" in prop_name:
             return self.get_gross_volume(obj)
         elif "volume" in prop_name :
@@ -85,11 +95,18 @@ class QtoCalculator:
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
         return max(x, y, z)
 
-    def get_length(self, o, vg_index=None):
+    def get_length(self, o, vg_index=None, main_axis: str = ""):
         if vg_index is None:
             x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
             y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-            return max(x, y)
+            z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+            if self.get_object_main_axis(o) == "x" or main_axis=="x":
+                return max(x, y)
+            if self.get_object_main_axis(o) == "z":
+                return max(z, x)
+            if self.get_object_main_axis(o) == "y":
+                return max(y, z)
+
         length = 0
         edges = [
             e
@@ -121,7 +138,7 @@ class QtoCalculator:
         """
         return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
-    def get_perimeter(self, o):
+    def get_net_perimeter(self, o):
         parsed_edges = []
         shared_edges = []
         perimeter = 0
@@ -135,6 +152,19 @@ class QtoCalculator:
         for edge_key in shared_edges:
             perimeter -= self.get_edge_key_distance(o, edge_key)
         return perimeter
+
+    def get_gross_perimeter(self, o):
+        element = tool.Ifc.get_entity(o)
+        mesh = self.get_gross_element_mesh(element)
+        gross_obj = bpy.data.objects.new("GrossObj", mesh)
+        gross_perimeter = self.get_net_perimeter(gross_obj)
+        self.delete_obj(gross_obj)
+        return gross_perimeter
+
+    def get_rectangular_perimeter(self, obj):
+        length = self.get_length(obj, main_axis='x')
+        height = self.get_height(obj)
+        return (length+height)*2
 
     def get_lowest_polygons(self, o):
         lowest_polygons = []
@@ -186,6 +216,22 @@ class QtoCalculator:
             area += polygon.area
         return area
 
+    def get_gross_footprint_area(self, o):
+        """_summary_: Returns the area of the footprint of the object, without related opening and excluding any holes
+
+        :param blender-object o: blender object
+        :return float: footprint area"""
+        if not self.has_openings(o):
+            return self.get_net_footprint_area(o)
+
+        element = tool.Ifc.get_entity(o)
+        mesh = self.get_gross_element_mesh(element)
+        gross_obj = bpy.data.objects.new("GrossObj", mesh)
+        gross_footprint_area = self.get_net_footprint_area(gross_obj)
+        self.delete_obj(gross_obj)
+        self.delete_mesh(mesh)
+        return gross_footprint_area
+
     def get_net_roofprint_area(self, o):
         # Is roofprint the right word? Couldn't think of anything better - vulevukusej
         """_summary_: Returns the area of the net roofprint of the object, excluding any holes
@@ -206,17 +252,47 @@ class QtoCalculator:
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
         return max(x * z, y * z)
 
-    def get_total_surface_area(self, o, vg_index=None):
+    def get_cross_section_area(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                mesh = self.create_mesh_from_shape(item.SweptArea)
+                area = self.get_mesh_area(mesh)
+                self.delete_mesh(mesh)
+                return area
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                area = self.get_end_area(obj, exclude_side_areas = True)
+                return area
+        # TODO handle other types of sections, and then fall back to mesh parsing
+
+    def get_gross_surface_area(self, o, vg_index=None):
         if vg_index is None:
-            area = 0
-            for polygon in o.data.polygons:
-                area += polygon.area
+            if not self.has_openings(o):
+                return self.get_net_surface_area(o)
+
+            mesh = self.get_gross_element_mesh(element)
+            area = self.get_mesh_area(mesh)
+            bpy.data.meshes.remove(mesh)
             return area
+
         area = 0
         vertices_in_vg = [v.index for v in o.data.vertices if vg_index in [g.group for g in v.groups]]
         for polygon in o.data.polygons:
             if self.is_polygon_in_vg(polygon, vertices_in_vg):
                 area += polygon.area
+        return area
+
+    def get_net_surface_area(self, obj):
+        return self.get_mesh_area(obj.data)
+
+    def get_mesh_area(self, mesh):
+        area = 0
+        for polygon in mesh.polygons:
+            area += polygon.area
         return area
 
     def is_polygon_in_vg(self, polygon, vertices_in_vg):
@@ -228,50 +304,29 @@ class QtoCalculator:
     def get_net_volume(self, o):
         o_mesh = bmesh.new()
         o_mesh.from_mesh(o.data)
-        return o_mesh.calc_volume()
+        volume = o_mesh.calc_volume()
+        o_mesh.free()
+        return volume
 
     def get_gross_volume(self, o):
+        if not self.has_openings(o):
+            return self.get_net_volume(o)
+
         element = tool.Ifc.get_entity(o)
-        if not element:
-            print(f"Object {o.name} hasn't an IFC instance so gross volume is equal to net volume")
-            return self.get_net_volume
-
-        settings = ifcopenshell.geom.settings()
-        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
-        shape = ifcopenshell.geom.create_shape(settings, element)
-        faces = shape.geometry.faces
-        verts = shape.geometry.verts
-
-        mesh = bpy.data.meshes.new("myBeautifulMesh")
-
-        num_vertices = len(verts) // 3
-        total_faces = len(faces)
-        loop_start = range(0, total_faces, 3)
-        num_loops = total_faces // 3
-        loop_total = [3] * num_loops
-        num_vertex_indices = len(faces)
-
-        mesh.vertices.add(num_vertices)
-        mesh.vertices.foreach_set("co", verts)
-        mesh.loops.add(num_vertex_indices)
-        mesh.loops.foreach_set("vertex_index", faces)
-        mesh.polygons.add(num_loops)
-        mesh.polygons.foreach_set("loop_start", loop_start)
-        mesh.polygons.foreach_set("loop_total", loop_total)
-        mesh.update()
-
-        # An alternative to foreach is
-        # mesh.from_pydata(grouped_verts, edges, grouped_faces)
-        # look at import_ifc.py in blenderbim
-
-        bm = bmesh.new()
-        bm.from_mesh(mesh)
+        mesh = self.get_gross_element_mesh(element)
+        bm = self.get_bmesh_from_mesh(mesh)
 
         gross_volume = bm.calc_volume()
 
         bm.free()
+        self.delete_mesh(mesh)
 
         return gross_volume
+
+    def has_openings(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        return element and getattr(element, "HasOpenings", [])
+
 
     # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
 
@@ -340,7 +395,11 @@ class QtoCalculator:
             for opening in openings:
                 opening_id = opening.RelatedOpeningElement.GlobalId
                 ifc_opening_element = ifc.by_guid(opening_id)
-                bl_opening_obj = tool.Ifc.get_object(ifc_opening_element)
+                #bl_opening_obj = tool.Ifc.get_object(ifc_opening_element)
+                #mesh = bpy.data.meshes.new('myMesh')
+                mesh = self.get_gross_element_mesh(ifc_opening_element)
+
+                bl_opening_obj = bpy.data.objects.new("MyObject", mesh)
 
                 opening_type = (
                     ifc_opening_element.PredefinedType
@@ -350,11 +409,18 @@ class QtoCalculator:
 
                 if ignore_recesses and opening_type == "RECESS":
                     continue
+
+                bl_OBB_opening_object = self.get_OBB_object(bl_opening_obj)
                 opening_area = self.get_lateral_area(
-                    self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
+                    #self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
+                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True, main_axis = 'x',
                 )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
+
+                self.delete_obj(bl_opening_obj)
+                self.delete_mesh(mesh)
+                self.delete_obj(bl_OBB_opening_object)
 
         return total_opening_area
 
@@ -366,6 +432,7 @@ class QtoCalculator:
         exclude_side_areas: bool = False,
         angle_z1: int = 45,
         angle_z2: int = 135,
+        main_axis: str = "",
     ):
         """_summary_
 
@@ -375,11 +442,27 @@ class QtoCalculator:
         :param bool exclude_side_areas: , defaults to False
         :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
         :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector greater than this value will be ignored, defaults to 135
+        :param str main_axis: set main axis, for example a wall must have x main axis default 'x'
         :return float: Lateral Area
         """
+
         x_axis = [1, 0, 0]
         y_axis = [0, 1, 0]
         z_axis = [0, 0, 1]
+
+        if self.get_object_main_axis(obj) == "x" or main_axis == "x":
+            main_axis = x_axis
+            side_axis = y_axis
+            top_axis = z_axis
+        elif self.get_object_main_axis(obj) == "z":
+            main_axis = z_axis
+            side_axis = x_axis
+            top_axis = y_axis
+        elif self.get_object_main_axis(obj) == "y":
+            main_axis = y_axis
+            side_axis = z_axis
+            top_axis = x_axis
+
         area = 0
         total_opening_area = (
             0 if subtract_openings else self.get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
@@ -387,19 +470,49 @@ class QtoCalculator:
         polygons = obj.data.polygons
 
         for polygon in polygons:
-            angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
-            if angle_to_z_axis < angle_z1 or angle_to_z_axis > angle_z2:
+            angle_to_top_axis = math.degrees(polygon.normal.rotation_difference(Vector(top_axis)).angle)
+            if angle_to_top_axis < angle_z1 or angle_to_top_axis > angle_z2:
                 continue
             if exclude_end_areas:
-                angle_to_x_axis = math.degrees(polygon.normal.rotation_difference(Vector(x_axis)).angle)
-                if angle_to_x_axis < 45 or angle_to_x_axis > 135:
+                angle_to_main_axis = math.degrees(polygon.normal.rotation_difference(Vector(main_axis)).angle)
+                if angle_to_main_axis < 45 or angle_to_main_axis > 135:
                     continue
             if exclude_side_areas:
-                angle_to_y_axis = math.degrees(polygon.normal.rotation_difference(Vector(y_axis)).angle)
-                if angle_to_y_axis < 45 or angle_to_y_axis > 135:
+                angle_to_side_axis = math.degrees(polygon.normal.rotation_difference(Vector(side_axis)).angle)
+                if angle_to_side_axis < 45 or angle_to_side_axis > 135:
                     continue
             area += polygon.area
         return area + total_opening_area
+
+    def get_gross_side_area(self, obj):
+        if not self.has_openings(obj):
+            return self.get_net_side_area(obj)
+
+        gross_side_area = self.get_lateral_area(obj, exclude_end_areas = True, subtract_openings = False, main_axis = 'x') / 2
+
+        return gross_side_area
+
+    def get_net_side_area(self, obj):
+        net_side_area = self.get_lateral_area(obj, exclude_end_areas = True, main_axis = 'x') / 2
+        return net_side_area
+
+    def get_outer_surface_area(self, obj):
+        outer_surface_area = self.get_lateral_area(obj, exclude_end_areas = True, angle_z1 = 0, angle_z2 = 360)
+        return outer_surface_area
+
+    def get_end_area(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        gross_mesh = self.get_gross_element_mesh(element)
+        gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
+
+        gross_obj.matrix_world = obj.matrix_world
+
+        end_area = self.get_lateral_area(gross_obj, exclude_side_areas = True) / 2
+
+        self.delete_obj(gross_obj)
+        self.delete_mesh(gross_mesh)
+
+        return end_area
 
     def get_gross_top_area(self, obj, angle: int = 45):
         """_summary_: Returns the gross top area of the object.
@@ -783,6 +896,69 @@ class QtoCalculator:
             polygon_tuples.append((x, y))
         return Polygon(polygon_tuples)
 
+    def get_gross_element_mesh(self, element):
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        return self.create_mesh_from_shape(element, settings)
+
+    def create_mesh_from_shape(self, element, settings=None):
+        if settings is None:
+            settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        geometry = shape.geometry if element.is_a("IfcRoot") else shape
+        faces = geometry.faces
+        verts = geometry.verts
+
+        mesh = bpy.data.meshes.new("myBeautifulMesh")
+
+        num_vertices = len(verts) // 3
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.update()
+        return mesh
+
+    def get_bmesh_from_mesh(self, mesh):
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        return bm
+
+    def get_object_main_axis(self, o):
+        """_summary_: Returns the main object axis. Useful for profile-defined objects.
+
+        :param blender-object o: Blender Object
+        :return str: main axis x or y or z
+        """
+        x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
+        y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
+        z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+
+        if x >= y and x > z:
+            return "x"
+        if y > z and y > x:
+            return "y"
+        if z > x and z > y:
+            return "z"
+        else:
+            return "x"
+
+    def delete_mesh(self, mesh):
+        mesh.user_clear()
+        bpy.data.meshes.remove(mesh)
+
+    def delete_obj(self, obj):
+        bpy.data.objects.remove(obj, do_unlink = True)
+
 # # Following code is here temporarily to test newly created functions:
 
 #qto = QtoCalculator()
@@ -800,7 +976,7 @@ class QtoCalculator:
 #     f"get_net_footprint_area: {qto.get_net_footprint_area(o)}{nl}{nl}"
 #     f"get_net_roofprint_area: {qto.get_net_roofprint_area(o)}{nl}{nl}"
 #     f"get_side_area: {qto.get_side_area(o)}{nl}{nl}"
-#     f"get_total_surface_area: {qto.get_total_surface_area(o)}{nl}{nl}"
+#     f"get_gross_surface_area: {qto.get_gross_surface_area(o)}{nl}{nl}"
 #     f"get_volume: {qto.get_volume(o)}{nl}{nl}"
 #     f"get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False): {qto.get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False)}{nl}{nl}"
 #     f"get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135): {qto.get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135)}{nl}{nl}"

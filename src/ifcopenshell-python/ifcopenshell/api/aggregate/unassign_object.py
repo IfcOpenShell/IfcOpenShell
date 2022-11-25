@@ -21,13 +21,42 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None):
+        """Unassigns a product from its aggregate
+
+        A product (i.e. a smaller part of a whole) may be aggregated into zero
+        or one larger space or element. This function will remove that
+        aggregation relationship.
+
+        As all physical IFC model elements must be part of a hierarchical tree
+        called the "spatial decomposition", using this function will remove the
+        product from that tree. This is a dangerous operation and may result in
+        the product no longer being visible in IFC applications.
+
+        If the product is not part of an aggregation relationship, nothing will
+        happen.
+
+        :param product: The part of the aggregate, typically an IfcElement or
+            IfcSpatialStructureElement subclass
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :return: The IfcRelAggregate relationship instance, only returned if the
+            whole still contains any other parts.
+        :rtype: ifcopenshell.entity_instance.entity_instance, None
+
+        Example::
+
+            element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
+            subelement1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+            subelement2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+            ifcopenshell.api.run("aggregate.assign_object", model, product=subelement1, relating_object=element)
+            ifcopenshell.api.run("aggregate.assign_object", model, product=subelement2, relating_object=element)
+            # The relationship is returned as element still has subelement2
+            rel = ifcopenshell.api.run("aggregate.unassign_object", model, product=subelement1)
+            # Nothing is returned, as element is now empty
+            ifcopenshell.api.run("aggregate.unassign_object", model, product=subelement2)
+        """
         self.file = file
-        self.settings = {
-            "product": None,
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = { "product": product }
 
     def execute(self):
         for rel in self.settings["product"].Decomposes or []:

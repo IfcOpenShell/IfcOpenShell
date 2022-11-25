@@ -20,6 +20,8 @@
 #include <TopoDS_Wire.hxx>
 #include <Standard_Version.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../ifcgeom_schema_agnostic/boolean_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -80,7 +82,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	}
 
 	if ( shape_type(operand1) == ST_SHAPELIST ) {
-		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
+		if (!(convert_shapes(operand1, items1) && util::flatten_shape_list(items1, s1, true, getValue(GV_PRECISION)))) {
 			return false;
 		}
 	} else if ( shape_type(operand1) == ST_SHAPE ) {
@@ -88,7 +90,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			return false;
 		}
 		{ TopoDS_Solid temp_solid;
-		s1 = ensure_fit_for_subtraction(s1, temp_solid); }
+		s1 = util::ensure_fit_for_subtraction(s1, temp_solid, getValue(GV_PRECISION)); }
 	} else {
 		Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand1);
 		return false;
@@ -99,7 +101,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		return true;
 	}
 
-	const double first_operand_volume = shape_volume(s1);
+	const double first_operand_volume = util::shape_volume(s1);
 	if (first_operand_volume <= ALMOST_ZERO) {
 		Logger::Message(Logger::LOG_WARNING, "Empty solid for:", l->FirstOperand());
 	}
@@ -118,12 +120,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		{
 			if (shape_type(op2) == ST_SHAPELIST) {
 				IfcRepresentationShapeItems items2;
-				shape2_processed = convert_shapes(op2, items2) && flatten_shape_list(items2, s2, true);
+				shape2_processed = convert_shapes(op2, items2) && util::flatten_shape_list(items2, s2, true, getValue(GV_PRECISION));
 			} else if (shape_type(op2) == ST_SHAPE) {
 				shape2_processed = convert_shape(op2, s2);
 				if (shape2_processed) {
 					TopoDS_Solid temp_solid;
-					s2 = ensure_fit_for_subtraction(s2, temp_solid);
+					s2 = util::ensure_fit_for_subtraction(s2, temp_solid, getValue(GV_PRECISION));
 				}
 			} else {
 				Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", op2);
@@ -133,7 +135,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		if (is_unbounded_halfspace) {
 			TopoDS_Shape temp;
 			double d;
-			if (fit_halfspace(s1, s2, temp, d)) {
+			if (util::fit_halfspace(s1, s2, temp, d, getValue(GV_PRECISION))) {
 				if (d < getValue(GV_PRECISION)) {
 					Logger::Message(Logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", l);
 					continue;
@@ -149,7 +151,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		}
 
 		if (op2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class())) {
-			const double second_operand_volume = shape_volume(s2);
+			const double second_operand_volume = util::shape_volume(s2);
 			if (second_operand_volume <= ALMOST_ZERO) {
 				Logger::Message(Logger::LOG_WARNING, "Empty solid for:", op2);
 			}
@@ -179,6 +181,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	
 	bool valid_result;
 
+	util::boolean_settings bst;
+	bst.attempt_2d = getValue(GV_BOOLEAN_ATTEMPT_2D) > 0.;
+	bst.debug = getValue(GV_DEBUG_BOOLEAN) > 0.;
+	bst.precision = getValue(GV_PRECISION);
+
 	if (s1.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s1).More() && util::is_nested_compound_of_solid(s1)) {
 		TopoDS_Compound C;
 		BRep_Builder B;
@@ -187,7 +194,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		valid_result = true;
 		for (; it.More(); it.Next()) {
 			TopoDS_Shape part;
-			if (boolean_operation(it.Value(), second_operand_shapes, occ_op, part)) {
+			if (util::boolean_operation(bst, it.Value(), second_operand_shapes, occ_op, part)) {
 				B.Add(C, part);
 			} else {
 				valid_result = false;
@@ -195,7 +202,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		}
 		shape = C;
 	} else {
-		valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape);
+		valid_result = util::boolean_operation(bst, s1, second_operand_shapes, occ_op, shape);
 	}
 
 #endif
@@ -203,7 +210,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
 		// In case of a subtraction, a check on volume is performed.
 		if (valid_result) {
-			const double volume_after_subtraction = shape_volume(shape);
+			const double volume_after_subtraction = util::shape_volume(shape);
 			if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
 				Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",l);
 		} else {

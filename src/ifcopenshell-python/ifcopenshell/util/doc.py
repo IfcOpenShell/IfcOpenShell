@@ -54,6 +54,7 @@ SCHEMA_FILES = {
 db = None
 schema_by_name = {"IFC2X3": None, "IFC4": None}
 
+
 def get_db(version):
     global db
     if not db:
@@ -70,11 +71,13 @@ def get_db(version):
                     db[ifc_version][data_type] = json.load(fi)
     return db.get(version)
 
+
 def get_schema_by_name(version):
     global schema_by_name
     if not schema_by_name[version]:
         schema_by_name[version] = ifcopenshell.ifcopenshell_wrapper.schema_by_name(version)
     return schema_by_name[version]
+
 
 def get_entity_doc(version, entity_name, recursive=True):
     db = get_db(version)
@@ -82,16 +85,16 @@ def get_entity_doc(version, entity_name, recursive=True):
         entity = copy.deepcopy(db["entities"].get(entity_name))
         if not recursive:
             return entity
-        
+
         ifc_schema = get_schema_by_name(version)
         ifc_entity = ifc_schema.declaration_by_name(entity_name)
         ifc_supertype = ifc_entity.supertype()
         if ifc_entity.supertype():
             parent_entity = get_entity_doc(version, ifc_supertype.name(), recursive=True)
-            if 'attributes' not in entity:
-                entity['attributes'] = dict()
-            for parent_attr in parent_entity["attributes"]:
-                entity['attributes'][parent_attr] = parent_entity["attributes"][parent_attr]
+            if "attributes" not in entity:
+                entity["attributes"] = dict()
+            for parent_attr in parent_entity.get("attributes", []):
+                entity["attributes"][parent_attr] = parent_entity["attributes"][parent_attr]
         return entity
 
 
@@ -102,6 +105,7 @@ def get_attribute_doc(version, entity, attribute, recursive=True):
         if entity:
             return entity["attributes"].get(attribute)
 
+
 def get_predefined_type_doc(version, entity, predefined_type):
     db = get_db(version)
     if db:
@@ -109,10 +113,12 @@ def get_predefined_type_doc(version, entity, predefined_type):
         if entity:
             return entity["predefined_types"].get(predefined_type)
 
+
 def get_property_set_doc(version, pset):
     db = get_db(version)
     if db:
         return db["properties"].get(pset)
+
 
 def get_property_doc(version, pset, prop):
     db = get_db(version)
@@ -121,10 +127,12 @@ def get_property_doc(version, pset, prop):
         if pset:
             return pset["properties"].get(prop)
 
+
 def get_type_doc(version, ifc_type):
     db = get_db(version)
     if db:
         return db["types"].get(ifc_type)
+
 
 class DocExtractor:
     def extract_ifc2x3(self):
@@ -205,14 +213,14 @@ class DocExtractor:
 
                 with open(xml_path, "r", encoding="utf-8") as fi:
                     bs_tree = BeautifulSoup(fi.read(), features="lxml")
-                
+
                 entity_attrs = dict()
                 predefined_types = dict()
                 # temporarily disable MarkupResemblesLocatorWarning
                 # because BeautifulSoup wrongly assume we confused
                 # html code for filepath and gives warnings
                 with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning) 
+                    warnings.simplefilter("ignore", category=MarkupResemblesLocatorWarning)
 
                     for html_attr in bs_tree.find_all("docattribute"):
                         attr_name = html_attr["name"]
@@ -228,7 +236,9 @@ class DocExtractor:
                             for href in hrefs:
                                 # in IFC2X3 all documentation for constants is empty
                                 # and as a temporary solution I'm trying to get constant's description from IFC4
-                                const_path = ifc4_references_paths_lookup.get(href, ifc2x3_references_paths_lookup[href])
+                                const_path = ifc4_references_paths_lookup.get(
+                                    href, ifc2x3_references_paths_lookup[href]
+                                )
                                 with open(const_path, "r", encoding="utf-8") as fi:
                                     const_bs_tree = BeautifulSoup(fi.read(), features="lxml")
                                 const_name = const_bs_tree.find("docconstant")["name"]
@@ -259,7 +269,7 @@ class DocExtractor:
 
                 if entity_attrs:
                     entities_dict[entity_name]["attributes"] = entity_attrs
-                
+
                 if predefined_types:
                     entities_dict[entity_name]["predefined_types"] = predefined_types
 
@@ -398,9 +408,7 @@ class DocExtractor:
     def extract_ifc2x3_types(self):
         types_dict = dict()
         # search
-        types_paths = [
-            filepath for filepath in glob.iglob(f"{IFC2x3_DOCS_LOCATION}/Sections/**/Types", recursive=True)
-        ]
+        types_paths = [filepath for filepath in glob.iglob(f"{IFC2x3_DOCS_LOCATION}/Sections/**/Types", recursive=True)]
         for parse_folder_path in types_paths:
             for type_path in glob.iglob(f"{parse_folder_path}/**/"):
                 type_path = Path(type_path)
@@ -421,15 +429,15 @@ class DocExtractor:
                     type_description = type_description.replace("Definition from ISO/CD 10303-41:1992: ", "")
 
                     type_description = type_description.strip()
-                
+
                 if type_description:
-                    types_dict[type_name]['description'] = type_description
+                    types_dict[type_name]["description"] = type_description
 
                 spec_url = (
                     "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/"
                     f"{md_path.parents[2].name.lower()}/lexical/{type_name.lower()}.htm"
                 )
-                types_dict[type_name]['spec_url'] = spec_url
+                types_dict[type_name]["spec_url"] = spec_url
 
         # export entities data
         with open(BASE_MODULE_PATH / "schema/ifc2x3_types.json", "w", encoding="utf-8") as fo:
@@ -500,7 +508,6 @@ class DocExtractor:
             property_reference = parsed_path.stem.replace("$", "")
             references_paths_lookup[property_reference] = parsed_path
         return references_paths_lookup
-
 
     def extract_ifc4_entities(self):
         references_paths_lookup = self.setup_ifc4_reference_lookup()
@@ -582,7 +589,7 @@ class DocExtractor:
 
                 if entity_attrs:
                     entities_dict[entity_name]["attributes"] = entity_attrs
-                
+
                 if predefined_types:
                     entities_dict[entity_name]["predefined_types"] = predefined_types
 
@@ -739,9 +746,7 @@ class DocExtractor:
     def extract_ifc4_types(self):
         types_dict = dict()
         # search
-        types_paths = [
-            filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Sections/**/Types", recursive=True)
-        ]
+        types_paths = [filepath for filepath in glob.iglob(f"{IFC4_DOCS_LOCATION}/Sections/**/Types", recursive=True)]
         for parse_folder_path in types_paths:
             for type_path in glob.iglob(f"{parse_folder_path}/**/"):
                 type_path = Path(type_path)
@@ -757,24 +762,27 @@ class DocExtractor:
                     type_description = type_description.replace("\n", " ")
                     type_description = type_description.replace("\u00a0", " ")
                     type_description = type_description.replace("{ .extDef}", "")
-                    type_description = type_description.replace("NOTE  Definition according to ISO/CD 10303-41:1992 ", "")
+                    type_description = type_description.replace(
+                        "NOTE  Definition according to ISO/CD 10303-41:1992 ", ""
+                    )
                     type_description = type_description.replace("Definition from ISO/CD 10303-41:1992: ", "")
 
                     type_description = type_description.strip()
-                
+
                 if type_description:
-                    types_dict[type_name]['description'] = type_description
+                    types_dict[type_name]["description"] = type_description
 
                 spec_url = (
                     "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/"
                     f"{md_path.parents[2].name.lower()}/lexical/{type_name.lower()}.htm"
                 )
-                types_dict[type_name]['spec_url'] = spec_url
+                types_dict[type_name]["spec_url"] = spec_url
 
         # export entities data
         with open(BASE_MODULE_PATH / "schema/ifc4_types.json", "w", encoding="utf-8") as fo:
             print(f"{len(types_dict)} ifc types parsed")
             json.dump(types_dict, fo, sort_keys=True, indent=4)
+
 
 def run_doc_api_examples():
     print("Entities (with parent entities attributes included):")

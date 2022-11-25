@@ -106,40 +106,6 @@ def cache_string(s):
 cache_string.data = {}
 
 
-def get_ifc_entity_docs(ifc_entity):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_entity_doc(schema, ifc_entity)
-
-
-def get_ifc_entity_description(ifc_entity):
-    docs = get_ifc_entity_docs(ifc_entity)
-    return docs.get("description", "") if docs is not None else ""
-
-
-def get_ifc_entity_doc_url(ifc_entity):
-    docs = get_ifc_entity_docs(ifc_entity)
-    return docs.get("spec_url", "") if docs is not None else ""
-
-
-def get_predefined_type_description(entity, predefined_type):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_predefined_type_doc(schema, entity, predefined_type)
-
-
-def get_attribute_description(entity, attribute):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_attribute_doc(schema, entity, attribute)
-
-
-def get_property_set_description(pset):
-    schema = tool.Ifc.get_schema()
-    if schema is not None:
-        return get_property_set_doc(schema, pset)
-
-
 def get_attribute_enum_values(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
@@ -163,6 +129,9 @@ def get_attribute_enum_values(prop, context):
                     "",
                 )
             )
+
+    if prop.enum_descriptions:
+        items = [(identifier, name, prop.enum_descriptions[i].name) for i, (identifier, name, _) in enumerate(items)]
 
     return items
 
@@ -226,20 +195,56 @@ def update_attribute_value(self, context):
             self.is_null = False
 
 
+def set_int_value(self, new_value):
+    set_numerical_value(self, "int_value", new_value)
+
+
+def set_float_value(self, new_value):
+    set_numerical_value(self, "float_value", new_value)
+
+
+def set_numerical_value(self, value_name, new_value):
+    if self.value_min_constraint and new_value < self.value_min:
+        new_value = self.value_min
+    elif self.value_max_constraint and new_value > self.value_max:
+        new_value = self.value_max
+    self[value_name] = new_value
+
+
 class Attribute(PropertyGroup):
+    tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    ifc_class: StringProperty(name="Ifc Class")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value", update=update_attribute_value)
-    bool_value: BoolProperty(name="Value", update=update_attribute_value)
-    int_value: IntProperty(name="Value", update=update_attribute_value)
-    float_value: FloatProperty(name="Value", update=update_attribute_value)
+    string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
+    bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
+    int_value: IntProperty(
+        name="Value",
+        description=tooltip,
+        update=update_attribute_value,
+        get=lambda self: int(self.get("int_value", 0)),
+        set=set_int_value,
+    )
+    float_value: FloatProperty(
+        name="Value",
+        description=tooltip,
+        update=update_attribute_value,
+        get=lambda self: float(self.get("float_value", 0.0)),
+        set=set_float_value,
+    )
     enum_items: StringProperty(name="Value")
+    enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
     has_calculator: BoolProperty(name="Has Calculator", default=False)
+    value_min: FloatProperty(description="This is used to validate int_value and float_value")
+    value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
+    value_max: FloatProperty(description="This is used to validate int_value and float_value")
+    value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
 
     def get_value(self):
         if self.is_optional and self.is_null:

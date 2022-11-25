@@ -112,7 +112,7 @@ class MaterialCreator:
 
     def parse_representation(self, representation):
         has_parsed = False
-        representation_items = self.resolve_all_representation_items(representation)
+        representation_items = self.resolve_all_stylable_representation_items(representation)
         for item in representation_items:
             if self.parse_representation_item(item):
                 has_parsed = True
@@ -153,11 +153,19 @@ class MaterialCreator:
             ]
             self.mesh.polygons.foreach_set("material_index", material_index)
 
-    def resolve_all_representation_items(self, representation):
+    def resolve_all_stylable_representation_items(self, representation):
         items = []
         for item in representation.Items:
             if item.is_a("IfcMappedItem"):
                 items.extend(item.MappingSource.MappedRepresentation.Items)
+            if item.is_a("IfcBooleanResult"):
+                operand = item.FirstOperand
+                while True:
+                    items.append(operand)
+                    if operand.is_a("IfcBooleanResult"):
+                        operand = operand.FirstOperand
+                    else:
+                        break
             items.append(item)
         return items
 
@@ -329,11 +337,14 @@ class IfcImporter:
         if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
-            self.element_types = set(
-                self.file.by_type("IfcElementType")
-                + self.file.by_type("IfcDoorStyle")
-                + self.file.by_type("IfcWindowStyle")
-            )
+            if self.file.schema in ("IFC2X3", "IFC4"):
+                self.element_types = set(
+                    self.file.by_type("IfcElementType")
+                    + self.file.by_type("IfcDoorStyle")
+                    + self.file.by_type("IfcWindowStyle")
+                )
+            else:
+                self.element_types = set(self.file.by_type("IfcElementType"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
@@ -517,14 +528,21 @@ class IfcImporter:
 
     def does_element_likely_have_geometry_far_away(self, element):
         for representation in element.Representation.Representations:
-            for subelement in self.file.traverse(representation):
-                if subelement.is_a("IfcCartesianPointList3D"):
-                    for point in subelement.CoordList:
-                        if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
+            items = []
+            for item in representation.Items:
+                if item.is_a("IfcMappedItem"):
+                    items.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    items.append(item)
+            for item in items:
+                for subelement in self.file.traverse(item):
+                    if subelement.is_a("IfcCartesianPointList3D"):
+                        for point in subelement.CoordList:
+                            if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
+                                return True
+                    if subelement.is_a("IfcCartesianPoint"):
+                        if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
                             return True
-                if subelement.is_a("IfcCartesianPoint"):
-                    if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
-                        return True
 
     def apply_blender_offset_to_matrix_world(self, obj, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties

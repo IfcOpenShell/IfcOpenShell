@@ -19,6 +19,8 @@
 
 #include <gp_Trsf2d.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/profile_helper.h"
+
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -52,5 +54,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS
 		-x1 + dx + w - x_offset, y,
 		-x1 + dx - x_offset,y
 	};
-	return profile_helper(4,coords,0,0,0,trsf2d,face);
+	return util::profile_helper(4,coords,0,0,0,trsf2d,face);
 }

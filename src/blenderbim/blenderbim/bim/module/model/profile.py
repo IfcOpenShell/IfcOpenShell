@@ -199,6 +199,17 @@ class DumbProfileGenerator:
 
 
 class DumbProfileRegenerator:
+    def regenerate_from_profile_def(self, profile):
+        self.file = tool.Ifc.get()
+        objs = []
+        if not profile:
+            return
+        for element in self.get_elements_using_profile(profile):
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                objs.append(obj)
+        DumbProfileRecalculator().recalculate(objs)
+
     def regenerate_from_profile(self, usecase_path, ifc_file, settings):
         self.file = ifc_file
         objs = []
@@ -833,7 +844,7 @@ class DumbProfileRecalculator:
                 queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
         joiner = DumbProfileJoiner()
         for element, profile in queue:
-            if element.is_a() in ("IfcColumn", "IfcBeam", "IfcMember") and profile:
+            if profile:
                 joiner.recreate_profile(element, profile)
 
 

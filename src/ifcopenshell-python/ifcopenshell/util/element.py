@@ -100,7 +100,7 @@ def get_properties(properties):
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcPropertyEnumeratedValue"):
-            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] or None
+            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
         elif prop.is_a("IfcPropertyListValue"):
             results[prop.Name] = [v.wrappedValue for v in prop.ListValues] or None
         elif prop.is_a("IfcPropertyBoundedValue"):
@@ -376,6 +376,7 @@ def get_decomposition(element):
             results.append(rel.RelatedBuildingElement)
     return results
 
+
 def get_grouped_by(element):
     """
     Retrieves all subelements of an element based on the group.
@@ -396,7 +397,8 @@ def get_grouped_by(element):
             queue.extend(rel.RelatedObjects)
             results.extend(rel.RelatedObjects)
     return results
-    
+
+
 def get_aggregate(element):
     """
     Retrieves the aggregate of an element.

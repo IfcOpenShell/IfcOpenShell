@@ -73,14 +73,22 @@ classes = (
     prop.ConstrBrowserState,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
+    prop.BIMStairProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_array,
+    ui.BIM_PT_stair,
     ui.DisplayConstrTypesUI,
     ui.LaunchTypeManager,
     ui.HelpConstrTypes,
     ui.BIM_MT_model,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_object,
+    stair.BIM_OT_add_clever_stair,
+    stair.AddStair,
+    stair.CancelEditingStair,
+    stair.FinishEditingStair,
+    stair.EnableEditingStair,
+    stair.RemoveStair,
     pie.OpenPieClass,
     pie.PieUpdateContainer,
     pie.PieAddOpening,
@@ -96,6 +104,7 @@ def register():
         bpy.utils.register_tool(workspace.BimTool, after={"builtin.scale_cage"}, separator=True, group=True)
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
+    bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
@@ -113,6 +122,7 @@ def unregister():
         bpy.utils.unregister_tool(workspace.BimTool)
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Object.BIMArrayProperties
+    del bpy.types.Object.BIMStairProperties
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)

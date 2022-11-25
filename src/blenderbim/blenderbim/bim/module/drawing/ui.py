@@ -171,10 +171,10 @@ class BIM_PT_drawings(Panel):
                 active_drawing = self.props.drawings[self.props.active_drawing_index]
                 row = self.layout.row(align=True)
                 col = row.column()
-                col.alignment = 'LEFT'
+                col.alignment = "LEFT"
                 col.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
                 col = row.column()
-                col.alignment = 'RIGHT'
+                col.alignment = "RIGHT"
                 op = row.operator("bim.open_view", icon="URL", text="")
                 op.view = active_drawing.name
                 op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
@@ -376,6 +376,9 @@ class BIM_PT_annotation_utilities(Panel):
         op.data_type = "curve"
         op = row.operator("bim.add_annotation", text="Angle", icon="DRIVER_ROTATIONAL_DIFFERENCE")
         op.object_type = "ANGLE"
+        op.data_type = "curve"
+        op = row.operator("bim.add_annotation", text="Angle (old)", icon="DRIVER_ROTATIONAL_DIFFERENCE")
+        op.object_type = "ANGLE_OLD"
         op.data_type = "mesh"
 
         row = layout.row(align=True)

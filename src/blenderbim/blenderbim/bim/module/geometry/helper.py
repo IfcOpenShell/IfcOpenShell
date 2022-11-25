@@ -481,7 +481,7 @@ class Helper:
                             unshared_vert.co, profile_face.verts[0].co, profile_face.normal
                         )
                     )
-                    > 0.001
+                    > 1e-6
                 ):
                     if unshared_vert == edge.verts[1]:
                         return [edge.verts[0].index, edge.verts[1].index]

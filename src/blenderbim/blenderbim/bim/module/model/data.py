@@ -22,15 +22,16 @@ import json
 import functools
 import ifcopenshell
 import ifcopenshell.util.element
+from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
-from blenderbim.bim.prop import get_ifc_entity_description, get_predefined_type_description
 
 
 def refresh():
     AuthoringData.is_loaded = False
     ArrayData.is_loaded = False
+    StairData.is_loaded = False
 
 
 class AuthoringData:
@@ -64,17 +65,19 @@ class AuthoringData:
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
         names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-        return [(c, c, get_ifc_entity_description(c)) for c in sorted(names)]
+        version = tool.Ifc.get_schema()
+        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def type_predefined_type(cls):
         results = []
         declaration = tool.Ifc().schema().declaration_by_name(cls.props.type_class)
+        version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
                 results.extend(
                     [
-                        (e, e, get_predefined_type_description(cls.props.type_class, e))
+                        (e, e, get_predefined_type_doc(version, cls.props.type_class, e))
                         for e in attribute.type_of_attribute().declared_type().enumeration_items()
                     ]
                 )
@@ -350,4 +353,24 @@ class ArrayData:
                     parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
                 except:
                     parameters["has_parent"] = False
+                return parameters
+
+
+class StairData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Stair", None)
+            if parameters:
+                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters

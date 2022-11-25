@@ -73,6 +73,24 @@ class TestAppendAsset(test.bootstrap.IFC4):
         assert len(new.RepresentationMaps[0].MappedRepresentation.Items[0].StyledByItem) == 1
         assert self.file.by_type("IfcStyledItem")[0].Item == self.file.by_type("IfcBoundingBox")[0]
 
+    def test_append_a_type_product_with_a_styled_materials(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        local_context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
+
+        library = ifcopenshell.api.run("project.create_file")
+        ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject")
+        context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
+
+        element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        style = ifcopenshell.api.run("style.add_style", library)
+        ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=context)
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
+        assert self.file.by_type("IfcWallType")[0].HasAssociations[0].RelatingMaterial.Name == "Material"
+        assert self.file.by_type("IfcWallType")[0].HasAssociations[0].RelatingMaterial.HasRepresentation
+        assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
+
     def test_append_a_material(self):
         library = ifcopenshell.api.run("project.create_file")
         material = ifcopenshell.api.run("material.add_material", library, name="Material")

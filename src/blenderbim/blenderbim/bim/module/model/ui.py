@@ -19,8 +19,10 @@
 import bpy
 import blenderbim.tool as tool
 from bpy.types import Panel, Operator, Menu
-from blenderbim.bim.module.model.data import AuthoringData, ArrayData
+from blenderbim.bim.module.model.data import AuthoringData, ArrayData, StairData
 from blenderbim.bim.module.model.prop import store_cursor_position
+from blenderbim.bim.module.model.stair import update_stair_modifier
+
 from blenderbim.bim.helper import prop_with_search
 
 
@@ -291,6 +293,7 @@ class BIM_PT_array(bpy.types.Panel):
                     row.prop(props, "x")
                     row.prop(props, "y")
                     row.prop(props, "z")
+
                 else:
                     row = box.row(align=True)
                     row.label(text=f"{array['count']} Items", icon="MOD_ARRAY")
@@ -304,6 +307,65 @@ class BIM_PT_array(bpy.types.Panel):
             row = self.layout.row()
             row.label(text="No Array Found")
             row.operator("bim.add_array", icon="ADD", text="")
+
+
+class BIM_PT_stair(bpy.types.Panel):
+    bl_label = "IFC Stair"
+    bl_idname = "BIM_PT_stair"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "modifier"
+
+    @classmethod
+    def poll(cls, context):
+        # always display modifier if it's IFC object
+        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+
+    def draw(self, context):
+        if not StairData.is_loaded:
+            StairData.load()
+
+        props = context.active_object.BIMStairProperties
+
+        if StairData.data["parameters"]:
+            row = self.layout.row(align=True)
+            row.label(text="Stair parameters", icon="IPO_CONSTANT")
+
+            stair_data = StairData.data["parameters"]["data"]
+            if props.is_editing != -1:
+                row = self.layout.row(align=True)
+                row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish editing")
+                row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
+                row = self.layout.row(align=True)
+                for prop_name in props.get_props_kwargs():
+                    self.layout.prop(props, prop_name)
+                update_stair_modifier(context)
+            else:
+                row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
+                row.operator("bim.remove_stair", icon="X", text="")
+                row = self.layout.row(align=True)
+                for prop in props.get_props_kwargs():
+                    prop_value = stair_data[prop]
+                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                    row = self.layout.row(align=True)
+                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=str(prop_value))
+
+            # calculated properties
+            number_of_rises = props.number_of_treads + 1
+            row = self.layout.row(align=True)
+            row.label(text="Number of risers")
+            row.label(text=str(number_of_rises))
+            row = self.layout.row(align=True)
+            row.label(text="Tread rise")
+            row.label(text=str(round(props.height / number_of_rises, 5)))
+            row = self.layout.row(align=True)
+            row.label(text="Length")
+            row.label(text=str(round(props.tread_run * number_of_rises, 5)))
+        else:
+            row = self.layout.row()
+            row.label(text="No Stair Found")
+            row.operator("bim.add_stair", icon="ADD", text="")
 
 
 class BIM_MT_model(Menu):

@@ -19,20 +19,19 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: '3.10'
       - name: Build package
         run: |
           cd src/bcf
           pip install build
           python -m build
+      - name: Test
+        run: |
+          cd src/bcf
+          make test
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
           packages_dir: src/bcf/dist
-
-
-
-
-
