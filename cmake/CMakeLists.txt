@@ -208,7 +208,14 @@ ELSE()
     ENDIF()
 ENDIF()
 
-set(BOOST_COMPONENTS)
+if (WASM_BUILD)
+    set(BOOST_COMPONENTS)
+else()
+    # @todo review this, shouldn't this be all possible header-only now?
+    # ... or rewritten using C++17 features?
+    set(BOOST_COMPONENTS system program_options regex thread date_time)
+endif()
+
 if(USE_MMAP)
     if(MSVC)
         # filesystem is necessary for the utf-16 wpath
