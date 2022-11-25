@@ -138,6 +138,41 @@ class QtoCalculator:
         """
         return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
+    def get_finish_ceiling_height(self, obj):
+        space_height = self.get_height(obj)
+        floor_height = self.get_finish_floor_height(obj)
+        ceiling_height = self.get_ceiling_height(obj)
+        finish_ceiling_height = space_height - floor_height - ceiling_height
+        return finish_ceiling_height
+
+    def get_finish_floor_height(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        decompositions = ifcopenshell.util.element.get_decomposition(element)
+        finish_floor_height = 0
+        for decomposition in decompositions:
+            if decomposition.get_info()['PredefinedType'] == 'FLOORING' and decomposition.get_info()['type'] == 'IfcCovering' :
+                floor_obj = tool.Ifc.get_object(decomposition)
+                new_finish_floor_height = self.get_height(floor_obj)
+                if new_finish_floor_height > finish_floor_height:
+                    finish_floor_height = new_finish_floor_height
+
+        return finish_floor_height
+
+    def get_ceiling_height(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        decompositions = ifcopenshell.util.element.get_decomposition(element)
+        finish_ceiling_height = 0
+        for decomposition in decompositions:
+            if decomposition.get_info()['PredefinedType'] == 'CEILING' and decomposition.get_info()['type'] == 'IfcCovering' :
+                ceiling_obj = tool.Ifc.get_object(decomposition)
+                new_finish_ceiling_height = self.get_height(ceiling_obj)
+                if new_finish_ceiling_height > finish_ceiling_height:
+                    finish_ceiling_height = new_finish_ceiling_height
+
+        return finish_ceiling_height
+
+
+
     def get_net_perimeter(self, o):
         parsed_edges = []
         shared_edges = []
@@ -160,6 +195,9 @@ class QtoCalculator:
         gross_perimeter = self.get_net_perimeter(gross_obj)
         self.delete_obj(gross_obj)
         return gross_perimeter
+
+    def get_space_net_perimeter(self, obj):
+        pass
 
     def get_rectangular_perimeter(self, obj):
         length = self.get_length(obj, main_axis='x')
@@ -204,6 +242,73 @@ class QtoCalculator:
 
     def get_edge_distance(self, obj, edge):
         return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
+
+    def get_net_floor_area(self, obj):
+        decompositions = self.get_obj_decompositions(obj)
+        if not decompositions:
+            return self.get_gross_footprint_area(obj)
+
+        total_net_floor_area = self.get_net_footprint_area(obj)
+
+        for decomposition in decompositions:
+            decomposition_type = decomposition.get_info()['type']
+            if  decomposition_type == 'IfcColumn' or decomposition_type == 'IfcColumn':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                net_footprint_obj_area = self.get_net_footprint_area(decomposition_obj)
+                total_net_floor_area -= net_footprint_obj_area
+
+        return total_net_floor_area
+
+    def get_gross_ceiling_area(self, obj):
+        decompositions = self.get_obj_decompositions(obj)
+        if not decompositions:
+            return self.get_gross_top_area(obj)
+
+        total_gross_ceiling_area = 0
+
+        for decomposition in decompositions:
+            decomposition_type = decomposition.get_info()['type']
+            decomposition_predefined_type = decomposition.get_info()['PredefinedType']
+            if  decomposition_type == 'IfcCovering' and decomposition_predefined_type == 'CEILING':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                total_gross_ceiling_area += self.get_gross_footprint_area(decomposition_obj)
+
+        return total_gross_ceiling_area
+
+    def get_net_ceiling_area(self, obj):
+        decompositions = self.get_obj_decompositions(obj)
+        if not decompositions:
+            return self.get_net_top_area(obj)
+
+        total_net_ceiling_area = 0
+
+        for decomposition in decompositions:
+            decomposition_type = decomposition.get_info()['type']
+            decomposition_predefined_type = decomposition.get_info()['PredefinedType']
+            if  decomposition_type == 'IfcCovering' and decomposition_predefined_type == 'CEILING':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                total_net_ceiling_area += self.get_net_footprint_area(decomposition_obj)
+
+            if  decomposition_type == 'IfcWall' or decomposition_type == 'IfcColumn':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                total_net_ceiling_area -= self.get_net_roofprint_area(decomposition_obj)
+
+        return total_net_ceiling_area
+
+    def get_space_net_volume(self, obj):
+        decompositions = self.get_obj_decompositions(obj)
+        if not decompositions:
+            return self.get_gross_volume(obj)
+
+        total_space_net_volume = self.get_gross_volume(obj)
+
+        for decomposition in decompositions:
+            decomposition_type = decomposition.get_info()['type']
+            if  decomposition_type == 'IfcWall' or decomposition_type == 'IfcColumn':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                total_space_net_volume -= self.get_net_volume(decomposition_obj)
+
+        return total_space_net_volume
 
     def get_net_footprint_area(self, o):
         """_summary_: Returns the area of the footprint of the object, excluding any holes
@@ -265,7 +370,7 @@ class QtoCalculator:
             elif item.is_a("IfcBooleanClippingResult"):
                 item = item.FirstOperand
             else:
-                area = self.get_end_area(obj, exclude_side_areas = True)
+                area = self.get_end_area(obj)
                 return area
         # TODO handle other types of sections, and then fall back to mesh parsing
 
@@ -326,6 +431,12 @@ class QtoCalculator:
     def has_openings(self, obj):
         element = tool.Ifc.get_entity(obj)
         return element and getattr(element, "HasOpenings", [])
+
+    def get_obj_decompositions(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        decompositions = ifcopenshell.util.element.get_decomposition(element)
+        return decompositions
+
 
 
     # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
