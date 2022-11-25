@@ -61,7 +61,9 @@ import sysconfig
 
 from urllib.request import urlretrieve
 
+
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 logger.addHandler(ch)
@@ -256,14 +258,14 @@ def run(cmds, cwd=None, can_fail=False):
     with leading and trailing whitespace removed.
     """
 
-    logger.info(f"running command {' '.join(cmds)} in directory {cwd}")
+    logger.debug(f"running command {' '.join(cmds)} in directory {cwd}")
     log_file_handle = open(LOG_FILE, "a")
     proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE, encoding="utf-8")
     stdout, stderr = proc.communicate()
     log_file_handle.write(stdout)
     log_file_handle.write(stderr)
     log_file_handle.close()
-    logger.info(f"command returned {proc.returncode}")
+    logger.debug(f"command returned {proc.returncode}")
 
     if proc.returncode != 0 and not can_fail:
         print("-" * 70)
@@ -867,7 +869,7 @@ if "IfcOpenShell-Python" in targets:
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        run([make, "VERBOSE=1", f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
+        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
         if python_executable:

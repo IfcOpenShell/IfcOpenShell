@@ -151,6 +151,9 @@ UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
 
 if(WASM_BUILD)
+    # when using the nix/build-all.py build script we should not
+    # look into the sysroot for most of the dependencies but rather
+    # in the designated build/ folder created by the script.
     set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
     set(CMAKE_FIND_ROOT_PATH "")
 endif()
@@ -354,9 +357,15 @@ endif()
 
 if(OCCT_STATIC)
     find_package(Threads)
-    # OPENCASCADE_LIBRARIES repeated three times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
-    # set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    
+    if(WASM_BUILD)
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    else()
+        # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
+        # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    endif()
+    
     if (NOT APPLE AND NOT WIN32)
         set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
     endif()
@@ -630,7 +639,12 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
 endfunction()
 
 if(NOT SCHEMA_VERSIONS)
-    set(SCHEMA_VERSIONS "2x3" "4")
+    if(WASM_BUILD)
+        # super arbitrarily try to keep size down at least a little bit
+        set(SCHEMA_VERSIONS "2x3" "4")
+    else()
+        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3" "4x3_tc1" "4x3_add1")
+    endif()
 endif()
 
 foreach(s ${SCHEMA_VERSIONS})
@@ -707,8 +721,11 @@ if (BUILD_IFCGEOM)
 	foreach(s ${SCHEMA_VERSIONS})
 		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom_ifc${s})
 	endforeach()
-	# set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
-	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
+	if (WASM_BUILD)
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
+	else()
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})	
+	endif()
 endif()
 if (BUILD_CONVERT OR BUILD_IFCPYTHON)
 	foreach(s ${SCHEMA_VERSIONS})
@@ -752,7 +769,11 @@ set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "0.6.0" SOVERSION "0.6")
 
-TARGET_LINK_LIBRARIES(IfcParse ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+if (WASM_BUILD)
+    TARGET_LINK_LIBRARIES(IfcParse ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+else()
+    TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+endif()
 
 if (BUILD_IFCGEOM)
 
@@ -764,7 +785,9 @@ set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 foreach(s ${SCHEMA_VERSIONS})
 	add_library(IfcGeom_ifc${s} STATIC ${IFCGEOM_FILES})
 	set_target_properties(IfcGeom_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
-	TARGET_LINK_LIBRARIES(IfcGeom_ifc${s})
+	if (NOT WASM_BUILD)
+	    TARGET_LINK_LIBRARIES(IfcGeom_ifc${s} IfcParse ${OPENCASCADE_LIBRARIES})	    
+	endif()
 endforeach()
 
 # IfcGeom (schema agnostic)
@@ -779,7 +802,11 @@ if (UNIX)
 find_package(Threads)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+if (WASM_BUILD)
+    TARGET_LINK_LIBRARIES(IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+else()
+    TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+endif()
 
 endif(BUILD_IFCGEOM)
 
@@ -796,7 +823,12 @@ set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 foreach(s ${SCHEMA_VERSIONS})
 	add_library(Serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
 	set_target_properties(Serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
-	TARGET_LINK_LIBRARIES(Serializers_ifc${s} ${HDF5_LIBRARIES})
+	
+	if (WASM_BUILD)
+	    TARGET_LINK_LIBRARIES(Serializers_ifc${s} ${HDF5_LIBRARIES})
+	else()
+	    TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
+	endif()
 endforeach()
 
 add_library(Serializers ${SERIALIZERS_FILES})
