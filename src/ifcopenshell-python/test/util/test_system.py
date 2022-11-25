@@ -39,11 +39,20 @@ class TestGetElementSystems(test.bootstrap.IFC4):
 
     def test_do_not_get_non_services_groups(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
-        ifcopenshell.api.run("system.assign_system", self.file, product=element, system=self.file.createIfcGroup())
-        ifcopenshell.api.run("system.assign_system", self.file, product=element, system=self.file.createIfcZone())
         ifcopenshell.api.run(
-            "system.assign_system", self.file, product=element, system=self.file.createIfcStructuralAnalysisModel()
+            "system.assign_system",
+            self.file,
+            product=element,
+            system=self.file.createIfcGroup(),
         )
+        for not_assignable_system_class in ("IfcZone", "IfcStructuralAnalysisModel"):
+            with pytest.raises(TypeError):
+                ifcopenshell.api.run(
+                    "system.assign_system",
+                    self.file,
+                    product=element,
+                    system=self.file.create_entity(not_assignable_system_class),
+                )
         assert not subject.get_element_systems(element)
 
 
