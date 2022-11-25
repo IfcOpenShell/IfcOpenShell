@@ -37,6 +37,7 @@ class BIM_PT_debug(Panel):
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "ifc_file", text="")
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
+        row.operator("bim.reload_selected_ifc_file", icon="FILE_REFRESH", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)
