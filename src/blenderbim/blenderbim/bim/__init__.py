@@ -91,6 +91,7 @@ classes = [
     operator.RemoveIfcFile,
     operator.SelectDataDir,
     operator.SelectIfcFile,
+    operator.ReloadSelectedIfcFile,
     operator.SelectSchemaDir,
     operator.SelectURIAttribute,
     operator.EditBlenderCollection,
