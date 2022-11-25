@@ -750,7 +750,7 @@ cmake_args = [
 if "wasm" in flags:
     # Boost is built by the build script so should not be found
     # inside of the sysroot set by the emscriptem toolchain
-    cmake_args.append("-DBOOST_NO_SYSROOT=On")
+    cmake_args.append("-DWASM_BUILD=On")
 
 if "cgal" in targets:
     cmake_args.extend([
