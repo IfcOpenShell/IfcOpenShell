@@ -29,9 +29,9 @@ class Usecase:
         or more inner boundaries (such as for windows), and a positional matrix
         for the orientation of the plane.
 
-        :param rel_space_bounary: The space boundary relationship to assign the
+        :param rel_space_boundary: The space boundary relationship to assign the
             connection geometry to.
-        :type rel_space_bounary: ifcopenshell.entity_instance.entity_instance
+        :type rel_space_boundary: ifcopenshell.entity_instance.entity_instance
         :param outer_boundary: A list of 2D points representing an open
             polyline.  The last point will connect to the first point. Each
             point is represented by an interable of 2 floats. The coordinates of
@@ -71,7 +71,7 @@ class Usecase:
         """
         self.file = file
         self.rel_space_boundary = rel_space_boundary
-        self.outer_boundary = outer_bounary
+        self.outer_boundary = outer_boundary
         self.inner_boundaries = inner_boundaries or ()
         self.location = location
         self.axis = axis
