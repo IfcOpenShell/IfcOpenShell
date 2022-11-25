@@ -36,6 +36,7 @@ ASSIGNABLE_DICT = {
     ),
     "IfcDistributionSystem": ("IfcDistributionElement",),
     "IfcStructuralAnalysisModel": ("IfcStructuralMember", "IfcStructuralConnection"),
+    "IfcSystem": ("IfcProduct",),
     "IfcGroup": ("IfcObjectDefinition",),
 }
 
