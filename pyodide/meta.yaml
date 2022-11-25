@@ -1,0 +1,18 @@
+package:
+  name: ifcopenshell
+  version: 0.7.0
+
+source:
+  path: IfcOpenShell
+
+build:
+  script: |
+    python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py310 IfcOpenShell-Python
+    cp pyodide/setup.py .
+
+about:
+  home: http://ifcopenshell.org
+  license: LGPL-3.0-or-later
+  summary: |
+    IfcOpenShell is an open source (LGPL) software library for 
+    working with the Industry Foundation Classes (IFC) file format.
