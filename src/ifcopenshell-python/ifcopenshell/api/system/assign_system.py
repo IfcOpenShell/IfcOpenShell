@@ -20,6 +20,33 @@ import ifcopenshell
 import ifcopenshell.api
 
 
+ASSIGNABLE_DICT = {
+    "IfcZone": ("IfcZone", "IfcSpace", "IfcSpatialZone"),
+    "IfcBuiltSystem": (
+        "IfcBuiltElement",
+        "IfcFurnishingElement",
+        "IfcElementAssembly",
+        "IfcTransportElement",
+    ),
+    "IfcBuildingSystem": (
+        "IfcBuildingElement",
+        "IfcFurnishingElement",
+        "IfcElementAssembly",
+        "IfcTransportElement",
+    ),
+    "IfcDistributionSystem": ("IfcDistributionElement",),
+    "IfcStructuralAnalysisModel": ("IfcStructuralMember", "IfcStructuralConnection"),
+    "IfcGroup": ("IfcObjectDefinition",),
+}
+
+
+def is_assignable(product, system) -> bool:
+    for assignable in ASSIGNABLE_DICT.get(system.is_a(), ()):
+        if product.is_a(assignable):
+            return True
+    return False
+
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -31,6 +58,11 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        system = self.settings["system"]
+        product = self.settings["product"]
+        if not is_assignable(product, system):
+            raise TypeError(f"You cannot assign an {product.is_a()} to an {system.is_a()}")
+
         if not self.settings["system"].IsGroupedBy:
             return self.file.create_entity(
                 "IfcRelAssignsToGroup",
@@ -39,7 +71,7 @@ class Usecase:
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                     "RelatedObjects": [self.settings["product"]],
                     "RelatingGroup": self.settings["system"],
-                }
+                },
             )
         rel = self.settings["system"].IsGroupedBy[0]
         related_objects = set(rel.RelatedObjects) or set()
