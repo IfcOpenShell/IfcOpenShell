@@ -21,10 +21,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+from pathlib import Path
 import numbers
 import functools
-import ifcopenshell.util.element
+import zipfile
 
+import ifcopenshell.util.element
+import ifcopenshell.util.file
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
 
@@ -441,6 +445,45 @@ class file(object):
 
     def __iter__(self):
         return iter(self[id] for id in self.wrapped_data.entity_names())
+
+    def write(self, path: "os.PathLike | str", format=None, zipped=False) -> None:
+        """Write ifc model to file.
+
+        :param format: Force use of a specific format. Guessed from file name if None.
+        Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to format=".ifc" with zipped=True)
+        For zipped .ifcXML use format=".ifcXML" with zipped=True
+        :param zipped: zip the file after it is written
+
+        Examples:
+        >>> model.write("path/to/model.ifc")
+        >>> model.write("path/to/model.ifcXML")
+        >>> model.write("path/to/model.ifcZIP")
+        >>> model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
+        >>> model.write("path/to/model.anyextension", format=".ifcXML")
+        """
+        path = Path(path)
+        if format == None:
+            format = ifcopenshell.util.file.guess_format(path)
+        if format == ".ifcXML":
+            serializer = ifcopenshell_wrapper.XmlSerializer(self, str(path))
+            serializer.finalize()
+            if zipped:
+                unzipped_path = path.with_suffix(format)
+                path.rename(unzipped_path)
+                with zipfile.ZipFile(path, "w") as zip_file:
+                    zip_file.write(unzipped_path, unzipped_path.name, compress_type=zipfile.ZIP_DEFLATED)
+                unzipped_path.unlink()
+            return
+        if format == ".ifcZIP":
+            return self.write(path, ".ifc", zipped=True)
+        self.wrapped_data.write(str(path))
+        if zipped:
+            unzipped_path = path.with_suffix(format)
+            path.rename(unzipped_path)
+            with zipfile.ZipFile(path, "w") as zip_file:
+                zip_file.write(unzipped_path, unzipped_path.name, compress_type=zipfile.ZIP_DEFLATED)
+                unzipped_path.unlink()
+        return
 
     @staticmethod
     def from_string(s):
