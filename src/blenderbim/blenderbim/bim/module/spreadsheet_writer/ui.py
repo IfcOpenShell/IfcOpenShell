@@ -1,13 +1,4 @@
-bl_info = {
-    "name": "BlenderBIM spreadsheet",
-    "author": "C. Claus",
-    "version": (1, 0, 3),
-    "blender": (3, 3, 3),
-    "location": "Tools",
-    "description": "BlenderBIM spreadsheet for .xlsx and .ods",
-    "support": "COMMUNITY",
-    }
-  
+
 import os
 import sys
 import time
@@ -22,20 +13,7 @@ from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
 from bpy_extras.io_utils import ImportHelper 
 from bpy.types import (Operator, PropertyGroup)
 
-import blenderbim.bim.import_ifc
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.tool as tool
-import ifcopenshell
 
-import openpyxl
-from openpyxl import load_workbook
-import pandas as pd
-import xlsxwriter
-import zipfile
-import xml.parsers.expat
-
-from collections import defaultdict
-from collections import OrderedDict
 
 from . import  prop, operator
     

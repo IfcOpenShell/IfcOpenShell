@@ -30,20 +30,15 @@ classes = (
     prop.BlenderBIMSpreadSheetProperties,
     prop.MyItem,
     prop.MyCollection,
-    
-    
-   
-)
 
+)
 
 def register():
 
     bpy.types.Scene.blenderbim_spreadsheet_properties = bpy.props.PointerProperty(type=prop.BlenderBIMSpreadSheetProperties)    
    
 
-
 def unregister():
-    #del bpy.types.Scene.BIMClashProperties
     
     bpy.types.Scene.blenderbim_spreadsheet_properties
 

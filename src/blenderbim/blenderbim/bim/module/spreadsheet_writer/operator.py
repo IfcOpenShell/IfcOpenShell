@@ -1,13 +1,3 @@
-bl_info = {
-    "name": "BlenderBIM spreadsheet",
-    "author": "C. Claus",
-    "version": (1, 0, 3),
-    "blender": (3, 3, 3),
-    "location": "Tools",
-    "description": "BlenderBIM spreadsheet for .xlsx and .ods",
-    "support": "COMMUNITY",
-    }
-  
 import os
 import sys
 import time
@@ -38,9 +28,9 @@ from collections import defaultdict
 from collections import OrderedDict
 
 
-print ('openpyxl', openpyxl.__version__, openpyxl.__file__)
-print ('pandas',pd.__version__, pd.__file__)
-print ('xlsxwriter',xlsxwriter.__version__, xlsxwriter.__file__)
+#print ('openpyxl', openpyxl.__version__, openpyxl.__file__)
+#print ('pandas',pd.__version__, pd.__file__)
+#print ('xlsxwriter',xlsxwriter.__version__, xlsxwriter.__file__)
 
 #https://stackoverflow.com/questions/72657415/fix-futurewarning-related-to-the-pandas-append-function
 
