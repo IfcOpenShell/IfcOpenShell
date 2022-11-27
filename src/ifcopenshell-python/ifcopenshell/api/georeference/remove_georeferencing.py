@@ -18,7 +18,21 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file):
+        """Remove georeferencing data
+
+        All georeferencing parameters such as projected CRS and map conversion
+        data will be lost.
+
+        :return: None
+        :rtype: None
+
+        Example:
+
+            ifcopenshell.api.run("georeference.add_georeferencing", model)
+            # Let's change our mind
+            ifcopenshell.api.run("georeference.remove_georeferencing", model)
+        """
         self.file = file
 
     def execute(self):
