@@ -1,10 +1,44 @@
+bl_info = {
+    "name": "BlenderBIM spreadsheet",
+    "author": "C. Claus",
+    "version": (1, 0, 3),
+    "blender": (3, 3, 3),
+    "location": "Tools",
+    "description": "BlenderBIM spreadsheet for .xlsx and .ods",
+    "support": "COMMUNITY",
+    }
+  
+import os
+import sys
+import time
+import site
+import collections
+import subprocess
+
+site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
 
 import bpy
 from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
 from bpy_extras.io_utils import ImportHelper 
 from bpy.types import (Operator, PropertyGroup)
 
+import blenderbim.bim.import_ifc
+from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
+import ifcopenshell
 
+import openpyxl
+from openpyxl import load_workbook
+import pandas as pd
+import xlsxwriter
+import zipfile
+import xml.parsers.expat
+
+from collections import defaultdict
+from collections import OrderedDict
+
+
+        
 class BlenderBIMSpreadSheetProperties(bpy.types.PropertyGroup):
     ###############################################
     ################# General #####################
@@ -52,6 +86,7 @@ class BlenderBIMSpreadSheetProperties(bpy.types.PropertyGroup):
                                         maxlen=1024,
                                         subtype="FILE_PATH")
 
+    
 class MyItem(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name="Property",description="Use the PropertySet name and Property name divided by a .",default = "[PropertySet.Property]") 
 

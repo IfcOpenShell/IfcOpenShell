@@ -1,16 +1,56 @@
+bl_info = {
+    "name": "BlenderBIM spreadsheet",
+    "author": "C. Claus",
+    "version": (1, 0, 3),
+    "blender": (3, 3, 3),
+    "location": "Tools",
+    "description": "BlenderBIM spreadsheet for .xlsx and .ods",
+    "support": "COMMUNITY",
+    }
+  
+import os
+import sys
+import time
+import site
+import collections
+import subprocess
+
+site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
+
 import bpy
-from bpy.types import Panel 
+from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
+from bpy_extras.io_utils import ImportHelper 
+from bpy.types import (Operator, PropertyGroup)
+
+import blenderbim.bim.import_ifc
 from blenderbim.bim.ifc import IfcStore
-from . import operator
+import blenderbim.tool as tool
+import ifcopenshell
 
+import openpyxl
+from openpyxl import load_workbook
+import pandas as pd
+import xlsxwriter
+import zipfile
+import xml.parsers.expat
 
+from collections import defaultdict
+from collections import OrderedDict
 
-class BlenderBIMSpreadSheet(Panel):
+from . import  prop, operator
+    
+class BlenderBIMSpreadSheetPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""  
 
-    bl_idname = "BlenderBIMSpreadSheet"  # this is not strictly necessary
-    bl_label = "BlenderBIM spreadsheet"
+    #bl_label = "BlenderBIM spreadsheet"
+    #bl_idname = "OBJECT_PT_blenderbimxlsxpanel"  # this is not strictly necessary
+    #bl_space_type = "VIEW_3D"
+    #bl_region_type = "UI"
+    #bl_category = "BlenderBIM"
     
+    
+    bl_label = "Spreadsheet Writer"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
@@ -86,26 +126,4 @@ class BlenderBIMSpreadSheet(Panel):
         row.prop(blenderbim_spreadsheet_properties, "my_file_path")
         self.layout.operator(operator.FilterIFCElements.bl_idname, text="Filter IFC elements", icon="FILTER")
         self.layout.operator(operator.UnhideIFCElements.bl_idname, text="Unhide IFC elements", icon="LIGHT")
-
-class MyItem(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty(name="Property",description="Use the PropertySet name and Property name divided by a .",default = "[PropertySet.Property]") 
-
-class MyCollection(bpy.types.PropertyGroup):
-    items: bpy.props.CollectionProperty(type=MyItem)
-
-class MyCollectionActions(bpy.types.Operator):
-    bl_idname = "my.collection_actions"
-    bl_label = "Execute"
-    action: bpy.props.EnumProperty(
-        items=(
-            ("add",) * 3,
-            ("remove",) * 3,
-        ),
-    )
-    def execute(self, context):
-        my_collection = context.scene.my_collection
-        if self.action == "add":           
-            item = my_collection.items.add()  
-        if self.action == "remove":
-            my_collection.items.remove(len(my_collection.items) - 1)
-        return {"FINISHED"}        
+        

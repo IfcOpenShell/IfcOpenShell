@@ -1,5 +1,13 @@
- 
-
+bl_info = {
+    "name": "BlenderBIM spreadsheet",
+    "author": "C. Claus",
+    "version": (1, 0, 3),
+    "blender": (3, 3, 3),
+    "location": "Tools",
+    "description": "BlenderBIM spreadsheet for .xlsx and .ods",
+    "support": "COMMUNITY",
+    }
+  
 import os
 import sys
 import time
@@ -7,12 +15,12 @@ import site
 import collections
 import subprocess
 
-#site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
+site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
 
 import bpy
-#from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
-#from bpy_extras.io_utils import ImportHelper 
-#from bpy.types import (Operator, PropertyGroup)
+from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
+from bpy_extras.io_utils import ImportHelper 
+from bpy.types import (Operator, PropertyGroup)
 
 import blenderbim.bim.import_ifc
 from blenderbim.bim.ifc import IfcStore
@@ -30,9 +38,9 @@ from collections import defaultdict
 from collections import OrderedDict
 
 
-#print ('openpyxl', openpyxl.__version__, openpyxl.__file__)
-#print ('pandas',pd.__version__, pd.__file__)
-#print ('xlsxwriter',xlsxwriter.__version__, xlsxwriter.__file__)
+print ('openpyxl', openpyxl.__version__, openpyxl.__file__)
+print ('pandas',pd.__version__, pd.__file__)
+print ('xlsxwriter',xlsxwriter.__version__, xlsxwriter.__file__)
 
 #https://stackoverflow.com/questions/72657415/fix-futurewarning-related-to-the-pandas-append-function
 
@@ -634,8 +642,8 @@ class UnhideIFCElements(bpy.types.Operator):
             obj.hide_viewport = False 
         
         return {'FINISHED'}  
-
-
+ 
+ 
 class MyCollectionActions(bpy.types.Operator):
     bl_idname = "my.collection_actions"
     bl_label = "Execute"
@@ -651,4 +659,4 @@ class MyCollectionActions(bpy.types.Operator):
             item = my_collection.items.add()  
         if self.action == "remove":
             my_collection.items.remove(len(my_collection.items) - 1)
-        return {"FINISHED"}        
+        return {"FINISHED"}
