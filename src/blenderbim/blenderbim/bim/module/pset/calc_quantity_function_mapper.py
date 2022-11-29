@@ -46,9 +46,9 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_VehicleBaseQuantities' : {
-        'Length' : None,
-        'Width' : None,
-        'Height' : None,
+        'Length' : "get_length",
+        'Width' : "get_width",
+        'Height' : "get_height",
     },
     'Qto_PipeFittingBaseQuantities' : {
         'Length' : None,
