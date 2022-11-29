@@ -29,6 +29,7 @@ Also GrossWallArea and NetWallArea need bounding object so for the moment is sti
 GrossFloorArea: following the definition, it should exclude the wall claddings, but for now, this is not considered into the calculation.
 NetFloorArea: it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall. Just add other entities into 'get_net_floor_area' if it's needed
 NetVolume: like NetFloorArea, it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall
+Also, the entire IfcColumn (or IfcWall) object volume is substracted, so it should be better to substract only the shared volume between IfcSpace and IfcColumn. Look at todo list
 
 
 
@@ -36,4 +37,7 @@ REMAINING TODO FUNCTIONS
 IfcSpace - NetPerimeter
 IfcSpace - GrossWallArea
 IfcSpace - NetWallArea
+IfcSpace - Calculate only shared volume between IfcColumn and IfcSpace
+IfcPipeSegment - Gross cross section area
+Qto_PipeFittingBaseQuantities - Basically all quantities because the object could not be linear
 

@@ -138,13 +138,12 @@ mapper = {
         'NetArea' : "get_net_footprint_area",
     },
     'Qto_PipeSegmentBaseQuantities' : {
-        'Length' : None,
+        'Length' : "get_length",
         'GrossCrossSectionArea' : None,
-        'NetCrossSectionArea' : None,
-        'OuterSurfaceArea' : None,
+        'NetCrossSectionArea' : "get_cross_section_area",
+        'OuterSurfaceArea' : "get_outer_surface_area",
         'GrossWeight' : None,
         'NetWeight' : None,
-        'FootPrintArea' : None,
     },
     'Qto_HumidifierBaseQuantities' : {
         'GrossWeight' : None,
