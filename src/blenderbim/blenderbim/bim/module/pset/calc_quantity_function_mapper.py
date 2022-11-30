@@ -81,11 +81,11 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_FacilityPartBaseQuantities' : {
-        'Length' : None,
-        'Width' : None,
-        'Height' : None,
-        'Area' : None,
-        'Volume' : None,
+        'Length' : "get_length",
+        'Width' : "get_width",
+        'Height' : "get_height",
+        'Area' : "get_net_footprint_area",
+        'Volume' : "get_net_volume",
     },
     'Qto_ProjectionElementBaseQuantities' : {
         'Area' : None,

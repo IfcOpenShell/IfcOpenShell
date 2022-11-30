@@ -39,5 +39,5 @@ IfcSpace - GrossWallArea
 IfcSpace - NetWallArea
 IfcSpace - Calculate only shared volume between IfcColumn and IfcSpace
 IfcPipeSegment - Gross cross section area
-Qto_PipeFittingBaseQuantities - Basically all quantities because the object could not be linear
+Qto_PipeFittingBaseQuantities - Basically all quantities because the object can not be straight
 
