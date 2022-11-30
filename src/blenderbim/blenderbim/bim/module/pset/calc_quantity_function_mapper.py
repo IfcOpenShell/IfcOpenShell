@@ -13,11 +13,11 @@ mapper = {
         'NetWeight' : None,
     },
     'Qto_OpeningElementBaseQuantities' : {
-        'Width' : None,
-        'Height' : None,
-        'Depth' : None,
-        'Area' : None,
-        'Volume' : None,
+        'Width' : "get_length",
+        'Height' : "get_opening_height",
+        'Depth' : "get_opening_depth",
+        'Area' : "get_opening_mapping_area",
+        'Volume' : "get_net_volume",
     },
     'Qto_MarineFacilityBaseQuantities' : {
         'Length' : None,
