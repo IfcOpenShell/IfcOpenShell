@@ -88,8 +88,8 @@ mapper = {
         'Volume' : "get_net_volume",
     },
     'Qto_ProjectionElementBaseQuantities' : {
-        'Area' : None,
-        'Volume' : None,
+        'Area' : "get_net_side_area",
+        'Volume' : "get_net_volume",
     },
     'Qto_SignBaseQuantities' : {
         'Height' : None,
