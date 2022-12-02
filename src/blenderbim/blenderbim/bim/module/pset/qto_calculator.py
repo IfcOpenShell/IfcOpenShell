@@ -138,6 +138,24 @@ class QtoCalculator:
         """
         return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
+    def get_opening_height(self, obj):
+        if self.is_opening_horizontal(obj):
+            return self.get_width(obj)
+        else:
+            return self.get_height(obj)
+
+    def get_opening_depth(self, obj):
+        if self.is_opening_horizontal(obj):
+            return self.get_height(obj)
+        else:
+            return self.get_width(obj)
+
+    def get_opening_mapping_area(self, obj):
+        if self.is_opening_horizontal(obj):
+            return self.get_net_footprint_area(obj)
+        else:
+            return self.get_net_side_area(obj)
+
     def get_finish_ceiling_height(self, obj):
         space_height = self.get_height(obj)
         floor_height = self.get_finish_floor_height(obj)
@@ -1062,6 +1080,13 @@ class QtoCalculator:
             return "z"
         else:
             return "x"
+
+    def is_opening_horizontal(self, o):
+        x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
+        y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
+        z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+
+        return z < x and z < y
 
     def delete_mesh(self, mesh):
         mesh.user_clear()
