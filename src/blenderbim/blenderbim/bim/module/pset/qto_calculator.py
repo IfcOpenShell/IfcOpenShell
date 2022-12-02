@@ -1086,10 +1086,7 @@ class QtoCalculator:
         y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
-        if z < x and z < y:
-            return True
-        else:
-            return False
+        return z < x and z < y
 
     def delete_mesh(self, mesh):
         mesh.user_clear()
