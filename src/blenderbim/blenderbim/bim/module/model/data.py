@@ -32,6 +32,7 @@ def refresh():
     AuthoringData.is_loaded = False
     ArrayData.is_loaded = False
     StairData.is_loaded = False
+    SverchokData.is_loaded = False
 
 
 class AuthoringData:
@@ -371,6 +372,26 @@ class StairData:
         if element:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Stair", None)
+            if parameters:
+                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                return parameters
+
+
+class SverchokData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Sverchok", None)
             if parameters:
                 parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters

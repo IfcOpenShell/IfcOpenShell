@@ -19,9 +19,10 @@
 import bpy
 import blenderbim.tool as tool
 from bpy.types import Panel, Operator, Menu
-from blenderbim.bim.module.model.data import AuthoringData, ArrayData, StairData
+from blenderbim.bim.module.model.data import AuthoringData, ArrayData, StairData, SverchokData
 from blenderbim.bim.module.model.prop import store_cursor_position
 from blenderbim.bim.module.model.stair import update_stair_modifier
+from blenderbim.bim.module.model.sverchok_modifier import update_sverchok_modifier
 
 from blenderbim.bim.helper import prop_with_search
 
@@ -366,6 +367,41 @@ class BIM_PT_stair(bpy.types.Panel):
             row = self.layout.row()
             row.label(text="No Stair Found")
             row.operator("bim.add_stair", icon="ADD", text="")
+
+
+class BIM_PT_sverchok(bpy.types.Panel):
+    bl_label = "IFC Sverchok"
+    bl_idname = "BIM_PT_sverchok"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "modifier"
+
+    @classmethod
+    def poll(cls, context):
+        # always display modifier if it's IFC object
+        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+
+    def draw(self, context):
+        if not SverchokData.is_loaded:
+            SverchokData.load()
+
+        self.layout.label(text="Requires SVERCHOK addon to be enabled.", icon="SEQUENCE_COLOR_02")
+
+        props = context.active_object.BIMSverchokProperties
+        self.layout.prop_search(props, "node_group", bpy.data, "node_groups")
+        self.layout.operator("bim.create_new_sverchok_graph", icon="ADD")
+
+        self.layout.operator("bim.update_data_from_sverchok", icon="FILE_REFRESH")
+
+        row = self.layout.row()
+        row.operator("bim.delete_sverchok_graph", icon="X")
+        row.enabled = bool(props.node_group)
+
+        self.layout.operator("bim.import_sverchok_graph", text="Import JSON", icon="RNA")
+
+        row = self.layout.row()
+        row.operator("bim.export_sverchok_graph", text="Export to JSON", icon="FILE_BACKUP")
+        row.enabled = bool(props.node_group)
 
 
 class BIM_MT_model(Menu):
