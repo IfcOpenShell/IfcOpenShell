@@ -17,7 +17,22 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import handler, prop, ui, grid, array, product, wall, slab, stair, opening, pie, workspace, profile
+from . import (
+    handler,
+    prop,
+    ui,
+    grid,
+    array,
+    product,
+    wall,
+    slab,
+    stair,
+    opening,
+    pie,
+    workspace,
+    profile,
+    sverchok_modifier,
+)
 
 classes = (
     array.AddArray,
@@ -74,9 +89,11 @@ classes = (
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
+    prop.BIMSverchokProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
+    ui.BIM_PT_sverchok,
     ui.DisplayConstrTypesUI,
     ui.LaunchTypeManager,
     ui.HelpConstrTypes,
@@ -94,6 +111,11 @@ classes = (
     pie.PieAddOpening,
     pie.VIEW3D_MT_PIE_bim,
     pie.VIEW3D_MT_PIE_bim_class,
+    sverchok_modifier.CreateNewSverchokGraph,
+    sverchok_modifier.UpdateDataFromSverchok,
+    sverchok_modifier.DeleteSverchokGraph,
+    sverchok_modifier.ImportSverchokGraph,
+    sverchok_modifier.ExportSverchokGraph,
 )
 
 addon_keymaps = []
@@ -105,6 +127,7 @@ def register():
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
+    bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
@@ -123,6 +146,7 @@ def unregister():
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMStairProperties
+    del bpy.types.Object.BIMSverchokProperties
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
