@@ -128,7 +128,7 @@ mapper = {
         'SignArea' : None,
     },
     'Qto_SpaceHeaterBaseQuantities' : {
-        'Length' : None,
+        'Length' : "get_length",
         'GrossWeight' : None,
         'NetWeight' : None,
     },
@@ -158,9 +158,9 @@ mapper = {
     'Qto_JunctionBoxBaseQuantities' : {
         'GrossWeight' : None,
         'NumberOfGangs' : None,
-        'Length' : None,
-        'Width' : None,
-        'Height' : None,
+        'Length' : "get_length",
+        'Width' : "get_width",
+        'Height' : "get_height",
     },
     'Qto_ArealStratumBaseQuantities' : {
         'Area' : None,
