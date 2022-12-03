@@ -92,9 +92,9 @@ mapper = {
         'Volume' : "get_net_volume",
     },
     'Qto_SignBaseQuantities' : {
-        'Height' : None,
-        'Width' : None,
-        'Thickness' : None,
+        'Height' : "get_height",
+        'Width' : { "function_name" : "get_length", "args" : ", main_axis = 'x'"},
+        'Thickness' : "get_width",
         'Weight' : None,
     },
     'Qto_CableSegmentBaseQuantities' : {
