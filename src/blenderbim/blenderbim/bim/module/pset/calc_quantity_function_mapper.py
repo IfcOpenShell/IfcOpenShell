@@ -124,7 +124,7 @@ mapper = {
         'Weight' : None,
     },
     'Qto_PictorialSignQuantities' : {
-        'Area' : None,
+        'Area' : "get_net_side_area",
         'SignArea' : None,
     },
     'Qto_SpaceHeaterBaseQuantities' : {
