@@ -168,10 +168,10 @@ mapper = {
         'PlanLength' : None,
     },
     'Qto_SiteBaseQuantities' : {
-        'GrossPerimeter' : None,
-        'GrossArea' : None,
+        'GrossPerimeter' : "get_gross_perimeter",
+        'GrossArea' : "get_gross_footprint_area",
     },
-    'Qto_MotorConnectionBaseQuantities' : {
+    'Qto_MotorConnectionBaseQuantities' : { #HERE
         'GrossWeight' : None,
     },
     'Qto_RoofBaseQuantities' : {
