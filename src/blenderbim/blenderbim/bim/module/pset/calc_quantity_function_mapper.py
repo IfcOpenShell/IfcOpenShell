@@ -163,8 +163,8 @@ mapper = {
         'Height' : "get_height",
     },
     'Qto_ArealStratumBaseQuantities' : {
-        'Area' : None,
-        'Length' : None,
+        'Area' : "get_net_footprint_area",
+        'Length' : "get_length",
         'PlanLength' : None,
     },
     'Qto_SiteBaseQuantities' : {
