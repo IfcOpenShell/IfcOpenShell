@@ -99,9 +99,9 @@ mapper = {
     },
     'Qto_CableSegmentBaseQuantities' : {
         'GrossWeight' : None,
-        'Length' : None,
+        'Length' : "get_length",
         'CrossSectionArea' : None,
-        'OuterSurfaceArea' : None,
+        'OuterSurfaceArea' : "get_outer_surface_area",
     },
     'Qto_BuildingBaseQuantities' : {
         'Height' : None,
@@ -119,8 +119,8 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_RailBaseQuantities' : {
-        'Length' : None,
-        'Volume' : None,
+        'Length' : "get_length",
+        'Volume' : "get_net_volume",
         'Weight' : None,
     },
     'Qto_PictorialSignQuantities' : {

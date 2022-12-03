@@ -39,5 +39,7 @@ IfcSpace - GrossWallArea
 IfcSpace - NetWallArea
 IfcSpace - Calculate only shared volume between IfcColumn and IfcSpace
 IfcPipeSegment - Gross cross section area
+IfcCableSegment - Cross section area
 Qto_PipeFittingBaseQuantities - Basically all quantities because the object can not be straight
+Qto_BuildingBaseQuantities - (n.7) Not sure if it's useful to map this entity because for example BBim doesn't create a building representation
 
