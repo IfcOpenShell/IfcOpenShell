@@ -45,4 +45,5 @@ Qto_BuildingBaseQuantities - (n.7) Not sure if it's useful to map this entity be
 Qto_PictorialSignQuantities - SignArea
 Qto_ArealStratumBaseQuantities - PlanLength
 Qto_RoofBaseQuantities - ProjectedArea
+Qto_EarthworksCutBase - LooseVolume
 
