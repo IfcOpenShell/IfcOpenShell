@@ -332,11 +332,11 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_KerbBaseQuantities' : {
-        'Length' : None,
-        'Width' : None,
-        'Height' : None,
+        'Length' : "get_length",
+        'Width' : "get_width",
+        'Height' : "get_height",
         'Depth' : None,
-        'Volume' : None,
+        'Volume' : "get_net_volume",
         'Weight' : None,
     },
     'Qto_PavementBaseQuantities' : {
