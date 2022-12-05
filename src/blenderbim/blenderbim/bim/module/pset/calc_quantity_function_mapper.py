@@ -180,7 +180,7 @@ mapper = {
         'ProjectedArea' : None,
     },
     'Qto_ChimneyBaseQuantities' : {
-        'Length' : None,
+        'Length' : "get_height",
     },
     'Qto_ElectricTimeControlBaseQuantities' : {
         'GrossWeight' : None,
