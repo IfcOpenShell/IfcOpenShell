@@ -171,12 +171,12 @@ mapper = {
         'GrossPerimeter' : "get_gross_perimeter",
         'GrossArea' : "get_gross_footprint_area",
     },
-    'Qto_MotorConnectionBaseQuantities' : { #HERE
+    'Qto_MotorConnectionBaseQuantities' : {
         'GrossWeight' : None,
     },
     'Qto_RoofBaseQuantities' : {
-        'GrossArea' : None,
-        'NetArea' : None,
+        'GrossArea' : "get_gross_footprint_area",
+        'NetArea' : "get_net_footprint_area",
         'ProjectedArea' : None,
     },
     'Qto_ChimneyBaseQuantities' : {
