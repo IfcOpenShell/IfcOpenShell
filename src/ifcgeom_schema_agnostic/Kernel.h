@@ -30,6 +30,12 @@
 #include INCLUDE_SCHEMA(7)
 #include INCLUDE_SCHEMA(8)
 #include INCLUDE_SCHEMA(9)
+#include INCLUDE_SCHEMA(10)
+#include INCLUDE_SCHEMA(11)
+#include INCLUDE_SCHEMA(12)
+#include INCLUDE_SCHEMA(13)
+#include INCLUDE_SCHEMA(14)
+#include INCLUDE_SCHEMA(15)
 
 #include <boost/function.hpp>
 

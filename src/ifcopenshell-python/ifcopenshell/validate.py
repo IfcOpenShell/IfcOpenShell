@@ -284,7 +284,16 @@ def validate(f, logger):
     It is recommended to supply the path to the file, so that internal C++ errors reported during the parse stage
     are also captured.
     """
+    
+    # Originally there was no way in Python to distinguish on an entity instance attribute value whether the
+    # value supplied in the model was NIL ($) or 'missing because derived in subtype' (*). For validation this
+    # however this may be important, and hence a feature switch has been implemented to return *-values as
+    # instances of a dedicated type `ifcopenshell.ifcopenshell_wrapper.attribute_value_derived`.
+    attribute_value_derived_org = ifcopenshell.ifcopenshell_wrapper.get_feature('use_attribute_value_derived')
+    ifcopenshell.ifcopenshell_wrapper.set_feature('use_attribute_value_derived', True)
+    
     filename = None
+    
     if not isinstance(f, ifcopenshell.file):
 
         # get_log() clears log existing output
@@ -335,7 +344,18 @@ def validate(f, logger):
                 zip(attrs, values, entity.derived())
             ):
 
-                if val is None and not (is_derived or attr.optional()):
+                if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
+                    if hasattr(logger, "set_instance"):
+                        logger.error("Attribute %s.%s is derived in subtype", entity, attr)
+                    else:
+                        logger.error(
+                            "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nDerived in subtype\n",
+                            inst,
+                            annotate_inst_attr_pos(inst, i),
+                            attr,
+                        )
+
+                if val is None and not attr.optional() and not is_derived:
                     if hasattr(logger, "set_instance"):
                         logger.error("Attribute %s.%s not optional", entity, attr)
                     else:
@@ -346,7 +366,7 @@ def validate(f, logger):
                             attr,
                         )
 
-                if val is not None:
+                if val is not None and not is_derived:
                     attr_type = attr.type_of_attribute()
                     try:
                         assert_valid(attr_type, val, schema, attr=attr)
@@ -379,6 +399,8 @@ def validate(f, logger):
         # are verified.
         log_internal_cpp_errors(filename, logger)
 
+    # Restore the original value for 'use_attribute_value_derived'
+    ifcopenshell.ifcopenshell_wrapper.set_feature('use_attribute_value_derived', attribute_value_derived_org)
 
 if __name__ == "__main__":
     import sys

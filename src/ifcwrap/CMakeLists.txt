@@ -67,20 +67,24 @@ endif()
 # Try to find the Python interpreter to get the site-packages
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(PythonInterp)
-IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
-    IF (USERSPACE_PYTHON_PREFIX)
-        EXECUTE_PROCESS(
-            COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import site; sys.stdout.write(site.USER_SITE)"
-            OUTPUT_VARIABLE python_package_dir
-        )
-    ELSE ()
-        EXECUTE_PROCESS(
-            COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
-            OUTPUT_VARIABLE python_package_dir
-        )
-    ENDIF()
-    if (BUILD_PACKAGE)
-        set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MODULE_INSTALL_DIR)
+    if (PYTHON_MODULE_INSTALL_DIR)
+	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
+    else()
+        IF (USERSPACE_PYTHON_PREFIX)
+            EXECUTE_PROCESS(
+                COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import site; sys.stdout.write(site.USER_SITE)"
+                OUTPUT_VARIABLE python_package_dir
+            )
+        ELSE ()
+            EXECUTE_PROCESS(
+                COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
+                OUTPUT_VARIABLE python_package_dir
+            )
+        ENDIF()
+        if (BUILD_PACKAGE)
+            set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+        endif()
     endif()
     IF("${python_package_dir}" STREQUAL "")
         MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")

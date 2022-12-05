@@ -38,6 +38,8 @@ import tempfile
 import zipfile
 from pathlib import Path
 
+import ifcopenshell.util.file
+
 if hasattr(os, "uname"):
     platform_system = os.uname()[0].lower()
 else:
@@ -83,14 +85,6 @@ class SchemaError(Error):
     pass
 
 
-def guess_format(path: Path) -> "str | None":
-    """Try to guess format using file extension"""
-    if path.suffix.lower() in (".ifczip", ".zip"):
-        return ".ifcZIP"
-    if path.suffix.lower() in (".ifcxml", ".xml"):
-        return ".ifcXML"
-
-
 def open(path: "os.PathLike | str", format: str = None) -> file:
     """Loads an IFC dataset from a filepath
 
@@ -104,7 +98,7 @@ def open(path: "os.PathLike | str", format: str = None) -> file:
     """
     path = Path(path)
     if format is None:
-        format = guess_format(path)
+        format = ifcopenshell.util.file.guess_format(path)
     if format == ".ifcXML":
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
         if f:

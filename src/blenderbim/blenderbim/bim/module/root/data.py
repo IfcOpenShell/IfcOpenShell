@@ -51,6 +51,7 @@ class IfcClassData:
             "IfcElement",
             "IfcElementType",
             "IfcSpatialElement",
+            "IfcSpatialElementType",
             "IfcGroup",
             "IfcStructuralItem",
             "IfcContext",

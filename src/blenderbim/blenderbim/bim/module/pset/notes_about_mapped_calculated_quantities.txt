@@ -21,6 +21,23 @@ It shouldn't be like that so we should find a method to only external lateral ar
 DOORS AND WINDOWS
 Doors and Windows have to have the main axis along 'x' and the height is measured along 'z' axis
 
+SPACES
+For calculating FinishFloorHeight and FinishCeilingHeight it substract the related IfcCovering with predefined type 'CEILING' and 'FLOORING'.
+NetPerimeter needs to substract related doors so basically it's needed to get the bounding walls. At this moment, i don't know how to do that.
+I created btw a "get_space_net_perimeter" that does nothing, only for reminder.
+Also GrossWallArea and NetWallArea need bounding object so for the moment is still in the todo list.
+GrossFloorArea: following the definition, it should exclude the wall claddings, but for now, this is not considered into the calculation.
+NetFloorArea: it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall. Just add other entities into 'get_net_floor_area' if it's needed
+NetVolume: like NetFloorArea, it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall
+Also, the entire IfcColumn (or IfcWall) object volume is substracted, so it should be better to substract only the shared volume between IfcSpace and IfcColumn. Look at todo list
 
 
+
+REMAINING TODO FUNCTIONS
+IfcSpace - NetPerimeter
+IfcSpace - GrossWallArea
+IfcSpace - NetWallArea
+IfcSpace - Calculate only shared volume between IfcColumn and IfcSpace
+IfcPipeSegment - Gross cross section area
+Qto_PipeFittingBaseQuantities - Basically all quantities because the object can not be straight
 
