@@ -356,12 +356,12 @@ mapper = {
         'GrossArea' : None,
     },
     'Qto_RampFlightBaseQuantities' : {
-        'Length' : None,
-        'Width' : None,
-        'GrossArea' : None,
-        'NetArea' : None,
-        'GrossVolume' : None,
-        'NetVolume' : None,
+        'Length' : "get_stair_length",
+        'Width' : "get_width",
+        'GrossArea' : "get_gross_stair_area",
+        'NetArea' : "get_net_stair_area",
+        'GrossVolume' : "get_gross_volume",
+        'NetVolume' : "get_net_volume",
     },
     'Qto_ElectricApplianceBaseQuantities' : {
         'GrossWeight' : None,
