@@ -20,11 +20,32 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, axis=None):
+        """Removes a grid axis from a grid
+
+        :param axis: The IfcGridAxis you want to remove.
+        :type axis: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+            # A pretty standard rectangular grid, with only two axes.
+            grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")
+            axis_a = ifcopenshell.api.run("grid.create_grid_axis", model,
+                axis_tag="A", uvw_axes="UAxes", grid=grid)
+            axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
+                axis_tag="1", uvw_axes="VAxes", grid=grid)
+
+            # Let's create a third so we can remvoe it later
+            axis_2 = ifcopenshell.api.run("grid.create_grid_axis", model,
+                axis_tag="2", uvw_axes="VAxes", grid=grid)
+
+            # Let's remove it!
+            ifcopenshell.api.run("grid.remove_grid_axis", model, axis=axis_2)
+        """
         self.file = file
-        self.settings = {"axis": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"axis": axis}
 
     def execute(self):
         if len(self.file.get_inverse(self.settings["axis"].AxisCurve)) == 1:
