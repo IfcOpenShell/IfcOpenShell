@@ -37,7 +37,6 @@ class Usecase:
             ifcopenshell.api.run("group.edit_group", model,
                 group=group, attributes={"Description": "All furniture and joinery included in the unit"})
         """
-
         self.file = file
         self.settings = {"group": group, "attributes": attributes or {}}
 

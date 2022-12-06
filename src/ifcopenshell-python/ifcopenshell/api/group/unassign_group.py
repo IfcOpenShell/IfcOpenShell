@@ -28,7 +28,7 @@ class Usecase:
 
         :param product: A IfcProduct element to unassign from the group
         :type product: ifcopenshell.entity_instance.entity_instance
-        :param group: The IfcGroup to assign the products to
+        :param group: The IfcGroup to unassign from
         :type group: ifcopenshell.entity_instance.entity_instance
         :return: None
         :rtype: None

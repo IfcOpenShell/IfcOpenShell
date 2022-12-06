@@ -170,7 +170,8 @@ class Usecase:
                 context=body, length=5, height=3, thickness=0.2)
 
             # Assign our new body geometry back to our wall
-            run("geometry.assign_representation", model, product=wall, representation=representation)
+            ifcopenshell.api.run("geometry.assign_representation", model,
+                product=wall, representation=representation)
         """
         self.file = file
         self.settings = {
