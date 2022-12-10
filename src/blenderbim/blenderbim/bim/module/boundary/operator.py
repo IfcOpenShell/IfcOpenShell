@@ -285,6 +285,7 @@ class UpdateBoundaryGeometry(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        tool.Boundary.move_origin_to_space_origin(context.active_object)
         settings = tool.Boundary.get_assign_connection_geometry_settings(context.active_object)
         ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
         return {"FINISHED"}
