@@ -67,7 +67,6 @@ class BIM_PT_Boundary(Panel):
     def draw(self, context):
         props = context.active_object.BIMObjectProperties
         ifc_file = tool.Ifc.get()
-        element = ifc_file.by_id(props.ifc_definition_id)
         boundary = ifc_file.by_id(props.ifc_definition_id)
         self.bprops = context.active_object.bim_boundary_properties
         if self.bprops.is_editing:
