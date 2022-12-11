@@ -65,7 +65,6 @@ class Boundary(blenderbim.core.tool.Boundary):
 
     @classmethod
     def move_origin_to_space_origin(cls, obj):
-        model = tool.Ifc.get()
         boundary = tool.Ifc.get_entity(obj)
         space = tool.Ifc.get_object(boundary.RelatingSpace)
         translation = obj.matrix_world.translation - space.matrix_world.translation
