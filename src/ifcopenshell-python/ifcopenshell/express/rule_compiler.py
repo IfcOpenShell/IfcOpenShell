@@ -1,9 +1,11 @@
+import pathlib
 import sys
 import json
 import hashlib
 import operator
 import functools
 import itertools
+import tempfile
 
 import ifcopenshell.express
 
@@ -204,29 +206,43 @@ class codegen_rule:
     def __call__(self, graph, node):
         v = self.fn(context(graph, [node]))
         graph.nodes[node]['value'] = v
+        return v
 
     @staticmethod
     def apply(G):
+        v = None
         for n in reversed(list(nx.topological_sort(G))):
             for r in codegen_rule.all_rules:
                 if r.pattern in paths(G, n, len(r.pattern)):
-                    r(G, n)
+                    v = r(G, n)
+        return v
 
 def process_rule_decl(context):
     return f"""
 class {context.rule_head.rule_id}:
-    def __init__(self, file):
-        self.file = file
-        
-    def validate(self):
-        {context.rule_head.entity_ref} = self.file.by_type("{context.rule_head.entity_ref}")
+    SCOPE = "file"
+
+    @staticmethod    
+    def __call__(file):
+        {context.rule_head.entity_ref} = file.by_type("{context.rule_head.entity_ref}")
+{indent(8, context.where_clause.domain_rule)}
+"""
+
+def process_type_decl(context):
+    return f"""
+class {context.type_id}_{context.where_clause.domain_rule.rule_label_id}:
+    SCOPE = "type"
+    TYPE_NAME = "{context.type_id}"
+    RULE_NAME = "{context.where_clause.domain_rule.rule_label_id}"
+
+    @staticmethod    
+    def __call__(self):
 {indent(8, context.where_clause.domain_rule)}
 """
 
 def process_domain_rule(context):
     return f"""
-if not {context.expression}:
-    raise ValueError(f"{{type(self).__name__}}.{context.rule_label_id}")
+assert {context.expression}
 """
 
 def process_expression(context):
@@ -238,15 +254,23 @@ codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 codegen_rule("function_call", lambda context: f"{context.branch(0)}({context.branch(1)})")
 codegen_rule("actual_parameter_list", lambda context: ','.join(map(str, context.branches())))
 codegen_rule("rule_decl", process_rule_decl)
+codegen_rule("type_decl", process_type_decl)
 codegen_rule("domain_rule", process_domain_rule)
 codegen_rule("expression", process_expression)
+codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches())))
+
+def reverse_compile(s):
+    return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
 
 if __name__ == "__main__":
+    import sys
     import shutil
     import subprocess
-    
-    schema = ifcopenshell.express.express_parser.parse("IFC2X3_tc1.exp").schema
-    for nm in ["IfcSingleProjectInstance"]: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+
+    schema = ifcopenshell.express.express_parser.parse(sys.argv[1]).schema
+    output = open(pathlib.Path(tempfile.gettempdir()) / f"{schema.name}.py", "w")
+
+    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment"]: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
         print(len(nm) * '=')
@@ -256,7 +280,7 @@ if __name__ == "__main__":
         json.dump(tree, sys.stdout, indent=2)
         
         G = to_graph(tree)
-        codegen_rule.apply(G)
+        rule_code = codegen_rule.apply(G)
 
         for n in G.nodes.values():
             if v := n.get('value'):
@@ -267,4 +291,8 @@ if __name__ == "__main__":
         fn = f"{nm}.dot"
         write_dot(fn, G)
 
-        print(subprocess.call([shutil.which("dot") or "dot", fn, "-O", "-Tpng"]))
+        subprocess.call([shutil.which("dot") or "dot", fn, "-O", "-Tpng"])
+
+        print(rule_code, "\n", file=output, sep='\n')
+
+    output.close()
