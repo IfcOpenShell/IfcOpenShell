@@ -77,3 +77,13 @@ src/ifcopenshell-python/test/build
 # tox cache
 .tox/
 *.egg-info/
+
+# mypy cache
+.mypy_cache
+
+# blenderbim libs
+src/blenderbim/blenderbim/libs
+
+# ifcopenshell swig and compiled files
+src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper.so
+src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
