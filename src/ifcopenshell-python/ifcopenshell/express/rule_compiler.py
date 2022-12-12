@@ -229,16 +229,20 @@ class {context.rule_head.rule_id}:
 """
 
 def process_type_decl(context):
-    return f"""
-class {context.type_id}_{context.where_clause.domain_rule.rule_label_id}:
+    def inner(domain_rule):
+        return f"""
+class {context.type_id}_{domain_rule.rule_label_id}:
     SCOPE = "type"
     TYPE_NAME = "{context.type_id}"
-    RULE_NAME = "{context.where_clause.domain_rule.rule_label_id}"
+    RULE_NAME = "{domain_rule.rule_label_id}"
 
     @staticmethod    
     def __call__(self):
-{indent(8, context.where_clause.domain_rule)}
+{indent(8, domain_rule)}
 """
+
+    # @todo should we not try to maintain a 1-1 correspondence?
+    return "\n\n".join(map(inner, context.where_clause.branches()))
 
 def process_domain_rule(context):
     return f"""
@@ -248,7 +252,34 @@ assert {context.expression}
 def process_expression(context):
     if len(context.simple_expression.term) == 2 and context.rel_op_extended:
         return f"{context.simple_expression.term[0]} {context.rel_op_extended} {context.simple_expression.term[1]}"
+    elif context.simple_expression.term.multiplication_like_op:
+        return " ".join(map(str, sum(zip(
+            [None] + context.simple_expression.term.multiplication_like_op.branches(),
+            map(lambda n: '(%s)' % n, context.simple_expression.term.factor.branches())
+        ), ())[1:]))
+    elif context.simple_expression.add_like_op:
+        return " ".join(map(str, sum(zip(
+            [None] + context.simple_expression.add_like_op.branches(),
+            map(lambda n: '(%s)' % n, context.simple_expression.term.branches())
+        ), ())[1:]))
 
+def process_interval(context):
+    op0, op1 = context.interval_op.branches()
+    return " ".join(map(str, (
+        context.interval_low,
+        op0,
+        context.interval_item,
+        op1,
+        context.interval_high
+    )))
+
+
+def simple_concat(context):
+    # simple_factor:
+    # only to join unary op (-) with number literal
+    # primary:
+    # only to join index with qualifyable operand
+    return "".join(map(str, context.branches()))
 
 codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 codegen_rule("function_call", lambda context: f"{context.branch(0)}({context.branch(1)})")
@@ -258,6 +289,10 @@ codegen_rule("type_decl", process_type_decl)
 codegen_rule("domain_rule", process_domain_rule)
 codegen_rule("expression", process_expression)
 codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches())))
+codegen_rule("interval", process_interval)
+codegen_rule("simple_factor", simple_concat)
+codegen_rule("primary", simple_concat)
+codegen_rule("index", lambda context: '[%s]' % context)
 
 def reverse_compile(s):
     return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
@@ -270,7 +305,7 @@ if __name__ == "__main__":
     schema = ifcopenshell.express.express_parser.parse(sys.argv[1]).schema
     output = open(pathlib.Path(tempfile.gettempdir()) / f"{schema.name}.py", "w")
 
-    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment"]: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure"]: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
         print(len(nm) * '=')
@@ -286,7 +321,7 @@ if __name__ == "__main__":
             if v := n.get('value'):
                 nl = "\n"
                 es = "\\n"
-                n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(nl, "<br/>")}</td></tr></table>>'
+                n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(">", "&gt;").replace(nl, "<br/>")}</td></tr></table>>'
         
         fn = f"{nm}.dot"
         write_dot(fn, G)

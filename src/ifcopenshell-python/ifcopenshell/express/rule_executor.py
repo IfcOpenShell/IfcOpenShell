@@ -25,6 +25,17 @@ class error(Exception):
         return f"Rule: {self.rule_name}\n{self.rule_definition}\nViolated by:\n{self.violation}{inst}"
 
 
+def fix_type(v):
+    if isinstance(v, (list, tuple)):
+        # 1-based indexing:
+        # 
+        # @todo this is not the best way, because it still allows to index the 0-th element,
+        # but given the existing body of rules this should be sufficient.
+        return type(v)([None]) + type(v)(map(fix_type, v))
+    # @todo enrich entity instances with code to evaluate derived attributes
+    return v
+
+
 def run(f, logger):
     fn = CODE_DIR / f"{f.schema}.py"
     source = open(fn, "r").read()
@@ -68,15 +79,40 @@ def run(f, logger):
     def type_name(ty):
         if isinstance(ty, ifcopenshell.ifcopenshell_wrapper.named_type):
             return type_name(ty.declared_type())
+        elif isinstance(ty, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
+            # breakpoint()
+            pass
+        elif isinstance(ty, ifcopenshell.ifcopenshell_wrapper.simple_type):
+            pass
         else:
-            if isinstance(ty, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
-                breakpoint()
             return ty.name()
     
     def check(value, type):
         if value is None:
             return
-        elif isinstance(value, (list, tuple)):
+
+        # if value == (-361, 0, 0):
+        #     breakpoint()
+        
+        if type_name(type) in D:
+            for R in D[type_name(type)]:
+                try:
+                    R()(fix_type(value))
+                except Exception as e:
+                    ln = e.__traceback__.tb_next.tb_lineno
+                    logger.error(str(error(
+                        R.__name__,
+                        reverse_compile(source.split("\n")[ln-1]),
+                        reverse_compile(e.args[0])
+                    )))
+
+        # @nb something can be a named type with rules and still be an aggregation.
+        # case in point IfcCompoundPlaneAngleMeasure. Therefore only unpack named
+        # type references from this point onwards.
+        while isinstance(type, (ifcopenshell.ifcopenshell_wrapper.named_type, ifcopenshell.ifcopenshell_wrapper.type_declaration)):
+            type = type.declared_type()
+
+        if isinstance(value, (list, tuple)):
             assert isinstance(type, ifcopenshell.ifcopenshell_wrapper.aggregation_type)
             ty = type.type_of_element()
             for v in value:
@@ -88,21 +124,7 @@ def run(f, logger):
             else:
                 # unpack the type instance
                 check(value[0], S.declaration_by_name(value.is_a()))
-        elif type_name(type) in D:
-            for R in D[type_name(type)]:
-                try:
-                    R()(value)
-                except Exception as e:
-                    ln = e.__traceback__.tb_next.tb_lineno
-                    logger.error(str(error(
-                        R.__name__,
-                        reverse_compile(source.split("\n")[ln-1]),
-                        reverse_compile(e.args[0])
-                    )))
-        else:
-            pass
-            # print(f"Not checking '{value}' of type <{type}>")
-
+        
 
     for inst in f:
         values = list(inst)

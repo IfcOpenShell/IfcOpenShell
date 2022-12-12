@@ -269,18 +269,46 @@ rule_definitions = {k: v for k, v in bootstrap.express}
 
 def to_tree(x, key=None):
         
-    def prune(di):       
+    def prune(di):
         # translate class names back to grammar rules if nested actions are encountered
         di = {get_rule_id(k) or k: v for k, v in di.items()}
         
         def replace_synonyms(x):
             for y in x:
                 if y in di:
+                    # production element from grammar is found in parsed data,
+                    # return that.
                     yield y
                 else:
+                    # lookup rule
                     rule = [e for k, e in bootstrap.express if k == y][0]
-                    if isinstance(rule, bootstrap.Term) and isinstance(rule.contents, bootstrap.Keyword):
-                        yield rule.contents.contents
+
+                    def is_synonym(rl):
+                        if isinstance(rl, bootstrap.Term) and isinstance(rl.contents, bootstrap.Keyword):
+                            return rl.contents.contents
+
+                    # is this a synonym? then processs that
+                    if S := is_synonym(rule):
+                        yield S
+                        # Do this recursively
+                        yield from replace_synonyms([S])
+                    
+                    # is this a concatenation with zero or more synonyms? then also processs that
+                    # @todo catches:
+                    #    - simple_expression = term { add_like_op term } .
+                    # but should probably also work on
+                    #    - a = b { b }
+                    # in which case the second Concat would be eliminated
+                    elif isinstance(rule, bootstrap.Concat) and \
+                            len(rule.contents) == 2 and \
+                            is_synonym(rule.contents[0]) and \
+                            isinstance(rule.contents[1].contents, bootstrap.Repeated) and \
+                            isinstance(rule.contents[1].contents.contents[0], bootstrap.Concat) and \
+                            str(rule.contents[1].contents.contents[0].contents[1]) == str(rule.contents[0]):
+                        S = is_synonym(rule.contents[0])
+                        yield S
+                        # Do this recursively
+                        yield from replace_synonyms([S])
 
         subrules = list(replace_synonyms(rule_dependencies[key]))
         
@@ -314,7 +342,7 @@ def to_tree(x, key=None):
         
     if isinstance(x, ListNode):
         return to_tree(x.dict_tokens, key=get_rule_id(x) or key)
-    if isinstance(x, Node,):
+    elif isinstance(x, Node):
         d = to_tree(x.tokens, key=get_rule_id(x) or key)
         if key is None:
             return {get_rule_id(x): d}
