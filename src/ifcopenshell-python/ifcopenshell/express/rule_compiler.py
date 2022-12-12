@@ -228,21 +228,32 @@ class {context.rule_head.rule_id}:
 {indent(8, context.where_clause.domain_rule)}
 """
 
-def process_type_decl(context):
+def process_type_decl(scope, context):
+    class_name = context.type_id if scope == 'type' else context.entity_head.entity_id
+
+    attributes = []
+
+    if scope == 'entity':
+        # @todo derived attributes
+        attributes = [a.attribute_decl.attribute_id for a in context.entity_body.explicit_attr]    
+
     def inner(domain_rule):
         return f"""
-class {context.type_id}_{domain_rule.rule_label_id}:
-    SCOPE = "type"
-    TYPE_NAME = "{context.type_id}"
+class {class_name}_{domain_rule.rule_label_id}:
+    SCOPE = "{scope}"
+    TYPE_NAME = "{class_name}"
     RULE_NAME = "{domain_rule.rule_label_id}"
 
     @staticmethod    
     def __call__(self):
+{indent(8, (f"{a} = self.{a}" for a in attributes))}
 {indent(8, domain_rule)}
 """
 
+    rule_parent = context if scope == 'type' else context.entity_body
+
     # @todo should we not try to maintain a 1-1 correspondence?
-    return "\n\n".join(map(inner, context.where_clause.branches()))
+    return "\n\n".join(map(inner, rule_parent.where_clause.branches()))
 
 def process_domain_rule(context):
     return f"""
@@ -279,13 +290,29 @@ def simple_concat(context):
     # only to join unary op (-) with number literal
     # primary:
     # only to join index with qualifyable operand
-    return "".join(map(str, context.branches()))
+
+    def qualifier_position(s):
+        # @todo this is a really ugly hack, can we not depend on stable branch order and why?
+        if s == "-": return -1
+        if s and s[0] in ('.', '['): return 1
+        return 0
+
+    v = "".join(sorted(map(str, context.branches()), key=qualifier_position))
+    return v
+
+
+def process_rel_op(context):
+    if str(context) == "<>":
+        return "!="
+    elif str(context) == "=":
+        return "=="
 
 codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 codegen_rule("function_call", lambda context: f"{context.branch(0)}({context.branch(1)})")
 codegen_rule("actual_parameter_list", lambda context: ','.join(map(str, context.branches())))
+codegen_rule("entity_decl", functools.partial(process_type_decl, 'entity'))
 codegen_rule("rule_decl", process_rule_decl)
-codegen_rule("type_decl", process_type_decl)
+codegen_rule("type_decl", functools.partial(process_type_decl, 'type'))
 codegen_rule("domain_rule", process_domain_rule)
 codegen_rule("expression", process_expression)
 codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches())))
@@ -293,6 +320,8 @@ codegen_rule("interval", process_interval)
 codegen_rule("simple_factor", simple_concat)
 codegen_rule("primary", simple_concat)
 codegen_rule("index", lambda context: '[%s]' % context)
+codegen_rule("attribute_qualifier", lambda context: '.%s' % context)
+codegen_rule("rel_op", process_rel_op)
 
 def reverse_compile(s):
     return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
@@ -305,7 +334,14 @@ if __name__ == "__main__":
     schema = ifcopenshell.express.express_parser.parse(sys.argv[1]).schema
     output = open(pathlib.Path(tempfile.gettempdir()) / f"{schema.name}.py", "w")
 
-    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure"]: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    print("def exists(v): return v is not None", "\n", file=output, sep='\n')
+
+    print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
+
+    for k, v in schema.enumerations.items():
+        print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
+
+    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole"]: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
         print(len(nm) * '=')

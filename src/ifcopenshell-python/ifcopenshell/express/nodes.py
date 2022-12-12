@@ -348,7 +348,10 @@ def to_tree(x, key=None):
             return {get_rule_id(x): d}
         return d
     elif isinstance(x, dict):
-        return simplify(prune({k: to_tree(v, key=k) for k, v in x.items()}))
+        # d = {k: to_tree(v, key=k) for k, v in x.items()}
+        # not fully understood, but when finding specific node Types and production rules, prioritize the former
+        d = {get_rule_id(k) or k: to_tree(v, key=k) for k, v in sorted(x.items(), key=lambda p: get_rule_id(p[0]) is not None)}
+        return simplify(prune(d))
     elif isinstance(x, list):
         return [to_tree(v, key=key) for v in x]
     else:

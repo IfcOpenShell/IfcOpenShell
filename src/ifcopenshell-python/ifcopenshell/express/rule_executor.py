@@ -137,6 +137,17 @@ def run(f, logger):
             else:
                 check(val, attr.type_of_attribute())
 
+    for R in [r for r in rules if r.SCOPE == 'entity']:
+        for inst in f.by_type(R.TYPE_NAME):
+            try:
+                R()(inst)
+            except Exception as e:
+                ln = e.__traceback__.tb_next.tb_lineno
+                logger.error(str(error(
+                    R.__name__,
+                    reverse_compile(source.split("\n")[ln-1]),
+                    reverse_compile(e.args[0])
+                )))
 
     """
     for R in []:
