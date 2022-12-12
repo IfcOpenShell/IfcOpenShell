@@ -293,11 +293,23 @@ def simple_concat(context):
 
     def qualifier_position(s):
         # @todo this is a really ugly hack, can we not depend on stable branch order and why?
-        if s == "-": return -1
+        
+        # unary operators
+        if s in ("-", "+", "not"): return -1
+
+        # qualifiers
         if s and s[0] in ('.', '['): return 1
+
+        # default
         return 0
 
-    v = "".join(sorted(map(str, context.branches()), key=qualifier_position))
+    branches = sorted(map(str, context.branches()), key=qualifier_position)
+
+    concat = ""
+    if len(branches) == 2 and branches[0] == 'not':
+        concat = " "
+
+    v = concat.join(branches)
     return v
 
 
@@ -341,7 +353,7 @@ if __name__ == "__main__":
     for k, v in schema.enumerations.items():
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
 
-    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole"]: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
         print(len(nm) * '=')
