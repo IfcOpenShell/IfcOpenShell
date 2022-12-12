@@ -332,6 +332,7 @@ codegen_rule("interval", process_interval)
 codegen_rule("simple_factor", simple_concat)
 codegen_rule("primary", simple_concat)
 codegen_rule("index", lambda context: '[%s]' % context)
+# @nb group_qualifier is ignored on purpose (?)
 codegen_rule("attribute_qualifier", lambda context: '.%s' % context)
 codegen_rule("rel_op", process_rel_op)
 
@@ -353,7 +354,7 @@ if __name__ == "__main__":
     for k, v in schema.enumerations.items():
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
 
-    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
         print(len(nm) * '=')
