@@ -162,6 +162,15 @@ class context:
             
         return context(self.graph, list(inner()))
 
+    def has_inverse(self, a):
+        for r in self.rules:
+            if a in map(
+                lambda n: self.graph.nodes[n].get('label'),
+                self.graph.predecessors(r)
+            ):
+                return True
+        return False
+
     def __iter__(self):
         for r in self.rules:
             yield context(self.graph, [r])
@@ -274,6 +283,19 @@ def process_expression(context):
             map(lambda n: '(%s)' % n, context.simple_expression.term.branches())
         ), ())[1:]))
 
+    # @nb below is for binding on simple_expression directly.
+    if not context.has_inverse("expression"):
+        if context.term.multiplication_like_op:
+            return " ".join(map(str, sum(zip(
+                [None] + context.term.multiplication_like_op.branches(),
+                map(lambda n: '(%s)' % n, context.term.factor.branches())
+            ), ())[1:]))
+        elif context.add_like_op:
+            return " ".join(map(str, sum(zip(
+                [None] + context.add_like_op.branches(),
+                map(lambda n: '(%s)' % n, context.term.branches())
+            ), ())[1:]))
+
 def process_interval(context):
     op0, op1 = context.interval_op.branches()
     return " ".join(map(str, (
@@ -319,7 +341,8 @@ def process_rel_op(context):
     elif str(context) == "=":
         return "=="
 
-codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
+# implemented sizeof() function in generated code
+# codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 codegen_rule("function_call", lambda context: f"{context.branch(0)}({context.branch(1)})")
 codegen_rule("actual_parameter_list", lambda context: ','.join(map(str, context.branches())))
 codegen_rule("entity_decl", functools.partial(process_type_decl, 'entity'))
@@ -327,6 +350,7 @@ codegen_rule("rule_decl", process_rule_decl)
 codegen_rule("type_decl", functools.partial(process_type_decl, 'type'))
 codegen_rule("domain_rule", process_domain_rule)
 codegen_rule("expression", process_expression)
+codegen_rule("simple_expression", process_expression)
 codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches())))
 codegen_rule("interval", process_interval)
 codegen_rule("simple_factor", simple_concat)
@@ -351,9 +375,18 @@ if __name__ == "__main__":
 
     print("def exists(v): return v is not None", "\n", file=output, sep='\n')
 
+    print("sizeof = len", file=output, sep='\n')
+
     print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
 
     print("""
+class rmult_set(set):
+    def __rmul__(self, other):
+        return rmult_set(set(other) & self)
+    def __repr__(self):
+        return repr(set(self))
+
+
 def typeof(inst):
     schema_name = inst.wrapped_data.file.schema.lower()
     def inner():
@@ -361,13 +394,13 @@ def typeof(inst):
         while decl:
             yield '.'.join((schema_name, decl.name().lower()))
             decl = decl.supertype()
-    return set(inner())
+    return rmult_set(inner())
 """, file=output, sep='\n')
 
     for k, v in schema.enumerations.items():
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
 
-    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
         print(len(nm) * '=')
