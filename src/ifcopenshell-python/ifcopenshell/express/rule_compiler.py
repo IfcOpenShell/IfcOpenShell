@@ -347,14 +347,27 @@ if __name__ == "__main__":
     schema = ifcopenshell.express.express_parser.parse(sys.argv[1]).schema
     output = open(pathlib.Path(tempfile.gettempdir()) / f"{schema.name}.py", "w")
 
+    print("import ifcopenshell", file=output, sep='\n')
+
     print("def exists(v): return v is not None", "\n", file=output, sep='\n')
 
     print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
 
+    print("""
+def typeof(inst):
+    schema_name = inst.wrapped_data.file.schema.lower()
+    def inner():
+        decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
+        while decl:
+            yield '.'.join((schema_name, decl.name().lower()))
+            decl = decl.supertype()
+    return set(inner())
+""", file=output, sep='\n')
+
     for k, v in schema.enumerations.items():
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
 
-    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
         print(len(nm) * '=')
