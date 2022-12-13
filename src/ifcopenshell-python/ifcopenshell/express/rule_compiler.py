@@ -1,4 +1,4 @@
-import pathlib
+import os
 import sys
 import json
 import hashlib
@@ -185,13 +185,18 @@ class context:
             nodes
         ))
         # assert len(terminals) == 1
-        attrs = self.graph.nodes[terminals_or_values[0]]
-        return attrs.get('value', attrs['label'])
+        attrs = [self.graph.nodes[tv] for tv in terminals_or_values]
+        attrs = [a.get('value', a['label']) for a in attrs]
+        attr_types = list(map(type, attrs))
+        if empty in attr_types[0:1]:
+            return ""
+        attrs = list(filter(lambda s: isinstance(s, str), attrs))
+        return attrs[0]
 
 
     def branches(self):
         assert len(self.rules) == 1
-        return [context(self.graph, [n]) for n in self.graph.successors(self.rules[0])]
+        return sorted((context(self.graph, [n]) for n in self.graph.successors(self.rules[0])), key=lambda c: c.rules[0] if c.rules else "")
         
         
     def branch(self, i):
@@ -237,16 +242,21 @@ class {context.rule_head.rule_id}:
 {indent(8, context.where_clause.domain_rule)}
 """
 
+class empty:
+    pass
+
+
 def process_type_decl(scope, context):
     class_name = context.type_id if scope == 'type' else context.entity_head.entity_id
 
     attributes = []
 
     if scope == 'entity':
+        
         # @todo derived attributes
         attributes = [a.attribute_decl.attribute_id for a in context.entity_body.explicit_attr]    
 
-    def inner(domain_rule):
+    def format_rule(domain_rule):
         return f"""
 class {class_name}_{domain_rule.rule_label_id}:
     SCOPE = "{scope}"
@@ -261,8 +271,25 @@ class {class_name}_{domain_rule.rule_label_id}:
 
     rule_parent = context if scope == 'type' else context.entity_body
 
-    # @todo should we not try to maintain a 1-1 correspondence?
-    return "\n\n".join(map(inner, rule_parent.where_clause.branches()))
+    statements = []
+
+    if rule_parent.where_clause:
+        # @todo should we not try to maintain a 1-1 correspondence?
+        statements.extend(map(format_rule, rule_parent.where_clause.branches()))
+
+    if scope == 'entity':
+        def format_derived(derived_attr):
+            slash = "\\"
+            return f"""
+def calc_{class_name}_{derived_attr.attribute_decl}(self):
+{indent(4, (f"{a} = self.{a}" for a in attributes))}
+{indent(4, f"return {slash}")}
+{indent(4, derived_attr.expression)}
+"""
+        if context.entity_body.derive_clause:
+            statements.extend(map(format_derived, context.entity_body.derive_clause.branches()))
+
+    return "\n\n".join(statements)
 
 def process_domain_rule(context):
     return f"""
@@ -325,13 +352,17 @@ def simple_concat(context):
         # default
         return 0
 
-    branches = sorted(map(str, context.branches()), key=qualifier_position)
+    # branches = sorted(map(str, context.branches()), key=qualifier_position)
+
+    # sorting no longer necessary as we sort in branches() now
+    branches = list(map(str, context.branches()))
 
     concat = ""
     if len(branches) == 2 and branches[0] == 'not':
         concat = " "
 
     v = concat.join(branches)
+
     return v
 
 
@@ -341,13 +372,25 @@ def process_rel_op(context):
     elif str(context) == "=":
         return "=="
 
+
+def process_if_stmt(context):
+    return f"if {context.logical_expression}:\n{indent(4, context.stmt)}"
+
+
+def process_function_decl(context):
+    arguments = list(map(str, context.function_head.formal_parameter.branches()))[0::2]
+    return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.stmt.branches())}"
+
+
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
-codegen_rule("function_call", lambda context: f"{context.branch(0)}({context.branch(1)})")
+# @todo 
+codegen_rule("function_call", lambda context: f"{context.built_in_function or context.function_ref}({context.actual_parameter_list})")
 codegen_rule("actual_parameter_list", lambda context: ','.join(map(str, context.branches())))
 codegen_rule("entity_decl", functools.partial(process_type_decl, 'entity'))
 codegen_rule("rule_decl", process_rule_decl)
 codegen_rule("type_decl", functools.partial(process_type_decl, 'type'))
+codegen_rule("function_decl", process_function_decl)
 codegen_rule("domain_rule", process_domain_rule)
 codegen_rule("expression", process_expression)
 codegen_rule("simple_expression", process_expression)
@@ -355,10 +398,14 @@ codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str,
 codegen_rule("interval", process_interval)
 codegen_rule("simple_factor", simple_concat)
 codegen_rule("primary", simple_concat)
-codegen_rule("index", lambda context: '[%s]' % context)
-# @nb group_qualifier is ignored on purpose (?)
+codegen_rule("qualifier", simple_concat)
+codegen_rule("return_stmt", lambda context: 'return %s' % context)
+codegen_rule("if_stmt", process_if_stmt)
+codegen_rule("index", lambda context: '[%s]' % (int(str(context)) - 1))
+codegen_rule("group_qualifier", lambda context: empty())
 codegen_rule("attribute_qualifier", lambda context: '.%s' % context)
 codegen_rule("rel_op", process_rel_op)
+codegen_rule("built_in_constant", lambda context: "None" if str(context) == "?" else str(context))
 
 def reverse_compile(s):
     return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
@@ -369,13 +416,15 @@ if __name__ == "__main__":
     import subprocess
 
     schema = ifcopenshell.express.express_parser.parse(sys.argv[1]).schema
-    output = open(pathlib.Path(tempfile.gettempdir()) / f"{schema.name}.py", "w")
+    ofn = os.path.join(os.path.dirname(__file__), "rules", f"{schema.name}.py")
+    output = open(ofn, "w")
 
     print("import ifcopenshell", file=output, sep='\n')
 
     print("def exists(v): return v is not None", "\n", file=output, sep='\n')
 
     print("sizeof = len", file=output, sep='\n')
+    print("hiindex = len", file=output, sep='\n')    
 
     print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
 
@@ -400,23 +449,32 @@ def typeof(inst):
     for k, v in schema.enumerations.items():
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
 
-    for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef'
+    # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    for nm in ['IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
         print(len(nm) * '=')
         
+        # if nm in ("IfcSingleProjectInstance", 'IfcCurveDim'):
+        #     breakpoint() 
+
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])
                 
-        json.dump(tree, sys.stdout, indent=2)
+        with open(f"{nm}.json", "w") as f:
+            json.dump(tree, f, indent=2)
         
         G = to_graph(tree)
         rule_code = codegen_rule.apply(G)
 
         for n in G.nodes.values():
             if v := n.get('value'):
-                nl = "\n"
-                es = "\\n"
-                n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(">", "&gt;").replace(nl, "<br/>")}</td></tr></table>>'
+                if isinstance(v, str):
+                    nl = "\n"
+                    es = "\\n"
+                    n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(">", "&gt;").replace(nl, "<br/>")}</td></tr></table>>'
+                elif isinstance(v, empty):
+                    n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">---</td></tr></table>>'
         
         fn = f"{nm}.dot"
         write_dot(fn, G)

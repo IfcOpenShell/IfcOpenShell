@@ -1,4 +1,5 @@
 import os
+import sys
 import glob
 
 import pytest
@@ -6,9 +7,11 @@ import tabulate
 
 import ifcopenshell.express.rule_executor
 
+
+
 @pytest.mark.parametrize(
     "filename",
-    glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/rules/*.ifc")),
+    [fn for fn in glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/rules/*.ifc")) if len(sys.argv) < 2 or sys.argv[1] in fn],
 )
 def test_file(filename):
     base = os.path.basename(filename)

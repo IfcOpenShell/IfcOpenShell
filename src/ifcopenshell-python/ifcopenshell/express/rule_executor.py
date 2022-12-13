@@ -31,7 +31,11 @@ def fix_type(v):
         # 
         # @todo this is not the best way, because it still allows to index the 0-th element,
         # but given the existing body of rules this should be sufficient.
-        return type(v)([None]) + type(v)(map(fix_type, v))
+        # return type(v)([None]) + type(v)(map(fix_type, v))
+
+        # We don't do this anymore, because it doesn't fix instance attribute lookups
+        # We now instead perform a -1 on the index qualifier in the code generation
+        pass
     # @todo enrich entity instances with code to evaluate derived attributes
     return v
 

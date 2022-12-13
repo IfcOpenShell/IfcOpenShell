@@ -341,7 +341,10 @@ def to_tree(x, key=None):
             return di
         
     if isinstance(x, ListNode):
-        return to_tree(x.dict_tokens, key=get_rule_id(x) or key)
+        d = to_tree(x.dict_tokens, key=get_rule_id(x) or key)
+        if key is None:
+            return {get_rule_id(x): d}
+        return d
     elif isinstance(x, Node):
         d = to_tree(x.tokens, key=get_rule_id(x) or key)
         if key is None:
@@ -522,7 +525,7 @@ class StringType(Node):
         return s
 
 
-class ProcedureDeclaration(Node):
+class ProcedureDeclaration(ListNode):
     @property
     def name(self):
         return self.flat[1]

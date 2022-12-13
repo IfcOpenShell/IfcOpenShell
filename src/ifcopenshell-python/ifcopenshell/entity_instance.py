@@ -22,6 +22,7 @@ from __future__ import division
 from __future__ import print_function
 
 import functools
+import importlib
 import numbers
 import itertools
 
@@ -119,6 +120,19 @@ class entity_instance(object):
         elif attr_cat == INVERSE:
             return entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
         else:
+            schema_name = self.wrapped_data.file.schema
+            rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
+            def yield_supertypes():
+                decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
+                while decl:
+                    yield decl.name()
+                    decl = decl.supertype()
+
+            for sty in yield_supertypes():
+                fn = getattr(rules, f"calc_{sty}_{name}", None)
+                if fn:
+                    return fn(self)
+
             raise AttributeError(
                 "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), name)
             )
