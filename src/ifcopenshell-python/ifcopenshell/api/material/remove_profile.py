@@ -51,7 +51,7 @@ class Usecase:
 
             # Imagine a welded square along the length of the profile.
             welded_square = ifcopenshell.api.run("profile.add_arbitrary_profile", model,
-                profile=[(2.5, 2.5), (32.5, 2.5), (32.5, -2.5), (2.5, -2.5)])
+                profile=[(.0025, .0025), (.0325, .0025), (.0325, -.0025), (.0025, -.0025), (.0025, .0025)])
             weld_profile = ifcopenshell.api.run("material.add_profile", model,
                 profile_set=material_set, material=steel, profile=welded_square)
 
