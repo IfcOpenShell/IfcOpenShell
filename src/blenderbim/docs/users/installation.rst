@@ -56,35 +56,52 @@ You can enable add-ons permanently by using ``Save User Settings`` from the Addo
 
     If you are a poweruser, you may be interested in the **Unstable installation** to help with testing. :doc:`Read more <../devs/installation>`
 
+.. _where is the add-on installed:
+
 Where is the add-on installed?
 ------------------------------
 
+Upon installation, the BlenderBIM Add-on is stored in the
+``scripts/addons/blenderbim/`` directory, within your Blender configuration
+folder. However, the location of your Blender configuration folder depends on
+how you have installed Blender.
+
 If you downloaded Blender as a ``.zip`` file without running an installer, you
-will find the BlenderBIM Add-on installed in the following directory, where
+will find the Blender configuration folder in the following directory, where
 ``X.XX`` is the Blender version:
 ::
 
-    /path/to/blender/X.XX/scripts/addons/
+    /path/to/blender/X.XX/
 
-Otherwise, if you installed Blender using an installation package, the add-ons
-folder depends on which operating system you use. On Linux:
+Otherwise, if you installed Blender using an installation package, the Blender
+configuration folder depends on which operating system you use.
+
+On Linux, if you are installing the add-on as a user:
 ::
 
-    ~/.config/blender/X.XX/scripts/addons/
+    ~/.config/blender/X.XX/
 
-On Mac:
+On Linux, if you are deploying the add-on system-wide (this may also depend on
+your Linux distribution):
+::
+
+    /usr/share/blender/X.XX/
+
+On Mac, if you are installing the add-on as a user:
 ::
 
     /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/
 
+On Mac, if you are deploying the add-on system-wide:
+
+::
+
+    /Library/Application Support/Blender/X.XX/
+
 On Windows:
 ::
 
-    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\scripts\addons
-
-Upon installation, the BlenderBIM Add-on is stored in the ``blenderbim/``
-directory.
-
+    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\
 
 Updating
 --------
@@ -125,3 +142,18 @@ FAQ
    Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
    If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
    or you'll need to compile IfcOpenShell yourself.
+
+3. **Some other error prevents me from installing or doing basic functions with
+   the add-on. Is it specific to my environment?**
+
+   Sometimes it is helpful to try installing and using the BlenderBIM Add-on on
+   a "clean environment". A clean environment is defined as a fresh Blender
+   installation with no other add-ons enabled with factory settings.
+
+   To quickly test in a clean environment, find your Blender configuration
+   folder based on the `where is the add-on installed`_ section. Rename the
+   folder from ``X.XX`` to something else like ``X.XX_backup``, then restart
+   Blender and try follow the installation instructions again.
+
+   If this fixes your issue, consider disabling other add-ons one by one until
+   you find a conflict as a next step to isolating the issue.
