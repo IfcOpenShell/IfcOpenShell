@@ -253,30 +253,3 @@ Required static assets are:
 
     bim/data/gantt/jsgantt.js (from jsgantt-improved)
     bim/data/gantt/jsgantt.css (from jsgantt-improved)
-
-
-Troubleshooting
--------------------------
-
-Sometimes other Blender plugins will interfere, and cause bugs with BlenderBIM. 
-
-To troubleshoot, it is suggested to temporarily remove (rename) the folder with 
-all the plugins.  Depending on your OS, it could be located in one of the following locations
-::
-
-    - Windows
-      - USER: %USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.79\
-      - SYSTEM: %USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.79\
-    - macos
-      - USER: /Users/$USER/Library/Application Support/Blender/2.79/
-      - SYSTEM: /Library/Application Support/Blender/2.79/
-    - Linux
-      - USER: $HOME/.config/blender/2.79/
-      - SYSTEM: /usr/share/blender/2.79/
-
-After renaming the folder try a fresh BlenderBIM reinstall and then test to see if the same 
-problem exists. Similarly, you can rename individual plugin folder to conduct a trail and error to 
-determine which plugin, specifically, is causing the problem.
-
-If the same problem persists, to reenable all your plugins, simply undo the folder name change you did above. 
-You will also want to delete the newly created folder which contains the version of BlenderBIM you just installed.
