@@ -519,31 +519,44 @@ IfcWorkControlTypeEnum = enum_namespace()
 
 
 
-def calc_IfcCurve_Dim(self):
+class IfcBSplineCurve_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBSplineCurve"
+    RULE_NAME = "WR41"
 
+    @staticmethod    
+    def __call__(self):
+        Degree = self.Degree
+        ControlPointsList = self.ControlPointsList
+        CurveForm = self.CurveForm
+        ClosedCurve = self.ClosedCurve
+        SelfIntersect = self.SelfIntersect
+        
+        assert sizeof([Temp for Temp in ControlPointsList if Temp.Dim != ControlPointsList[0].Dim]) == 0
+        
+
+
+
+def calc_IfcBSplineCurve_ControlPoints(self):
+    Degree = self.Degree
+    ControlPointsList = self.ControlPointsList
+    CurveForm = self.CurveForm
+    ClosedCurve = self.ClosedCurve
+    SelfIntersect = self.SelfIntersect
     return \
-    IfcCurveDim(self)
+    IfcListToArray(UpperIndexOnControlPoints)
 
 
 
-def IfcCurveDim(Curve):
-    if 'ifc2x3.ifcline' in typeof(Curve):
-        return Curve.Pnt.Dim
-    if 'ifc2x3.ifcconic' in typeof(Curve):
-        return Curve.Position.Dim
-    if 'ifc2x3.ifcpolyline' in typeof(Curve):
-        return Curve.Points[0].Dim
-    if 'ifc2x3.ifctrimmedcurve' in typeof(Curve):
-        return IfcCurveDim(Curve.BasisCurve)
-    if 'ifc2x3.ifccompositecurve' in typeof(Curve):
-        return Curve.Segments[0].Dim
-    if 'ifc2x3.ifcbsplinecurve' in typeof(Curve):
-        return Curve.ControlPointsList[0].Dim
-    if 'ifc2x3.ifcoffsetcurve2d' in typeof(Curve):
-        return 2
-    if 'ifc2x3.ifcoffsetcurve3d' in typeof(Curve):
-        return 3
-    return None
+def calc_IfcBSplineCurve_UpperIndexOnControlPoints(self):
+    Degree = self.Degree
+    ControlPointsList = self.ControlPointsList
+    CurveForm = self.CurveForm
+    ClosedCurve = self.ClosedCurve
+    SelfIntersect = self.SelfIntersect
+    return \
+    (sizeof(ControlPointsList)) - (1)
+
 
 
 

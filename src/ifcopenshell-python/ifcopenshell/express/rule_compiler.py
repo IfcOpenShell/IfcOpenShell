@@ -382,6 +382,10 @@ def process_function_decl(context):
     return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.stmt.branches())}"
 
 
+def process_query(context):
+    return f"[{context.variable_id} for {context.variable_id} in {context.aggregate_source} if {context.logical_expression}]"
+
+
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 # @todo 
@@ -394,6 +398,8 @@ codegen_rule("function_decl", process_function_decl)
 codegen_rule("domain_rule", process_domain_rule)
 codegen_rule("expression", process_expression)
 codegen_rule("simple_expression", process_expression)
+codegen_rule("logical_expression", process_expression)
+codegen_rule("query_expression", process_query)
 codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches())))
 codegen_rule("interval", process_interval)
 codegen_rule("simple_factor", simple_concat)
@@ -451,13 +457,10 @@ def typeof(inst):
 
     # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef'
     # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
-    for nm in ['IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    # for nm in ['IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    for nm in ['IfcBSplineCurve', 'IfcCartesianPoint']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
 
         print(nm)
-        print(len(nm) * '=')
-        
-        # if nm in ("IfcSingleProjectInstance", 'IfcCurveDim'):
-        #     breakpoint() 
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])
                 

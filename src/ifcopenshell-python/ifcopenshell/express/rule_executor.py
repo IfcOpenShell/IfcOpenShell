@@ -1,3 +1,4 @@
+import os
 import ast
 import collections
 from dataclasses import dataclass
@@ -41,7 +42,7 @@ def fix_type(v):
 
 
 def run(f, logger):
-    fn = CODE_DIR / f"{f.schema}.py"
+    fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema}.py")
     source = open(fn, "r").read()
     a = ast.parse(source)
     assertion.rewrite.rewrite_asserts(mod=a, source=source)
@@ -94,9 +95,6 @@ def run(f, logger):
     def check(value, type):
         if value is None:
             return
-
-        # if value == (-361, 0, 0):
-        #     breakpoint()
         
         if type_name(type) in D:
             for R in D[type_name(type)]:
