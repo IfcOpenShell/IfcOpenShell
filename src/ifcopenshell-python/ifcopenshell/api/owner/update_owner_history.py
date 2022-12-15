@@ -68,9 +68,7 @@ class Usecase:
         if not application:
             return
         if not self.settings["element"].OwnerHistory:
-            self.settings["element"].OwnerHistory = ifcopenshell.api.run(
-                "owner.create_owner_history", self.file, **self.settings
-            )
+            self.settings["element"].OwnerHistory = ifcopenshell.api.run("owner.create_owner_history", self.file)
             return self.settings["element"].OwnerHistory
         if self.file.get_total_inverses(self.settings["element"].OwnerHistory) > 1:
             new = ifcopenshell.util.element.copy(self.file, self.settings["element"].OwnerHistory)
