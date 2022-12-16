@@ -373,8 +373,8 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_SurfaceFeatureBaseQuantities' : {
-        'Area' : None,
-        'Length' : None,
+        'Area' : "get_net_footprint_area",
+        'Length' : "get_length",
     },
     'Qto_WallBaseQuantities' : {
         'Length' : { "function_name" : "get_length", "args" : ", main_axis = 'x'"},
