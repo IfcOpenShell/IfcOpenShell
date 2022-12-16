@@ -448,11 +448,11 @@ mapper = {
         'NetVolume' : "get_space_net_volume",
     },
     'Qto_CourseBaseQuantities' : {
-        'Length' : None,
-        'Width' : None,
-        'Thickness' : None,
-        'Volume' : None,
-        'GrossVolume' : None,
+        'Length' : "get_length",
+        'Width' : "get_width",
+        'Thickness' : "get_height",
+        'Volume' : "get_net_volume",
+        'GrossVolume' : "get_gross_volume",
         'Weight' : None,
     },
     'Qto_CondenserBaseQuantities' : {
