@@ -493,7 +493,7 @@ mapper = {
     'Qto_TankBaseQuantities' : {
         'GrossWeight' : None,
         'NetWeight' : None,
-        'TotalSurfaceArea' : None,
+        'TotalSurfaceArea' : "get_outer_surface_area",
     },
     'Qto_AirToAirHeatRecoveryBaseQuantities' : {
         'GrossWeight' : None,
