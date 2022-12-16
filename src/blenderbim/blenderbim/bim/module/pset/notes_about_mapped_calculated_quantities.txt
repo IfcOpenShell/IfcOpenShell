@@ -49,4 +49,6 @@ Qto_EarthworksCutBase - LooseVolume
 Qto_KerbBaseQuantities - Depth (not sure what's the difference between depth and width: there are 4 dimensions, i don't understand the difference)
 Qto_LinearStratumBaseQuantities - Diameter
 Qto_LinearStratumBaseQuantities - Length
+Qto_BodyGeometryValidation - SurfaceGenusBeforeFeatures
+Qto_BodyGeometryValidation - SurfaceGenusAfterFeatures
 
