@@ -390,9 +390,9 @@ mapper = {
         'NetWeight' : None,
     },
     'Qto_StairFlightBaseQuantities' : {
-        'Length' : None,
-        'GrossVolume' : None,
-        'NetVolume' : None,
+        'Length' : "get_stair_length",
+        'GrossVolume' : "get_gross_volume",
+        'NetVolume' : "get_net_volume",
     },
     'Qto_SwitchingDeviceBaseQuantities' : {
         'GrossWeight' : None,
