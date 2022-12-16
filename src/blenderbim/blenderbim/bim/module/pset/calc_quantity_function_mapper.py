@@ -561,7 +561,7 @@ mapper = {
     },
     'Qto_ReinforcingElementBaseQuantities' : {
         'Count' : None,
-        'Length' : None,
+        'Length' : "get_length",
         'Weight' : None,
     },
     'Qto_EvaporativeCoolerBaseQuantities' : {
