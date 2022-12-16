@@ -462,7 +462,7 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_RailingBaseQuantities' : {
-        'Length' : None,
+        'Length' : "get_length",
     },
     'Qto_TubeBundleBaseQuantities' : {
         'GrossWeight' : None,
