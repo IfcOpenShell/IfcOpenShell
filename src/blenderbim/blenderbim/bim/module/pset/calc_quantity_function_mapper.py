@@ -555,9 +555,9 @@ mapper = {
         'Volume' : "get_net_volume",
     },
     'Qto_SpatialZoneBaseQuantities' : {
-        'Length' : None,
-        'Width' : None,
-        'Height' : None,
+        'Length' : "get_length",
+        'Width' : "get_width",
+        'Height' : "get_height",
     },
     'Qto_ReinforcingElementBaseQuantities' : {
         'Count' : None,
