@@ -514,8 +514,8 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_BuildingElementProxyQuantities' : {
-        'NetSurfaceArea' : None,
-        'NetVolume' : None,
+        'NetSurfaceArea' : "get_net_surface_area",
+        'NetVolume' : "get_net_volume",
     },
     'Qto_FanBaseQuantities' : {
         'GrossWeight' : None,
