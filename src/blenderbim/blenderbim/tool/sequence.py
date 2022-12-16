@@ -15,17 +15,20 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
-from dateutil import parser
+
 import bpy
 import re
 import isodate
-from datetime import datetime
 import ifcopenshell
+import ifcopenshell.util.sequence
 import json
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
+
+from dateutil import parser
+from datetime import datetime
 
 
 class Sequence(blenderbim.core.tool.Sequence):
@@ -469,6 +472,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 new = props.nested_task_outputs.add()
                 new.ifc_definition_id = output.id()
                 new.name = output.Name or "Unnamed"
+
     @classmethod
     def get_highlighted_task(cls):
         props = bpy.context.scene.BIMWorkScheduleProperties
@@ -482,12 +486,17 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def get_task_outputs(cls, task):
         return [rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
+
     @classmethod
     def get_nested_tasks_outputs(cls, tasks):
         outputs = []
         for subtask in tasks:
-            [outputs.append(rel.RelatingProduct) for rel in subtask.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
-        return outputs            
+            [
+                outputs.append(rel.RelatingProduct)
+                for rel in subtask.HasAssignments
+                if rel.is_a("IfcRelAssignsToProduct")
+            ]
+        return outputs
 
     @classmethod
     def get_task_resources(cls, task):

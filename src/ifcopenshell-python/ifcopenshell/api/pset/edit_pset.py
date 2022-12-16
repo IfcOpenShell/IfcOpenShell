@@ -112,23 +112,20 @@ class Usecase:
             # own "Company Standard" property set templates. Notice how we
             # prefix our property set with "Foo_", if our company name was "Foo"
             # this would make sense.
-            pset_template = ifcopenshell.api.run("pset_template.add_pset_template", model)
-            ifcopenshell.api.run("pset_template.edit_pset_template", model, attributes={"Name": "Foo_Bar"})
+            template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="Foo_bar")
 
             # Let's imagine we want all model authors to specify two properties,
             # one being a length measurement and another being a boolean.
-            prop1 = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=pset_template)
-            ifcopenshell.api.run("pset_template.edit_prop_template", model,
-                prop_template=prop1, attributes={"Name": "DemoA", "PrimaryMeasureType": "IfcLengthMeasure"})
-            prop2 = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=pset_template)
-            ifcopenshell.api.run("pset_template.edit_prop_template", model,
-                prop_template=prop2, attributes={"Name": "DemoB", "PrimaryMeasureType": "IfcBoolean"})
+            prop1 = ifcopenshell.api.run("pset_template.add_prop_template", model,
+                pset_template=template, name="DemoA", primary_measure_type="IfcLengthMeasure")
+            prop2 = ifcopenshell.api.run("pset_template.add_prop_template", model,
+                pset_template=template, name="DemoB", primary_measure_type="IfcBoolean")
 
             # Now we can use our property set template to add our properties,
             # and the data types will always match our template.
             pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Foo_Bar")
             ifcopenshell.api.run("pset.edit_pset", model,
-                pset=pset, properties={"DemoA": 42.3, "DemoB": True}, pset_template=pset_template)
+                pset=pset, properties={"DemoA": 42.3, "DemoB": True}, pset_template=template)
 
             # Here's a third scenario where we want to add arbitrary properties
             # that are not standardised by anything, not even our own custom
