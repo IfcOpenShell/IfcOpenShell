@@ -549,10 +549,10 @@ mapper = {
         'SurfaceGenusAfterFeatures' : None,
     },
     'Qto_VolumetricStratumBaseQuantities' : {
-        'Area' : None,
+        'Area' : "get_net_footprint_area",
         'Mass' : None,
-        'PlanArea' : None,
-        'Volume' : None,
+        'PlanArea' : "get_net_footprint_area",
+        'Volume' : "get_net_volume",
     },
     'Qto_SpatialZoneBaseQuantities' : {
         'Length' : None,
