@@ -78,25 +78,19 @@ class Usecase:
             # prefix our property set with "Foo_", if our company name was "Foo"
             # this would make sense. In this example, we say that our template
             # only applies to walls and is for quantities.
-            pset_template = ifcopenshell.api.run("pset_template.add_pset_template", model)
-            ifcopenshell.api.run("pset_template.edit_pset_template", model,
-                attributes={
-                    "Name": "Foo_Wall", "TemplateType": "QTO_OCCURRENCEDRIVEN", "ApplicableEntity": "IfcWall"
-                })
+            template = ifcopenshell.api.run("pset_template.add_pset_template", model,
+                name="Foo_Wall", template_type="QTO_OCCURRENCEDRIVEN", applicable_entity="IfcWall")
 
             # Let's imagine we want all model authors to specify a length
             # measurement for the portion of a wall that is overhanging.
-            prop = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=pset_template)
-            ifcopenshell.api.run("pset_template.edit_prop_template", model,
-                prop_template=prop, attributes={
-                    "Name": "OverhangLength", "TemplateType": "Q_LENGTH", "PrimaryMeasureType": "IfcLengthMeasure"
-                })
+            prop = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
+                name="OverhangLength", template_type="Q_LENGTH", primary_measure_type="IfcLengthMeasure")
 
             # Now we can use our property set template to add our properties,
             # and the data types will always match our template.
             qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Foo_Wall")
             ifcopenshell.api.run("pset.edit_qto", model,
-                qto=qto, properties={"OverhangLength": 42.3}, pset_template=pset_template)
+                qto=qto, properties={"OverhangLength": 42.3}, pset_template=template)
 
             # Here's a third scenario where we want to add arbitrary quantities
             # that are not standardised by anything, not even our own custom
@@ -112,7 +106,6 @@ class Usecase:
             # if possible. So this will still be a length measure.
             ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"SomeLength": 12.3})
         """
-
         self.file = file
         self.settings = {"qto": qto, "name": name, "properties": properties or {}, "pset_template": pset_template}
 
