@@ -417,11 +417,11 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_DistributionChamberElementBaseQuantities' : {
-        'GrossSurfaceArea' : None,
-        'NetSurfaceArea' : None,
-        'GrossVolume' : None,
-        'NetVolume' : None,
-        'Depth' : None,
+        'GrossSurfaceArea' : "get_gross_surface_area",
+        'NetSurfaceArea' : "get_net_surface_area",
+        'GrossVolume' : "get_gross_volume",
+        'NetVolume' : "get_net_volume",
+        'Depth' : "get_length",
     },
     'Qto_CompressorBaseQuantities' : {
         'GrossWeight' : None,
