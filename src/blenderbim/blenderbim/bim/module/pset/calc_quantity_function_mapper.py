@@ -480,9 +480,9 @@ mapper = {
         'NetWeight' : None,
     },
     'Qto_SleeperBaseQuantities' : {
-        'Length' : None,
-        'Width' : None,
-        'Height' : None,
+        'Length' : "get_length",
+        'Width' : "get_width",
+        'Height' : "get_height",
     },
     'Qto_ProtectiveDeviceBaseQuantities' : {
         'GrossWeight' : None,
