@@ -401,8 +401,8 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_ConstructionMaterialResourceBaseQuantities' : {
-        'GrossVolume' : None,
-        'NetVolume' : None,
+        'GrossVolume' : "get_gross_volume",
+        'NetVolume' : "get_net_volume",
         'GrossWeight' : None,
         'NetWeight' : None,
     },
