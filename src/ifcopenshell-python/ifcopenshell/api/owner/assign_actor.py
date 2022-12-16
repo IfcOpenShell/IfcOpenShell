@@ -31,11 +31,14 @@ class Usecase:
 
         Here are a list of objects you may assign an actor to:
 
-         - IfcControl: Indicates project directives issued by the actor.
-         - IfcGroup: Indicates groups for which the actor is responsible.
-         - IfcProduct: Indicates products for which the actor is responsible.
-         - IfcProcess: Indicates processes for which the actor is responsible.
-         - IfcResource: Indicates resources for which the actor is responsible.
+        * IfcControl: Indicates project directives issued by the actor.
+        * IfcGroup: Indicates groups for which the actor is responsible.
+        * IfcProduct: Indicates products for which the actor is responsible.
+        * IfcProcess: Indicates processes for which the actor is responsible.
+        * IfcResource: Indicates resources for which the actor is responsible to
+            allocate, manage, or delegate. This is not the actor actually using
+            the resource or performing the work. For that type of actor, see
+            ifcopenshell.api.resource.assign_resource.
 
         :param relating_actor: The IfcActor who is responsible for the object.
         :type relating_actor: ifcopenshell.entity_instance.entity_instance

@@ -53,8 +53,7 @@ class Usecase:
             # Setup an organisation with a single role
             organisation = ifcopenshell.api.run("owner.add_organisation", model,
                 identification="AWB", name="Architects Without Ballpens")
-            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation)
-            ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "ARCHITECT"})
+            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
 
             # Assign that organisation to a newly created actor
             actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
