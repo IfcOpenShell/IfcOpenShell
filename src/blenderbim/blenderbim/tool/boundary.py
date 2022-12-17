@@ -62,3 +62,11 @@ class Boundary(blenderbim.core.tool.Boundary):
     def polyline_to_2d(cls, polyline, placement_matrix):
         matrix_inv = placement_matrix.inverted()
         return tuple((matrix_inv @ v).to_2d() for v in polyline)
+
+    @classmethod
+    def move_origin_to_space_origin(cls, obj):
+        boundary = tool.Ifc.get_entity(obj)
+        space = tool.Ifc.get_object(boundary.RelatingSpace)
+        translation = obj.matrix_world.translation - space.matrix_world.translation
+        obj.data.transform(mathutils.Matrix.Translation(translation))
+        obj.matrix_world = space.matrix_world
