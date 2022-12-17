@@ -414,7 +414,7 @@ class IfcImporter:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
                 return True
-            elif len(items) and ( # See #2508 why we accommodate for invalid IFCs here
+            elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
                 items[0].is_a("IfcSweptDiskSolid")
                 and len({i.is_a() for i in items}) == 1
                 and len({i.Radius for i in items}) == 1
@@ -1410,7 +1410,11 @@ class IfcImporter:
             rel_aggregates += [e.Decomposes[0] for e in self.elements if e.Decomposes]
             rel_aggregates = set(rel_aggregates)
         else:
-            rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
+            rel_aggregates = [
+                a
+                for a in self.file.by_type("IfcRelAggregates")
+                if a.RelatingObject.is_a("IfcElement") or a.RelatingObject.is_a("IfcElementType")
+            ]
 
         if len(rel_aggregates) > 10000:
             # More than 10,000 collections makes Blender unhappy
@@ -1433,6 +1437,10 @@ class IfcImporter:
             parent = ifcopenshell.util.element.get_container(aggregate["element"])
             if parent:
                 self.collections[parent.GlobalId].children.link(aggregate["collection"])
+                continue
+            if aggregate["element"].is_a("IfcElementType"):
+                self.type_collection.children.link(aggregate["collection"])
+                continue
 
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
