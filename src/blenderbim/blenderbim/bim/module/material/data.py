@@ -178,7 +178,7 @@ class ObjectMaterialData:
                 icon = "POINTCLOUD_DATA"
 
             for item in items or []:
-                data = {"id": item.id(), "name": item.Name or "Unnamed", "icon": icon}
+                data = {"id": item.id(), "name": getattr(item, "Name", None) or "Unnamed", "icon": icon}
                 if item.is_a("IfcMaterialProfile") and not item.Name:
                     data["name"] = item.Profile.ProfileName or "Unnamed"
                 if item.is_a("IfcMaterialLayer"):
