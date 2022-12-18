@@ -675,7 +675,8 @@ class QtoCalculator:
         ifc = tool.Ifc.get()
         ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
-        if len(openings := ifc_element.HasOpenings) != 0:
+#        if len(openings := ifc_element.HasOpenings) != 0:
+        if len(openings := self.has_openings(obj)) != 0:
             for opening in openings:
                 if opening.RelatedOpeningElement.PredefinedType == "OPENING":
                     opening_id = opening.RelatedOpeningElement.GlobalId
