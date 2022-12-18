@@ -79,7 +79,7 @@ def disable_editing_resource_time(resource_tool):
 
 
 def calculate_resource_work(ifc, resource_tool, resource):
-    ifc.run("calculate_resource_work", resource=resource)
+    ifc.run("resource.calculate_resource_work", resource=resource)
     resource_tool.load_resources()
     resource_tool.load_resource_properties()
 
