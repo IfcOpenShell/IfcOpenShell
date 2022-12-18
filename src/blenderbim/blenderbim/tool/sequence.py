@@ -207,7 +207,6 @@ class Sequence(blenderbim.core.tool.Sequence):
             if props.active_task_id:
                 item.is_predecessor = props.active_task_id in [rel.RelatedProcess.id() for rel in task.IsPredecessorTo]
                 item.is_successor = props.active_task_id in [rel.RelatingProcess.id() for rel in task.IsSuccessorFrom]
-
             calendar = ifcopenshell.util.sequence.derive_calendar(task)
             if task.HasAssignments:
                 for rel in task.HasAssignments:
@@ -310,7 +309,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             tool.Ifc.get().by_id(task.ifc_definition_id)
             for task in bpy.context.scene.BIMTaskTreeProperties.tasks
             if task.is_selected
-        ]
+        ] or []
 
     @classmethod
     def get_task_attribute_value(cls, attribute_name):
@@ -365,17 +364,9 @@ class Sequence(blenderbim.core.tool.Sequence):
                     bpy.context.scene.BIMDuration.duration_minutes = (
                         minutes  # should consider years, months and seconds.
                     )
+                    return True
                 if isinstance(data[name], datetime):
                     prop.string_value = "" if prop.is_null else data[name].isoformat()
-                    if name == "ScheduleDuration":
-                        bpy.context.scene.BIMDuration.duration_days = data[name].days
-                        bpy.context.scene.BIMDuration.duration_hours = round(data[name].seconds / 60 / 60)
-                        bpy.context.scene.BIMDuration.duration_minutes = data[name].seconds / 60 % 60
-                    return True
-                elif isinstance(data[name], isodate.Duration):
-                    prop.string_value = (
-                        "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
-                    )
                     return True
 
         props = bpy.context.scene.BIMWorkScheduleProperties
@@ -472,7 +463,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 new = props.nested_task_outputs.add()
                 new.ifc_definition_id = output.id()
                 new.name = output.Name or "Unnamed"
-
+                
     @classmethod
     def get_highlighted_task(cls):
         props = bpy.context.scene.BIMWorkScheduleProperties
@@ -486,7 +477,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def get_task_outputs(cls, task):
         return [rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
-
+    
     @classmethod
     def get_nested_tasks_outputs(cls, tasks):
         outputs = []
@@ -778,17 +769,6 @@ class Sequence(blenderbim.core.tool.Sequence):
                 return rel.RelatingControl
         for rel in task.Nests or []:
             return cls.get_work_schedule(rel.RelatingObject)
-
-    @classmethod
-    def expand_ancestors(cls, task):
-        for rel in task.Nests or []:
-            parent_task = rel.RelatingObject if rel.RelatingObject.is_a("IfcTask") else None
-            print(parent_task)
-            contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
-            if parent_task and parent_task.id() in contracted_tasks:
-                contracted_tasks.remove(parent_task.id())
-                bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
-                cls.expand_ancestors(parent_task)
 
     @classmethod
     def highlight_task(cls, task):
