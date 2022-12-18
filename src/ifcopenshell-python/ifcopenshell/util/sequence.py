@@ -25,7 +25,8 @@ def derive_calendar(task):
     calendar = [
         rel.RelatingControl
         for rel in task.HasAssignments or []
-        if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar")
+        if rel.is_a("IfcRelAssignsToControl")
+        and rel.RelatingControl.is_a("IfcWorkCalendar")
     ]
     if calendar:
         return calendar[0]
@@ -38,7 +39,11 @@ def count_working_days(start, finish, calendar):
     current_date = datetime.date(start.year, start.month, start.day)
     finish_date = datetime.date(finish.year, finish.month, finish.day)
     while current_date < finish_date:
-        if calendar and calendar.WorkingTimes and is_working_day(current_date, calendar):
+        if (
+            calendar
+            and calendar.WorkingTimes
+            and is_working_day(current_date, calendar)
+        ):
             result += 1
         elif not calendar:
             result += 1
@@ -46,7 +51,9 @@ def count_working_days(start, finish, calendar):
     return result
 
 
-def get_start_or_finish_date(start, duration, duration_type, calendar, date_type="FINISH"):
+def get_start_or_finish_date(
+    start, duration, duration_type, calendar, date_type="FINISH"
+):
     if not duration.days:
         # Typically a milestone will have zero duration, so the start == finish
         return start
@@ -65,12 +72,13 @@ def offset_date(start, duration, duration_type, calendar):
     abs_duration = abs(duration.days)
     date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
     while abs_duration > 0:
-        if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
+        if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(
+            current_date, calendar
+        ):
             abs_duration -= 1
-        elif ifcopenshell.util.sequence.is_working_day(current_date, calendar):
+        elif is_working_day(current_date, calendar):
             abs_duration -= 1
         current_date += date_offset
-
     if duration.days > 0:
         current_date = get_soonest_working_day(current_date, duration_type, calendar)
     else:
@@ -79,17 +87,21 @@ def offset_date(start, duration, duration_type, calendar):
 
 
 def get_soonest_working_day(start, duration_type, calendar):
-    if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
+    if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(start, calendar):
         return start
     while not is_working_day(start, calendar):
+        if not is_calendar_applicable(start, calendar):
+            break
         start += datetime.timedelta(days=1)
     return start
 
 
 def get_recent_working_day(start, duration_type, calendar):
-    if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
+    if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(start, calendar):
         return start
     while not is_working_day(start, calendar):
+        if not is_calendar_applicable(start, calendar):
+            break
         start -= datetime.timedelta(days=1)
     return start
 
@@ -110,27 +122,46 @@ def is_working_day(day, calendar):
     return is_working_day
 
 
-def is_work_time_applicable_to_day(work_time, day):
-    start = None
-    finish = None
+@lru_cache(maxsize=None)
+def is_calendar_applicable(day, calendar):
+    if not calendar or not calendar.WorkingTimes:
+        return False
+    is_applicable = False
+    for work_time in calendar.WorkingTimes or []:
+        if is_day_in_work_time(day, work_time):
+            is_applicable = True
+            break
+    return is_applicable
+
+
+def is_day_in_work_time(day, work_time):
+    is_day_in_work_time = False
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
-
     if work_time.Start:
         start = ifcopenshell.util.date.ifc2datetime(work_time.Start)
-        if start > day:
-            return False
-
+        if day > start:
+            is_day_in_work_time = True
+        else:
+            is_day_in_work_time = False
     if work_time.Finish:
         finish = ifcopenshell.util.date.ifc2datetime(work_time.Finish)
-        if finish < day:
-            return False
+        if day < finish:
+            is_day_in_work_time = True
+        else:
+            is_day_in_work_time = False
+    return is_day_in_work_time
 
+
+def is_work_time_applicable_to_day(work_time, day):
+    if not is_day_in_work_time(day, work_time):
+        return False
     if not work_time.RecurrencePattern:
         return True
 
+    if isinstance(day, datetime.datetime):
+        day = datetime.date(day.year, day.month, day.day)
     recurrence = work_time.RecurrencePattern
-
     if recurrence.RecurrenceType == "DAILY":
         if not recurrence.Interval and not recurrence.Occurrences:
             return True
@@ -149,13 +180,16 @@ def is_work_time_applicable_to_day(work_time, day):
         return False  # TODO
     elif recurrence.RecurrenceType == "MONTHLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return (day.weekday() + 1) in recurrence.WeekdayComponent and math.floor(day.day / 7) + 1 == recurrence[
-                "Position"
-            ]
+            return (day.weekday() + 1) in recurrence.WeekdayComponent and math.floor(
+                day.day / 7
+            ) + 1 == recurrence["Position"]
         return False  # TODO
     elif recurrence.RecurrenceType == "YEARLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return day.month in recurrence.MonthComponent and day.day in recurrence.DayComponent
+            return (
+                day.month in recurrence.MonthComponent
+                and day.day in recurrence.DayComponent
+            )
         return False  # TODO
     elif recurrence.RecurrenceType == "YEARLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
