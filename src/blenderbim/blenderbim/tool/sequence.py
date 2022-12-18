@@ -21,6 +21,7 @@ import re
 import isodate
 import ifcopenshell
 import ifcopenshell.util.sequence
+import ifcopenshell.util.date
 import json
 import blenderbim.core.tool
 import blenderbim.tool as tool
