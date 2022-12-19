@@ -442,7 +442,7 @@ def process_repeat_stmt(context):
 
 
 def process_function_decl(context):
-    arguments = map(str, context.function_head.formal_parameter.parameter_id.branches(allow_multiple=True))
+    arguments = map(str.lower, map(str, context.function_head.formal_parameter.parameter_id.branches(allow_multiple=True)))
     return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.algorithm_head.local_decl)}\n{indent(4, context.stmt.branches())}"
 
 def process_query(context):
@@ -450,7 +450,7 @@ def process_query(context):
 
 def process_local_variable(context):
     if context.expression:
-        return '%s = %s' % (context.variable_id, context.expression)
+        return '%s = %s' % (str(context.variable_id).lower(), context.expression)
     else:
         return empty()
 
@@ -458,6 +458,17 @@ def process_local_variable(context):
 def process_function_call(context):
     x = f"{context.built_in_function if context.built_in_function else context.function_ref}"
     return f"{context.built_in_function if context.built_in_function else context.function_ref}({context.actual_parameter_list if context.actual_parameter_list and context.actual_parameter_list.branches() else ''})"
+
+
+def make_lowercase(context):
+    return str(context).lower()
+
+
+def process_assignment(context):
+    lhs = str(context.general_ref)
+    if context.qualifier:
+        lhs += str(context.qualifier)
+    return '%s = %s' % (lhs, context.expression)
 
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
@@ -488,10 +499,11 @@ codegen_rule("group_qualifier", lambda context: empty())
 codegen_rule("attribute_qualifier", lambda context: '.%s' % context)
 codegen_rule("rel_op", process_rel_op)
 codegen_rule("built_in_constant", lambda context: "None" if str(context) == "?" else str(context))
-codegen_rule("assignment_stmt", lambda context: '%s = %s' % (context.general_ref, context.expression))
+codegen_rule("assignment_stmt", process_assignment)
 codegen_rule("local_variable", process_local_variable)
 codegen_rule("local_decl", lambda context: '\n'.join(map(str, context.branches())))
-
+codegen_rule("general_ref/parameter_ref", make_lowercase)
+codegen_rule("qualifiable_factor/attribute_ref", make_lowercase)
 
 def reverse_compile(s):
     return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')

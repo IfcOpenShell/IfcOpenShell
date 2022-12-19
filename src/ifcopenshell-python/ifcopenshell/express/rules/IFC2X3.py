@@ -519,59 +519,59 @@ IfcWindowStyleOperationEnum = enum_namespace()
 IfcWorkControlTypeEnum = enum_namespace()
 
 
-def IfcDotProduct(Arg1, Arg2):
+def IfcDotProduct(arg1, arg2):
     
     
     
-    if (not exists(Arg1)) or (not exists(Arg2)):
-        Scalar = None
+    if (not exists(arg1)) or (not exists(arg2)):
+        scalar = None
     else:
-        if Arg1.Dim != Arg2.Dim:
-            Scalar = None
+        if arg1.Dim != arg2.Dim:
+            scalar = None
         else:
-            Vec1 = IfcNormalise(Arg1)
-            Vec2 = IfcNormalise(Arg2)
-            Ndim = Arg1.Dim
-            Scalar = 0.0
-            for i in range(1, Ndim):
-                Scalar = Scalar + ((Vec1.DirectionRatios[i - 1]) * (Vec2.DirectionRatios[i - 1]))
-    return Scalar
+            vec1 = IfcNormalise(arg1)
+            vec2 = IfcNormalise(arg2)
+            ndim = arg1.Dim
+            scalar = 0.0
+            for i in range(1, ndim):
+                scalar = scalar + ((vec1.DirectionRatios[i - 1]) * (vec2.DirectionRatios[i - 1]))
+    return scalar
 
 
-def IfcNormalise(Arg):
+def IfcNormalise(arg):
     
-    V = ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.])
-    Vec = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.]), Magnitude=1.)
+    v = ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.])
+    vec = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.]), Magnitude=1.)
     
-    Result = V
-    if not exists(Arg):
+    result = v
+    if not exists(arg):
         return None
     else:
-        Ndim = Arg.Dim
-        if 'ifc2x3.ifcvector' in typeof(Arg):
-            V = Arg.Orientation.DirectionRatios
-            Vec = Arg.Magnitude
-            Vec = V
-            if Arg.Magnitude == 0.0:
+        ndim = arg.Dim
+        if 'ifc2x3.ifcvector' in typeof(arg):
+            v.DirectionRatios = arg.Orientation.DirectionRatios
+            vec.Magnitude = arg.Magnitude
+            vec.Orientation = v
+            if arg.Magnitude == 0.0:
                 return None
             else:
-                Vec = 1.0
+                vec.Magnitude = 1.0
         else:
-            V = Arg.DirectionRatios
-        Mag = 0.0
-        for i in range(1, Ndim):
-            Mag = Mag + ((V.DirectionRatios[i - 1]) * (V.DirectionRatios[i - 1]))
-        if Mag > 0.0:
-            Mag = sqrt(Mag)
-            for i in range(1, Ndim):
-                V = (V.DirectionRatios[i - 1]) / Mag
+            v.DirectionRatios = arg.DirectionRatios
+        mag = 0.0
+        for i in range(1, ndim):
+            mag = mag + ((v.DirectionRatios[i - 1]) * (v.DirectionRatios[i - 1]))
+        if mag > 0.0:
+            mag = sqrt(mag)
+            for i in range(1, ndim):
+                v.DirectionRatios[i - 1] = (v.DirectionRatios[i - 1]) / mag
             if 'ifc2x3.ifcvector' in typeof(arg):
-                Vec = V
-                Result = Vec
+                vec.Orientation = v
+                result = vec
             else:
-                Result = V
+                result = v
         else:
             return None
-    return Result
+    return result
 
 
