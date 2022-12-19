@@ -141,8 +141,6 @@ class SvgWriter:
                 self.draw_dimension_annotations(obj)
             elif element.ObjectType == "ANGLE":
                 self.draw_angle_annotations(obj)
-            elif element.ObjectType == "ANGLE_OLD":
-                self.draw_angle_old_annotations(obj)
             elif element.ObjectType == "RADIUS":
                 self.draw_radius_annotations(obj)
             elif element.ObjectType == "DIAMETER":
@@ -653,12 +651,6 @@ class SvgWriter:
             new_verts = [bm.verts.new(p) for p in points_chunk]
             new_edges = [bm.edges.new( (new_verts[e[0]], new_verts[e[1]]) ) for e in ((0, 1), (1, 2))]
             self.draw_svg_3point_arc(obj, bm)
-
-    def draw_angle_old_annotations(self, obj):
-        bm = bmesh.new()
-        bm.from_mesh(obj.data)
-        bm.verts.ensure_lookup_table()
-        self.draw_svg_3point_arc(obj, bm)
 
     def draw_svg_3point_arc(self, obj, bm):
         # This implementation uses an SVG arc, which means that it can only draw
