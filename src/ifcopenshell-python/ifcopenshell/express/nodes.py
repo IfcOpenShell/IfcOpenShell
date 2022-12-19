@@ -275,9 +275,12 @@ def to_tree(x, key=None):
         
         def replace_synonyms(x):
             for y in x:
-                if y in di:
+                yield y
+                if False: # y in di:
                     # production element from grammar is found in parsed data,
                     # return that.
+
+                    # we now always explore other synonym, because more often than not we loose data otherwise
                     yield y
                 else:
                     # lookup rule
@@ -325,7 +328,7 @@ def to_tree(x, key=None):
             subrules = list(filter(str.islower, subrules))
 
         vs = list(di.values())
-        
+
         return {k: v for k, v in di.items() if k in subrules or (k == key and len(vs) == 1 and vs[0] not in all_rules)}
         
     def simplify(di):

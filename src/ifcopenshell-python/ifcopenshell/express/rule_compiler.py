@@ -194,11 +194,20 @@ class context:
         attrs = list(filter(lambda s: isinstance(s, str), attrs))
         return attrs[0]
 
+    
+    def __eq__(self, other):
+        return self.graph == other.graph and self.rules == other.rules
 
-    def branches(self, allow_multiple=False):
+
+    def __hash__(self):
+        return hash(other.rules)
+        
+
+    def branches(self, allow_multiple=False, exclude=()):
         if not allow_multiple:
             assert len(self.rules) == 1
-        return sum([sorted((context(self.graph, [n]) for n in self.graph.successors(R)), key=lambda c: c.rules[0] if c.rules else "") for R in self.rules], [])
+        combined = sum([sorted((context(self.graph, [n]) for n in self.graph.successors(R)), key=lambda c: c.rules[0] if c.rules else "") for R in self.rules], [])
+        return [c for c in combined if c not in exclude]
         
         
     def branch(self, i):
@@ -209,7 +218,10 @@ class context:
 
     def __getitem__(self, k):
         return list(self)[k]
-        
+
+
+# @todo
+context_class = context
 
 class codegen_rule:
     def __init__(self, pattern, fn):
@@ -305,10 +317,10 @@ def process_expression(context):
             s = '(%s)' % s
         return s
 
-    def concat(a, b):
+    def concat(a, b, **kwargs):
         return " ".join(map(str, sum(zip(
-            [None] + a.branches(),
-            map(wrap, b.branches())
+            [None] + a.branches(**kwargs),
+            map(wrap, b.branches(**kwargs))
         ), ())[1:]))
 
     if context.rel_op_extended:
@@ -326,8 +338,8 @@ def process_expression(context):
                 break_points = [[0]]
                 bracket_nesting = 0
                 for i, tk in enumerate(args): 
-                    if tk == '[': bracket_nesting += 1
-                    if tk == ']': bracket_nesting -= 1
+                    if tk in '[(': bracket_nesting += 1
+                    if tk in ')]': bracket_nesting -= 1
                     if tk == ',' and bracket_nesting == 0:
                         break_points[-1].append(i)
                         break_points.append([i+1])
@@ -348,18 +360,22 @@ def process_expression(context):
                 args = [args[slice(*x)] for x in break_points]
 
                 for i, arg in filter(lambda p: p[1], enumerate(args)):
-                    all_args[entity_attributes[i].name()] = ast.literal_eval(arg)
+                    all_args[entity_attributes[i].name()] = arg
 
                 cl = count_chain_length(entity)
                 if cl > most_concrete_type_inheritance_chain_length:
                     most_concrete_type = entity.name()
                     most_concrete_type_inheritance_chain_length = cl
 
-            return f"ifcopenshell.create_entity({most_concrete_type!r}, schema={schema.name!r}, **{all_args})"
+            return f"ifcopenshell.create_entity({most_concrete_type!r}, schema={schema.name!r}{''.join(f', {a[0]}={a[1]}' for a in all_args.items())})"
         else:
             return concat(context.multiplication_like_op, context.factor)
     elif context.add_like_op:
-        return concat(context.add_like_op, context.term)
+        if context.factor:
+            # @todo not sure what's going on here, why we have both factor and term as direct child productions of simple_expression (in IfcDotProduct)
+            return concat(context.add_like_op, context, allow_multiple=True, exclude=[context.add_like_op])
+        else:
+            return concat(context.add_like_op, context.term)
 
 
 def process_interval(context):
@@ -414,7 +430,7 @@ def process_rel_op(context):
 
 
 def process_if_stmt(context):
-    s = f"if {context.logical_expression}:\n{indent(4, context.stmt.branches())}"
+    s = f"if {context.logical_expression if context.logical_expression.branches() else context.expression}:\n{indent(4, context.stmt.branches())}"
     if context.else_stmt:
         s += f"\nelse:\n{indent(4, context.else_stmt.branches())}"
     return s
@@ -427,17 +443,27 @@ def process_repeat_stmt(context):
 
 def process_function_decl(context):
     arguments = map(str, context.function_head.formal_parameter.parameter_id.branches(allow_multiple=True))
-    return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.stmt.branches())}"
+    return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.algorithm_head.local_decl)}\n{indent(4, context.stmt.branches())}"
 
 def process_query(context):
     return f"[{context.variable_id} for {context.variable_id} in {context.aggregate_source} if {context.logical_expression}]"
 
+def process_local_variable(context):
+    if context.expression:
+        return '%s = %s' % (context.variable_id, context.expression)
+    else:
+        return empty()
+
+
+def process_function_call(context):
+    x = f"{context.built_in_function if context.built_in_function else context.function_ref}"
+    return f"{context.built_in_function if context.built_in_function else context.function_ref}({context.actual_parameter_list if context.actual_parameter_list and context.actual_parameter_list.branches() else ''})"
 
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 # @todo 
-codegen_rule("function_call", lambda context: f"{context.built_in_function if context.built_in_function else context.function_ref}({context.actual_parameter_list if context.actual_parameter_list and context.actual_parameter_list.branches() else ''})")
-codegen_rule("actual_parameter_list", lambda context: ','.join(map(str, context.branches())))
+codegen_rule("function_call", process_function_call)
+codegen_rule("actual_parameter_list", lambda context: ','.join(map(str, context.expression.branches() if context.expression else [])))
 codegen_rule("entity_decl", functools.partial(process_type_decl, 'entity'))
 codegen_rule("rule_decl", process_rule_decl)
 codegen_rule("type_decl", functools.partial(process_type_decl, 'type'))
@@ -463,6 +489,9 @@ codegen_rule("attribute_qualifier", lambda context: '.%s' % context)
 codegen_rule("rel_op", process_rel_op)
 codegen_rule("built_in_constant", lambda context: "None" if str(context) == "?" else str(context))
 codegen_rule("assignment_stmt", lambda context: '%s = %s' % (context.general_ref, context.expression))
+codegen_rule("local_variable", process_local_variable)
+codegen_rule("local_decl", lambda context: '\n'.join(map(str, context.branches())))
+
 
 def reverse_compile(s):
     return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
@@ -481,7 +510,8 @@ if __name__ == "__main__":
     print("def exists(v): return v is not None", "\n", file=output, sep='\n')
 
     print("sizeof = len", file=output, sep='\n')
-    print("hiindex = len", file=output, sep='\n')    
+    print("hiindex = len", file=output, sep='\n')
+    print("from math import *", file=output, sep='\n')
 
     print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
 
@@ -509,7 +539,7 @@ def typeof(inst):
     # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
     # for nm in []: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
     # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef', 'IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint', 'IfcCShapeProfileDef', 'IfcExtrudedAreaSolid', 'IfcBSplineCurve',
-    for nm in ['IfcBaseAxis', 'IfcDotProduct']:
+    for nm in ['IfcDotProduct', 'IfcNormalise']:
     
         print(nm)
 

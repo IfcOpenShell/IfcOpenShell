@@ -4,6 +4,7 @@ def exists(v): return v is not None
 
 sizeof = len
 hiindex = len
+from math import *
 class enum_namespace:
     def __getattr__(self, k):
         return k
@@ -518,32 +519,10 @@ IfcWindowStyleOperationEnum = enum_namespace()
 IfcWorkControlTypeEnum = enum_namespace()
 
 
-def IfcBaseAxis(Dim, Axis1, Axis2, Axis3):
-    if Dim == 3:
-        D1 = nvl(ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', **{'DirectionRatios': [0.0, 0.0, 1.0]}))
-        D2 = IfcFirstProjAxis(Axis1)
-        U = [D2,IfcSecondProjAxis(Axis2),D1]
-    else:
-        if exists(Axis1):
-            D1 = IfcNormalise(Axis1)
-            U = [D1,IfcOrthogonalComplement(D1)]
-            if exists(Axis2):
-                Factor = IfcDotProduct(U[2 - 1])
-                if Factor < 0.0:
-                    U = -U[2 - 1].DirectionRatios[1 - 1]
-                    U = -U[2 - 1].DirectionRatios[2 - 1]
-        else:
-            if exists(Axis2):
-                D1 = IfcNormalise(Axis2)
-                U = [IfcOrthogonalComplement(D1),D1]
-                U = -U[1 - 1].DirectionRatios[1 - 1]
-                U = -U[1 - 1].DirectionRatios[2 - 1]
-            else:
-                U = [ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', **{'DirectionRatios': [1.0, 0.0]}),ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', **{'DirectionRatios': [0.0, 1.0]})]
-    return U
-
-
 def IfcDotProduct(Arg1, Arg2):
+    
+    
+    
     if (not exists(Arg1)) or (not exists(Arg2)):
         Scalar = None
     else:
@@ -555,7 +534,44 @@ def IfcDotProduct(Arg1, Arg2):
             Ndim = Arg1.Dim
             Scalar = 0.0
             for i in range(1, Ndim):
-                Scalar = (Vec1.DirectionRatios[i - 1]) + *
+                Scalar = Scalar + ((Vec1.DirectionRatios[i - 1]) * (Vec2.DirectionRatios[i - 1]))
     return Scalar
+
+
+def IfcNormalise(Arg):
+    
+    V = ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.])
+    Vec = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.]), Magnitude=1.)
+    
+    Result = V
+    if not exists(Arg):
+        return None
+    else:
+        Ndim = Arg.Dim
+        if 'ifc2x3.ifcvector' in typeof(Arg):
+            V = Arg.Orientation.DirectionRatios
+            Vec = Arg.Magnitude
+            Vec = V
+            if Arg.Magnitude == 0.0:
+                return None
+            else:
+                Vec = 1.0
+        else:
+            V = Arg.DirectionRatios
+        Mag = 0.0
+        for i in range(1, Ndim):
+            Mag = Mag + ((V.DirectionRatios[i - 1]) * (V.DirectionRatios[i - 1]))
+        if Mag > 0.0:
+            Mag = sqrt(Mag)
+            for i in range(1, Ndim):
+                V = (V.DirectionRatios[i - 1]) / Mag
+            if 'ifc2x3.ifcvector' in typeof(arg):
+                Vec = V
+                Result = Vec
+            else:
+                Result = V
+        else:
+            return None
+    return Result
 
 
