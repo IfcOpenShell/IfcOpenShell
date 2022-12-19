@@ -61,3 +61,6 @@ class TestWrite:
 
     def test_write_anyextension_ifczip_ifcxml_format(self):
         self.assert_model_is_written("model.anyextension", format=".ifcXML", zipped=True)
+
+    def test_write_to_non_existing_dir(self):
+        self.assert_model_is_written("tmp/model.ifczip")
