@@ -518,66 +518,44 @@ IfcWindowStyleOperationEnum = enum_namespace()
 IfcWorkControlTypeEnum = enum_namespace()
 
 
-
-class IfcBSplineCurve_WR41:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcBSplineCurve"
-    RULE_NAME = "WR41"
-
-    @staticmethod    
-    def __call__(self):
-        Degree = self.Degree
-        ControlPointsList = self.ControlPointsList
-        CurveForm = self.CurveForm
-        ClosedCurve = self.ClosedCurve
-        SelfIntersect = self.SelfIntersect
-        
-        assert sizeof([Temp for Temp in ControlPointsList if Temp.Dim != ControlPointsList[0].Dim]) == 0
-        
-
-
-
-def calc_IfcBSplineCurve_ControlPoints(self):
-    Degree = self.Degree
-    ControlPointsList = self.ControlPointsList
-    CurveForm = self.CurveForm
-    ClosedCurve = self.ClosedCurve
-    SelfIntersect = self.SelfIntersect
-    return \
-    IfcListToArray(UpperIndexOnControlPoints)
+def IfcBaseAxis(Dim, Axis1, Axis2, Axis3):
+    if Dim == 3:
+        D1 = nvl(ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', **{'DirectionRatios': [0.0, 0.0, 1.0]}))
+        D2 = IfcFirstProjAxis(Axis1)
+        U = [D2,IfcSecondProjAxis(Axis2),D1]
+    else:
+        if exists(Axis1):
+            D1 = IfcNormalise(Axis1)
+            U = [D1,IfcOrthogonalComplement(D1)]
+            if exists(Axis2):
+                Factor = IfcDotProduct(U[2 - 1])
+                if Factor < 0.0:
+                    U = -U[2 - 1].DirectionRatios[1 - 1]
+                    U = -U[2 - 1].DirectionRatios[2 - 1]
+        else:
+            if exists(Axis2):
+                D1 = IfcNormalise(Axis2)
+                U = [IfcOrthogonalComplement(D1),D1]
+                U = -U[1 - 1].DirectionRatios[1 - 1]
+                U = -U[1 - 1].DirectionRatios[2 - 1]
+            else:
+                U = [ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', **{'DirectionRatios': [1.0, 0.0]}),ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', **{'DirectionRatios': [0.0, 1.0]})]
+    return U
 
 
-
-def calc_IfcBSplineCurve_UpperIndexOnControlPoints(self):
-    Degree = self.Degree
-    ControlPointsList = self.ControlPointsList
-    CurveForm = self.CurveForm
-    ClosedCurve = self.ClosedCurve
-    SelfIntersect = self.SelfIntersect
-    return \
-    (sizeof(ControlPointsList)) - (1)
-
-
-
-
-class IfcCartesianPoint_WR1:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcCartesianPoint"
-    RULE_NAME = "WR1"
-
-    @staticmethod    
-    def __call__(self):
-        Coordinates = self.Coordinates
-        
-        assert hiindex(Coordinates) >= 2
-        
-
-
-
-def calc_IfcCartesianPoint_Dim(self):
-    Coordinates = self.Coordinates
-    return \
-    hiindex(Coordinates)
-
+def IfcDotProduct(Arg1, Arg2):
+    if (not exists(Arg1)) or (not exists(Arg2)):
+        Scalar = None
+    else:
+        if Arg1.Dim != Arg2.Dim:
+            Scalar = None
+        else:
+            Vec1 = IfcNormalise(Arg1)
+            Vec2 = IfcNormalise(Arg2)
+            Ndim = Arg1.Dim
+            Scalar = 0.0
+            for i in range(1, Ndim):
+                Scalar = (Vec1.DirectionRatios[i - 1]) + *
+    return Scalar
 
 

@@ -1,3 +1,4 @@
+import ast
 import os
 import sys
 import json
@@ -194,9 +195,10 @@ class context:
         return attrs[0]
 
 
-    def branches(self):
-        assert len(self.rules) == 1
-        return sorted((context(self.graph, [n]) for n in self.graph.successors(self.rules[0])), key=lambda c: c.rules[0] if c.rules else "")
+    def branches(self, allow_multiple=False):
+        if not allow_multiple:
+            assert len(self.rules) == 1
+        return sum([sorted((context(self.graph, [n]) for n in self.graph.successors(R)), key=lambda c: c.rules[0] if c.rules else "") for R in self.rules], [])
         
         
     def branch(self, i):
@@ -297,31 +299,68 @@ assert {context.expression}
 """
 
 def process_expression(context):
-    if len(context.simple_expression.term) == 2 and context.rel_op_extended:
-        return f"{context.simple_expression.term[0]} {context.rel_op_extended} {context.simple_expression.term[1]}"
-    elif context.simple_expression.term.multiplication_like_op:
+    def wrap(s):
+        s = str(s)
+        if " " in s:
+            s = '(%s)' % s
+        return s
+
+    def concat(a, b):
         return " ".join(map(str, sum(zip(
-            [None] + context.simple_expression.term.multiplication_like_op.branches(),
-            map(lambda n: '(%s)' % n, context.simple_expression.term.factor.branches())
-        ), ())[1:]))
-    elif context.simple_expression.add_like_op:
-        return " ".join(map(str, sum(zip(
-            [None] + context.simple_expression.add_like_op.branches(),
-            map(lambda n: '(%s)' % n, context.simple_expression.term.branches())
+            [None] + a.branches(),
+            map(wrap, b.branches())
         ), ())[1:]))
 
-    # @nb below is for binding on simple_expression directly.
-    if not context.has_inverse("expression"):
-        if context.term.multiplication_like_op:
-            return " ".join(map(str, sum(zip(
-                [None] + context.term.multiplication_like_op.branches(),
-                map(lambda n: '(%s)' % n, context.term.factor.branches())
-            ), ())[1:]))
-        elif context.add_like_op:
-            return " ".join(map(str, sum(zip(
-                [None] + context.add_like_op.branches(),
-                map(lambda n: '(%s)' % n, context.term.branches())
-            ), ())[1:]))
+    if context.rel_op_extended:
+        return concat(context.rel_op_extended, context.simple_expression)
+    elif context.multiplication_like_op:
+        if str(context.multiplication_like_op.branches()[0]) == '||':
+            all_args = {}
+            most_concrete_type = None
+            most_concrete_type_inheritance_chain_length = -1
+
+            for s in context.factor.branches():
+                typename, args = str(s).split('(', 1)
+                args = args[:-1]
+
+                break_points = [[0]]
+                bracket_nesting = 0
+                for i, tk in enumerate(args): 
+                    if tk == '[': bracket_nesting += 1
+                    if tk == ']': bracket_nesting -= 1
+                    if tk == ',' and bracket_nesting == 0:
+                        break_points[-1].append(i)
+                        break_points.append([i+1])
+
+                break_points[-1].append(len(args))
+
+                S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema.name)
+                entity = S.declaration_by_name(typename)
+                entity_attributes = entity.attributes()
+
+                def count_chain_length(ent):
+                    length = 0
+                    while ent:
+                        ent = ent.supertype()
+                        length += 1
+                    return length
+
+                args = [args[slice(*x)] for x in break_points]
+
+                for i, arg in filter(lambda p: p[1], enumerate(args)):
+                    all_args[entity_attributes[i].name()] = ast.literal_eval(arg)
+
+                cl = count_chain_length(entity)
+                if cl > most_concrete_type_inheritance_chain_length:
+                    most_concrete_type = entity.name()
+                    most_concrete_type_inheritance_chain_length = cl
+
+            return f"ifcopenshell.create_entity({most_concrete_type!r}, schema={schema.name!r}, **{all_args})"
+        else:
+            return concat(context.multiplication_like_op, context.factor)
+    elif context.add_like_op:
+        return concat(context.add_like_op, context.term)
+
 
 def process_interval(context):
     op0, op1 = context.interval_op.branches()
@@ -352,10 +391,11 @@ def simple_concat(context):
         # default
         return 0
 
-    # branches = sorted(map(str, context.branches()), key=qualifier_position)
+    branches = sorted(map(str, context.branches()), key=qualifier_position)
 
     # sorting no longer necessary as we sort in branches() now
-    branches = list(map(str, context.branches()))
+    # correction: still necessary, apparently.
+    # branches = list(map(str, context.branches()))
 
     concat = ""
     if len(branches) == 2 and branches[0] == 'not':
@@ -374,13 +414,20 @@ def process_rel_op(context):
 
 
 def process_if_stmt(context):
-    return f"if {context.logical_expression}:\n{indent(4, context.stmt)}"
+    s = f"if {context.logical_expression}:\n{indent(4, context.stmt.branches())}"
+    if context.else_stmt:
+        s += f"\nelse:\n{indent(4, context.else_stmt.branches())}"
+    return s
+
+
+def process_repeat_stmt(context):
+    ic = context.repeat_control.increment_control
+    return f"for {ic.variable_id} in range({ic.bound_1}, {ic.bound_2}):\n{indent(4, context.stmt.branches())}"
 
 
 def process_function_decl(context):
-    arguments = list(map(str, context.function_head.formal_parameter.branches()))[0::2]
+    arguments = map(str, context.function_head.formal_parameter.parameter_id.branches(allow_multiple=True))
     return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.stmt.branches())}"
-
 
 def process_query(context):
     return f"[{context.variable_id} for {context.variable_id} in {context.aggregate_source} if {context.logical_expression}]"
@@ -389,7 +436,7 @@ def process_query(context):
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 # @todo 
-codegen_rule("function_call", lambda context: f"{context.built_in_function or context.function_ref}({context.actual_parameter_list})")
+codegen_rule("function_call", lambda context: f"{context.built_in_function if context.built_in_function else context.function_ref}({context.actual_parameter_list if context.actual_parameter_list and context.actual_parameter_list.branches() else ''})")
 codegen_rule("actual_parameter_list", lambda context: ','.join(map(str, context.branches())))
 codegen_rule("entity_decl", functools.partial(process_type_decl, 'entity'))
 codegen_rule("rule_decl", process_rule_decl)
@@ -399,6 +446,7 @@ codegen_rule("domain_rule", process_domain_rule)
 codegen_rule("expression", process_expression)
 codegen_rule("simple_expression", process_expression)
 codegen_rule("logical_expression", process_expression)
+codegen_rule("term", process_expression)
 codegen_rule("query_expression", process_query)
 codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches())))
 codegen_rule("interval", process_interval)
@@ -406,12 +454,15 @@ codegen_rule("simple_factor", simple_concat)
 codegen_rule("primary", simple_concat)
 codegen_rule("qualifier", simple_concat)
 codegen_rule("return_stmt", lambda context: 'return %s' % context)
+codegen_rule("compound_stmt", lambda context: '\n'.join(map(str, context.stmt.branches())))
 codegen_rule("if_stmt", process_if_stmt)
-codegen_rule("index", lambda context: '[%s]' % (int(str(context)) - 1))
+codegen_rule("repeat_stmt", process_repeat_stmt)
+codegen_rule("index", lambda context: '[%s - 1]' % context)
 codegen_rule("group_qualifier", lambda context: empty())
 codegen_rule("attribute_qualifier", lambda context: '.%s' % context)
 codegen_rule("rel_op", process_rel_op)
 codegen_rule("built_in_constant", lambda context: "None" if str(context) == "?" else str(context))
+codegen_rule("assignment_stmt", lambda context: '%s = %s' % (context.general_ref, context.expression))
 
 def reverse_compile(s):
     return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
@@ -455,11 +506,11 @@ def typeof(inst):
     for k, v in schema.enumerations.items():
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
 
-    # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef'
     # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
-    # for nm in ['IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
-    for nm in ['IfcBSplineCurve', 'IfcCartesianPoint']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
-
+    # for nm in []: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+    # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef', 'IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint', 'IfcCShapeProfileDef', 'IfcExtrudedAreaSolid', 'IfcBSplineCurve',
+    for nm in ['IfcBaseAxis', 'IfcDotProduct']:
+    
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])

@@ -58,7 +58,7 @@ class ListNode:
         self.rule = rule or (type(self).__name__)
         self.tokens = tokens.asList()
         self.dict_tokens = collections.defaultdict(list)
-        
+
         rules_as_list = set()
         for t in self.tokens:
             r = getattr(t, 'rule', None)
@@ -342,6 +342,49 @@ def to_tree(x, key=None):
         
     if isinstance(x, ListNode):
         d = to_tree(x.dict_tokens, key=get_rule_id(x) or key)
+
+        if key == 'if_stmt':
+            # The definition of if statement if (roughy):
+            #   'if' expr 'then' stmt+ 'else' stmt+
+            # this causes stmt to be joined under the same
+            # dict key. The code below creates an artifical
+            # `else_stmt` that collects the second group
+            # of stmts.
+
+            statements = x.dict_tokens['stmt']
+            
+            else_index = None
+            if_nesting = 0
+            for i, tk in enumerate(x.flat): 
+                if tk == 'if': if_nesting += 1
+                if tk == 'end_if': if_nesting -= 1
+                if tk == 'else' and if_nesting == 1:
+                    else_index = i
+
+            if else_index:
+                indices = []
+                for s in statements:
+                    for i in range(max(indices, default=0), len(x.flat)):
+                        if x.flat[i:i+len(s.flat)] == s.flat:
+                            indices.append(i)
+                            break
+
+                assert len(indices) == len(statements)
+                before_else = [i < else_index for i in indices]
+
+                else_stmt = [st for b, st in zip(before_else, d['stmt']) if not b]
+                d['stmt'] = [st for b, st in zip(before_else, d['stmt']) if b]
+
+                if else_stmt:
+                    d['else_stmt'] = else_stmt
+        
+        if key == 'formal_parameter':
+            # Not so pretty hack to fix the overwriting of simple_id-like
+            # ast nodes. The full solution would probably to register parse
+            # actions. And directly reassign.
+            pid = d['parameter_id'][0][0]
+            d['parameter_id'][0] = x.flat[:x.flat.index(pid)+1:2]
+
         if key is None:
             return {get_rule_id(x): d}
         return d
