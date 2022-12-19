@@ -622,34 +622,37 @@ class SvgWriter:
             )
 
     def draw_angle_annotations(self, obj):
-        # calculate p3 which is the center of the arc
-        # to use draw_svg_3point_arc()
         points = obj.data.splines[0].points
         region = bpy.context.region
         region_3d = bpy.context.area.spaces.active.region_3d
-        points_2d = [view3d_utils.location_3d_to_region_2d(region, region_3d, p.co.xyz) for p in points]
+        points_chunked = [points[i:i+3] for i in range(len(points)-2)]
 
-        edge0 = points_2d[0] - points_2d[1]
-        edge1 = points_2d[2] - points_2d[1]
-        angle_radius = min(edge0.length, edge1.length)
-        dir0 = edge0.normalized()
-        dir1 = edge1.normalized()
-        dir2 = ((dir0 + dir1) / 2).normalized()
+        for points_chunk in points_chunked:
+            points_2d = [view3d_utils.location_3d_to_region_2d(region, region_3d, p.co.xyz) for p in points_chunk]
 
-        p3 = points_2d[1] + dir2 * angle_radius
+            edge0 = points_2d[0] - points_2d[1]
+            edge1 = points_2d[2] - points_2d[1]
+            angle_radius = min(edge0.length, edge1.length)
+            dir0 = edge0.normalized()
+            dir1 = edge1.normalized()
+            dir2 = ((dir0 + dir1) / 2).normalized()
 
-        # make all edges the same radius
-        p0 = points_2d[1] + dir0 * angle_radius
-        p2 = points_2d[1] + dir1 * angle_radius
-        points = [view3d_utils.region_2d_to_origin_3d(region, region_3d, p) for p in [p0, p3, p2]]
-        # points = [p.co.xyz for p in bpy.context.object.data.splines[0].points[:3]]
+            # calculate p3 which is the center of the arc
+            # to use draw_svg_3point_arc()
+            p3 = points_2d[1] + dir2 * angle_radius
 
-        bm = bmesh.new()
-        bm.verts.index_update()
-        bm.edges.index_update()
-        new_verts = [bm.verts.new(p) for p in points]
-        new_edges = [bm.edges.new( (new_verts[e[0]], new_verts[e[1]]) ) for e in ((0, 1), (1, 2))]
-        self.draw_svg_3point_arc(obj, bm)
+            # make all edges the same radius
+            p0 = points_2d[1] + dir0 * angle_radius
+            p2 = points_2d[1] + dir1 * angle_radius
+            points_chunk = [view3d_utils.region_2d_to_origin_3d(region, region_3d, p) for p in [p0, p3, p2]]
+            # points = [p.co.xyz for p in bpy.context.object.data.splines[0].points[:3]]
+
+            bm = bmesh.new()
+            bm.verts.index_update()
+            bm.edges.index_update()
+            new_verts = [bm.verts.new(p) for p in points_chunk]
+            new_edges = [bm.edges.new( (new_verts[e[0]], new_verts[e[1]]) ) for e in ((0, 1), (1, 2))]
+            self.draw_svg_3point_arc(obj, bm)
 
     def draw_angle_old_annotations(self, obj):
         bm = bmesh.new()
