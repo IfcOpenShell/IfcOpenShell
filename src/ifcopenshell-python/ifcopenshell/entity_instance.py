@@ -120,7 +120,7 @@ class entity_instance(object):
         elif attr_cat == INVERSE:
             return entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
         else:
-            schema_name = self.wrapped_data.file.schema
+            schema_name = self.wrapped_data.is_a(True).split('.')[0]
             rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
             def yield_supertypes():
                 decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())

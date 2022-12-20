@@ -19,7 +19,7 @@ class rmult_set(set):
 
 
 def typeof(inst):
-    schema_name = inst.wrapped_data.file.schema.lower()
+    schema_name = inst.is_a(True).split('.')[0].lower()
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
@@ -519,6 +519,22 @@ IfcWindowStyleOperationEnum = enum_namespace()
 IfcWorkControlTypeEnum = enum_namespace()
 
 
+
+class IfcExtrudedAreaSolid_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcExtrudedAreaSolid"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        extrudeddirection = self.ExtrudedDirection
+        depth = self.Depth
+        
+        assert (IfcDotProduct(ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[0.0,0.0,1.0]),self.ExtrudedDirection)) != 0.0
+        
+
+
+
 def IfcDotProduct(arg1, arg2):
     
     
@@ -533,7 +549,7 @@ def IfcDotProduct(arg1, arg2):
             vec2 = IfcNormalise(arg2)
             ndim = arg1.Dim
             scalar = 0.0
-            for i in range(1, ndim):
+            for i in range(1, ndim + 1):
                 scalar = scalar + ((vec1.DirectionRatios[i - 1]) * (vec2.DirectionRatios[i - 1]))
     return scalar
 
@@ -559,12 +575,14 @@ def IfcNormalise(arg):
         else:
             v.DirectionRatios = arg.DirectionRatios
         mag = 0.0
-        for i in range(1, ndim):
+        for i in range(1, ndim + 1):
             mag = mag + ((v.DirectionRatios[i - 1]) * (v.DirectionRatios[i - 1]))
         if mag > 0.0:
             mag = sqrt(mag)
-            for i in range(1, ndim):
-                v.DirectionRatios[i - 1] = (v.DirectionRatios[i - 1]) / mag
+            for i in range(1, ndim + 1):
+                temp = list(v.DirectionRatios)
+                temp[i - 1] = (v.DirectionRatios[i - 1]) / mag
+                v.DirectionRatios = temp
             if 'ifc2x3.ifcvector' in typeof(arg):
                 vec.Orientation = v
                 result = vec
@@ -573,5 +591,13 @@ def IfcNormalise(arg):
         else:
             return None
     return result
+
+
+
+def calc_IfcDirection_Dim(self):
+    directionratios = self.DirectionRatios
+    return \
+    hiindex(directionratios)
+
 
 

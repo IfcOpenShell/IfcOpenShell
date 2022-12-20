@@ -1,5 +1,6 @@
 import ast
 import os
+import re
 import sys
 import json
 import hashlib
@@ -279,7 +280,7 @@ class {class_name}_{domain_rule.rule_label_id}:
 
     @staticmethod    
     def __call__(self):
-{indent(8, (f"{a} = self.{a}" for a in attributes))}
+{indent(8, (f"{str(a).lower()} = self.{a}" for a in attributes))}
 {indent(8, domain_rule)}
 """
 
@@ -296,7 +297,7 @@ class {class_name}_{domain_rule.rule_label_id}:
             slash = "\\"
             return f"""
 def calc_{class_name}_{derived_attr.attribute_decl}(self):
-{indent(4, (f"{a} = self.{a}" for a in attributes))}
+{indent(4, (f"{str(a).lower()} = self.{a}" for a in attributes))}
 {indent(4, f"return {slash}")}
 {indent(4, derived_attr.expression)}
 """
@@ -438,7 +439,7 @@ def process_if_stmt(context):
 
 def process_repeat_stmt(context):
     ic = context.repeat_control.increment_control
-    return f"for {ic.variable_id} in range({ic.bound_1}, {ic.bound_2}):\n{indent(4, context.stmt.branches())}"
+    return f"for {ic.variable_id} in range({ic.bound_1}, {ic.bound_2} + 1):\n{indent(4, context.stmt.branches())}"
 
 
 def process_function_decl(context):
@@ -468,7 +469,12 @@ def process_assignment(context):
     lhs = str(context.general_ref)
     if context.qualifier:
         lhs += str(context.qualifier)
-    return '%s = %s' % (lhs, context.expression)
+    if m := re.match(r'^([^\[]+)\[([^\[]+)\]$', lhs):
+        # @todo ugly regex hack
+        aggr, index = m.groups()
+        return f"temp = list({aggr})\ntemp[{index}] = {context.expression}\n{aggr} = temp"
+    else:
+        return '%s = %s' % (lhs, context.expression)
 
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
@@ -536,7 +542,7 @@ class rmult_set(set):
 
 
 def typeof(inst):
-    schema_name = inst.wrapped_data.file.schema.lower()
+    schema_name = inst.is_a(True).split('.')[0].lower()
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
@@ -551,7 +557,7 @@ def typeof(inst):
     # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
     # for nm in []: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
     # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef', 'IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint', 'IfcCShapeProfileDef', 'IfcExtrudedAreaSolid', 'IfcBSplineCurve',
-    for nm in ['IfcDotProduct', 'IfcNormalise']:
+    for nm in ['IfcExtrudedAreaSolid', 'IfcDotProduct', 'IfcNormalise', 'IfcDirection']:
     
         print(nm)
 
