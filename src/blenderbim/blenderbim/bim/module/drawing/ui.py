@@ -377,9 +377,6 @@ class BIM_PT_annotation_utilities(Panel):
         op = row.operator("bim.add_annotation", text="Angle", icon="DRIVER_ROTATIONAL_DIFFERENCE")
         op.object_type = "ANGLE"
         op.data_type = "curve"
-        op = row.operator("bim.add_annotation", text="Angle (old)", icon="DRIVER_ROTATIONAL_DIFFERENCE")
-        op.object_type = "ANGLE_OLD"
-        op.data_type = "mesh"
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Radius", icon="FORWARD")

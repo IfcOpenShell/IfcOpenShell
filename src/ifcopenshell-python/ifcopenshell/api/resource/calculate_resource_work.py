@@ -63,7 +63,17 @@ class Usecase:
             self.settings["resource"]
         ).get("EPset_Productivity", None)
         if not self.productivity:
-            return
+            # Proposal for Schema - If instance doesn't have any productivity, use the parent's productivity - if any.
+            if not self.settings["resource"].Nests:
+                return
+            else:
+                parent_resource = self.settings["resource"].Nests[0].RelatingObject
+                self.productivity = ifcopenshell.util.element.get_psets(
+                    parent_resource
+                ).get("EPset_Productivity", None)
+                if not self.productivity:
+                    return
+
         unit_consumed = self.get_unit_consumed()
         self.unit_produced_name = self.productivity.get(
             "BaseQuantityProducedName", None

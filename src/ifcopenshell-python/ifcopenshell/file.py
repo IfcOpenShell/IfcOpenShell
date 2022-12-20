@@ -462,6 +462,7 @@ class file(object):
         >>> model.write("path/to/model.anyextension", format=".ifcXML")
         """
         path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
         if format == None:
             format = ifcopenshell.util.file.guess_format(path)
         if format == ".ifcXML":
