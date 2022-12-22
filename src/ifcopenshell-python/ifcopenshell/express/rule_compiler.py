@@ -469,7 +469,7 @@ def process_function_decl(context):
     return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.algorithm_head.local_decl)}\n{indent(4, context.stmt.branches())}"
 
 def process_query(context):
-    return f"[{context.variable_id} for {context.variable_id} in {context.aggregate_source} if {context.logical_expression if context.logical_expression and context.logical_expression.branches() else context.expression}]"
+    return f"[{str(context.variable_id).lower()} for {str(context.variable_id).lower()} in {context.aggregate_source} if {context.logical_expression if context.logical_expression and context.logical_expression.branches() else context.expression}]"
 
 def process_local_variable(context):
     if context.expression:
@@ -485,6 +485,13 @@ def process_function_call(context):
 
 def make_lowercase(context):
     return str(context).lower()
+
+
+def make_lowercase_if(fn):
+    def inner(context):
+        if fn(context):
+            return make_lowercase(context)
+    return inner
 
 
 def process_assignment(context):
@@ -541,7 +548,7 @@ codegen_rule("assignment_stmt", process_assignment)
 codegen_rule("local_variable", process_local_variable)
 codegen_rule("local_decl", lambda context: '\n'.join(map(str, context.branches())))
 codegen_rule("general_ref/parameter_ref", make_lowercase)
-codegen_rule("qualifiable_factor/attribute_ref", make_lowercase)
+codegen_rule("qualifiable_factor/attribute_ref", make_lowercase_if(lambda context: str(context) not in set(map(str, schema.all_declarations.keys()))))
 codegen_rule("case_action", process_case_action)
 codegen_rule("case_stmt", process_case_statement)
 
@@ -607,11 +614,11 @@ def typeof(inst):
     # for nm in []: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
     # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef', 'IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint', 'IfcCShapeProfileDef', 'IfcExtrudedAreaSolid', 'IfcBSplineCurve',
     # for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
-
-    DEBUG = False
-    # ['IfcSameValue', 'IfcCorrectDimensions']
-    # for nm in schema.functions.keys():
-    for nm in ['IfcSIUnit','IfcNamedUnit','IfcCorrectDimensions', 'IfcDimensionsForSiUnit']:
+    # for nm in ['IfcSIUnit','IfcNamedUnit','IfcCorrectDimensions', 'IfcDimensionsForSiUnit']:
+    
+    DEBUG = True
+    # 
+    for nm in ['IfcCorrectObjectAssignment']: # schema.functions.keys():
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])
