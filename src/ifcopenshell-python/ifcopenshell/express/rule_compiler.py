@@ -176,6 +176,16 @@ class context:
     def __iter__(self):
         for r in self.rules:
             yield context(self.graph, [r])
+
+    def descendants(self):
+        return [b.rules[0][len(self.rules[0])+1:] for b in self.branches(allow_multiple=True)]
+
+    def __repr__(self):
+        try:
+            s = "\n\n"+str(self)
+        except:
+            s = ""
+        return f"<rule_context ({' '.join(self.descendants())})>{s}"
         
     def __str__(self):
         assert len(self.rules) == 1
@@ -447,7 +457,7 @@ def process_function_decl(context):
     return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.algorithm_head.local_decl)}\n{indent(4, context.stmt.branches())}"
 
 def process_query(context):
-    return f"[{context.variable_id} for {context.variable_id} in {context.aggregate_source} if {context.logical_expression}]"
+    return f"[{context.variable_id} for {context.variable_id} in {context.aggregate_source} if {context.logical_expression if context.logical_expression and context.logical_expression.branches() else context.expression}]"
 
 def process_local_variable(context):
     if context.expression:
@@ -531,8 +541,6 @@ if __name__ == "__main__":
     print("hiindex = len", file=output, sep='\n')
     print("from math import *", file=output, sep='\n')
 
-    print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
-
     print("""
 class rmult_set(set):
     def __rmul__(self, other):
@@ -551,13 +559,20 @@ def typeof(inst):
     return rmult_set(inner())
 """, file=output, sep='\n')
 
+    print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
+
     for k, v in schema.enumerations.items():
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
 
-    # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
+        for vi in v.values:
+            print(f"{vi.lower()} = {k}.{vi}", "\n", file=output, sep='\n')    
+
+    # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + :
     # for nm in []: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
     # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef', 'IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint', 'IfcCShapeProfileDef', 'IfcExtrudedAreaSolid', 'IfcBSplineCurve',
-    for nm in ['IfcExtrudedAreaSolid', 'IfcDotProduct', 'IfcNormalise', 'IfcDirection']:
+    # for nm in schema.all_declarations.keys():
+
+    for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
     
         print(nm)
 
@@ -580,7 +595,6 @@ def typeof(inst):
         
         fn = f"{nm}.dot"
         write_dot(fn, G)
-
         subprocess.call([shutil.which("dot") or "dot", fn, "-O", "-Tpng"])
 
         print(rule_code, "\n", file=output, sep='\n')
