@@ -50,6 +50,9 @@
     "IfcChimney": [
         "IfcChimneyType"
     ],
+    "IfcCivilElement": [
+        "IfcCivilElementType"
+    ],
     "IfcCoil": [
         "IfcCoilType"
     ],
