@@ -28,6 +28,7 @@ def to_graph(tree):
             return g.add_node(name + "_value", label=val)
 
         for i, (k, v) in enumerate(pairs):
+            i = f"{i:03d}"
             nid = f"{name or 'root'}_{k or i}"
             g.add_node(nid, label=k)
             if name:
@@ -220,6 +221,9 @@ class context:
         combined = sum([sorted((context(self.graph, [n]) for n in self.graph.successors(R)), key=lambda c: c.rules[0] if c.rules else "") for R in self.rules], [])
         return [c for c in combined if c not in exclude]
         
+    def parent(self):
+        assert len(self.rules) == 1
+        return context(self.graph, list(self.graph.predecessors(self.rules[0])))
         
     def branch(self, i):
         return self.branches()[i]
@@ -309,7 +313,7 @@ class {class_name}_{domain_rule.rule_label_id}:
         def format_derived(derived_attr):
             slash = "\\"
             return f"""
-def calc_{class_name}_{derived_attr.attribute_decl}(self):
+def calc_{class_name}_{str(derived_attr.attribute_decl.redeclared_attribute.qualified_attribute.attribute_qualifier)[1:] if derived_attr.attribute_decl.redeclared_attribute else derived_attr.attribute_decl}(self):
 {indent(4, (f"{str(a).lower()} = self.{a}" for a in attributes))}
 {indent(4, f"return {slash}")}
 {indent(4, derived_attr.expression)}
@@ -338,7 +342,11 @@ def process_expression(context):
         ), ())[1:]))
 
     if context.rel_op_extended:
-        return concat(context.rel_op_extended, context.simple_expression)
+        if context.term:
+            # IfcSameValue
+            return concat(context.rel_op_extended, context, allow_multiple=True, exclude=[context.rel_op_extended])
+        else:
+            return concat(context.rel_op_extended, context.simple_expression)
     elif context.multiplication_like_op:
         if str(context.multiplication_like_op.branches()[0]) == '||':
             all_args = {}
@@ -381,7 +389,7 @@ def process_expression(context):
                     most_concrete_type = entity.name()
                     most_concrete_type_inheritance_chain_length = cl
 
-            return f"ifcopenshell.create_entity({most_concrete_type!r}, schema={schema.name!r}{''.join(f', {a[0]}={a[1]}' for a in all_args.items())})"
+            return f"{most_concrete_type}({', '.join(f'{a[0]}={a[1]}' for a in all_args.items())})"
         else:
             return concat(context.multiplication_like_op, context.factor)
     elif context.add_like_op:
@@ -490,6 +498,16 @@ def process_assignment(context):
     else:
         return '%s = %s' % (lhs, context.expression)
 
+def process_case_action(context):
+    return f"if {context.parent().expression} == {context.expression}:\n{indent(4, context.stmt.branches())}"
+
+
+def process_case_statement(context):
+    branches = context.branches(exclude=[getattr(context, v) for v in context.descendants() if not v.startswith('case_action')])
+    if context.stmt and context.stmt.branches():
+        branches += [context.stmt]
+    return'\n'.join(map(str, branches))
+
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 # @todo 
@@ -524,8 +542,13 @@ codegen_rule("local_variable", process_local_variable)
 codegen_rule("local_decl", lambda context: '\n'.join(map(str, context.branches())))
 codegen_rule("general_ref/parameter_ref", make_lowercase)
 codegen_rule("qualifiable_factor/attribute_ref", make_lowercase)
-codegen_rule("XOR", lambda context: "^")
+codegen_rule("case_action", process_case_action)
+codegen_rule("case_stmt", process_case_statement)
 
+codegen_rule("XOR", lambda context: "^")
+codegen_rule("MOD", lambda context: "%")
+codegen_rule("TRUE", lambda context: "True")
+codegen_rule("FALSE", lambda context: "False")
 
 def reverse_compile(s):
     return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
@@ -542,10 +565,14 @@ if __name__ == "__main__":
     print("import ifcopenshell", file=output, sep='\n')
 
     print("def exists(v): return v is not None", "\n", file=output, sep='\n')
+    print("def nvl(v, default): return v if v is not None else default", "\n", file=output, sep='\n')
 
     print("sizeof = len", file=output, sep='\n')
     print("hiindex = len", file=output, sep='\n')
     print("from math import *", file=output, sep='\n')
+
+    # @todo this will get us in trouble when evaluating the truthness
+    print("unknown = 'UNKNOWN'", file=output, sep='\n')
 
     print("""
 class rmult_set(set):
@@ -571,7 +598,10 @@ def typeof(inst):
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
 
         for vi in v.values:
-            print(f"{vi.lower()} = {k}.{vi}", "\n", file=output, sep='\n')    
+            print(f"{vi.lower()} = {k}.{vi}", "\n", file=output, sep='\n')
+
+    for k in schema.entities.keys():
+        print(f"def {k}(*args, **kwargs): return ifcopenshell.create_entity({k!r}, {schema.name!r}, *args, **kwargs)", "\n", file=output, sep='\n')
 
     # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + :
     # for nm in []: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
@@ -579,10 +609,9 @@ def typeof(inst):
     # for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
 
     DEBUG = False
-
-    for nm in ["IfcCrossProduct", "IfcNormalise", "IfcAxis2Placement3D", "IfcCartesianPoint", "IfcDirection"]: # 
-
-    
+    # ['IfcSameValue', 'IfcCorrectDimensions']
+    # for nm in schema.functions.keys():
+    for nm in ['IfcSIUnit','IfcNamedUnit','IfcCorrectDimensions', 'IfcDimensionsForSiUnit']:
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])

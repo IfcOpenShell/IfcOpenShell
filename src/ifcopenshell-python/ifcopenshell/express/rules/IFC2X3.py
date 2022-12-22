@@ -2,9 +2,13 @@ import ifcopenshell
 def exists(v): return v is not None
 
 
+def nvl(v, default): return v if v is not None else default
+
+
 sizeof = len
 hiindex = len
 from math import *
+unknown = 'UNKNOWN'
 
 class rmult_set(set):
     def __rmul__(self, other):
@@ -4449,177 +4453,2202 @@ userdefined = IfcWorkControlTypeEnum.USERDEFINED
 notdefined = IfcWorkControlTypeEnum.NOTDEFINED
 
 
-def IfcCrossProduct(arg1, arg2):
-    
-    
-    
-    
-    if ((not exists(arg1)) or (arg1.Dim == 2)) or ((not exists(arg2)) or (arg2.Dim == 2)):
-        return None
-    else:
-        v1 = IfcNormalise(arg1).DirectionRatios
-        v2 = IfcNormalise(arg2).DirectionRatios
-        res = ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[((v1[2 - 1]) * (v2[3 - 1])) - ((v1[3 - 1]) * (v2[2 - 1])),((v1[3 - 1]) * (v2[1 - 1])) - ((v1[1 - 1]) * (v2[3 - 1])),((v1[1 - 1]) * (v2[2 - 1])) - ((v1[2 - 1]) * (v2[1 - 1]))])
-        mag = 0.0
-        for i in range(1, 3 + 1):
-            mag = mag + ((res.DirectionRatios[i - 1]) * (res.DirectionRatios[i - 1]))
-        if mag > 0.0:
-            result = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=res, Magnitude=sqrt(mag))
-        else:
-            result = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=arg1, Magnitude=0.0)
-        return result
+def Ifc2DCompositeCurve(*args, **kwargs): return ifcopenshell.create_entity('Ifc2DCompositeCurve', 'IFC2X3', *args, **kwargs)
 
 
-def IfcNormalise(arg):
-    
-    v = ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.])
-    vec = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.]), Magnitude=1.)
-    
-    result = v
-    if not exists(arg):
-        return None
-    else:
-        ndim = arg.Dim
-        if 'ifc2x3.ifcvector' in typeof(arg):
-            v.DirectionRatios = arg.Orientation.DirectionRatios
-            vec.Magnitude = arg.Magnitude
-            vec.Orientation = v
-            if arg.Magnitude == 0.0:
-                return None
-            else:
-                vec.Magnitude = 1.0
-        else:
-            v.DirectionRatios = arg.DirectionRatios
-        mag = 0.0
-        for i in range(1, ndim + 1):
-            mag = mag + ((v.DirectionRatios[i - 1]) * (v.DirectionRatios[i - 1]))
-        if mag > 0.0:
-            mag = sqrt(mag)
-            for i in range(1, ndim + 1):
-                temp = list(v.DirectionRatios)
-                temp[i - 1] = (v.DirectionRatios[i - 1]) / mag
-                v.DirectionRatios = temp
-            if 'ifc2x3.ifcvector' in typeof(arg):
-                vec.Orientation = v
-                result = vec
-            else:
-                result = v
-        else:
-            return None
-    return result
+def IfcActionRequest(*args, **kwargs): return ifcopenshell.create_entity('IfcActionRequest', 'IFC2X3', *args, **kwargs)
+
+
+def IfcActor(*args, **kwargs): return ifcopenshell.create_entity('IfcActor', 'IFC2X3', *args, **kwargs)
+
+
+def IfcActorRole(*args, **kwargs): return ifcopenshell.create_entity('IfcActorRole', 'IFC2X3', *args, **kwargs)
+
+
+def IfcActuatorType(*args, **kwargs): return ifcopenshell.create_entity('IfcActuatorType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAddress(*args, **kwargs): return ifcopenshell.create_entity('IfcAddress', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAirTerminalBoxType(*args, **kwargs): return ifcopenshell.create_entity('IfcAirTerminalBoxType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAirTerminalType(*args, **kwargs): return ifcopenshell.create_entity('IfcAirTerminalType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAirToAirHeatRecoveryType(*args, **kwargs): return ifcopenshell.create_entity('IfcAirToAirHeatRecoveryType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAlarmType(*args, **kwargs): return ifcopenshell.create_entity('IfcAlarmType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAngularDimension(*args, **kwargs): return ifcopenshell.create_entity('IfcAngularDimension', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotation(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotationCurveOccurrence(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotationCurveOccurrence', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotationFillArea(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotationFillArea', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotationFillAreaOccurrence(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotationFillAreaOccurrence', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotationOccurrence(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotationOccurrence', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotationSurface(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotationSurface', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotationSurfaceOccurrence(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotationSurfaceOccurrence', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotationSymbolOccurrence(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotationSymbolOccurrence', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAnnotationTextOccurrence(*args, **kwargs): return ifcopenshell.create_entity('IfcAnnotationTextOccurrence', 'IFC2X3', *args, **kwargs)
+
+
+def IfcApplication(*args, **kwargs): return ifcopenshell.create_entity('IfcApplication', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAppliedValue(*args, **kwargs): return ifcopenshell.create_entity('IfcAppliedValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAppliedValueRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcAppliedValueRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcApproval(*args, **kwargs): return ifcopenshell.create_entity('IfcApproval', 'IFC2X3', *args, **kwargs)
+
+
+def IfcApprovalActorRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcApprovalActorRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcApprovalPropertyRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcApprovalPropertyRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcApprovalRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcApprovalRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcArbitraryClosedProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcArbitraryClosedProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcArbitraryOpenProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcArbitraryOpenProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcArbitraryProfileDefWithVoids(*args, **kwargs): return ifcopenshell.create_entity('IfcArbitraryProfileDefWithVoids', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAsset(*args, **kwargs): return ifcopenshell.create_entity('IfcAsset', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAsymmetricIShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcAsymmetricIShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAxis1Placement(*args, **kwargs): return ifcopenshell.create_entity('IfcAxis1Placement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAxis2Placement2D(*args, **kwargs): return ifcopenshell.create_entity('IfcAxis2Placement2D', 'IFC2X3', *args, **kwargs)
+
+
+def IfcAxis2Placement3D(*args, **kwargs): return ifcopenshell.create_entity('IfcAxis2Placement3D', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBSplineCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcBSplineCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBeam(*args, **kwargs): return ifcopenshell.create_entity('IfcBeam', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBeamType(*args, **kwargs): return ifcopenshell.create_entity('IfcBeamType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBezierCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcBezierCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBlobTexture(*args, **kwargs): return ifcopenshell.create_entity('IfcBlobTexture', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBlock(*args, **kwargs): return ifcopenshell.create_entity('IfcBlock', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoilerType(*args, **kwargs): return ifcopenshell.create_entity('IfcBoilerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBooleanClippingResult(*args, **kwargs): return ifcopenshell.create_entity('IfcBooleanClippingResult', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBooleanResult(*args, **kwargs): return ifcopenshell.create_entity('IfcBooleanResult', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoundaryCondition(*args, **kwargs): return ifcopenshell.create_entity('IfcBoundaryCondition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoundaryEdgeCondition(*args, **kwargs): return ifcopenshell.create_entity('IfcBoundaryEdgeCondition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoundaryFaceCondition(*args, **kwargs): return ifcopenshell.create_entity('IfcBoundaryFaceCondition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoundaryNodeCondition(*args, **kwargs): return ifcopenshell.create_entity('IfcBoundaryNodeCondition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoundaryNodeConditionWarping(*args, **kwargs): return ifcopenshell.create_entity('IfcBoundaryNodeConditionWarping', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoundedCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcBoundedCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoundedSurface(*args, **kwargs): return ifcopenshell.create_entity('IfcBoundedSurface', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoundingBox(*args, **kwargs): return ifcopenshell.create_entity('IfcBoundingBox', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBoxedHalfSpace(*args, **kwargs): return ifcopenshell.create_entity('IfcBoxedHalfSpace', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBuilding(*args, **kwargs): return ifcopenshell.create_entity('IfcBuilding', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBuildingElement(*args, **kwargs): return ifcopenshell.create_entity('IfcBuildingElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBuildingElementComponent(*args, **kwargs): return ifcopenshell.create_entity('IfcBuildingElementComponent', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBuildingElementPart(*args, **kwargs): return ifcopenshell.create_entity('IfcBuildingElementPart', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBuildingElementProxy(*args, **kwargs): return ifcopenshell.create_entity('IfcBuildingElementProxy', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBuildingElementProxyType(*args, **kwargs): return ifcopenshell.create_entity('IfcBuildingElementProxyType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBuildingElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcBuildingElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcBuildingStorey(*args, **kwargs): return ifcopenshell.create_entity('IfcBuildingStorey', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcCShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCableCarrierFittingType(*args, **kwargs): return ifcopenshell.create_entity('IfcCableCarrierFittingType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCableCarrierSegmentType(*args, **kwargs): return ifcopenshell.create_entity('IfcCableCarrierSegmentType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCableSegmentType(*args, **kwargs): return ifcopenshell.create_entity('IfcCableSegmentType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCalendarDate(*args, **kwargs): return ifcopenshell.create_entity('IfcCalendarDate', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCartesianPoint(*args, **kwargs): return ifcopenshell.create_entity('IfcCartesianPoint', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCartesianTransformationOperator(*args, **kwargs): return ifcopenshell.create_entity('IfcCartesianTransformationOperator', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCartesianTransformationOperator2D(*args, **kwargs): return ifcopenshell.create_entity('IfcCartesianTransformationOperator2D', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCartesianTransformationOperator2DnonUniform(*args, **kwargs): return ifcopenshell.create_entity('IfcCartesianTransformationOperator2DnonUniform', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCartesianTransformationOperator3D(*args, **kwargs): return ifcopenshell.create_entity('IfcCartesianTransformationOperator3D', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCartesianTransformationOperator3DnonUniform(*args, **kwargs): return ifcopenshell.create_entity('IfcCartesianTransformationOperator3DnonUniform', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCenterLineProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcCenterLineProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcChamferEdgeFeature(*args, **kwargs): return ifcopenshell.create_entity('IfcChamferEdgeFeature', 'IFC2X3', *args, **kwargs)
+
+
+def IfcChillerType(*args, **kwargs): return ifcopenshell.create_entity('IfcChillerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCircle(*args, **kwargs): return ifcopenshell.create_entity('IfcCircle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCircleHollowProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcCircleHollowProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCircleProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcCircleProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcClassification(*args, **kwargs): return ifcopenshell.create_entity('IfcClassification', 'IFC2X3', *args, **kwargs)
+
+
+def IfcClassificationItem(*args, **kwargs): return ifcopenshell.create_entity('IfcClassificationItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcClassificationItemRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcClassificationItemRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcClassificationNotation(*args, **kwargs): return ifcopenshell.create_entity('IfcClassificationNotation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcClassificationNotationFacet(*args, **kwargs): return ifcopenshell.create_entity('IfcClassificationNotationFacet', 'IFC2X3', *args, **kwargs)
+
+
+def IfcClassificationReference(*args, **kwargs): return ifcopenshell.create_entity('IfcClassificationReference', 'IFC2X3', *args, **kwargs)
+
+
+def IfcClosedShell(*args, **kwargs): return ifcopenshell.create_entity('IfcClosedShell', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCoilType(*args, **kwargs): return ifcopenshell.create_entity('IfcCoilType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcColourRgb(*args, **kwargs): return ifcopenshell.create_entity('IfcColourRgb', 'IFC2X3', *args, **kwargs)
+
+
+def IfcColourSpecification(*args, **kwargs): return ifcopenshell.create_entity('IfcColourSpecification', 'IFC2X3', *args, **kwargs)
+
+
+def IfcColumn(*args, **kwargs): return ifcopenshell.create_entity('IfcColumn', 'IFC2X3', *args, **kwargs)
+
+
+def IfcColumnType(*args, **kwargs): return ifcopenshell.create_entity('IfcColumnType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcComplexProperty(*args, **kwargs): return ifcopenshell.create_entity('IfcComplexProperty', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCompositeCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcCompositeCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCompositeCurveSegment(*args, **kwargs): return ifcopenshell.create_entity('IfcCompositeCurveSegment', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCompositeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcCompositeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCompressorType(*args, **kwargs): return ifcopenshell.create_entity('IfcCompressorType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCondenserType(*args, **kwargs): return ifcopenshell.create_entity('IfcCondenserType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCondition(*args, **kwargs): return ifcopenshell.create_entity('IfcCondition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConditionCriterion(*args, **kwargs): return ifcopenshell.create_entity('IfcConditionCriterion', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConic(*args, **kwargs): return ifcopenshell.create_entity('IfcConic', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConnectedFaceSet(*args, **kwargs): return ifcopenshell.create_entity('IfcConnectedFaceSet', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConnectionCurveGeometry(*args, **kwargs): return ifcopenshell.create_entity('IfcConnectionCurveGeometry', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConnectionGeometry(*args, **kwargs): return ifcopenshell.create_entity('IfcConnectionGeometry', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConnectionPointEccentricity(*args, **kwargs): return ifcopenshell.create_entity('IfcConnectionPointEccentricity', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConnectionPointGeometry(*args, **kwargs): return ifcopenshell.create_entity('IfcConnectionPointGeometry', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConnectionPortGeometry(*args, **kwargs): return ifcopenshell.create_entity('IfcConnectionPortGeometry', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConnectionSurfaceGeometry(*args, **kwargs): return ifcopenshell.create_entity('IfcConnectionSurfaceGeometry', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConstraint(*args, **kwargs): return ifcopenshell.create_entity('IfcConstraint', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConstraintAggregationRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcConstraintAggregationRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConstraintClassificationRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcConstraintClassificationRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConstraintRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcConstraintRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConstructionEquipmentResource(*args, **kwargs): return ifcopenshell.create_entity('IfcConstructionEquipmentResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConstructionMaterialResource(*args, **kwargs): return ifcopenshell.create_entity('IfcConstructionMaterialResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConstructionProductResource(*args, **kwargs): return ifcopenshell.create_entity('IfcConstructionProductResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConstructionResource(*args, **kwargs): return ifcopenshell.create_entity('IfcConstructionResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcContextDependentUnit(*args, **kwargs): return ifcopenshell.create_entity('IfcContextDependentUnit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcControl(*args, **kwargs): return ifcopenshell.create_entity('IfcControl', 'IFC2X3', *args, **kwargs)
+
+
+def IfcControllerType(*args, **kwargs): return ifcopenshell.create_entity('IfcControllerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcConversionBasedUnit(*args, **kwargs): return ifcopenshell.create_entity('IfcConversionBasedUnit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCooledBeamType(*args, **kwargs): return ifcopenshell.create_entity('IfcCooledBeamType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCoolingTowerType(*args, **kwargs): return ifcopenshell.create_entity('IfcCoolingTowerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCoordinatedUniversalTimeOffset(*args, **kwargs): return ifcopenshell.create_entity('IfcCoordinatedUniversalTimeOffset', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCostItem(*args, **kwargs): return ifcopenshell.create_entity('IfcCostItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCostSchedule(*args, **kwargs): return ifcopenshell.create_entity('IfcCostSchedule', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCostValue(*args, **kwargs): return ifcopenshell.create_entity('IfcCostValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCovering(*args, **kwargs): return ifcopenshell.create_entity('IfcCovering', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCoveringType(*args, **kwargs): return ifcopenshell.create_entity('IfcCoveringType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCraneRailAShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcCraneRailAShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCraneRailFShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcCraneRailFShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCrewResource(*args, **kwargs): return ifcopenshell.create_entity('IfcCrewResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCsgPrimitive3D(*args, **kwargs): return ifcopenshell.create_entity('IfcCsgPrimitive3D', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCsgSolid(*args, **kwargs): return ifcopenshell.create_entity('IfcCsgSolid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurrencyRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcCurrencyRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurtainWall(*args, **kwargs): return ifcopenshell.create_entity('IfcCurtainWall', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurtainWallType(*args, **kwargs): return ifcopenshell.create_entity('IfcCurtainWallType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurveBoundedPlane(*args, **kwargs): return ifcopenshell.create_entity('IfcCurveBoundedPlane', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurveStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcCurveStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurveStyleFont(*args, **kwargs): return ifcopenshell.create_entity('IfcCurveStyleFont', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurveStyleFontAndScaling(*args, **kwargs): return ifcopenshell.create_entity('IfcCurveStyleFontAndScaling', 'IFC2X3', *args, **kwargs)
+
+
+def IfcCurveStyleFontPattern(*args, **kwargs): return ifcopenshell.create_entity('IfcCurveStyleFontPattern', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDamperType(*args, **kwargs): return ifcopenshell.create_entity('IfcDamperType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDateAndTime(*args, **kwargs): return ifcopenshell.create_entity('IfcDateAndTime', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDefinedSymbol(*args, **kwargs): return ifcopenshell.create_entity('IfcDefinedSymbol', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDerivedProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcDerivedProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDerivedUnit(*args, **kwargs): return ifcopenshell.create_entity('IfcDerivedUnit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDerivedUnitElement(*args, **kwargs): return ifcopenshell.create_entity('IfcDerivedUnitElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDiameterDimension(*args, **kwargs): return ifcopenshell.create_entity('IfcDiameterDimension', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDimensionCalloutRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcDimensionCalloutRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDimensionCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcDimensionCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDimensionCurveDirectedCallout(*args, **kwargs): return ifcopenshell.create_entity('IfcDimensionCurveDirectedCallout', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDimensionCurveTerminator(*args, **kwargs): return ifcopenshell.create_entity('IfcDimensionCurveTerminator', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDimensionPair(*args, **kwargs): return ifcopenshell.create_entity('IfcDimensionPair', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDimensionalExponents(*args, **kwargs): return ifcopenshell.create_entity('IfcDimensionalExponents', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDirection(*args, **kwargs): return ifcopenshell.create_entity('IfcDirection', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDiscreteAccessory(*args, **kwargs): return ifcopenshell.create_entity('IfcDiscreteAccessory', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDiscreteAccessoryType(*args, **kwargs): return ifcopenshell.create_entity('IfcDiscreteAccessoryType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionChamberElement(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionChamberElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionChamberElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionChamberElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionControlElement(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionControlElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionControlElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionControlElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionElement(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionFlowElement(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionFlowElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionFlowElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionFlowElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDistributionPort(*args, **kwargs): return ifcopenshell.create_entity('IfcDistributionPort', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDocumentElectronicFormat(*args, **kwargs): return ifcopenshell.create_entity('IfcDocumentElectronicFormat', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDocumentInformation(*args, **kwargs): return ifcopenshell.create_entity('IfcDocumentInformation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDocumentInformationRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcDocumentInformationRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDocumentReference(*args, **kwargs): return ifcopenshell.create_entity('IfcDocumentReference', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDoor(*args, **kwargs): return ifcopenshell.create_entity('IfcDoor', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDoorLiningProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcDoorLiningProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDoorPanelProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcDoorPanelProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDoorStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcDoorStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDraughtingCallout(*args, **kwargs): return ifcopenshell.create_entity('IfcDraughtingCallout', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDraughtingCalloutRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcDraughtingCalloutRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDraughtingPreDefinedColour(*args, **kwargs): return ifcopenshell.create_entity('IfcDraughtingPreDefinedColour', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDraughtingPreDefinedCurveFont(*args, **kwargs): return ifcopenshell.create_entity('IfcDraughtingPreDefinedCurveFont', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDraughtingPreDefinedTextFont(*args, **kwargs): return ifcopenshell.create_entity('IfcDraughtingPreDefinedTextFont', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDuctFittingType(*args, **kwargs): return ifcopenshell.create_entity('IfcDuctFittingType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDuctSegmentType(*args, **kwargs): return ifcopenshell.create_entity('IfcDuctSegmentType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcDuctSilencerType(*args, **kwargs): return ifcopenshell.create_entity('IfcDuctSilencerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEdge(*args, **kwargs): return ifcopenshell.create_entity('IfcEdge', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEdgeCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcEdgeCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEdgeFeature(*args, **kwargs): return ifcopenshell.create_entity('IfcEdgeFeature', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEdgeLoop(*args, **kwargs): return ifcopenshell.create_entity('IfcEdgeLoop', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricApplianceType(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricApplianceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricDistributionPoint(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricDistributionPoint', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricFlowStorageDeviceType(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricFlowStorageDeviceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricGeneratorType(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricGeneratorType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricHeaterType(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricHeaterType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricMotorType(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricMotorType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricTimeControlType(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricTimeControlType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricalBaseProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricalBaseProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricalCircuit(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricalCircuit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElectricalElement(*args, **kwargs): return ifcopenshell.create_entity('IfcElectricalElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElement(*args, **kwargs): return ifcopenshell.create_entity('IfcElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElementAssembly(*args, **kwargs): return ifcopenshell.create_entity('IfcElementAssembly', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElementComponent(*args, **kwargs): return ifcopenshell.create_entity('IfcElementComponent', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElementComponentType(*args, **kwargs): return ifcopenshell.create_entity('IfcElementComponentType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElementQuantity(*args, **kwargs): return ifcopenshell.create_entity('IfcElementQuantity', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcElementarySurface(*args, **kwargs): return ifcopenshell.create_entity('IfcElementarySurface', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEllipse(*args, **kwargs): return ifcopenshell.create_entity('IfcEllipse', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEllipseProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcEllipseProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEnergyConversionDevice(*args, **kwargs): return ifcopenshell.create_entity('IfcEnergyConversionDevice', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEnergyConversionDeviceType(*args, **kwargs): return ifcopenshell.create_entity('IfcEnergyConversionDeviceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEnergyProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcEnergyProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEnvironmentalImpactValue(*args, **kwargs): return ifcopenshell.create_entity('IfcEnvironmentalImpactValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEquipmentElement(*args, **kwargs): return ifcopenshell.create_entity('IfcEquipmentElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEquipmentStandard(*args, **kwargs): return ifcopenshell.create_entity('IfcEquipmentStandard', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEvaporativeCoolerType(*args, **kwargs): return ifcopenshell.create_entity('IfcEvaporativeCoolerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcEvaporatorType(*args, **kwargs): return ifcopenshell.create_entity('IfcEvaporatorType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcExtendedMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcExtendedMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcExternalReference(*args, **kwargs): return ifcopenshell.create_entity('IfcExternalReference', 'IFC2X3', *args, **kwargs)
+
+
+def IfcExternallyDefinedHatchStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcExternallyDefinedHatchStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcExternallyDefinedSurfaceStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcExternallyDefinedSurfaceStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcExternallyDefinedSymbol(*args, **kwargs): return ifcopenshell.create_entity('IfcExternallyDefinedSymbol', 'IFC2X3', *args, **kwargs)
+
+
+def IfcExternallyDefinedTextFont(*args, **kwargs): return ifcopenshell.create_entity('IfcExternallyDefinedTextFont', 'IFC2X3', *args, **kwargs)
+
+
+def IfcExtrudedAreaSolid(*args, **kwargs): return ifcopenshell.create_entity('IfcExtrudedAreaSolid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFace(*args, **kwargs): return ifcopenshell.create_entity('IfcFace', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFaceBasedSurfaceModel(*args, **kwargs): return ifcopenshell.create_entity('IfcFaceBasedSurfaceModel', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFaceBound(*args, **kwargs): return ifcopenshell.create_entity('IfcFaceBound', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFaceOuterBound(*args, **kwargs): return ifcopenshell.create_entity('IfcFaceOuterBound', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFaceSurface(*args, **kwargs): return ifcopenshell.create_entity('IfcFaceSurface', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFacetedBrep(*args, **kwargs): return ifcopenshell.create_entity('IfcFacetedBrep', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFacetedBrepWithVoids(*args, **kwargs): return ifcopenshell.create_entity('IfcFacetedBrepWithVoids', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFailureConnectionCondition(*args, **kwargs): return ifcopenshell.create_entity('IfcFailureConnectionCondition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFanType(*args, **kwargs): return ifcopenshell.create_entity('IfcFanType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFastener(*args, **kwargs): return ifcopenshell.create_entity('IfcFastener', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFastenerType(*args, **kwargs): return ifcopenshell.create_entity('IfcFastenerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFeatureElement(*args, **kwargs): return ifcopenshell.create_entity('IfcFeatureElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFeatureElementAddition(*args, **kwargs): return ifcopenshell.create_entity('IfcFeatureElementAddition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFeatureElementSubtraction(*args, **kwargs): return ifcopenshell.create_entity('IfcFeatureElementSubtraction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFillAreaStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcFillAreaStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFillAreaStyleHatching(*args, **kwargs): return ifcopenshell.create_entity('IfcFillAreaStyleHatching', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFillAreaStyleTileSymbolWithStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcFillAreaStyleTileSymbolWithStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFillAreaStyleTiles(*args, **kwargs): return ifcopenshell.create_entity('IfcFillAreaStyleTiles', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFilterType(*args, **kwargs): return ifcopenshell.create_entity('IfcFilterType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFireSuppressionTerminalType(*args, **kwargs): return ifcopenshell.create_entity('IfcFireSuppressionTerminalType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowController(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowController', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowControllerType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowControllerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowFitting(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowFitting', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowFittingType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowFittingType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowInstrumentType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowInstrumentType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowMeterType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowMeterType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowMovingDevice(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowMovingDevice', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowMovingDeviceType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowMovingDeviceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowSegment(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowSegment', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowSegmentType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowSegmentType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowStorageDevice(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowStorageDevice', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowStorageDeviceType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowStorageDeviceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowTerminal(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowTerminal', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowTerminalType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowTerminalType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowTreatmentDevice(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowTreatmentDevice', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFlowTreatmentDeviceType(*args, **kwargs): return ifcopenshell.create_entity('IfcFlowTreatmentDeviceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFluidFlowProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcFluidFlowProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFooting(*args, **kwargs): return ifcopenshell.create_entity('IfcFooting', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFuelProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcFuelProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFurnishingElement(*args, **kwargs): return ifcopenshell.create_entity('IfcFurnishingElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFurnishingElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcFurnishingElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFurnitureStandard(*args, **kwargs): return ifcopenshell.create_entity('IfcFurnitureStandard', 'IFC2X3', *args, **kwargs)
+
+
+def IfcFurnitureType(*args, **kwargs): return ifcopenshell.create_entity('IfcFurnitureType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGasTerminalType(*args, **kwargs): return ifcopenshell.create_entity('IfcGasTerminalType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGeneralMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcGeneralMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGeneralProfileProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcGeneralProfileProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGeometricCurveSet(*args, **kwargs): return ifcopenshell.create_entity('IfcGeometricCurveSet', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGeometricRepresentationContext(*args, **kwargs): return ifcopenshell.create_entity('IfcGeometricRepresentationContext', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGeometricRepresentationItem(*args, **kwargs): return ifcopenshell.create_entity('IfcGeometricRepresentationItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGeometricRepresentationSubContext(*args, **kwargs): return ifcopenshell.create_entity('IfcGeometricRepresentationSubContext', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGeometricSet(*args, **kwargs): return ifcopenshell.create_entity('IfcGeometricSet', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGrid(*args, **kwargs): return ifcopenshell.create_entity('IfcGrid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGridAxis(*args, **kwargs): return ifcopenshell.create_entity('IfcGridAxis', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGridPlacement(*args, **kwargs): return ifcopenshell.create_entity('IfcGridPlacement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcGroup(*args, **kwargs): return ifcopenshell.create_entity('IfcGroup', 'IFC2X3', *args, **kwargs)
+
+
+def IfcHalfSpaceSolid(*args, **kwargs): return ifcopenshell.create_entity('IfcHalfSpaceSolid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcHeatExchangerType(*args, **kwargs): return ifcopenshell.create_entity('IfcHeatExchangerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcHumidifierType(*args, **kwargs): return ifcopenshell.create_entity('IfcHumidifierType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcHygroscopicMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcHygroscopicMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcIShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcIShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcImageTexture(*args, **kwargs): return ifcopenshell.create_entity('IfcImageTexture', 'IFC2X3', *args, **kwargs)
+
+
+def IfcInventory(*args, **kwargs): return ifcopenshell.create_entity('IfcInventory', 'IFC2X3', *args, **kwargs)
+
+
+def IfcIrregularTimeSeries(*args, **kwargs): return ifcopenshell.create_entity('IfcIrregularTimeSeries', 'IFC2X3', *args, **kwargs)
+
+
+def IfcIrregularTimeSeriesValue(*args, **kwargs): return ifcopenshell.create_entity('IfcIrregularTimeSeriesValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcJunctionBoxType(*args, **kwargs): return ifcopenshell.create_entity('IfcJunctionBoxType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcLShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLaborResource(*args, **kwargs): return ifcopenshell.create_entity('IfcLaborResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLampType(*args, **kwargs): return ifcopenshell.create_entity('IfcLampType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLibraryInformation(*args, **kwargs): return ifcopenshell.create_entity('IfcLibraryInformation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLibraryReference(*args, **kwargs): return ifcopenshell.create_entity('IfcLibraryReference', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightDistributionData(*args, **kwargs): return ifcopenshell.create_entity('IfcLightDistributionData', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightFixtureType(*args, **kwargs): return ifcopenshell.create_entity('IfcLightFixtureType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightIntensityDistribution(*args, **kwargs): return ifcopenshell.create_entity('IfcLightIntensityDistribution', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightSource(*args, **kwargs): return ifcopenshell.create_entity('IfcLightSource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightSourceAmbient(*args, **kwargs): return ifcopenshell.create_entity('IfcLightSourceAmbient', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightSourceDirectional(*args, **kwargs): return ifcopenshell.create_entity('IfcLightSourceDirectional', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightSourceGoniometric(*args, **kwargs): return ifcopenshell.create_entity('IfcLightSourceGoniometric', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightSourcePositional(*args, **kwargs): return ifcopenshell.create_entity('IfcLightSourcePositional', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLightSourceSpot(*args, **kwargs): return ifcopenshell.create_entity('IfcLightSourceSpot', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLine(*args, **kwargs): return ifcopenshell.create_entity('IfcLine', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLinearDimension(*args, **kwargs): return ifcopenshell.create_entity('IfcLinearDimension', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLocalPlacement(*args, **kwargs): return ifcopenshell.create_entity('IfcLocalPlacement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLocalTime(*args, **kwargs): return ifcopenshell.create_entity('IfcLocalTime', 'IFC2X3', *args, **kwargs)
+
+
+def IfcLoop(*args, **kwargs): return ifcopenshell.create_entity('IfcLoop', 'IFC2X3', *args, **kwargs)
+
+
+def IfcManifoldSolidBrep(*args, **kwargs): return ifcopenshell.create_entity('IfcManifoldSolidBrep', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMappedItem(*args, **kwargs): return ifcopenshell.create_entity('IfcMappedItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMaterial(*args, **kwargs): return ifcopenshell.create_entity('IfcMaterial', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMaterialClassificationRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcMaterialClassificationRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMaterialDefinitionRepresentation(*args, **kwargs): return ifcopenshell.create_entity('IfcMaterialDefinitionRepresentation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMaterialLayer(*args, **kwargs): return ifcopenshell.create_entity('IfcMaterialLayer', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMaterialLayerSet(*args, **kwargs): return ifcopenshell.create_entity('IfcMaterialLayerSet', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMaterialLayerSetUsage(*args, **kwargs): return ifcopenshell.create_entity('IfcMaterialLayerSetUsage', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMaterialList(*args, **kwargs): return ifcopenshell.create_entity('IfcMaterialList', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMeasureWithUnit(*args, **kwargs): return ifcopenshell.create_entity('IfcMeasureWithUnit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMechanicalConcreteMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcMechanicalConcreteMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMechanicalFastener(*args, **kwargs): return ifcopenshell.create_entity('IfcMechanicalFastener', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMechanicalFastenerType(*args, **kwargs): return ifcopenshell.create_entity('IfcMechanicalFastenerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMechanicalMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcMechanicalMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMechanicalSteelMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcMechanicalSteelMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMember(*args, **kwargs): return ifcopenshell.create_entity('IfcMember', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMemberType(*args, **kwargs): return ifcopenshell.create_entity('IfcMemberType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMetric(*args, **kwargs): return ifcopenshell.create_entity('IfcMetric', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMonetaryUnit(*args, **kwargs): return ifcopenshell.create_entity('IfcMonetaryUnit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMotorConnectionType(*args, **kwargs): return ifcopenshell.create_entity('IfcMotorConnectionType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcMove(*args, **kwargs): return ifcopenshell.create_entity('IfcMove', 'IFC2X3', *args, **kwargs)
+
+
+def IfcNamedUnit(*args, **kwargs): return ifcopenshell.create_entity('IfcNamedUnit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcObject(*args, **kwargs): return ifcopenshell.create_entity('IfcObject', 'IFC2X3', *args, **kwargs)
+
+
+def IfcObjectDefinition(*args, **kwargs): return ifcopenshell.create_entity('IfcObjectDefinition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcObjectPlacement(*args, **kwargs): return ifcopenshell.create_entity('IfcObjectPlacement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcObjective(*args, **kwargs): return ifcopenshell.create_entity('IfcObjective', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOccupant(*args, **kwargs): return ifcopenshell.create_entity('IfcOccupant', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOffsetCurve2D(*args, **kwargs): return ifcopenshell.create_entity('IfcOffsetCurve2D', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOffsetCurve3D(*args, **kwargs): return ifcopenshell.create_entity('IfcOffsetCurve3D', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOneDirectionRepeatFactor(*args, **kwargs): return ifcopenshell.create_entity('IfcOneDirectionRepeatFactor', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOpenShell(*args, **kwargs): return ifcopenshell.create_entity('IfcOpenShell', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOpeningElement(*args, **kwargs): return ifcopenshell.create_entity('IfcOpeningElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOpticalMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcOpticalMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOrderAction(*args, **kwargs): return ifcopenshell.create_entity('IfcOrderAction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOrganization(*args, **kwargs): return ifcopenshell.create_entity('IfcOrganization', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOrganizationRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcOrganizationRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOrientedEdge(*args, **kwargs): return ifcopenshell.create_entity('IfcOrientedEdge', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOutletType(*args, **kwargs): return ifcopenshell.create_entity('IfcOutletType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcOwnerHistory(*args, **kwargs): return ifcopenshell.create_entity('IfcOwnerHistory', 'IFC2X3', *args, **kwargs)
+
+
+def IfcParameterizedProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcParameterizedProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPath(*args, **kwargs): return ifcopenshell.create_entity('IfcPath', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPerformanceHistory(*args, **kwargs): return ifcopenshell.create_entity('IfcPerformanceHistory', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPermeableCoveringProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcPermeableCoveringProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPermit(*args, **kwargs): return ifcopenshell.create_entity('IfcPermit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPerson(*args, **kwargs): return ifcopenshell.create_entity('IfcPerson', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPersonAndOrganization(*args, **kwargs): return ifcopenshell.create_entity('IfcPersonAndOrganization', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPhysicalComplexQuantity(*args, **kwargs): return ifcopenshell.create_entity('IfcPhysicalComplexQuantity', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPhysicalQuantity(*args, **kwargs): return ifcopenshell.create_entity('IfcPhysicalQuantity', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPhysicalSimpleQuantity(*args, **kwargs): return ifcopenshell.create_entity('IfcPhysicalSimpleQuantity', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPile(*args, **kwargs): return ifcopenshell.create_entity('IfcPile', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPipeFittingType(*args, **kwargs): return ifcopenshell.create_entity('IfcPipeFittingType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPipeSegmentType(*args, **kwargs): return ifcopenshell.create_entity('IfcPipeSegmentType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPixelTexture(*args, **kwargs): return ifcopenshell.create_entity('IfcPixelTexture', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPlacement(*args, **kwargs): return ifcopenshell.create_entity('IfcPlacement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPlanarBox(*args, **kwargs): return ifcopenshell.create_entity('IfcPlanarBox', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPlanarExtent(*args, **kwargs): return ifcopenshell.create_entity('IfcPlanarExtent', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPlane(*args, **kwargs): return ifcopenshell.create_entity('IfcPlane', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPlate(*args, **kwargs): return ifcopenshell.create_entity('IfcPlate', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPlateType(*args, **kwargs): return ifcopenshell.create_entity('IfcPlateType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPoint(*args, **kwargs): return ifcopenshell.create_entity('IfcPoint', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPointOnCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcPointOnCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPointOnSurface(*args, **kwargs): return ifcopenshell.create_entity('IfcPointOnSurface', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPolyLoop(*args, **kwargs): return ifcopenshell.create_entity('IfcPolyLoop', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPolygonalBoundedHalfSpace(*args, **kwargs): return ifcopenshell.create_entity('IfcPolygonalBoundedHalfSpace', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPolyline(*args, **kwargs): return ifcopenshell.create_entity('IfcPolyline', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPort(*args, **kwargs): return ifcopenshell.create_entity('IfcPort', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPostalAddress(*args, **kwargs): return ifcopenshell.create_entity('IfcPostalAddress', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPreDefinedColour(*args, **kwargs): return ifcopenshell.create_entity('IfcPreDefinedColour', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPreDefinedCurveFont(*args, **kwargs): return ifcopenshell.create_entity('IfcPreDefinedCurveFont', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPreDefinedDimensionSymbol(*args, **kwargs): return ifcopenshell.create_entity('IfcPreDefinedDimensionSymbol', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPreDefinedItem(*args, **kwargs): return ifcopenshell.create_entity('IfcPreDefinedItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPreDefinedPointMarkerSymbol(*args, **kwargs): return ifcopenshell.create_entity('IfcPreDefinedPointMarkerSymbol', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPreDefinedSymbol(*args, **kwargs): return ifcopenshell.create_entity('IfcPreDefinedSymbol', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPreDefinedTerminatorSymbol(*args, **kwargs): return ifcopenshell.create_entity('IfcPreDefinedTerminatorSymbol', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPreDefinedTextFont(*args, **kwargs): return ifcopenshell.create_entity('IfcPreDefinedTextFont', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPresentationLayerAssignment(*args, **kwargs): return ifcopenshell.create_entity('IfcPresentationLayerAssignment', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPresentationLayerWithStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcPresentationLayerWithStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPresentationStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcPresentationStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPresentationStyleAssignment(*args, **kwargs): return ifcopenshell.create_entity('IfcPresentationStyleAssignment', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProcedure(*args, **kwargs): return ifcopenshell.create_entity('IfcProcedure', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProcess(*args, **kwargs): return ifcopenshell.create_entity('IfcProcess', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProduct(*args, **kwargs): return ifcopenshell.create_entity('IfcProduct', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProductDefinitionShape(*args, **kwargs): return ifcopenshell.create_entity('IfcProductDefinitionShape', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProductRepresentation(*args, **kwargs): return ifcopenshell.create_entity('IfcProductRepresentation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProductsOfCombustionProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcProductsOfCombustionProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProfileProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcProfileProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProject(*args, **kwargs): return ifcopenshell.create_entity('IfcProject', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProjectOrder(*args, **kwargs): return ifcopenshell.create_entity('IfcProjectOrder', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProjectOrderRecord(*args, **kwargs): return ifcopenshell.create_entity('IfcProjectOrderRecord', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProjectionCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcProjectionCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProjectionElement(*args, **kwargs): return ifcopenshell.create_entity('IfcProjectionElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProperty(*args, **kwargs): return ifcopenshell.create_entity('IfcProperty', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyBoundedValue(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyBoundedValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyConstraintRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyConstraintRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyDefinition(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyDefinition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyDependencyRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyDependencyRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyEnumeratedValue(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyEnumeratedValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyEnumeration(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyEnumeration', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyListValue(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyListValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyReferenceValue(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyReferenceValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertySet(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertySet', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertySetDefinition(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertySetDefinition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertySingleValue(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertySingleValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPropertyTableValue(*args, **kwargs): return ifcopenshell.create_entity('IfcPropertyTableValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProtectiveDeviceType(*args, **kwargs): return ifcopenshell.create_entity('IfcProtectiveDeviceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcProxy(*args, **kwargs): return ifcopenshell.create_entity('IfcProxy', 'IFC2X3', *args, **kwargs)
+
+
+def IfcPumpType(*args, **kwargs): return ifcopenshell.create_entity('IfcPumpType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcQuantityArea(*args, **kwargs): return ifcopenshell.create_entity('IfcQuantityArea', 'IFC2X3', *args, **kwargs)
+
+
+def IfcQuantityCount(*args, **kwargs): return ifcopenshell.create_entity('IfcQuantityCount', 'IFC2X3', *args, **kwargs)
+
+
+def IfcQuantityLength(*args, **kwargs): return ifcopenshell.create_entity('IfcQuantityLength', 'IFC2X3', *args, **kwargs)
+
+
+def IfcQuantityTime(*args, **kwargs): return ifcopenshell.create_entity('IfcQuantityTime', 'IFC2X3', *args, **kwargs)
+
+
+def IfcQuantityVolume(*args, **kwargs): return ifcopenshell.create_entity('IfcQuantityVolume', 'IFC2X3', *args, **kwargs)
+
+
+def IfcQuantityWeight(*args, **kwargs): return ifcopenshell.create_entity('IfcQuantityWeight', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRadiusDimension(*args, **kwargs): return ifcopenshell.create_entity('IfcRadiusDimension', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRailing(*args, **kwargs): return ifcopenshell.create_entity('IfcRailing', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRailingType(*args, **kwargs): return ifcopenshell.create_entity('IfcRailingType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRamp(*args, **kwargs): return ifcopenshell.create_entity('IfcRamp', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRampFlight(*args, **kwargs): return ifcopenshell.create_entity('IfcRampFlight', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRampFlightType(*args, **kwargs): return ifcopenshell.create_entity('IfcRampFlightType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRationalBezierCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcRationalBezierCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRectangleHollowProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcRectangleHollowProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRectangleProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcRectangleProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRectangularPyramid(*args, **kwargs): return ifcopenshell.create_entity('IfcRectangularPyramid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRectangularTrimmedSurface(*args, **kwargs): return ifcopenshell.create_entity('IfcRectangularTrimmedSurface', 'IFC2X3', *args, **kwargs)
+
+
+def IfcReferencesValueDocument(*args, **kwargs): return ifcopenshell.create_entity('IfcReferencesValueDocument', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRegularTimeSeries(*args, **kwargs): return ifcopenshell.create_entity('IfcRegularTimeSeries', 'IFC2X3', *args, **kwargs)
+
+
+def IfcReinforcementBarProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcReinforcementBarProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcReinforcementDefinitionProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcReinforcementDefinitionProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcReinforcingBar(*args, **kwargs): return ifcopenshell.create_entity('IfcReinforcingBar', 'IFC2X3', *args, **kwargs)
+
+
+def IfcReinforcingElement(*args, **kwargs): return ifcopenshell.create_entity('IfcReinforcingElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcReinforcingMesh(*args, **kwargs): return ifcopenshell.create_entity('IfcReinforcingMesh', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAggregates(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAggregates', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssigns(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssigns', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssignsTasks(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssignsTasks', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssignsToActor(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssignsToActor', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssignsToControl(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssignsToControl', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssignsToGroup(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssignsToGroup', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssignsToProcess(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssignsToProcess', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssignsToProduct(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssignsToProduct', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssignsToProjectOrder(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssignsToProjectOrder', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssignsToResource(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssignsToResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociates(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociates', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociatesAppliedValue(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociatesAppliedValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociatesApproval(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociatesApproval', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociatesClassification(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociatesClassification', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociatesConstraint(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociatesConstraint', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociatesDocument(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociatesDocument', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociatesLibrary(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociatesLibrary', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociatesMaterial(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociatesMaterial', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelAssociatesProfileProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcRelAssociatesProfileProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnects(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnects', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsElements(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsElements', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsPathElements(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsPathElements', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsPortToElement(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsPortToElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsPorts(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsPorts', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsStructuralActivity(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsStructuralActivity', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsStructuralElement(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsStructuralElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsStructuralMember(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsStructuralMember', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsWithEccentricity(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsWithEccentricity', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelConnectsWithRealizingElements(*args, **kwargs): return ifcopenshell.create_entity('IfcRelConnectsWithRealizingElements', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelContainedInSpatialStructure(*args, **kwargs): return ifcopenshell.create_entity('IfcRelContainedInSpatialStructure', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelCoversBldgElements(*args, **kwargs): return ifcopenshell.create_entity('IfcRelCoversBldgElements', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelCoversSpaces(*args, **kwargs): return ifcopenshell.create_entity('IfcRelCoversSpaces', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelDecomposes(*args, **kwargs): return ifcopenshell.create_entity('IfcRelDecomposes', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelDefines(*args, **kwargs): return ifcopenshell.create_entity('IfcRelDefines', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelDefinesByProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcRelDefinesByProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelDefinesByType(*args, **kwargs): return ifcopenshell.create_entity('IfcRelDefinesByType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelFillsElement(*args, **kwargs): return ifcopenshell.create_entity('IfcRelFillsElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelFlowControlElements(*args, **kwargs): return ifcopenshell.create_entity('IfcRelFlowControlElements', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelInteractionRequirements(*args, **kwargs): return ifcopenshell.create_entity('IfcRelInteractionRequirements', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelNests(*args, **kwargs): return ifcopenshell.create_entity('IfcRelNests', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelOccupiesSpaces(*args, **kwargs): return ifcopenshell.create_entity('IfcRelOccupiesSpaces', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelOverridesProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcRelOverridesProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelProjectsElement(*args, **kwargs): return ifcopenshell.create_entity('IfcRelProjectsElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelReferencedInSpatialStructure(*args, **kwargs): return ifcopenshell.create_entity('IfcRelReferencedInSpatialStructure', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelSchedulesCostItems(*args, **kwargs): return ifcopenshell.create_entity('IfcRelSchedulesCostItems', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelSequence(*args, **kwargs): return ifcopenshell.create_entity('IfcRelSequence', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelServicesBuildings(*args, **kwargs): return ifcopenshell.create_entity('IfcRelServicesBuildings', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelSpaceBoundary(*args, **kwargs): return ifcopenshell.create_entity('IfcRelSpaceBoundary', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelVoidsElement(*args, **kwargs): return ifcopenshell.create_entity('IfcRelVoidsElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRelaxation(*args, **kwargs): return ifcopenshell.create_entity('IfcRelaxation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRepresentation(*args, **kwargs): return ifcopenshell.create_entity('IfcRepresentation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRepresentationContext(*args, **kwargs): return ifcopenshell.create_entity('IfcRepresentationContext', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRepresentationItem(*args, **kwargs): return ifcopenshell.create_entity('IfcRepresentationItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRepresentationMap(*args, **kwargs): return ifcopenshell.create_entity('IfcRepresentationMap', 'IFC2X3', *args, **kwargs)
+
+
+def IfcResource(*args, **kwargs): return ifcopenshell.create_entity('IfcResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRevolvedAreaSolid(*args, **kwargs): return ifcopenshell.create_entity('IfcRevolvedAreaSolid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRibPlateProfileProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcRibPlateProfileProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRightCircularCone(*args, **kwargs): return ifcopenshell.create_entity('IfcRightCircularCone', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRightCircularCylinder(*args, **kwargs): return ifcopenshell.create_entity('IfcRightCircularCylinder', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRoof(*args, **kwargs): return ifcopenshell.create_entity('IfcRoof', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRoot(*args, **kwargs): return ifcopenshell.create_entity('IfcRoot', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRoundedEdgeFeature(*args, **kwargs): return ifcopenshell.create_entity('IfcRoundedEdgeFeature', 'IFC2X3', *args, **kwargs)
+
+
+def IfcRoundedRectangleProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcRoundedRectangleProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSIUnit(*args, **kwargs): return ifcopenshell.create_entity('IfcSIUnit', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSanitaryTerminalType(*args, **kwargs): return ifcopenshell.create_entity('IfcSanitaryTerminalType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcScheduleTimeControl(*args, **kwargs): return ifcopenshell.create_entity('IfcScheduleTimeControl', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSectionProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcSectionProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSectionReinforcementProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcSectionReinforcementProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSectionedSpine(*args, **kwargs): return ifcopenshell.create_entity('IfcSectionedSpine', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSensorType(*args, **kwargs): return ifcopenshell.create_entity('IfcSensorType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcServiceLife(*args, **kwargs): return ifcopenshell.create_entity('IfcServiceLife', 'IFC2X3', *args, **kwargs)
+
+
+def IfcServiceLifeFactor(*args, **kwargs): return ifcopenshell.create_entity('IfcServiceLifeFactor', 'IFC2X3', *args, **kwargs)
+
+
+def IfcShapeAspect(*args, **kwargs): return ifcopenshell.create_entity('IfcShapeAspect', 'IFC2X3', *args, **kwargs)
+
+
+def IfcShapeModel(*args, **kwargs): return ifcopenshell.create_entity('IfcShapeModel', 'IFC2X3', *args, **kwargs)
+
+
+def IfcShapeRepresentation(*args, **kwargs): return ifcopenshell.create_entity('IfcShapeRepresentation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcShellBasedSurfaceModel(*args, **kwargs): return ifcopenshell.create_entity('IfcShellBasedSurfaceModel', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSimpleProperty(*args, **kwargs): return ifcopenshell.create_entity('IfcSimpleProperty', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSite(*args, **kwargs): return ifcopenshell.create_entity('IfcSite', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSlab(*args, **kwargs): return ifcopenshell.create_entity('IfcSlab', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSlabType(*args, **kwargs): return ifcopenshell.create_entity('IfcSlabType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSlippageConnectionCondition(*args, **kwargs): return ifcopenshell.create_entity('IfcSlippageConnectionCondition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSolidModel(*args, **kwargs): return ifcopenshell.create_entity('IfcSolidModel', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSoundProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcSoundProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSoundValue(*args, **kwargs): return ifcopenshell.create_entity('IfcSoundValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSpace(*args, **kwargs): return ifcopenshell.create_entity('IfcSpace', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSpaceHeaterType(*args, **kwargs): return ifcopenshell.create_entity('IfcSpaceHeaterType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSpaceProgram(*args, **kwargs): return ifcopenshell.create_entity('IfcSpaceProgram', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSpaceThermalLoadProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcSpaceThermalLoadProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSpaceType(*args, **kwargs): return ifcopenshell.create_entity('IfcSpaceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSpatialStructureElement(*args, **kwargs): return ifcopenshell.create_entity('IfcSpatialStructureElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSpatialStructureElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcSpatialStructureElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSphere(*args, **kwargs): return ifcopenshell.create_entity('IfcSphere', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStackTerminalType(*args, **kwargs): return ifcopenshell.create_entity('IfcStackTerminalType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStair(*args, **kwargs): return ifcopenshell.create_entity('IfcStair', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStairFlight(*args, **kwargs): return ifcopenshell.create_entity('IfcStairFlight', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStairFlightType(*args, **kwargs): return ifcopenshell.create_entity('IfcStairFlightType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralAction(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralAction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralActivity(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralActivity', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralAnalysisModel(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralAnalysisModel', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralConnection(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralConnection', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralConnectionCondition(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralConnectionCondition', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralCurveConnection(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralCurveConnection', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralCurveMember(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralCurveMember', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralCurveMemberVarying(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralCurveMemberVarying', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralItem(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLinearAction(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLinearAction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLinearActionVarying(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLinearActionVarying', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoad(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoad', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadGroup(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadGroup', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadLinearForce(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadLinearForce', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadPlanarForce(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadPlanarForce', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadSingleDisplacement(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadSingleDisplacement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadSingleDisplacementDistortion(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadSingleDisplacementDistortion', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadSingleForce(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadSingleForce', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadSingleForceWarping(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadSingleForceWarping', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadStatic(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadStatic', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralLoadTemperature(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralLoadTemperature', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralMember(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralMember', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralPlanarAction(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralPlanarAction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralPlanarActionVarying(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralPlanarActionVarying', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralPointAction(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralPointAction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralPointConnection(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralPointConnection', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralPointReaction(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralPointReaction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralProfileProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralProfileProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralReaction(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralReaction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralResultGroup(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralResultGroup', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralSteelProfileProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralSteelProfileProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralSurfaceConnection(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralSurfaceConnection', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralSurfaceMember(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralSurfaceMember', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuralSurfaceMemberVarying(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuralSurfaceMemberVarying', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStructuredDimensionCallout(*args, **kwargs): return ifcopenshell.create_entity('IfcStructuredDimensionCallout', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStyleModel(*args, **kwargs): return ifcopenshell.create_entity('IfcStyleModel', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStyledItem(*args, **kwargs): return ifcopenshell.create_entity('IfcStyledItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcStyledRepresentation(*args, **kwargs): return ifcopenshell.create_entity('IfcStyledRepresentation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSubContractResource(*args, **kwargs): return ifcopenshell.create_entity('IfcSubContractResource', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSubedge(*args, **kwargs): return ifcopenshell.create_entity('IfcSubedge', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurface(*args, **kwargs): return ifcopenshell.create_entity('IfcSurface', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceCurveSweptAreaSolid(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceCurveSweptAreaSolid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceOfLinearExtrusion(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceOfLinearExtrusion', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceOfRevolution(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceOfRevolution', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceStyleLighting(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceStyleLighting', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceStyleRefraction(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceStyleRefraction', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceStyleRendering(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceStyleRendering', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceStyleShading(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceStyleShading', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceStyleWithTextures(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceStyleWithTextures', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSurfaceTexture(*args, **kwargs): return ifcopenshell.create_entity('IfcSurfaceTexture', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSweptAreaSolid(*args, **kwargs): return ifcopenshell.create_entity('IfcSweptAreaSolid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSweptDiskSolid(*args, **kwargs): return ifcopenshell.create_entity('IfcSweptDiskSolid', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSweptSurface(*args, **kwargs): return ifcopenshell.create_entity('IfcSweptSurface', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSwitchingDeviceType(*args, **kwargs): return ifcopenshell.create_entity('IfcSwitchingDeviceType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSymbolStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcSymbolStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSystem(*args, **kwargs): return ifcopenshell.create_entity('IfcSystem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcSystemFurnitureElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcSystemFurnitureElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcTShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTable(*args, **kwargs): return ifcopenshell.create_entity('IfcTable', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTableRow(*args, **kwargs): return ifcopenshell.create_entity('IfcTableRow', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTankType(*args, **kwargs): return ifcopenshell.create_entity('IfcTankType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTask(*args, **kwargs): return ifcopenshell.create_entity('IfcTask', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTelecomAddress(*args, **kwargs): return ifcopenshell.create_entity('IfcTelecomAddress', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTendon(*args, **kwargs): return ifcopenshell.create_entity('IfcTendon', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTendonAnchor(*args, **kwargs): return ifcopenshell.create_entity('IfcTendonAnchor', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTerminatorSymbol(*args, **kwargs): return ifcopenshell.create_entity('IfcTerminatorSymbol', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextLiteral(*args, **kwargs): return ifcopenshell.create_entity('IfcTextLiteral', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextLiteralWithExtent(*args, **kwargs): return ifcopenshell.create_entity('IfcTextLiteralWithExtent', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcTextStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextStyleFontModel(*args, **kwargs): return ifcopenshell.create_entity('IfcTextStyleFontModel', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextStyleForDefinedFont(*args, **kwargs): return ifcopenshell.create_entity('IfcTextStyleForDefinedFont', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextStyleTextModel(*args, **kwargs): return ifcopenshell.create_entity('IfcTextStyleTextModel', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextStyleWithBoxCharacteristics(*args, **kwargs): return ifcopenshell.create_entity('IfcTextStyleWithBoxCharacteristics', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextureCoordinate(*args, **kwargs): return ifcopenshell.create_entity('IfcTextureCoordinate', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextureCoordinateGenerator(*args, **kwargs): return ifcopenshell.create_entity('IfcTextureCoordinateGenerator', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextureMap(*args, **kwargs): return ifcopenshell.create_entity('IfcTextureMap', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTextureVertex(*args, **kwargs): return ifcopenshell.create_entity('IfcTextureVertex', 'IFC2X3', *args, **kwargs)
+
+
+def IfcThermalMaterialProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcThermalMaterialProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTimeSeries(*args, **kwargs): return ifcopenshell.create_entity('IfcTimeSeries', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTimeSeriesReferenceRelationship(*args, **kwargs): return ifcopenshell.create_entity('IfcTimeSeriesReferenceRelationship', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTimeSeriesSchedule(*args, **kwargs): return ifcopenshell.create_entity('IfcTimeSeriesSchedule', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTimeSeriesValue(*args, **kwargs): return ifcopenshell.create_entity('IfcTimeSeriesValue', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTopologicalRepresentationItem(*args, **kwargs): return ifcopenshell.create_entity('IfcTopologicalRepresentationItem', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTopologyRepresentation(*args, **kwargs): return ifcopenshell.create_entity('IfcTopologyRepresentation', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTransformerType(*args, **kwargs): return ifcopenshell.create_entity('IfcTransformerType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTransportElement(*args, **kwargs): return ifcopenshell.create_entity('IfcTransportElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTransportElementType(*args, **kwargs): return ifcopenshell.create_entity('IfcTransportElementType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTrapeziumProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcTrapeziumProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTrimmedCurve(*args, **kwargs): return ifcopenshell.create_entity('IfcTrimmedCurve', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTubeBundleType(*args, **kwargs): return ifcopenshell.create_entity('IfcTubeBundleType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTwoDirectionRepeatFactor(*args, **kwargs): return ifcopenshell.create_entity('IfcTwoDirectionRepeatFactor', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTypeObject(*args, **kwargs): return ifcopenshell.create_entity('IfcTypeObject', 'IFC2X3', *args, **kwargs)
+
+
+def IfcTypeProduct(*args, **kwargs): return ifcopenshell.create_entity('IfcTypeProduct', 'IFC2X3', *args, **kwargs)
+
+
+def IfcUShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcUShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcUnitAssignment(*args, **kwargs): return ifcopenshell.create_entity('IfcUnitAssignment', 'IFC2X3', *args, **kwargs)
+
+
+def IfcUnitaryEquipmentType(*args, **kwargs): return ifcopenshell.create_entity('IfcUnitaryEquipmentType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcValveType(*args, **kwargs): return ifcopenshell.create_entity('IfcValveType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcVector(*args, **kwargs): return ifcopenshell.create_entity('IfcVector', 'IFC2X3', *args, **kwargs)
+
+
+def IfcVertex(*args, **kwargs): return ifcopenshell.create_entity('IfcVertex', 'IFC2X3', *args, **kwargs)
+
+
+def IfcVertexBasedTextureMap(*args, **kwargs): return ifcopenshell.create_entity('IfcVertexBasedTextureMap', 'IFC2X3', *args, **kwargs)
+
+
+def IfcVertexLoop(*args, **kwargs): return ifcopenshell.create_entity('IfcVertexLoop', 'IFC2X3', *args, **kwargs)
+
+
+def IfcVertexPoint(*args, **kwargs): return ifcopenshell.create_entity('IfcVertexPoint', 'IFC2X3', *args, **kwargs)
+
+
+def IfcVibrationIsolatorType(*args, **kwargs): return ifcopenshell.create_entity('IfcVibrationIsolatorType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcVirtualElement(*args, **kwargs): return ifcopenshell.create_entity('IfcVirtualElement', 'IFC2X3', *args, **kwargs)
+
+
+def IfcVirtualGridIntersection(*args, **kwargs): return ifcopenshell.create_entity('IfcVirtualGridIntersection', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWall(*args, **kwargs): return ifcopenshell.create_entity('IfcWall', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWallStandardCase(*args, **kwargs): return ifcopenshell.create_entity('IfcWallStandardCase', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWallType(*args, **kwargs): return ifcopenshell.create_entity('IfcWallType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWasteTerminalType(*args, **kwargs): return ifcopenshell.create_entity('IfcWasteTerminalType', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWaterProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcWaterProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWindow(*args, **kwargs): return ifcopenshell.create_entity('IfcWindow', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWindowLiningProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcWindowLiningProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWindowPanelProperties(*args, **kwargs): return ifcopenshell.create_entity('IfcWindowPanelProperties', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWindowStyle(*args, **kwargs): return ifcopenshell.create_entity('IfcWindowStyle', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWorkControl(*args, **kwargs): return ifcopenshell.create_entity('IfcWorkControl', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWorkPlan(*args, **kwargs): return ifcopenshell.create_entity('IfcWorkPlan', 'IFC2X3', *args, **kwargs)
+
+
+def IfcWorkSchedule(*args, **kwargs): return ifcopenshell.create_entity('IfcWorkSchedule', 'IFC2X3', *args, **kwargs)
+
+
+def IfcZShapeProfileDef(*args, **kwargs): return ifcopenshell.create_entity('IfcZShapeProfileDef', 'IFC2X3', *args, **kwargs)
+
+
+def IfcZone(*args, **kwargs): return ifcopenshell.create_entity('IfcZone', 'IFC2X3', *args, **kwargs)
 
 
 
-class IfcAxis2Placement3D_WR1:
+def calc_IfcSIUnit_Dimensions(self):
+    prefix = self.Prefix
+    name = self.Name
+    return \
+    IfcDimensionsForSiUnit(self.Name)
+
+
+
+
+class IfcNamedUnit_WR1:
     SCOPE = "entity"
-    TYPE_NAME = "IfcAxis2Placement3D"
+    TYPE_NAME = "IfcNamedUnit"
     RULE_NAME = "WR1"
 
     @staticmethod    
     def __call__(self):
-        axis = self.Axis
-        refdirection = self.RefDirection
+        dimensions = self.Dimensions
+        unittype = self.UnitType
         
-        assert self.Location.Dim == 3
-        
-
-
-
-class IfcAxis2Placement3D_WR2:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcAxis2Placement3D"
-    RULE_NAME = "WR2"
-
-    @staticmethod    
-    def __call__(self):
-        axis = self.Axis
-        refdirection = self.RefDirection
-        
-        assert (not exists(axis)) or (axis.Dim == 3)
+        assert IfcCorrectDimensions(self.UnitType,self.Dimensions)
         
 
 
 
-class IfcAxis2Placement3D_WR3:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcAxis2Placement3D"
-    RULE_NAME = "WR3"
+def IfcCorrectDimensions(m, dim):
 
-    @staticmethod    
-    def __call__(self):
-        axis = self.Axis
-        refdirection = self.RefDirection
-        
-        assert (not exists(refdirection)) or (refdirection.Dim == 3)
-        
+    if m == lengthunit:
+        if dim == IfcDimensionalExponents(1,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == massunit:
+        if dim == IfcDimensionalExponents(0,1,0,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == timeunit:
+        if dim == IfcDimensionalExponents(0,0,1,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == electriccurrentunit:
+        if dim == IfcDimensionalExponents(0,0,0,1,0,0,0):
+            return True
+        else:
+            return False
+    if m == thermodynamictemperatureunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,1,0,0):
+            return True
+        else:
+            return False
+    if m == amountofsubstanceunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,1,0):
+            return True
+        else:
+            return False
+    if m == luminousintensityunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,0,1):
+            return True
+        else:
+            return False
+    if m == planeangleunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == solidangleunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == areaunit:
+        if dim == IfcDimensionalExponents(2,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == volumeunit:
+        if dim == IfcDimensionalExponents(3,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == absorbeddoseunit:
+        if dim == IfcDimensionalExponents(2,0,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == radioactivityunit:
+        if dim == IfcDimensionalExponents(0,0,-1,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == electriccapacitanceunit:
+        if dim == IfcDimensionalExponents(-2,1,4,1,0,0,0):
+            return True
+        else:
+            return False
+    if m == doseequivalentunit:
+        if dim == IfcDimensionalExponents(2,0,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == electricchargeunit:
+        if dim == IfcDimensionalExponents(0,0,1,1,0,0,0):
+            return True
+        else:
+            return False
+    if m == electricconductanceunit:
+        if dim == IfcDimensionalExponents(-2,-1,3,2,0,0,0):
+            return True
+        else:
+            return False
+    if m == electricvoltageunit:
+        if dim == IfcDimensionalExponents(2,1,-3,-1,0,0,0):
+            return True
+        else:
+            return False
+    if m == electricresistanceunit:
+        if dim == IfcDimensionalExponents(2,1,-3,-2,0,0,0):
+            return True
+        else:
+            return False
+    if m == energyunit:
+        if dim == IfcDimensionalExponents(2,1,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == forceunit:
+        if dim == IfcDimensionalExponents(1,1,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == frequencyunit:
+        if dim == IfcDimensionalExponents(0,0,-1,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == inductanceunit:
+        if dim == IfcDimensionalExponents(2,1,-2,-2,0,0,0):
+            return True
+        else:
+            return False
+    if m == illuminanceunit:
+        if dim == IfcDimensionalExponents(-2,0,0,0,0,0,1):
+            return True
+        else:
+            return False
+    if m == luminousfluxunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,0,1):
+            return True
+        else:
+            return False
+    if m == magneticfluxunit:
+        if dim == IfcDimensionalExponents(2,1,-2,-1,0,0,0):
+            return True
+        else:
+            return False
+    if m == magneticfluxdensityunit:
+        if dim == IfcDimensionalExponents(0,1,-2,-1,0,0,0):
+            return True
+        else:
+            return False
+    if m == powerunit:
+        if dim == IfcDimensionalExponents(2,1,-3,0,0,0,0):
+            return True
+        else:
+            return False
+    if m == pressureunit:
+        if dim == IfcDimensionalExponents(-1,1,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    return unknown
 
 
+def IfcDimensionsForSiUnit(n):
 
-class IfcAxis2Placement3D_WR4:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcAxis2Placement3D"
-    RULE_NAME = "WR4"
-
-    @staticmethod    
-    def __call__(self):
-        axis = self.Axis
-        refdirection = self.RefDirection
-        
-        assert (not exists(axis)) or (not exists(refdirection)) or (IfcCrossProduct(axis,refdirection).Magnitude > 0.0)
-        
-
-
-
-class IfcAxis2Placement3D_WR5:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcAxis2Placement3D"
-    RULE_NAME = "WR5"
-
-    @staticmethod    
-    def __call__(self):
-        axis = self.Axis
-        refdirection = self.RefDirection
-        
-        assert not exists(axis) ^ exists(refdirection)
-        
-
-
-
-def calc_IfcAxis2Placement3D_P(self):
-    axis = self.Axis
-    refdirection = self.RefDirection
-    return \
-    IfcBuildAxes(axis,refdirection)
-
-
-
-
-class IfcCartesianPoint_WR1:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcCartesianPoint"
-    RULE_NAME = "WR1"
-
-    @staticmethod    
-    def __call__(self):
-        coordinates = self.Coordinates
-        
-        assert hiindex(coordinates) >= 2
-        
-
-
-
-def calc_IfcCartesianPoint_Dim(self):
-    coordinates = self.Coordinates
-    return \
-    hiindex(coordinates)
-
-
-
-
-def calc_IfcDirection_Dim(self):
-    directionratios = self.DirectionRatios
-    return \
-    hiindex(directionratios)
-
+    if n == metre:
+        return IfcDimensionalExponents(1,0,0,0,0,0,0)
+    if n == square_metre:
+        return IfcDimensionalExponents(2,0,0,0,0,0,0)
+    if n == cubic_metre:
+        return IfcDimensionalExponents(3,0,0,0,0,0,0)
+    if n == gram:
+        return IfcDimensionalExponents(0,1,0,0,0,0,0)
+    if n == second:
+        return IfcDimensionalExponents(0,0,1,0,0,0,0)
+    if n == ampere:
+        return IfcDimensionalExponents(0,0,0,1,0,0,0)
+    if n == kelvin:
+        return IfcDimensionalExponents(0,0,0,0,1,0,0)
+    if n == mole:
+        return IfcDimensionalExponents(0,0,0,0,0,1,0)
+    if n == candela:
+        return IfcDimensionalExponents(0,0,0,0,0,0,1)
+    if n == radian:
+        return IfcDimensionalExponents(0,0,0,0,0,0,0)
+    if n == steradian:
+        return IfcDimensionalExponents(0,0,0,0,0,0,0)
+    if n == hertz:
+        return IfcDimensionalExponents(0,0,-1,0,0,0,0)
+    if n == newton:
+        return IfcDimensionalExponents(1,1,-2,0,0,0,0)
+    if n == pascal:
+        return IfcDimensionalExponents(-1,1,-2,0,0,0,0)
+    if n == joule:
+        return IfcDimensionalExponents(2,1,-2,0,0,0,0)
+    if n == watt:
+        return IfcDimensionalExponents(2,1,-3,0,0,0,0)
+    if n == coulomb:
+        return IfcDimensionalExponents(0,0,1,1,0,0,0)
+    if n == volt:
+        return IfcDimensionalExponents(2,1,-3,-1,0,0,0)
+    if n == farad:
+        return IfcDimensionalExponents(-2,-1,4,1,0,0,0)
+    if n == ohm:
+        return IfcDimensionalExponents(2,1,-3,-2,0,0,0)
+    if n == siemens:
+        return IfcDimensionalExponents(-2,-1,3,2,0,0,0)
+    if n == weber:
+        return IfcDimensionalExponents(2,1,-2,-1,0,0,0)
+    if n == tesla:
+        return IfcDimensionalExponents(0,1,-2,-1,0,0,0)
+    if n == henry:
+        return IfcDimensionalExponents(2,1,-2,-2,0,0,0)
+    if n == degree_celsius:
+        return IfcDimensionalExponents(0,0,0,0,1,0,0)
+    if n == lumen:
+        return IfcDimensionalExponents(0,0,0,0,0,0,1)
+    if n == lux:
+        return IfcDimensionalExponents(-2,0,0,0,0,0,1)
+    if n == becquerel:
+        return IfcDimensionalExponents(0,0,-1,0,0,0,0)
+    if n == gray:
+        return IfcDimensionalExponents(2,0,-2,0,0,0,0)
+    if n == sievert:
+        return IfcDimensionalExponents(2,0,-2,0,0,0,0)
+    return IfcDimensionalExponents(0,0,0,0,0,0,0)
 
 
