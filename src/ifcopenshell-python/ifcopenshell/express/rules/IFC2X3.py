@@ -4449,54 +4449,147 @@ userdefined = IfcWorkControlTypeEnum.USERDEFINED
 notdefined = IfcWorkControlTypeEnum.NOTDEFINED
 
 
+def IfcCrossProduct(arg1, arg2):
+    
+    
+    
+    
+    if ((not exists(arg1)) or (arg1.Dim == 2)) or ((not exists(arg2)) or (arg2.Dim == 2)):
+        return None
+    else:
+        v1 = IfcNormalise(arg1).DirectionRatios
+        v2 = IfcNormalise(arg2).DirectionRatios
+        res = ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[((v1[2 - 1]) * (v2[3 - 1])) - ((v1[3 - 1]) * (v2[2 - 1])),((v1[3 - 1]) * (v2[1 - 1])) - ((v1[1 - 1]) * (v2[3 - 1])),((v1[1 - 1]) * (v2[2 - 1])) - ((v1[2 - 1]) * (v2[1 - 1]))])
+        mag = 0.0
+        for i in range(1, 3 + 1):
+            mag = mag + ((res.DirectionRatios[i - 1]) * (res.DirectionRatios[i - 1]))
+        if mag > 0.0:
+            result = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=res, Magnitude=sqrt(mag))
+        else:
+            result = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=arg1, Magnitude=0.0)
+        return result
 
-class IfcArbitraryProfileDefWithVoids_WR1:
+
+def IfcNormalise(arg):
+    
+    v = ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.])
+    vec = ifcopenshell.create_entity('IfcVector', schema='IFC2X3', Orientation=ifcopenshell.create_entity('IfcDirection', schema='IFC2X3', DirectionRatios=[1.,0.]), Magnitude=1.)
+    
+    result = v
+    if not exists(arg):
+        return None
+    else:
+        ndim = arg.Dim
+        if 'ifc2x3.ifcvector' in typeof(arg):
+            v.DirectionRatios = arg.Orientation.DirectionRatios
+            vec.Magnitude = arg.Magnitude
+            vec.Orientation = v
+            if arg.Magnitude == 0.0:
+                return None
+            else:
+                vec.Magnitude = 1.0
+        else:
+            v.DirectionRatios = arg.DirectionRatios
+        mag = 0.0
+        for i in range(1, ndim + 1):
+            mag = mag + ((v.DirectionRatios[i - 1]) * (v.DirectionRatios[i - 1]))
+        if mag > 0.0:
+            mag = sqrt(mag)
+            for i in range(1, ndim + 1):
+                temp = list(v.DirectionRatios)
+                temp[i - 1] = (v.DirectionRatios[i - 1]) / mag
+                v.DirectionRatios = temp
+            if 'ifc2x3.ifcvector' in typeof(arg):
+                vec.Orientation = v
+                result = vec
+            else:
+                result = v
+        else:
+            return None
+    return result
+
+
+
+class IfcAxis2Placement3D_WR1:
     SCOPE = "entity"
-    TYPE_NAME = "IfcArbitraryProfileDefWithVoids"
+    TYPE_NAME = "IfcAxis2Placement3D"
     RULE_NAME = "WR1"
 
     @staticmethod    
     def __call__(self):
-        innercurves = self.InnerCurves
+        axis = self.Axis
+        refdirection = self.RefDirection
         
-        assert self.ProfileType == area
+        assert self.Location.Dim == 3
         
 
 
 
-class IfcArbitraryProfileDefWithVoids_WR2:
+class IfcAxis2Placement3D_WR2:
     SCOPE = "entity"
-    TYPE_NAME = "IfcArbitraryProfileDefWithVoids"
+    TYPE_NAME = "IfcAxis2Placement3D"
     RULE_NAME = "WR2"
 
     @staticmethod    
     def __call__(self):
-        innercurves = self.InnerCurves
+        axis = self.Axis
+        refdirection = self.RefDirection
         
-        assert (sizeof([temp for temp in innercurves if temp.Dim != 2])) == 0
+        assert (not exists(axis)) or (axis.Dim == 3)
         
 
 
 
-class IfcArbitraryProfileDefWithVoids_WR3:
+class IfcAxis2Placement3D_WR3:
     SCOPE = "entity"
-    TYPE_NAME = "IfcArbitraryProfileDefWithVoids"
+    TYPE_NAME = "IfcAxis2Placement3D"
     RULE_NAME = "WR3"
 
     @staticmethod    
     def __call__(self):
-        innercurves = self.InnerCurves
+        axis = self.Axis
+        refdirection = self.RefDirection
         
-        assert (sizeof([temp for temp in innercurves if 'ifc2x3.ifcline' in typeof(temp)])) == 0
+        assert (not exists(refdirection)) or (refdirection.Dim == 3)
         
 
 
 
+class IfcAxis2Placement3D_WR4:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement3D"
+    RULE_NAME = "WR4"
 
-def calc_IfcCurve_Dim(self):
+    @staticmethod    
+    def __call__(self):
+        axis = self.Axis
+        refdirection = self.RefDirection
+        
+        assert (not exists(axis)) or (not exists(refdirection)) or (IfcCrossProduct(axis,refdirection).Magnitude > 0.0)
+        
 
+
+
+class IfcAxis2Placement3D_WR5:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement3D"
+    RULE_NAME = "WR5"
+
+    @staticmethod    
+    def __call__(self):
+        axis = self.Axis
+        refdirection = self.RefDirection
+        
+        assert not exists(axis) ^ exists(refdirection)
+        
+
+
+
+def calc_IfcAxis2Placement3D_P(self):
+    axis = self.Axis
+    refdirection = self.RefDirection
     return \
-    IfcCurveDim(self)
+    IfcBuildAxes(axis,refdirection)
 
 
 
@@ -4522,67 +4615,11 @@ def calc_IfcCartesianPoint_Dim(self):
 
 
 
-def IfcCurveDim(curve):
 
-    if 'ifc2x3.ifcline' in typeof(curve):
-        return curve.Pnt.Dim
-    if 'ifc2x3.ifcconic' in typeof(curve):
-        return curve.Position.Dim
-    if 'ifc2x3.ifcpolyline' in typeof(curve):
-        return curve.Points[1 - 1].Dim
-    if 'ifc2x3.ifctrimmedcurve' in typeof(curve):
-        return IfcCurveDim(curve.BasisCurve)
-    if 'ifc2x3.ifccompositecurve' in typeof(curve):
-        return curve.Segments[1 - 1].Dim
-    if 'ifc2x3.ifcbsplinecurve' in typeof(curve):
-        return curve.ControlPointsList[1 - 1].Dim
-    if 'ifc2x3.ifcoffsetcurve2d' in typeof(curve):
-        return 2
-    if 'ifc2x3.ifcoffsetcurve3d' in typeof(curve):
-        return 3
-    return None
-
-
-
-class IfcArbitraryClosedProfileDef_WR1:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcArbitraryClosedProfileDef"
-    RULE_NAME = "WR1"
-
-    @staticmethod    
-    def __call__(self):
-        outercurve = self.OuterCurve
-        
-        assert outercurve.Dim == 2
-        
-
-
-
-class IfcArbitraryClosedProfileDef_WR2:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcArbitraryClosedProfileDef"
-    RULE_NAME = "WR2"
-
-    @staticmethod    
-    def __call__(self):
-        outercurve = self.OuterCurve
-        
-        assert not 'ifc2x3.ifcline' in typeof(outercurve)
-        
-
-
-
-class IfcArbitraryClosedProfileDef_WR3:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcArbitraryClosedProfileDef"
-    RULE_NAME = "WR3"
-
-    @staticmethod    
-    def __call__(self):
-        outercurve = self.OuterCurve
-        
-        assert not 'ifc2x3.ifcoffsetcurve2d' in typeof(outercurve)
-        
+def calc_IfcDirection_Dim(self):
+    directionratios = self.DirectionRatios
+    return \
+    hiindex(directionratios)
 
 
 

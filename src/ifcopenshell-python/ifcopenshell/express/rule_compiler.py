@@ -243,7 +243,10 @@ class codegen_rule:
         codegen_rule.all_rules.append(self)
         
     def __call__(self, graph, node):
+        # try:
         v = self.fn(context(graph, [node]))
+        # except:
+        #     v = "ERROR!!"
         graph.nodes[node]['value'] = v
         return v
 
@@ -382,7 +385,8 @@ def process_expression(context):
         else:
             return concat(context.multiplication_like_op, context.factor)
     elif context.add_like_op:
-        if context.factor:
+        if context.factor or len(context.term) > 1:
+            # @todo now sure why this is required (in IfcCrossProduct)
             # @todo not sure what's going on here, why we have both factor and term as direct child productions of simple_expression (in IfcDotProduct)
             return concat(context.add_like_op, context, allow_multiple=True, exclude=[context.add_like_op])
         else:
@@ -436,7 +440,7 @@ def simple_concat(context):
 def process_rel_op(context):
     if str(context) == "<>":
         return "!="
-    elif str(context) == "=":
+    elif str(context) == "=" or str(context) == ":=:":
         return "=="
 
 
@@ -501,7 +505,7 @@ codegen_rule("simple_expression", process_expression)
 codegen_rule("logical_expression", process_expression)
 codegen_rule("term", process_expression)
 codegen_rule("query_expression", process_query)
-codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches())))
+codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches() if context.element else ())))
 codegen_rule("interval", process_interval)
 codegen_rule("simple_factor", simple_concat)
 codegen_rule("primary", simple_concat)
@@ -520,6 +524,8 @@ codegen_rule("local_variable", process_local_variable)
 codegen_rule("local_decl", lambda context: '\n'.join(map(str, context.branches())))
 codegen_rule("general_ref/parameter_ref", make_lowercase)
 codegen_rule("qualifiable_factor/attribute_ref", make_lowercase)
+codegen_rule("XOR", lambda context: "^")
+
 
 def reverse_compile(s):
     return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
@@ -570,32 +576,37 @@ def typeof(inst):
     # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + :
     # for nm in []: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
     # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef', 'IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint', 'IfcCShapeProfileDef', 'IfcExtrudedAreaSolid', 'IfcBSplineCurve',
-    # for nm in schema.all_declarations.keys():
+    # for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
 
-    for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
+    DEBUG = False
+
+    for nm in ["IfcCrossProduct", "IfcNormalise", "IfcAxis2Placement3D", "IfcCartesianPoint", "IfcDirection"]: # 
+
     
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])
-                
-        with open(f"{nm}.json", "w") as f:
-            json.dump(tree, f, indent=2)
+
+        if DEBUG:    
+            with open(f"{nm}.json", "w") as f:
+                json.dump(tree, f, indent=2)
         
         G = to_graph(tree)
         rule_code = codegen_rule.apply(G)
 
-        for n in G.nodes.values():
-            if v := n.get('value'):
-                if isinstance(v, str):
-                    nl = "\n"
-                    es = "\\n"
-                    n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(">", "&gt;").replace(nl, "<br/>")}</td></tr></table>>'
-                elif isinstance(v, empty):
-                    n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">---</td></tr></table>>'
-        
-        fn = f"{nm}.dot"
-        write_dot(fn, G)
-        subprocess.call([shutil.which("dot") or "dot", fn, "-O", "-Tpng"])
+        if DEBUG:
+            for n in G.nodes.values():
+                if v := n.get('value'):
+                    if isinstance(v, str):
+                        nl = "\n"
+                        es = "\\n"
+                        n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(">", "&gt;").replace(nl, "<br/>")}</td></tr></table>>'
+                    elif isinstance(v, empty):
+                        n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">---</td></tr></table>>'
+            
+            fn = f"{nm}.dot"
+            write_dot(fn, G)
+            subprocess.call([shutil.which("dot") or "dot", fn, "-O", "-Tpng"])
 
         print(rule_code, "\n", file=output, sep='\n')
 
