@@ -271,6 +271,8 @@ class {context.rule_head.rule_id}:
     @staticmethod    
     def __call__(file):
         {context.rule_head.entity_ref} = file.by_type("{context.rule_head.entity_ref}")
+{indent(8, context.algorithm_head.local_decl)}
+{indent(8, context.stmt.branches())}
 {indent(8, context.where_clause.domain_rule)}
 """
 
@@ -452,7 +454,8 @@ def simple_concat(context):
 
 
 def process_rel_op(context):
-    if str(context) == "<>":
+    # @todo the distinction between value comparison and instance comparison
+    if str(context) == "<>" or str(context) == ":<>:":
         return "!="
     elif str(context) == "=" or str(context) == ":=:":
         return "=="
@@ -568,6 +571,7 @@ codegen_rule("general_ref/parameter_ref", make_lowercase)
 codegen_rule("qualifiable_factor/attribute_ref", make_lowercase_if(lambda context: str(context) not in set(map(str, schema.all_declarations.keys()))))
 codegen_rule("case_action", process_case_action)
 codegen_rule("case_stmt", process_case_statement)
+codegen_rule("escape_stmt", lambda context: "break")
 
 codegen_rule("XOR", lambda context: "^")
 codegen_rule("MOD", lambda context: "%")
@@ -646,7 +650,8 @@ def typeof(inst):
     DEBUG = True
     # for nm in ['IfcShapeRepresentation', 'IfcShapeRepresentationTypes', 'IfcPolyline', 'IfcCurve', 'IfcCartesianPoint', 'IfcCurveDim']: # schema.functions.keys():
 
-    for nm in ['IfcPropertySet', 'IfcUniquePropertyName']:
+    # for nm in schema.all_declarations.keys():
+    for nm in ['IfcRepresentationContextSameWCS']:
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])
