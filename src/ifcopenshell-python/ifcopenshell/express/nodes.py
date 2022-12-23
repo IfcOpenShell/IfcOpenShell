@@ -314,6 +314,10 @@ def to_tree(x, key=None):
                         yield from replace_synonyms([S])
 
         subrules = list(replace_synonyms(rule_dependencies[key]))
+
+        if key == "aggregation_types":
+            # hack hack hack apparently the parser can't distinguish these
+            subrules += list(replace_synonyms(rule_dependencies["general_aggregation_types"]))
         
         if rule_dependencies[key] and not subrules:
             # sometimes an intermediate production rule is missing

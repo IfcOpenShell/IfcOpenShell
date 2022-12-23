@@ -479,7 +479,11 @@ def process_query(context):
 
 def process_local_variable(context):
     if context.expression:
-        return '%s = %s' % (str(context.variable_id).lower(), context.expression)
+        expr = str(context.expression)
+        if context.parameter_type.generalized_types.general_aggregation_types.general_set_type:
+            expr = re.sub('(\[[^\]]*\])', 'express_set(\\1)', expr)
+            
+        return '%s = %s' % (str(context.variable_id).lower(), expr)
     else:
         return empty()
 
@@ -596,9 +600,18 @@ if __name__ == "__main__":
     print("unknown = 'UNKNOWN'", file=output, sep='\n')
 
     print("""
-class rmult_set(set):
+class express_set(set):
     def __rmul__(self, other):
-        return rmult_set(set(other) & self)
+        return express_set(set(other) & self)
+    def __add__(self, other):
+        def make_list(v):
+            # Comply with 12.6.3 Union operator
+            if isinstance(v, (list, tuple, set, express_set)):
+                return list(v)
+            else:
+                return [v]
+        return express_set(list(self) + make_list(other))
+    __radd__ = __add__
     def __repr__(self):
         return repr(set(self))
 
@@ -610,7 +623,7 @@ def typeof(inst):
         while decl:
             yield '.'.join((schema_name, decl.name().lower()))
             decl = decl.supertype()
-    return rmult_set(inner())
+    return express_set(inner())
 """, file=output, sep='\n')
 
     print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
@@ -630,8 +643,10 @@ def typeof(inst):
     # for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
     # for nm in ['IfcSIUnit','IfcNamedUnit','IfcCorrectDimensions', 'IfcDimensionsForSiUnit']:
     
-    DEBUG = False
-    for nm in ['IfcShapeRepresentation', 'IfcShapeRepresentationTypes', 'IfcPolyline', 'IfcCurve', 'IfcCartesianPoint', 'IfcCurveDim']: # schema.functions.keys():
+    DEBUG = True
+    # for nm in ['IfcShapeRepresentation', 'IfcShapeRepresentationTypes', 'IfcPolyline', 'IfcCurve', 'IfcCartesianPoint', 'IfcCurveDim']: # schema.functions.keys():
+
+    for nm in ['IfcPropertySet', 'IfcUniquePropertyName']:
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])

@@ -11,9 +11,18 @@ loindex = lambda x: 1
 from math import *
 unknown = 'UNKNOWN'
 
-class rmult_set(set):
+class express_set(set):
     def __rmul__(self, other):
-        return rmult_set(set(other) & self)
+        return express_set(set(other) & self)
+    def __add__(self, other):
+        def make_list(v):
+            # Comply with 12.6.3 Union operator
+            if isinstance(v, (list, tuple, set, express_set)):
+                return list(v)
+            else:
+                return [v]
+        return express_set(list(self) + make_list(other))
+    __radd__ = __add__
     def __repr__(self):
         return repr(set(self))
 
@@ -25,7 +34,7 @@ def typeof(inst):
         while decl:
             yield '.'.join((schema_name, decl.name().lower()))
             decl = decl.supertype()
-    return rmult_set(inner())
+    return express_set(inner())
 
 class enum_namespace:
     def __getattr__(self, k):
@@ -6414,178 +6423,46 @@ def IfcZone(*args, **kwargs): return ifcopenshell.create_entity('IfcZone', 'IFC2
 
 
 
-class IfcShapeRepresentation_WR21:
+class IfcPropertySet_WR31:
     SCOPE = "entity"
-    TYPE_NAME = "IfcShapeRepresentation"
-    RULE_NAME = "WR21"
+    TYPE_NAME = "IfcPropertySet"
+    RULE_NAME = "WR31"
 
     @staticmethod    
     def __call__(self):
-        contextofitems = self.ContextOfItems
-        representationidentifier = self.RepresentationIdentifier
-        representationtype = self.RepresentationType
-        items = self.Items
+        globalid = self.GlobalId
+        ownerhistory = self.OwnerHistory
+        name = self.Name
+        description = self.Description
+        hasproperties = self.HasProperties
         
-        assert 'ifc2x3.ifcgeometricrepresentationcontext' in typeof(self.ContextOfItems)
+        assert exists(self.Name)
         
 
 
 
-class IfcShapeRepresentation_WR22:
+class IfcPropertySet_WR32:
     SCOPE = "entity"
-    TYPE_NAME = "IfcShapeRepresentation"
-    RULE_NAME = "WR22"
+    TYPE_NAME = "IfcPropertySet"
+    RULE_NAME = "WR32"
 
     @staticmethod    
     def __call__(self):
-        contextofitems = self.ContextOfItems
-        representationidentifier = self.RepresentationIdentifier
-        representationtype = self.RepresentationType
-        items = self.Items
+        globalid = self.GlobalId
+        ownerhistory = self.OwnerHistory
+        name = self.Name
+        description = self.Description
+        hasproperties = self.HasProperties
         
-        assert (sizeof([temp for temp in items if ('ifc2x3.ifctopologicalrepresentationitem' in typeof(temp)) and (not (sizeof(['ifc2x3.ifcvertexpoint','ifc2x3.ifcedgecurve','ifc2x3.ifcfacesurface'] * typeof(temp))) == 1)])) == 0
-        
-
-
-
-class IfcShapeRepresentation_WR23:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcShapeRepresentation"
-    RULE_NAME = "WR23"
-
-    @staticmethod    
-    def __call__(self):
-        contextofitems = self.ContextOfItems
-        representationidentifier = self.RepresentationIdentifier
-        representationtype = self.RepresentationType
-        items = self.Items
-        
-        assert exists(self.RepresentationType)
+        assert IfcUniquePropertyName(hasproperties)
         
 
 
 
-class IfcShapeRepresentation_WR24:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcShapeRepresentation"
-    RULE_NAME = "WR24"
-
-    @staticmethod    
-    def __call__(self):
-        contextofitems = self.ContextOfItems
-        representationidentifier = self.RepresentationIdentifier
-        representationtype = self.RepresentationType
-        items = self.Items
-        
-        assert IfcShapeRepresentationTypes(self.RepresentationType,self.Items)
-        
-
-
-
-def IfcShapeRepresentationTypes(reptype, items):
-    count = 0
-    if reptype.lower() == 'curve2d':
-        count = sizeof([temp for temp in items if ('ifc2x3.ifccurve' in typeof(temp)) and (temp.Dim == 2)])
-    elif reptype.lower() == 'annotation2d':
-        count = sizeof([temp for temp in items if (sizeof(typeof(temp) * ['ifc2x3.ifcpoint','ifc2x3.ifccurve','ifc2x3.ifcgeometriccurveset','ifc2x3.ifcannotationfillarea','ifc2x3.ifcdefinedsymbol','ifc2x3.ifctextliteral','ifc2x3.ifcdraughtingcallout'])) == 1])
-    elif reptype.lower() == 'geometricset':
-        count = sizeof([temp for temp in items if ('ifc2x3.ifcgeometricset' in typeof(temp)) or ('ifc2x3.ifcpoint' in typeof(temp)) or ('ifc2x3.ifccurve' in typeof(temp)) or ('ifc2x3.ifcsurface' in typeof(temp))])
-    elif reptype.lower() == 'geometriccurveset':
-        count = sizeof([temp for temp in items if ('ifc2x3.ifcgeometriccurveset' in typeof(temp)) or ('ifc2x3.ifcgeometricset' in typeof(temp)) or ('ifc2x3.ifcpoint' in typeof(temp)) or ('ifc2x3.ifccurve' in typeof(temp))])
-        for i in range(1, hiindex(items) + 1):
-            if 'ifc2x3.ifcgeometricset' in (typeof(items[i - 1])):
-                if (sizeof([temp for temp in items[i - 1].Elements if 'ifc2x3.ifcsurface' in typeof(temp)])) > 0:
-                    count = count - 1
-    elif reptype.lower() == 'surfacemodel':
-        count = sizeof([temp for temp in items if (sizeof(['ifc2x3.ifcshellbasedsurfacemodel','ifc2x3.ifcfacebasedsurfacemodel','ifc2x3.ifcfacetedbrep','ifc2x3.ifcfacetedbrepwithvoids'] * typeof(temp))) >= 1])
-    elif reptype.lower() == 'solidmodel':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcsolidmodel' in typeof(temp)])
-    elif reptype.lower() == 'sweptsolid':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcsweptareasolid' in typeof(temp)])
-    elif reptype.lower() == 'csg':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcbooleanresult' in typeof(temp)])
-    elif reptype.lower() == 'clipping':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcbooleanclippingresult' in typeof(temp)])
-    elif reptype.lower() == 'advancedsweptsolid':
-        count = sizeof([temp for temp in items if ('ifc2x3.ifcsurfacecurvesweptareasolid' in typeof(temp)) or ('ifc2x3.ifcsweptdisksolid' in typeof(temp))])
-    elif reptype.lower() == 'brep':
-        count = sizeof([temp for temp in items if ('ifc2x3.ifcfacetedbrep' in typeof(temp)) or ('ifc2x3.ifcfacetedbrepwithvoids' in typeof(temp))])
-    elif reptype.lower() == 'boundingbox':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcboundingbox' in typeof(temp)])
-        if sizeof(items) > 1:
-            count = 0
-    elif reptype.lower() == 'sectionedspine':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcsectionedspine' in typeof(temp)])
-    elif reptype.lower() == 'mappedrepresentation':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcmappeditem' in typeof(temp)])
-    else:
-        return None
-    return count == sizeof(items)
-
-
-
-class IfcPolyline_WR41:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcPolyline"
-    RULE_NAME = "WR41"
-
-    @staticmethod    
-    def __call__(self):
-        points = self.Points
-        
-        assert (sizeof([temp for temp in points if temp.Dim != (points[1 - 1].Dim)])) == 0
-        
-
-
-
-
-def calc_IfcCurve_Dim(self):
-
-    return \
-    IfcCurveDim(self)
-
-
-
-
-class IfcCartesianPoint_WR1:
-    SCOPE = "entity"
-    TYPE_NAME = "IfcCartesianPoint"
-    RULE_NAME = "WR1"
-
-    @staticmethod    
-    def __call__(self):
-        coordinates = self.Coordinates
-        
-        assert hiindex(coordinates) >= 2
-        
-
-
-
-def calc_IfcCartesianPoint_Dim(self):
-    coordinates = self.Coordinates
-    return \
-    hiindex(coordinates)
-
-
-
-def IfcCurveDim(curve):
-
-    if 'ifc2x3.ifcline' in typeof(curve):
-        return curve.Pnt.Dim
-    if 'ifc2x3.ifcconic' in typeof(curve):
-        return curve.Position.Dim
-    if 'ifc2x3.ifcpolyline' in typeof(curve):
-        return curve.Points[1 - 1].Dim
-    if 'ifc2x3.ifctrimmedcurve' in typeof(curve):
-        return IfcCurveDim(curve.BasisCurve)
-    if 'ifc2x3.ifccompositecurve' in typeof(curve):
-        return curve.Segments[1 - 1].Dim
-    if 'ifc2x3.ifcbsplinecurve' in typeof(curve):
-        return curve.ControlPointsList[1 - 1].Dim
-    if 'ifc2x3.ifcoffsetcurve2d' in typeof(curve):
-        return 2
-    if 'ifc2x3.ifcoffsetcurve3d' in typeof(curve):
-        return 3
-    return None
+def IfcUniquePropertyName(properties):
+    names = express_set([])
+    for i in range(1, hiindex(properties) + 1):
+        names = names + (properties[i - 1].Name)
+    return sizeof(names) == sizeof(properties)
 
 
