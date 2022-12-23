@@ -188,8 +188,10 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-# Basically copied Sverchok SvNodeTreeImporter
-# Wasn't able to use actual SvNodeTreeImporter because it expects node graph to be opened
+# https://github.com/nortikin/sverchok/blob/a470f9d5c84090773d3f4a98ad04a8aca7492b33/ui/sv_IO_panel.py#L188-L237
+# used code from Sverchok's SvNodeTreeImporter licensed under GPL v3
+# the code was changed to work with ifc sverchok modifier
+# removed the part that was relying on node graph to be opened at execution
 class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_sverchok_graph"
     bl_label = "Import sverchok graph"
@@ -228,8 +230,10 @@ class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
         col.template_ID(context.scene.io_panel_properties, "import_tree", new="node.new_import_tree")
 
 
-# Basically copied Sverchok SvNodeTreeExporter
-# Wasn't able to use actual SvNodeTreeExporter because it expects node graph to be opened
+# https://github.com/nortikin/sverchok/blob/a470f9d5c84090773d3f4a98ad04a8aca7492b33/ui/sv_IO_panel.py#L104-L185
+# used code from Sverchok's SvNodeTreeExporter licensed under GPL v3
+# the code was changed to work with ifc sverchok modifier
+# removed the part that was relying on node graph to be opened at execution
 class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.export_sverchok_graph"
     bl_label = "Export sverchok graph"
