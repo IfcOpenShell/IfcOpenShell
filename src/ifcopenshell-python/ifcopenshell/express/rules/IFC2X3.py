@@ -7,6 +7,7 @@ def nvl(v, default): return v if v is not None else default
 
 sizeof = len
 hiindex = len
+loindex = lambda x: 1
 from math import *
 unknown = 'UNKNOWN'
 
@@ -6413,242 +6414,178 @@ def IfcZone(*args, **kwargs): return ifcopenshell.create_entity('IfcZone', 'IFC2
 
 
 
-def calc_IfcSIUnit_Dimensions(self):
-    prefix = self.Prefix
-    name = self.Name
-    return \
-    IfcDimensionsForSiUnit(self.Name)
-
-
-
-
-class IfcNamedUnit_WR1:
+class IfcShapeRepresentation_WR21:
     SCOPE = "entity"
-    TYPE_NAME = "IfcNamedUnit"
+    TYPE_NAME = "IfcShapeRepresentation"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        contextofitems = self.ContextOfItems
+        representationidentifier = self.RepresentationIdentifier
+        representationtype = self.RepresentationType
+        items = self.Items
+        
+        assert 'ifc2x3.ifcgeometricrepresentationcontext' in typeof(self.ContextOfItems)
+        
+
+
+
+class IfcShapeRepresentation_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcShapeRepresentation"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        contextofitems = self.ContextOfItems
+        representationidentifier = self.RepresentationIdentifier
+        representationtype = self.RepresentationType
+        items = self.Items
+        
+        assert (sizeof([temp for temp in items if ('ifc2x3.ifctopologicalrepresentationitem' in typeof(temp)) and (not (sizeof(['ifc2x3.ifcvertexpoint','ifc2x3.ifcedgecurve','ifc2x3.ifcfacesurface'] * typeof(temp))) == 1)])) == 0
+        
+
+
+
+class IfcShapeRepresentation_WR23:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcShapeRepresentation"
+    RULE_NAME = "WR23"
+
+    @staticmethod    
+    def __call__(self):
+        contextofitems = self.ContextOfItems
+        representationidentifier = self.RepresentationIdentifier
+        representationtype = self.RepresentationType
+        items = self.Items
+        
+        assert exists(self.RepresentationType)
+        
+
+
+
+class IfcShapeRepresentation_WR24:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcShapeRepresentation"
+    RULE_NAME = "WR24"
+
+    @staticmethod    
+    def __call__(self):
+        contextofitems = self.ContextOfItems
+        representationidentifier = self.RepresentationIdentifier
+        representationtype = self.RepresentationType
+        items = self.Items
+        
+        assert IfcShapeRepresentationTypes(self.RepresentationType,self.Items)
+        
+
+
+
+def IfcShapeRepresentationTypes(reptype, items):
+    count = 0
+    if reptype.lower() == 'curve2d':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifccurve' in typeof(temp)) and (temp.Dim == 2)])
+    elif reptype.lower() == 'annotation2d':
+        count = sizeof([temp for temp in items if (sizeof(typeof(temp) * ['ifc2x3.ifcpoint','ifc2x3.ifccurve','ifc2x3.ifcgeometriccurveset','ifc2x3.ifcannotationfillarea','ifc2x3.ifcdefinedsymbol','ifc2x3.ifctextliteral','ifc2x3.ifcdraughtingcallout'])) == 1])
+    elif reptype.lower() == 'geometricset':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcgeometricset' in typeof(temp)) or ('ifc2x3.ifcpoint' in typeof(temp)) or ('ifc2x3.ifccurve' in typeof(temp)) or ('ifc2x3.ifcsurface' in typeof(temp))])
+    elif reptype.lower() == 'geometriccurveset':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcgeometriccurveset' in typeof(temp)) or ('ifc2x3.ifcgeometricset' in typeof(temp)) or ('ifc2x3.ifcpoint' in typeof(temp)) or ('ifc2x3.ifccurve' in typeof(temp))])
+        for i in range(1, hiindex(items) + 1):
+            if 'ifc2x3.ifcgeometricset' in (typeof(items[i - 1])):
+                if (sizeof([temp for temp in items[i - 1].Elements if 'ifc2x3.ifcsurface' in typeof(temp)])) > 0:
+                    count = count - 1
+    elif reptype.lower() == 'surfacemodel':
+        count = sizeof([temp for temp in items if (sizeof(['ifc2x3.ifcshellbasedsurfacemodel','ifc2x3.ifcfacebasedsurfacemodel','ifc2x3.ifcfacetedbrep','ifc2x3.ifcfacetedbrepwithvoids'] * typeof(temp))) >= 1])
+    elif reptype.lower() == 'solidmodel':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcsolidmodel' in typeof(temp)])
+    elif reptype.lower() == 'sweptsolid':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcsweptareasolid' in typeof(temp)])
+    elif reptype.lower() == 'csg':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcbooleanresult' in typeof(temp)])
+    elif reptype.lower() == 'clipping':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcbooleanclippingresult' in typeof(temp)])
+    elif reptype.lower() == 'advancedsweptsolid':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcsurfacecurvesweptareasolid' in typeof(temp)) or ('ifc2x3.ifcsweptdisksolid' in typeof(temp))])
+    elif reptype.lower() == 'brep':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcfacetedbrep' in typeof(temp)) or ('ifc2x3.ifcfacetedbrepwithvoids' in typeof(temp))])
+    elif reptype.lower() == 'boundingbox':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcboundingbox' in typeof(temp)])
+        if sizeof(items) > 1:
+            count = 0
+    elif reptype.lower() == 'sectionedspine':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcsectionedspine' in typeof(temp)])
+    elif reptype.lower() == 'mappedrepresentation':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcmappeditem' in typeof(temp)])
+    else:
+        return None
+    return count == sizeof(items)
+
+
+
+class IfcPolyline_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPolyline"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+        points = self.Points
+        
+        assert (sizeof([temp for temp in points if temp.Dim != (points[1 - 1].Dim)])) == 0
+        
+
+
+
+
+def calc_IfcCurve_Dim(self):
+
+    return \
+    IfcCurveDim(self)
+
+
+
+
+class IfcCartesianPoint_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianPoint"
     RULE_NAME = "WR1"
 
     @staticmethod    
     def __call__(self):
-        dimensions = self.Dimensions
-        unittype = self.UnitType
+        coordinates = self.Coordinates
         
-        assert IfcCorrectDimensions(self.UnitType,self.Dimensions)
+        assert hiindex(coordinates) >= 2
         
 
 
 
-def IfcCorrectDimensions(m, dim):
-
-    if m == lengthunit:
-        if dim == IfcDimensionalExponents(1,0,0,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == massunit:
-        if dim == IfcDimensionalExponents(0,1,0,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == timeunit:
-        if dim == IfcDimensionalExponents(0,0,1,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == electriccurrentunit:
-        if dim == IfcDimensionalExponents(0,0,0,1,0,0,0):
-            return True
-        else:
-            return False
-    if m == thermodynamictemperatureunit:
-        if dim == IfcDimensionalExponents(0,0,0,0,1,0,0):
-            return True
-        else:
-            return False
-    if m == amountofsubstanceunit:
-        if dim == IfcDimensionalExponents(0,0,0,0,0,1,0):
-            return True
-        else:
-            return False
-    if m == luminousintensityunit:
-        if dim == IfcDimensionalExponents(0,0,0,0,0,0,1):
-            return True
-        else:
-            return False
-    if m == planeangleunit:
-        if dim == IfcDimensionalExponents(0,0,0,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == solidangleunit:
-        if dim == IfcDimensionalExponents(0,0,0,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == areaunit:
-        if dim == IfcDimensionalExponents(2,0,0,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == volumeunit:
-        if dim == IfcDimensionalExponents(3,0,0,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == absorbeddoseunit:
-        if dim == IfcDimensionalExponents(2,0,-2,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == radioactivityunit:
-        if dim == IfcDimensionalExponents(0,0,-1,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == electriccapacitanceunit:
-        if dim == IfcDimensionalExponents(-2,1,4,1,0,0,0):
-            return True
-        else:
-            return False
-    if m == doseequivalentunit:
-        if dim == IfcDimensionalExponents(2,0,-2,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == electricchargeunit:
-        if dim == IfcDimensionalExponents(0,0,1,1,0,0,0):
-            return True
-        else:
-            return False
-    if m == electricconductanceunit:
-        if dim == IfcDimensionalExponents(-2,-1,3,2,0,0,0):
-            return True
-        else:
-            return False
-    if m == electricvoltageunit:
-        if dim == IfcDimensionalExponents(2,1,-3,-1,0,0,0):
-            return True
-        else:
-            return False
-    if m == electricresistanceunit:
-        if dim == IfcDimensionalExponents(2,1,-3,-2,0,0,0):
-            return True
-        else:
-            return False
-    if m == energyunit:
-        if dim == IfcDimensionalExponents(2,1,-2,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == forceunit:
-        if dim == IfcDimensionalExponents(1,1,-2,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == frequencyunit:
-        if dim == IfcDimensionalExponents(0,0,-1,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == inductanceunit:
-        if dim == IfcDimensionalExponents(2,1,-2,-2,0,0,0):
-            return True
-        else:
-            return False
-    if m == illuminanceunit:
-        if dim == IfcDimensionalExponents(-2,0,0,0,0,0,1):
-            return True
-        else:
-            return False
-    if m == luminousfluxunit:
-        if dim == IfcDimensionalExponents(0,0,0,0,0,0,1):
-            return True
-        else:
-            return False
-    if m == magneticfluxunit:
-        if dim == IfcDimensionalExponents(2,1,-2,-1,0,0,0):
-            return True
-        else:
-            return False
-    if m == magneticfluxdensityunit:
-        if dim == IfcDimensionalExponents(0,1,-2,-1,0,0,0):
-            return True
-        else:
-            return False
-    if m == powerunit:
-        if dim == IfcDimensionalExponents(2,1,-3,0,0,0,0):
-            return True
-        else:
-            return False
-    if m == pressureunit:
-        if dim == IfcDimensionalExponents(-1,1,-2,0,0,0,0):
-            return True
-        else:
-            return False
-    return unknown
+def calc_IfcCartesianPoint_Dim(self):
+    coordinates = self.Coordinates
+    return \
+    hiindex(coordinates)
 
 
-def IfcDimensionsForSiUnit(n):
 
-    if n == metre:
-        return IfcDimensionalExponents(1,0,0,0,0,0,0)
-    if n == square_metre:
-        return IfcDimensionalExponents(2,0,0,0,0,0,0)
-    if n == cubic_metre:
-        return IfcDimensionalExponents(3,0,0,0,0,0,0)
-    if n == gram:
-        return IfcDimensionalExponents(0,1,0,0,0,0,0)
-    if n == second:
-        return IfcDimensionalExponents(0,0,1,0,0,0,0)
-    if n == ampere:
-        return IfcDimensionalExponents(0,0,0,1,0,0,0)
-    if n == kelvin:
-        return IfcDimensionalExponents(0,0,0,0,1,0,0)
-    if n == mole:
-        return IfcDimensionalExponents(0,0,0,0,0,1,0)
-    if n == candela:
-        return IfcDimensionalExponents(0,0,0,0,0,0,1)
-    if n == radian:
-        return IfcDimensionalExponents(0,0,0,0,0,0,0)
-    if n == steradian:
-        return IfcDimensionalExponents(0,0,0,0,0,0,0)
-    if n == hertz:
-        return IfcDimensionalExponents(0,0,-1,0,0,0,0)
-    if n == newton:
-        return IfcDimensionalExponents(1,1,-2,0,0,0,0)
-    if n == pascal:
-        return IfcDimensionalExponents(-1,1,-2,0,0,0,0)
-    if n == joule:
-        return IfcDimensionalExponents(2,1,-2,0,0,0,0)
-    if n == watt:
-        return IfcDimensionalExponents(2,1,-3,0,0,0,0)
-    if n == coulomb:
-        return IfcDimensionalExponents(0,0,1,1,0,0,0)
-    if n == volt:
-        return IfcDimensionalExponents(2,1,-3,-1,0,0,0)
-    if n == farad:
-        return IfcDimensionalExponents(-2,-1,4,1,0,0,0)
-    if n == ohm:
-        return IfcDimensionalExponents(2,1,-3,-2,0,0,0)
-    if n == siemens:
-        return IfcDimensionalExponents(-2,-1,3,2,0,0,0)
-    if n == weber:
-        return IfcDimensionalExponents(2,1,-2,-1,0,0,0)
-    if n == tesla:
-        return IfcDimensionalExponents(0,1,-2,-1,0,0,0)
-    if n == henry:
-        return IfcDimensionalExponents(2,1,-2,-2,0,0,0)
-    if n == degree_celsius:
-        return IfcDimensionalExponents(0,0,0,0,1,0,0)
-    if n == lumen:
-        return IfcDimensionalExponents(0,0,0,0,0,0,1)
-    if n == lux:
-        return IfcDimensionalExponents(-2,0,0,0,0,0,1)
-    if n == becquerel:
-        return IfcDimensionalExponents(0,0,-1,0,0,0,0)
-    if n == gray:
-        return IfcDimensionalExponents(2,0,-2,0,0,0,0)
-    if n == sievert:
-        return IfcDimensionalExponents(2,0,-2,0,0,0,0)
-    return IfcDimensionalExponents(0,0,0,0,0,0,0)
+def IfcCurveDim(curve):
+
+    if 'ifc2x3.ifcline' in typeof(curve):
+        return curve.Pnt.Dim
+    if 'ifc2x3.ifcconic' in typeof(curve):
+        return curve.Position.Dim
+    if 'ifc2x3.ifcpolyline' in typeof(curve):
+        return curve.Points[1 - 1].Dim
+    if 'ifc2x3.ifctrimmedcurve' in typeof(curve):
+        return IfcCurveDim(curve.BasisCurve)
+    if 'ifc2x3.ifccompositecurve' in typeof(curve):
+        return curve.Segments[1 - 1].Dim
+    if 'ifc2x3.ifcbsplinecurve' in typeof(curve):
+        return curve.ControlPointsList[1 - 1].Dim
+    if 'ifc2x3.ifcoffsetcurve2d' in typeof(curve):
+        return 2
+    if 'ifc2x3.ifcoffsetcurve3d' in typeof(curve):
+        return 3
+    return None
 
 

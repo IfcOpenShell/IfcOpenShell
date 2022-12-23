@@ -248,7 +248,12 @@ class entity_instance(object):
     def __eq__(self, other):
         if not isinstance(self, type(other)):
             return False
-        return self.wrapped_data == other.wrapped_data
+        elif None in (self.wrapped_data.file, other.wrapped_data.file):
+            # when not added to a file, we can only compare attribute values
+            # and we need this for where rule evaluation
+            return self.get_info(recursive=True, include_identifier=False) == other.get_info(recursive=True, include_identifier=False)
+        else:
+            return self.wrapped_data == other.wrapped_data
 
     def __hash__(self):
         return hash((self.id(), self.wrapped_data.file_pointer()))

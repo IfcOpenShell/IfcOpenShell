@@ -285,8 +285,14 @@ def process_type_decl(scope, context):
 
     if scope == 'entity':
         
-        # @todo derived attributes
-        attributes = [a.attribute_decl.attribute_id for a in context.entity_body.explicit_attr]    
+        def get_attributes(nm):
+            ent = schema.entities[nm]
+            if ent.supertypes:
+                yield from get_attributes(ent.supertypes[0])
+            yield from [a.name for a in ent.attributes]
+
+        # @todo derived and inverse attributes
+        attributes = list(get_attributes(class_name))
 
     def format_rule(domain_rule):
         return f"""
@@ -506,13 +512,20 @@ def process_assignment(context):
         return '%s = %s' % (lhs, context.expression)
 
 def process_case_action(context):
-    return f"if {context.parent().expression} == {context.expression}:\n{indent(4, context.stmt.branches())}"
+    first = context.parent().branches().index(context)
+    pred = "elif" if first else "if"
+    if re.match(r"^'[a-z0-9]+'$", str(context.expression)):
+        # @todo this is yet again an ugly hack
+        lower = '.lower()'
+    else:
+        lower = ''
+    return f"{pred} {context.parent().expression}{lower} == {context.expression}:\n{indent(4, context.stmt.branches())}"
 
 
 def process_case_statement(context):
     branches = context.branches(exclude=[getattr(context, v) for v in context.descendants() if not v.startswith('case_action')])
     if context.stmt and context.stmt.branches():
-        branches += [context.stmt]
+        branches += [f"else:\n{indent(4, context.stmt)}"]
     return'\n'.join(map(str, branches))
 
 # implemented sizeof() function in generated code
@@ -576,6 +589,7 @@ if __name__ == "__main__":
 
     print("sizeof = len", file=output, sep='\n')
     print("hiindex = len", file=output, sep='\n')
+    print("loindex = lambda x: 1", file=output, sep='\n')
     print("from math import *", file=output, sep='\n')
 
     # @todo this will get us in trouble when evaluating the truthness
@@ -616,9 +630,8 @@ def typeof(inst):
     # for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
     # for nm in ['IfcSIUnit','IfcNamedUnit','IfcCorrectDimensions', 'IfcDimensionsForSiUnit']:
     
-    DEBUG = True
-    # 
-    for nm in ['IfcCorrectObjectAssignment']: # schema.functions.keys():
+    DEBUG = False
+    for nm in ['IfcShapeRepresentation', 'IfcShapeRepresentationTypes', 'IfcPolyline', 'IfcCurve', 'IfcCartesianPoint', 'IfcCurveDim']: # schema.functions.keys():
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])

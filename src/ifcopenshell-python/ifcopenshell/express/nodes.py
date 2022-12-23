@@ -458,7 +458,7 @@ class SuperTypeExpression(Node):
         else:
             constraint = self.supertype_rule[0]
         return [
-            s[0][0].simple_id for s in constraint.subtype_constraint[0].supertype_expression[0][0][0].one_of[0][2::2]
+            list(list(s)[0])[0].simple_id for s in list(list(list(constraint.subtype_constraint[0].supertype_expression[0])[0])[0].one_of[0])[2::2]
         ]
 
     sub_types = property(get_sub_types)
