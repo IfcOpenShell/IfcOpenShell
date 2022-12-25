@@ -1,5 +1,11 @@
 import ifcopenshell
-def exists(v): return v is not None
+
+def exists(v):
+    if callable(v):
+        try: return v() is not None
+        except IndexError as e: return False
+    else: return v is not None
+
 
 
 def nvl(v, default): return v if v is not None else default
@@ -10,6 +16,17 @@ hiindex = len
 loindex = lambda x: 1
 from math import *
 unknown = 'UNKNOWN'
+
+'''
+class express_index():
+    def __init__(self, index):
+        self.index = index - 1
+    def __rpow__(self, other):
+        try:
+            return other[self.index]
+        except:
+            pass
+'''
 
 class express_set(set):
     def __rmul__(self, other):
@@ -28,6 +45,9 @@ class express_set(set):
 
 
 def typeof(inst):
+    if not inst:
+        # If V evaluates to indeterminate (?), an empty set is returned.
+        return express_set([])
     schema_name = inst.is_a(True).split('.')[0].lower()
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
@@ -38,7 +58,7 @@ def typeof(inst):
 
 class enum_namespace:
     def __getattr__(self, k):
-        return k
+        return k.upper()
 
 
 IfcActionSourceTypeEnum = enum_namespace()
@@ -6423,6 +6443,5357 @@ def IfcZone(*args, **kwargs): return ifcopenshell.create_entity('IfcZone', 'IFC2
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcBoxAlignment_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcBoxAlignment"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self in ['top-left','top-middle','top-right','middle-left','center','middle-right','bottom-left','bottom-middle','bottom-right']
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcCompoundPlaneAngleMeasure_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcCompoundPlaneAngleMeasure"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert -360 <= self[1 - 1] < 360
+        
+
+
+
+class IfcCompoundPlaneAngleMeasure_WR2:
+    SCOPE = "type"
+    TYPE_NAME = "IfcCompoundPlaneAngleMeasure"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert -60 <= self[2 - 1] < 60
+        
+
+
+
+class IfcCompoundPlaneAngleMeasure_WR3:
+    SCOPE = "type"
+    TYPE_NAME = "IfcCompoundPlaneAngleMeasure"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert -60 <= self[3 - 1] < 60
+        
+
+
+
+class IfcCompoundPlaneAngleMeasure_WR4:
+    SCOPE = "type"
+    TYPE_NAME = "IfcCompoundPlaneAngleMeasure"
+    RULE_NAME = "WR4"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (((self[1 - 1]) >= 0) and ((self[2 - 1]) >= 0) and ((self[3 - 1]) >= 0)) or (((self[1 - 1]) <= 0) and ((self[2 - 1]) <= 0) and ((self[3 - 1]) <= 0))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcDaylightSavingHour_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcDaylightSavingHour"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 0 <= self <= 2
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcDimensionCount_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcDimensionCount"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 0 < self <= 3
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcFontStyle_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcFontStyle"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self in ['normal','italic','oblique']
+        
+
+
+
+
+class IfcFontVariant_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcFontVariant"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self in ['normal','small-caps']
+        
+
+
+
+
+class IfcFontWeight_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcFontWeight"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self in ['normal','small-caps','100','200','300','400','500','600','700','800','900']
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcHeatingValueMeasure_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcHeatingValueMeasure"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self > 0.
+        
+
+
+
+
+class IfcHourInDay_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcHourInDay"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 0 <= self < 24
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcMinuteInHour_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcMinuteInHour"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 0 <= self <= 59
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcMonthInYearNumber_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcMonthInYearNumber"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 1 <= self <= 12
+        
+
+
+
+
+
+
+
+class IfcNormalisedRatioMeasure_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcNormalisedRatioMeasure"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 0.0 <= self <= 1.0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcPHMeasure_WR21:
+    SCOPE = "type"
+    TYPE_NAME = "IfcPHMeasure"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 0.0 <= self <= 14.0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcPositiveLengthMeasure_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcPositiveLengthMeasure"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self > 0.
+        
+
+
+
+
+class IfcPositivePlaneAngleMeasure_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcPositivePlaneAngleMeasure"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self > 0.
+        
+
+
+
+
+class IfcPositiveRatioMeasure_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcPositiveRatioMeasure"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self > 0.
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcSecondInMinute_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcSecondInMinute"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 0. <= self < 60.
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcSpecularRoughness_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcSpecularRoughness"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 0.0 <= self <= 1.0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcTextAlignment_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcTextAlignment"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self in ['left','right','center','justify']
+        
+
+
+
+
+class IfcTextDecoration_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcTextDecoration"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self in ['none','underline','overline','line-through','blink']
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcTextTransformation_WR1:
+    SCOPE = "type"
+    TYPE_NAME = "IfcTextTransformation"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self in ['capitalize','uppercase','lowercase','none']
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Ifc2DCompositeCurve_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "Ifc2DCompositeCurve"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.ClosedCurve
+        
+
+
+
+class Ifc2DCompositeCurve_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "Ifc2DCompositeCurve"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Dim == 2
+        
+
+
+
+
+
+
+
+
+
+
+class IfcActorRole_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcActorRole"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        role = self.Role
+        
+        assert (role != IfcRoleEnum.USERDEFINED) or ((role == IfcRoleEnum.USERDEFINED) and exists(self.UserDefinedRole))
+        
+
+
+
+
+
+
+
+class IfcAddress_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAddress"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        purpose = self.Purpose
+        
+        assert (not exists(purpose)) or ((purpose != IfcAddressTypeEnum.USERDEFINED) or ((purpose == IfcAddressTypeEnum.USERDEFINED) and exists(self.UserDefinedPurpose)))
+        
+
+
+
+
+class IfcAirTerminalBoxType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAirTerminalBoxType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcAirTerminalBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalBoxTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcAirTerminalType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAirTerminalType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcAirTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcAirToAirHeatRecoveryType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAirToAirHeatRecoveryType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcAnnotationCurveOccurrence_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAnnotationCurveOccurrence"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Item)) or ('ifc2x3.ifccurve' in typeof(self.Item))
+        
+
+
+
+
+
+
+
+class IfcAnnotationFillAreaOccurrence_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAnnotationFillAreaOccurrence"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Item)) or ('ifc2x3.ifcannotationfillarea' in typeof(self.Item))
+        
+
+
+
+
+
+
+
+class IfcAnnotationSurface_WR01:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAnnotationSurface"
+    RULE_NAME = "WR01"
+
+    @staticmethod    
+    def __call__(self):
+        item = self.Item
+        
+        assert (sizeof(['ifc2x3.ifcsurface','ifc2x3.ifcshellbasedsurfacemodel','ifc2x3.ifcfacebasedsurfacemodel','ifc2x3.ifcsolidmodel','ifc2x3.ifcbooleanresult','ifc2x3.ifccsgprimitive3d'] * typeof(item))) >= 1
+        
+
+
+
+
+class IfcAnnotationSurfaceOccurrence_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAnnotationSurfaceOccurrence"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Item)) or ((sizeof(['ifc2x3.ifcsurface','ifc2x3.ifcfacebasedsurfacemodel','ifc2x3.ifcshellbasedsurfacemodel','ifc2x3.ifcsolidmodel'] * typeof(self.Item))) > 0)
+        
+
+
+
+
+class IfcAnnotationSymbolOccurrence_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAnnotationSymbolOccurrence"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Item)) or ('ifc2x3.ifcdefinedsymbol' in typeof(self.Item))
+        
+
+
+
+
+class IfcAnnotationTextOccurrence_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAnnotationTextOccurrence"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Item)) or ('ifc2x3.ifctextliteral' in typeof(self.Item))
+        
+
+
+
+
+
+
+
+class IfcAppliedValue_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAppliedValue"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        appliedvalue = self.AppliedValue
+        valueofcomponents = self.ValueOfComponents
+        
+        assert exists(appliedvalue) or exists(valueofcomponents)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcArbitraryClosedProfileDef_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcArbitraryClosedProfileDef"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        outercurve = self.OuterCurve
+        
+        assert outercurve.Dim == 2
+        
+
+
+
+class IfcArbitraryClosedProfileDef_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcArbitraryClosedProfileDef"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        outercurve = self.OuterCurve
+        
+        assert not 'ifc2x3.ifcline' in typeof(outercurve)
+        
+
+
+
+class IfcArbitraryClosedProfileDef_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcArbitraryClosedProfileDef"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        outercurve = self.OuterCurve
+        
+        assert not 'ifc2x3.ifcoffsetcurve2d' in typeof(outercurve)
+        
+
+
+
+
+class IfcArbitraryOpenProfileDef_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcArbitraryOpenProfileDef"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert ('ifc2x3.ifccenterlineprofiledef' in typeof(self)) or (self.ProfileType == IfcProfileTypeEnum.CURVE)
+        
+
+
+
+class IfcArbitraryOpenProfileDef_WR12:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcArbitraryOpenProfileDef"
+    RULE_NAME = "WR12"
+
+    @staticmethod    
+    def __call__(self):
+        curve = self.Curve
+        
+        assert curve.Dim == 2
+        
+
+
+
+
+class IfcArbitraryProfileDefWithVoids_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcArbitraryProfileDefWithVoids"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.ProfileType == area
+        
+
+
+
+class IfcArbitraryProfileDefWithVoids_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcArbitraryProfileDefWithVoids"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        innercurves = self.InnerCurves
+        
+        assert (sizeof([temp for temp in innercurves if temp.Dim != 2])) == 0
+        
+
+
+
+class IfcArbitraryProfileDefWithVoids_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcArbitraryProfileDefWithVoids"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        innercurves = self.InnerCurves
+        
+        assert (sizeof([temp for temp in innercurves if 'ifc2x3.ifcline' in typeof(temp)])) == 0
+        
+
+
+
+
+class IfcAsset_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAsset"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not 'ifc2x3.ifcelement' in typeof(temp)])) == 0
+        
+
+
+
+
+
+
+
+class IfcAxis1Placement_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis1Placement"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        axis = self.Axis
+        
+        assert (not exists(axis)) or (axis.Dim == 3)
+        
+
+
+
+class IfcAxis1Placement_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis1Placement"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Location.Dim == 3
+        
+
+
+
+def calc_IfcAxis1Placement_Z(self):
+    axis = self.Axis
+    return \
+    nvl(IfcNormalise(axis),IfcDirection(DirectionRatios=[0.0,0.0,1.0]))
+
+
+
+
+class IfcAxis2Placement2D_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement2D"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        refdirection = self.RefDirection
+        
+        assert (not exists(refdirection)) or (refdirection.Dim == 2)
+        
+
+
+
+class IfcAxis2Placement2D_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement2D"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Location.Dim == 2
+        
+
+
+
+def calc_IfcAxis2Placement2D_P(self):
+    refdirection = self.RefDirection
+    return \
+    IfcBuild2Axes(refdirection)
+
+
+
+
+class IfcAxis2Placement3D_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement3D"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Location.Dim == 3
+        
+
+
+
+class IfcAxis2Placement3D_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement3D"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        axis = self.Axis
+        
+        assert (not exists(axis)) or (axis.Dim == 3)
+        
+
+
+
+class IfcAxis2Placement3D_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement3D"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        refdirection = self.RefDirection
+        
+        assert (not exists(refdirection)) or (refdirection.Dim == 3)
+        
+
+
+
+class IfcAxis2Placement3D_WR4:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement3D"
+    RULE_NAME = "WR4"
+
+    @staticmethod    
+    def __call__(self):
+        axis = self.Axis
+        refdirection = self.RefDirection
+        
+        assert (not exists(axis)) or (not exists(refdirection)) or (IfcCrossProduct(axis,refdirection).Magnitude > 0.0)
+        
+
+
+
+class IfcAxis2Placement3D_WR5:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcAxis2Placement3D"
+    RULE_NAME = "WR5"
+
+    @staticmethod    
+    def __call__(self):
+        axis = self.Axis
+        refdirection = self.RefDirection
+        
+        assert not exists(axis) ^ exists(refdirection)
+        
+
+
+
+def calc_IfcAxis2Placement3D_P(self):
+    axis = self.Axis
+    refdirection = self.RefDirection
+    return \
+    IfcBuildAxes(axis,refdirection)
+
+
+
+
+class IfcBSplineCurve_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBSplineCurve"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+        controlpointslist = self.ControlPointsList
+        
+        assert (sizeof([temp for temp in controlpointslist if temp.Dim != (controlpointslist[1 - 1].Dim)])) == 0
+        
+
+
+
+def calc_IfcBSplineCurve_ControlPoints(self):
+    controlpointslist = self.ControlPointsList
+    upperindexoncontrolpoints = self.UpperIndexOnControlPoints
+    return \
+    IfcListToArray(controlpointslist,0,upperindexoncontrolpoints)
+
+
+
+def calc_IfcBSplineCurve_UpperIndexOnControlPoints(self):
+    controlpointslist = self.ControlPointsList
+    return \
+    sizeof(controlpointslist) - 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcBlobTexture_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBlobTexture"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.RasterFormat in ['bmp','jpg','gif','png']
+        
+
+
+
+
+
+
+
+class IfcBoilerType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBoilerType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcBoilerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBoilerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcBooleanClippingResult_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBooleanClippingResult"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        firstoperand = self.FirstOperand
+        
+        assert ('ifc2x3.ifcsweptareasolid' in typeof(firstoperand)) or ('ifc2x3.ifcbooleanclippingresult' in typeof(firstoperand))
+        
+
+
+
+class IfcBooleanClippingResult_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBooleanClippingResult"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        secondoperand = self.SecondOperand
+        
+        assert 'ifc2x3.ifchalfspacesolid' in typeof(secondoperand)
+        
+
+
+
+class IfcBooleanClippingResult_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBooleanClippingResult"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        operator = self.Operator
+        
+        assert operator == difference
+        
+
+
+
+
+class IfcBooleanResult_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBooleanResult"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        firstoperand = self.FirstOperand
+        secondoperand = self.SecondOperand
+        
+        assert firstoperand.Dim == secondoperand.Dim
+        
+
+
+
+def calc_IfcBooleanResult_Dim(self):
+    firstoperand = self.FirstOperand
+    return \
+    firstoperand.Dim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def calc_IfcBoundingBox_Dim(self):
+
+    return \
+    3
+
+
+
+
+class IfcBoxedHalfSpace_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBoxedHalfSpace"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert not 'ifc2x3.ifccurveboundedplane' in typeof(self.BaseSurface)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcBuildingElementProxy_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcBuildingElementProxy"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Name)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcCShapeProfileDef_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCShapeProfileDef"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        depth = self.Depth
+        girth = self.Girth
+        
+        assert girth < (depth / 2.)
+        
+
+
+
+class IfcCShapeProfileDef_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCShapeProfileDef"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        depth = self.Depth
+        width = self.Width
+        internalfilletradius = self.InternalFilletRadius
+        
+        assert (not exists(internalfilletradius)) or ((internalfilletradius <= (width / 2.)) and (internalfilletradius <= (depth / 2.)))
+        
+
+
+
+class IfcCShapeProfileDef_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCShapeProfileDef"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        depth = self.Depth
+        width = self.Width
+        wallthickness = self.WallThickness
+        
+        assert (wallthickness < (width / 2.)) and (wallthickness < (depth / 2.))
+        
+
+
+
+
+class IfcCableCarrierFittingType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCableCarrierFittingType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcCableCarrierFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierFittingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcCalendarDate_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCalendarDate"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcValidCalendarDate(self)
+        
+
+
+
+
+class IfcCartesianPoint_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianPoint"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        coordinates = self.Coordinates
+        
+        assert hiindex(coordinates) >= 2
+        
+
+
+
+def calc_IfcCartesianPoint_Dim(self):
+    coordinates = self.Coordinates
+    return \
+    hiindex(coordinates)
+
+
+
+
+class IfcCartesianTransformationOperator_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        scl = self.Scl
+        
+        assert scl > 0.0
+        
+
+
+
+def calc_IfcCartesianTransformationOperator_Scl(self):
+    scale = self.Scale
+    return \
+    nvl(scale,1.0)
+
+
+
+def calc_IfcCartesianTransformationOperator_Dim(self):
+    localorigin = self.LocalOrigin
+    return \
+    localorigin.Dim
+
+
+
+
+class IfcCartesianTransformationOperator2D_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator2D"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Dim == 2
+        
+
+
+
+class IfcCartesianTransformationOperator2D_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator2D"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Axis1)) or (self.Axis1.Dim == 2)
+        
+
+
+
+class IfcCartesianTransformationOperator2D_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator2D"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Axis2)) or (self.Axis2.Dim == 2)
+        
+
+
+
+def calc_IfcCartesianTransformationOperator2D_U(self):
+
+    return \
+    IfcBaseAxis(2,self.Axis1,self.Axis2,None)
+
+
+
+
+class IfcCartesianTransformationOperator2DnonUniform_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator2DnonUniform"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        scl2 = self.Scl2
+        
+        assert scl2 > 0.0
+        
+
+
+
+def calc_IfcCartesianTransformationOperator2DnonUniform_Scl2(self):
+    scale2 = self.Scale2
+    return \
+    nvl(scale2,self.Scl)
+
+
+
+
+class IfcCartesianTransformationOperator3D_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator3D"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Dim == 3
+        
+
+
+
+class IfcCartesianTransformationOperator3D_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator3D"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Axis1)) or (self.Axis1.Dim == 3)
+        
+
+
+
+class IfcCartesianTransformationOperator3D_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator3D"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Axis2)) or (self.Axis2.Dim == 3)
+        
+
+
+
+class IfcCartesianTransformationOperator3D_WR4:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator3D"
+    RULE_NAME = "WR4"
+
+    @staticmethod    
+    def __call__(self):
+        axis3 = self.Axis3
+        
+        assert (not exists(axis3)) or (axis3.Dim == 3)
+        
+
+
+
+def calc_IfcCartesianTransformationOperator3D_U(self):
+    axis3 = self.Axis3
+    return \
+    IfcBaseAxis(3,self.Axis1,self.Axis2,axis3)
+
+
+
+
+class IfcCartesianTransformationOperator3DnonUniform_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator3DnonUniform"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        scl2 = self.Scl2
+        
+        assert scl2 > 0.0
+        
+
+
+
+class IfcCartesianTransformationOperator3DnonUniform_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCartesianTransformationOperator3DnonUniform"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        scl3 = self.Scl3
+        
+        assert scl3 > 0.0
+        
+
+
+
+def calc_IfcCartesianTransformationOperator3DnonUniform_Scl2(self):
+    scale2 = self.Scale2
+    return \
+    nvl(scale2,self.Scl)
+
+
+
+def calc_IfcCartesianTransformationOperator3DnonUniform_Scl3(self):
+    scale3 = self.Scale3
+    return \
+    nvl(scale3,self.Scl)
+
+
+
+
+
+
+
+
+
+
+class IfcChillerType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcChillerType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcChillerTypeEnum.USERDEFINED) or ((predefinedtype == IfcChillerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+class IfcCircleHollowProfileDef_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCircleHollowProfileDef"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        wallthickness = self.WallThickness
+        
+        assert wallthickness < self.Radius
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcCoilType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCoilType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcCoilTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoilTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcComplexProperty_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcComplexProperty"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        hasproperties = self.HasProperties
+        
+        assert (sizeof([temp for temp in hasproperties if self == temp])) == 0
+        
+
+
+
+class IfcComplexProperty_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcComplexProperty"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        hasproperties = self.HasProperties
+        
+        assert IfcUniquePropertyName(hasproperties)
+        
+
+
+
+
+class IfcCompositeCurve_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCompositeCurve"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+        segments = self.Segments
+        closedcurve = self.ClosedCurve
+        
+        assert ((not closedcurve) and ((sizeof([temp for temp in segments if temp.Transition == discontinuous])) == 1)) or (closedcurve and ((sizeof([temp for temp in segments if temp.Transition == discontinuous])) == 0))
+        
+
+
+
+class IfcCompositeCurve_WR42:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCompositeCurve"
+    RULE_NAME = "WR42"
+
+    @staticmethod    
+    def __call__(self):
+        segments = self.Segments
+        
+        assert (sizeof([temp for temp in segments if temp.Dim != (segments[1 - 1].Dim)])) == 0
+        
+
+
+
+def calc_IfcCompositeCurve_NSegments(self):
+    segments = self.Segments
+    return \
+    sizeof(segments)
+
+
+
+def calc_IfcCompositeCurve_ClosedCurve(self):
+    segments = self.Segments
+    nsegments = self.NSegments
+    return \
+    (segments[nsegments - 1].Transition) != discontinuous
+
+
+
+
+class IfcCompositeCurveSegment_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCompositeCurveSegment"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        parentcurve = self.ParentCurve
+        
+        assert 'ifc2x3.ifcboundedcurve' in typeof(parentcurve)
+        
+
+
+
+def calc_IfcCompositeCurveSegment_Dim(self):
+    parentcurve = self.ParentCurve
+    return \
+    parentcurve.Dim
+
+
+
+
+class IfcCompositeProfileDef_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCompositeProfileDef"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        profiles = self.Profiles
+        
+        assert (sizeof([temp for temp in profiles if temp.ProfileType != (profiles[1 - 1].ProfileType)])) == 0
+        
+
+
+
+class IfcCompositeProfileDef_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCompositeProfileDef"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        profiles = self.Profiles
+        
+        assert (sizeof([temp for temp in profiles if 'ifc2x3.ifccompositeprofiledef' in typeof(temp)])) == 0
+        
+
+
+
+
+class IfcCompressorType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCompressorType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcCompressorTypeEnum.USERDEFINED) or ((predefinedtype == IfcCompressorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcCondenserType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCondenserType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcCondenserTypeEnum.USERDEFINED) or ((predefinedtype == IfcCondenserTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+class IfcConditionCriterion_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcConditionCriterion"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Name)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcConstraint_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcConstraint"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+        constraintgrade = self.ConstraintGrade
+        
+        assert (constraintgrade != IfcConstraintEnum.USERDEFINED) or ((constraintgrade == IfcConstraintEnum.USERDEFINED) and exists(self.UserDefinedGrade))
+        
+
+
+
+
+class IfcConstraintAggregationRelationship_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcConstraintAggregationRelationship"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+        relatingconstraint = self.RelatingConstraint
+        relatedconstraints = self.RelatedConstraints
+        
+        assert (sizeof([temp for temp in relatedconstraints if temp == relatingconstraint])) == 0
+        
+
+
+
+
+
+
+
+class IfcConstraintRelationship_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcConstraintRelationship"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+        relatingconstraint = self.RelatingConstraint
+        relatedconstraints = self.RelatedConstraints
+        
+        assert (sizeof([temp for temp in relatedconstraints if temp == relatingconstraint])) == 0
+        
+
+
+
+
+
+
+
+class IfcConstructionMaterialResource_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcConstructionMaterialResource"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert sizeof(self.ResourceOf) <= 1
+        
+
+
+
+class IfcConstructionMaterialResource_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcConstructionMaterialResource"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(lambda: self.ResourceOf[1 - 1])) or ((self.ResourceOf[1 - 1].RelatedObjectsType) == IfcObjectTypeEnum.PRODUCT)
+        
+
+
+
+
+class IfcConstructionProductResource_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcConstructionProductResource"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert sizeof(self.ResourceOf) <= 1
+        
+
+
+
+class IfcConstructionProductResource_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcConstructionProductResource"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(lambda: self.ResourceOf[1 - 1])) or ((self.ResourceOf[1 - 1].RelatedObjectsType) == IfcObjectTypeEnum.PRODUCT)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcCooledBeamType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCooledBeamType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcCooledBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcCooledBeamTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcCoolingTowerType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCoolingTowerType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcCoolingTowerTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoolingTowerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcCovering_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCovering"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (not exists(predefinedtype)) or (predefinedtype != IfcCoveringTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoveringTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def calc_IfcCsgPrimitive3D_Dim(self):
+
+    return \
+    3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def calc_IfcCurve_Dim(self):
+
+    return \
+    IfcCurveDim(self)
+
+
+
+
+def calc_IfcCurveBoundedPlane_Dim(self):
+    basissurface = self.BasisSurface
+    return \
+    basissurface.Dim
+
+
+
+
+class IfcCurveStyle_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCurveStyle"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+        curvewidth = self.CurveWidth
+        
+        assert (not exists(curvewidth)) or ('ifc2x3.ifcpositivelengthmeasure' in typeof(curvewidth)) or (('ifc2x3.ifcdescriptivemeasure' in typeof(curvewidth)) and (curvewidth == 'bylayer'))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcCurveStyleFontPattern_WR01:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcCurveStyleFontPattern"
+    RULE_NAME = "WR01"
+
+    @staticmethod    
+    def __call__(self):
+        visiblesegmentlength = self.VisibleSegmentLength
+        
+        assert visiblesegmentlength >= 0.
+        
+
+
+
+
+class IfcDamperType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDamperType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcDamperTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcDerivedProfileDef_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDerivedProfileDef"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        parentprofile = self.ParentProfile
+        
+        assert self.ProfileType == parentprofile.ProfileType
+        
+
+
+
+
+class IfcDerivedUnit_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDerivedUnit"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        elements = self.Elements
+        
+        assert (sizeof(elements) > 1) or ((sizeof(elements) == 1) and ((elements[1 - 1].Exponent) != 1))
+        
+
+
+
+class IfcDerivedUnit_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDerivedUnit"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        unittype = self.UnitType
+        
+        assert (unittype != IfcDerivedUnitEnum.USERDEFINED) or ((unittype == IfcDerivedUnitEnum.USERDEFINED) and exists(self.UserDefinedType))
+        
+
+
+
+def calc_IfcDerivedUnit_Dimensions(self):
+    elements = self.Elements
+    return \
+    IfcDeriveDimensionalExponents(elements)
+
+
+
+
+
+
+
+
+
+
+class IfcDimensionCalloutRelationship_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCalloutRelationship"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Name in ['primary','secondary']
+        
+
+
+
+class IfcDimensionCalloutRelationship_WR12:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCalloutRelationship"
+    RULE_NAME = "WR12"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof(typeof(self.RelatingDraughtingCallout) * ['ifc2x3.ifcangulardimension','ifc2x3.ifcdiameterdimension','ifc2x3.ifclineardimension','ifc2x3.ifcradiusdimension'])) == 1
+        
+
+
+
+class IfcDimensionCalloutRelationship_WR13:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCalloutRelationship"
+    RULE_NAME = "WR13"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert not 'ifc2x3.ifcdimensioncurvedirectedcallout' in typeof(self.RelatedDraughtingCallout)
+        
+
+
+
+
+class IfcDimensionCurve_WR51:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCurve"
+    RULE_NAME = "WR51"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert sizeof(usedin(self,'ifc2x3.ifcdraughtingcallout.contents')) >= 1
+        
+
+
+
+class IfcDimensionCurve_WR52:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCurve"
+    RULE_NAME = "WR52"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert ((sizeof([dct1 for dct1 in usedin(self,'ifc2x3.' + 'ifcterminatorsymbol.annotatedcurve') if dct1.Role == IfcDimensionExtentUsage.ORIGIN])) <= 1) and ((sizeof([dct2 for dct2 in usedin(self,'ifc2x3.' + 'ifcterminatorsymbol.annotatedcurve') if dct2.Role == IfcDimensionExtentUsage.TARGET])) <= 1)
+        
+
+
+
+class IfcDimensionCurve_WR53:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCurve"
+    RULE_NAME = "WR53"
+
+    @staticmethod    
+    def __call__(self):
+        annotatedbysymbols = self.AnnotatedBySymbols
+        
+        assert (sizeof([dct for dct in annotatedbysymbols if not 'ifc2x3.ifcdimensioncurveterminator' in typeof(dct)])) == 0
+        
+
+
+
+
+class IfcDimensionCurveDirectedCallout_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCurveDirectedCallout"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([dc for dc in self.Contents if 'ifc2x3.ifcdimensioncurve' in typeof(dc)])) == 1
+        
+
+
+
+class IfcDimensionCurveDirectedCallout_WR42:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCurveDirectedCallout"
+    RULE_NAME = "WR42"
+
+    @staticmethod    
+    def __call__(self):
+        contents = self.Contents
+        
+        assert (sizeof([dc for dc in self.contents if 'ifc2x3.ifcprojectioncurve' in typeof(dc)])) <= 2
+        
+
+
+
+
+class IfcDimensionCurveTerminator_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionCurveTerminator"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 'ifc2x3.ifcdimensioncurve' in typeof(self.AnnotatedCurve)
+        
+
+
+
+
+class IfcDimensionPair_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionPair"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Name in ['chained','parallel']
+        
+
+
+
+class IfcDimensionPair_WR12:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionPair"
+    RULE_NAME = "WR12"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof(typeof(self.RelatingDraughtingCallout) * ['ifc2x3.ifcangulardimension','ifc2x3.ifcdiameterdimension','ifc2x3.ifclineardimension','ifc2x3.ifcradiusdimension'])) == 1
+        
+
+
+
+class IfcDimensionPair_WR13:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDimensionPair"
+    RULE_NAME = "WR13"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof(typeof(self.RelatedDraughtingCallout) * ['ifc2x3.ifcangulardimension','ifc2x3.ifcdiameterdimension','ifc2x3.ifclineardimension','ifc2x3.ifcradiusdimension'])) == 1
+        
+
+
+
+
+
+
+
+def calc_IfcDirection_Dim(self):
+    directionratios = self.DirectionRatios
+    return \
+    hiindex(directionratios)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcDocumentElectronicFormat_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDocumentElectronicFormat"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        fileextension = self.FileExtension
+        mimecontenttype = self.MimeContentType
+        
+        assert exists(fileextension) or exists(mimecontenttype)
+        
+
+
+
+
+
+
+
+
+
+
+class IfcDocumentReference_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDocumentReference"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        name = self.Name
+        referencetodocument = self.ReferenceToDocument
+        
+        assert exists(name) ^ (exists(lambda: referencetodocument[1 - 1]))
+        
+
+
+
+
+
+
+
+class IfcDoorLiningProperties_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDoorLiningProperties"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        liningdepth = self.LiningDepth
+        liningthickness = self.LiningThickness
+        
+        assert not (not exists(liningdepth)) and exists(liningthickness)
+        
+
+
+
+class IfcDoorLiningProperties_WR32:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDoorLiningProperties"
+    RULE_NAME = "WR32"
+
+    @staticmethod    
+    def __call__(self):
+        thresholddepth = self.ThresholdDepth
+        thresholdthickness = self.ThresholdThickness
+        
+        assert not (not exists(thresholddepth)) and exists(thresholdthickness)
+        
+
+
+
+class IfcDoorLiningProperties_WR33:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDoorLiningProperties"
+    RULE_NAME = "WR33"
+
+    @staticmethod    
+    def __call__(self):
+        transomthickness = self.TransomThickness
+        transomoffset = self.TransomOffset
+        
+        assert (exists(transomoffset) and exists(transomthickness)) ^ ((not exists(transomoffset)) and (not exists(transomthickness)))
+        
+
+
+
+class IfcDoorLiningProperties_WR34:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDoorLiningProperties"
+    RULE_NAME = "WR34"
+
+    @staticmethod    
+    def __call__(self):
+        casingthickness = self.CasingThickness
+        casingdepth = self.CasingDepth
+        
+        assert (exists(casingdepth) and exists(casingthickness)) ^ ((not exists(casingdepth)) and (not exists(casingthickness)))
+        
+
+
+
+class IfcDoorLiningProperties_WR35:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDoorLiningProperties"
+    RULE_NAME = "WR35"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (exists(lambda: self.DefinesType[1 - 1])) and ('ifc2x3.ifcdoorstyle' in (typeof(self.DefinesType[1 - 1])))
+        
+
+
+
+
+class IfcDoorPanelProperties_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDoorPanelProperties"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (exists(lambda: self.DefinesType[1 - 1])) and ('ifc2x3.ifcdoorstyle' in (typeof(self.DefinesType[1 - 1])))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcDraughtingPreDefinedColour_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDraughtingPreDefinedColour"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Name in ['black','red','green','blue','yellow','magenta','cyan','white','bylayer']
+        
+
+
+
+
+class IfcDraughtingPreDefinedCurveFont_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDraughtingPreDefinedCurveFont"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Name in ['continuous','chain','chaindoubledash','dashed','dotted','bylayer']
+        
+
+
+
+
+class IfcDraughtingPreDefinedTextFont_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDraughtingPreDefinedTextFont"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Name in ['iso3098-1fonta','iso3098-1fontb']
+        
+
+
+
+
+class IfcDuctFittingType_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDuctFittingType"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcDuctFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctFittingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcDuctSegmentType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDuctSegmentType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcDuctSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcDuctSilencerType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcDuctSilencerType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcDuctSilencerTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSilencerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcEdgeLoop_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcEdgeLoop"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        edgelist = self.EdgeList
+        ne = self.Ne
+        
+        assert (edgelist[1 - 1].EdgeStart) == (edgelist[ne - 1].EdgeEnd)
+        
+
+
+
+class IfcEdgeLoop_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcEdgeLoop"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcLoopHeadToTail(self)
+        
+
+
+
+def calc_IfcEdgeLoop_Ne(self):
+    edgelist = self.EdgeList
+    return \
+    sizeof(edgelist)
+
+
+
+
+
+
+
+class IfcElectricDistributionPoint_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcElectricDistributionPoint"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        distributionpointfunction = self.DistributionPointFunction
+        
+        assert (distributionpointfunction != IfcElectricDistributionPointFunctionEnum.USERDEFINED) or ((distributionpointfunction == IfcElectricDistributionPointFunctionEnum.USERDEFINED) and exists(self.UserDefinedFunction))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcElementAssembly_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcElementAssembly"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcElementAssemblyTypeEnum.USERDEFINED) or ((predefinedtype == IfcElementAssemblyTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def calc_IfcElementarySurface_Dim(self):
+    position = self.Position
+    return \
+    position.Dim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcEnvironmentalImpactValue_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcEnvironmentalImpactValue"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        category = self.Category
+        
+        assert (category != IfcEnvironmentalImpactCategoryEnum.USERDEFINED) or ((category == IfcEnvironmentalImpactCategoryEnum.USERDEFINED) and exists(self.UserDefinedCategory))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcEvaporativeCoolerType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcEvaporativeCoolerType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcEvaporativeCoolerTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporativeCoolerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcEvaporatorType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcEvaporatorType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcEvaporatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporatorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+class IfcExternalReference_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcExternalReference"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        location = self.Location
+        itemreference = self.ItemReference
+        name = self.Name
+        
+        assert exists(itemreference) or exists(location) or exists(name)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcExtrudedAreaSolid_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcExtrudedAreaSolid"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcDotProduct(IfcDirection(DirectionRatios=[0.0,0.0,1.0]),self.ExtrudedDirection) != 0.0
+        
+
+
+
+
+class IfcFace_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFace"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        bounds = self.Bounds
+        
+        assert (sizeof([temp for temp in bounds if 'ifc2x3.ifcfaceouterbound' in typeof(temp)])) <= 1
+        
+
+
+
+
+def calc_IfcFaceBasedSurfaceModel_Dim(self):
+
+    return \
+    3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcFanType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFanType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcFanTypeEnum.USERDEFINED) or ((predefinedtype == IfcFanTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcFillAreaStyle_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFillAreaStyle"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([style for style in self.FillStyles if 'ifc2x3.ifccolour' in typeof(style)])) <= 1
+        
+
+
+
+class IfcFillAreaStyle_WR12:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFillAreaStyle"
+    RULE_NAME = "WR12"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([style for style in self.FillStyles if 'ifc2x3.ifcexternallydefinedhatchstyle' in typeof(style)])) <= 1
+        
+
+
+
+class IfcFillAreaStyle_WR13:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFillAreaStyle"
+    RULE_NAME = "WR13"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcCorrectFillAreaStyle(self.FillStyles)
+        
+
+
+
+
+class IfcFillAreaStyleHatching_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFillAreaStyleHatching"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        startofnexthatchline = self.StartOfNextHatchLine
+        
+        assert not 'ifc2x3.ifctwodirectionrepeatfactor' in typeof(startofnexthatchline)
+        
+
+
+
+class IfcFillAreaStyleHatching_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFillAreaStyleHatching"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        patternstart = self.PatternStart
+        
+        assert (not exists(patternstart)) or (patternstart.Dim == 2)
+        
+
+
+
+class IfcFillAreaStyleHatching_WR23:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFillAreaStyleHatching"
+    RULE_NAME = "WR23"
+
+    @staticmethod    
+    def __call__(self):
+        pointofreferencehatchline = self.PointOfReferenceHatchLine
+        
+        assert (not exists(pointofreferencehatchline)) or (pointofreferencehatchline.Dim == 2)
+        
+
+
+
+
+
+
+
+
+
+
+class IfcFilterType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFilterType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcFilterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFilterTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcFlowMeterType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFlowMeterType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcFlowMeterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowMeterTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcFooting_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcFooting"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcFootingTypeEnum.USERDEFINED) or ((predefinedtype == IfcFootingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcGasTerminalType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGasTerminalType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcGasTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcGasTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+class IfcGeneralProfileProperties_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGeneralProfileProperties"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        crosssectionarea = self.CrossSectionArea
+        
+        assert (not exists(crosssectionarea)) or (crosssectionarea > 0.)
+        
+
+
+
+
+class IfcGeometricCurveSet_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGeometricCurveSet"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.Elements if 'ifc2x3.ifcsurface' in typeof(temp)])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+class IfcGeometricRepresentationSubContext_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGeometricRepresentationSubContext"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        parentcontext = self.ParentContext
+        
+        assert not 'ifc2x3.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)
+        
+
+
+
+class IfcGeometricRepresentationSubContext_WR32:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGeometricRepresentationSubContext"
+    RULE_NAME = "WR32"
+
+    @staticmethod    
+    def __call__(self):
+        targetview = self.TargetView
+        userdefinedtargetview = self.UserDefinedTargetView
+        
+        assert (targetview != IfcGeometricProjectionEnum.USERDEFINED) or ((targetview == IfcGeometricProjectionEnum.USERDEFINED) and exists(userdefinedtargetview))
+        
+
+
+
+def calc_IfcGeometricRepresentationSubContext_WorldCoordinateSystem(self):
+    parentcontext = self.ParentContext
+    return \
+    parentcontext.WorldCoordinateSystem
+
+
+
+def calc_IfcGeometricRepresentationSubContext_CoordinateSpaceDimension(self):
+    parentcontext = self.ParentContext
+    return \
+    parentcontext.CoordinateSpaceDimension
+
+
+
+def calc_IfcGeometricRepresentationSubContext_TrueNorth(self):
+    parentcontext = self.ParentContext
+    return \
+    nvl(parentcontext.TrueNorth,self.WorldCoordinateSystem.P[2 - 1])
+
+
+
+def calc_IfcGeometricRepresentationSubContext_Precision(self):
+    parentcontext = self.ParentContext
+    return \
+    nvl(parentcontext.Precision,1)
+
+
+
+
+class IfcGeometricSet_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGeometricSet"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        elements = self.Elements
+        
+        assert (sizeof([temp for temp in elements if temp.Dim != (elements[1 - 1].Dim)])) == 0
+        
+
+
+
+def calc_IfcGeometricSet_Dim(self):
+    elements = self.Elements
+    return \
+    elements[1 - 1].Dim
+
+
+
+
+class IfcGrid_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGrid"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.ObjectPlacement)
+        
+
+
+
+
+class IfcGridAxis_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGridAxis"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        axiscurve = self.AxisCurve
+        
+        assert axiscurve.Dim == 2
+        
+
+
+
+class IfcGridAxis_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcGridAxis"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        partofw = self.PartOfW
+        partofv = self.PartOfV
+        partofu = self.PartOfU
+        
+        assert (sizeof(partofu) == 1) ^ (sizeof(partofv) == 1) ^ (sizeof(partofw) == 1)
+        
+
+
+
+
+
+
+
+
+
+
+def calc_IfcHalfSpaceSolid_Dim(self):
+
+    return \
+    3
+
+
+
+
+class IfcHeatExchangerType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcHeatExchangerType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcHeatExchangerTypeEnum.USERDEFINED) or ((predefinedtype == IfcHeatExchangerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcHumidifierType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcHumidifierType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcHumidifierTypeEnum.USERDEFINED) or ((predefinedtype == IfcHumidifierTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+class IfcIShapeProfileDef_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcIShapeProfileDef"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        overalldepth = self.OverallDepth
+        flangethickness = self.FlangeThickness
+        
+        assert flangethickness < (overalldepth / 2.)
+        
+
+
+
+class IfcIShapeProfileDef_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcIShapeProfileDef"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        overallwidth = self.OverallWidth
+        webthickness = self.WebThickness
+        
+        assert webthickness < overallwidth
+        
+
+
+
+class IfcIShapeProfileDef_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcIShapeProfileDef"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        overallwidth = self.OverallWidth
+        overalldepth = self.OverallDepth
+        webthickness = self.WebThickness
+        flangethickness = self.FlangeThickness
+        filletradius = self.FilletRadius
+        
+        assert (not exists(filletradius)) or ((filletradius <= ((overallwidth - webthickness) / 2.)) and (filletradius <= ((overalldepth - (2. * flangethickness)) / 2.)))
+        
+
+
+
+
+
+
+
+class IfcInventory_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcInventory"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not ('ifc2x3.ifcspace' in typeof(temp)) or ('ifc2x3.ifcasset' in typeof(temp)) or ('ifc2x3.ifcfurnishingelement' in typeof(temp))])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcLShapeProfileDef_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcLShapeProfileDef"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        depth = self.Depth
+        thickness = self.Thickness
+        
+        assert thickness < depth
+        
+
+
+
+class IfcLShapeProfileDef_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcLShapeProfileDef"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        width = self.Width
+        thickness = self.Thickness
+        
+        assert (not exists(width)) or (thickness < width)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcLine_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcLine"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        pnt = self.Pnt
+        dir = self.Dir
+        
+        assert dir.Dim == pnt.Dim
+        
+
+
+
+
+
+
+
+class IfcLocalPlacement_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcLocalPlacement"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        placementrelto = self.PlacementRelTo
+        relativeplacement = self.RelativePlacement
+        
+        assert IfcCorrectLocalPlacement(relativeplacement,placementrelto)
+        
+
+
+
+
+class IfcLocalTime_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcLocalTime"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcValidTime(self)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcMaterialDefinitionRepresentation_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMaterialDefinitionRepresentation"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+        representations = self.Representations
+        
+        assert (sizeof([temp for temp in representations if not 'ifc2x3.ifcstyledrepresentation' in typeof(temp)])) == 0
+        
+
+
+
+
+
+
+
+def calc_IfcMaterialLayerSet_TotalThickness(self):
+
+    return \
+    IfcMlsTotalThickness(self)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcMechanicalMaterialProperties_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMechanicalMaterialProperties"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        youngmodulus = self.YoungModulus
+        
+        assert (not exists(youngmodulus)) or (youngmodulus >= 0.0)
+        
+
+
+
+class IfcMechanicalMaterialProperties_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMechanicalMaterialProperties"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        shearmodulus = self.ShearModulus
+        
+        assert (not exists(shearmodulus)) or (shearmodulus >= 0.0)
+        
+
+
+
+
+class IfcMechanicalSteelMaterialProperties_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMechanicalSteelMaterialProperties"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        yieldstress = self.YieldStress
+        
+        assert (not exists(yieldstress)) or (yieldstress >= 0.)
+        
+
+
+
+class IfcMechanicalSteelMaterialProperties_WR32:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMechanicalSteelMaterialProperties"
+    RULE_NAME = "WR32"
+
+    @staticmethod    
+    def __call__(self):
+        ultimatestress = self.UltimateStress
+        
+        assert (not exists(ultimatestress)) or (ultimatestress >= 0.)
+        
+
+
+
+class IfcMechanicalSteelMaterialProperties_WR33:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMechanicalSteelMaterialProperties"
+    RULE_NAME = "WR33"
+
+    @staticmethod    
+    def __call__(self):
+        hardeningmodule = self.HardeningModule
+        
+        assert (not exists(hardeningmodule)) or (hardeningmodule >= 0.)
+        
+
+
+
+class IfcMechanicalSteelMaterialProperties_WR34:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMechanicalSteelMaterialProperties"
+    RULE_NAME = "WR34"
+
+    @staticmethod    
+    def __call__(self):
+        proportionalstress = self.ProportionalStress
+        
+        assert (not exists(proportionalstress)) or (proportionalstress >= 0.)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcMove_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMove"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert sizeof(self.OperatesOn) >= 1
+        
+
+
+
+class IfcMove_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMove"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        operateson = self.OperatesOn
+        
+        assert (sizeof([temp for temp in operateson if (sizeof([temp2 for temp2 in temp.RelatedObjects if ('ifc2x3.ifcactor' in typeof(temp2)) or ('ifc2x3.ifcequipmentelement' in typeof(temp2)) or ('ifc2x3.ifcfurnishingelement' in typeof(temp2))])) >= 1])) >= 1
+        
+
+
+
+class IfcMove_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcMove"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Name)
+        
+
+
+
+
+class IfcNamedUnit_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcNamedUnit"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcCorrectDimensions(self.UnitType,self.Dimensions)
+        
+
+
+
+
+class IfcObject_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcObject"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        isdefinedby = self.IsDefinedBy
+        
+        assert (sizeof([temp for temp in isdefinedby if 'ifc2x3.ifcreldefinesbytype' in typeof(temp)])) <= 1
+        
+
+
+
+
+
+
+
+
+
+
+class IfcObjective_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcObjective"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        objectivequalifier = self.ObjectiveQualifier
+        
+        assert (objectivequalifier != IfcObjectiveEnum.USERDEFINED) or ((objectivequalifier == IfcObjectiveEnum.USERDEFINED) and exists(self.UserDefinedQualifier))
+        
+
+
+
+
+class IfcOccupant_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcOccupant"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (not predefinedtype == IfcOccupantTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        
+
+
+
+
+class IfcOffsetCurve2D_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcOffsetCurve2D"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        basiscurve = self.BasisCurve
+        
+        assert basiscurve.Dim == 2
+        
+
+
+
+
+class IfcOffsetCurve3D_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcOffsetCurve3D"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        basiscurve = self.BasisCurve
+        
+        assert basiscurve.Dim == 3
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcOrientedEdge_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcOrientedEdge"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        edgeelement = self.EdgeElement
+        
+        assert not 'ifc2x3.ifcorientededge' in typeof(edgeelement)
+        
+
+
+
+def calc_IfcOrientedEdge_EdgeStart(self):
+    edgeelement = self.EdgeElement
+    orientation = self.Orientation
+    return \
+    IfcBooleanChoose(orientation,edgeelement.EdgeStart,edgeelement.EdgeEnd)
+
+
+
+def calc_IfcOrientedEdge_EdgeEnd(self):
+    edgeelement = self.EdgeElement
+    orientation = self.Orientation
+    return \
+    IfcBooleanChoose(orientation,edgeelement.EdgeEnd,edgeelement.EdgeStart)
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcPath_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPath"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcPathHeadToTail(self)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcPerson_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPerson"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        familyname = self.FamilyName
+        givenname = self.GivenName
+        
+        assert exists(familyname) or exists(givenname)
+        
+
+
+
+
+
+
+
+class IfcPhysicalComplexQuantity_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPhysicalComplexQuantity"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        hasquantities = self.HasQuantities
+        
+        assert (sizeof([temp for temp in hasquantities if self == temp])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+class IfcPile_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPile"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcPileTypeEnum.USERDEFINED) or ((predefinedtype == IfcPileTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        
+
+
+
+
+class IfcPipeFittingType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPipeFittingType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcPipeFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeFittingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcPipeSegmentType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPipeSegmentType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcPipeSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcPixelTexture_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPixelTexture"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        width = self.Width
+        
+        assert width >= 1
+        
+
+
+
+class IfcPixelTexture_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPixelTexture"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        height = self.Height
+        
+        assert height >= 1
+        
+
+
+
+class IfcPixelTexture_WR23:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPixelTexture"
+    RULE_NAME = "WR23"
+
+    @staticmethod    
+    def __call__(self):
+        colourcomponents = self.ColourComponents
+        
+        assert 1 <= colourcomponents <= 4
+        
+
+
+
+class IfcPixelTexture_WR24:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPixelTexture"
+    RULE_NAME = "WR24"
+
+    @staticmethod    
+    def __call__(self):
+        width = self.Width
+        height = self.Height
+        pixel = self.Pixel
+        
+        assert sizeof(pixel) == (width * height)
+        
+
+
+
+
+def calc_IfcPlacement_Dim(self):
+    location = self.Location
+    return \
+    location.Dim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def calc_IfcPointOnCurve_Dim(self):
+    basiscurve = self.BasisCurve
+    return \
+    basiscurve.Dim
+
+
+
+
+def calc_IfcPointOnSurface_Dim(self):
+    basissurface = self.BasisSurface
+    return \
+    basissurface.Dim
+
+
+
+
+class IfcPolyLoop_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPolyLoop"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        polygon = self.Polygon
+        
+        assert (sizeof([temp for temp in polygon if temp.Dim != (polygon[1 - 1].Dim)])) == 0
+        
+
+
+
+
+class IfcPolygonalBoundedHalfSpace_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPolygonalBoundedHalfSpace"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+        polygonalboundary = self.PolygonalBoundary
+        
+        assert polygonalboundary.Dim == 2
+        
+
+
+
+class IfcPolygonalBoundedHalfSpace_WR42:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPolygonalBoundedHalfSpace"
+    RULE_NAME = "WR42"
+
+    @staticmethod    
+    def __call__(self):
+        polygonalboundary = self.PolygonalBoundary
+        
+        assert (sizeof(typeof(polygonalboundary) * ['ifc2x3.ifcpolyline','ifc2x3.ifccompositecurve'])) == 1
+        
+
+
+
+
+class IfcPolyline_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPolyline"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+        points = self.Points
+        
+        assert (sizeof([temp for temp in points if temp.Dim != (points[1 - 1].Dim)])) == 0
+        
+
+
+
+
+
+
+
+class IfcPostalAddress_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPostalAddress"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        internallocation = self.InternalLocation
+        addresslines = self.AddressLines
+        postalbox = self.PostalBox
+        town = self.Town
+        region = self.Region
+        postalcode = self.PostalCode
+        country = self.Country
+        
+        assert exists(internallocation) or exists(addresslines) or exists(postalbox) or exists(postalcode) or exists(town) or exists(region) or exists(country)
+        
+
+
+
+
+
+
+
+
+
+
+class IfcPreDefinedDimensionSymbol_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPreDefinedDimensionSymbol"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Name in ['arclength','conicaltaper','counterbore','countersink','depth','diameter','plusminus','radius','slope','sphericaldiameter','sphericalradius','square']
+        
+
+
+
+
+
+
+
+class IfcPreDefinedPointMarkerSymbol_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPreDefinedPointMarkerSymbol"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Name in ['asterisk','circle','dot','plus','square','triangle','x']
+        
+
+
+
+
+
+
+
+class IfcPreDefinedTerminatorSymbol_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPreDefinedTerminatorSymbol"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert self.Name in ['blankedarrow','blankedbox','blankeddot','dimensionorigin','filledarrow','filledbox','filleddot','integralsymbol','openarrow','slash','unfilledarrow']
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcProcedure_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProcedure"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.Decomposes if not 'ifc2x3.ifcrelnests' in typeof(temp)])) == 0
+        
+
+
+
+class IfcProcedure_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProcedure"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.IsDecomposedBy if not 'ifc2x3.ifcrelnests' in typeof(temp)])) == 0
+        
+
+
+
+class IfcProcedure_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProcedure"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Name)
+        
+
+
+
+class IfcProcedure_WR4:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProcedure"
+    RULE_NAME = "WR4"
+
+    @staticmethod    
+    def __call__(self):
+        proceduretype = self.ProcedureType
+        
+        assert (proceduretype != IfcProcedureTypeEnum.USERDEFINED) or ((proceduretype == IfcProcedureTypeEnum.USERDEFINED) and exists(self.UserDefinedProcedureType))
+        
+
+
+
+
+
+
+
+class IfcProduct_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProduct"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        objectplacement = self.ObjectPlacement
+        representation = self.Representation
+        
+        assert (exists(representation) and exists(objectplacement)) or (exists(representation) and (not 'ifc2x3.ifcproductdefinitionshape' in typeof(representation))) or (not exists(representation))
+        
+
+
+
+
+class IfcProductDefinitionShape_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProductDefinitionShape"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+        representations = self.Representations
+        
+        assert (sizeof([temp for temp in representations if not 'ifc2x3.ifcshapemodel' in typeof(temp)])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcProject_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProject"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Name)
+        
+
+
+
+class IfcProject_WR32:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProject"
+    RULE_NAME = "WR32"
+
+    @staticmethod    
+    def __call__(self):
+        representationcontexts = self.RepresentationContexts
+        
+        assert (sizeof([temp for temp in representationcontexts if 'ifc2x3.ifcgeometricrepresentationsubcontext' in typeof(temp)])) == 0
+        
+
+
+
+class IfcProject_WR33:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProject"
+    RULE_NAME = "WR33"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert sizeof(self.Decomposes) == 0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcPropertyBoundedValue_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyBoundedValue"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        upperboundvalue = self.UpperBoundValue
+        lowerboundvalue = self.LowerBoundValue
+        
+        assert (not exists(upperboundvalue)) or (not exists(lowerboundvalue)) or (typeof(upperboundvalue) == typeof(lowerboundvalue))
+        
+
+
+
+class IfcPropertyBoundedValue_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyBoundedValue"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        upperboundvalue = self.UpperBoundValue
+        lowerboundvalue = self.LowerBoundValue
+        
+        assert exists(upperboundvalue) or exists(lowerboundvalue)
+        
+
+
+
+
+
+
+
+
+
+
+class IfcPropertyDependencyRelationship_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyDependencyRelationship"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        dependingproperty = self.DependingProperty
+        dependantproperty = self.DependantProperty
+        
+        assert dependingproperty != dependantproperty
+        
+
+
+
+
+class IfcPropertyEnumeratedValue_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyEnumeratedValue"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        enumerationvalues = self.EnumerationValues
+        enumerationreference = self.EnumerationReference
+        
+        assert (not exists(enumerationreference)) or ((sizeof([temp for temp in enumerationvalues if temp in enumerationreference.EnumerationValues])) == sizeof(enumerationvalues))
+        
+
+
+
+
+class IfcPropertyEnumeration_WR01:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyEnumeration"
+    RULE_NAME = "WR01"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.EnumerationValues if not (typeof(self.EnumerationValues[1 - 1])) == typeof(temp)])) == 0
+        
+
+
+
+
+class IfcPropertyListValue_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyListValue"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.ListValues if not (typeof(self.ListValues[1 - 1])) == typeof(temp)])) == 0
+        
+
+
+
+
+
+
+
 class IfcPropertySet_WR31:
     SCOPE = "entity"
     TYPE_NAME = "IfcPropertySet"
@@ -6430,11 +11801,7 @@ class IfcPropertySet_WR31:
 
     @staticmethod    
     def __call__(self):
-        globalid = self.GlobalId
-        ownerhistory = self.OwnerHistory
-        name = self.Name
-        description = self.Description
-        hasproperties = self.HasProperties
+
         
         assert exists(self.Name)
         
@@ -6448,10 +11815,6 @@ class IfcPropertySet_WR32:
 
     @staticmethod    
     def __call__(self):
-        globalid = self.GlobalId
-        ownerhistory = self.OwnerHistory
-        name = self.Name
-        description = self.Description
         hasproperties = self.HasProperties
         
         assert IfcUniquePropertyName(hasproperties)
@@ -6459,10 +11822,3447 @@ class IfcPropertySet_WR32:
 
 
 
+
+
+
+
+
+
+
+class IfcPropertyTableValue_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyTableValue"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        definingvalues = self.DefiningValues
+        definedvalues = self.DefinedValues
+        
+        assert sizeof(definingvalues) == sizeof(definedvalues)
+        
+
+
+
+class IfcPropertyTableValue_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyTableValue"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.DefiningValues if typeof(temp) != (typeof(self.DefiningValues[1 - 1]))])) == 0
+        
+
+
+
+class IfcPropertyTableValue_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPropertyTableValue"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.DefinedValues if typeof(temp) != (typeof(self.DefinedValues[1 - 1]))])) == 0
+        
+
+
+
+
+
+
+
+class IfcProxy_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcProxy"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Name)
+        
+
+
+
+
+class IfcPumpType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcPumpType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcPumpTypeEnum.USERDEFINED) or ((predefinedtype == IfcPumpTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcQuantityArea_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityArea"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.AREAUNIT)
+        
+
+
+
+class IfcQuantityArea_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityArea"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        areavalue = self.AreaValue
+        
+        assert areavalue >= 0.
+        
+
+
+
+
+class IfcQuantityCount_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityCount"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        countvalue = self.CountValue
+        
+        assert countvalue >= 0.
+        
+
+
+
+
+class IfcQuantityLength_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityLength"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.LENGTHUNIT)
+        
+
+
+
+class IfcQuantityLength_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityLength"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        lengthvalue = self.LengthValue
+        
+        assert lengthvalue >= 0.
+        
+
+
+
+
+class IfcQuantityTime_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityTime"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.TIMEUNIT)
+        
+
+
+
+class IfcQuantityTime_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityTime"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        timevalue = self.TimeValue
+        
+        assert timevalue >= 0.
+        
+
+
+
+
+class IfcQuantityVolume_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityVolume"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.VOLUMEUNIT)
+        
+
+
+
+class IfcQuantityVolume_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityVolume"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        volumevalue = self.VolumeValue
+        
+        assert volumevalue >= 0.
+        
+
+
+
+
+class IfcQuantityWeight_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityWeight"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.MASSUNIT)
+        
+
+
+
+class IfcQuantityWeight_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcQuantityWeight"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        weightvalue = self.WeightValue
+        
+        assert weightvalue >= 0.
+        
+
+
+
+
+
+
+
+class IfcRailing_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRailing"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (not exists(predefinedtype)) or (predefinedtype != IfcRailingTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        
+
+
+
+
+
+
+
+class IfcRamp_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRamp"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (hiindex(self.IsDecomposedBy) == 0) or ((hiindex(self.IsDecomposedBy) == 1) and (not exists(self.Representation)))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcRationalBezierCurve_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRationalBezierCurve"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        weightsdata = self.WeightsData
+        
+        assert sizeof(weightsdata) == sizeof(self.ControlPointsList)
+        
+
+
+
+class IfcRationalBezierCurve_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRationalBezierCurve"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcCurveWeightsPositive(self)
+        
+
+
+
+def calc_IfcRationalBezierCurve_Weights(self):
+    weightsdata = self.WeightsData
+    return \
+    IfcListToArray(weightsdata,0,self.UpperIndexOnControlPoints)
+
+
+
+
+class IfcRectangleHollowProfileDef_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRectangleHollowProfileDef"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        wallthickness = self.WallThickness
+        
+        assert (wallthickness < (self.XDim / 2.)) and (wallthickness < (self.YDim / 2.))
+        
+
+
+
+class IfcRectangleHollowProfileDef_WR32:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRectangleHollowProfileDef"
+    RULE_NAME = "WR32"
+
+    @staticmethod    
+    def __call__(self):
+        outerfilletradius = self.OuterFilletRadius
+        
+        assert (not exists(outerfilletradius)) or ((outerfilletradius <= (self.XDim / 2.)) and (outerfilletradius <= (self.YDim / 2.)))
+        
+
+
+
+class IfcRectangleHollowProfileDef_WR33:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRectangleHollowProfileDef"
+    RULE_NAME = "WR33"
+
+    @staticmethod    
+    def __call__(self):
+        wallthickness = self.WallThickness
+        innerfilletradius = self.InnerFilletRadius
+        
+        assert (not exists(innerfilletradius)) or ((innerfilletradius <= ((self.XDim / 2.) - wallthickness)) and (innerfilletradius <= ((self.YDim / 2.) - wallthickness)))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcRectangularTrimmedSurface_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRectangularTrimmedSurface"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        u1 = self.U1
+        u2 = self.U2
+        
+        assert u1 != u2
+        
+
+
+
+class IfcRectangularTrimmedSurface_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRectangularTrimmedSurface"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        v1 = self.V1
+        v2 = self.V2
+        
+        assert v1 != v2
+        
+
+
+
+class IfcRectangularTrimmedSurface_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRectangularTrimmedSurface"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        basissurface = self.BasisSurface
+        u1 = self.U1
+        u2 = self.U2
+        usense = self.Usense
+        
+        assert (('ifc2x3.ifcelementarysurface' in typeof(basissurface)) and (not 'ifc2x3.ifcplane' in typeof(basissurface))) or ('ifc2x3.ifcsurfaceofrevolution' in typeof(basissurface)) or (usense == (u2 > u1))
+        
+
+
+
+class IfcRectangularTrimmedSurface_WR4:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRectangularTrimmedSurface"
+    RULE_NAME = "WR4"
+
+    @staticmethod    
+    def __call__(self):
+        v1 = self.V1
+        v2 = self.V2
+        vsense = self.Vsense
+        
+        assert vsense == (v2 > v1)
+        
+
+
+
+def calc_IfcRectangularTrimmedSurface_Dim(self):
+    basissurface = self.BasisSurface
+    return \
+    basissurface.Dim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcReinforcingBar_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcReinforcingBar"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        barrole = self.BarRole
+        
+        assert (barrole != IfcReinforcingBarRoleEnum.USERDEFINED) or ((barrole == IfcReinforcingBarRoleEnum.USERDEFINED) and exists(self.ObjectType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcRelAssigns_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssigns"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatedobjects = self.RelatedObjects
+        relatedobjectstype = self.RelatedObjectsType
+        
+        assert IfcCorrectObjectAssignment(relatedobjectstype,relatedobjects)
+        
+
+
+
+
+class IfcRelAssignsTasks_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsTasks"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert hiindex(self.RelatedObjects) == 1
+        
+
+
+
+class IfcRelAssignsTasks_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsTasks"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 'ifc2x3.ifctask' in (typeof(self.RelatedObjects[1 - 1]))
+        
+
+
+
+class IfcRelAssignsTasks_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsTasks"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 'ifc2x3.ifcworkcontrol' in typeof(self.RelatingControl)
+        
+
+
+
+
+class IfcRelAssignsToActor_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsToActor"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatingactor = self.RelatingActor
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if relatingactor == temp])) == 0
+        
+
+
+
+
+class IfcRelAssignsToControl_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsToControl"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatingcontrol = self.RelatingControl
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if relatingcontrol == temp])) == 0
+        
+
+
+
+
+class IfcRelAssignsToGroup_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsToGroup"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatinggroup = self.RelatingGroup
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if relatinggroup == temp])) == 0
+        
+
+
+
+
+class IfcRelAssignsToProcess_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsToProcess"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatingprocess = self.RelatingProcess
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if relatingprocess == temp])) == 0
+        
+
+
+
+
+class IfcRelAssignsToProduct_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsToProduct"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatingproduct = self.RelatingProduct
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if relatingproduct == temp])) == 0
+        
+
+
+
+
+
+
+
+class IfcRelAssignsToResource_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssignsToResource"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatingresource = self.RelatingResource
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if relatingresource == temp])) == 0
+        
+
+
+
+
+class IfcRelAssociates_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssociates"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        relatedobjects = self.RelatedObjects
+        
+        assert (sizeof([temp for temp in relatedobjects if not ('ifc2x3.ifcobjectdefinition' in typeof(temp)) or ('ifc2x3.ifcpropertydefinition' in typeof(temp))])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcRelAssociatesMaterial_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssociatesMaterial"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if ('ifc2x3.ifcfeatureelementsubtraction' in typeof(temp)) or ('ifc2x3.ifcvirtualelement' in typeof(temp))])) == 0
+        
+
+
+
+class IfcRelAssociatesMaterial_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelAssociatesMaterial"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if (not 'ifc2x3.ifcproduct' in typeof(temp)) and (not 'ifc2x3.ifctypeproduct' in typeof(temp))])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+class IfcRelConnectsElements_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelConnectsElements"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        relatingelement = self.RelatingElement
+        relatedelement = self.RelatedElement
+        
+        assert relatingelement != relatedelement
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcRelContainedInSpatialStructure_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelContainedInSpatialStructure"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        relatedelements = self.RelatedElements
+        
+        assert (sizeof([temp for temp in relatedelements if 'ifc2x3.ifcspatialstructureelement' in typeof(temp)])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+class IfcRelDecomposes_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelDecomposes"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        relatingobject = self.RelatingObject
+        relatedobjects = self.RelatedObjects
+        
+        assert (sizeof([temp for temp in relatedobjects if relatingobject == temp])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcRelNests_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelNests"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if not typeof(self.RelatingObject) == typeof(temp)])) == 0
+        
+
+
+
+
+
+
+
+class IfcRelOverridesProperties_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelOverridesProperties"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert sizeof(self.RelatedObjects) == 1
+        
+
+
+
+
+
+
+
+class IfcRelReferencedInSpatialStructure_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelReferencedInSpatialStructure"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        relatedelements = self.RelatedElements
+        
+        assert (sizeof([temp for temp in relatedelements if 'ifc2x3.ifcspatialstructureelement' in typeof(temp)])) == 0
+        
+
+
+
+
+class IfcRelSchedulesCostItems_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelSchedulesCostItems"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.RelatedObjects if not 'ifc2x3.ifccostitem' in typeof(temp)])) == 0
+        
+
+
+
+class IfcRelSchedulesCostItems_WR12:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelSchedulesCostItems"
+    RULE_NAME = "WR12"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 'ifc2x3.ifccostschedule' in typeof(self.RelatingControl)
+        
+
+
+
+
+class IfcRelSequence_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelSequence"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatingprocess = self.RelatingProcess
+        relatedprocess = self.RelatedProcess
+        
+        assert relatingprocess != relatedprocess
+        
+
+
+
+
+
+
+
+class IfcRelSpaceBoundary_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRelSpaceBoundary"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        relatedbuildingelement = self.RelatedBuildingElement
+        physicalorvirtualboundary = self.PhysicalOrVirtualBoundary
+        
+        assert ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Physical) and (exists(relatedbuildingelement) and (not 'ifc2x3.ifcvirtualelement' in typeof(relatedbuildingelement)))) or ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Virtual) and ((not exists(relatedbuildingelement)) or ('ifc2x3.ifcvirtualelement' in typeof(relatedbuildingelement)))) or (physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.NotDefined)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcRevolvedAreaSolid_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRevolvedAreaSolid"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        axis = self.Axis
+        
+        assert (axis.Location.Coordinates[3 - 1]) == 0.0
+        
+
+
+
+class IfcRevolvedAreaSolid_WR32:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRevolvedAreaSolid"
+    RULE_NAME = "WR32"
+
+    @staticmethod    
+    def __call__(self):
+        axis = self.Axis
+        
+        assert (axis.Z.DirectionRatios[3 - 1]) == 0.0
+        
+
+
+
+def calc_IfcRevolvedAreaSolid_AxisLine(self):
+    axis = self.Axis
+    return \
+    IfcLine(Pnt=axis.Location, Dir=IfcVector(Orientation=axis.Z, Magnitude=1.0))
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcRoof_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRoof"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (hiindex(self.IsDecomposedBy) == 0) or ((hiindex(self.IsDecomposedBy) == 1) and (not exists(self.Representation)))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcRoundedRectangleProfileDef_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcRoundedRectangleProfileDef"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        roundingradius = self.RoundingRadius
+        
+        assert (roundingradius <= (self.XDim / 2.)) and (roundingradius <= (self.YDim / 2.))
+        
+
+
+
+
+def calc_IfcSIUnit_Dimensions(self):
+
+    return \
+    IfcDimensionsForSiUnit(self.Name)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcSectionedSpine_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSectionedSpine"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        crosssections = self.CrossSections
+        crosssectionpositions = self.CrossSectionPositions
+        
+        assert sizeof(crosssections) == sizeof(crosssectionpositions)
+        
+
+
+
+class IfcSectionedSpine_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSectionedSpine"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        crosssections = self.CrossSections
+        
+        assert (sizeof([temp for temp in crosssections if (crosssections[1 - 1].ProfileType) != temp.ProfileType])) == 0
+        
+
+
+
+class IfcSectionedSpine_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSectionedSpine"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        spinecurve = self.SpineCurve
+        
+        assert spinecurve.Dim == 3
+        
+
+
+
+def calc_IfcSectionedSpine_Dim(self):
+
+    return \
+    3
+
+
+
+
+
+
+
+
+
+
+class IfcServiceLifeFactor_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcServiceLifeFactor"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (not predefinedtype == IfcServiceLifeFactorTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        
+
+
+
+
+
+
+
+class IfcShapeModel_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcShapeModel"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+        ofshapeaspect = self.OfShapeAspect
+        
+        assert (sizeof(self.OfProductRepresentation) == 1) ^ (sizeof(self.RepresentationMap) == 1) ^ (sizeof(ofshapeaspect) == 1)
+        
+
+
+
+
+class IfcShapeRepresentation_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcShapeRepresentation"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert 'ifc2x3.ifcgeometricrepresentationcontext' in typeof(self.ContextOfItems)
+        
+
+
+
+class IfcShapeRepresentation_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcShapeRepresentation"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        items = self.Items
+        
+        assert (sizeof([temp for temp in items if ('ifc2x3.ifctopologicalrepresentationitem' in typeof(temp)) and (not (sizeof(['ifc2x3.ifcvertexpoint','ifc2x3.ifcedgecurve','ifc2x3.ifcfacesurface'] * typeof(temp))) == 1)])) == 0
+        
+
+
+
+class IfcShapeRepresentation_WR23:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcShapeRepresentation"
+    RULE_NAME = "WR23"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.RepresentationType)
+        
+
+
+
+class IfcShapeRepresentation_WR24:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcShapeRepresentation"
+    RULE_NAME = "WR24"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcShapeRepresentationTypes(self.RepresentationType,self.Items)
+        
+
+
+
+
+def calc_IfcShellBasedSurfaceModel_Dim(self):
+
+    return \
+    3
+
+
+
+
+
+
+
+
+
+
+class IfcSlab_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSlab"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (not exists(predefinedtype)) or (predefinedtype != IfcSlabTypeEnum.USERDEFINED) or ((predefinedtype == IfcSlabTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        
+
+
+
+
+
+
+
+
+
+
+def calc_IfcSolidModel_Dim(self):
+
+    return \
+    3
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcSpaceHeaterType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSpaceHeaterType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcSpaceHeaterTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceHeaterTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcSpatialStructureElement_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSpatialStructureElement"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (hiindex(self.Decomposes) == 1) and ('ifc2x3.ifcrelaggregates' in (typeof(self.Decomposes[1 - 1]))) and (('ifc2x3.ifcproject' in (typeof(self.Decomposes[1 - 1].RelatingObject))) or ('ifc2x3.ifcspatialstructureelement' in (typeof(self.Decomposes[1 - 1].RelatingObject))))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcStair_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStair"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (hiindex(self.IsDecomposedBy) == 0) or ((hiindex(self.IsDecomposedBy) == 1) and (not exists(self.Representation)))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcStructuralLinearAction_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralLinearAction"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof(['ifc2x3.ifcstructuralloadlinearforce','ifc2x3.ifcstructuralloadtemperature'] * typeof(self.AppliedLoad))) == 1
+        
+
+
+
+
+def calc_IfcStructuralLinearActionVarying_VaryingAppliedLoads(self):
+    subsequentappliedloads = self.SubsequentAppliedLoads
+    return \
+    IfcAddToBeginOfList(self.AppliedLoad,subsequentappliedloads)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcStructuralPlanarAction_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralPlanarAction"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof(['ifc2x3.ifcstructuralloadplanarforce','ifc2x3.ifcstructuralloadtemperature'] * typeof(self.AppliedLoad))) == 1
+        
+
+
+
+
+def calc_IfcStructuralPlanarActionVarying_VaryingAppliedLoads(self):
+    subsequentappliedloads = self.SubsequentAppliedLoads
+    return \
+    IfcAddToBeginOfList(self.AppliedLoad,subsequentappliedloads)
+
+
+
+
+class IfcStructuralPointAction_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralPointAction"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof(['ifc2x3.ifcstructuralloadsingleforce','ifc2x3.ifcstructuralloadsingledisplacement'] * typeof(self.AppliedLoad))) == 1
+        
+
+
+
+
+
+
+
+class IfcStructuralPointReaction_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralPointReaction"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof(['ifc2x3.ifcstructuralloadsingleforce','ifc2x3.ifcstructuralloadsingledisplacement'] * typeof(self.AppliedLoad))) == 1
+        
+
+
+
+
+class IfcStructuralProfileProperties_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralProfileProperties"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        sheardeformationareay = self.ShearDeformationAreaY
+        
+        assert (not exists(sheardeformationareay)) or (sheardeformationareay >= 0.)
+        
+
+
+
+class IfcStructuralProfileProperties_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralProfileProperties"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        sheardeformationareaz = self.ShearDeformationAreaZ
+        
+        assert (not exists(sheardeformationareaz)) or (sheardeformationareaz >= 0.)
+        
+
+
+
+
+
+
+
+
+
+
+class IfcStructuralSteelProfileProperties_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralSteelProfileProperties"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        shearareay = self.ShearAreaY
+        
+        assert (not exists(shearareay)) or (shearareay >= 0.)
+        
+
+
+
+class IfcStructuralSteelProfileProperties_WR32:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralSteelProfileProperties"
+    RULE_NAME = "WR32"
+
+    @staticmethod    
+    def __call__(self):
+        shearareaz = self.ShearAreaZ
+        
+        assert (not exists(shearareaz)) or (shearareaz >= 0.)
+        
+
+
+
+
+
+
+
+
+
+
+class IfcStructuralSurfaceMemberVarying_WR61:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralSurfaceMemberVarying"
+    RULE_NAME = "WR61"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Thickness)
+        
+
+
+
+class IfcStructuralSurfaceMemberVarying_WR62:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralSurfaceMemberVarying"
+    RULE_NAME = "WR62"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.VaryingThicknessLocation.ShapeRepresentations if not sizeof(temp.Items) == 1])) == 0
+        
+
+
+
+class IfcStructuralSurfaceMemberVarying_WR63:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuralSurfaceMemberVarying"
+    RULE_NAME = "WR63"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.VaryingThicknessLocation.ShapeRepresentations if not ('ifc2x3.ifccartesianpoint' in (typeof(temp.Items[1 - 1]))) or ('ifc2x3.ifcpointonsurface' in (typeof(temp.Items[1 - 1])))])) == 0
+        
+
+
+
+def calc_IfcStructuralSurfaceMemberVarying_VaryingThickness(self):
+    subsequentthickness = self.SubsequentThickness
+    return \
+    IfcAddToBeginOfList(self.Thickness,subsequentthickness)
+
+
+
+
+class IfcStructuredDimensionCallout_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStructuredDimensionCallout"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        contents = self.Contents
+        
+        assert (sizeof([ato for ato in [con for con in self.contents if 'ifc2x3.ifcannotationtextoccurrence' in typeof(con)] if not ato.Name in ['dimensionvalue','tolerancevalue','unittext','prefixtext','suffixtext']])) == 0
+        
+
+
+
+
+
+
+
+class IfcStyledItem_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStyledItem"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+        styles = self.Styles
+        
+        assert sizeof(styles) == 1
+        
+
+
+
+class IfcStyledItem_WR12:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStyledItem"
+    RULE_NAME = "WR12"
+
+    @staticmethod    
+    def __call__(self):
+        item = self.Item
+        
+        assert not 'ifc2x3.ifcstyleditem' in typeof(item)
+        
+
+
+
+
+class IfcStyledRepresentation_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcStyledRepresentation"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.Items if not 'ifc2x3.ifcstyleditem' in typeof(temp)])) == 0
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcSurfaceOfLinearExtrusion_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSurfaceOfLinearExtrusion"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+        depth = self.Depth
+        
+        assert depth > 0.
+        
+
+
+
+def calc_IfcSurfaceOfLinearExtrusion_ExtrusionAxis(self):
+    extrudeddirection = self.ExtrudedDirection
+    depth = self.Depth
+    return \
+    IfcVector(Orientation=extrudeddirection, Magnitude=depth)
+
+
+
+
+def calc_IfcSurfaceOfRevolution_AxisLine(self):
+    axisposition = self.AxisPosition
+    return \
+    IfcLine(Pnt=axisposition.Location, Dir=IfcVector(Orientation=axisposition.Z, Magnitude=1.0))
+
+
+
+
+class IfcSurfaceStyle_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSurfaceStyle"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([style for style in self.Styles if 'ifc2x3.ifcsurfacestyleshading' in typeof(style)])) <= 1
+        
+
+
+
+class IfcSurfaceStyle_WR12:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSurfaceStyle"
+    RULE_NAME = "WR12"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([style for style in self.Styles if 'ifc2x3.ifcsurfacestylelighting' in typeof(style)])) <= 1
+        
+
+
+
+class IfcSurfaceStyle_WR13:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSurfaceStyle"
+    RULE_NAME = "WR13"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([style for style in self.Styles if 'ifc2x3.ifcsurfacestylerefraction' in typeof(style)])) <= 1
+        
+
+
+
+class IfcSurfaceStyle_WR14:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSurfaceStyle"
+    RULE_NAME = "WR14"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([style for style in self.Styles if 'ifc2x3.ifcsurfacestylewithtextures' in typeof(style)])) <= 1
+        
+
+
+
+class IfcSurfaceStyle_WR15:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSurfaceStyle"
+    RULE_NAME = "WR15"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([style for style in self.Styles if 'ifc2x3.ifcexternallydefinedsurfacestyle' in typeof(style)])) <= 1
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcSweptAreaSolid_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSweptAreaSolid"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        sweptarea = self.SweptArea
+        
+        assert sweptarea.ProfileType == IfcProfileTypeEnum.Area
+        
+
+
+
+
+class IfcSweptDiskSolid_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSweptDiskSolid"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        directrix = self.Directrix
+        
+        assert directrix.Dim == 3
+        
+
+
+
+class IfcSweptDiskSolid_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSweptDiskSolid"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        radius = self.Radius
+        innerradius = self.InnerRadius
+        
+        assert (not exists(innerradius)) or (radius > innerradius)
+        
+
+
+
+
+class IfcSweptSurface_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSweptSurface"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        sweptcurve = self.SweptCurve
+        
+        assert not 'ifc2x3.ifcderivedprofiledef' in typeof(sweptcurve)
+        
+
+
+
+class IfcSweptSurface_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcSweptSurface"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        sweptcurve = self.SweptCurve
+        
+        assert sweptcurve.ProfileType == IfcProfileTypeEnum.Curve
+        
+
+
+
+def calc_IfcSweptSurface_Dim(self):
+    position = self.Position
+    return \
+    position.Dim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcTShapeProfileDef_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTShapeProfileDef"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        depth = self.Depth
+        flangethickness = self.FlangeThickness
+        
+        assert flangethickness < depth
+        
+
+
+
+class IfcTShapeProfileDef_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTShapeProfileDef"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        flangewidth = self.FlangeWidth
+        webthickness = self.WebThickness
+        
+        assert webthickness < flangewidth
+        
+
+
+
+
+class IfcTable_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTable"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        rows = self.Rows
+        
+        assert (sizeof([temp for temp in rows if hiindex(temp.RowCells) != (hiindex(rows[1 - 1].RowCells))])) == 0
+        
+
+
+
+class IfcTable_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTable"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+        rows = self.Rows
+        
+        assert (sizeof([temp for temp in rows if hiindex(temp.RowCells) != (hiindex(rows[1 - 1].RowCells))])) == 0
+        
+
+
+
+class IfcTable_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTable"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+        numberofheadings = self.NumberOfHeadings
+        
+        assert 0 <= numberofheadings <= 1
+        
+
+
+
+def calc_IfcTable_NumberOfCellsInRow(self):
+    rows = self.Rows
+    return \
+    hiindex(rows[1 - 1].RowCells)
+
+
+
+def calc_IfcTable_NumberOfHeadings(self):
+    rows = self.Rows
+    return \
+    sizeof([temp for temp in rows if temp.IsHeading])
+
+
+
+def calc_IfcTable_NumberOfDataRows(self):
+    rows = self.Rows
+    return \
+    sizeof([temp for temp in rows if not temp.IsHeading])
+
+
+
+
+
+
+
+class IfcTankType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTankType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcTankTypeEnum.USERDEFINED) or ((predefinedtype == IfcTankTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcTask_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTask"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.Decomposes if not 'ifc2x3.ifcrelnests' in typeof(temp)])) == 0
+        
+
+
+
+class IfcTask_WR2:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTask"
+    RULE_NAME = "WR2"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.IsDecomposedBy if not 'ifc2x3.ifcrelnests' in typeof(temp)])) == 0
+        
+
+
+
+class IfcTask_WR3:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTask"
+    RULE_NAME = "WR3"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Name)
+        
+
+
+
+
+class IfcTelecomAddress_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTelecomAddress"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        telephonenumbers = self.TelephoneNumbers
+        facsimilenumbers = self.FacsimileNumbers
+        pagernumber = self.PagerNumber
+        electronicmailaddresses = self.ElectronicMailAddresses
+        wwwhomepageurl = self.WWWHomePageURL
+        
+        assert exists(telephonenumbers) or exists(pagernumber) or exists(facsimilenumbers) or exists(electronicmailaddresses) or exists(wwwhomepageurl)
+        
+
+
+
+
+class IfcTendon_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTendon"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcTendonTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcTextLiteralWithExtent_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTextLiteralWithExtent"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        extent = self.Extent
+        
+        assert not 'ifc2x3.ifcplanarbox' in typeof(extent)
+        
+
+
+
+
+
+
+
+class IfcTextStyleFontModel_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTextStyleFontModel"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert ('ifc2x3.ifclengthmeasure' in typeof(self.FontSize)) and (self.FontSize > 0.)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcTextureMap_WR11:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTextureMap"
+    RULE_NAME = "WR11"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof(['ifc2x3.ifcshellbasedsurfacemodel','ifc2x3.ifcfacebasedsurfacemodel','ifc2x3.ifcfacetedbrep','ifc2x3.ifcfacetedbrepwithvoids'] * (typeof(self.AnnotatedSurface[1 - 1].Item)))) >= 1
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcTimeSeriesSchedule_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTimeSeriesSchedule"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+        timeseriesscheduletype = self.TimeSeriesScheduleType
+        
+        assert (not timeseriesscheduletype == IfcTimeSeriesScheduleTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        
+
+
+
+
+
+
+
+
+
+
+class IfcTopologyRepresentation_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTopologyRepresentation"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.Items if not 'ifc2x3.ifctopologicalrepresentationitem' in typeof(temp)])) == 0
+        
+
+
+
+class IfcTopologyRepresentation_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTopologyRepresentation"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.RepresentationType)
+        
+
+
+
+class IfcTopologyRepresentation_WR23:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTopologyRepresentation"
+    RULE_NAME = "WR23"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert IfcTopologyRepresentationTypes(self.RepresentationType,self.Items)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcTrimmedCurve_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTrimmedCurve"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+        trim1 = self.Trim1
+        
+        assert (hiindex(trim1) == 1) or ((typeof(trim1[1 - 1])) != (typeof(trim1[2 - 1])))
+        
+
+
+
+class IfcTrimmedCurve_WR42:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTrimmedCurve"
+    RULE_NAME = "WR42"
+
+    @staticmethod    
+    def __call__(self):
+        trim2 = self.Trim2
+        
+        assert (hiindex(trim2) == 1) or ((typeof(trim2[1 - 1])) != (typeof(trim2[2 - 1])))
+        
+
+
+
+class IfcTrimmedCurve_WR43:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTrimmedCurve"
+    RULE_NAME = "WR43"
+
+    @staticmethod    
+    def __call__(self):
+        basiscurve = self.BasisCurve
+        
+        assert not 'ifc2x3.ifcboundedcurve' in typeof(basiscurve)
+        
+
+
+
+
+class IfcTubeBundleType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTubeBundleType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcTubeBundleTypeEnum.USERDEFINED) or ((predefinedtype == IfcTubeBundleTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+class IfcTypeObject_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTypeObject"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert exists(self.Name)
+        
+
+
+
+
+class IfcTypeProduct_WR41:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcTypeProduct"
+    RULE_NAME = "WR41"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (not exists(lambda: self.ObjectTypeOf[1 - 1])) or ((sizeof([temp for temp in self.ObjectTypeOf[1 - 1].RelatedObjects if not 'ifc2x3.ifcproduct' in typeof(temp)])) == 0)
+        
+
+
+
+
+class IfcUShapeProfileDef_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcUShapeProfileDef"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        depth = self.Depth
+        flangethickness = self.FlangeThickness
+        
+        assert flangethickness < (depth / 2.)
+        
+
+
+
+class IfcUShapeProfileDef_WR22:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcUShapeProfileDef"
+    RULE_NAME = "WR22"
+
+    @staticmethod    
+    def __call__(self):
+        flangewidth = self.FlangeWidth
+        webthickness = self.WebThickness
+        
+        assert webthickness < flangewidth
+        
+
+
+
+
+class IfcUnitAssignment_WR01:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcUnitAssignment"
+    RULE_NAME = "WR01"
+
+    @staticmethod    
+    def __call__(self):
+        units = self.Units
+        
+        assert IfcCorrectUnitAssignment(units)
+        
+
+
+
+
+class IfcUnitaryEquipmentType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcUnitaryEquipmentType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcUnitaryEquipmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryEquipmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcValveType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcValveType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcValveTypeEnum.USERDEFINED) or ((predefinedtype == IfcValveTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+class IfcVector_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcVector"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        magnitude = self.Magnitude
+        
+        assert magnitude >= 0.0
+        
+
+
+
+def calc_IfcVector_Dim(self):
+    orientation = self.Orientation
+    return \
+    orientation.Dim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcVibrationIsolatorType_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcVibrationIsolatorType"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        predefinedtype = self.PredefinedType
+        
+        assert (predefinedtype != IfcVibrationIsolatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationIsolatorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcWall_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcWall"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.HasAssociations if 'ifc2x3.ifcrelassociatesmaterial' in typeof(temp)])) <= 1
+        
+
+
+
+
+class IfcWallStandardCase_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcWallStandardCase"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in usedin(self,'ifc2x3.ifcrelassociates.relatedobjects') if ('ifc2x3.ifcrelassociatesmaterial' in typeof(temp)) and ('ifc2x3.ifcmateriallayersetusage' in typeof(temp.RelatingMaterial))])) == 1
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IfcWindowLiningProperties_WR31:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcWindowLiningProperties"
+    RULE_NAME = "WR31"
+
+    @staticmethod    
+    def __call__(self):
+        liningdepth = self.LiningDepth
+        liningthickness = self.LiningThickness
+        
+        assert not (not exists(liningdepth)) and exists(liningthickness)
+        
+
+
+
+class IfcWindowLiningProperties_WR32:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcWindowLiningProperties"
+    RULE_NAME = "WR32"
+
+    @staticmethod    
+    def __call__(self):
+        firsttransomoffset = self.FirstTransomOffset
+        secondtransomoffset = self.SecondTransomOffset
+        
+        assert not (not exists(firsttransomoffset)) and exists(secondtransomoffset)
+        
+
+
+
+class IfcWindowLiningProperties_WR33:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcWindowLiningProperties"
+    RULE_NAME = "WR33"
+
+    @staticmethod    
+    def __call__(self):
+        firstmullionoffset = self.FirstMullionOffset
+        secondmullionoffset = self.SecondMullionOffset
+        
+        assert not (not exists(firstmullionoffset)) and exists(secondmullionoffset)
+        
+
+
+
+class IfcWindowLiningProperties_WR34:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcWindowLiningProperties"
+    RULE_NAME = "WR34"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (exists(lambda: self.DefinesType[1 - 1])) and ('ifc2x3.ifcwindowstyle' in (typeof(self.DefinesType[1 - 1])))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcWorkControl_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcWorkControl"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+        workcontroltype = self.WorkControlType
+        
+        assert (workcontroltype != IfcWorkControlTypeEnum.USERDEFINED) or ((workcontroltype == IfcWorkControlTypeEnum.USERDEFINED) and exists(self.UserDefinedControlType))
+        
+
+
+
+
+
+
+
+
+
+
+class IfcZShapeProfileDef_WR21:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcZShapeProfileDef"
+    RULE_NAME = "WR21"
+
+    @staticmethod    
+    def __call__(self):
+        depth = self.Depth
+        flangethickness = self.FlangeThickness
+        
+        assert flangethickness < (depth / 2.)
+        
+
+
+
+
+class IfcZone_WR1:
+    SCOPE = "entity"
+    TYPE_NAME = "IfcZone"
+    RULE_NAME = "WR1"
+
+    @staticmethod    
+    def __call__(self):
+
+        
+        assert (sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not ('ifc2x3.ifczone' in typeof(temp)) or ('ifc2x3.ifcspace' in typeof(temp))])) == 0
+        
+
+
+
+
+class IfcRepresentationContextSameWCS:
+    SCOPE = "file"
+
+    @staticmethod    
+    def __call__(file):
+        IfcGeometricRepresentationContext = file.by_type("IfcGeometricRepresentationContext")
+        isdifferent = False
+        if sizeof(IfcGeometricRepresentationContext) > 1:
+            for i in range(2, hiindex(IfcGeometricRepresentationContext) + 1):
+                if (IfcGeometricRepresentationContext[1 - 1].WorldCoordinateSystem) != (IfcGeometricRepresentationContext[i - 1].WorldCoordinateSystem):
+                    isdifferent = (not IfcSameValidPrecision(IfcGeometricRepresentationContext[1 - 1].Precision,IfcGeometricRepresentationContext[i - 1].Precision)) or (not IfcSameAxis2Placement(IfcGeometricRepresentationContext[1 - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[i - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[1 - 1].Precision))
+                    if isdifferent == True:
+                        break
+        
+        assert isdifferent == False
+        
+
+
+
+
+class IfcSingleProjectInstance:
+    SCOPE = "file"
+
+    @staticmethod    
+    def __call__(file):
+        IfcProject = file.by_type("IfcProject")
+
+
+        
+        assert sizeof(IfcProject) <= 1
+        
+
+
+
+def IfcAddToBeginOfList(ascalar, alist):
+    result = []
+    if not exists(ascalar):
+        result = alist
+    else:
+        result = result + ascalar
+        if hiindex(alist) >= 1:
+            for i in range(1, hiindex(alist) + 1):
+                temp = list(result)
+                temp[i - 1] = alist[i - 1]
+                result = temp
+    return result
+
+
+def IfcBaseAxis(dim, axis1, axis2, axis3):
+    
+    
+    
+    if dim == 3:
+        d1 = nvl(IfcNormalise(axis3),IfcDirection(DirectionRatios=[0.0,0.0,1.0]))
+        d2 = IfcFirstProjAxis(d1,axis1)
+        u = [d2,IfcSecondProjAxis(d1,d2,axis2),d1]
+    else:
+        if exists(axis1):
+            d1 = IfcNormalise(axis1)
+            u = [d1,IfcOrthogonalComplement(d1)]
+            if exists(axis2):
+                factor = IfcDotProduct(axis2,u[2 - 1])
+                if factor < 0.0:
+                    u[2 - 1].DirectionRatios[1 - 1] = -u[2 - 1].DirectionRatios[1 - 1]
+                    u[2 - 1].DirectionRatios[2 - 1] = -u[2 - 1].DirectionRatios[2 - 1]
+        else:
+            if exists(axis2):
+                d1 = IfcNormalise(axis2)
+                u = [IfcOrthogonalComplement(d1),d1]
+                u[1 - 1].DirectionRatios[1 - 1] = -u[1 - 1].DirectionRatios[1 - 1]
+                u[1 - 1].DirectionRatios[2 - 1] = -u[1 - 1].DirectionRatios[2 - 1]
+            else:
+                u = [IfcDirection(DirectionRatios=[1.0,0.0]),IfcDirection(DirectionRatios=[0.0,1.0])]
+    return u
+
+
+def IfcBooleanChoose(b, choice1, choice2):
+
+    if b:
+        return choice1
+    else:
+        return choice2
+
+
+def IfcBuild2Axes(refdirection):
+    d = nvl(IfcNormalise(refdirection),IfcDirection(DirectionRatios=[1.0,0.0]))
+    return [d,IfcOrthogonalComplement(d)]
+
+
+def IfcBuildAxes(axis, refdirection):
+    
+    d1 = nvl(IfcNormalise(axis),IfcDirection(DirectionRatios=[0.0,0.0,1.0]))
+    d2 = IfcFirstProjAxis(d1,refdirection)
+    return [d2,IfcNormalise(IfcCrossProduct(d1,d2)).Orientation,d1]
+
+
+def IfcCorrectDimensions(m, dim):
+
+    if m == lengthunit:
+        if dim == IfcDimensionalExponents(1,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == massunit:
+        if dim == IfcDimensionalExponents(0,1,0,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == timeunit:
+        if dim == IfcDimensionalExponents(0,0,1,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == electriccurrentunit:
+        if dim == IfcDimensionalExponents(0,0,0,1,0,0,0):
+            return True
+        else:
+            return False
+    elif m == thermodynamictemperatureunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,1,0,0):
+            return True
+        else:
+            return False
+    elif m == amountofsubstanceunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,1,0):
+            return True
+        else:
+            return False
+    elif m == luminousintensityunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,0,1):
+            return True
+        else:
+            return False
+    elif m == planeangleunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == solidangleunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == areaunit:
+        if dim == IfcDimensionalExponents(2,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == volumeunit:
+        if dim == IfcDimensionalExponents(3,0,0,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == absorbeddoseunit:
+        if dim == IfcDimensionalExponents(2,0,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == radioactivityunit:
+        if dim == IfcDimensionalExponents(0,0,-1,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == electriccapacitanceunit:
+        if dim == IfcDimensionalExponents(-2,1,4,1,0,0,0):
+            return True
+        else:
+            return False
+    elif m == doseequivalentunit:
+        if dim == IfcDimensionalExponents(2,0,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == electricchargeunit:
+        if dim == IfcDimensionalExponents(0,0,1,1,0,0,0):
+            return True
+        else:
+            return False
+    elif m == electricconductanceunit:
+        if dim == IfcDimensionalExponents(-2,-1,3,2,0,0,0):
+            return True
+        else:
+            return False
+    elif m == electricvoltageunit:
+        if dim == IfcDimensionalExponents(2,1,-3,-1,0,0,0):
+            return True
+        else:
+            return False
+    elif m == electricresistanceunit:
+        if dim == IfcDimensionalExponents(2,1,-3,-2,0,0,0):
+            return True
+        else:
+            return False
+    elif m == energyunit:
+        if dim == IfcDimensionalExponents(2,1,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == forceunit:
+        if dim == IfcDimensionalExponents(1,1,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == frequencyunit:
+        if dim == IfcDimensionalExponents(0,0,-1,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == inductanceunit:
+        if dim == IfcDimensionalExponents(2,1,-2,-2,0,0,0):
+            return True
+        else:
+            return False
+    elif m == illuminanceunit:
+        if dim == IfcDimensionalExponents(-2,0,0,0,0,0,1):
+            return True
+        else:
+            return False
+    elif m == luminousfluxunit:
+        if dim == IfcDimensionalExponents(0,0,0,0,0,0,1):
+            return True
+        else:
+            return False
+    elif m == magneticfluxunit:
+        if dim == IfcDimensionalExponents(2,1,-2,-1,0,0,0):
+            return True
+        else:
+            return False
+    elif m == magneticfluxdensityunit:
+        if dim == IfcDimensionalExponents(0,1,-2,-1,0,0,0):
+            return True
+        else:
+            return False
+    elif m == powerunit:
+        if dim == IfcDimensionalExponents(2,1,-3,0,0,0,0):
+            return True
+        else:
+            return False
+    elif m == pressureunit:
+        if dim == IfcDimensionalExponents(-1,1,-2,0,0,0,0):
+            return True
+        else:
+            return False
+    else:
+        return unknown
+
+
+def IfcCorrectFillAreaStyle(styles):
+    hatching = 0
+    tiles = 0
+    colour = 0
+    external = 0
+    external = sizeof([style for style in styles if 'ifc2x3.ifcexternallydefinedhatchstyle' in typeof(style)])
+    hatching = sizeof([style for style in styles if 'ifc2x3.ifcfillareastylehatching' in typeof(style)])
+    tiles = sizeof([style for style in styles if 'ifc2x3.ifcfillareastyletiles' in typeof(style)])
+    colour = sizeof([style for style in styles if 'ifc2x3.ifccolour' in typeof(style)])
+    if external > 1:
+        return False
+    if (external == 1) and ((hatching > 0) or (tiles > 0) or (colour > 0)):
+        return False
+    if colour > 1:
+        return False
+    if (hatching > 0) and (tiles > 0):
+        return False
+    return True
+
+
+def IfcCorrectLocalPlacement(axisplacement, relplacement):
+
+    if exists(relplacement):
+        if 'ifc2x3.ifcgridplacement' in typeof(relplacement):
+            return None
+        if 'ifc2x3.ifclocalplacement' in typeof(relplacement):
+            if 'ifc2x3.ifcaxis2placement2d' in typeof(axisplacement):
+                return True
+            if 'ifc2x3.ifcaxis2placement3d' in typeof(axisplacement):
+                if relplacement.RelativePlacement.Dim == 3:
+                    return True
+                else:
+                    return False
+        return True
+    return None
+
+
+def IfcCorrectObjectAssignment(constraint, objects):
+    count = 0
+    if not exists(constraint):
+        return True
+    if constraint == IfcObjectTypeEnum.NOTDEFINED:
+        return True
+    elif constraint == IfcObjectTypeEnum.PRODUCT:
+        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcproduct' in typeof(temp)])
+        return count == 0
+    elif constraint == IfcObjectTypeEnum.PROCESS:
+        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcprocess' in typeof(temp)])
+        return count == 0
+    elif constraint == IfcObjectTypeEnum.CONTROL:
+        count = sizeof([temp for temp in objects if not 'ifc2x3.ifccontrol' in typeof(temp)])
+        return count == 0
+    elif constraint == IfcObjectTypeEnum.RESOURCE:
+        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcresource' in typeof(temp)])
+        return count == 0
+    elif constraint == IfcObjectTypeEnum.ACTOR:
+        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcactor' in typeof(temp)])
+        return count == 0
+    elif constraint == IfcObjectTypeEnum.GROUP:
+        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcgroup' in typeof(temp)])
+        return count == 0
+    elif constraint == IfcObjectTypeEnum.PROJECT:
+        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcproject' in typeof(temp)])
+        return count == 0
+    else:
+        return None
+
+
+def IfcCorrectUnitAssignment(units):
+    namedunitnumber = 0
+    derivedunitnumber = 0
+    monetaryunitnumber = 0
+    namedunitnames = express_set([])
+    derivedunitnames = express_set([])
+    namedunitnumber = sizeof([temp for temp in units if ('ifc2x3.ifcnamedunit' in typeof(temp)) and (not temp.UnitType == IfcUnitEnum.USERDEFINED)])
+    derivedunitnumber = sizeof([temp for temp in units if ('ifc2x3.ifcderivedunit' in typeof(temp)) and (not temp.UnitType == IfcDerivedUnitEnum.USERDEFINED)])
+    monetaryunitnumber = sizeof([temp for temp in units if 'ifc2x3.ifcmonetaryunit' in typeof(temp)])
+    for i in range(1, sizeof(units) + 1):
+        if ('ifc2x3.ifcnamedunit' in (typeof(units[i - 1]))) and (not (units[i - 1].UnitType) == IfcUnitEnum.USERDEFINED):
+            namedunitnames = namedunitnames + (units[i - 1].UnitType)
+        if ('ifc2x3.ifcderivedunit' in (typeof(units[i - 1]))) and (not (units[i - 1].UnitType) == IfcDerivedUnitEnum.USERDEFINED):
+            derivedunitnames = derivedunitnames + (units[i - 1].UnitType)
+    return (sizeof(namedunitnames) == namedunitnumber) and (sizeof(derivedunitnames) == derivedunitnumber) and (monetaryunitnumber <= 1)
+
+
+def IfcCrossProduct(arg1, arg2):
+    
+    
+    
+    
+    if ((not exists(arg1)) or (arg1.Dim == 2)) or ((not exists(arg2)) or (arg2.Dim == 2)):
+        return None
+    else:
+        v1 = IfcNormalise(arg1).DirectionRatios
+        v2 = IfcNormalise(arg2).DirectionRatios
+        res = IfcDirection(DirectionRatios=[((v1[2 - 1]) * (v2[3 - 1])) - ((v1[3 - 1]) * (v2[2 - 1])),((v1[3 - 1]) * (v2[1 - 1])) - ((v1[1 - 1]) * (v2[3 - 1])),((v1[1 - 1]) * (v2[2 - 1])) - ((v1[2 - 1]) * (v2[1 - 1]))])
+        mag = 0.0
+        for i in range(1, 3 + 1):
+            mag = mag + ((res.DirectionRatios[i - 1]) * (res.DirectionRatios[i - 1]))
+        if mag > 0.0:
+            result = IfcVector(Orientation=res, Magnitude=sqrt(mag))
+        else:
+            result = IfcVector(Orientation=arg1, Magnitude=0.0)
+        return result
+
+
+def IfcCurveDim(curve):
+
+    if 'ifc2x3.ifcline' in typeof(curve):
+        return curve.Pnt.Dim
+    if 'ifc2x3.ifcconic' in typeof(curve):
+        return curve.Position.Dim
+    if 'ifc2x3.ifcpolyline' in typeof(curve):
+        return curve.Points[1 - 1].Dim
+    if 'ifc2x3.ifctrimmedcurve' in typeof(curve):
+        return IfcCurveDim(curve.BasisCurve)
+    if 'ifc2x3.ifccompositecurve' in typeof(curve):
+        return curve.Segments[1 - 1].Dim
+    if 'ifc2x3.ifcbsplinecurve' in typeof(curve):
+        return curve.ControlPointsList[1 - 1].Dim
+    if 'ifc2x3.ifcoffsetcurve2d' in typeof(curve):
+        return 2
+    if 'ifc2x3.ifcoffsetcurve3d' in typeof(curve):
+        return 3
+    return None
+
+
+def IfcCurveWeightsPositive(b):
+    result = True
+    for i in range(0, b.UpperIndexOnControlPoints + 1):
+        if (b.Weights[i - 1]) <= 0.0:
+            result = False
+            return result
+    return result
+
+
+def IfcDeriveDimensionalExponents(unitelements):
+    result = IfcDimensionalExponents(0,0,0,0,0,0,0)
+    for i in range(loindex(unitelements), hiindex(unitelements) + 1):
+        result.LengthExponent = result.LengthExponent + ((unitelements[i - 1].Exponent) * (unitelements[i - 1].Unit.Dimensions.LengthExponent))
+        result.MassExponent = result.MassExponent + ((unitelements[i - 1].Exponent) * (unitelements[i - 1].Unit.Dimensions.MassExponent))
+        result.TimeExponent = result.TimeExponent + ((unitelements[i - 1].Exponent) * (unitelements[i - 1].Unit.Dimensions.TimeExponent))
+        result.ElectricCurrentExponent = result.ElectricCurrentExponent + ((unitelements[i - 1].Exponent) * (unitelements[i - 1].Unit.Dimensions.ElectricCurrentExponent))
+        result.ThermodynamicTemperatureExponent = result.ThermodynamicTemperatureExponent + ((unitelements[i - 1].Exponent) * (unitelements[i - 1].Unit.Dimensions.ThermodynamicTemperatureExponent))
+        result.AmountOfSubstanceExponent = result.AmountOfSubstanceExponent + ((unitelements[i - 1].Exponent) * (unitelements[i - 1].Unit.Dimensions.AmountOfSubstanceExponent))
+        result.LuminousIntensityExponent = result.LuminousIntensityExponent + ((unitelements[i - 1].Exponent) * (unitelements[i - 1].Unit.Dimensions.LuminousIntensityExponent))
+    return result
+
+
+def IfcDimensionsForSiUnit(n):
+
+    if n == metre:
+        return IfcDimensionalExponents(1,0,0,0,0,0,0)
+    elif n == square_metre:
+        return IfcDimensionalExponents(2,0,0,0,0,0,0)
+    elif n == cubic_metre:
+        return IfcDimensionalExponents(3,0,0,0,0,0,0)
+    elif n == gram:
+        return IfcDimensionalExponents(0,1,0,0,0,0,0)
+    elif n == second:
+        return IfcDimensionalExponents(0,0,1,0,0,0,0)
+    elif n == ampere:
+        return IfcDimensionalExponents(0,0,0,1,0,0,0)
+    elif n == kelvin:
+        return IfcDimensionalExponents(0,0,0,0,1,0,0)
+    elif n == mole:
+        return IfcDimensionalExponents(0,0,0,0,0,1,0)
+    elif n == candela:
+        return IfcDimensionalExponents(0,0,0,0,0,0,1)
+    elif n == radian:
+        return IfcDimensionalExponents(0,0,0,0,0,0,0)
+    elif n == steradian:
+        return IfcDimensionalExponents(0,0,0,0,0,0,0)
+    elif n == hertz:
+        return IfcDimensionalExponents(0,0,-1,0,0,0,0)
+    elif n == newton:
+        return IfcDimensionalExponents(1,1,-2,0,0,0,0)
+    elif n == pascal:
+        return IfcDimensionalExponents(-1,1,-2,0,0,0,0)
+    elif n == joule:
+        return IfcDimensionalExponents(2,1,-2,0,0,0,0)
+    elif n == watt:
+        return IfcDimensionalExponents(2,1,-3,0,0,0,0)
+    elif n == coulomb:
+        return IfcDimensionalExponents(0,0,1,1,0,0,0)
+    elif n == volt:
+        return IfcDimensionalExponents(2,1,-3,-1,0,0,0)
+    elif n == farad:
+        return IfcDimensionalExponents(-2,-1,4,1,0,0,0)
+    elif n == ohm:
+        return IfcDimensionalExponents(2,1,-3,-2,0,0,0)
+    elif n == siemens:
+        return IfcDimensionalExponents(-2,-1,3,2,0,0,0)
+    elif n == weber:
+        return IfcDimensionalExponents(2,1,-2,-1,0,0,0)
+    elif n == tesla:
+        return IfcDimensionalExponents(0,1,-2,-1,0,0,0)
+    elif n == henry:
+        return IfcDimensionalExponents(2,1,-2,-2,0,0,0)
+    elif n == degree_celsius:
+        return IfcDimensionalExponents(0,0,0,0,1,0,0)
+    elif n == lumen:
+        return IfcDimensionalExponents(0,0,0,0,0,0,1)
+    elif n == lux:
+        return IfcDimensionalExponents(-2,0,0,0,0,0,1)
+    elif n == becquerel:
+        return IfcDimensionalExponents(0,0,-1,0,0,0,0)
+    elif n == gray:
+        return IfcDimensionalExponents(2,0,-2,0,0,0,0)
+    elif n == sievert:
+        return IfcDimensionalExponents(2,0,-2,0,0,0,0)
+    else:
+        return IfcDimensionalExponents(0,0,0,0,0,0,0)
+
+
+def IfcDotProduct(arg1, arg2):
+    
+    
+    
+    if (not exists(arg1)) or (not exists(arg2)):
+        scalar = None
+    else:
+        if arg1.Dim != arg2.Dim:
+            scalar = None
+        else:
+            vec1 = IfcNormalise(arg1)
+            vec2 = IfcNormalise(arg2)
+            ndim = arg1.Dim
+            scalar = 0.0
+            for i in range(1, ndim + 1):
+                scalar = scalar + ((vec1.DirectionRatios[i - 1]) * (vec2.DirectionRatios[i - 1]))
+    return scalar
+
+
+def IfcFirstProjAxis(zaxis, arg):
+    
+    
+    
+    
+    if not exists(zaxis):
+        return None
+    else:
+        z = IfcNormalise(zaxis)
+        if not exists(arg):
+            if z.DirectionRatios != [1.0,0.0,0.0]:
+                v = IfcDirection(DirectionRatios=[1.0,0.0,0.0])
+            else:
+                v = IfcDirection(DirectionRatios=[0.0,1.0,0.0])
+        else:
+            if arg.Dim != 3:
+                return None
+            if IfcCrossProduct(arg,z).Magnitude == 0.0:
+                return None
+            else:
+                v = IfcNormalise(arg)
+        xvec = IfcScalarTimesVector(IfcDotProduct(v,z),z)
+        xaxis = IfcVectorDifference(v,xvec).Orientation
+        xaxis = IfcNormalise(xaxis)
+    return xaxis
+
+
+def IfcLeapYear(year):
+
+    if (((year % 4) == 0) and ((year % 100) != 0)) or ((year % 400) == 0):
+        return True
+    else:
+        return False
+
+
+def IfcListToArray(lis, low, u):
+    
+    
+    n = sizeof(lis)
+    if n != (u - low + 1):
+        return None
+    else:
+        res = ([lis[1 - 1]] * n)
+        for i in range(2, n + 1):
+            temp = list(res)
+            temp[low - 1] = lis[i - 1]
+            res = temp
+        return res
+
+
+def IfcLoopHeadToTail(aloop):
+    
+    p = True
+    n = sizeof(aloop.EdgeList)
+    for i in range(2, n + 1):
+        p = p and ((aloop.EdgeList[i - 1].EdgeEnd) == (aloop.EdgeList[i - 1].EdgeStart))
+    return p
+
+
+def IfcMlsTotalThickness(layerset):
+    max = layerset.MaterialLayers[1 - 1].LayerThickness
+    if sizeof(layerset.MaterialLayers) > 1:
+        for i in range(2, hiindex(layerset.MaterialLayers) + 1):
+            max = max + (layerset.MaterialLayers[i - 1].LayerThickness)
+    return max
+
+
+def IfcNormalise(arg):
+    
+    v = IfcDirection(DirectionRatios=[1.,0.])
+    vec = IfcVector(Orientation=IfcDirection(DirectionRatios=[1.,0.]), Magnitude=1.)
+    
+    result = v
+    if not exists(arg):
+        return None
+    else:
+        ndim = arg.Dim
+        if 'ifc2x3.ifcvector' in typeof(arg):
+            v.DirectionRatios = arg.Orientation.DirectionRatios
+            vec.Magnitude = arg.Magnitude
+            vec.Orientation = v
+            if arg.Magnitude == 0.0:
+                return None
+            else:
+                vec.Magnitude = 1.0
+        else:
+            v.DirectionRatios = arg.DirectionRatios
+        mag = 0.0
+        for i in range(1, ndim + 1):
+            mag = mag + ((v.DirectionRatios[i - 1]) * (v.DirectionRatios[i - 1]))
+        if mag > 0.0:
+            mag = sqrt(mag)
+            for i in range(1, ndim + 1):
+                temp = list(v.DirectionRatios)
+                temp[i - 1] = (v.DirectionRatios[i - 1]) / mag
+                v.DirectionRatios = temp
+            if 'ifc2x3.ifcvector' in typeof(arg):
+                vec.Orientation = v
+                result = vec
+            else:
+                result = v
+        else:
+            return None
+    return result
+
+
+def IfcOrthogonalComplement(vec):
+    
+    if (not exists(vec)) or (vec.Dim != 2):
+        return None
+    else:
+        result = IfcDirection(DirectionRatios=[-vec.DirectionRatios[2 - 1],vec.DirectionRatios[1 - 1]])
+        return result
+
+
+def IfcPathHeadToTail(apath):
+    n = 0
+    p = unknown
+    n = sizeof(apath.EdgeList)
+    for i in range(2, n + 1):
+        p = p and ((apath.EdgeList[i - 1].EdgeEnd) == (apath.EdgeList[i - 1].EdgeStart))
+    return p
+
+
+def IfcSameAxis2Placement(ap1, ap2, epsilon):
+
+    return (IfcSameDirection(ap1.P[1 - 1],ap2.P[1 - 1],epsilon)) and (IfcSameDirection(ap1.P[2 - 1],ap2.P[2 - 1],epsilon)) and IfcSameCartesianPoint(ap1.Location,ap1.Location,epsilon)
+
+
+def IfcSameCartesianPoint(cp1, cp2, epsilon):
+    cp1x = cp1.Coordinates[1 - 1]
+    cp1y = cp1.Coordinates[2 - 1]
+    cp1z = 0
+    cp2x = cp2.Coordinates[1 - 1]
+    cp2y = cp2.Coordinates[2 - 1]
+    cp2z = 0
+    if sizeof(cp1.Coordinates) > 2:
+        cp1z = cp1.Coordinates[3 - 1]
+    if sizeof(cp2.Coordinates) > 2:
+        cp2z = cp2.Coordinates[3 - 1]
+    return IfcSameValue(cp1x,cp2x,epsilon) and IfcSameValue(cp1y,cp2y,epsilon) and IfcSameValue(cp1z,cp2z,epsilon)
+
+
+def IfcSameDirection(dir1, dir2, epsilon):
+    dir1x = dir1.DirectionRatios[1 - 1]
+    dir1y = dir1.DirectionRatios[2 - 1]
+    dir1z = 0
+    dir2x = dir2.DirectionRatios[1 - 1]
+    dir2y = dir2.DirectionRatios[2 - 1]
+    dir2z = 0
+    if sizeof(dir1.DirectionRatios) > 2:
+        dir1z = dir1.DirectionRatios[3 - 1]
+    if sizeof(dir2.DirectionRatios) > 2:
+        dir2z = dir2.DirectionRatios[3 - 1]
+    return IfcSameValue(dir1x,dir2x,epsilon) and IfcSameValue(dir1y,dir2y,epsilon) and IfcSameValue(dir1z,dir2z,epsilon)
+
+
+def IfcSameValidPrecision(epsilon1, epsilon2):
+    
+    defaulteps = 0.000001
+    derivationofeps = 1.001
+    uppereps = 1.0
+    valideps1 = nvl(epsilon1,defaulteps)
+    valideps2 = nvl(epsilon2,defaulteps)
+    return (0.0 < valideps1) and (valideps1 <= (derivationofeps * valideps2)) and (valideps2 <= (derivationofeps * valideps1)) and (valideps2 < uppereps)
+
+
+def IfcSameValue(value1, value2, epsilon):
+    
+    defaulteps = 0.000001
+    valideps = nvl(epsilon,defaulteps)
+    return ((value1 + valideps) > value2) and (value1 < (value2 + valideps))
+
+
+def IfcScalarTimesVector(scalar, vec):
+    
+    
+    
+    if (not exists(scalar)) or (not exists(vec)):
+        return None
+    else:
+        if 'ifc2x3.ifcvector' in typeof(vec):
+            v = vec.Orientation
+            mag = scalar * vec.Magnitude
+        else:
+            v = vec
+            mag = scalar
+        if mag < 0.0:
+            for i in range(1, sizeof(v.DirectionRatios) + 1):
+                temp = list(v.DirectionRatios)
+                temp[i - 1] = -v.DirectionRatios[i - 1]
+                v.DirectionRatios = temp
+            mag = -mag
+        result = IfcVector(Orientation=IfcNormalise(v), Magnitude=mag)
+    return result
+
+
+def IfcSecondProjAxis(zaxis, xaxis, arg):
+    
+    
+    
+    if not exists(arg):
+        v = IfcDirection(DirectionRatios=[0.0,1.0,0.0])
+    else:
+        v = arg
+    temp = IfcScalarTimesVector(IfcDotProduct(v,zaxis),zaxis)
+    yaxis = IfcVectorDifference(v,temp)
+    temp = IfcScalarTimesVector(IfcDotProduct(v,xaxis),xaxis)
+    yaxis = IfcVectorDifference(yaxis,temp)
+    yaxis = IfcNormalise(yaxis)
+    return yaxis.Orientation
+
+
+def IfcShapeRepresentationTypes(reptype, items):
+    count = 0
+    if reptype.lower() == 'curve2d':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifccurve' in typeof(temp)) and (temp.Dim == 2)])
+    elif reptype.lower() == 'annotation2d':
+        count = sizeof([temp for temp in items if (sizeof(typeof(temp) * ['ifc2x3.ifcpoint','ifc2x3.ifccurve','ifc2x3.ifcgeometriccurveset','ifc2x3.ifcannotationfillarea','ifc2x3.ifcdefinedsymbol','ifc2x3.ifctextliteral','ifc2x3.ifcdraughtingcallout'])) == 1])
+    elif reptype.lower() == 'geometricset':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcgeometricset' in typeof(temp)) or ('ifc2x3.ifcpoint' in typeof(temp)) or ('ifc2x3.ifccurve' in typeof(temp)) or ('ifc2x3.ifcsurface' in typeof(temp))])
+    elif reptype.lower() == 'geometriccurveset':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcgeometriccurveset' in typeof(temp)) or ('ifc2x3.ifcgeometricset' in typeof(temp)) or ('ifc2x3.ifcpoint' in typeof(temp)) or ('ifc2x3.ifccurve' in typeof(temp))])
+        for i in range(1, hiindex(items) + 1):
+            if 'ifc2x3.ifcgeometricset' in (typeof(items[i - 1])):
+                if (sizeof([temp for temp in items[i - 1].Elements if 'ifc2x3.ifcsurface' in typeof(temp)])) > 0:
+                    count = count - 1
+    elif reptype.lower() == 'surfacemodel':
+        count = sizeof([temp for temp in items if (sizeof(['ifc2x3.ifcshellbasedsurfacemodel','ifc2x3.ifcfacebasedsurfacemodel','ifc2x3.ifcfacetedbrep','ifc2x3.ifcfacetedbrepwithvoids'] * typeof(temp))) >= 1])
+    elif reptype.lower() == 'solidmodel':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcsolidmodel' in typeof(temp)])
+    elif reptype.lower() == 'sweptsolid':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcsweptareasolid' in typeof(temp)])
+    elif reptype.lower() == 'csg':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcbooleanresult' in typeof(temp)])
+    elif reptype.lower() == 'clipping':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcbooleanclippingresult' in typeof(temp)])
+    elif reptype.lower() == 'advancedsweptsolid':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcsurfacecurvesweptareasolid' in typeof(temp)) or ('ifc2x3.ifcsweptdisksolid' in typeof(temp))])
+    elif reptype.lower() == 'brep':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcfacetedbrep' in typeof(temp)) or ('ifc2x3.ifcfacetedbrepwithvoids' in typeof(temp))])
+    elif reptype.lower() == 'boundingbox':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcboundingbox' in typeof(temp)])
+        if sizeof(items) > 1:
+            count = 0
+    elif reptype.lower() == 'sectionedspine':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcsectionedspine' in typeof(temp)])
+    elif reptype.lower() == 'mappedrepresentation':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcmappeditem' in typeof(temp)])
+    else:
+        return None
+    return count == sizeof(items)
+
+
+def IfcTopologyRepresentationTypes(reptype, items):
+    count = 0
+    if reptype.lower() == 'vertex':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcvertex' in typeof(temp)])
+    elif reptype.lower() == 'edge':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcedge' in typeof(temp)])
+    elif reptype.lower() == 'path':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcpath' in typeof(temp)])
+    elif reptype.lower() == 'face':
+        count = sizeof([temp for temp in items if 'ifc2x3.ifcface' in typeof(temp)])
+    elif reptype.lower() == 'shell':
+        count = sizeof([temp for temp in items if ('ifc2x3.ifcopenshell' in typeof(temp)) or ('ifc2x3.ifcclosedshell' in typeof(temp))])
+    elif reptype.lower() == 'undefined':
+        return True
+    else:
+        return None
+    return count == sizeof(items)
+
+
 def IfcUniquePropertyName(properties):
     names = express_set([])
     for i in range(1, hiindex(properties) + 1):
         names = names + (properties[i - 1].Name)
     return sizeof(names) == sizeof(properties)
+
+
+def IfcValidCalendarDate(date):
+
+    if not 1 <= date.DayComponent <= 31:
+        return False
+    if date.MonthComponent == 4:
+        return 1 <= date.DayComponent <= 30
+    elif date.MonthComponent == 6:
+        return 1 <= date.DayComponent <= 30
+    elif date.MonthComponent == 9:
+        return 1 <= date.DayComponent <= 30
+    elif date.MonthComponent == 11:
+        return 1 <= date.DayComponent <= 30
+    elif date.MonthComponent == 2:
+        if IfcLeapYear(date.YearComponent):
+            return 1 <= date.DayComponent <= 29
+        else:
+            return 1 <= date.DayComponent <= 28
+    else:
+        return True
+
+
+def IfcValidTime(time):
+
+    if exists(time.SecondComponent):
+        return exists(time.MinuteComponent)
+    else:
+        return True
+
+
+def IfcVectorDifference(arg1, arg2):
+    
+    
+    
+    
+    if ((not exists(arg1)) or (not exists(arg2))) or (arg1.Dim != arg2.Dim):
+        return None
+    else:
+        if 'ifc2x3.ifcvector' in typeof(arg1):
+            mag1 = arg1.Magnitude
+            vec1 = arg1.Orientation
+        else:
+            mag1 = 1.0
+            vec1 = arg1
+        if 'ifc2x3.ifcvector' in typeof(arg2):
+            mag2 = arg2.Magnitude
+            vec2 = arg2.Orientation
+        else:
+            mag2 = 1.0
+            vec2 = arg2
+        vec1 = IfcNormalise(vec1)
+        vec2 = IfcNormalise(vec2)
+        ndim = sizeof(vec1.DirectionRatios)
+        mag = 0.0
+        res = IfcDirection(DirectionRatios=([0.0] * ndim))
+        for i in range(1, ndim + 1):
+            temp = list(res.DirectionRatios)
+            temp[i - 1] = (mag1 * (vec1.DirectionRatios[i - 1])) - (mag2 * (vec2.DirectionRatios[i - 1]))
+            res.DirectionRatios = temp
+            mag = mag + ((res.DirectionRatios[i - 1]) * (res.DirectionRatios[i - 1]))
+        if mag > 0.0:
+            result = IfcVector(Orientation=res, Magnitude=sqrt(mag))
+        else:
+            result = IfcVector(Orientation=vec1, Magnitude=0.0)
+    return result
+
+
+def IfcVectorSum(arg1, arg2):
+    
+    
+    
+    
+    if ((not exists(arg1)) or (not exists(arg2))) or (arg1.Dim != arg2.Dim):
+        return None
+    else:
+        if 'ifc2x3.ifcvector' in typeof(arg1):
+            mag1 = arg1.Magnitude
+            vec1 = arg1.Orientation
+        else:
+            mag1 = 1.0
+            vec1 = arg1
+        if 'ifc2x3.ifcvector' in typeof(arg2):
+            mag2 = arg2.Magnitude
+            vec2 = arg2.Orientation
+        else:
+            mag2 = 1.0
+            vec2 = arg2
+        vec1 = IfcNormalise(vec1)
+        vec2 = IfcNormalise(vec2)
+        ndim = sizeof(vec1.DirectionRatios)
+        mag = 0.0
+        res = IfcDirection(DirectionRatios=([0.0] * ndim))
+        for i in range(1, ndim + 1):
+            temp = list(res.DirectionRatios)
+            temp[i - 1] = (mag1 * (vec1.DirectionRatios[i - 1])) + (mag2 * (vec2.DirectionRatios[i - 1]))
+            res.DirectionRatios = temp
+            mag = mag + ((res.DirectionRatios[i - 1]) * (res.DirectionRatios[i - 1]))
+        if mag > 0.0:
+            result = IfcVector(Orientation=res, Magnitude=sqrt(mag))
+        else:
+            result = IfcVector(Orientation=vec1, Magnitude=0.0)
+    return result
 
 
