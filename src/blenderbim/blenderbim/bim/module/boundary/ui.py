@@ -67,7 +67,6 @@ class BIM_PT_Boundary(Panel):
     def draw(self, context):
         props = context.active_object.BIMObjectProperties
         ifc_file = tool.Ifc.get()
-        element = ifc_file.by_id(props.ifc_definition_id)
         boundary = ifc_file.by_id(props.ifc_definition_id)
         self.bprops = context.active_object.bim_boundary_properties
         if self.bprops.is_editing:
@@ -101,7 +100,7 @@ class BIM_PT_Boundary(Panel):
             entity = getattr(boundary, ifc_attribute)
             if entity:
                 row.label(text=f"{entity.is_a()}/{entity.Name}")
-                op = row.operator("bim.select_global_id", text="", icon="TRACKER")
+                op = row.operator("bim.select_global_id", text="", icon="OBJECT_DATA")
                 op.global_id = entity.GlobalId
             else:
                 row.label(text="")

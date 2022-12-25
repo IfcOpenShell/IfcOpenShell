@@ -28,6 +28,7 @@
 #include <BRep_Tool.hxx>
 #include <BRepTools.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
+#include <BOPAlgo_Operation.hxx>
 
 namespace IfcGeom {
 	namespace util {
@@ -84,6 +85,16 @@ namespace IfcGeom {
 
 		bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, TopoDS_Shape& result, double eps);
 
+		struct boolean_settings {
+			bool debug, attempt_2d;
+			double precision;
+		};
+
+		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+
+		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+
+		const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid, double tol);
 	}
 }
 

@@ -76,7 +76,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         total_entities = len(list(self.file))
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
-        assert len(list(self.file)) == total_entities - 5
+        assert len(list(self.file)) == total_entities - 6
         assert len(self.file.by_type("IfcProductDefinitionShape")) == 0
         assert len(self.file.by_type("IfcShapeRepresentation")) == 1
         assert len(self.file.by_type("IfcMappedItem")) == 0
@@ -140,3 +140,101 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcChiller")) == 0
         assert len(self.file.by_type("IfcRelNests")) == 0
         assert len(self.file.by_type("IfcDistributionPort")) == 0
+
+    def test_removing_all_aggregate_relationships_of_a_whole(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelAggregates")) == 0
+        assert len(self.file.by_type("IfcElementAssembly")) == 0
+        assert len(self.file.by_type("IfcBeam")) == 1
+
+    def test_removing_all_aggregate_relationships_of_a_part(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelAggregates")) == 0
+        assert len(self.file.by_type("IfcElementAssembly")) == 1
+        assert len(self.file.by_type("IfcBeam")) == 0
+
+    def test_removing_all_containment_relationships_of_a_container(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSpace")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelContainedInSpatialStructure")) == 0
+        assert len(self.file.by_type("IfcSpace")) == 0
+        assert len(self.file.by_type("IfcWall")) == 1
+
+    def test_removing_all_containment_relationships_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSpace")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelContainedInSpatialStructure")) == 0
+        assert len(self.file.by_type("IfcSpace")) == 1
+        assert len(self.file.by_type("IfcWall")) == 0
+
+    def test_removing_path_connection_relationships_of_an_element(self):
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcColumn")
+        ifcopenshell.api.run("geometry.connect_path", self.file, relating_element=element1, related_element=element2)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelConnectsPathElements")) == 0
+        assert len(self.file.by_type("IfcColumn")) == 1
+        assert len(self.file.by_type("IfcBeam")) == 0
+
+    def test_removing_all_property_relationships_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert not self.file.by_type("IfcRelDefinesByProperties")
+        assert not self.file.by_type("IfcPropertySet")
+        assert not self.file.by_type("IfcPropertySingleValue")
+
+    def test_removing_all_material_relationships_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file, name="Foo")
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert not self.file.by_type("IfcRelAssociatesMaterial")
+        assert self.file.by_type("IfcMaterial")
+
+    def test_removing_all_type_relationships_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert not self.file.by_type("IfcRelDefinesByType")
+        assert self.file.by_type("IfcWallType")
+
+    def test_removing_all_type_relationships_of_an_element_type(self):
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element1, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
+        ifcopenshell.api.run("root.remove_product", self.file, product=element_type)
+        assert not self.file.by_type("IfcRelDefinesByType")
+        assert self.file.by_type("IfcWall")
+
+    def test_removing_all_space_boundaries_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        boundary = self.file.createIfcRelSpaceBoundary2ndLevel(
+            GlobalId=ifcopenshell.guid.new(), RelatedBuildingElement=element
+        )
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert not self.file.by_type("IfcRelSpaceBoundary")

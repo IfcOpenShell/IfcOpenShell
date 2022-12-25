@@ -72,7 +72,6 @@ IfcParse::schema_definition::schema_definition(const std::string& name, const st
 }
 
 IfcParse::schema_definition::~schema_definition() {
-	schemas.erase(name_);
 	for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
 		delete *it;
 	}
@@ -116,6 +115,15 @@ void IfcParse::register_schema(schema_definition* s) {
 #ifdef HAS_SCHEMA_4x3_rc4
 #include "../ifcparse/Ifc4x3_rc4.h"
 #endif
+#ifdef HAS_SCHEMA_4x3
+#include "../ifcparse/Ifc4x3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_tc1
+#include "../ifcparse/Ifc4x3_tc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_add1
+#include "../ifcparse/Ifc4x3_add1.h"
+#endif
 
 const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& name) {
 	// TODO: initialize automatically somehow
@@ -142,6 +150,15 @@ const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& n
 #endif
 #ifdef HAS_SCHEMA_4x3_rc4
    Ifc4x3_rc4::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3
+   Ifc4x3::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_tc1
+   Ifc4x3_tc1::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_add1
+   Ifc4x3_add1::get_schema();
 #endif
 
 	std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(boost::to_upper_copy(name));
@@ -190,6 +207,15 @@ void IfcParse::clear_schemas() {
 #endif
 #ifdef HAS_SCHEMA_4x3_rc4
 	Ifc4x3_rc4::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3
+	Ifc4x3::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_tc1
+	Ifc4x3_tc1::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_add1
+	Ifc4x3_add1::clear_schema();
 #endif
 
 	// clear any remaining registered schemas

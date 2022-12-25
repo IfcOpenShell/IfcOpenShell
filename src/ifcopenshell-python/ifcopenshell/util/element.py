@@ -20,6 +20,20 @@ import ifcopenshell
 
 
 def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
+    """Retrieve property sets, their related properties' names & values and ids.
+
+    :param element: The IFC Element entity
+    :param psets_only: Default as False. Set to true if only property sets are needed.
+    :param qtos_only: Default as False. Set to true if only quantities are needed.
+    :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
+    :return: dictionnary: key, value pair of psets' names and their properties' names & values
+
+    Example::
+        element = ifcopenshell.by_type("IfcBuildingElement")[0]
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
+        psets_and_qtos = ifcopenshell.util.element.get_psets(element)
+    """
     psets = {}
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
@@ -72,6 +86,11 @@ def get_quantities(quantities):
     for quantity in quantities or []:
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
             results[quantity.Name] = quantity[3]
+        elif quantity.is_a("IfcPhysicalComplexQuantity"):
+            data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
+            data["properties"] = get_quantities(quantity.HasQuantities)
+            del data["HasQuantities"]
+            results[quantity.Name] = data
     return results
 
 
@@ -81,9 +100,15 @@ def get_properties(properties):
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcPropertyEnumeratedValue"):
-            values = [v.wrappedValue for v in prop.EnumerationValues]
-            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] or None
-
+            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
+        elif prop.is_a("IfcPropertyListValue"):
+            results[prop.Name] = [v.wrappedValue for v in prop.ListValues] or None
+        elif prop.is_a("IfcPropertyBoundedValue"):
+            data = prop.get_info()
+            del data["Unit"]
+            results[prop.Name] = data
+        elif prop.is_a("IfcPropertyTableValue"):
+            results[prop.Name] = prop.get_info()
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)
@@ -93,6 +118,16 @@ def get_properties(properties):
 
 
 def get_predefined_type(element):
+    """
+    Retrieves the PrefefinedType attribute of an element.
+
+    :param element: The IFC Element entity
+    :return: The predefined type of the element
+
+    Example::
+    element = ifcopenshell.by_type("IfcWall")[0]
+    predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+    """
     element_type = get_type(element)
     if element_type:
         predefined_type = getattr(element_type, "PredefinedType", None)
@@ -107,6 +142,16 @@ def get_predefined_type(element):
 
 
 def get_type(element):
+    """
+    Retrieves the Element Type entity related to an element entity.
+
+    :param element: The IFC Element entity
+    :return: The Element Type entity defining the element
+
+    Example::
+    element = ifcopenshell.by_type("IfcWall")[0]
+    element_type = ifcopenshell.util.element.get_type(element)
+    """
     if element.is_a("IfcTypeObject"):
         return element
     elif hasattr(element, "IsTypedBy") and element.IsTypedBy:
@@ -142,6 +187,21 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
 
 
 def get_elements_by_material(ifc_file, material):
+    """
+    Retrieves the elements related to a material.
+
+    This includes elements using the material as part of a material set or set
+    usage.
+
+    :param ifc_file: The IFC file
+    :param material: The IFC Material entity
+    :return: A list of elements using the to the material
+
+    Example::
+
+        material = file.by_type("IfcMaterial")[0]
+        elements = ifcopenshell.util.element.get_elements_by_material(file, material)
+    """
     results = set()
     for inverse in ifc_file.get_inverse(material):
         if inverse.is_a("IfcRelAssociatesMaterial"):
@@ -165,6 +225,18 @@ def get_elements_by_material(ifc_file, material):
 
 
 def get_elements_by_style(ifc_file, style):
+    """
+    Retrieves the elements related to a style.
+
+    :param ifc_file: The IFC file
+    :param style: The IFC Style entity
+    :return: The elements related to the style
+
+    Example::
+
+        style = file.by_type("IfcSurfaceStyle")[0]
+        elements = ifcopenshell.util.element.get_elements_by_style(file, style)
+    """
     results = set()
     inverses = list(ifc_file.get_inverse(style))
     while inverses:
@@ -224,6 +296,24 @@ def get_layers(ifc_file, element):
 
 
 def get_container(element, should_get_direct=False):
+    """
+    Retrieves the spatial structure container of an element.
+
+    :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
+    :param should_get_direct: If True, a result is only returned if the element
+        is directly contained in a spatial structure element. If False, an
+        indirect spatial container may be returned, such as if an element is a
+        part of an aggregate, and then if that aggregate is contained in a
+        spatial structure element.
+    :type should_get_direct: bool
+    :return: The direct or indirect container of the element or None.
+
+    Example::
+
+        element = file.by_type("IfcWall")[0]
+        container = ifcopenshell.util.element.get_container(element)
+    """
     if should_get_direct:
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
             return element.ContainedInStructure[0].RelatingStructure
@@ -235,7 +325,39 @@ def get_container(element, should_get_direct=False):
             return element.ContainedInStructure[0].RelatingStructure
 
 
+def get_referenced_structures(element):
+    """
+    Retreives a list of referenced spatial elements, typically useful for
+    multistorey elements or elements that span multiple spaces or in-between
+    spaces.
+
+    :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
+
+    Example::
+
+        element = file.by_type("IfcWall")[0]
+        print(ifcopenshell.util.element.get_referenced_structures(element))
+    """
+    if hasattr(element, "ReferencedInStructures"):
+        return [r.RelatingStructure for r in element.ReferencedInStructures]
+    return []
+
+
 def get_decomposition(element):
+    """
+    Retrieves all subelements of an element based on the spatial decomposition
+    hierarchy. This includes all subspaces and elements contained in subspaces,
+    parts of an aggreate, all openings, and all fills of any openings.
+
+    :param element: The IFC element
+    :return: The decomposition of the element
+
+    Example::
+
+        element = file.by_type("IfcProject")[0]
+        decomposition = ifcopenshell.util.element.get_decomposition(element)
+    """
     queue = [element]
     results = []
     while queue:
@@ -246,15 +368,65 @@ def get_decomposition(element):
         for rel in getattr(element, "IsDecomposedBy", []):
             queue.extend(rel.RelatedObjects)
             results.extend(rel.RelatedObjects)
+        for rel in getattr(element, "HasOpenings", []):
+            queue.append(rel.RelatedOpeningElement)
+            results.append(rel.RelatedOpeningElement)
+        for rel in getattr(element, "HasFillings", []):
+            queue.append(rel.RelatedBuildingElement)
+            results.append(rel.RelatedBuildingElement)
+    return results
+
+
+def get_grouped_by(element):
+    """
+    Retrieves all subelements of an element based on the group.
+
+    :param element: The IFC element
+    :return: All subelements of the group
+
+    Example::
+
+        element = file.by_type("IfcGroup")[0]
+        subelements = ifcopenshell.util.element.get_group(element)
+    """
+    queue = [element]
+    results = []
+    while queue:
+        element = queue.pop()
+        for rel in getattr(element, "IsGroupedBy", []):
+            queue.extend(rel.RelatedObjects)
+            results.extend(rel.RelatedObjects)
     return results
 
 
 def get_aggregate(element):
+    """
+    Retrieves the aggregate of an element.
+
+    :param element: The IFC element
+    :return: The aggregate of the element
+
+    Example::
+    element = file.by_type("IfcBeam")[0]
+    aggregate = ifcopenshell.util.element.get_aggregate(element)
+
+    """
     if hasattr(element, "Decomposes") and element.Decomposes:
         return element.Decomposes[0].RelatingObject
 
 
 def get_parts(element):
+    """
+    Retrieves the parts of an element.
+
+    :param element: The IFC element
+    :return: The parts of the element
+
+    Example::
+    element = file.by_type("IfcElementAssembly")[0]
+    parts = ifcopenshell.util.element.get_parts(element)
+
+    """
     if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
         return element.IsDecomposedBy[0].RelatedObjects
 
@@ -262,8 +434,7 @@ def get_parts(element):
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if has_element_reference(attribute, old):
-            new_attribute = element.walk(lambda v: v == old, lambda v: new, attribute)
-            element[i] = new_attribute
+            element[i] = element.walk(lambda v: v == old, lambda v: new, attribute)
 
 
 def has_element_reference(value, element):
@@ -287,8 +458,35 @@ def remove_deep(ifc_file, element):
 
 
 def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
-    # Experimental remove deep proposal. No batch for now until this is more certain. See #1812.
-    # ifc_file.batch()
+    """
+    Recursively purges a subgraph safely, starting at an element
+
+    This should always be used instead of remove_deep. See #1812. The start
+    element must have no inverses. The subgraph to be purged is calculated using
+    all forward relationships determined by the traverse() function.
+
+    The deletion process starts at element and traverses forward through the
+    subgraph. Each subelement is checked for any inverses outside the subgraph.
+    If there are no inverses outside, it may be safely purged. If there are
+    inverses that aren't part of this subgraph, that subelement, and all of its
+    subelements (i.e. that entire branch of subelements) will not be deleted as
+    it is used elsewhere.
+
+    For simple subgraphs, traverse() is sufficient to fully represent all
+    related subelements. When it isn't, the ``also_consider`` argument may be
+    used. These are typically inverses futher down the subelement chain.
+
+    Note that remove_deep2 will _not_ remove elements in also_consider. Instead,
+    it is only used as a consideration for whether or not an element has all
+    inverses fully contained in the subgraph.
+
+    The do_not_delete argument contains all elements that may be part of the
+    subgraph but are protected from deletion.
+
+    :param element: The starting element that defines the subgraph
+    :type element: ifcopenshell.entity_instance.entity_instance
+    """
+    ifc_file.batch()
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
@@ -298,17 +496,27 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
         subelement = subelement_queue.pop(0)
         if (
             subelement.id()
-            and len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
             and subelement not in do_not_delete
+            and len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
-    for subelement in to_delete:
+    # We delete elements from subgraph in reverse order to allow batching to work
+    for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
         ifc_file.remove(subelement)
-    # ifc_file.unbatch()
+    ifc_file.unbatch()
 
 
 def copy(ifc_file, element):
+    """
+    Copy a single element. Any referenced elements are not copied.
+
+    GlobalIds are regenerated.
+
+    :param ifc_file: The IFC file object
+    :param element: The IFC element to copy
+    :return: The newly copied element
+    """
     new = ifc_file.create_entity(element.is_a())
     for i, attribute in enumerate(element):
         if attribute is None:
@@ -320,16 +528,33 @@ def copy(ifc_file, element):
     return new
 
 
-def copy_deep(ifc_file, element):
+def copy_deep(ifc_file, element, exclude=None):
+    """
+    Recursively copy an element and all of its directly related subelements.
+
+    GlobalIds are regenerated.
+
+    :param ifc_file: The IFC file object
+    :param element: The IFC element to copy
+    :param exclude: An optional list of strings of IFC class names to not copy.
+        If any of the subelement is this class, it will not be copied and the
+        original instance will be referenced.
+    :return: The newly copied element
+    """
     new = ifc_file.create_entity(element.is_a())
     for i, attribute in enumerate(element):
         if attribute is None:
             continue
         if isinstance(attribute, ifcopenshell.entity_instance):
-            attribute = copy_deep(ifc_file, attribute)
+            if not exclude or (exclude and not any([attribute.is_a(e) for e in exclude])):
+                attribute = copy_deep(ifc_file, attribute, exclude=exclude)
         elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
-            attribute = list(attribute)
-            for j, item in enumerate(attribute):
-                attribute[j] = copy_deep(ifc_file, item)
-        new[i] = attribute
+            if not exclude or (exclude and not any([attribute[0].is_a(e) for e in exclude])):
+                attribute = list(attribute)
+                for j, item in enumerate(attribute):
+                    attribute[j] = copy_deep(ifc_file, item, exclude=exclude)
+        if new.attribute_name(i) == "GlobalId":
+            new[i] = ifcopenshell.guid.new()
+        else:
+            new[i] = attribute
     return new

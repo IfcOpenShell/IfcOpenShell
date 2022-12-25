@@ -24,6 +24,7 @@ import blenderbim.core.qto as core
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.qto import helper
 from ifcopenshell.api.pset.data import Data as PsetData
+from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
 class CalculateCircleRadius(bpy.types.Operator):
@@ -107,6 +108,26 @@ class ExecuteQtoMethod(bpy.types.Operator):
             result = helper.calculate_formwork_area(selected_mesh_objects, context)
         elif props.qto_methods == "SIDE_FORMWORK":
             result = helper.calculate_side_formwork_area(selected_mesh_objects, context)
+        elif props.qto_methods == "NetFootprintArea":
+            result = QtoCalculator().get_net_footprint_area(selected_mesh_objects[0])
+        elif props.qto_methods == "NetRoofprintArea":
+            result = QtoCalculator().get_net_roofprint_area(selected_mesh_objects[0])
+        elif props.qto_methods == "LateralArea":
+            result = QtoCalculator().get_lateral_area(selected_mesh_objects[0])
+        elif props.qto_methods == "TotalSurfaceArea":
+            result = QtoCalculator().get_total_surface_area(selected_mesh_objects[0])
+        elif props.qto_methods == "OpeningArea":
+            result = QtoCalculator().get_opening_area(selected_mesh_objects[0])
+        elif props.qto_methods == "GrossTopArea":
+            result = QtoCalculator().get_gross_top_area(selected_mesh_objects[0])
+        elif props.qto_methods == "NetTopArea":
+            result = QtoCalculator().get_net_top_area(selected_mesh_objects[0])
+        elif props.qto_methods == "ProjectedArea":
+            result = QtoCalculator().get_projected_area(selected_mesh_objects[0])
+        elif props.qto_methods == "TotalContactArea":
+            result = QtoCalculator().get_total_contact_area(selected_mesh_objects[0])
+        elif props.qto_methods == "ContactArea":
+            result = QtoCalculator().get_contact_area(selected_mesh_objects[0], selected_mesh_objects[1])
         props.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
@@ -149,4 +170,32 @@ class QuantifyObjects(bpy.types.Operator):
             )
             ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={props.prop_name: result})
             PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
+        return {"FINISHED"}
+
+class AssignPsetQto(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_pset_qto"
+    bl_label = "Assign Pset Qto"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Assign pset qto to selected object"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and context.selected_objects
+
+    def _execute(self, context):
+        core.assign_pset_qto(tool.Qto, selected_objects = context.selected_objects)
+        return {"FINISHED"}
+
+class CalculateAllQtos(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_all_qtos"
+    bl_label = "Calculate All Qtos"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Calculate all pset qtos properties of objects assigned pset qto"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and context.selected_objects
+
+    def _execute(self, context):
+        core.calculate_all_qtos(tool.Qto, selected_objects = context.selected_objects)
         return {"FINISHED"}

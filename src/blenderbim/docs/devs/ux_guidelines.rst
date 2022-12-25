@@ -23,7 +23,7 @@ BIM will by definition contain a (big) number of submodules or subschemas. Grant
 
   - Tools to create, modify or delete items are in the dedicated Toolbar (The left one)   in the 3D viewport
   
-  - Some Misc tools and informations are displayed in the N panel of the 3D viewport .   They're shortcuts to things that are already present elsewhere in the UI, but are   handy to have when modifying objects or geometry in the Viewport.
+  - Some Misc tools and information are displayed in the N panel of the 3D viewport .   They're shortcuts to things that are already present elsewhere in the UI, but are   handy to have when modifying objects or geometry in the Viewport.
   
   - Adding specific Import / Export IFC operators (arguably a bit misleading since   BlenderBim does more than import / export in these operations)
 
@@ -87,7 +87,7 @@ Icons
 
 **Use** : To disable the edition state of a particular item.
 
-**Expected result** : A part of the interface showing the item attributes is either shrinked down or hidden. The button is usually replaced by a button to delete this item.
+**Expected result** : A part of the interface showing the item attributes is either shrunk down or hidden. The button is usually replaced by a button to delete this item.
 
 * .. image:: https://user-images.githubusercontent.com/25156105/137271575-dcae9e56-3c64-4d8b-89b0-6cf103b999f2.png
 
@@ -139,7 +139,7 @@ Icons
 
 **Use** : to import a particular file from the user's computer's directory to the current context
 
-**Expected result** : A new file browser window should open, with sufficient information provided to the user to know which file type should be loaded in (eg adding a file extension, adding information in the filebrowser UI). When the file is loaded, the interface should expand to show the attributes or informations or new context-sensitive operations provided by the imported file.
+**Expected result** : A new file browser window should open, with sufficient information provided to the user to know which file type should be loaded in (eg adding a file extension, adding information in the filebrowser UI). When the file is loaded, the interface should expand to show the attributes or information or new context-sensitive operations provided by the imported file.
 
 **Proposal** : Currently there are some instances where I don't know if the elements are supposed to require an external file, eg 
  

@@ -1,0 +1,92 @@
+name: Publish-blenderbim-chocolatey package
+
+on:
+  schedule:
+    #         ┌───────────── minute (0 - 59)
+    #         │  ┌───────────── hour (0 - 23)
+    #         │  │ ┌───────────── day of the month (1 - 31)
+    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         *  * * * *
+    - cron:  "30 0 * * *" # 30min past utc midnight
+
+env:
+  major: 0
+  minor: 0
+  name: blenderbim
+  choco_version: 1.1.0
+  CHOCO_TOKEN:   ${{ secrets.CHOCO_TOKEN }}
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: [py310]
+        config:
+          - {
+            name: "Windows Build",
+            short_name: win,
+          }
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+        with:
+          python-version: '3.10.9' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+      - run: echo ${{ env.DATE }}
+
+      - name: Check in published releases if we should do a choco release
+        id: do_choco
+        run: |
+          echo "::set-output name=choco_release::$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --do_choco_release?)"
+
+      - name: Fill chocolatey scripts on win with latest blender python
+        if: ${{steps.do_choco.outputs.choco_release}} == 'do_choco_release'
+        run: |
+          yesterday_non_iso="$(date  --date='yesterday' +'%y%m%d' | tr -d '\n')" &&
+          target_os=${{ matrix.config.short_name }} &&
+          latest_blender_python_version_maj_min=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_python_version_maj_min?) &&
+          echo "latest_blender_python_version_maj_min?: $latest_blender_python_version_maj_min" &&
+          pyver=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --pyver?) &&
+          export latest_blender_version_maj_min=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_release_maj_min?) &&
+          export latest_blender_version_maj_min_pat=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_release_maj_min_pat?) &&
+          echo   latest_blender_version_maj_min_pat?: $latest_blender_version_maj_min_pat &&
+          export blenderbim_build_version="${{ env.major }}.${{ env.minor }}.$yesterday_non_iso" &&
+          export url_blenderbim_py310_win_zip="https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-$yesterday_non_iso/blenderbim-$yesterday_non_iso-$pyver-$target_os.zip" &&
+          wget $url_blenderbim_py310_win_zip --no-verbose &&
+          export sha256sum_blenderbim_py310_win_zip=$( sha256sum blenderbim-$yesterday_non_iso-$pyver-$target_os.zip  --tag | cut -d ' ' -f 4  | tr -d '\n') &&
+          echo   sha256sum_blenderbim_py310_win_zip: $sha256sum_blenderbim_py310_win_zip &&
+          python3 choco/blenderbim/fill_dynamic_parameters.py &&
+          echo __build choco with mono &&
+          wget "https://github.com/chocolatey/choco/archive/refs/tags/$choco_version.tar.gz" --quiet &&
+          tar -xzf "$choco_version.tar.gz" &&
+          cd choco-$choco_version &&
+          chmod +x build.sh zip.sh &&
+          ./build.sh &&
+          cp -r build_output/chocolatey /opt/chocolatey &&
+          cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&
+          echo __choco pack &&
+          mono /opt/chocolatey/choco.exe --version &&
+          mono /opt/chocolatey/choco.exe pack --allow-unofficial &&
+          echo __choco set apiKey &&
+          mono /opt/chocolatey/choco.exe setapikey --key="$CHOCO_TOKEN" --source="https://push.chocolatey.org/" --allow-unofficial # &&
+          echo __choco push &&
+          mono /opt/chocolatey/choco.exe push --source="https://push.chocolatey.org/" --key="$CHOCO_TOKEN" --allow-unofficial --verbose
+
+      - name: Inform user about not packaging
+        if: ${{steps.do_choco.outputs.choco_release}} != 'do_choco_release'
+        run: |
+          echo "no releases found today ${{ env.DATE }}, therefore choco packaging is skipped."
+

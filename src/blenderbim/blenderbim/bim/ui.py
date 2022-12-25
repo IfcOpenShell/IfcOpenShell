@@ -17,13 +17,20 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import bpy
 from pathlib import Path
-from . import ifc
+import bpy
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
-from blenderbim.bim.helper import IfcHeaderExtractor
+from ifcopenshell.util.doc import (
+    get_entity_doc,
+    get_property_set_doc,
+    get_type_doc,
+    get_attribute_doc,
+)
+from . import ifc
 import blenderbim.tool as tool
+from blenderbim.bim.helper import IfcHeaderExtractor
+from blenderbim.bim.prop import Attribute
 
 
 class IFCFileSelector:
@@ -114,6 +121,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
+    lock_grids_on_import: BoolProperty(name="Will lock grids upon import", default=True)
 
     def draw(self, context):
         layout = self.layout
@@ -149,6 +157,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
+        row = layout.row()
+        row.prop(self, "lock_grids_on_import")
+
+        row = layout.row()
+        row.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")
 
         row = layout.row()
         row.prop(context.scene.BIMModelProperties, "occurrence_name_style")
@@ -375,3 +388,63 @@ class BIM_PT_misc_object(Panel):
 
     def draw(self, context):
         pass
+
+
+def draw_custom_context_menu(self, context):
+    # https://blender.stackexchange.com/a/275555/86891
+    if (
+        not hasattr(context, "button_pointer")
+        or not hasattr(context, "button_prop")
+        or not hasattr(context.button_prop, "identifier")
+    ):
+        return
+    prop = context.button_pointer
+    prop_name = context.button_prop.identifier
+    prop_value = getattr(prop, prop_name, None)
+    if prop_value is None:
+        return
+    version = tool.Ifc.get_schema()
+    layout = self.layout
+
+    if isinstance(context.button_pointer, Attribute):
+        description = getattr(context.button_pointer, "description", None)
+        ifc_class = getattr(context.button_pointer, "ifc_class", "")
+        if ifc_class:
+            try:
+                url = get_entity_doc(version, context.button_pointer.ifc_class).get("spec_url", "")
+            except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
+                doc = get_property_set_doc(version, context.button_pointer.ifc_class)
+                if doc:
+                    url = doc.get("spec_url", "")
+                else:  # It's a custom property set. No URL available
+                    url = ""
+        if description:
+            layout.separator()
+            op_description = layout.operator("bim.show_description", text="IFC Description", icon="INFO")
+            op_description.attr_name = getattr(context.button_pointer, "name", "")
+            op_description.description = description
+            op_description.url = url
+    else:
+        # Ugly but we can't know which type of data is under the cursor so we test everything until it clicks
+        try:
+            docs = get_entity_doc(version, prop_value)
+            if docs is None:
+                raise RuntimeError
+        except (RuntimeError, AttributeError):
+            try:
+                docs = get_type_doc(version, prop_value)
+                if docs is None:
+                    raise RuntimeError
+            except (RuntimeError, AttributeError):
+                try:
+                    docs = get_property_set_doc(version, prop_value)
+                    if docs is None:
+                        raise RuntimeError
+                except (RuntimeError, AttributeError):
+                    pass
+        if docs:
+            url = docs.get("spec_url", "")
+            if url:
+                layout.separator()
+                url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
+                url_op.url = url

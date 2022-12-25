@@ -20,6 +20,9 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.HighlightProductRelatedTask,
+    operator.ExpandAllTasks,
+    operator.ContractAllTasks,
     operator.AddSummaryTask,
     operator.AddTask,
     operator.AddTaskColumn,
@@ -63,7 +66,7 @@ classes = (
     operator.EnableEditingTaskCalendar,
     operator.EnableEditingTaskSequence,
     operator.EnableEditingTaskTime,
-    operator.EnableEditingTasks,
+    operator.EnableEditingWorkScheduleTasks,
     operator.EnableEditingWorkCalendar,
     operator.EnableEditingWorkCalendarTimes,
     operator.EnableEditingWorkPlan,
@@ -80,6 +83,7 @@ classes = (
     operator.ImportPP,
     operator.LoadTaskInputs,
     operator.LoadTaskOutputs,
+    operator.LoadNestedTasksOutputs,
     operator.LoadTaskProperties,
     operator.LoadTaskResources,
     operator.RecalculateSchedule,
@@ -92,6 +96,7 @@ classes = (
     operator.RemoveWorkSchedule,
     operator.RemoveWorkTime,
     operator.SelectTaskRelatedProducts,
+    operator.SelectTaskRelatedInputs,
     operator.SetTaskSortColumn,
     operator.UnassignLagTime,
     operator.UnassignPredecessor,
@@ -114,6 +119,7 @@ classes = (
     prop.BIMWorkCalendarProperties,
     prop.DatePickerProperties,
     prop.BIMDateTextProperties,
+    prop.BIMDuration,
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
@@ -122,7 +128,9 @@ classes = (
     ui.BIM_UL_task_inputs,
     ui.BIM_UL_task_resources,
     ui.BIM_UL_task_outputs,
+    ui.BIM_UL_nested_task_outputs,
     ui.BIM_UL_tasks,
+    ui.BIM_PT_SequenceToolKit,
 )
 
 
@@ -144,6 +152,7 @@ def register():
     bpy.types.Scene.BIMTaskTreeProperties = bpy.props.PointerProperty(type=prop.BIMTaskTreeProperties)
     bpy.types.Scene.BIMWorkCalendarProperties = bpy.props.PointerProperty(type=prop.BIMWorkCalendarProperties)
     bpy.types.Scene.DatePickerProperties = bpy.props.PointerProperty(type=prop.DatePickerProperties)
+    bpy.types.Scene.BIMDuration = bpy.props.PointerProperty(type=prop.BIMDuration)
     bpy.types.TextCurve.BIMDateTextProperties = bpy.props.PointerProperty(type=prop.BIMDateTextProperties)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
@@ -155,6 +164,7 @@ def unregister():
     del bpy.types.Scene.BIMTaskTreeProperties
     del bpy.types.Scene.BIMWorkCalendarProperties
     del bpy.types.Scene.DatePickerProperties
+    del bpy.types.Scene.BIMDuration
     del bpy.types.TextCurve.BIMDateTextProperties
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)

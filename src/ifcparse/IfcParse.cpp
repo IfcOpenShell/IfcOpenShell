@@ -695,7 +695,19 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	std::vector<Argument*>* vector = 0;
 	vector_or_array<Argument*> filler(attributes, num_attributes);
 	if (attributes == 0) {
-		vector = new std::vector<Argument*>();
+		if (num_attributes != 0) {
+			// If num_attributes is zero we know this is a top-level entity instance (or header entity) being parsed.
+			// There can only be parsed one of these at a time, so we can reuse the vector we have defined at the file
+			// scope.
+			if (entity) {
+				vector = &internal_attribute_vector_;
+			} else {
+				vector = &internal_attribute_vector_simple_type_;
+			}
+			vector->clear();
+		} else {
+			vector = new std::vector<Argument*>;
+		}
 		filler = vector_or_array<Argument*>(vector);
 	}
 
@@ -723,7 +735,9 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 			
 			if (TokenFunc::isKeyword(next)) {
 				try {
-					filler.push_back(new EntityArgument(next));
+					auto ea = new EntityArgument(next);
+					addEntity(((IfcUtil::IfcBaseClass*) *ea));
+					filler.push_back(ea);
 				} catch (IfcException& e) {
 					Logger::Message(Logger::LOG_ERROR, e.what());
 				}
@@ -736,14 +750,27 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	}
 
 	if (vector) {
-		attributes = new Argument*[vector->size()];
-		return_value = vector->size();
-		for (size_t i = 0; i < vector->size(); ++i) {
-			attributes[i] = vector->at(i);
-		}
-	}
+		// Obviously don't try and create a 0-length array.
+		if (num_attributes || vector->size()) {
+			// @todo figure out whether all this logic is still necessary, since we know the
+			// expected amount of attributes and shouldn't be able to access more than allowed
+			// by the schema.
+			attributes = new Argument*[(std::max)(num_attributes, vector->size())]{ nullptr };
 
-	delete vector;
+			// @todo this appears unnecessary, we increment this in the loop already,
+			// which is more accurate as the filler can't go above it's size in case
+			// it uses the pre-allocated c-array.
+			// -> return_value = vector->size();
+
+			for (size_t i = 0; i < vector->size(); ++i) {
+				attributes[i] = vector->at(i);
+			}
+		}
+
+		if ((vector != &internal_attribute_vector_) && (vector != &internal_attribute_vector_simple_type_)) {
+			delete vector;
+		}
+	}	
 
 	return return_value;
 }
@@ -800,8 +827,12 @@ ArgumentList::operator aggregate_of_instance::ptr() const {
 	aggregate_of_instance::ptr l ( new aggregate_of_instance() );
 	for (size_t i = 0; i < size_; ++i) {
 		// FIXME: account for $
-		IfcUtil::IfcBaseClass* entity = *list_[i];
-		l->push(entity);
+        try {
+            IfcUtil::IfcBaseClass *entity = *list_[i];
+            l->push(entity);
+        } catch (IfcException e) {
+            Logger::Error(e);
+        }
 	}
 	return l;
 }
@@ -932,15 +963,30 @@ IfcUtil::ArgumentType EntityArgument::type() const {
 //
 // Functions for casting the EntityArgument to other types
 //
-EntityArgument::operator IfcUtil::IfcBaseClass*() const { return entity; }
-unsigned int EntityArgument::size() const { return 1; }
-Argument* EntityArgument::operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of arguments"); }
-std::string EntityArgument::toString(bool upper) const { 
+EntityArgument::operator IfcUtil::IfcBaseClass*() const {
+	return entity; 
+}
+
+unsigned int EntityArgument::size() const {
+	return 1;
+}
+
+Argument* EntityArgument::operator [] (unsigned int /*i*/) const { 
+	throw IfcException("Argument is not a list of arguments"); 
+}
+
+std::string EntityArgument::toString(bool upper) const {
 	return entity->data().toString(upper);
 }
-//return entity->entity->toString(); }
+
 bool EntityArgument::isNull() const { return false; }
-EntityArgument::~EntityArgument() { delete entity;}
+EntityArgument::~EntityArgument() {
+	// We don't delete it here, rather it will be freed as part of the entity_file_map.
+	// For that purpose when parsed, the simple type instance is explicitly added to the
+	// file. The reason is we want parsed simply types to behave the same as constructed
+	// simple types.
+	// delete entity;
+}
 
 //
 // Reads an Entity from the list of Tokens at the specified offset in the file
@@ -1094,11 +1140,7 @@ void IfcEntityInstanceData::load() const {
 	static std::recursive_mutex m;
 	std::lock_guard<std::recursive_mutex> lk(m);
 
-	// type_ is 0 for header entities which have their size predetermined in code
 	Argument** tmp_data = nullptr;
-	if (type_ != 0) {
-		tmp_data = new Argument*[getArgumentCount()]{};
-	}
 	
 	if (file->parsing_complete()) {
 		// only when parsing is fully complete we need to seek to the instance, otherwise
@@ -1109,13 +1151,23 @@ void IfcEntityInstanceData::load() const {
 		file->tokens->Next();
 	}
 
-	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, tmp_data, getArgumentCount());
+	// type_ is 0 for header entities which have their size predetermined in code
+	// in that we have attributes_ pre-constructed to the correct size in the constructor
+	// in the other case load() will use a vector internally to grow to the size found in the file
+	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, type_ ? tmp_data : attributes_, getArgumentCount());
 	if (n != getArgumentCount()) {
-		Logger::Error("Wrong number of attributes on instance with id #" + boost::lexical_cast<std::string>(id_));
+		Logger::Error("Wrong number of attributes on instance with id #" + std::to_string(id_) + 
+			" at offset " + std::to_string(this->offset_in_file()) + 
+			" expected " + std::to_string(getArgumentCount()) + 
+			" got " + std::to_string(n));
 	}
+
 	file->try_read_semicolon();
+	
 	// @todo does this need to be atomic somehow?
-	attributes_ = tmp_data;
+	if (tmp_data) {
+		attributes_ = tmp_data;
+	}
 }
 
 namespace {
@@ -1405,6 +1457,21 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	if (attributes_[i] != 0) {
 		Argument* current_attribute = attributes_[i];
 		if (this->file) {
+
+			// Deregister old attribute guid in file guid map.
+			if (i == 0 && this->type() && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+				try {
+					auto guid = (std::string) *current_attribute;
+					auto it = this->file->internal_guid_map().find(guid);
+					if (it != this->file->internal_guid_map().end() && &it->second->data() == this) {
+						this->file->internal_guid_map().erase(it);
+					}
+				} catch (IfcParse::IfcException& e) {
+					Logger::Error(e);
+				}
+			}
+
+			// Deregister inverse indices in file
 			unregister_inverse_visitor visitor(*this->file, *this);
 			apply_individual_instance_visitor(current_attribute, i).apply(visitor);
 		}
@@ -1412,11 +1479,28 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	}
 
 	if (this->file) {
+		// Register inverse indices in file
 		register_inverse_visitor visitor(*this->file, *this);
 		apply_individual_instance_visitor(new_attribute, i).apply(visitor);
 	}
 
 	attributes_[i] = new_attribute;
+
+	// Register new attribute guid in guid map
+	if (this->file) {
+		if (i == 0 && this->type() && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+			try {
+				auto guid = (std::string) *new_attribute;
+				auto it = this->file->internal_guid_map().find(guid);
+				if (it != this->file->internal_guid_map().end()) {
+					Logger::Warning("Duplicate guid " + guid);
+				}
+				this->file->internal_guid_map()[guid] = this->file->instance_by_id(this->id());
+			} catch (IfcParse::IfcException& e) {
+				Logger::Error(e);
+			}
+		}
+	}
 }
 
 //
@@ -1460,6 +1544,10 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	// Initialize a "C" locale for locale-independent
 	// number parsing. See comment above on line 41.
 	init_locale();
+
+	// prevent heap allocations during parse
+	internal_attribute_vector_.reserve(64);
+	internal_attribute_vector_simple_type_.reserve(16);
 
 	parsing_complete_ = false;
 	MaxId = 0;
@@ -1532,7 +1620,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 			try {
 				entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream[2]));
 			} catch (const IfcException& ex) {
-				Logger::Message(Logger::LOG_ERROR, ex.what());
+				Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream[2].startPos));
 				goto advance;
 			}
 				
@@ -1989,6 +2077,11 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 
 		// The mapping by entity instance name is updated.
 		byid[new_id] = new_entity;
+	} else if (!new_entity->data().file) {
+		// For non-entity instances, no mappings are updated, but the file
+		// pointer has to be set, so that actual copies are created in subsequent
+		// times.
+		new_entity->data().file = this;
 	}
 
 	if (parsing_complete_ && ty->as_entity()) {
@@ -2354,6 +2447,47 @@ std::string IfcFile::createTimestamp() const {
 	}
 
 	return result;
+}
+
+std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
+	std::vector<int> return_value;
+	
+	auto lower = byref.lower_bound({ instance_id, -1, -1 });
+	auto upper = byref.upper_bound({ instance_id, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+
+	// Mapping of instance id to attribute offset.
+	std::map<int, std::vector<int>> mapping;
+	
+	for (auto it = lower; it != upper; ++it) {
+		for (auto& i : it->second) {
+			// We only take the tuple for the type that id=i actually is, in order not
+			// to count double. Because byref contains mappings for every supertype of id=i.
+			if (instance_by_id(i)->declaration().index_in_schema() == std::get<1>(it->first)) {
+				mapping[i].push_back(std::get<2>(it->first));
+			}
+		}
+	}
+
+	auto refs = instances_by_reference(instance_id);
+
+	for (auto& r : *refs) {
+		auto it = mapping.find(r->data().id());
+		if (it == mapping.end() || it->second.empty()) {
+			throw IfcException("Internal error");
+		}
+		return_value.push_back(it->second.front());
+		it->second.erase(it->second.begin());
+		if (it->second.empty()) {
+			mapping.erase(it);
+		}
+	}
+
+	// Test whether all mappings where indeed used.
+	if (!mapping.empty()) {
+		throw IfcException("Internal error");
+	}
+
+	return return_value;
 }
 
 aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index) {

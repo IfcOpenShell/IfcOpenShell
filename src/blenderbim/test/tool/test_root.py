@@ -29,30 +29,30 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Root)
 
 
-class TestAddDynamicOpeningVoids(NewFile):
+class TestAddTrackedOpening(NewFile):
     def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        subject.add_tracked_opening(obj)
+        props = bpy.context.scene.BIMModelProperties
+        assert props.openings[0].obj == obj
+
+
+class TestCopyRepresentation(NewFile):
+    def test_copying_a_product(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
+        source = ifc.createIfcWall(Representation=ifc.createIfcProductDefinitionShape())
+        dest = ifc.createIfcWall()
+        subject.copy_representation(source, dest)
+        assert dest.Representation.is_a("IfcProductDefinitionShape")
 
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        element = ifc.createIfcOpeningElement()
-        tool.Ifc.link(element, obj)
-
-        wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        wall_element = ifc.createIfcOpeningElement()
-        tool.Ifc.link(wall_element, wall_obj)
-
-        ifcopenshell.api.run("void.add_opening", ifc, opening=element, element=wall_element)
-
-        subject.add_dynamic_opening_voids(element, obj)
-
-        modifier = wall_obj.modifiers[0]
-        assert modifier.type == "BOOLEAN"
-        assert modifier.name == "IfcOpeningElement"
-        assert modifier.operation == "DIFFERENCE"
-        assert modifier.object == obj
-        assert modifier.solver == "EXACT"
-        assert modifier.use_self is True
+    def test_copying_a_type_product(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        source = ifc.createIfcWallType(RepresentationMaps=[ifc.createIfcRepresentationMap()])
+        dest = ifc.createIfcWallType()
+        subject.copy_representation(source, dest)
+        assert dest.RepresentationMaps[0].is_a("IfcRepresentationMap")
 
 
 class TestDoesTypeHaveRepresentations(NewFile):
@@ -62,6 +62,33 @@ class TestDoesTypeHaveRepresentations(NewFile):
         assert subject.does_type_have_representations(element) is False
         element.RepresentationMaps = [ifc.createIfcRepresentationMap()]
         assert subject.does_type_have_representations(element) is True
+
+
+class TestGetDecompositionRelationships(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        element = ifc.createIfcWall()
+        opening = ifc.createIfcOpeningElement()
+        fill = ifc.createIfcWindow()
+        ifcopenshell.api.run("void.add_opening", ifc, opening=opening, element=element)
+        ifcopenshell.api.run("void.add_filling", ifc, opening=opening, element=fill)
+
+        obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(fill, obj)
+
+        assert subject.get_decomposition_relationships([obj]) == {fill: {"type": "fill", "element": element}}
+
+
+class TestGetElementRepresentation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        context = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context)
+        wall = ifc.createIfcWall(Representation=ifc.createIfcProductDefinitionShape(Representations=[representation]))
+        assert subject.get_element_representation(wall, context) == representation
 
 
 class TestGetElementType(NewFile):

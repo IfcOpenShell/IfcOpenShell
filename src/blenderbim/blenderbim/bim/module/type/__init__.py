@@ -20,13 +20,16 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddType,
     operator.AssignType,
-    operator.UnassignType,
-    operator.EnableEditingType,
     operator.DisableEditingType,
+    operator.DuplicateType,
+    operator.EnableEditingType,
+    operator.RemoveType,
     operator.SelectSimilarType,
-    operator.SelectTypeObjects,
     operator.SelectType,
+    operator.SelectTypeObjects,
+    operator.UnassignType,
     prop.BIMTypeProperties,
     ui.BIM_PT_type,
 )

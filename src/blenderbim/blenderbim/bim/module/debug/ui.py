@@ -37,6 +37,7 @@ class BIM_PT_debug(Panel):
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "ifc_file", text="")
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
+        row.operator("bim.reload_selected_ifc_file", icon="FILE_REFRESH", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)
@@ -94,7 +95,7 @@ class BIM_PT_debug(Panel):
                 op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
                 op.global_id = attribute.string_value
             if attribute.name == "ObjectPlacement":
-                op = row.operator("bim.print_object_placement", icon="TRACKER", text="")
+                op = row.operator("bim.print_object_placement", icon="OBJECT_ORIGIN", text="")
                 op.step_id = attribute.int_value
             if attribute.int_value:
                 row.operator(

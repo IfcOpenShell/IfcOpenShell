@@ -119,28 +119,8 @@ private:
 		const std::vector<std::vector<double>>* points_ = nullptr;
 		double eps_;
 		bool non_manifold_;
-
-		template <typename Fn>
-		void loop_(const LP& lp, const Fn& callback) {
-			auto ps = get_idxs(lp);
-
-			if (ps.size() < 3) {
-				return;
-			}
-
-			auto A = ps.back();
-			for (auto& B : ps) {
-				auto C = vertex_mapping_[A], D = vertex_mapping_[B];
-				bool fwd = C < D;
-				if (!fwd) {
-					std::swap(C, D);
-				}
-				if (C != D) {
-					callback(C, D, fwd);
-					A = B;
-				}
-			}
-		}
+		
+		void loop_(const LP& lp, const std::function<void(int, int, bool)>& callback);
 
 		bool construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l);
 		bool construct(const std::vector<double>& cp, gp_Pnt* l);
@@ -153,32 +133,9 @@ private:
 			return &cp;
 		}
 
-		std::vector<const void*> get_idxs(const IfcSchema::IfcPolyLoop* lp) {
-			auto poly = lp->Polygon();
-			std::vector<const void*> idxs;
-			std::transform(poly->begin(), poly->end(), std::back_inserter(idxs), [this](const IfcSchema::IfcCartesianPoint* p) {return get_idx(p); });
-			return idxs;
-		}
-
-		std::vector<const void*> get_idxs(const std::vector<int>& it) {
-			std::vector<const void*> idxs;
-			std::transform(it.begin(), it.end(), std::back_inserter(idxs), [this](int i) { return get_idx((*points_)[i - 1]); });
-			return idxs;
-		}
-
-		/*
-		std::vector<uintptr_t> get_idxs(std::vector<std::vector<int>>::const_iterator it) {
-			std::vector<uintptr_t> idxs;
-			std::transform(it->begin(), it->end(), std::back_inserter(idxs), [this](int i) {return get_idx(i); });
-			return idxs;
-		}
-		*/
-
+		std::vector<const void*> get_idxs(const IfcSchema::IfcPolyLoop* lp);
+		std::vector<const void*> get_idxs(const std::vector<int>& it);
 	public:
-		/*
-		faceset_helper(MAKE_TYPE_NAME(Kernel)* kernel, const IfcSchema::IfcConnectedFaceSet* l);
-		*/
-
 		faceset_helper(
 			MAKE_TYPE_NAME(Kernel)* kernel, 
 			const std::vector<CP>& points,
@@ -189,64 +146,12 @@ private:
 
 		bool non_manifold() const { return non_manifold_; }
 		bool& non_manifold() { return non_manifold_; }
+		double epsilon() const { return eps_; }
+		
+		bool edge(int A, int B, TopoDS_Edge& e);
 
-		/*
-		bool edge(CP a, CP b, TopoDS_Edge& e) {
-			int A = vertex_mapping_[get_idx(a)];
-			int B = vertex_mapping_[get_idx(b)];
-			if (A == B) {
-				return false;
-			}
-
-			return edge(A, B, e);
-		}
-		*/
-
-		bool edge(int A, int B, TopoDS_Edge& e) {
-			auto it = edges_.find({A, B});
-			if (it == edges_.end()) {
-				return false;
-			}
-			e = it->second;
-			return true;
-		}
-
-		bool wire(const LP& loop, TopoDS_Wire& wire) {
-			if (duplicates_.find(util::conditional_address_of(loop)) != duplicates_.end()) {
-				return false;
-			}
-			BRep_Builder builder;
-			builder.MakeWire(wire);
-			int count = 0;
-			loop_(loop, [this, &builder, &wire, &count](int A, int B, bool fwd) {
-				TopoDS_Edge e;
-				if (edge(A, B, e)) {
-					if (!fwd) {
-						e.Reverse();
-					}
-					builder.Add(wire, e);
-					count += 1;
-				}
-			});
-			if (count >= 3) {
-				wire.Closed(true);
-
-				TopTools_ListOfShape results;
-				if (kernel_->wire_intersections(wire, results)) {
-					Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
-					kernel_->select_largest(results, wire);
-					non_manifold_ = true;
-				}
-
-				return true;
-			} else {
-				return false;
-			}
-		}
-
-		double epsilon() const {
-			return eps_;
-		}
+		bool wire(const LP& loop, TopoDS_Wire& wire);
+		bool wires(const LP& loop, TopTools_ListOfShape& wires);
 	};
 
 	double deflection_tolerance;
@@ -261,8 +166,6 @@ private:
 	double precision_factor;
 	double boolean_debug_setting;
 	double boolean_attempt_2d;
-
-	size_t operation_counter_ = 0;
 
 	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
 	const IfcParse::declaration* placement_rel_to_type_;
@@ -355,83 +258,23 @@ public:
 
 	void set_offset(const std::array<double, 3>& offset);
 	void set_rotation(const std::array<double, 4>& rotation);
-
-	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
-	bool convert_wire_to_faces(const TopoDS_Wire& wire, TopoDS_Compound& face);
-	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
+	double get_wire_intersection_tolerance(const TopoDS_Wire&) const;
+	
 	bool convert_shapes(const IfcUtil::IfcBaseInterface* L, IfcRepresentationShapeItems& result);
 	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseInterface* L);
 	bool convert_shape(const IfcUtil::IfcBaseInterface* L, TopoDS_Shape& result);
-	bool flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse);
 	bool convert_wire(const IfcUtil::IfcBaseInterface* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseInterface* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseInterface* L, TopoDS_Shape& result);
 	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
-	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
-	void assert_closed_wire(TopoDS_Wire& wire);
 
 	bool convert_layerset(const IfcSchema::IfcProduct*, std::vector<Handle_Geom_Surface>&, std::vector<std::shared_ptr<const SurfaceStyle>>&, std::vector<double>&);
-	bool apply_layerset(const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<std::shared_ptr<const SurfaceStyle>>&, IfcRepresentationShapeItems&);
-	bool apply_folded_layerset(const IfcRepresentationShapeItems&, const std::vector< std::vector<Handle_Geom_Surface> >&, const std::vector<std::shared_ptr<const SurfaceStyle>>&, IfcRepresentationShapeItems&);
 	bool fold_layers(const IfcSchema::IfcWall*, const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<double>&, std::vector< std::vector<Handle_Geom_Surface> >&);
-
-	bool split_solid_by_surface(const TopoDS_Shape&, const Handle_Geom_Surface&, TopoDS_Shape&, TopoDS_Shape&);
-	bool split_solid_by_shell(const TopoDS_Shape&, const TopoDS_Shape& s, TopoDS_Shape&, TopoDS_Shape&);
-
-#if OCC_VERSION_HEX < 0x60900
-	bool boolean_operation(const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&);
-	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&);
-#else
-	bool boolean_operation(const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
-	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
-#endif
-
-	bool fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height);
-
-	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
-	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);
-	const Handle_Geom_Curve intersect(const TopoDS_Face&, const Handle_Geom_Surface&);
-	bool intersect(const Handle_Geom_Curve&, const Handle_Geom_Surface&, gp_Pnt&);
-	bool intersect(const Handle_Geom_Curve&, const TopoDS_Face&, gp_Pnt&);
-	bool intersect(const Handle_Geom_Curve&, const TopoDS_Shape&, std::vector<gp_Pnt>&);
-	bool intersect(const Handle_Geom_Surface&, const TopoDS_Shape&, std::vector< std::pair<Handle_Geom_Surface, Handle_Geom_Curve> >&);
-	bool closest(const gp_Pnt&, const std::vector<gp_Pnt>&, gp_Pnt&);
-	bool project(const Handle_Geom_Curve&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
-	bool project(const Handle_Geom_Surface&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen=0.1);
-	
 	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
 
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
 	const IfcSchema::IfcRepresentationItem* find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item);
-	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
-	bool shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li);
-	bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& solid, bool force_sewing=false);
-	bool is_compound(const TopoDS_Shape& shape);
-	bool is_convex(const TopoDS_Wire& wire);
-	TopoDS_Shape halfspace_from_plane(const gp_Pln& pln,const gp_Pnt& cent);
-	gp_Pln plane_from_face(const TopoDS_Face& face);
-	gp_Pnt point_above_plane(const gp_Pln& pln, bool agree=true);
-	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
-	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face); 
-	void apply_tolerance(TopoDS_Shape& s, double t);
-	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
-	void remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
-	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
-	bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
-	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
-	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&, double eps=-1.);
-	bool flatten_wire(TopoDS_Wire&);
-	/// Triangulate the set of wires. The firstmost wire is assumed to be the outer wire.
-	bool triangulate_wire(const std::vector<TopoDS_Wire>&, TopTools_ListOfShape&);
-	bool wire_intersections(const TopoDS_Wire & wire, TopTools_ListOfShape & wires);
-	void select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest);
 
-	static double shape_volume(const TopoDS_Shape& s);
-	static double face_area(const TopoDS_Face& f);
-
-	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
-	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
-	
 	bool is_identity_transform(IfcUtil::IfcBaseInterface*);
 
 	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);

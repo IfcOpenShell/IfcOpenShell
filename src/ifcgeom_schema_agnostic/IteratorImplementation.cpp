@@ -1,55 +1,30 @@
 #include "IteratorImplementation.h"
 
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
+
+// Declares the schema-based external iterator initialization routines:
+// - extern void init_IteratorImplementation_Ifc2x3(IteratorFactoryImplementation*);
+// - ...
+#define EXTERNAL_DEFS(r, data, elem) \
+	extern void BOOST_PP_CAT(init_IteratorImplementation_Ifc, elem)(IteratorFactoryImplementation*);
+
+// Declares the schema-based external iterator initialization routines:
+// - init_IteratorImplementation_Ifc2x3(this);
+// - ...
+#define CALL_DEFS(r, data, elem) \
+	BOOST_PP_CAT(init_IteratorImplementation_Ifc, elem)(this);
 
 IFC_GEOM_API IteratorFactoryImplementation& iterator_implementations() {
 	static IteratorFactoryImplementation impl;
 	return impl;
 }
 
-#ifdef HAS_SCHEMA_2x3
-extern void init_IteratorImplementation_Ifc2x3(IteratorFactoryImplementation*);
-#endif
-
-#ifdef HAS_SCHEMA_4
-extern void init_IteratorImplementation_Ifc4(IteratorFactoryImplementation*);
-#endif
-
-#ifdef HAS_SCHEMA_4x1
-extern void init_IteratorImplementation_Ifc4x1(IteratorFactoryImplementation*);
-#endif
-
-#ifdef HAS_SCHEMA_4x2
-extern void init_IteratorImplementation_Ifc4x2(IteratorFactoryImplementation*);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc1
-extern void init_IteratorImplementation_Ifc4x3_rc1(IteratorFactoryImplementation*);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc2
-extern void init_IteratorImplementation_Ifc4x3_rc2(IteratorFactoryImplementation*);
-#endif
+BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 
 IteratorFactoryImplementation::IteratorFactoryImplementation() {
-#ifdef HAS_SCHEMA_2x3
-	init_IteratorImplementation_Ifc2x3(this);
-#endif
-#ifdef HAS_SCHEMA_4
-	init_IteratorImplementation_Ifc4(this);
-#endif
-#ifdef HAS_SCHEMA_4x1
-	init_IteratorImplementation_Ifc4x1(this);
-#endif
-#ifdef HAS_SCHEMA_4x2
-	init_IteratorImplementation_Ifc4x2(this);
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	init_IteratorImplementation_Ifc4x3_rc1(this);
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	init_IteratorImplementation_Ifc4x3_rc2(this);
-#endif
+	BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
 }
 
 void IteratorFactoryImplementation::bind(const std::string& schema_name, iterator_fn fn) {

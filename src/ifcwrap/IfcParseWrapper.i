@@ -54,7 +54,41 @@ private:
 %rename("add") addEntity;
 %rename("remove") removeEntity;
 
+class attribute_value_derived {};
 %{
+class attribute_value_derived {};
+%}
+
+%extend attribute_value_derived {
+	%pythoncode %{
+		def __bool__(self): return False
+		def __repr__(self): return '*'
+	%}
+}
+
+%inline %{
+static bool feature_use_attribute_value_derived = false;
+
+void set_feature(const std::string& x, PyObject* v) {
+	if (PyBool_Check(v) && x == "use_attribute_value_derived") {
+		feature_use_attribute_value_derived = v == Py_True;
+	} else {
+		throw std::runtime_error("Invalid feature specification");
+	}
+}
+
+PyObject* get_feature(const std::string& x) {
+	if (x == "use_attribute_value_derived") {
+		return PyBool_FromLong(feature_use_attribute_value_derived);
+	} else {
+		throw std::runtime_error("Invalid feature specification");
+	}
+}
+
+%}
+
+%{
+
 static const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl) {
 	return decl->name();
 }
@@ -85,9 +119,15 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
 		return $self->instance_by_guid(guid);
 	}
+	
 	aggregate_of_instance::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
 		return $self->getInverse(e->data().id(), 0, -1);
 	}
+
+	std::vector<int> get_inverse_indices(IfcUtil::IfcBaseClass* e) {
+		return $self->get_inverse_indices(e->data().id());
+	}
+
 	int get_total_inverses(IfcUtil::IfcBaseClass* e) {
 		return $self->getTotalInverses(e->data().id());
 	}
@@ -248,6 +288,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 
 	std::string __repr__() const {
 		return $self->data().toString();
+	}
+
+	std::string to_string(bool valid_spf) const {
+		return $self->data().toString(valid_spf);
 	}
 
 	// Just something to have a somewhat sensible value to hash

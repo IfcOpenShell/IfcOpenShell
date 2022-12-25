@@ -40,7 +40,10 @@ Scenario: Convert brick project
 Scenario: Assign brick reference
     Given an empty IFC project
     And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
-    And I press "bim.view_brick_item(item='https://brickschema.org/schema/Brick#Chiller')"
+    And I set "scene.BIMBrickProperties.namespace" to "https://example.org/digitaltwin#"
+    And I set "scene.BIMBrickProperties.brick_equipment_class" to "https://brickschema.org/schema/Brick#Chiller"
+    And I press "bim.add_brick"
+    And I press "bim.view_brick_class(brick_class='Chiller')"
     And I add a cube
     And the object "Cube" is selected
     And I set "scene.BIMRootProperties.ifc_class" to "IfcChiller"

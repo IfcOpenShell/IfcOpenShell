@@ -20,14 +20,30 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, constraint=None):
+        """Assigns a constraint to a product
+
+        This assigns a relationship between a product and a constraint, so that
+        when a product's properties and quantities do not match the requirements
+        of the constraint's metrics, results can be flagged.
+
+        It is assumed (but not explicit in the IFC documentation) that
+        constraints are inherited from the type. This way, it is not necessary
+        to create lots of constraint assignments.
+
+        :param product: The product the constraint applies to. This is anything
+            which can have properties or quantities.
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :param constraint: The IfcObjective constraint
+        :type constraint: ifcopenshell.entity_instance.entity_instance
+        :return: The new or updated IfcRelAssociatesConstraint relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "constraint": None,
+            "product": product,
+            "constraint": constraint,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         rel = self.get_constraint_rel()

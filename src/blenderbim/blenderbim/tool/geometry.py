@@ -59,19 +59,6 @@ class Geometry(blenderbim.core.tool.Geometry):
                 obj.scale = Vector((1.0, 1.0, 1.0))
 
     @classmethod
-    def create_dynamic_voids(cls, obj):
-        element = tool.Ifc.get_entity(obj)
-        for rel in element.HasOpenings:
-            opening_obj = tool.Ifc.get_object(rel.RelatedOpeningElement)
-            if not opening_obj:
-                continue
-            modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-            modifier.operation = "DIFFERENCE"
-            modifier.object = opening_obj
-            modifier.solver = "EXACT"
-            modifier.use_self = True
-
-    @classmethod
     def delete_data(cls, data):
         bpy.data.meshes.remove(data)
 
@@ -180,7 +167,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return data.users != 0
 
     @classmethod
-    def import_representation(cls, obj, representation, enable_dynamic_voids=False):
+    def import_representation(cls, obj, representation):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
@@ -188,7 +175,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         settings.set(settings.WELD_VERTICES, True)
 
         if representation.ContextOfItems.ContextIdentifier == "Body":
-            if element.is_a("IfcTypeProduct") or enable_dynamic_voids:
+            if element.is_a("IfcTypeProduct"):
                 shape = ifcopenshell.geom.create_shape(settings, representation)
             else:
                 shape = ifcopenshell.geom.create_shape(settings, element)
@@ -262,6 +249,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
     @classmethod
+    def remove_connection(cls, connection):
+        tool.Ifc.get().remove(connection)
+
+    @classmethod
     def rename_object(cls, obj, name):
         obj.name = name
 
@@ -292,6 +283,15 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def run_style_add_style(cls, obj=None):
         return blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=obj)
+
+    @classmethod
+    def select_connection(cls, connection):
+        obj = tool.Ifc.get_object(connection.RelatingElement)
+        if obj:
+            obj.select_set(True)
+        obj = tool.Ifc.get_object(connection.RelatedElement)
+        if obj:
+            obj.select_set(True)
 
     @classmethod
     def should_force_faceted_brep(cls):

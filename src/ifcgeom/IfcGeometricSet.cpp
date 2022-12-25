@@ -39,14 +39,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 		TopoDS_Shape s;
 		if (shape_type(element) == ST_SHAPELIST) {
 			IfcRepresentationShapeItems items;
-			if (!(convert_shapes(element, items) && flatten_shape_list(items, s, false))) {
+			if (!(convert_shapes(element, items) && util::flatten_shape_list(items, s, false, getValue(GV_PRECISION)))) {
 				continue;
 			}
 		} else if (shape_type(element) == ST_SHAPE && include_solids_and_surfaces) {
 			if (!convert_shape(element, s)) {
 				continue;
 			}
-		} else if (shape_type(element) == ST_WIRE && include_curves) {
+		} else if ((shape_type(element) == ST_WIRE || shape_type(element) == ST_CURVE) && include_curves) {
 			TopoDS_Wire w;
 			if (!convert_wire(element, w)) {
 				continue;

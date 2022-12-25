@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-from blenderbim.bim.ifc import IfcStore
 from math import radians
-from blenderbim.bim.prop import StrProperty, Attribute
+import bpy
 from ifcopenshell.api.structural.data import Data
+from ifcopenshell.util.doc import get_entity_doc
+import blenderbim.tool as tool
+from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -84,20 +86,30 @@ def getApplicableStructuralLoads(self, context):
     return applicablestructuralloads_enum
 
 
-def getStructuralLoadTypes(self, context):
+def get_structural_load_types(self, context):
     global structuralloadtypes_enum
     file = IfcStore.get_file()
     if len(structuralloadtypes_enum) < 1 and file:
         declaration = IfcStore.get_schema().declaration_by_name("IfcStructuralLoadStatic")
-        structuralloadtypes_enum.extend([(d.name(), d.name(), "") for d in declaration.subtypes()])
+        version = tool.Ifc.get_schema()
+        structuralloadtypes_enum.extend(
+            [
+                (d.name(), d.name(), get_entity_doc(version, d.name()).get("description", ""))
+                for d in declaration.subtypes()
+            ]
+        )
     return structuralloadtypes_enum
 
 
-def getBoundaryConditionTypes(self, context):
+def get_boundary_condition_types(self, context):
     file = IfcStore.get_file()
     if file:
         declaration = IfcStore.get_schema().declaration_by_name("IfcBoundaryCondition")
-        boundaryconditiontypes_enum = [(d.name(), d.name(), "") for d in declaration.subtypes()]
+        version = tool.Ifc.get_schema()
+        boundaryconditiontypes_enum = [
+            (d.name(), d.name(), get_entity_doc(version, d.name()).get("description", ""))
+            for d in declaration.subtypes()
+        ]
         return boundaryconditiontypes_enum
     return []
 
@@ -177,7 +189,7 @@ class BIMStructuralProperties(PropertyGroup):
     active_structural_load_index: IntProperty(name="Active Structural Load Index")
     active_structural_load_id: IntProperty(name="Active Structural Load Id")
     is_editing_loads: BoolProperty(name="Is Editing Loads", default=False)
-    structural_load_types: EnumProperty(items=getStructuralLoadTypes, name="Structural Load Types")
+    structural_load_types: EnumProperty(items=get_structural_load_types, name="Structural Load Types")
     structural_load_attributes: CollectionProperty(name="Structural Load Attributes", type=Attribute)
     filtered_structural_loads: BoolProperty(name="Filtered Structural Loads", default=False)
 
@@ -185,7 +197,7 @@ class BIMStructuralProperties(PropertyGroup):
     active_boundary_condition_index: IntProperty(name="Active Boundary Condition Index")
     active_boundary_condition_id: IntProperty(name="Active Boundary Condition Id")
     is_editing_boundary_conditions: BoolProperty(name="Is Editing Boundary Conditions", default=False)
-    boundary_condition_types: EnumProperty(items=getBoundaryConditionTypes, name="Boundary Condition Types")
+    boundary_condition_types: EnumProperty(items=get_boundary_condition_types, name="Boundary Condition Types")
     boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
     filtered_boundary_conditions: BoolProperty(name="Filtered Boundary Conditions", default=False)
 

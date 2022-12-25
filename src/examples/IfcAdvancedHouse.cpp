@@ -108,7 +108,7 @@ int main() {
 	setSurfaceColour(file, building_shape, 0.75, 0.73, 0.68);
 
 	// For the ground mesh of the IfcSite we will use a Nurbs surface created in Open Cascade. Only
-	// in IFC4 the surface can be directly serialized. In IFC2X3 the it will have to be tesselated.
+	// in IFC4 the surface can be directly serialized. In IFC2X3 the it will have to be tessellated.
 	TopoDS_Shape shape;
 	createGroundShape(shape);
 

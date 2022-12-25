@@ -38,7 +38,7 @@ class MepGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
-    def generate(self):
+    def generate(self, link_to_scene=True):
         self.file = tool.Ifc.get()
         self.collection = bpy.context.view_layer.active_layer_collection.collection
 
@@ -55,15 +55,15 @@ class MepGenerator:
                 self.height = dimensions.get("NominalHeight")
                 self.length = 1
 
-                return self.derive_from_cursor()
+                return self.derive_from_cursor(link_to_scene=link_to_scene)
         elif self.relating_type.is_a("IfcPipeSegmentType"):
             pass
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self, link_to_scene):
         self.location = bpy.context.scene.cursor.location
-        return self.create_rectangle_segment()
+        return self.create_rectangle_segment(link_to_scene)
 
-    def create_rectangle_segment(self):
+    def create_rectangle_segment(self, link_to_scene):
         verts = [
             Vector((-self.width / 2, self.height / 2, 0)),
             Vector((-self.width / 2, -self.height / 2, 0)),
@@ -89,10 +89,11 @@ class MepGenerator:
         ifc_class = ifc_classes[0]
 
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-        obj.location = self.location
-        obj.rotation_euler[0] = math.pi / 2
-        obj.rotation_euler[2] = math.pi / 2
-        self.collection.objects.link(obj)
+        if link_to_scene:
+            obj.location = self.location
+            obj.rotation_euler[0] = math.pi / 2
+            obj.rotation_euler[2] = math.pi / 2
+            self.collection.objects.link(obj)
 
         bpy.ops.bim.assign_class(
             obj=obj.name,
@@ -114,5 +115,13 @@ class MepGenerator:
             tool.Ifc.run("system.assign_port", element=element, port=port)
             tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=obj.matrix_world @ mat, is_si=True)
 
-        obj.select_set(True)
+        try:
+            obj.select_set(True)
+        except RuntimeError:
+            def msg(self, context):
+                txt = "The created object could not be assigned to a collection. "
+                txt += "Has any IfcSpatialElement been deleted?"
+                self.layout.label(text=txt)
+
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
         return obj

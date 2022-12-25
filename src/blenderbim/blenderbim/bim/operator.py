@@ -19,14 +19,19 @@
 import os
 import bpy
 import json
+import textwrap
+import time
+import logging
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from . import schema
+from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
+from blenderbim.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
@@ -95,6 +100,18 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
+    bl_idname = "bim.reload_selected_ifc_file"
+    bl_label = "Reload selected IFC File"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload currently selected IFC file"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        self.filepath = context.scene.BIMProperties.ifc_file
+        if self.is_existing_ifc_file():
+            context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
+        return {"FINISHED"}
 
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
@@ -396,15 +413,76 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
         bpy.ops.object.delete({"selected_objects": [context.active_object]})
 
 
-class ReloadIfcFile(bpy.types.Operator):
+class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload the same IFC file"
+    bl_description = "Reload an updated IFC file"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
-    def execute(self, context):
-        # TODO: reimplement. See #1222.
+    def _execute(self, context):
+        import ifcdiff
+
+        old = tool.Ifc.get()
+        new = ifcopenshell.open(self.filepath)
+
+        ifc_diff = ifcdiff.IfcDiff(old, new, relationships=[])
+        ifc_diff.diff()
+
+        changed_elements = set([k for k, v in ifc_diff.change_register.items() if "geometry_changed" in v])
+
+        for global_id in ifc_diff.deleted_elements | changed_elements:
+            element = tool.Ifc.get().by_guid(global_id)
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                bpy.data.objects.remove(obj)
+
+        # STEP IDs may change, but we assume the GlobalID to be constant
+        obj_map = {}
+        for obj in bpy.data.objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and hasattr(element, "GlobalId"):
+                obj_map[obj.name] = element.GlobalId
+
+        delta_elements = [new.by_guid(global_id) for global_id in ifc_diff.added_elements | changed_elements]
+        tool.Ifc.set(new)
+
+        for obj in bpy.data.objects:
+            global_id = obj_map.get(obj.name)
+            if global_id:
+                try:
+                    tool.Ifc.link(new.by_guid(global_id), obj)
+                except:
+                    # Still prototyping, so things like types definitely won't work
+                    print("Could not relink", obj)
+
+        start = time.time()
+        logger = logging.getLogger("ImportIFC")
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+        logging.basicConfig(
+            filename=path_log,
+            filemode="a",
+            level=logging.DEBUG,
+        )
+        settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
+        settings.has_filter = True
+        settings.should_filter_spatial_elements = False
+        settings.elements = delta_elements
+        settings.logger.info("Starting import")
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+
+        context.scene.BIMProperties.ifc_file = self.filepath
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class AddIfcFile(bpy.types.Operator):
@@ -425,6 +503,20 @@ class RemoveIfcFile(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.DocProperties.ifc_files.remove(self.index)
+        return {"FINISHED"}
+
+
+class BIM_OT_open_webbrowser(bpy.types.Operator):
+    bl_idname = "bim.open_webbrowser"
+    bl_description = "Open the URL in your Web Browser"
+    bl_label = "Open URL"
+
+    url: bpy.props.StringProperty()
+
+    def execute(self, context):
+        import webbrowser
+
+        webbrowser.open(self.url)
         return {"FINISHED"}
 
 
@@ -527,9 +619,16 @@ class ConfigureVisibility(bpy.types.Operator):
 
 
 def update_enum_property_search_prop(self, context):
-    for i, prop in enumerate(self.collection_name):
+    for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
-            setattr(context.data, self.prop_name, self.collection_identifier[i].name)
+            setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
+            predefined_type = self.collection_predefined_types[i].name
+            if predefined_type:
+                try:
+                    setattr(context.data, "ifc_predefined_type", predefined_type)
+                except TypeError:  # User clicked on a suggestion, but it's not a predefined type
+                    pass
+            break
 
 
 class BIM_OT_enum_property_search(bpy.types.Operator):
@@ -537,28 +636,99 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_label = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
-    collection_name: bpy.props.CollectionProperty(type=StrProperty)
-    collection_identifier: bpy.props.CollectionProperty(type=StrProperty)
+    collection_names: bpy.props.CollectionProperty(type=StrProperty)
+    collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
+    collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
 
     def invoke(self, context, event):
+        self.clear_collections()
         self.data = context.data
-        getter = self.data.getter_enum.get(self.prop_name, None)
-        if getter is None:
+        items = get_enum_items(self.data, self.prop_name, context)
+        if items is None:
             return {"FINISHED"}
-        self.collection_name.clear()
-        self.collection_identifier.clear()
-        for item in getter(self.data, context):
-            self.collection_identifier.add().name = item[0]
-            if item[0] == getattr(self.data, self.prop_name):
-                self.dummy_name = item[1]  # We found the current enum value
-            self.collection_name.add().name = item[1]
+        self.add_items_regular(items)
+        self.add_items_suggestions()
         return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        # Mandatory to access context.data in update :
+        self.layout.context_pointer_set(name="data", data=self.data)
+        self.layout.prop_search(self, "dummy_name", self, "collection_names")
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def clear_collections(self):
+        self.collection_names.clear()
+        self.collection_identifiers.clear()
+
+    def add_item(self, identifier: str, name: str, predefined_type: str = ""):
+        self.collection_identifiers.add().name = identifier
+        self.collection_names.add().name = name
+        self.collection_predefined_types.add().name = predefined_type
+
+    def add_items_regular(self, items):
+        self.identifiers = []
+        for item in items:
+            self.identifiers.append(item[0])
+            self.add_item(identifier=item[0], name=item[1])
+            if item[0] == getattr(self.data, self.prop_name):
+                self.dummy_name = item[1]  # We found the current enum name
+
+    def add_items_suggestions(self):
+        getter_suggestions = getattr(self.data, "getter_enum_suggestions", None)
+        if getter_suggestions is not None:
+            mapping = getter_suggestions.get(self.prop_name)
+            if mapping is None:
+                return
+            for key, values in mapping().items():
+                if key in self.identifiers:
+                    if not isinstance(values, (tuple, list)):
+                        values = [values]
+                    for value in values:
+                        self.add_item(identifier=key, name=key + " > " + value, predefined_type=value.upper())
+
+
+class EditBlenderCollection(bpy.types.Operator):
+    bl_idname = "bim.edit_blender_collection"
+    bl_label = "Add or Remove blender collection item"
+    bl_options = {"REGISTER", "UNDO"}
+    option: bpy.props.StringProperty(description="add or remove item from collection")
+    collection: bpy.props.StringProperty(description="collection to be edited")
+    index: bpy.props.IntProperty(description="index of item to be removed")
+
+    def execute(self, context):
+        if self.option == "add":
+            getattr(context.bim_prop_group, self.collection).add()
+        else:
+            getattr(context.bim_prop_group, self.collection).remove(self.index)
+        return {"FINISHED"}
+
+
+class BIM_OT_show_description(bpy.types.Operator):
+    bl_idname = "bim.show_description"
+    bl_label = "Description"
+    attr_name: bpy.props.StringProperty()
+    description: bpy.props.StringProperty()
+    url: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
 
     def execute(self, context):
         return {"FINISHED"}
 
     def draw(self, context):
-        # Mandatory to access context.data in update :
-        self.layout.context_pointer_set(name="data", data=self.data)
-        self.layout.prop_search(self, "dummy_name", self, "collection_name")
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=80)
+        for line in wrapper.wrap(self.attr_name + " : " + self.description):
+            layout.label(text=line)
+        if self.url:
+            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
+            url_op.url = self.url
+
+    @classmethod
+    def description(cls, context, properties):
+        return properties.description

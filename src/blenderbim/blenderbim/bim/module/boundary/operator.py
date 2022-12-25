@@ -49,7 +49,7 @@ class Loader:
         if not boundary.ConnectionGeometry:
             return None
         surface = boundary.ConnectionGeometry.SurfaceOnRelatingElement
-        # workaround for unvalid geometry provided by Revit. See https://github.com/IfcOpenShell/IfcOpenShell/issues/635#issuecomment-770366838
+        # workaround for invalid geometry provided by Revit. See https://github.com/IfcOpenShell/IfcOpenShell/issues/635#issuecomment-770366838
         if surface.is_a("IfcCurveBoundedPlane") and not getattr(surface, "InnerBoundaries", None):
             surface.InnerBoundaries = ()
         shape = ifcopenshell.geom.create_shape(self.settings, surface)
@@ -285,6 +285,7 @@ class UpdateBoundaryGeometry(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        tool.Boundary.move_origin_to_space_origin(context.active_object)
         settings = tool.Boundary.get_assign_connection_geometry_settings(context.active_object)
         ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
         return {"FINISHED"}

@@ -17,11 +17,14 @@ IfcOpenShell is a suite of developer libraries and utilities to manipulate OpenB
    ifcconvert
    bimtester
    ifcdiff
+   ifcpatch
    ifcclash
    ifccobie
    ifcmax
    ifcsverchok
    bimserver-plugin
+   C++ API Reference <https://ifcopenshell.github.io/docs/rst_files/library_root.html>
+   Python API Reference <autoapi/index>
 
 
 Indices and tables

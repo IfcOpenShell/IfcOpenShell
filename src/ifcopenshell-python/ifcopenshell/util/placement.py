@@ -28,9 +28,18 @@ def a2p(o, z, x):
 
 
 def get_axis2placement(plc):
-    z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
-    x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
-    o = plc.Location.Coordinates
+    if plc.is_a("IfcAxis2Placement3D"):
+        z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
+        x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
+        o = plc.Location.Coordinates
+    elif plc.is_a("IfcAxis2Placement2D"):
+        z = np.array((0, 0, 1))
+        if plc.RefDirection:
+            x = np.array(plc.RefDirection.DirectionRatios)
+            x.resize(3)
+        else:
+            x = np.array((1, 0, 0))
+        o = (*plc.Location.Coordinates, 0.0)
     return a2p(o, z, x)
 
 

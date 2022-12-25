@@ -35,8 +35,12 @@ class Usecase:
 
     def execute(self):
         time_period = self.file.create_entity("IfcTimePeriod")
-        time_period.StartTime = ifcopenshell.util.date.datetime2ifc(self.settings["start_time"], "IfcTime")
-        time_period.EndTime = ifcopenshell.util.date.datetime2ifc(self.settings["end_time"], "IfcTime")
+        time_period.StartTime = ifcopenshell.util.date.datetime2ifc(
+            self.settings["start_time"], "IfcTime"
+        )
+        time_period.EndTime = ifcopenshell.util.date.datetime2ifc(
+            self.settings["end_time"], "IfcTime"
+        )
         time_periods = list(self.settings["recurrence_pattern"].TimePeriods or [])
         time_periods.append(time_period)
         self.settings["recurrence_pattern"].TimePeriods = time_periods

@@ -92,7 +92,6 @@ class FilterCategory(PropertyGroup):
 
 class Link(PropertyGroup):
     name: StringProperty(name="Name")
-    collection: PointerProperty(name="Collection", type=bpy.types.Collection)
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
@@ -160,6 +159,9 @@ class BIMProjectProperties(PropertyGroup):
     false_origin: StringProperty(name="False Origin", default="0,0,0")
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
+    should_disable_undo_on_save: BoolProperty(
+        name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
+    )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")
@@ -167,28 +169,3 @@ class BIMProjectProperties(PropertyGroup):
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
-
-    getter_enum = {
-        "collection_mode": lambda self, context: [
-            ("DECOMPOSITION", "Decomposition", "Collections represent aggregates and spatial containers"),
-            ("SPATIAL_DECOMPOSITION", "Spatial Decomposition", "Collections represent spatial containers"),
-            ("IFC_CLASS", "IFC Class", "Collections represent IFC class"),
-            ("NONE", "None", "No collections are created"),
-        ],
-        "filter_mode": lambda self, context: [
-            ("NONE", "None", "No filtering is performed"),
-            ("DECOMPOSITION", "Decomposition", "Filter objects by decomposition"),
-            ("IFC_CLASS", "IFC Class", "Filter objects by class"),
-            ("IFC_TYPE", "IFC Type", "Filter objects by type"),
-            ("WHITELIST", "Whitelist", "Filter objects using a custom whitelist query"),
-            ("BLACKLIST", "Blacklist", "Filter objects using a custom blacklist query"),
-        ],
-        "merge_mode": lambda self, context: [
-            ("NONE", "None", "No objects are merged"),
-            ("IFC_CLASS", "IFC Class", "One object per IFC class"),
-            ("IFC_TYPE", "IFC Type", "One object per IFC construction type"),
-            ("MATERIAL", "Material", "One object per material"),
-        ],
-        "export_schema": get_export_schema,
-        "template_file": get_template_file,
-    }

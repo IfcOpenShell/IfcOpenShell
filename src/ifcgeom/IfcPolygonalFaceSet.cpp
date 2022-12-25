@@ -22,6 +22,8 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -40,12 +42,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 	
 	for (auto& f : *polygonal_faces) {
 		loop_grouping.emplace_back();
-		loop_grouping.back().push_back(indices.size());
+		loop_grouping.back().push_back((int) indices.size());
 		indices.push_back(f->CoordIndex());
 		if (f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()) {
 			auto inner_coordinates = f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()->InnerCoordIndices();
 			for (auto& x : inner_coordinates) {
-				loop_grouping.back().push_back(indices.size());
+				loop_grouping.back().push_back((int) indices.size());
 				indices.push_back(x);
 			}
 		}
@@ -111,12 +113,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 
 		if (not_planar) {
 			TopTools_ListOfShape fs;
-			if (triangulate_wire(ws, fs)) {
+			if (util::triangulate_wire(ws, fs)) {
 				Logger::Warning("Triangulated face boundary:", pfs);
 				TopTools_ListIteratorOfListOfShape it(fs);
 				for (; it.More(); it.Next()) {
 					const TopoDS_Face& tri = TopoDS::Face(it.Value());
-					if (face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
+					if (util::face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
 						faces.Append(tri);
 					}
 				}
@@ -126,7 +128,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 		}
 	}
 
-	if (faces.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !create_solid_from_faces(faces, shape)) {
+	if (faces.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !util::create_solid_from_faces(faces, shape, getValue(GV_PRECISION))) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);

@@ -53,7 +53,8 @@ OPTION(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
-OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" ON)
+OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
+OPTION(WASM_BUILD OFF)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
@@ -149,6 +150,14 @@ UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
 
+if(WASM_BUILD)
+    # when using the nix/build-all.py build script we should not
+    # look into the sysroot for most of the dependencies but rather
+    # in the designated build/ folder created by the script.
+    set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
+    set(CMAKE_FIND_ROOT_PATH "")
+endif()
+
 if (NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
 FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
@@ -199,7 +208,14 @@ ELSE()
     ENDIF()
 ENDIF()
 
-set(BOOST_COMPONENTS system program_options regex thread date_time)
+if (WASM_BUILD)
+    set(BOOST_COMPONENTS)
+else()
+    # @todo review this, shouldn't this be all possible header-only now?
+    # ... or rewritten using C++17 features?
+    set(BOOST_COMPONENTS system program_options regex thread date_time)
+endif()
+
 if(USE_MMAP)
     if(MSVC)
         # filesystem is necessary for the utf-16 wpath
@@ -210,6 +226,10 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
+MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+
 if (NOT MINIMAL_BUILD)
 # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
   find_package(LibXml2 REQUIRED)
@@ -219,11 +239,6 @@ if (NOT MINIMAL_BUILD AND IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
 	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
-
-FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
-MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
-
 
 # Usage:
 # set(SOME_LIRARIES foo bar)
@@ -343,10 +358,21 @@ if("${libTKernelExt}" STREQUAL ".a")
     set(OCCT_STATIC ON)
 endif()
 
+if(WASM_BUILD)
+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
+endif()
+
 if(OCCT_STATIC)
     find_package(Threads)
-    # OPENCASCADE_LIBRARIES repeated three times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    
+    if(WASM_BUILD)
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    else()
+        # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
+        # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    endif()
+    
     if (NOT APPLE AND NOT WIN32)
         set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
     endif()
@@ -452,30 +478,60 @@ if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
 
     if (HDF5_LIBRARY_DIR)
     	# result of the HDF5 ctest package
-    	
-        if (WIN32)
-        	set(zlib_post lib)
-        	set(lib_ext lib)
-        else()
-        	set(lib_ext a)
+        # Find zlib using cmake find_library. How should this be implemented?
+        # FIND_LIBRARY(NAMES z libz libz_debug PATHS ... NO_DEFAULT_PATH)
+
+
+        if ("$ENV{CONDA_BUILD}" STREQUAL "")
+            # result of the HDF5 ctest package
+
+            if (WIN32)
+                set(zlib_post lib)
+                set(lib_ext lib)
+            else()
+                set(lib_ext a)
+            endif()
+
+            if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+                set(debug_postfix "_debug")
+            endif()
+
+            SET(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libz${zlib_post}${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
+                    )
+
+        ELSE()
+            MESSAGE(STATUS "Packaging hdf5 and zlib for conda distribution")
+            if (WIN32)
+                # Windows
+                set(zlib_post zlib)
+                set(lib_ext lib)
+            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                # macOS
+                set(zlib_post libz)
+                set(lib_ext dylib)
+            else()
+                # linux
+                set(zlib_post libz)
+                set(lib_ext so)
+            endif()
+
+            SET(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
+                    )
         endif()
 
-	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-		set(debug_postfix "_debug")
-	endif() 
-        
-        SET(HDF5_LIBRARIES 
-            "${HDF5_LIBRARY_DIR}/libhdf5_cpp${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libhdf5${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libz${zlib_post}${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
-        )
     endif()
-    
+
     if (NOT HDF5_LIBRARIES)
     	# debian default
-    	
+
         SET(HDF5_LIBRARIES
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
@@ -590,12 +646,20 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
 endfunction()
 
 if(NOT SCHEMA_VERSIONS)
-    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4")
+    if(WASM_BUILD)
+        # super arbitrarily try to keep size down at least a little bit
+        set(SCHEMA_VERSIONS "2x3" "4")
+    else()
+        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3" "4x3_tc1" "4x3_add1")
+    endif()
 endif()
 
 foreach(s ${SCHEMA_VERSIONS})
 	add_definitions(-DHAS_SCHEMA_${s})
 endforeach()
+
+string(REPLACE ";" ")(" schema_version_seq "(${SCHEMA_VERSIONS})")
+ADD_DEFINITIONS(-DSCHEMA_SEQ=${schema_version_seq})
 
 if(COMPILE_SCHEMA)
 	# @todo, this appears to be untested at the moment
@@ -664,7 +728,11 @@ if (BUILD_IFCGEOM)
 	foreach(s ${SCHEMA_VERSIONS})
 		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom_ifc${s})
 	endforeach()
-	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
+	if (WASM_BUILD)
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
+	else()
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})	
+	endif()
 endif()
 if (BUILD_CONVERT OR BUILD_IFCPYTHON)
 	foreach(s ${SCHEMA_VERSIONS})
@@ -708,7 +776,11 @@ set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "0.6.0" SOVERSION "0.6")
 
-TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+if (WASM_BUILD)
+    TARGET_LINK_LIBRARIES(IfcParse ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+else()
+    TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+endif()
 
 if (BUILD_IFCGEOM)
 
@@ -720,7 +792,9 @@ set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 foreach(s ${SCHEMA_VERSIONS})
 	add_library(IfcGeom_ifc${s} STATIC ${IFCGEOM_FILES})
 	set_target_properties(IfcGeom_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
-	TARGET_LINK_LIBRARIES(IfcGeom_ifc${s} IfcParse ${OPENCASCADE_LIBRARIES})
+	if (NOT WASM_BUILD)
+	    TARGET_LINK_LIBRARIES(IfcGeom_ifc${s} IfcParse ${OPENCASCADE_LIBRARIES})	    
+	endif()
 endforeach()
 
 # IfcGeom (schema agnostic)
@@ -735,7 +809,11 @@ if (UNIX)
 find_package(Threads)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+if (WASM_BUILD)
+    TARGET_LINK_LIBRARIES(IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+else()
+    TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+endif()
 
 endif(BUILD_IFCGEOM)
 
@@ -752,7 +830,12 @@ set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 foreach(s ${SCHEMA_VERSIONS})
 	add_library(Serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
 	set_target_properties(Serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
-	TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
+	
+	if (WASM_BUILD)
+	    TARGET_LINK_LIBRARIES(Serializers_ifc${s} ${HDF5_LIBRARIES})
+	else()
+	    TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
+	endif()
 endforeach()
 
 add_library(Serializers ${SERIALIZERS_FILES})
@@ -820,7 +903,8 @@ if (GIT_FOUND)
 	)
 	string(REPLACE "\n" ";" git_branch_list "${git_branches}")
 	foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-		string(STRIP "${git_branch_candidate}" git_branch_candidate_2)
+		string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
+		string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
 		if (NOT git_branch_candidate_2 MATCHES "^HEAD$")
 			set(git_branch ${git_branch_candidate_2})
 		endif()
@@ -928,12 +1012,12 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 
 FOREACH(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
     string(REPLACE "_" "-" COMP ${COMPONENT})
-    set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}1.67.0")
+    set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}-dev")
 endforeach(COMPONENT)
 
 set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, liboce-foundation11, liboce-modeling11, liboce-ocaf11, liboce-visualization11, liboce-ocaf-lite11, libpython3.8 ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3.8 ${BOOST_DEPS}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")

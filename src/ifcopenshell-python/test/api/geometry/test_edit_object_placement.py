@@ -134,6 +134,40 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix2)
         assert element.ObjectPlacement != element2.ObjectPlacement
 
+    def test_changing_an_object_placement_shared_by_its_parent(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        matrix1 = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 2.0),
+                (0.0, 0.0, 1.0, 3.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        matrix2 = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 4.0),
+                (0.0, 1.0, 0.0, 5.0),
+                (0.0, 0.0, 1.0, 6.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=element, matrix=matrix1.copy(), is_si=False
+        )
+        subelement.ObjectPlacement = element.ObjectPlacement
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=subelement, matrix=matrix2.copy(), is_si=False
+        )
+        assert subelement.ObjectPlacement.PlacementRelTo != subelement.ObjectPlacement
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), matrix2)
+        assert element.ObjectPlacement != subelement.ObjectPlacement
+
+
     def test_changing_placements_relative_to_a_spatial_container(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
@@ -489,6 +523,54 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=subelement, matrix=submatrix.copy(), is_si=False
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement",
+            self.file,
+            product=element,
+            matrix=submatrix.copy(),
+            is_si=False,
+            should_transform_children=False,
+        )
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), submatrix)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), shifted_submatrix)
+        assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
+
+    def test_changing_placements_always_affecting_child_features_as_a_special_case(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        matrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 1.0),
+                (0.0, 0.0, 1.0, 1.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        submatrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 2.0),
+                (0.0, 0.0, 1.0, 3.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        shifted_submatrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 3.0),
+                (0.0, 0.0, 1.0, 5.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        ifcopenshell.api.run("void.add_opening", self.file, opening=subelement, element=element)
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
         )

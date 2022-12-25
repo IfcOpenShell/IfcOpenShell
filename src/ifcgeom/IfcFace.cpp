@@ -38,6 +38,7 @@
 #include "../ifcgeom/IfcGeom.h"
 
 #include "../ifcgeom_schema_agnostic/face_definition.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -101,24 +102,38 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 			// The exterior face boundary is processed first
 			if (is_interior == !process_interior) continue;
 
+			TopTools_ListOfShape wires;
 			TopoDS_Wire wire;
 			if (faceset_helper_ && loop->as<IfcSchema::IfcPolyLoop>()) {
-				if (!faceset_helper_->wire(loop->as<IfcSchema::IfcPolyLoop>(), wire)) {
+				if (!faceset_helper_->wires(loop->as<IfcSchema::IfcPolyLoop>(), wires)) {
 					Logger::Message(Logger::LOG_WARNING, "Face boundary loop not included", loop);
 					continue;
 				}
-			} else if (!convert_wire(loop, wire)) {
-				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
-				return false;
+			} else {
+				if (convert_wire(loop, wire)) {
+					wires.Append(wire);
+				} else {
+					Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
+					return false;
+				}
 			}
 
-			if (!same_sense) {
-				wire.Reverse();
+			if (wires.Size() > 1) {
+				Logger::Message(Logger::LOG_WARNING, "Face loop definition results in " + std::to_string(wires.Size()) + " loops", loop);
+				if (!is_interior) {
+					fd.all_outer() = true;
+				}
 			}
 
-			wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+			for (auto& w : wires) {
+				if (!same_sense) {
+					w.Reverse();
+				}
 
-			fd.wires().emplace_back(wire);
+				wire_senses.Bind(w.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+
+				fd.wires().emplace_back(TopoDS::Wire(w));
+			}
 		}
 	}
 
@@ -156,7 +171,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 				}
 			} else {
 				gp_Pln pln;
-				if (approximate_plane_through_wire(wire, pln)) {
+				if (util::approximate_plane_through_wire(wire, pln, getValue(GV_PRECISION))) {
 					fd.surface() = new Geom_Plane(pln);
 				}
 			}
@@ -185,11 +200,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 		if (fd.all_outer()) {
 			for (const auto& w : fd.wires()) {
 				TopTools_ListOfShape fl;
-				triangulate_wire({ w }, fl);
+				auto r = util::triangulate_wire({ w }, fl);
+				if (r == util::TRIANGULATE_WIRE_FAIL) {
+					continue;
+				}
 				face_list.Append(fl);
+				if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
+					faceset_helper_->non_manifold() = true;
+				}
 			}
 		} else {
-			triangulate_wire(fd.wires(), face_list);			
+			auto r = util::triangulate_wire(fd.wires(), face_list);
+			if (r != util::TRIANGULATE_WIRE_FAIL) {
+				if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
+					faceset_helper_->non_manifold() = true;
+				}
+			}
 		}
 	} else if (!fd.all_outer()) {
 		BRepBuilderAPI_MakeFace mf(fd.surface(), fd.outer_wire());
@@ -292,7 +318,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 		}
 	}
 
-	if (face_list.Extent() > 1) {
+	if (face_list.Extent() == 0) {
+		return false;
+	}  else if (face_list.Extent() > 1) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);

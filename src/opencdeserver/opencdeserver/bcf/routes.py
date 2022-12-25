@@ -200,7 +200,7 @@ def update_snippet(project_id, topic_id):
             if (project["project_id"]) == project_id:
                 for topic in jdata["Topics"]:
                     if (topic["guid"]) == topic_id:
-                        return jsonify("PUT Request Sucessfull")
+                        return jsonify("PUT Request Successful")
         return invalid_project()
     return invalid_user()
 
@@ -223,7 +223,7 @@ def get_files(project_id, topic_id):
             if (project["project_id"]) == project_id:
                 for topic in jdata["Topics"]:
                     if (topic["guid"]) == topic_id:
-                        return jsonify("Get request for files successfull")
+                        return jsonify("Get request for files successful")
         return invalid_project()
     return invalid_user()
 

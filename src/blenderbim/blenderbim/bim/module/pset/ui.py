@@ -41,7 +41,7 @@ def draw_property(prop, layout, copy_operator=None):
 def draw_single_property(prop, layout, copy_operator=None):
     value_name = prop.metadata.get_value_name()
     if not value_name:
-        layout.label(text=prop.metadata.name)
+        layout.label(text=prop["Name"])
         return
     layout.prop(
         prop.metadata,
@@ -88,6 +88,10 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
     obj_name = get_active_pset_obj_name(context, obj_type)
     if not props.active_pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
+        op = row.operator("bim.guess_all_quantities", icon="FILE_REFRESH", text="")
+        op.pset_id = pset_id
+        op.obj_name = obj_name
+        op.obj_type = obj_type
         op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
         op.pset_id = pset_id
         op.obj = obj_name
@@ -135,6 +139,10 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
     draw_property(prop, row, copy_operator="bim.copy_property_to_selection")
+    if prop.metadata.has_calculator:
+        op = row.operator("bim.calculate_quantity", icon="MOD_EDGESPLIT", text="")
+        op.prop = prop.name
+    # Old "guess quantity" feature to be removed once new calculator is comprehensive
     if (
         "length" in prop.name.lower()
         or "width" in prop.name.lower()
@@ -252,7 +260,7 @@ class BIM_PT_material_psets(Panel):
 
         props = context.active_object.active_material.PsetProperties
         row = self.layout.row(align=True)
-        row.prop(props, "pset_name", text="")
+        prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj = context.active_object.active_material.name
         op.obj_type = "Material"
@@ -348,7 +356,7 @@ class BIM_PT_resource_psets(Panel):
 
         props = context.scene.ResourcePsetProperties
         row = self.layout.row(align=True)
-        row.prop(props, "pset_name", text="")
+        prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj_type = "Resource"
 
@@ -381,7 +389,7 @@ class BIM_PT_profile_psets(Panel):
 
         props = context.scene.ProfilePsetProperties
         row = self.layout.row(align=True)
-        row.prop(props, "pset_name", text="")
+        prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj_type = "Profile"
 
@@ -410,7 +418,7 @@ class BIM_PT_work_schedule_psets(Panel):
 
         props = context.scene.WorkSchedulePsetProperties
         row = self.layout.row(align=True)
-        row.prop(props, "pset_name", text="")
+        prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj_type = "WorkSchedule"
 
@@ -450,7 +458,7 @@ class BIM_PT_rename_parameters(Panel):
         if props:
             for index, prop in enumerate(props):
                 row = layout.row(align=True)
-                row.prop(prop, "pset_name", text="")
+                prop_with_search(row, prop, "pset_name", text="")
                 row.prop(prop, "existing_property_name", text="")
                 row.prop(prop, "new_property_name", text="")
                 op = row.operator("bim.remove_property_to_edit", icon="X", text="")
@@ -485,12 +493,12 @@ class BIM_PT_add_edit_custom_properties(Panel):
         if props:
             for index, prop in enumerate(props):
                 row = layout.row(align=True)
-                row.prop(prop, "pset_name", text="")
+                prop_with_search(row, prop, "pset_name", text="")
                 row.prop(prop, "property_name", text="")
                 if prop.template_type == "IfcPropertySingleValue":
                     row.prop(prop, prop.get_value_name(), text="")
                 prop_with_search(row, prop, "primary_measure_type", text="")
-                prop_with_search(row, prop, "template_type", text="")
+                row.prop(prop, "template_type", text="")
                 op = row.operator("bim.remove_property_to_edit", icon="X", text="")
                 op.index = index
                 op.option = "AddEditProperties"
@@ -537,7 +545,7 @@ class BIM_PT_delete_psets(Panel):
         if props:
             for index, prop in enumerate(props):
                 row = layout.row(align=True)
-                row.prop(prop, "pset_name", text="")
+                prop_with_search(row, prop, "pset_name", text="")
                 op = row.operator("bim.remove_property_to_edit", icon="X", text="")
                 op.index = index
                 op.option = "DeletePsets"
