@@ -630,16 +630,21 @@ def exists(v):
     print("unknown = 'UNKNOWN'", file=output, sep='\n')
 
     print("""
-'''
-class express_index():
-    def __init__(self, index):
-        self.index = index - 1
-    def __rpow__(self, other):
-        try:
-            return other[self.index]
-        except:
-            pass
-'''
+def usedin(inst, ref_name):
+    def case_insensitive_attrgetter(name):
+        def inner(inst):
+            nm = [x for x in dir(inst) if x.lower() == name.lower()][0]
+            return getattr(inst, nm)
+        return inner
+    if inst is None:
+        return []
+    _, __, attr = ref_name.split('.')
+    def filter():
+        for ref, attr_idx in inst.wrapped_data.file.get_inverse(inst, allow_duplicate=True, with_attribute_indices=True):
+            if ref.wrapped_data.get_attribute_names()[attr_idx].lower() == attr:
+                yield ref
+    return list(filter())
+
 
 class express_set(set):
     def __rmul__(self, other):

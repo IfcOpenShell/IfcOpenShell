@@ -14269,7 +14269,21 @@ class IfcWallStandardCase_WR1:
         assert (sizeof([temp for temp in usedin(self,'ifc2x3.ifcrelassociates.relatedobjects') if ('ifc2x3.ifcrelassociatesmaterial' in typeof(temp)) and ('ifc2x3.ifcmateriallayersetusage' in typeof(temp.RelatingMaterial))])) == 1
         
 
-
+def usedin(inst, ref_name):
+    def case_insensitive_attrgetter(name):
+        def inner(inst):
+            nm = [x for x in dir(inst) if x.lower() == name.lower()][0]
+            return getattr(inst, nm)
+        return inner
+    if inst is None:
+        return []
+    _, __, attr = ref_name.split('.')
+    def filter():
+        for ref, attr_idx in inst.wrapped_data.file.get_inverse(inst, allow_duplicate=True, with_attribute_indices=True):
+            if ref.wrapped_data.get_attribute_names()[attr_idx].lower() == attr:
+                yield ref
+    return list(filter())
+    
 
 
 
