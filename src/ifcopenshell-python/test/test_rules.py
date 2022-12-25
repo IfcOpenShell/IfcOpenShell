@@ -11,7 +11,7 @@ import ifcopenshell.express.rule_executor
 
 @pytest.mark.parametrize(
     "filename",
-    [fn for fn in glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/rules/*.ifc")) if len(sys.argv) < 2 or sys.argv[1] in fn],
+    [fn for fn in glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/rules/*.ifc")) if len(sys.argv) < 2 or sys.argv[1] in os.path.basename(fn)],
 )
 def test_file(filename):
     base = os.path.basename(filename)
