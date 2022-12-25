@@ -1,4 +1,3 @@
-import ast
 import os
 import re
 import sys
@@ -7,7 +6,6 @@ import hashlib
 import operator
 import functools
 import itertools
-import tempfile
 
 import ifcopenshell.express
 
