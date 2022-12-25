@@ -212,7 +212,7 @@ class context:
 
 
     def __hash__(self):
-        return hash(other.rules)
+        return hash(self.rules)
         
 
     def branches(self, allow_multiple=False, exclude=()):
@@ -272,13 +272,14 @@ class {context.rule_head.rule_id}:
     def __call__(file):
         {context.rule_head.entity_ref} = file.by_type("{context.rule_head.entity_ref}")
 {indent(8, context.algorithm_head.local_decl)}
-{indent(8, context.stmt.branches())}
+{indent(8, context.stmt.branches()) if context.stmt else ''}
 {indent(8, context.where_clause.domain_rule)}
 """
 
 class empty:
     pass
 
+wb = r"\b"
 
 def process_type_decl(scope, context):
     class_name = context.type_id if scope == 'type' else context.entity_head.entity_id
@@ -292,6 +293,10 @@ def process_type_decl(scope, context):
             if ent.supertypes:
                 yield from get_attributes(ent.supertypes[0])
             yield from [a.name for a in ent.attributes]
+            yield from [a.name for a in ent.inverse]
+            # redeclared do not need to be printed, because they're emitted
+            # as part of supertype
+            yield from [a[0] for a in ent.derive if isinstance(a[0], str)]
 
         # @todo derived and inverse attributes
         attributes = list(get_attributes(class_name))
@@ -305,7 +310,7 @@ class {class_name}_{domain_rule.rule_label_id}:
 
     @staticmethod    
     def __call__(self):
-{indent(8, (f"{str(a).lower()} = self.{a}" for a in attributes))}
+{indent(8, (f"{a.lower()} = self.{a}" for a in attributes if re.search(f'{wb}{a.lower()}{wb}', str(domain_rule))))}
 {indent(8, domain_rule)}
 """
 
@@ -322,7 +327,7 @@ class {class_name}_{domain_rule.rule_label_id}:
             slash = "\\"
             return f"""
 def calc_{class_name}_{str(derived_attr.attribute_decl.redeclared_attribute.qualified_attribute.attribute_qualifier)[1:] if derived_attr.attribute_decl.redeclared_attribute else derived_attr.attribute_decl}(self):
-{indent(4, (f"{str(a).lower()} = self.{a}" for a in attributes))}
+{indent(4, (f"{a.lower()} = self.{a}" for a in attributes if re.search(f'{wb}{a.lower()}{wb}', str(derived_attr.expression))))}
 {indent(4, f"return {slash}")}
 {indent(4, derived_attr.expression)}
 """
@@ -492,8 +497,15 @@ def process_local_variable(context):
 
 
 def process_function_call(context):
-    x = f"{context.built_in_function if context.built_in_function else context.function_ref}"
-    return f"{context.built_in_function if context.built_in_function else context.function_ref}({context.actual_parameter_list if context.actual_parameter_list and context.actual_parameter_list.branches() else ''})"
+    nm = f"{context.built_in_function if context.built_in_function else context.function_ref}"
+    args = f"{context.actual_parameter_list if context.actual_parameter_list and context.actual_parameter_list.branches() else ''}"
+    if nm == "exists" and '[' in args:
+        # exists check if it receives a callable to catch IndexError, because express semantics
+        # dictate that out of bounds index returned unknown (IfcTypeObject_WR1)
+        wrap = "lambda: "
+    else:
+        wrap = ""
+    return f"{nm}({wrap}{args})"
 
 
 def make_lowercase(context):
@@ -535,6 +547,13 @@ def process_case_statement(context):
         branches += [f"else:\n{indent(4, context.stmt)}"]
     return'\n'.join(map(str, branches))
 
+
+def process_aggregate_initializer(context):
+    if context.element.repetition:
+        return '([%s] * %s)' % (context.element.expression, context.element.repetition)
+    else:
+        return '[%s]' % ','.join(map(str, context.element.branches() if context.element else ()))
+
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 # @todo 
@@ -550,7 +569,7 @@ codegen_rule("simple_expression", process_expression)
 codegen_rule("logical_expression", process_expression)
 codegen_rule("term", process_expression)
 codegen_rule("query_expression", process_query)
-codegen_rule("aggregate_initializer", lambda context: '[%s]' % ','.join(map(str, context.element.branches() if context.element else ())))
+codegen_rule("aggregate_initializer", process_aggregate_initializer)
 codegen_rule("interval", process_interval)
 codegen_rule("simple_factor", simple_concat)
 codegen_rule("primary", simple_concat)
@@ -559,6 +578,7 @@ codegen_rule("return_stmt", lambda context: 'return %s' % context)
 codegen_rule("compound_stmt", lambda context: '\n'.join(map(str, context.stmt.branches())))
 codegen_rule("if_stmt", process_if_stmt)
 codegen_rule("repeat_stmt", process_repeat_stmt)
+# codegen_rule("index", lambda context: '**express_index(%s)' % context)
 codegen_rule("index", lambda context: '[%s - 1]' % context)
 codegen_rule("group_qualifier", lambda context: empty())
 codegen_rule("attribute_qualifier", lambda context: '.%s' % context)
@@ -592,7 +612,13 @@ if __name__ == "__main__":
 
     print("import ifcopenshell", file=output, sep='\n')
 
-    print("def exists(v): return v is not None", "\n", file=output, sep='\n')
+    print("""
+def exists(v):
+    if callable(v):
+        try: return v() is not None
+        except IndexError as e: return False
+    else: return v is not None
+""", "\n", file=output, sep='\n')
     print("def nvl(v, default): return v if v is not None else default", "\n", file=output, sep='\n')
 
     print("sizeof = len", file=output, sep='\n')
@@ -604,6 +630,17 @@ if __name__ == "__main__":
     print("unknown = 'UNKNOWN'", file=output, sep='\n')
 
     print("""
+'''
+class express_index():
+    def __init__(self, index):
+        self.index = index - 1
+    def __rpow__(self, other):
+        try:
+            return other[self.index]
+        except:
+            pass
+'''
+
 class express_set(set):
     def __rmul__(self, other):
         return express_set(set(other) & self)
@@ -621,6 +658,9 @@ class express_set(set):
 
 
 def typeof(inst):
+    if not inst:
+        # If V evaluates to indeterminate (?), an empty set is returned.
+        return express_set([])
     schema_name = inst.is_a(True).split('.')[0].lower()
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
@@ -630,7 +670,7 @@ def typeof(inst):
     return express_set(inner())
 """, file=output, sep='\n')
 
-    print("class enum_namespace:\n    def __getattr__(self, k):\n        return k", "\n", file=output, sep='\n')
+    print("class enum_namespace:\n    def __getattr__(self, k):\n        return k.upper()", "\n", file=output, sep='\n')
 
     for k, v in schema.enumerations.items():
         print(f"{k} = enum_namespace()", "\n", file=output, sep='\n')
@@ -647,11 +687,14 @@ def typeof(inst):
     # for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
     # for nm in ['IfcSIUnit','IfcNamedUnit','IfcCorrectDimensions', 'IfcDimensionsForSiUnit']:
     
-    DEBUG = True
+    DEBUG = False
     # for nm in ['IfcShapeRepresentation', 'IfcShapeRepresentationTypes', 'IfcPolyline', 'IfcCurve', 'IfcCartesianPoint', 'IfcCurveDim']: # schema.functions.keys():
+    # for nm in ['IfcVectorDifference']:
+    # for nm in ['IfcTypeProduct']:
 
-    # for nm in schema.all_declarations.keys():
-    for nm in ['IfcRepresentationContextSameWCS']:
+    for nm in schema.all_declarations.keys():
+    
+    
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])
