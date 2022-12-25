@@ -8,7 +8,7 @@ from _pytest import assertion
 import ifcopenshell
 from ifcopenshell.validate import json_logger
 
-from rule_compiler import reverse_compile
+from rule_compiler import reverse_compile, indent
 
 CODE_DIR = pathlib.Path(tempfile.gettempdir())
 
@@ -22,8 +22,8 @@ class error(Exception):
     def __str__(self):
         inst = ""
         if self.instance:
-            inst = "\nOn instance:\n{self.instance}"
-        return f"Rule: {self.rule_name}\n{self.rule_definition}\nViolated by:\n{self.violation}{inst}"
+            inst = f"On instance:\n{indent(4, str(self.instance))}\n"
+        return f"{inst}Rule {self.rule_name}:\n{indent(4, self.rule_definition)}\nViolated by:\n{indent(4, self.violation)}"
 
 
 def fix_type(v):
@@ -92,7 +92,7 @@ def run(f, logger):
         else:
             return ty.name()
     
-    def check(value, type):
+    def check(value, type, instance):
         if value is None:
             return
         
@@ -105,7 +105,8 @@ def run(f, logger):
                     logger.error(str(error(
                         R.__name__,
                         reverse_compile(source.split("\n")[ln-1]),
-                        reverse_compile(e.args[0])
+                        reverse_compile(e.args[0]),
+                        instance
                     )))
 
         # @nb something can be a named type with rules and still be an aggregation.
@@ -118,14 +119,14 @@ def run(f, logger):
             assert isinstance(type, ifcopenshell.ifcopenshell_wrapper.aggregation_type)
             ty = type.type_of_element()
             for v in value:
-                check(v, ty)
+                check(v, ty, instance=inst)
         elif isinstance(value, ifcopenshell.entity_instance):
             if isinstance(S.declaration_by_name(value.is_a()), ifcopenshell.ifcopenshell_wrapper.entity):
                 # top level entity instances will be checked on their own
                 pass
             else:
                 # unpack the type instance
-                check(value[0], S.declaration_by_name(value.is_a()))
+                check(value[0], S.declaration_by_name(value.is_a()), instance=inst)
         
 
     for inst in f:
@@ -137,7 +138,7 @@ def run(f, logger):
                 # @todo
                 pass
             else:
-                check(val, attr.type_of_attribute())
+                check(val, attr.type_of_attribute(), instance=inst)
 
     for R in [r for r in rules if r.SCOPE == 'entity']:
         for inst in f.by_type(R.TYPE_NAME):
@@ -148,7 +149,8 @@ def run(f, logger):
                 logger.error(str(error(
                     R.__name__,
                     reverse_compile(source.split("\n")[ln-1]),
-                    reverse_compile(e.args[0])
+                    reverse_compile(e.args[0]),
+                    inst
                 )))
 
     """
