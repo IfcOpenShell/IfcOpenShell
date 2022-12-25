@@ -58,13 +58,15 @@ options = [
 
 for is_valid, dims, rep_type, name, fn in options:
     f = ifcopenshell.file(schema="IFC2X3")
-    f.createIfcShapeRepresentation(
-        f.createIfcGeometricRepresentationContext(
-            None, None, dims, None,
-            f.create_entity(f'IfcAxis2Placement{dims}D', f.createIfcCartesianPoint(make_nd(dims)((0., 0.)))),
-        ),
-        'Body',
-        rep_type,
-        fn(f)
-    )
+    f.createIfcProductDefinitionShape(Representations=[
+        f.createIfcShapeRepresentation(
+            f.createIfcGeometricRepresentationContext(
+                None, None, dims, None,
+                f.create_entity(f'IfcAxis2Placement{dims}D', f.createIfcCartesianPoint(make_nd(dims)((0., 0.)))),
+            ),
+            'Body',
+            rep_type,
+            fn(f)
+        )
+    ])    
     f.write(f"{'pass' if is_valid else 'fail'}-shaperep-{rep_type.lower()}-{name}-ifc2x3.ifc")

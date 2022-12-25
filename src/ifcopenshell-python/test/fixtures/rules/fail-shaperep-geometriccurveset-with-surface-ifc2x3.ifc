@@ -1,7 +1,7 @@
 ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
-FILE_NAME('','2022-12-23T09:23:59',(),(),'IfcOpenShell v0.7.0-fa6bbf2d','IfcOpenShell v0.7.0-fa6bbf2d','');
+FILE_NAME('','2022-12-25T11:08:05',(),(),'IfcOpenShell v0.7.0-fa6bbf2d','IfcOpenShell v0.7.0-fa6bbf2d','');
 FILE_SCHEMA(('IFC2X3'));
 ENDSEC;
 DATA;
@@ -13,5 +13,6 @@ DATA;
 #6=IFCPLANE(#5);
 #7=IFCGEOMETRICSET((#6));
 #8=IFCSHAPEREPRESENTATION(#3,'Body','GeometricCurveSet',(#7));
+#9=IFCPRODUCTDEFINITIONSHAPE($,$,(#8));
 ENDSEC;
 END-ISO-10303-21;

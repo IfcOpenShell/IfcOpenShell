@@ -1,7 +1,7 @@
 ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
-FILE_NAME('','2022-12-23T09:23:59',(),(),'IfcOpenShell v0.7.0-fa6bbf2d','IfcOpenShell v0.7.0-fa6bbf2d','');
+FILE_NAME('','2022-12-25T11:08:05',(),(),'IfcOpenShell v0.7.0-fa6bbf2d','IfcOpenShell v0.7.0-fa6bbf2d','');
 FILE_SCHEMA(('IFC2X3'));
 ENDSEC;
 DATA;
@@ -11,5 +11,6 @@ DATA;
 #4=IFCCARTESIANPOINT((0.,0.,0.));
 #5=IFCBOUNDINGBOX(#4,1.,1.,1.);
 #6=IFCSHAPEREPRESENTATION(#3,'Body','BoundingBox',(#5,#5));
+#7=IFCPRODUCTDEFINITIONSHAPE($,$,(#6));
 ENDSEC;
 END-ISO-10303-21;

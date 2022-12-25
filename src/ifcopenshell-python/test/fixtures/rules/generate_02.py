@@ -26,5 +26,13 @@ for i, (is_valid, lat) in enumerate(latitudes):
     pando = f.createIfcPersonAndOrganization(p, o)
     appl = f.createIfcApplication(o, ifcopenshell.version, "IfcOpenShell", f"IfcOpenShell {ifcopenshell.version}")
     ownerhist = f.createIfcOwnerHistory(pando, appl, ChangeAction="ADDED", CreationDate=int(time.time()))
-    f.createIfcSite(ifcopenshell.guid.new(), ownerhist, RefLatitude=lat)
+    units = f.createIfcUnitAssignment(Units=[f.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")])
+    site = f.createIfcSite(ifcopenshell.guid.new(), ownerhist, RefLatitude=lat)
+    proj = f.createIfcProject(ifcopenshell.guid.new(), ownerhist, 'My Project', UnitsInContext=units, RepresentationContexts=[
+      f.createIfcGeometricRepresentationContext(
+            None, None, 3, None,
+            f.create_entity(f'IfcAxis2Placement3D', f.createIfcCartesianPoint((0., 0., 0.))),
+      )
+    ])
+    f.createIfcRelAggregates(ifcopenshell.guid.new(), ownerhist, None, None, proj, [site])
     f.write(f"{'pass' if is_valid else 'fail'}-site-latitude-{i}-ifc2x3.ifc")
