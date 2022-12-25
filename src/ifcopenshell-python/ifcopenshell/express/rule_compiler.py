@@ -623,6 +623,7 @@ def exists(v):
 
     print("sizeof = len", file=output, sep='\n')
     print("hiindex = len", file=output, sep='\n')
+    print("blength = len", file=output, sep='\n')
     print("loindex = lambda x: 1", file=output, sep='\n')
     print("from math import *", file=output, sep='\n')
 
@@ -631,11 +632,6 @@ def exists(v):
 
     print("""
 def usedin(inst, ref_name):
-    def case_insensitive_attrgetter(name):
-        def inner(inst):
-            nm = [x for x in dir(inst) if x.lower() == name.lower()][0]
-            return getattr(inst, nm)
-        return inner
     if inst is None:
         return []
     _, __, attr = ref_name.split('.')
