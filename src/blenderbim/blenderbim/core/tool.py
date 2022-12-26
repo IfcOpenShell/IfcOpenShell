@@ -473,7 +473,8 @@ class Selector:
 class Sequence:
     def get_work_plan_attributes(cls): pass
     def load_work_plan_attributes(cls, work_plan): pass
-    def get_nested_tasks(cls, task):pass
+    def get_direct_nested_tasks(cls, task):pass
+    def get_all_nested_tasks(cls, task): pass
     def enable_editing_work_plan(cls, work_plan): pass
     def disable_editing_work_plan(cls): pass
     def enable_editing_work_plan_schedules(cls, work_plan): pass
@@ -509,10 +510,9 @@ class Sequence:
     def get_task_inputs(cls, task): pass
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass
-    def load_nested_task_outputs(cls, outputs): pass
     def get_highlighted_task(cls): pass
+    def get_direct_task_outputs(cls, task): pass
     def get_task_outputs(cls, task): pass
-    def get_nested_task_outputs(cls, tasks): pass
     def get_task_resources(cls, task):pass
     def enable_editing_work_calendar_times(cls, work_calendar): pass
     def load_work_calendar_attributes(cls, work_calendar): pass

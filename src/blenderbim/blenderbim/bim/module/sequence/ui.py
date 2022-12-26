@@ -441,21 +441,12 @@ class BIM_PT_task_icom(Panel):
                 op.relating_product = output_id
 
         op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
-        op.task = task.ifc_definition_id
-        op.type = 'CURRENT_TASK'
+        op.task = task.ifc_definition_id    
+        row2 = col.row()
+        row2.prop(self.props, "is_nested_task_outputs", text="Show Nested")  
         row2 = col.row()
         row2.template_list(
             "BIM_UL_task_outputs", "", self.props, "task_outputs", self.props, "active_task_output_index"
-        )
-        # Column3 // Row3
-        row3 = col.row()
-        row3.label(text="Nested Tasks Outputs")
-        op = row3.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
-        op.type = 'NESTED_TASKS'
-        op.task = task.ifc_definition_id
-        row3 = col.row()
-        row3.template_list(
-            "BIM_UL_nested_task_outputs", "", self.props, "nested_task_outputs", self.props, "active_nested_task_output_index"
         )
 
 class BIM_UL_task_columns(UIList):
@@ -485,13 +476,6 @@ class BIM_UL_task_resources(UIList):
 
 
 class BIM_UL_task_outputs(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-            row.prop(item, "name", emboss=False, text="")
-
-
-class BIM_UL_nested_task_outputs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
