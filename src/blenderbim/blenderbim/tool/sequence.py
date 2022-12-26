@@ -455,15 +455,6 @@ class Sequence(blenderbim.core.tool.Sequence):
                 new.ifc_definition_id = output.id()
                 new.name = output.Name or "Unnamed"
 
-    @classmethod
-    def load_nested_tasks_outputs(cls, outputs):
-        props = bpy.context.scene.BIMWorkScheduleProperties
-        props.nested_task_outputs.clear()
-        if outputs:
-            for output in outputs:
-                new = props.nested_task_outputs.add()
-                new.ifc_definition_id = output.id()
-                new.name = output.Name or "Unnamed"
                 
     @classmethod
     def get_highlighted_task(cls):
@@ -472,22 +463,26 @@ class Sequence(blenderbim.core.tool.Sequence):
         return tool.Ifc.get().by_id(task_props.tasks[props.active_task_index].ifc_definition_id)
 
     @classmethod
-    def get_nested_tasks(cls, task):
+    def get_direct_nested_tasks(cls, task):
         return helper.get_nested_tasks(task)
+    
+    @classmethod
+    def get_all_nested_tasks(cls, task):
+        for nested_task in helper.get_nested_tasks(task):
+            yield nested_task
+            yield from cls.get_all_nested_tasks(nested_task)
+
+    @classmethod
+    def get_direct_task_outputs(cls, task):       
+        return[rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
 
     @classmethod
     def get_task_outputs(cls, task):
-        return [rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
-    
-    @classmethod
-    def get_nested_tasks_outputs(cls, tasks):
-        outputs = []
-        for subtask in tasks:
-            [
-                outputs.append(rel.RelatingProduct)
-                for rel in subtask.HasAssignments
-                if rel.is_a("IfcRelAssignsToProduct")
-            ]
+        if bpy.context.scene.BIMWorkScheduleProperties.is_nested_task_outputs:
+            nested_tasks = cls.get_all_nested_tasks(task)
+            outputs = [output for nested_task in nested_tasks for output in cls.get_direct_task_outputs(nested_task)]
+        else:
+            outputs = cls.get_direct_task_outputs(task)
         return outputs
 
     @classmethod

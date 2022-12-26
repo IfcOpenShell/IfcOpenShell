@@ -83,7 +83,6 @@ classes = (
     operator.ImportPP,
     operator.LoadTaskInputs,
     operator.LoadTaskOutputs,
-    operator.LoadNestedTasksOutputs,
     operator.LoadTaskProperties,
     operator.LoadTaskResources,
     operator.RecalculateSchedule,
@@ -128,7 +127,6 @@ classes = (
     ui.BIM_UL_task_inputs,
     ui.BIM_UL_task_resources,
     ui.BIM_UL_task_outputs,
-    ui.BIM_UL_nested_task_outputs,
     ui.BIM_UL_tasks,
     ui.BIM_PT_SequenceToolKit,
 )
