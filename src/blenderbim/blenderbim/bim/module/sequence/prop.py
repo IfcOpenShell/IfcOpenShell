@@ -275,6 +275,7 @@ class WorkPlan(PropertyGroup):
 class TaskResource(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    schedule_usage: FloatProperty(name="Schedule Usage")
 
 
 class TaskProduct(PropertyGroup):
