@@ -1,0 +1,10 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2022-12-12T15:43:30',(),(),'IfcOpenShell v0.7.0-fa6bbf2d','IfcOpenShell v0.7.0-fa6bbf2d','');
+FILE_SCHEMA(('IFC2X3'));
+ENDSEC;
+DATA;
+#1=IFCTELECOMADDRESS($,$,$,('040-12345678'),$,$,$,$);
+ENDSEC;
+END-ISO-10303-21;
