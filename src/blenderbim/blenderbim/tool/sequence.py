@@ -127,20 +127,11 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def create_task_tree(cls, work_schedule):
-        def get_root_tasks_ids(work_schedule):
-            related_objects_ids = []
-            if work_schedule.Controls:
-                for rel in work_schedule.Controls:
-                    for obj in rel.RelatedObjects:
-                        if obj.is_a("IfcTask"):
-                            related_objects_ids.append(obj.id())
-            return related_objects_ids
-
         bpy.context.scene.BIMTaskTreeProperties.tasks.clear()
         props = bpy.context.scene.BIMWorkScheduleProperties
         cls.contracted_tasks = json.loads(props.contracted_tasks)
 
-        related_objects_ids = get_root_tasks_ids(work_schedule)
+        related_objects_ids = helper.get_root_tasks_ids(work_schedule)
         if not related_objects_ids:
             return
         cls.sort_keys = {i: cls.get_sort_key(tool.Ifc.get().by_id(i)) for i in related_objects_ids}
@@ -466,25 +457,15 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def get_direct_nested_tasks(cls, task):
         return helper.get_nested_tasks(task)
-    
-    @classmethod
-    def get_all_nested_tasks(cls, task):
-        for nested_task in helper.get_nested_tasks(task):
-            yield nested_task
-            yield from cls.get_all_nested_tasks(nested_task)
 
     @classmethod
     def get_direct_task_outputs(cls, task):       
-        return[rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
+        return helper.get_direct_task_outputs(task)
 
     @classmethod
     def get_task_outputs(cls, task):
-        if bpy.context.scene.BIMWorkScheduleProperties.is_nested_task_outputs:
-            nested_tasks = cls.get_all_nested_tasks(task)
-            outputs = [output for nested_task in nested_tasks for output in cls.get_direct_task_outputs(nested_task)]
-        else:
-            outputs = cls.get_direct_task_outputs(task)
-        return outputs
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.is_nested_task_outputs
+        return helper.get_task_outputs(task, is_deep)
 
     @classmethod
     def get_task_resources(cls, task):
@@ -720,6 +701,30 @@ class Sequence(blenderbim.core.tool.Sequence):
         new.data_type = data_type
 
     @classmethod
+    def setup_default_task_columns(cls):
+        items = [
+                {
+                    "column_type": "IfcTaskTime",
+                    "name": "ScheduleStart",
+                },
+                {
+                    "column_type": "IfcTaskTime",
+                    "name": "ScheduleFinish",
+                },
+                {
+                    "column_type": "IfcTaskTime",
+                    "name": "ScheduleDuration",
+                },
+            ]
+
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        props.columns.clear()
+        for item in items:
+            new = props.columns.add()
+            new.name = f"{item['column_type']}.{item['name']}"
+            new.data_type = "string"
+
+    @classmethod
     def remove_task_column(cls, name):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.remove(props.columns.find(name))
@@ -760,14 +765,6 @@ class Sequence(blenderbim.core.tool.Sequence):
         )
 
     @classmethod
-    def get_work_schedule(cls, task):
-        for rel in task.HasAssignments or []:
-            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
-                return rel.RelatingControl
-        for rel in task.Nests or []:
-            return cls.get_work_schedule(rel.RelatingObject)
-
-    @classmethod
     def highlight_task(cls, task):
         def expand_ancestors(task):
             for rel in task.Nests or []:
@@ -787,3 +784,20 @@ class Sequence(blenderbim.core.tool.Sequence):
             expand_ancestors(task)
         task_index = [item.ifc_definition_id for item in task_props.tasks].index(task.id()) or 0
         bpy.context.scene.BIMWorkScheduleProperties.active_task_index = task_index
+
+    @classmethod
+    def guess_date_range(cls, work_schedule):
+        return helper.guess_date_range(work_schedule)
+
+    @classmethod
+    def update_visualisation_date(cls, start_date, finish_date):
+        def canonicalise_time(time):
+            if not time:
+                return "-"
+            return time.strftime("%d/%m/%y")
+
+        print(start_date, finish_date)
+
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        props.visualisation_start = canonicalise_time(start_date)
+        props.visualisation_finish = canonicalise_time(finish_date)
