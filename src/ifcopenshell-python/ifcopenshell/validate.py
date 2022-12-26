@@ -27,6 +27,7 @@ import functools
 from collections import namedtuple
 
 import ifcopenshell
+import ifcopenshell.express.rule_executor
 
 named_type = ifcopenshell.ifcopenshell_wrapper.named_type
 aggregation_type = ifcopenshell.ifcopenshell_wrapper.aggregation_type
@@ -265,7 +266,7 @@ def get_entity_attributes(schema, entity):
     return entity_attrs
 
 
-def validate(f, logger):
+def validate(f, logger, express_rules=False):
     """
     For an IFC population model `f` (or filepath to such a file) validate whether the entity attribute values are correctly supplied. As this
     is a function that is applied after a file has been parsed, certain types of errors in syntax, duplicate
@@ -402,6 +403,9 @@ def validate(f, logger):
     # Restore the original value for 'use_attribute_value_derived'
     ifcopenshell.ifcopenshell_wrapper.set_feature('use_attribute_value_derived', attribute_value_derived_org)
 
+    if express_rules:
+        ifcopenshell.express.rule_executor.run(f, logger)
+
 if __name__ == "__main__":
     import sys
     import logging
@@ -417,8 +421,7 @@ if __name__ == "__main__":
             logger.setLevel(logging.DEBUG)
 
         print("Validating", fn, file=sys.stderr)
-
-        validate(fn, logger)
+        validate(fn, logger, "--rules" in flags)
 
         if "--json" in flags:
             conv = str
