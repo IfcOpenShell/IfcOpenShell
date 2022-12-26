@@ -266,8 +266,8 @@ def load_task_outputs(sequence):
     task = sequence.get_highlighted_task()
     outputs = sequence.get_task_outputs(task)
     sequence.load_task_outputs(outputs)
-    
-    
+
+
 def load_task_inputs(sequence):
     task = sequence.get_highlighted_task()
     inputs = sequence.get_task_inputs(task)
@@ -425,12 +425,12 @@ def disable_editing_rel_sequence(sequence):
 
 def select_task_outputs(ifc, sequence, task=None):
     outputs = sequence.get_task_outputs(task)
-    sequence.select_task_products(outputs)
+    sequence.select_products(outputs)
 
 
 def select_task_inputs(ifc, sequence, task=None):
     inputs = sequence.get_task_inputs(task)
-    sequence.select_task_products(inputs)
+    sequence.select_products(inputs)
 
 
 def recalculate_schedule(ifc, work_schedule=None):
@@ -470,9 +470,11 @@ def highlight_product_related_task(sequence, product_type=None):
             if is_work_schedule_active:
                 sequence.highlight_task(task)
 
+
 def guess_date_range(sequence, work_schedule=None):
     start, finish = sequence.guess_date_range(work_schedule)
-    sequence.update_visualisation_date(start,finish)
+    sequence.update_visualisation_date(start, finish)
+
 
 def setup_default_task_columns(sequence):
     sequence.setup_default_task_columns()

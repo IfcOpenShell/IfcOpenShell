@@ -1020,6 +1020,7 @@ class SelectTaskRelatedProducts(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
+
 class SelectTaskRelatedInputs(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_task_related_inputs"
     bl_label = "Select All Input Products"
@@ -1094,6 +1095,7 @@ class GuessDateRange(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.guess_date_range(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
+
 
 class VisualiseWorkScheduleDateRange(bpy.types.Operator):
     bl_idname = "bim.visualise_work_schedule_date_range"
@@ -1461,6 +1463,7 @@ class AddTaskColumn(bpy.types.Operator):
         core.add_task_column(tool.Sequence, self.column_type, self.name, self.data_type)
         return {"FINISHED"}
 
+
 class SetupDefaultTaskColumns(bpy.types.Operator):
     bl_idname = "bim.setup_default_task_columns"
     bl_label = "Setip Default Task Columns"
@@ -1469,6 +1472,7 @@ class SetupDefaultTaskColumns(bpy.types.Operator):
     def execute(self, context):
         core.setup_default_task_columns(tool.Sequence)
         return {"FINISHED"}
+
 
 class RemoveTaskColumn(bpy.types.Operator):
     bl_idname = "bim.remove_task_column"
@@ -1520,7 +1524,7 @@ class LoadTaskOutputs(bpy.types.Operator):
     def execute(self, context):
         core.load_task_outputs(tool.Sequence)
         return {"FINISHED"}
-    
+
 
 class CalculateTaskDuration(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_task_duration"

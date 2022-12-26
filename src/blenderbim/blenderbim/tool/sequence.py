@@ -447,7 +447,6 @@ class Sequence(blenderbim.core.tool.Sequence):
                 new.ifc_definition_id = output.id()
                 new.name = output.Name or "Unnamed"
 
-                
     @classmethod
     def get_highlighted_task(cls):
         props = bpy.context.scene.BIMWorkScheduleProperties
@@ -459,7 +458,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         return helper.get_nested_tasks(task)
 
     @classmethod
-    def get_direct_task_outputs(cls, task):       
+    def get_direct_task_outputs(cls, task):
         return helper.get_direct_task_outputs(task)
 
     @classmethod
@@ -687,7 +686,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes)
 
     @classmethod
-    def select_task_products(cls, products):
+    def select_products(cls, products):
         for obj in bpy.context.visible_objects:
             obj.select_set(False)
             if obj.BIMObjectProperties.ifc_definition_id in [product.id() for product in products]:
@@ -703,19 +702,19 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def setup_default_task_columns(cls):
         items = [
-                {
-                    "column_type": "IfcTaskTime",
-                    "name": "ScheduleStart",
-                },
-                {
-                    "column_type": "IfcTaskTime",
-                    "name": "ScheduleFinish",
-                },
-                {
-                    "column_type": "IfcTaskTime",
-                    "name": "ScheduleDuration",
-                },
-            ]
+            {
+                "column_type": "IfcTaskTime",
+                "name": "ScheduleStart",
+            },
+            {
+                "column_type": "IfcTaskTime",
+                "name": "ScheduleFinish",
+            },
+            {
+                "column_type": "IfcTaskTime",
+                "name": "ScheduleDuration",
+            },
+        ]
 
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.clear()
