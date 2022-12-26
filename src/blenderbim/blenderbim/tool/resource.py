@@ -68,7 +68,8 @@ class Resource(blenderbim.core.tool.Resource):
         props.is_resource_update_enabled = False
         for item in tprops.resources:
             resource = tool.Ifc.get().by_id(item.ifc_definition_id)
-            item.name = resource.Name if resource else "Unnamed"
+            item.name = resource.Name if resource.Name else "Unnamed"
+            item.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
         props.is_resource_update_enabled = True
 
     @classmethod

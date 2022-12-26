@@ -78,6 +78,7 @@ def update_active_resource_index(self, context):
 class Resource(PropertyGroup):
     name: StringProperty(name="Name", update=updateResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    schedule_usage: FloatProperty(name="Schedule Usage")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
