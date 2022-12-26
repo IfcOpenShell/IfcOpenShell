@@ -65,11 +65,17 @@ def canonicalise_time(time):
 
 
 def get_nested_tasks(task):
-    return [related_object for rel in task.IsNestedBy for related_object in rel.RelatedObjects if related_object.is_a("IfcTask")]
+    return [
+        related_object
+        for rel in task.IsNestedBy
+        for related_object in rel.RelatedObjects
+        if related_object.is_a("IfcTask")
+    ]
 
 
 def get_parent_task(task):
     return task.Nests[0].RelatingObject if task.Nests and task.Nests[0].RelatingObject.is_a("IfcTask") else None
+
 
 def get_task_work_schedule(task):
     parent_task = get_parent_task(task)
@@ -84,11 +90,13 @@ def get_task_work_schedule(task):
         print(f"Returning {schedules}")
         return schedules
 
+
 def get_all_nested_tasks(task):
     for nested_task in get_nested_tasks(task):
         yield nested_task
         yield from get_all_nested_tasks(nested_task)
-        
+
+
 def get_work_schedule_tasks(work_schedule):
     tasks = []
     for root_task in get_root_tasks(work_schedule):
@@ -96,11 +104,14 @@ def get_work_schedule_tasks(work_schedule):
         tasks.extend(nested_tasks)
     return tasks
 
+
 def get_root_tasks(work_schedule):
     return [obj for rel in work_schedule.Controls for obj in rel.RelatedObjects if obj.is_a("IfcTask")]
 
+
 def get_root_tasks_ids(work_schedule):
     return [obj.id() for rel in work_schedule.Controls for obj in rel.RelatedObjects if obj.is_a("IfcTask")]
+
 
 def guess_date_range(work_schedule):
     earliest = None
@@ -123,8 +134,10 @@ def guess_date_range(work_schedule):
             latest = derived_finish
     return earliest, latest
 
-def get_direct_task_outputs(task):       
+
+def get_direct_task_outputs(task):
     return [rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
+
 
 def get_task_outputs(task, is_deep=False):
     if not is_deep:
@@ -132,6 +145,7 @@ def get_task_outputs(task, is_deep=False):
     else:
         nested_tasks = get_all_nested_tasks(task)
         return [output for nested_task in nested_tasks for output in get_direct_task_outputs(nested_task)]
+
 
 def has_task_outputs(task):
     return len(get_task_outputs(task)) > 0

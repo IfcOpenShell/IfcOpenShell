@@ -442,9 +442,9 @@ class BIM_PT_task_icom(Panel):
                 op.relating_product = output_id
 
         op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
-        op.task = task.ifc_definition_id    
+        op.task = task.ifc_definition_id
         row2 = col.row()
-        row2.prop(self.props, "is_nested_task_outputs", text="Show Nested")  
+        row2.prop(self.props, "is_nested_task_outputs", text="Show Nested")
         row2 = col.row()
         row2.template_list(
             "BIM_UL_task_outputs", "", self.props, "task_outputs", self.props, "active_task_output_index"
