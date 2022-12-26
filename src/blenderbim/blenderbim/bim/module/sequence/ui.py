@@ -369,9 +369,8 @@ class BIM_PT_task_icom(Panel):
         col = grid.column()
 
         row2 = col.row(align=True)
-        row2.label(text="Inputs")
         total_task_inputs = len(self.props.task_inputs)
-
+        row2.label(text="Inputs ({})".format(total_task_inputs))
         if context.selected_objects:
             op = row2.operator("bim.assign_process", icon="ADD", text="")
             op.task = task.ifc_definition_id
@@ -394,8 +393,8 @@ class BIM_PT_task_icom(Panel):
         col = grid.column()
 
         row2 = col.row(align=True)
-        row2.label(text="Resources")
-
+        total_task_resources = len(self.props.task_resources)
+        row2.label(text="Resources ({})".format(total_task_resources))
         op = row2.operator("bim.calculate_task_duration", text="", icon="TEMP")
         op.task = task.ifc_definition_id
 
@@ -411,7 +410,6 @@ class BIM_PT_task_icom(Panel):
                 op.task = task.ifc_definition_id
                 op.related_object_type = "RESOURCE"
 
-        total_task_resources = len(self.props.task_resources)
         if total_task_resources and self.props.active_task_resource_index < total_task_resources:
             op = row2.operator("bim.unassign_process", icon="REMOVE", text="")
             op.task = task.ifc_definition_id
@@ -427,9 +425,8 @@ class BIM_PT_task_icom(Panel):
         col = grid.column()
 
         row2 = col.row(align=True)
-        row2.label(text="Task Outputs")
         total_task_outputs = len(self.props.task_outputs)
-
+        row2.label(text="Outputs ({})".format(total_task_outputs))
         if context.selected_objects:
             op = row2.operator("bim.assign_product", icon="ADD", text="")
             op.task = task.ifc_definition_id
