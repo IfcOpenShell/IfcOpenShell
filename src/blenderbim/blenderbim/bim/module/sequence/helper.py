@@ -30,7 +30,7 @@ def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=Fa
         )
         if current_date:
             return current_date
-    for subtask in get_nested_tasks(task):
+    for subtask in get_all_nested_tasks(task):
         current_date = derive_date(subtask, attribute_name, date=date, is_earliest=is_earliest, is_latest=is_latest)
         if is_earliest:
             if current_date and (date is None or current_date < date):
@@ -65,12 +65,7 @@ def canonicalise_time(time):
 
 
 def get_nested_tasks(task):
-    tasks = []
-    for rel in task.IsNestedBy:
-        for object in rel.RelatedObjects:
-            if object.is_a("IfcTask"):
-                tasks.append(object)
-    return tasks
+    return [related_object for rel in task.IsNestedBy for related_object in rel.RelatedObjects if related_object.is_a("IfcTask")]
 
 
 def get_parent_task(task):
@@ -89,3 +84,22 @@ def get_task_work_schedule(task):
         ]
         print(f"Returning {schedules}")
         return schedules
+
+def get_all_nested_tasks(task):
+    for nested_task in get_nested_tasks(task):
+        yield nested_task
+        yield from get_all_nested_tasks(nested_task)
+        
+def get_work_schedule_tasks(work_schedule):
+    tasks = []
+    for root_task in get_root_tasks(work_schedule):
+        nested_tasks = get_all_nested_tasks(root_task)
+        tasks.extend(nested_tasks)
+
+    return tasks
+
+def get_root_tasks(work_schedule):
+    return [obj for rel in work_schedule.Controls for obj in rel.RelatedObjects if obj.is_a("IfcTask")]
+
+def get_root_tasks_ids(work_schedule):
+    return [obj.id() for rel in work_schedule.Controls for obj in rel.RelatedObjects if obj.is_a("IfcTask")]
