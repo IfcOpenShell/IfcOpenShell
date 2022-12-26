@@ -1086,6 +1086,15 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
             self.completed.update(products)
 
 
+class GuessDateRange(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.guess_date_range"
+    bl_label = "Guess Work Schedule Date Range"
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.guess_date_range(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
+
 class VisualiseWorkScheduleDateRange(bpy.types.Operator):
     bl_idname = "bim.visualise_work_schedule_date_range"
     bl_label = "Visualise Work Schedule Date Range"
@@ -1452,6 +1461,14 @@ class AddTaskColumn(bpy.types.Operator):
         core.add_task_column(tool.Sequence, self.column_type, self.name, self.data_type)
         return {"FINISHED"}
 
+class SetupDefaultTaskColumns(bpy.types.Operator):
+    bl_idname = "bim.setup_default_task_columns"
+    bl_label = "Setip Default Task Columns"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.setup_default_task_columns(tool.Sequence)
+        return {"FINISHED"}
 
 class RemoveTaskColumn(bpy.types.Operator):
     bl_idname = "bim.remove_task_column"
