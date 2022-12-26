@@ -11,6 +11,10 @@ import ifcopenshell.express
 
 import networkx as nx
 
+from codegen import indent
+
+DEBUG = False
+
 def to_graph(tree):
     g = nx.DiGraph()
 
@@ -112,15 +116,6 @@ def write_dot(fn, g):
             w(nodename(a), "->", nodename(b), ";")
 
         w("}", flush=True)
-        
-        
-def indent(n, s):
-    if isinstance(s, str):
-        strs = [s]
-    else:
-        strs = s
-    splitted = itertools.chain.from_iterable(map(functools.partial(str.split, sep="\n"), map(str, strs)))
-    return "\n".join(" "*n + l for l in splitted)
         
 
 from pyparsing import *
@@ -596,9 +591,6 @@ codegen_rule("MOD", lambda context: "%")
 codegen_rule("TRUE", lambda context: "True")
 codegen_rule("FALSE", lambda context: "False")
 
-def reverse_compile(s):
-    return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
-
 if __name__ == "__main__":
     import sys
     import shutil
@@ -680,20 +672,7 @@ def typeof(inst):
     for k in schema.entities.keys():
         print(f"def {k}(*args, **kwargs): return ifcopenshell.create_entity({k!r}, {schema.name!r}, *args, **kwargs)", "\n", file=output, sep='\n')
 
-    # for nm in ["IfcSingleProjectInstance", 'IfcCurveDim']: #["IfcExtrudedAreaSolid"] + :
-    # for nm in []: #["IfcExtrudedAreaSolid"] + list(schema.rules.keys()) + list(schema.functions.keys()):
-    # for nm in ["IfcSingleProjectInstance", "IfcBoxAlignment", "IfcCompoundPlaneAngleMeasure", "IfcPositiveLengthMeasure", "IfcActorRole", "IfcAddress", 'IfcPostalAddress', 'IfcTelecomAddress', 'IfcAirTerminalType', 'IfcAnnotationCurveOccurrence', 'IfcAnnotationSurface', 'IfcArbitraryClosedProfileDef', 'IfcCurve', 'IfcCurveDim', 'IfcCartesianPoint', 'IfcCShapeProfileDef', 'IfcExtrudedAreaSolid', 'IfcBSplineCurve',
-    # for nm in ["IfcArbitraryProfileDefWithVoids", "IfcCurve", "IfcCartesianPoint", "IfcCurveDim", "IfcArbitraryClosedProfileDef"]:
-    # for nm in ['IfcSIUnit','IfcNamedUnit','IfcCorrectDimensions', 'IfcDimensionsForSiUnit']:
-    
-    DEBUG = False
-    # for nm in ['IfcShapeRepresentation', 'IfcShapeRepresentationTypes', 'IfcPolyline', 'IfcCurve', 'IfcCartesianPoint', 'IfcCurveDim']: # schema.functions.keys():
-    # for nm in ['IfcVectorDifference']:
-    # for nm in ['IfcTypeProduct']:
-
     for nm in schema.all_declarations.keys():
-    
-    
         print(nm)
 
         tree = ifcopenshell.express.express_parser.to_tree(schema[nm])

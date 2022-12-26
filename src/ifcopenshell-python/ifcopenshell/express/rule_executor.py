@@ -1,16 +1,18 @@
 import os
 import ast
 import collections
+
 from dataclasses import dataclass
-import pathlib
-import tempfile
 from _pytest import assertion
+
 import ifcopenshell
 from ifcopenshell.validate import json_logger
 
-from rule_compiler import reverse_compile, indent
+from codegen import indent
 
-CODE_DIR = pathlib.Path(tempfile.gettempdir())
+def reverse_compile(s):
+    return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
+
 
 @dataclass
 class error(Exception):
@@ -153,39 +155,6 @@ def run(f, logger):
                     inst
                 )))
 
-    """
-    for R in []:
-        r = R()
-        S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
-        entities = [x for x in S.declarations() if isinstance(x, ifcopenshell.ifcopenshell_wrapper.entity)]
-        for e in entities:
-            for attr in e.attributes():
-                ty = attr.type_of_attribute()
-                if isinstance(ty, ifcopenshell.ifcopenshell_wrapper.named_type):
-                    pass
-                ifcopenshell.ifcopenshell_wrapper.type_declaration
-                # check for type inheritance
-                ifcopenshell.ifcopenshell_wrapper.aggregation_type
-                # check elements of lists
-                ifcopenshell.ifcopenshell_wrapper.select_type
-                # check based on value in model and then get wrapped data
-                # also check aggregation of select
-                # and select of aggregation
-                # is it better to do it the other way around? probably
-                if ty.name() == R.TYPE_NAME:
-                    for inst in f.by_type(e.name()):
-                        attr = getattr(inst, attr.name())
-                        try:
-                            r(attr)
-                        except Exception as e:
-                            ln = e.__traceback__.tb_next.tb_lineno
-                            logger.error(str(error(
-                                R.__name__,
-                                reverse_compile(source.split("\n")[ln-1]),
-                                reverse_compile(e.args[0]),
-                                inst
-                            )))
-    """
 
 if __name__ == "__main__":
     import sys
