@@ -473,6 +473,7 @@ class BIM_UL_task_resources(UIList):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
+            row.prop(item, "schedule_usage", emboss=False, text="")
 
 
 class BIM_UL_task_outputs(UIList):
