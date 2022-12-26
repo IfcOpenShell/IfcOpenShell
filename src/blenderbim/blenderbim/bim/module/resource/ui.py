@@ -244,6 +244,7 @@ class BIM_UL_resources(UIList):
             else:
                 row.label(text="", icon="DOT")
             row.prop(item, "name", emboss=False, text="", icon=icon_map[resource["type"]])
+            row.prop(item, "schedule_usage", text="", emboss=False)
             if context.active_object and not props.active_resource_id:
                 oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
