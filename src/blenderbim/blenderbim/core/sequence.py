@@ -266,12 +266,7 @@ def load_task_outputs(sequence):
     task = sequence.get_highlighted_task()
     outputs = sequence.get_task_outputs(task)
     sequence.load_task_outputs(outputs)
-
-def load_nested_tasks_outputs(sequence):
-    task = sequence.get_highlighted_task()
-    nested_tasks = sequence.get_nested_tasks(task)
-    outputs = sequence.get_nested_tasks_outputs(nested_tasks)
-    sequence.load_nested_tasks_outputs(outputs)
+    
     
 def load_task_inputs(sequence):
     task = sequence.get_highlighted_task()
@@ -428,12 +423,8 @@ def disable_editing_rel_sequence(sequence):
     sequence.disable_editing_rel_sequence()
 
 
-def select_task_outputs(ifc, sequence, task=None, type=None):
-    if type == 'CURRENT_TASK':
-        outputs = sequence.get_task_outputs(task)
-    elif type == 'NESTED_TASKS':
-        tasks = sequence.get_nested_tasks(task)
-        outputs = sequence.get_nested_tasks_outputs(tasks)
+def select_task_outputs(ifc, sequence, task=None):
+    outputs = sequence.get_task_outputs(task)
     sequence.select_task_products(outputs)
 
 

@@ -1016,10 +1016,9 @@ class SelectTaskRelatedProducts(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Select All Output Products"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task), type=self.type)
+        core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 class SelectTaskRelatedInputs(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_task_related_inputs"
@@ -1505,15 +1504,6 @@ class LoadTaskOutputs(bpy.types.Operator):
         core.load_task_outputs(tool.Sequence)
         return {"FINISHED"}
     
-class LoadNestedTasksOutputs(bpy.types.Operator):
-    bl_idname = "bim.load_nested_tasks_outputs"
-    bl_label = "Load Task Outputs"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        core.load_nested_tasks_outputs(tool.Sequence)
-        return {"FINISHED"}
-
 
 class CalculateTaskDuration(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_task_duration"
