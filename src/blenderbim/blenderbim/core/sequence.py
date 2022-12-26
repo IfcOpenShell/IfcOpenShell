@@ -469,3 +469,10 @@ def highlight_product_related_task(sequence, product_type=None):
             is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
             if is_work_schedule_active:
                 sequence.highlight_task(task)
+
+def guess_date_range(sequence, work_schedule=None):
+    start, finish = sequence.guess_date_range(work_schedule)
+    sequence.update_visualisation_date(start,finish)
+
+def setup_default_task_columns(sequence):
+    sequence.setup_default_task_columns()

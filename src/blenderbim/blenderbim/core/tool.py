@@ -474,7 +474,6 @@ class Sequence:
     def get_work_plan_attributes(cls): pass
     def load_work_plan_attributes(cls, work_plan): pass
     def get_direct_nested_tasks(cls, task):pass
-    def get_all_nested_tasks(cls, task): pass
     def enable_editing_work_plan(cls, work_plan): pass
     def disable_editing_work_plan(cls): pass
     def enable_editing_work_plan_schedules(cls, work_plan): pass
@@ -544,7 +543,9 @@ class Sequence:
     def get_work_schedule(cls, task): pass
     def is_work_schedule_active(cls, work_schedule): pass
     def highlight_task(cls, task): pass
-
+    def setup_default_task_columns(cls): pass
+    def guess_date_range(cls, task): pass
+    def update_visualisation_date(cls, date): pass
 
 
 @interface

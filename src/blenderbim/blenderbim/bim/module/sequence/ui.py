@@ -194,15 +194,17 @@ class BIM_PT_work_schedules(Panel):
 
     def draw_column_ui(self):
         row = self.layout.row(align=True)
+        row.operator("bim.setup_default_task_columns", text="Show Default Columns", icon="ANCHOR_BOTTOM")
+        row = self.layout.row(align=True)
         row.prop(self.props, "column_types", text="")
         column_type = self.props.column_types
-        if self.props.column_types == "IfcTask":
+        if column_type == "IfcTask":
             row.prop(self.props, "task_columns", text="")
             name, data_type = self.props.task_columns.split("/")
-        elif self.props.column_types == "IfcTaskTime":
+        elif column_type == "IfcTaskTime":
             row.prop(self.props, "task_time_columns", text="")
             name, data_type = self.props.task_time_columns.split("/")
-        elif self.props.column_types == "Special":
+        elif column_type == "Special":
             row.prop(self.props, "other_columns", text="")
             column_type, name = self.props.other_columns.split(".")
             data_type = "string"
@@ -223,6 +225,8 @@ class BIM_PT_work_schedules(Panel):
         op.target_prop = "BIMWorkScheduleProperties.visualisation_start"
         op = row.operator("bim.datepicker", text=self.props.visualisation_finish or "Finish Date", icon="FF")
         op.target_prop = "BIMWorkScheduleProperties.visualisation_finish"
+        op = row.operator("bim.guess_date_range", text="Guess", icon="FILE_REFRESH")
+        op.work_schedule = self.props.active_work_schedule_id
         op = row.operator("bim.visualise_work_schedule_date", text="", icon="RESTRICT_RENDER_OFF")
         op.work_schedule = self.props.active_work_schedule_id
         op = row.operator("bim.visualise_work_schedule_date_range", text="", icon="OUTLINER_OB_CAMERA")
@@ -253,8 +257,8 @@ class BIM_PT_work_schedules(Panel):
             "active_task_index",
         )
         row = self.layout.row()
-        row.operator("bim.expand_all_tasks", text="Expand All Tasks")
-        row.operator("bim.contract_all_tasks", text="Contract All Tasks")
+        row.operator("bim.expand_all_tasks", text="Expand All")
+        row.operator("bim.contract_all_tasks", text="Contract All")
         if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
             self.draw_editable_task_attributes_ui()
         elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
