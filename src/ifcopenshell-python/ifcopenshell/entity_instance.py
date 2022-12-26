@@ -22,6 +22,7 @@ from __future__ import division
 from __future__ import print_function
 
 import functools
+import importlib
 import numbers
 import itertools
 
@@ -33,7 +34,7 @@ except ImportError as e:
     logging = type("logger", (object,), {"exception": staticmethod(lambda s: print(s))})
 
 
-def set_derived_atribute(*args):
+def set_derived_attribute(*args):
     raise TypeError("Unable to set derived attribute")
 
 
@@ -73,7 +74,7 @@ def register_schema_attributes(schema):
 
             # resolve to actual functions in wrapper
             functions = [
-                set_derived_atribute
+                set_derived_attribute
                 if mname == "setArgumentAsDerived"
                 else getattr(ifcopenshell_wrapper.entity_instance, mname)
                 for mname in fn_names
@@ -123,17 +124,30 @@ class entity_instance(object):
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
-            return entity_instance.wrap_value(
-                self.wrapped_data.get_argument(
-                    self.wrapped_data.get_argument_index(name)
-                ),
-                self.wrapped_data.file,
-            )
+            idx = self.wrapped_data.get_argument_index(name)
+            if _method_dict[self.is_a(True)][idx] != set_derived_attribute:
+                # A bit ugly, but we fall through to derived attribute handling below
+                return entity_instance.wrap_value(
+                    self.wrapped_data.get_argument(idx), self.wrapped_data.file
+                )
         elif attr_cat == INVERSE:
-            return entity_instance.wrap_value(
-                self.wrapped_data.get_inverse(name), self.wrapped_data.file
-            )
-        else:
+            return entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
+        
+        # derived attribute perhaps?
+        schema_name = self.wrapped_data.is_a(True).split('.')[0]
+        rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
+        def yield_supertypes():
+            decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
+            while decl:
+                yield decl.name()
+                decl = decl.supertype()
+
+        for sty in yield_supertypes():
+            fn = getattr(rules, f"calc_{sty}_{name}", None)
+            if fn:
+                return fn(self)
+
+        if attr_cat != FORWARD:
             raise AttributeError(
                 "entity instance of type '%s' has no attribute '%s'"
                 % (self.wrapped_data.is_a(True), name)
@@ -218,7 +232,7 @@ class entity_instance(object):
         method = self.method_list[idx]
 
         if value is None:
-            if method is not set_derived_atribute:
+            if method is not set_derived_attribute:
                 self.wrapped_data.setArgumentAsNull(idx)
         else:
             self.method_list[idx](
@@ -275,17 +289,22 @@ class entity_instance(object):
     def __eq__(self, other):
         if not isinstance(self, type(other)):
             return False
-        # Proper entity instances have a stable identity by means of the numeric
-        # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
-        # always have id=0, so we compare <type, value, file pointer>
-        if self.id():
-            return self.wrapped_data == other.wrapped_data
+        elif None in (self.wrapped_data.file, other.wrapped_data.file):
+            # when not added to a file, we can only compare attribute values
+            # and we need this for where rule evaluation
+            return self.get_info(recursive=True, include_identifier=False) == other.get_info(recursive=True, include_identifier=False)
         else:
-            return (self.is_a(), self[0], self.wrapped_data.file_pointer()) == (
-                other.is_a(),
-                other[0],
-                other.wrapped_data.file_pointer(),
-            )
+            # Proper entity instances have a stable identity by means of the numeric
+            # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
+            # always have id=0, so we compare <type, value, file pointer>
+            if self.id():
+                return self.wrapped_data == other.wrapped_data
+            else:
+                return (self.is_a(), self[0], self.wrapped_data.file_pointer()) == (
+                    other.is_a(),
+                    other[0],
+                    other.wrapped_data.file_pointer(),
+                )
 
     def __hash__(self):
         # Proper entity instances have a stable identity by means of the numeric
