@@ -603,6 +603,15 @@ if "libxml2" in targets:
     )
     
 if "OpenCOLLADA" in targets:
+    patches = ["./patches/opencollada/pr622_and_disable_subdirs.patch"]
+
+    if "wasm" in flags:
+        # This is necessary for the WASM build, because recent versions of
+        # clang don't have the tr1:: namespace anymore. However, it breaks
+        # some versions of gcc (9.4.0 at least) due to specializing std::hash
+        # outside of the std:: namespace.
+        patches.append("./patches/opencollada/remove_tr1.patch")
+
     build_dependency(
         "OpenCOLLADA",
         "cmake",
@@ -617,7 +626,7 @@ if "OpenCOLLADA" in targets:
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
         download_tool=download_tool_git,
-        patch=("./patches/opencollada/pr622_and_disable_subdirs.patch", "./patches/opencollada/remove_tr1.patch"),
+        patch=patches,
         revision=OPENCOLLADA_VERSION
     )
 

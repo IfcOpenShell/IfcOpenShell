@@ -45,7 +45,7 @@ def count_working_days(start, finish, calendar):
             and is_working_day(current_date, calendar)
         ):
             result += 1
-        elif not calendar:
+        elif not calendar or not is_calendar_applicable(current_date, calendar):
             result += 1
         current_date += datetime.timedelta(days=1)
     return result

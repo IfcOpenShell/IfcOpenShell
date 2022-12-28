@@ -410,7 +410,7 @@ class SchemaClass(codegen.Base):
         x.begin_schema()
 
         emitted = set()
-        len_to_emit = len(mapping.schema)
+        len_to_emit = len(mapping.schema) - len(mapping.schema.rules) - len(mapping.schema.functions)
 
         def write_simpletype(schema_name, name, type):
             try:
@@ -446,6 +446,10 @@ class SchemaClass(codegen.Base):
                 fn = write_entity
             elif mapping.schema.is_select(name):
                 fn = write_select
+            elif name in mapping.schema.rules:
+                return
+            elif name in mapping.schema.functions:
+                return
 
             decl = mapping.schema[name]
             if isinstance(decl, nodes.TypeDeclaration):

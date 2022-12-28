@@ -20,7 +20,7 @@ import bpy
 from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
-from bpy.types import PropertyGroup
+from bpy.types import PropertyGroup, NodeTree
 
 
 def get_ifc_class(self, context):
@@ -294,3 +294,7 @@ class BIMStairProperties(PropertyGroup):
                 "tread_depth": self.tread_depth,
                 "tread_run": self.tread_run,
             }
+
+
+class BIMSverchokProperties(PropertyGroup):
+    node_group: bpy.props.PointerProperty(name="Node Group", type=NodeTree)

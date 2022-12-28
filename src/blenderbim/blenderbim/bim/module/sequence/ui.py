@@ -194,15 +194,17 @@ class BIM_PT_work_schedules(Panel):
 
     def draw_column_ui(self):
         row = self.layout.row(align=True)
+        row.operator("bim.setup_default_task_columns", text="Show Default Columns", icon="ANCHOR_BOTTOM")
+        row = self.layout.row(align=True)
         row.prop(self.props, "column_types", text="")
         column_type = self.props.column_types
-        if self.props.column_types == "IfcTask":
+        if column_type == "IfcTask":
             row.prop(self.props, "task_columns", text="")
             name, data_type = self.props.task_columns.split("/")
-        elif self.props.column_types == "IfcTaskTime":
+        elif column_type == "IfcTaskTime":
             row.prop(self.props, "task_time_columns", text="")
             name, data_type = self.props.task_time_columns.split("/")
-        elif self.props.column_types == "Special":
+        elif column_type == "Special":
             row.prop(self.props, "other_columns", text="")
             column_type, name = self.props.other_columns.split(".")
             data_type = "string"
@@ -223,6 +225,8 @@ class BIM_PT_work_schedules(Panel):
         op.target_prop = "BIMWorkScheduleProperties.visualisation_start"
         op = row.operator("bim.datepicker", text=self.props.visualisation_finish or "Finish Date", icon="FF")
         op.target_prop = "BIMWorkScheduleProperties.visualisation_finish"
+        op = row.operator("bim.guess_date_range", text="Guess", icon="FILE_REFRESH")
+        op.work_schedule = self.props.active_work_schedule_id
         op = row.operator("bim.visualise_work_schedule_date", text="", icon="RESTRICT_RENDER_OFF")
         op.work_schedule = self.props.active_work_schedule_id
         op = row.operator("bim.visualise_work_schedule_date_range", text="", icon="OUTLINER_OB_CAMERA")
@@ -253,8 +257,8 @@ class BIM_PT_work_schedules(Panel):
             "active_task_index",
         )
         row = self.layout.row()
-        row.operator("bim.expand_all_tasks", text="Expand All Tasks")
-        row.operator("bim.contract_all_tasks", text="Contract All Tasks")
+        row.operator("bim.expand_all_tasks", text="Expand All")
+        row.operator("bim.contract_all_tasks", text="Contract All")
         if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
             self.draw_editable_task_attributes_ui()
         elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
@@ -369,9 +373,8 @@ class BIM_PT_task_icom(Panel):
         col = grid.column()
 
         row2 = col.row(align=True)
-        row2.label(text="Inputs")
         total_task_inputs = len(self.props.task_inputs)
-
+        row2.label(text="Inputs ({})".format(total_task_inputs))
         if context.selected_objects:
             op = row2.operator("bim.assign_process", icon="ADD", text="")
             op.task = task.ifc_definition_id
@@ -394,8 +397,8 @@ class BIM_PT_task_icom(Panel):
         col = grid.column()
 
         row2 = col.row(align=True)
-        row2.label(text="Resources")
-
+        total_task_resources = len(self.props.task_resources)
+        row2.label(text="Resources ({})".format(total_task_resources))
         op = row2.operator("bim.calculate_task_duration", text="", icon="TEMP")
         op.task = task.ifc_definition_id
 
@@ -411,7 +414,6 @@ class BIM_PT_task_icom(Panel):
                 op.task = task.ifc_definition_id
                 op.related_object_type = "RESOURCE"
 
-        total_task_resources = len(self.props.task_resources)
         if total_task_resources and self.props.active_task_resource_index < total_task_resources:
             op = row2.operator("bim.unassign_process", icon="REMOVE", text="")
             op.task = task.ifc_definition_id
@@ -427,9 +429,8 @@ class BIM_PT_task_icom(Panel):
         col = grid.column()
 
         row2 = col.row(align=True)
-        row2.label(text="Task Outputs")
         total_task_outputs = len(self.props.task_outputs)
-
+        row2.label(text="Outputs ({})".format(total_task_outputs))
         if context.selected_objects:
             op = row2.operator("bim.assign_product", icon="ADD", text="")
             op.task = task.ifc_definition_id
@@ -442,20 +443,11 @@ class BIM_PT_task_icom(Panel):
 
         op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
         op.task = task.ifc_definition_id
-        op.type = 'CURRENT_TASK'
+        row2 = col.row()
+        row2.prop(self.props, "is_nested_task_outputs", text="Show Nested")
         row2 = col.row()
         row2.template_list(
             "BIM_UL_task_outputs", "", self.props, "task_outputs", self.props, "active_task_output_index"
-        )
-        # Column3 // Row3
-        row3 = col.row()
-        row3.label(text="Nested Tasks Outputs")
-        op = row3.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
-        op.type = 'NESTED_TASKS'
-        op.task = task.ifc_definition_id
-        row3 = col.row()
-        row3.template_list(
-            "BIM_UL_nested_task_outputs", "", self.props, "nested_task_outputs", self.props, "active_nested_task_output_index"
         )
 
 class BIM_UL_task_columns(UIList):
@@ -482,16 +474,10 @@ class BIM_UL_task_resources(UIList):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
+            row.prop(item, "schedule_usage", emboss=False, text="")
 
 
 class BIM_UL_task_outputs(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-            row.prop(item, "name", emboss=False, text="")
-
-
-class BIM_UL_nested_task_outputs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)

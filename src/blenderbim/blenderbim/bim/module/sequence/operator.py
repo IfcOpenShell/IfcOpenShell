@@ -1016,10 +1016,10 @@ class SelectTaskRelatedProducts(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Select All Output Products"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task), type=self.type)
+        core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+
 
 class SelectTaskRelatedInputs(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_task_related_inputs"
@@ -1085,6 +1085,16 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
             self.started.update(products)
         else:
             self.completed.update(products)
+
+
+class GuessDateRange(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.guess_date_range"
+    bl_label = "Guess Work Schedule Date Range"
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.guess_date_range(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
 
 
 class VisualiseWorkScheduleDateRange(bpy.types.Operator):
@@ -1454,6 +1464,16 @@ class AddTaskColumn(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SetupDefaultTaskColumns(bpy.types.Operator):
+    bl_idname = "bim.setup_default_task_columns"
+    bl_label = "Setip Default Task Columns"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.setup_default_task_columns(tool.Sequence)
+        return {"FINISHED"}
+
+
 class RemoveTaskColumn(bpy.types.Operator):
     bl_idname = "bim.remove_task_column"
     bl_label = "Remove Task Column"
@@ -1503,15 +1523,6 @@ class LoadTaskOutputs(bpy.types.Operator):
 
     def execute(self, context):
         core.load_task_outputs(tool.Sequence)
-        return {"FINISHED"}
-    
-class LoadNestedTasksOutputs(bpy.types.Operator):
-    bl_idname = "bim.load_nested_tasks_outputs"
-    bl_label = "Load Task Outputs"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        core.load_nested_tasks_outputs(tool.Sequence)
         return {"FINISHED"}
 
 
