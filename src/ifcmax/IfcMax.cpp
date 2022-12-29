@@ -251,10 +251,12 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 	std::map<std::vector<std::string>, Mtl*> material_cache;
 
 	do{
+		const IfcGeom::Element* element = static_cast<const IfcGeom::Element*>(iterator->get());
 		const IfcGeom::TriangulationElement* o = static_cast<const IfcGeom::TriangulationElement*>(iterator->get());
 
 		TSTR o_type = S(o->type());
 		TSTR o_guid = S(o->guid());
+		TSTR o_name = S(o->name());
 
 		Mtl *m = ComposeMultiMaterial(material_cache, mats, itfc, slot, o->geometry().materials(), o->type(), o->geometry().material_ids());
 
@@ -316,7 +318,9 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 		ImpNode* node = impitfc->CreateNode();
 		node->Reference(tri);
-		node->SetName(o_guid);
+		
+		node->SetName( o_name );
+
 		node->GetINode()->Hide(o->type() == "IfcOpeningElement" || o->type() == "IfcSpace");
 		if (m) {
 			node->GetINode()->SetMtl(m);
