@@ -39,5 +39,16 @@ IfcSpace - GrossWallArea
 IfcSpace - NetWallArea
 IfcSpace - Calculate only shared volume between IfcColumn and IfcSpace
 IfcPipeSegment - Gross cross section area
+IfcCableSegment - Cross section area
 Qto_PipeFittingBaseQuantities - Basically all quantities because the object can not be straight
+Qto_BuildingBaseQuantities - (n.7) Not sure if it's useful to map this entity because for example BBim doesn't create a building representation
+Qto_PictorialSignQuantities - SignArea
+Qto_ArealStratumBaseQuantities - PlanLength
+Qto_RoofBaseQuantities - ProjectedArea
+Qto_EarthworksCutBase - LooseVolume
+Qto_KerbBaseQuantities - Depth (not sure what's the difference between depth and width: there are 4 dimensions, i don't understand the difference)
+Qto_LinearStratumBaseQuantities - Diameter
+Qto_LinearStratumBaseQuantities - Length
+Qto_BodyGeometryValidation - SurfaceGenusBeforeFeatures
+Qto_BodyGeometryValidation - SurfaceGenusAfterFeatures
 
