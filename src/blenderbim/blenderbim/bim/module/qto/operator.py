@@ -174,9 +174,9 @@ class QuantifyObjects(bpy.types.Operator):
 
 class AssignPsetQto(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_pset_qto"
-    bl_label = "Assign Pset Qto"
+    bl_label = "Assign IFC Object Quantity Set"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Assign pset qto to selected object"
+    bl_description = "Assign IFC quantity set to selected object"
 
     @classmethod
     def poll(cls, context):
@@ -188,9 +188,9 @@ class AssignPsetQto(bpy.types.Operator, tool.Ifc.Operator):
 
 class CalculateAllQtos(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_all_qtos"
-    bl_label = "Calculate All Qtos"
+    bl_label = "Calculate all quantities"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Calculate all pset qtos properties of objects assigned pset qto"
+    bl_description = "Calculate all possible quantities and assign them to selected object"
 
     @classmethod
     def poll(cls, context):

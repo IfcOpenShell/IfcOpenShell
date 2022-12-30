@@ -24,7 +24,7 @@ import ifcopenshell
 from mathutils import Vector
 from ifcopenshell import util
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
-
+from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 
 
 class Qto(blenderbim.core.tool.Qto):
@@ -52,7 +52,8 @@ class Qto(blenderbim.core.tool.Qto):
         file = tool.Ifc.get()
         schema = file.schema
         pset_qto = util.pset.PsetQto(schema)
-        pset_qto_name = cls.get_pset_qto_name(obj)
+#        pset_qto_name = cls.get_pset_qto_name(obj)
+        pset_qto_name = cls.get_assigned_pset_qto_name(obj)
         pset_qto_properties = pset_qto.get_by_name(pset_qto_name).get_info()['HasPropertyTemplates']
         return pset_qto_properties
 
@@ -63,6 +64,13 @@ class Qto(blenderbim.core.tool.Qto):
             if 'Qto_' in applicable_pset_name:
                 pset_qto_name = applicable_pset_name
                 return pset_qto_name
+
+    @classmethod
+    def get_assigned_pset_qto_name(cls, obj):
+        entity = tool.Ifc.get_entity(obj)
+        assigned_pset_qto_name = ifcopenshell.util.element.get_psets(entity, qtos_only = True)
+        assigned_pset_qto_name = list(assigned_pset_qto_name.keys())[0]
+        return assigned_pset_qto_name
 
     @classmethod
     def get_applicable_pset_names(cls, obj):
@@ -77,8 +85,8 @@ class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def edit_qto(cls, obj, calculated_quantities):
         file = tool.Ifc.get()
-        pset_qto_id = cls.get_pset_qto_id(obj)
         pset_qto_name = cls.get_pset_qto_name(obj)
+        pset_qto_id = cls.get_pset_qto_id(obj, pset_qto_name)
 
         ifcopenshell.api.run("pset.edit_qto",
                 file,
@@ -86,9 +94,8 @@ class Qto(blenderbim.core.tool.Qto):
             )
 
     @classmethod
-    def get_pset_qto_id(cls, obj):
+    def get_pset_qto_id(cls, obj, pset_qto_name):
         file = tool.Ifc.get()
-        pset_qto_name = cls.get_pset_qto_name(obj)
         pset_qto_object_ifc_info = cls.get_pset_qto_object_ifc_info(obj)
         pset_qto_id = file.by_id(pset_qto_object_ifc_info[pset_qto_name]['id'])
         return pset_qto_id
@@ -102,10 +109,15 @@ class Qto(blenderbim.core.tool.Qto):
                 return pset_qto_name
 
     @classmethod
-    def get_new_quantity(cls, obj, quantity_name, alternative_prop_names):
+    def get_new_calculated_quantity(cls, qto_name, quantity_name, obj):
+        calculator = QtoCalculator()
+        new_quantity = calculator.calculate_quantity(qto_name, quantity_name, obj)
+        return new_quantity
+
+    @classmethod
+    def get_new_guessed_quantity(cls, obj, quantity_name, alternative_prop_names):
         calculator = QtoCalculator()
         new_quantity = calculator.guess_quantity(quantity_name, alternative_prop_names, obj)
-        return new_quantity
 
     @classmethod
     def get_rounded_value(cls, new_quantity):
@@ -114,11 +126,33 @@ class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def get_calculated_quantities(cls, obj, pset_qto_properties):
         calculated_quantities = {}
+        qto_name = cls.get_pset_qto_name(obj)
+        calculator = QtoCalculator()
+
+        for pset_qto_property in pset_qto_properties:
+            quantity_name = pset_qto_property.get_info()['Name']
+            if not cls.has_calculator(qto_name, quantity_name):
+                continue
+            else:
+                new_quantity = calculator.calculate_quantity(qto_name, quantity_name, obj)
+                new_quantity = cls.get_rounded_value(new_quantity)
+
+            calculated_quantities[quantity_name] = new_quantity
+
+        return calculated_quantities
+
+    @classmethod
+    def has_calculator(cls, qto_name, quantity_name):
+        return bool(mapper.get(qto_name, {}).get(quantity_name, None))
+
+    @classmethod
+    def get_guessed_quantities(cls, obj, pset_qto_properties):
+        calculated_quantities = {}
         for pset_qto_property in pset_qto_properties:
             quantity_name = pset_qto_property.get_info()['Name']
             alternative_prop_names = [p.get_info()['Name'] for p in pset_qto_properties]
 
-            new_quantity = cls.get_new_quantity(obj, quantity_name, alternative_prop_names)
+            new_quantity = cls.get_new_guessed_quantity(obj, quantity_name, alternative_prop_names)
 
             if not new_quantity:
                 new_quantity = 0
@@ -128,6 +162,7 @@ class Qto(blenderbim.core.tool.Qto):
             calculated_quantities[quantity_name] = new_quantity
 
         return calculated_quantities
+
 
     @classmethod
     def assign_pset_qto_to_selected_object(cls, obj):
