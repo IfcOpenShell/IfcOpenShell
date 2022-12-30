@@ -120,6 +120,22 @@ class QtoCalculator:
             length += self.get_edge_distance(o, e)
         return length
 
+    def get_stair_length(self, obj):
+        length = self.get_length(obj)
+        height = self.get_height(obj)
+        stair_length = math.sqrt(pow(length, 2) + pow(height, 2))
+        return stair_length
+
+    def get_net_stair_area(self, obj):
+        OBB_obj = self.get_OBB_object(obj)
+        OBB_net_footprint_area = self.get_net_footprint_area(OBB_obj)
+        return OBB_net_footprint_area
+
+    def get_gross_stair_area(self, obj):
+        OBB_obj = self.get_OBB_object(obj)
+        OBB_gross_footprint_area = self.get_gross_footprint_area(OBB_obj)
+        return OBB_gross_footprint_area
+
     def get_width(self, o):
         """_summary_: Returns the width of the object bounding box
 
@@ -659,7 +675,8 @@ class QtoCalculator:
         ifc = tool.Ifc.get()
         ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
-        if len(openings := ifc_element.HasOpenings) != 0:
+#        if len(openings := ifc_element.HasOpenings) != 0:
+        if len(openings := self.has_openings(obj)) != 0:
             for opening in openings:
                 if opening.RelatedOpeningElement.PredefinedType == "OPENING":
                     opening_id = opening.RelatedOpeningElement.GlobalId

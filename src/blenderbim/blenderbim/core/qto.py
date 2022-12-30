@@ -37,3 +37,15 @@ def calculate_all_qtos(qto, selected_objects):
         calculated_quantities = qto.get_calculated_quantities(obj, pset_qto_properties)
 
         qto.edit_qto(obj, calculated_quantities)
+
+def guess_all_qtos(qto, selected_objects):
+    for obj in selected_objects:
+        if not qto.get_pset_qto_object_ifc_info(obj):
+            print(f"There is no pset qto instance associated to object {obj.name}")
+            continue
+
+        pset_qto_properties = qto.get_pset_qto_properties(obj)
+
+        calculated_quantities = qto.get_calculated_quantities(obj, pset_qto_properties)
+
+        qto.edit_qto(obj, calculated_quantities)
