@@ -107,6 +107,10 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
     node_group: bpy.props.StringProperty(default="")
     force_mode: bpy.props.BoolProperty(default=False)
 
+    # FIXME For now it's fine to center around buildings. 
+    # But for the future it'd be good to also allow other 
+    # infra-related spatial structure elements, such as IfcBridge.
+    # https://github.com/IfcOpenShell/IfcOpenShell/pull/2576#discussion_r1016261407
     def execute(self, context):
         self.file = SvIfcStore.purge()
         node_tree = context.space_data.node_tree
@@ -189,8 +193,9 @@ class IFC_Sv_write_file(bpy.types.Operator):
         if not self.file:
             raise Exception("No IFC file in SvIfcStore.")
         _, ext = splitext(self.filepath)
+        # FIXME checking for extension not necessary
         if not ext:
-            raise Exception("Bad path. Provide a path to a file.")
+            raise Exception("Bad path. Provide a path to a file ending with a file extension.")
         else:
             self.ensure_hirarchy(self.file)
             self.file.write(self.filepath)
