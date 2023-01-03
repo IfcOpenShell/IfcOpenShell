@@ -18,11 +18,19 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, structural_item=None, axis=None):
+        """Edits the coordinate system of a structural connection
+
+        :param structural_item: The IfcStructuralItem you want to modify.
+        :type structural_item: ifcopenshell.entity_instance.entity_instance
+        :param axis: The unit Z axis vector defined as a list of 3 floats.
+            Defaults to [0., 0., 1.].
+        :type axis: list[float]
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"structural_item": None, "axis": [0.0, 0.0, 1.0]}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"structural_item": structural_item, "axis": axis or [0.0, 0.0, 1.0]}
 
     def execute(self):
         if len(self.file.get_inverse(self.settings["structural_item"].Axis)) == 1:

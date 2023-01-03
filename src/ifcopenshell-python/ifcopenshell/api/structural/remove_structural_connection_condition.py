@@ -20,11 +20,18 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relation=None):
+        """Removes a relationship between a connection and a condition
+
+        The condition and the member itself is preserved.
+
+        :param relation: The IfcRelConnectsStructuralMember to remove.
+        :type relation: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"relation": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"relation": relation}
 
     def execute(self):
         if self.settings["relation"].AppliedCondition:
