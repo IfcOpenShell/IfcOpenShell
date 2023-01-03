@@ -21,14 +21,22 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, structural_analysis_model=None):
+        """Assigns a load or structural member to an analysis model
+
+        :param product: The structural element that is part of the analysis.
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :param structural_analysis_model: The IfcStructuralAnalysisModel that
+            the structural element is related to.
+        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
+        :return: The IfcRelAssignsToGroup relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "structural_analysis_model": None,
+            "product": product,
+            "structural_analysis_model": structural_analysis_model,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if not self.settings["structural_analysis_model"].IsGroupedBy:
