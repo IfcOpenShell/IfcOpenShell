@@ -69,8 +69,10 @@ class Usecase:
             project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
             element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
             subelement = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+
             # The project contains a site (note that project aggregation is a special case in IFC)
             ifcopenshell.api.run("aggregate.assign_object", model, product=element, relating_object=project)
+
             # The site has a building
             ifcopenshell.api.run("aggregate.assign_object", model, product=subelement, relating_object=element)
         """
