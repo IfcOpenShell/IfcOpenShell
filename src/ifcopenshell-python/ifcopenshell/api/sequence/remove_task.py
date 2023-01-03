@@ -20,11 +20,38 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, task=None):
+        """Removes a task
+
+        All subtasks are also removed recursively. Any relationships such as
+        sequences or controls are also removed.
+
+        :param task: The IfcTask to remove.
+        :type task: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example::
+
+            # Let's imagine we are creating a construction schedule. All tasks
+            # need to be part of a work schedule.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+
+            # Add a root task to represent the design milestones, and major
+            # project phases.
+            ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Milestones", identification="A")
+            design = ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Design", identification="B")
+            ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Construction", identification="C")
+
+            # Ah, let's delete the design section, who needs it anyway we'll
+            # just fix it on site.
+            ifcopenshell.api.run("sequence.remove_task", model, task=design)
+        """
         self.file = file
-        self.settings = {"task": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"task": task}
 
     def execute(self):
         # TODO: do a deep purge

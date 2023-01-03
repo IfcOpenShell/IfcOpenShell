@@ -54,12 +54,12 @@ class Usecase:
                 parent_resource=crew, ifc_class="IfcLaborResource")
 
             # Labour resource is quantified in terms of time.
-            ifcopenshell.api.run("resource.add_resource_quantity", model,
+            quantity = ifcopenshell.api.run("resource.add_resource_quantity", model,
                 resource=labour, ifc_class="IfcQuantityTime")
 
             # Store the time used in hours
             ifcopenshell.api.run("resource.edit_resource_quantity", model,
-                physical_quantity=time, attributes={"TimeValue": 8.0})
+                physical_quantity=quantity, attributes={"TimeValue": 8.0})
         """
         self.file = file
         self.settings = {"resource": resource, "ifc_class": ifc_class}
