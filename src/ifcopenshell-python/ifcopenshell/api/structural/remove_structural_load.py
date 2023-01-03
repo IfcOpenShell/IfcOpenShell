@@ -18,11 +18,16 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, structural_load=None):
+        """Removes a structural load
+
+        :param structural_load: The IfcStructuralLoad to remove.
+        :type structural_load: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"structural_load": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"structural_load": structural_load}
 
     def execute(self):
         self.file.remove(self.settings["structural_load"])
