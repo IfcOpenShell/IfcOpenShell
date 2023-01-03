@@ -21,13 +21,41 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None):
+        """Unassigns a container from a product.
+
+        :param product: The IfcProduct to remove the containment from.
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example::
+
+            project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
+            site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
+            building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+            storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
+
+            # The project contains a site (note that project aggregation is a special case in IFC)
+            ifcopenshell.api.run("aggregate.assign_object", model, product=site, relating_object=project)
+
+            # The site has a building, the building has a storey, and the storey has a space
+            ifcopenshell.api.run("aggregate.assign_object", model, product=building, relating_object=site)
+            ifcopenshell.api.run("aggregate.assign_object", model, product=storey, relating_object=building)
+
+            # Create a wall
+            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+            # The wall is in the storey
+            ifcopenshell.api.run("spatial.assign_container", model, product=wall, relating_structure=storey)
+
+            # Not anymore!
+            ifcopenshell.api.run("spatial.unassign_container", model, product=wall)
+        """
         self.file = file
         self.settings = {
-            "product": None,
+            "product": product,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         for rel in self.settings["product"].ContainedInStructure or []:
