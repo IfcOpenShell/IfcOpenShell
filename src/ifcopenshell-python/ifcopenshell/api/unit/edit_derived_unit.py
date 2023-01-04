@@ -18,11 +18,21 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, unit=None, attributes=None):
+        """Edits the attributes of an IfcDerivedUnit
+
+        For more information about the attributes and data types of an
+        IfcDerivedUnit, consult the IFC documentation.
+
+        :param unit: The IfcDerivedUnit entity you want to edit
+        :type unit: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"unit": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"unit": unit, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():
