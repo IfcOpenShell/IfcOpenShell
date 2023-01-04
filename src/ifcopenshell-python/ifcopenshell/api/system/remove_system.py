@@ -18,11 +18,26 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, system=None):
+        """Removes a distribution system
+
+        All the distribution elements within the system are retained.
+
+        :param system: The IfcSystem to remove.
+        :type system: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example::
+
+            # A completely empty distribution system
+            system = ifcopenshell.api.run("system.add_system", model)
+
+            # Delete it.
+            ifcopenshell.api.run("system.remove_system", model, system=system)
+        """
         self.file = file
-        self.settings = {"system": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"system": system}
 
     def execute(self):
         for rel in self.settings["system"].IsGroupedBy or []:
