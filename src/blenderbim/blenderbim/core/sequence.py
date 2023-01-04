@@ -478,3 +478,26 @@ def guess_date_range(sequence, work_schedule=None):
 
 def setup_default_task_columns(sequence):
     sequence.setup_default_task_columns()
+
+
+def add_task_bars(sequence):
+    tasks = sequence.get_animation_bar_tasks()
+    if tasks:
+        sequence.create_bars(tasks)
+
+
+def enable_editing_task_animation_colors(sequence):
+    sequence.load_task_animation_colors()
+    sequence.enable_editing_task_animation_colors()
+
+
+def disable_editing_task_animation_colors(sequence):
+    sequence.disable_editing_task_animation_colors()
+
+
+def visualise_work_schedule_date_range(sequence, work_schedule=None):
+    settings = sequence.get_animation_settings()
+    product_frames = sequence.get_animation_product_frames(work_schedule, settings)
+    sequence.load_task_animation_colors()
+    sequence.animate_objects(settings, product_frames)
+    sequence.add_text_animation_handler(settings)

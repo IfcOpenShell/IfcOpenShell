@@ -249,6 +249,28 @@ def update_visualisation_start_finish(self, context, startfinish):
         setattr(self, startfinish, canonical_value)
 
 
+def update_color_full(self, context):
+    material = bpy.data.materials.get("color_full")
+    if material:
+        color_full = bpy.context.scene.BIMAnimationProperties.color_full
+        inputs = material.node_tree.nodes["Principled BSDF"].inputs
+        color = inputs["Base Color"].default_value
+        color[0] = color_full.r
+        color[1] = color_full.g
+        color[2] = color_full.b
+
+
+def update_color_progress(self, context):
+    material = bpy.data.materials.get("color_progress")
+    if material:
+        color_progress = bpy.context.scene.BIMAnimationProperties.color_progress
+        inputs = material.node_tree.nodes["Principled BSDF"].inputs
+        color = inputs["Base Color"].default_value
+        color[0] = color_progress.r
+        color[1] = color_progress.g
+        color[2] = color_progress.b
+
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -256,6 +278,7 @@ class Task(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     is_selected: BoolProperty(name="Is Selected")
     is_expanded: BoolProperty(name="Is Expanded")
+    has_bar_visual: BoolProperty(name="Bar Visualization", default=False)
     level_index: IntProperty(name="Level Index")
     duration: StringProperty(name="Duration", update=updateTaskDuration)
     start: StringProperty(name="Start", update=updateTaskTimeStart)
@@ -294,7 +317,18 @@ class BIMWorkPlanProperties(PropertyGroup):
     work_schedules: EnumProperty(items=getWorkSchedules, name="Work Schedules")
 
 
+class BIMDuration(PropertyGroup):
+    name: StringProperty(name="Attribute")
+    years: IntProperty(name="Years")
+    months: IntProperty(name="Months")
+    days: IntProperty(name="Days ")
+    hours: IntProperty(name="Hours")
+    minutes: IntProperty(name="Minutes")
+    seconds: IntProperty(name="Seconds")
+
+
 class BIMWorkScheduleProperties(PropertyGroup):
+    durations_attributes: CollectionProperty(name="Durations Attributes", type=BIMDuration)
     work_calendars: EnumProperty(items=getWorkCalendars, name="Work Calendars")
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)
     editing_type: StringProperty(name="Editing Type")
@@ -305,6 +339,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
+    should_show_bar_visual_option: BoolProperty(name="Should Show Settings UI", default=False)
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
     columns: CollectionProperty(name="Columns", type=Attribute)
     active_column_index: IntProperty(name="Active Column Index")
@@ -358,13 +393,6 @@ class BIMWorkScheduleProperties(PropertyGroup):
     is_nested_task_outputs: BoolProperty(
         name="Is Nested Task Outputs", default=False, update=update_active_task_outputs
     )
-    active_nested_task_output_index: IntProperty(name="Active Nested Tasks Output Index")
-
-
-class BIMDuration(PropertyGroup):
-    duration_days: IntProperty(name="Days ")
-    duration_hours: IntProperty(name="Hours")
-    duration_minutes: IntProperty(name="Minutes")
 
 
 class BIMTaskTreeProperties(PropertyGroup):
@@ -423,3 +451,42 @@ class BIMDateTextProperties(PropertyGroup):
     total_frames: IntProperty(name="Total Frames")
     start: StringProperty(name="Start")
     finish: StringProperty(name="Finish")
+
+
+class BIMTaskTypeColor(PropertyGroup):
+    name: StringProperty(name="Name")
+    animation_type: StringProperty(name="Type")
+    color: FloatVectorProperty(
+        name="Color",
+        subtype="COLOR",
+        default=(1, 0, 0),
+        min=0.0,
+        max=1.0,
+        # update=update_task_animation_color,
+    )
+
+
+class BIMAnimationProperties(PropertyGroup):
+    is_editing: BoolProperty(name="Is Loaded", default=False)
+    active_color_component_outputs_index: IntProperty(name="Active Color Component Index")
+    active_color_component_inputs_index: IntProperty(name="Active Color Component Index")
+    task_colors_components_inputs: CollectionProperty(name="Groups", type=BIMTaskTypeColor)
+    task_colors_components_outputs: CollectionProperty(name="Groups", type=BIMTaskTypeColor)
+    color_full: FloatVectorProperty(
+        name="Full Bar",
+        subtype="COLOR",
+        default=(1.0, 0.0, 0.0),
+        min=0.0,
+        max=1.0,
+        description="color picker",
+        update=update_color_full,
+    )
+    color_progress: FloatVectorProperty(
+        name="Progress Bar",
+        subtype="COLOR",
+        default=(0.0, 1.0, 0.0),
+        min=0.0,
+        max=1.0,
+        description="color picker",
+        update=update_color_progress,
+    )
