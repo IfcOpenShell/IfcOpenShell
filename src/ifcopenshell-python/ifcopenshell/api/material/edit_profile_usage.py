@@ -79,6 +79,7 @@ class Usecase:
             body = ifcopenshell.api.run("geoemtry.add_profile_representation",
                 context=body_context, profile=hea100, depth=1000)
             ifcopenshell.api.run("geometry.assign_representation", model, product=beam, representation=body)
+            ifcopenshell.api.run("geometry.edit_object_placement", model, product=beam)
 
             # Let's change the cardinal point to be the top center of the axis
             # line. This is represented by the number "8". Consult the IFC

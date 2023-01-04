@@ -125,6 +125,7 @@ class Usecase:
                 context=body_context, length=5000, height=3000, thickness=200)
             ifcopenshell.api.run("geometry.assign_representation", model, product=wall, representation=axis)
             ifcopenshell.api.run("geometry.assign_representation", model, product=wall, representation=body)
+            ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
         """
         self.file = file
         self.settings = {"product": product, "type": type, "material": material}
