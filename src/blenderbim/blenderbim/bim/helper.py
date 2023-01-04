@@ -43,16 +43,25 @@ def draw_attribute(attribute, layout, copy_operator=None):
         return
     if value_name == "enum_value":
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
+    elif attribute.name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"]:
+        propis = bpy.context.scene.BIMWorkScheduleProperties
+        for item in propis.durations_attributes:
+            if item.name == attribute.name:
+                duration_props = item
+                layout.label(text=attribute.name)
+                layout.prop(duration_props, "years", text="Y")
+                layout.prop(duration_props, "months", text="M")
+                layout.prop(duration_props, "days", text="D")
+                layout.prop(duration_props, "hours", text="H")
+                layout.prop(duration_props, "minutes", text="Min")
+                layout.prop(duration_props, "seconds", text="S")
+                break
     else:
         layout.prop(
             attribute,
             value_name,
             text=attribute.name,
         )
-    if "ScheduleDuration" in attribute.name:
-        layout.prop(bpy.context.scene.BIMDuration, "duration_days", text="D")
-        layout.prop(bpy.context.scene.BIMDuration, "duration_hours", text="H")
-        layout.prop(bpy.context.scene.BIMDuration, "duration_minutes", text="M")
 
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
