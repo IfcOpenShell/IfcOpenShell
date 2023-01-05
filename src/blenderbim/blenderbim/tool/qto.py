@@ -42,8 +42,18 @@ class Qto(blenderbim.core.tool.Qto):
         bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
 
     @classmethod
-    def set_active_object(cls, obj):
-        bpy.context.view_layer.objects.active = obj
+    def assign_pset_qto_to_selected_object(cls, obj):
+        file = tool.Ifc.get()
+        entity = tool.Ifc.get_entity(obj)
+        pset_qto_name = cls.get_qto_applicable_name(obj)
+        ifcopenshell.api.run(
+            "pset.add_qto",
+            file,
+            **{
+                "product": entity,
+                "name": pset_qto_name,
+            },
+        )
 
     @classmethod
     def get_pset_qto_object_ifc_info(cls, obj):
@@ -56,45 +66,34 @@ class Qto(blenderbim.core.tool.Qto):
         file = tool.Ifc.get()
         schema = file.schema
         pset_qto = util.pset.PsetQto(schema)
-        pset_qto_name = obj.PsetProperties.qto_name
+        pset_qto_name = cls.get_qto_applicable_name(obj)
         pset_qto_properties = pset_qto.get_by_name(pset_qto_name).get_info()['HasPropertyTemplates']
         return pset_qto_properties
 
     @classmethod
-    def get_applicable_pset_names(cls, obj):
-        file = tool.Ifc.get()
-        schema = file.schema
-        pset_qto = util.pset.PsetQto(schema)
+    def get_qto_applicable_name(cls, obj):
         entity = tool.Ifc.get_entity(obj)
-        ifc_object_type = entity.get_info()['type']
-        applicable_pset_names = pset_qto.get_applicable_names(ifc_object_type)
-        return applicable_pset_names
+        ifc_class = entity.get_info()['type']
+        qto_applicable_name = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(ifc_class, qto_only=True)[0]
+        return qto_applicable_name
 
     @classmethod
     def edit_qto(cls, obj, calculated_quantities):
         file = tool.Ifc.get()
-        pset_qto_name = obj.PsetProperties.qto_name
-        pset_qto_id = cls.get_pset_qto_id(obj, pset_qto_name)
+        pset_qto_applicable_name = cls.get_qto_applicable_name(obj)
+        qto_entity = cls.get_qto_entity(obj, pset_qto_applicable_name)
 
         ifcopenshell.api.run("pset.edit_qto",
                 file,
-                **{"qto" : pset_qto_id, "name" : pset_qto_name, "properties": calculated_quantities}
+                qto = qto_entity, properties = calculated_quantities,
             )
 
     @classmethod
-    def get_pset_qto_id(cls, obj, pset_qto_name):
+    def get_qto_entity(cls, obj, pset_qto_applicable_name):
         file = tool.Ifc.get()
         pset_qto_object_ifc_info = cls.get_pset_qto_object_ifc_info(obj)
-        pset_qto_id = file.by_id(pset_qto_object_ifc_info[pset_qto_name]['id'])
-        return pset_qto_id
-
-    @classmethod
-    def get_pset_qto_name(cls, obj):
-        applicable_pset_names = cls.get_applicable_pset_names(obj)
-        for applicable_pset_name in applicable_pset_names:
-            if 'Qto_' in applicable_pset_name:
-                pset_qto_name = applicable_pset_name
-                return pset_qto_name
+        qto_entity = file.by_id(pset_qto_object_ifc_info[pset_qto_applicable_name]['id'])
+        return qto_entity
 
     @classmethod
     def get_new_calculated_quantity(cls, qto_name, quantity_name, obj):
@@ -114,7 +113,7 @@ class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def get_calculated_quantities(cls, obj, pset_qto_properties):
         calculated_quantities = {}
-        qto_name = obj.PsetProperties.qto_name
+        qto_name = cls.get_qto_applicable_name(obj)
         calculator = QtoCalculator()
 
         for pset_qto_property in pset_qto_properties:
@@ -151,17 +150,3 @@ class Qto(blenderbim.core.tool.Qto):
 
         return calculated_quantities
 
-
-    @classmethod
-    def assign_pset_qto_to_selected_object(cls, obj):
-        file = tool.Ifc.get()
-        entity = tool.Ifc.get_entity(obj)
-        pset_qto_name = obj.PsetProperties.qto_name
-        ifcopenshell.api.run(
-            "pset.add_qto",
-            file,
-            **{
-                "product": entity,
-                "name": pset_qto_name,
-            },
-        )
