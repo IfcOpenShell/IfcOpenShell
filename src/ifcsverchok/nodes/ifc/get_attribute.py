@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcSverchok.
 #
@@ -21,25 +20,52 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
+from sverchok.data_structure import updateNode, flatten_data
 
 
-class SvIfcGetAttribute(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+class SvIfcGetAttribute(
+    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
+):
     bl_idname = "SvIfcGetAttribute"
     bl_label = "IFC Get Attribute"
-    entity: StringProperty(name="entity", update=updateNode)
-    attribute_name: StringProperty(name="attribute_name", update=updateNode)
+    entity: StringProperty(name="Entity Ids", update=updateNode)
+    attribute_name: StringProperty(
+        name="Attribute name",
+        description='Name of attribute, eg. "Name".',
+        update=updateNode,
+    )
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "entity").prop_name = "entity"
-        self.inputs.new("SvStringsSocket", "attribute_name").prop_name = "attribute_name"
+        self.inputs.new(
+            "SvStringsSocket", "attribute_name"
+        ).prop_name = "attribute_name"
         self.outputs.new("SvStringsSocket", "value")
+
+    def draw_buttons(self, context, layout):
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = (
+            "Get the value of an attribute of an IfcEntity. Can take multiple entities."
+        )
 
     def process(self):
         self.value_out = []
-        entity_nested_inputs = self.inputs["entity"].sv_get()
+        entity_nested_input_ids = flatten_data(
+            self.inputs["entity"].sv_get(), target_level=1
+        )
+        if not entity_nested_input_ids[0]:
+            return
+        self.file = SvIfcStore.get_file()
+        try:
+            entity_nested_inputs = [
+                self.file.by_id(int(step_id)) for step_id in entity_nested_input_ids
+            ]
+        except Exception as e:
+            raise Exception("Instance ID not found", e)
         attribute_name = self.inputs["attribute_name"].sv_get()[0][0]
         for entities in entity_nested_inputs:
             if hasattr(entities, "__iter__"):
