@@ -24,9 +24,9 @@ def assign_scene_units(ifc, unit):
 
     if unit.is_scene_unit_metric():
         prefix = unit.get_scene_unit_si_prefix()
-        lengthunit = ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", name=length_name, prefix=prefix)
-        areaunit = ifc.run("unit.add_si_unit", unit_type="AREAUNIT", name=area_name, prefix=prefix)
-        volumeunit = ifc.run("unit.add_si_unit", unit_type="VOLUMEUNIT", name=volume_name, prefix=prefix)
+        lengthunit = ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix=prefix)
+        areaunit = ifc.run("unit.add_si_unit", unit_type="AREAUNIT", prefix=prefix)
+        volumeunit = ifc.run("unit.add_si_unit", unit_type="VOLUMEUNIT", prefix=prefix)
     else:
         lengthunit = ifc.run("unit.add_conversion_based_unit", name=length_name)
         areaunit = ifc.run("unit.add_conversion_based_unit", name=area_name)
@@ -68,7 +68,7 @@ def add_monetary_unit(ifc, unit):
 
 
 def add_si_unit(ifc, unit, unit_type=None):
-    result = ifc.run("unit.add_si_unit", unit_type=unit_type, name=unit.get_si_name_from_unit_type(unit_type))
+    result = ifc.run("unit.add_si_unit", unit_type=unit_type)
     unit.import_units()
     return result
 
