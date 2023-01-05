@@ -1,13 +1,9 @@
 import os
 import ast
 import collections
-
+import ifcopenshell
 from dataclasses import dataclass
 from _pytest import assertion
-
-import ifcopenshell
-from ifcopenshell.validate import json_logger
-
 from codegen import indent
 
 def reverse_compile(s):
@@ -161,6 +157,7 @@ if __name__ == "__main__":
     import json
     import logging
     import ifcopenshell
+    from ifcopenshell.validate import json_logger
 
     filenames = [x for x in sys.argv[1:] if not x.startswith("--")]
     flags = set(x for x in sys.argv[1:] if x.startswith("--"))

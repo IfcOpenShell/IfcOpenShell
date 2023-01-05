@@ -75,6 +75,7 @@ class Usecase:
             body = ifcopenshell.api.run("geoemtry.add_profile_representation",
                 context=body_context, profile=hea100, depth=1000)
             ifcopenshell.api.run("geometry.assign_representation", model, product=beam, representation=body)
+            ifcopenshell.api.run("geometry.edit_object_placement", model, product=beam)
 
             # Now let's change the profile to a HEA200 standard profile instead.
             # This will automatically change the body representation that we

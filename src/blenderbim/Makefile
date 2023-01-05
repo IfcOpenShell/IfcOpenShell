@@ -171,6 +171,13 @@ OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/win-64/octo
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/win-64/zlib-1.2.11-h62dcd97_1010.tar.bz2
 endif
 
+.PHONY: bump
+bump:
+	cd . && $(SED) "s/$(OLD)/$(NEW)/" Makefile
+	cd ../ifcopenshell-python/ && $(SED) "s/$(OLD)/$(NEW)/" Makefile
+	cd ../ifcopenshell-python/docs/ifcconvert/ && $(SED) "s/$(OLD)/$(NEW)/" installation.rst
+	cd ../ifcopenshell-python/docs/ifcopenshell-python/ && $(SED) "s/$(OLD)/$(NEW)/" installation.rst
+
 .PHONY: dist
 dist:
 ifndef PLATFORM
@@ -182,7 +189,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-cdde536-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-6180d73-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 

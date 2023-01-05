@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcSverchok.
 #
@@ -27,6 +26,7 @@ from sverchok.data_structure import updateNode
 
 
 def update_usecase(self, context):
+    print("API - running update usecase!")
     module_usecase = self.get_module_usecase()
     if module_usecase:
         self.generate_node(*module_usecase)

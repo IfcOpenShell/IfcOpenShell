@@ -45,6 +45,7 @@ class Usecase:
                 context=body, length=5, height=3, thickness=0.2)
             ifcopenshell.api.run("geometry.assign_representation", model,
                 product=wall, representation=representation)
+            ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
 
             # Now let's create a layer that contains walls
             layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
