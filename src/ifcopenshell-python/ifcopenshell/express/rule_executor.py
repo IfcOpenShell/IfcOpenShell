@@ -3,19 +3,19 @@ import ast
 import collections
 import ifcopenshell
 from dataclasses import dataclass
-from _pytest import assertion
 from codegen import indent
 
+
 def reverse_compile(s):
-    return s.strip().replace('len(', 'SIZEOF(').replace('assert ', '')
+    return s.strip().replace("len(", "SIZEOF(").replace("assert ", "")
 
 
 @dataclass
 class error(Exception):
-    rule_name : str
-    rule_definition : str
-    violation : str
-    instance : ifcopenshell.entity_instance = None
+    rule_name: str
+    rule_definition: str
+    violation: str
+    instance: ifcopenshell.entity_instance = None
 
     def __str__(self):
         inst = ""
@@ -27,7 +27,7 @@ class error(Exception):
 def fix_type(v):
     if isinstance(v, (list, tuple)):
         # 1-based indexing:
-        # 
+        #
         # @todo this is not the best way, because it still allows to index the 0-th element,
         # but given the existing body of rules this should be sufficient.
         # return type(v)([None]) + type(v)(map(fix_type, v))
@@ -40,27 +40,27 @@ def fix_type(v):
 
 
 def run(f, logger):
+    from _pytest import assertion
+
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema}.py")
     source = open(fn, "r").read()
     a = ast.parse(source)
     assertion.rewrite.rewrite_asserts(mod=a, source=source)
-    cd = compile(a, f"{f.schema}.py", 'exec')
+    cd = compile(a, f"{f.schema}.py", "exec")
     scope = {}
     exec(cd, scope)
     S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
-    
-    rules = list(filter(lambda x: hasattr(x, 'SCOPE'), scope.values()))
-    
-    for R in [r for r in rules if r.SCOPE == 'file']:
+
+    rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
+
+    for R in [r for r in rules if r.SCOPE == "file"]:
         try:
             R()(f)
         except Exception as e:
             ln = e.__traceback__.tb_next.tb_lineno
-            logger.error(str(error(
-                R.__name__,
-                reverse_compile(source.split("\n")[ln-1]),
-                reverse_compile(e.args[0])
-            )))
+            logger.error(
+                str(error(R.__name__, reverse_compile(source.split("\n")[ln - 1]), reverse_compile(e.args[0])))
+            )
 
     types = {}
     subtypes = collections.defaultdict(list)
@@ -72,13 +72,15 @@ def run(f, logger):
 
     D = collections.defaultdict(list)
     for r in rules:
-        if r.SCOPE == 'type':
+        if r.SCOPE == "type":
+
             def visit(nm):
                 D[nm].append(r)
                 for nm2 in subtypes[nm]:
                     visit(nm2)
+
             visit(r.TYPE_NAME)
-    
+
     def type_name(ty):
         if isinstance(ty, ifcopenshell.ifcopenshell_wrapper.named_type):
             return type_name(ty.declared_type())
@@ -89,28 +91,34 @@ def run(f, logger):
             pass
         else:
             return ty.name()
-    
+
     def check(value, type, instance):
         if value is None:
             return
-        
+
         if type_name(type) in D:
             for R in D[type_name(type)]:
                 try:
                     R()(fix_type(value))
                 except Exception as e:
                     ln = e.__traceback__.tb_next.tb_lineno
-                    logger.error(str(error(
-                        R.__name__,
-                        reverse_compile(source.split("\n")[ln-1]),
-                        reverse_compile(e.args[0]),
-                        instance
-                    )))
+                    logger.error(
+                        str(
+                            error(
+                                R.__name__,
+                                reverse_compile(source.split("\n")[ln - 1]),
+                                reverse_compile(e.args[0]),
+                                instance,
+                            )
+                        )
+                    )
 
         # @nb something can be a named type with rules and still be an aggregation.
         # case in point IfcCompoundPlaneAngleMeasure. Therefore only unpack named
         # type references from this point onwards.
-        while isinstance(type, (ifcopenshell.ifcopenshell_wrapper.named_type, ifcopenshell.ifcopenshell_wrapper.type_declaration)):
+        while isinstance(
+            type, (ifcopenshell.ifcopenshell_wrapper.named_type, ifcopenshell.ifcopenshell_wrapper.type_declaration)
+        ):
             type = type.declared_type()
 
         if isinstance(value, (list, tuple)):
@@ -125,7 +133,6 @@ def run(f, logger):
             else:
                 # unpack the type instance
                 check(value[0], S.declaration_by_name(value.is_a()), instance=inst)
-        
 
     for inst in f:
         values = list(inst)
@@ -138,18 +145,17 @@ def run(f, logger):
             else:
                 check(val, attr.type_of_attribute(), instance=inst)
 
-    for R in [r for r in rules if r.SCOPE == 'entity']:
+    for R in [r for r in rules if r.SCOPE == "entity"]:
         for inst in f.by_type(R.TYPE_NAME):
             try:
                 R()(inst)
             except Exception as e:
                 ln = e.__traceback__.tb_next.tb_lineno
-                logger.error(str(error(
-                    R.__name__,
-                    reverse_compile(source.split("\n")[ln-1]),
-                    reverse_compile(e.args[0]),
-                    inst
-                )))
+                logger.error(
+                    str(
+                        error(R.__name__, reverse_compile(source.split("\n")[ln - 1]), reverse_compile(e.args[0]), inst)
+                    )
+                )
 
 
 if __name__ == "__main__":
