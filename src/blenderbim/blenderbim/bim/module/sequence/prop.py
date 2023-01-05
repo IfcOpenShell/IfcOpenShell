@@ -278,7 +278,7 @@ class Task(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     is_selected: BoolProperty(name="Is Selected")
     is_expanded: BoolProperty(name="Is Expanded")
-    has_bar_visual: BoolProperty(name="Bar Visualization", default=False)
+    has_bar_visual: BoolProperty(name="Show Task Bar Animation", default=False)
     level_index: IntProperty(name="Level Index")
     duration: StringProperty(name="Duration", update=updateTaskDuration)
     start: StringProperty(name="Start", update=updateTaskTimeStart)
@@ -317,18 +317,18 @@ class BIMWorkPlanProperties(PropertyGroup):
     work_schedules: EnumProperty(items=getWorkSchedules, name="Work Schedules")
 
 
-class BIMDuration(PropertyGroup):
-    name: StringProperty(name="Attribute")
-    years: IntProperty(name="Years")
-    months: IntProperty(name="Months")
-    days: IntProperty(name="Days ")
-    hours: IntProperty(name="Hours")
-    minutes: IntProperty(name="Minutes")
-    seconds: IntProperty(name="Seconds")
+class ISODuration(PropertyGroup):
+    name: StringProperty(name="Name")
+    years: IntProperty(name="Years", default=0)
+    months: IntProperty(name="Months", default=0)
+    days: IntProperty(name="Days", default=0)
+    hours: IntProperty(name="Hours", default=0)
+    minutes: IntProperty(name="Minutes", default=0)
+    seconds: IntProperty(name="Seconds", default=0)
 
 
 class BIMWorkScheduleProperties(PropertyGroup):
-    durations_attributes: CollectionProperty(name="Durations Attributes", type=BIMDuration)
+    durations_attributes: CollectionProperty(name="Durations Attributes", type=ISODuration)
     work_calendars: EnumProperty(items=getWorkCalendars, name="Work Calendars")
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)
     editing_type: StringProperty(name="Editing Type")

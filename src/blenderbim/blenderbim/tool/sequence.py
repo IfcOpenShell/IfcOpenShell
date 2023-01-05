@@ -344,7 +344,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def load_task_time_attributes(cls, task_time):
         def callback(name, prop, data):
-            if prop.data_type == "string":
+            if prop and prop.data_type == "string":
                 duration_props = bpy.context.scene.BIMWorkScheduleProperties.durations_attributes.add()
                 duration_props.name = name
                 if prop.is_null:
@@ -353,8 +353,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                             setattr(duration_props, key, 0)
                     return True
                 if name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"] and data[name]:
-                    time_object = ifcopenshell.util.date.ifc2datetime(data[name])
-                    for key, value in helper.parse_duration_as_blender_props(time_object).items():
+                    for key, value in helper.parse_duration_as_blender_props(data[name]).items():
                         duration_props[key] = value
                     return True
             if isinstance(data[name], datetime):
@@ -396,7 +395,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                         value = 0
                     return True
                 else:
-                    duration_type = getattr(attributes, "DurationType", None)
+                    duration_type = attributes["DurationType"] if "DurationType" in attributes else None
                     time_split_iso_duration = helper.simplify_duration(
                         props.durations_attributes, duration_type, prop.name
                     )
@@ -1030,7 +1029,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
         def calculate_using_multiplier(start, finish, fps, multiplier):
             animation_time = (finish - start) / multiplier
-            return animation_time.seconds_left() * fps
+            return animation_time.total_seconds() * fps
 
         def calculate_using_duration(start, finish, fps, animation_duration, real_duration):
             return calculate_using_multiplier(start, finish, fps, real_duration / animation_duration)
@@ -1039,6 +1038,8 @@ class Sequence(blenderbim.core.tool.Sequence):
             return ((finish - start) / real_duration) * animation_frames
 
         props = bpy.context.scene.BIMWorkScheduleProperties
+        if not (props.visualisation_start and props.visualisation_finish):
+            return
         start = parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
         finish = parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
         duration = finish - start
