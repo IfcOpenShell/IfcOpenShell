@@ -45,28 +45,31 @@ def canonicalise_time(time):
     return time.strftime("%d/%m/%y")
 
 
-def parse_duration_as_blender_props(dt):
-    seconds = dt.seconds
-    hours, seconds = divmod(seconds, 3600)
-    minutes, seconds = divmod(seconds, 60)
-    days = dt.days
-    months = int(getattr(dt, "months", 0))
-    years = int(getattr(dt, "years", 0))
-    return {
-        "years": years,
-        "months": months,
-        "days": days if days else 0,
-        "hours": hours if hours else 0,
-        "minutes": minutes if minutes else 0,
-        "seconds": seconds if seconds else 0,
-    }
+def parse_duration_as_blender_props(dt, simplify=True):
+    if simplify:
+        if isinstance(dt, str):
+            dt = ifcdateutils.ifc2datetime(dt)
+
+        seconds = getattr(dt, "seconds", 0)
+        hours, seconds = divmod(seconds, 3600)
+        minutes, seconds = divmod(seconds, 60)
+        days = getattr(dt, "days",0)
+        months = int(getattr(dt, "months", 0))
+        years = int(getattr(dt, "years", 0))
+        return {
+            "years": years,
+            "months": months,
+            "days": days,
+            "hours": hours,
+            "minutes": minutes,
+            "seconds": seconds,
+        }
 
 
 def simplify_duration(durations_attributes, duration_type, prop_name):
     for item in durations_attributes:
         if item.name == prop_name:
             duration_props = item
-            print(duration_props, "duration_props")
     if duration_props and not duration_type or duration_type == "ELAPSEDTIME":
         duration_string = "P{}Y{}M{}DT{}H{}M{}S".format(
             duration_props.years if duration_props.years else 0,
