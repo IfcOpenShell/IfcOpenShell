@@ -28,7 +28,7 @@ import ifcopenshell
 import blenderbim
 import blenderbim.tool as tool
 from blenderbim.bim.module.model.prop import BIMStairProperties
-
+from blenderbim.bim.ifc import IfcStore
 
 from mathutils import Vector
 from pprint import pprint
@@ -70,6 +70,7 @@ def update_sverchok_modifier(context):
         bm.to_mesh(obj.data)
         bm.free()
     obj.data.update()
+    IfcStore.edited_objs.add(obj)
 
 
 # UI operators
