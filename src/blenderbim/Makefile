@@ -47,7 +47,7 @@ PYNUMBER:=39
 endif
 ifeq ($(PYVERSION), py310)
 PYLIBDIR:=python3.10
-PYNUMBER:=31
+PYNUMBER:=310
 endif
 
 ifeq ($(PLATFORM), linux)
