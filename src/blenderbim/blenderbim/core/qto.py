@@ -24,7 +24,7 @@ def calculate_circle_radius(qto, obj=None):
 
 def assign_pset_qto(qto, selected_objects):
     for obj in selected_objects:
-        qto.assign_pset_qto_to_selected_object(obj)
+        qto.assign_base_qto_to_object(obj)
 
 def calculate_all_qtos(qto, selected_objects):
     for obj in selected_objects:
@@ -32,9 +32,9 @@ def calculate_all_qtos(qto, selected_objects):
             print(f"There is no pset qto instance associated to object {obj.name}")
             continue
 
-        pset_qto_properties = qto.get_pset_qto_properties(obj)
+        applicable_quantity_names = qto.get_applicable_quantity_names(obj)
 
-        calculated_quantities = qto.get_calculated_quantities(obj, pset_qto_properties)
+        calculated_quantities = qto.get_calculated_quantities(obj, applicable_quantity_names)
 
         qto.edit_qto(obj, calculated_quantities)
 
@@ -44,8 +44,8 @@ def guess_all_qtos(qto, selected_objects):
             print(f"There is no pset qto instance associated to object {obj.name}")
             continue
 
-        pset_qto_properties = qto.get_pset_qto_properties(obj)
+        applicable_quantity_names = qto.get_base_quantities_name(obj)
 
-        calculated_quantities = qto.get_calculated_quantities(obj, pset_qto_properties)
+        calculated_quantities = qto.get_calculated_quantities(obj, applicable_quantity_names)
 
         qto.edit_qto(obj, calculated_quantities)

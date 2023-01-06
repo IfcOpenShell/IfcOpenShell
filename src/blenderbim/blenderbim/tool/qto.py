@@ -42,7 +42,7 @@ class Qto(blenderbim.core.tool.Qto):
         bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
 
     @classmethod
-    def assign_pset_qto_to_selected_object(cls, obj):
+    def assign_base_qto_to_object(cls, obj):
         file = tool.Ifc.get()
         entity = tool.Ifc.get_entity(obj)
         pset_qto_name = cls.get_qto_applicable_name(obj)
@@ -62,19 +62,21 @@ class Qto(blenderbim.core.tool.Qto):
         return pset_qto_ifc_info
 
     @classmethod
-    def get_pset_qto_properties(cls, obj):
+    def get_applicable_quantity_names(cls, obj):
         file = tool.Ifc.get()
         schema = file.schema
         pset_qto = util.pset.PsetQto(schema)
-        pset_qto_name = cls.get_qto_applicable_name(obj)
-        pset_qto_properties = pset_qto.get_by_name(pset_qto_name).get_info()['HasPropertyTemplates']
-        return pset_qto_properties
+        qto_name = cls.get_qto_applicable_name(obj)
+        properties_templates = pset_qto.get_by_name(qto_name).get_info()['HasPropertyTemplates']
+        applicable_quantity_names = [a.get_info()['Name'] for a in properties_templates]
+        return applicable_quantity_names
 
     @classmethod
     def get_qto_applicable_name(cls, obj):
         entity = tool.Ifc.get_entity(obj)
         ifc_class = entity.get_info()['type']
-        qto_applicable_name = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(ifc_class, qto_only=True)[0]
+        qto_applicable_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(ifc_class, qto_only=True)
+        qto_applicable_name = [q for q in qto_applicable_names if "Qto_" in q and "Base" in q][0]
         return qto_applicable_name
 
     @classmethod
@@ -111,13 +113,12 @@ class Qto(blenderbim.core.tool.Qto):
         return round(new_quantity, 3)
 
     @classmethod
-    def get_calculated_quantities(cls, obj, pset_qto_properties):
+    def get_calculated_quantities(cls, obj, applicable_quantity_names):
         calculated_quantities = {}
         qto_name = cls.get_qto_applicable_name(obj)
         calculator = QtoCalculator()
 
-        for pset_qto_property in pset_qto_properties:
-            quantity_name = pset_qto_property.get_info()['Name']
+        for quantity_name in applicable_quantity_names:
             if not cls.has_calculator(qto_name, quantity_name):
                 continue
             else:
