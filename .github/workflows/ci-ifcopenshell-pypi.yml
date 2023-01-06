@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py36, py37, py38, py39, py310]
+        pyver: [py36, py37, py38, py39, py310, py311]
         config:
           - {
             name: "Windows Build",

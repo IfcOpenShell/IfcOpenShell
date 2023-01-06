@@ -15,7 +15,10 @@ ifeq ($(PYVERSION), py39)
 PYNUMBER:=39
 endif
 ifeq ($(PYVERSION), py310)
-PYNUMBER:=31
+PYNUMBER:=310
+endif
+ifeq ($(PYVERSION), py311)
+PYNUMBER:=311
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -35,6 +38,13 @@ ifeq ($(PLATFORM), macosm1)
 ifeq ($(PYVERSION), py36)
 # Pure Evil. Let me know if you're the first to file a bug report.
 PYNUMBER:=37
+endif
+endif
+
+ifeq ($(PLATFORM), macos)
+ifeq ($(PYVERSION), py311)
+# Pure Evil. Let me know if you're the first to file a bug report.
+PYNUMBER:=310
 endif
 endif
 
