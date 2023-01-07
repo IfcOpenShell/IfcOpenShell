@@ -76,7 +76,7 @@ def update_sverchok_modifier(context):
 # UI operators
 class CreateNewSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_new_sverchok_graph"
-    bl_label = "Create new sverchok graph"
+    bl_label = "Create New Sverchok Graph"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -101,7 +101,7 @@ class CreateNewSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
 
 class DeleteSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.delete_sverchok_graph"
-    bl_label = "Delete selected sverchok graph"
+    bl_label = "Delete Selected Sverchok Graph"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -120,7 +120,7 @@ class DeleteSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
 
 class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_data_from_sverchok"
-    bl_label = "Update data from sverchok"
+    bl_label = "Update Data From Sverchok"
     bl_options = {"REGISTER"}
 
     def invoke(self, context, event):
