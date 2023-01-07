@@ -42,71 +42,60 @@ class Qto(blenderbim.core.tool.Qto):
         bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
 
     @classmethod
+    def assign_base_qto_to_object(cls, obj):
+        file = tool.Ifc.get()
+        entity = tool.Ifc.get_entity(obj)
+        pset_qto_name = cls.get_qto_applicable_name(obj)
+        ifcopenshell.api.run(
+            "pset.add_qto",
+            file,
+            **{
+                "product": entity,
+                "name": pset_qto_name,
+            },
+        )
+
+    @classmethod
     def get_pset_qto_object_ifc_info(cls, obj):
         element = tool.Ifc.get_entity(obj)
         pset_qto_ifc_info = ifcopenshell.util.element.get_psets(element, qtos_only = True)
         return pset_qto_ifc_info
 
     @classmethod
-    def get_pset_qto_properties(cls, obj):
+    def get_applicable_quantity_names(cls, obj):
         file = tool.Ifc.get()
         schema = file.schema
         pset_qto = util.pset.PsetQto(schema)
-#        pset_qto_name = cls.get_pset_qto_name(obj)
-        pset_qto_name = cls.get_assigned_pset_qto_name(obj)
-        pset_qto_properties = pset_qto.get_by_name(pset_qto_name).get_info()['HasPropertyTemplates']
-        return pset_qto_properties
+        qto_name = cls.get_qto_applicable_name(obj)
+        properties_templates = pset_qto.get_by_name(qto_name).get_info()['HasPropertyTemplates']
+        applicable_quantity_names = [a.get_info()['Name'] for a in properties_templates]
+        return applicable_quantity_names
 
     @classmethod
-    def get_pset_qto_name(cls, obj):
-        applicable_pset_names = cls.get_applicable_pset_names(obj)
-        for applicable_pset_name in applicable_pset_names:
-            if 'Qto_' in applicable_pset_name:
-                pset_qto_name = applicable_pset_name
-                return pset_qto_name
-
-    @classmethod
-    def get_assigned_pset_qto_name(cls, obj):
+    def get_qto_applicable_name(cls, obj):
         entity = tool.Ifc.get_entity(obj)
-        assigned_pset_qto_name = ifcopenshell.util.element.get_psets(entity, qtos_only = True)
-        assigned_pset_qto_name = list(assigned_pset_qto_name.keys())[0]
-        return assigned_pset_qto_name
-
-    @classmethod
-    def get_applicable_pset_names(cls, obj):
-        file = tool.Ifc.get()
-        schema = file.schema
-        pset_qto = util.pset.PsetQto(schema)
-        entity = tool.Ifc.get_entity(obj)
-        ifc_object_type = entity.get_info()['type']
-        applicable_pset_names = pset_qto.get_applicable_names(ifc_object_type)
-        return applicable_pset_names
+        ifc_class = entity.get_info()['type']
+        qto_applicable_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(ifc_class, qto_only=True)
+        qto_applicable_name = [q for q in qto_applicable_names if "Qto_" in q and "Base" in q][0]
+        return qto_applicable_name
 
     @classmethod
     def edit_qto(cls, obj, calculated_quantities):
         file = tool.Ifc.get()
-        pset_qto_name = cls.get_pset_qto_name(obj)
-        pset_qto_id = cls.get_pset_qto_id(obj, pset_qto_name)
+        pset_qto_applicable_name = cls.get_qto_applicable_name(obj)
+        qto_entity = cls.get_qto_entity(obj, pset_qto_applicable_name)
 
         ifcopenshell.api.run("pset.edit_qto",
                 file,
-                **{"qto" : pset_qto_id, "name" : pset_qto_name, "properties": calculated_quantities}
+                qto = qto_entity, properties = calculated_quantities,
             )
 
     @classmethod
-    def get_pset_qto_id(cls, obj, pset_qto_name):
+    def get_qto_entity(cls, obj, pset_qto_applicable_name):
         file = tool.Ifc.get()
         pset_qto_object_ifc_info = cls.get_pset_qto_object_ifc_info(obj)
-        pset_qto_id = file.by_id(pset_qto_object_ifc_info[pset_qto_name]['id'])
-        return pset_qto_id
-
-    @classmethod
-    def get_pset_qto_name(cls, obj):
-        applicable_pset_names = cls.get_applicable_pset_names(obj)
-        for applicable_pset_name in applicable_pset_names:
-            if 'Qto_' in applicable_pset_name:
-                pset_qto_name = applicable_pset_name
-                return pset_qto_name
+        qto_entity = file.by_id(pset_qto_object_ifc_info[pset_qto_applicable_name]['id'])
+        return qto_entity
 
     @classmethod
     def get_new_calculated_quantity(cls, qto_name, quantity_name, obj):
@@ -124,13 +113,12 @@ class Qto(blenderbim.core.tool.Qto):
         return round(new_quantity, 3)
 
     @classmethod
-    def get_calculated_quantities(cls, obj, pset_qto_properties):
+    def get_calculated_quantities(cls, obj, applicable_quantity_names):
         calculated_quantities = {}
-        qto_name = cls.get_pset_qto_name(obj)
+        qto_name = cls.get_qto_applicable_name(obj)
         calculator = QtoCalculator()
 
-        for pset_qto_property in pset_qto_properties:
-            quantity_name = pset_qto_property.get_info()['Name']
+        for quantity_name in applicable_quantity_names:
             if not cls.has_calculator(qto_name, quantity_name):
                 continue
             else:
@@ -163,17 +151,3 @@ class Qto(blenderbim.core.tool.Qto):
 
         return calculated_quantities
 
-
-    @classmethod
-    def assign_pset_qto_to_selected_object(cls, obj):
-        file = tool.Ifc.get()
-        entity = tool.Ifc.get_entity(obj)
-        pset_qto_name = cls.get_pset_qto_name(obj)
-        ifcopenshell.api.run(
-            "pset.add_qto",
-            file,
-            **{
-                "product": entity,
-                "name": pset_qto_name,
-            },
-        )
