@@ -1,5 +1,5 @@
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
+# Copyright (C) 2022, 2023 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -18,7 +18,7 @@
 
 bl_info = {
     "name": "IFC for Sverchok",
-    "author": "Dion Moult",
+    "author": "Martina Jakubowska, Dion Moult",
     "version": (0, 0, 999999),
     "blender": (2, 90, 0),
     "location": "Node Editor",
@@ -29,16 +29,8 @@ bl_info = {
 }
 
 import importlib
-import nodeitems_utils
-from sverchok.core import make_node_list
-from sverchok.utils import auto_gather_node_classes, get_node_class_reference
-from sverchok.menu import SverchNodeItem, SverchNodeCategory
-from sverchok.utils.extra_categories import (
-    register_extra_category_provider,
-    unregister_extra_category_provider,
-)
-from sverchok.ui.nodeview_space_menu import make_extra_category_menus
 from sverchok.utils.logging import info, debug
+from sverchok.ui.nodeview_space_menu import add_node_menu
 
 
 def nodes_index():
@@ -76,6 +68,39 @@ def nodes_index():
     ]
 
 
+node_categories = [
+    {
+        "IFC": [
+            "SvIfcCreateFile",
+            "SvIfcReadFile",
+            "SvIfcWriteFile",
+            "SvIfcCreateEntity",
+            "SvIfcCreateShape",
+            "SvIfcReadEntity",
+            "SvIfcPickIfcClass",
+            "SvIfcById",
+            "SvIfcByGuid",
+            "SvIfcByType",
+            "SvIfcByQuery",
+            "SvIfcAdd",
+            "SvIfcAddPset",
+            "SvIfcAddSpatialElement",
+            "SvIfcRemove",
+            "SvIfcGenerateGuid",
+            "SvIfcGetProperty",
+            "SvIfcGetAttribute",
+            "SvIfcSelectBlenderObjects",
+            "SvIfcApi",
+            "SvIfcApiWIP",
+            "SvIfcBMeshToIfcRepr",
+            "SvIfcSverchokToIfcRepr",
+            "SvIfcCreateProject",
+            "SvIfcQuickProjectSetup",
+        ]
+    }
+]
+
+
 def make_node_list():
     modules = []
     base_name = "ifcsverchok.nodes"
@@ -107,8 +132,8 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
     node_group: bpy.props.StringProperty(default="")
     force_mode: bpy.props.BoolProperty(default=False)
 
-    # FIXME For now it's fine to center around buildings. 
-    # But for the future it'd be good to also allow other 
+    # FIXME For now it's fine to center around buildings.
+    # But for the future it'd be good to also allow other
     # infra-related spatial structure elements, such as IfcBridge.
     # https://github.com/IfcOpenShell/IfcOpenShell/pull/2576#discussion_r1016261407
     def execute(self, context):
@@ -233,42 +258,6 @@ class IFC_PT_write_file_panel(bpy.types.Panel):
 CLASSES = [IFC_Sv_UpdateCurrent, IFC_Sv_write_file, IFC_PT_write_file_panel]
 
 
-def register_nodes():
-    node_modules = make_node_list()
-    for module in node_modules:
-        module.register()
-    info("Registered %s nodes", len(node_modules))
-
-
-def unregister_nodes():
-    global imported_modules
-    for module in reversed(imported_modules):
-        module.unregister()
-
-
-def make_menu():
-    menu = []
-    index = nodes_index()
-    for category, items in index:
-        identifier = "IFCSVERCHOK_" + category.replace(" ", "_")
-        node_items = []
-        for item in items:
-            nodetype = item[1]
-            rna = get_node_class_reference(nodetype)
-            if not rna:
-                info(
-                    "Node `%s' is not available (probably due to missing dependencies).",
-                    nodetype,
-                )
-            else:
-                node_item = SverchNodeItem.new(nodetype)
-                node_items.append(node_item)
-        if node_items:
-            cat = SverchNodeCategory(identifier, category, items=node_items)
-            menu.append(cat)
-    return menu
-
-
 class SvExCategoryProvider(object):
     def __init__(self, identifier, menu):
         self.identifier = identifier
@@ -280,34 +269,21 @@ class SvExCategoryProvider(object):
 
 our_menu_classes = []
 
+add_node_menu.append_from_config(node_categories)
+
 
 def register():
-    global our_menu_classes
-
-    debug("Registering ifcsverchok")
-    for klass in CLASSES:
-        bpy.utils.register_class(klass)
-    register_nodes()
-    extra_nodes = importlib.import_module(".nodes", "ifcsverchok")
-    auto_gather_node_classes(extra_nodes)
-    menu = make_menu()
-    menu_category_provider = SvExCategoryProvider("IFCSVERCHOK", menu)
-    register_extra_category_provider(menu_category_provider)  # if 'IFCSVERCHOK' in nodeitems_utils._node_categories:
-    nodeitems_utils.register_node_categories("IFCSVERCHOK", menu)
-    our_menu_classes = make_extra_category_menus()
+    node_modules = make_node_list()
+    for module in node_modules:
+        module.register()
+    for cls in CLASSES:
+        bpy.utils.register_class(cls)
+    add_node_menu.register()
 
 
 def unregister():
-    global our_menu_classes
-    if "IFCSVERCHOK" in nodeitems_utils._node_categories:
-        nodeitems_utils.unregister_node_categories("IFCSVERCHOK")
-    for clazz in our_menu_classes:
-        try:
-            bpy.utils.unregister_class(clazz)
-        except Exception as e:
-            print("Can't unregister menu class %s" % clazz)
-            print(e)
-    unregister_extra_category_provider("IFCSVERCHOK")
-    unregister_nodes()
-    for klass in CLASSES:
-        bpy.utils.unregister_class(klass)
+    global imported_modules
+    for module in reversed(imported_modules):
+        module.unregister()
+    for cls in reversed(CLASSES):
+        bpy.utils.unregister_class(cls)

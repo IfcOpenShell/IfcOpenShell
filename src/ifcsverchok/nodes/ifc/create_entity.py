@@ -193,7 +193,7 @@ class SvIfcCreateEntity(
                         self.file,
                         ifc_class=self.ifc_class,
                         name=self.names[i][j],
-                        description=self.descriptions[i][j],
+                        #description=self.descriptions[i][j],
                     )
                     try:
                         for repr in self.representations[i][j]:
