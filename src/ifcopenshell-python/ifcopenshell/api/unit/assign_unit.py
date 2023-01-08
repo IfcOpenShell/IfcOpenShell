@@ -60,7 +60,7 @@ class Usecase:
         """
         self.file = file
         self.settings = {
-            "units": None,
+            "units": units,
             "length": {"is_metric": True, "raw": "MILLIMETERS"},
             "area": {"is_metric": True, "raw": "METERS"},
             "volume": {"is_metric": True, "raw": "METERS"},
