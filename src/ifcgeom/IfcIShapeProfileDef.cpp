@@ -34,7 +34,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	const double x1 = l->OverallWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double y = l->OverallDepth() / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double d1 = l->WebThickness() / 2.0f	* getValue(GV_LENGTH_UNIT);
-	const double d2 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
+	const double ft1 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
 	const double slope = l->FlangeSlope().get_value_or(0.) * getValue(GV_PLANEANGLE_UNIT);
 #endif
@@ -46,6 +46,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	double fe1 = 0.0f;
 	double fe2 = 0.0f;
 	double x2 = x1;
+	double ft2 = ft1;
 
 	if ( doFillet1 ) {
 		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
@@ -71,14 +72,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 			f2 = *assym->TopFlangeFilletRadius() * getValue(GV_LENGTH_UNIT);
 		}
 		if (assym->TopFlangeThickness()) {
-			dy2 = *assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
+			ft2 = *assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
 		}
 	} else {
 		f2 = f1;
 		fe2 = fe1;
 	}
 
-	if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || dy1 < ALMOST_ZERO || dy2 < ALMOST_ZERO ) {
+	if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || ft1 < ALMOST_ZERO || ft2 < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
@@ -95,16 +96,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	double coords[24] = {
 		-x1,-y,
 		x1,-y,
-		x1,-y+d2-dy2,
-		d1,-y+d2+dy1,
-		d1,y-d2-dy1,
-		x2,y-d2+dy2,
+		x1,-y+ft1-dy2,
+		d1,-y+ft1+dy1,
+		d1,y-ft1-dy1,
+		x2,y-ft1+dy2,
 		x2,y,
 		-x2,y,
-		-x2,y-d2+dy2,
-		-d1,y-d2-dy1,
-		-d1,-y+d2+dy1,
-		-x1,-y+d2-dy2
+		-x2,y-ft2+dy2,
+		-d1,y-ft2-dy1,
+		-d1,-y+ft2+dy1,
+		-x1,-y+ft2-dy2
 	};
 	int fillets[8] = {2,3,4,5,8,9,10,11};
 	double radii[8] = {fe1,f1,f2,fe2,fe2,f2,f1,fe1};
