@@ -65,6 +65,9 @@ autoapi_type = 'python'
 # autoapi works by reading source code instead of importing modules
 autoapi_dirs = ['../ifcopenshell', '../../ifcdiff']
 
+# These are auto-generated based on the IFC schema, so exclude them
+autoapi_ignore = ['*ifcopenshell/express/rules*']
+
 # autoapi_options doesn't have show-module-summary, as it tends to create one
 # page per function which contradicts the presentation of showing all functions
 # as a list. This creates two possible locations where a function is documented
