@@ -56,12 +56,6 @@ class Qto(blenderbim.core.tool.Qto):
         )
 
     @classmethod
-    def get_pset_qto_object_ifc_info(cls, obj):
-        element = tool.Ifc.get_entity(obj)
-        pset_qto_ifc_info = ifcopenshell.util.element.get_psets(element, qtos_only = True)
-        return pset_qto_ifc_info
-
-    @classmethod
     def get_applicable_quantity_names(cls, obj):
         file = tool.Ifc.get()
         schema = file.schema
@@ -83,7 +77,7 @@ class Qto(blenderbim.core.tool.Qto):
     def edit_qto(cls, obj, calculated_quantities):
         file = tool.Ifc.get()
         pset_qto_applicable_name = cls.get_qto_applicable_name(obj)
-        qto_entity = cls.get_qto_entity(obj, pset_qto_applicable_name)
+        qto_entity = cls.get_qto_entity(obj)
 
         ifcopenshell.api.run("pset.edit_qto",
                 file,
@@ -91,10 +85,11 @@ class Qto(blenderbim.core.tool.Qto):
             )
 
     @classmethod
-    def get_qto_entity(cls, obj, pset_qto_applicable_name):
+    def get_qto_entity(cls, obj):
         file = tool.Ifc.get()
-        pset_qto_object_ifc_info = cls.get_pset_qto_object_ifc_info(obj)
-        qto_entity = file.by_id(pset_qto_object_ifc_info[pset_qto_applicable_name]['id'])
+        entity = tool.Ifc.get_entity(obj)
+        qto_applicable_name = cls.get_qto_applicable_name(obj)
+        qto_entity = tool.Pset.get_element_pset(entity, qto_applicable_name)
         return qto_entity
 
     @classmethod
