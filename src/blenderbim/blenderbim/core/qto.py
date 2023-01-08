@@ -28,7 +28,7 @@ def assign_pset_qto(qto, selected_objects):
 
 def calculate_all_qtos(qto, selected_objects):
     for obj in selected_objects:
-        if not qto.get_pset_qto_object_ifc_info(obj):
+        if not qto.get_qto_entity(obj):
             print(f"There is no pset qto instance associated to object {obj.name}")
             continue
 

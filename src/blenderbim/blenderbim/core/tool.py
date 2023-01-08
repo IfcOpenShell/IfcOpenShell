@@ -405,7 +405,6 @@ class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
     def set_qto_result(cls, result): pass
     def assign_base_qto_to_object(cls, object): pass
-    def get_pset_qto_object_ifc_info(cls, object): pass
     def get_applicable_quantity_names(cls, object): pass
     def get_qto_applicable_name(cls, object): pass
     def edit_qto(cls, object, calculated_quantities): pass
