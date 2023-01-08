@@ -29,6 +29,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
 	const bool doFlangeEdgeRadius = !!l->FlangeEdgeRadius();
 	const bool hasSlope = !!l->FlangeSlope();
+#else
+	const bool doFlangeEdgeRadius = false;
+	const bool hasSlope = false;
 #endif
 
 	const double x1 = l->OverallWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
@@ -56,7 +59,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 		fe1 = *l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if (hasSlope) {
-		dy1 = (x1 - d1) * tan(slope);
+		dy1 = -d1 * tan(slope);
 		dy2 = x1 * tan(slope);
 	}
 #endif
@@ -98,20 +101,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 		x1,-y,
 		x1,-y+ft1-dy2,
 		d1,-y+ft1+dy1,
-		d1,y-ft1-dy1,
-		x2,y-ft1+dy2,
+		d1,y-ft2-dy1,
+		x2,y-ft2+dy2,
 		x2,y,
 		-x2,y,
 		-x2,y-ft2+dy2,
 		-d1,y-ft2-dy1,
-		-d1,-y+ft2+dy1,
-		-x1,-y+ft2-dy2
+		-d1,-y+ft1+dy1,
+		-x1,-y+ft1-dy2
 	};
 	int fillets[8] = {2,3,4,5,8,9,10,11};
 	double radii[8] = {fe1,f1,f2,fe2,fe2,f2,f1,fe1};
-#ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
 	return util::profile_helper(12,coords,(doFillet1 || doFillet2 || doFlangeEdgeRadius) ? 8 : 0,fillets,radii,trsf2d,face);
-#else
-	return util::profile_helper(12,coords,(doFillet1 || doFillet2 ) ? 8 : 0,fillets,radii,trsf2d,face);
-#endif
 }
