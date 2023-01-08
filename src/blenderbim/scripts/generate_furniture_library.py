@@ -27,7 +27,7 @@ from pathlib import Path
 from mathutils import Vector
 from itertools import chain
 
-from ifcopenshell.util.representation import ShapeBuilder
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 V = lambda *x: Vector([float(i) for i in x])
 
