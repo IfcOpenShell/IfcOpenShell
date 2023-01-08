@@ -409,7 +409,7 @@ class LibraryGenerator:
                 position=V(0, 0, height),
                 extrusion_vector=V(0, 0, -1)
             )
-            legs = [builder.extrude(leg, height-seat_level-thickness) for leg in legs]
+            legs = [builder.extrude(leg, seat_level-thickness) for leg in legs]
 
             items_3d = [seat, chair_back] + legs
             if return_representations:
@@ -421,20 +421,20 @@ class LibraryGenerator:
             else:
                 output.append(items_3d)
 
-            rect_size = 0.25
-            rectangle = builder.rectangle(size=V(width, depth*rect_size))
+            second_arc_depth = depth*(1-0.10)
+            second_arc_width = width - (depth-second_arc_depth)*2
+            polyline = builder.polyline( (V(0,0), V(width, 0) ) )
             _, _, first_semicircle = create_transition_arc_ifc(
-                width, depth*(1-rect_size), ifc_file=self.file)
-            builder.translate(first_semicircle, V(0, depth*rect_size))
+                width, depth, ifc_file=self.file)
 
             _, _, second_semicircle = create_transition_arc_ifc(
-                width*(1-0.1*2), depth*(1-rect_size*1.5), ifc_file=self.file)
-            builder.translate(second_semicircle, V(width*0.1, depth*rect_size))
+                second_arc_width, second_arc_depth, ifc_file=self.file)
+            builder.translate(second_semicircle, V((width-second_arc_width)/2, 0))
 
-            builder.translate([rectangle, first_semicircle, second_semicircle], shift_to_center)
-            builder.mirror([rectangle, first_semicircle, second_semicircle], mirror_axis)
+            builder.translate([polyline, first_semicircle, second_semicircle], shift_to_center)
+            builder.translate([polyline, first_semicircle, second_semicircle], V(0, -depth))
 
-            items_2d = [rectangle, first_semicircle, second_semicircle]
+            items_2d = [polyline, first_semicircle, second_semicircle]
 
             if return_representations:
                 representation_2d = builder.get_representation(
@@ -1950,4 +1950,4 @@ class LibraryGenerator:
 
 if __name__ == "__main__":
     path = Path(__file__).parents[1] / "blenderbim/bim/data/libraries"
-    LibraryGenerator().generate(output_filename=str(path / "Non_structural_assets_library.ifc"))
+    LibraryGenerator().generate(output_filename=str(path / "IFC4 AU Library.ifc"))
