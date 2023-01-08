@@ -20,9 +20,7 @@ import bpy
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, BoolProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-
 import bmesh
-from bmesh.types import BMVert
 
 import ifcopenshell
 import blenderbim
@@ -34,10 +32,7 @@ from mathutils import Vector
 from pprint import pprint
 import json
 import zipfile
-
-from os.path import basename, dirname
 import os.path
-import json
 
 
 def update_sverchok_modifier(context):
@@ -277,8 +272,8 @@ class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
             comp_mode = zipfile.ZIP_DEFLATED
 
             # destination path = /a../b../c../somename.json
-            base = basename(destination_path)  # somename.json
-            basedir = dirname(destination_path)  # /a../b../c../
+            base = os.path.basename(destination_path)  # somename.json
+            basedir = os.path.dirname(destination_path)  # /a../b../c../
 
             # somename.zip
             final_archivename = base.replace(".json", "") + ".zip"
