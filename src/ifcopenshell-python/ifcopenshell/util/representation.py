@@ -268,7 +268,7 @@ class ShapeBuilder:
         # > angle - in degrees
         # < rotated Vector
 
-        angle_rad = angle / 180 * pi
+        angle_rad = angle / 180 * pi * (1 if counter_clockwise else -1)
         relative_point = point_2d - pivot_point
         relative_point = Matrix.Rotation(angle_rad, 2, "Z") @ relative_point
         point_2d = relative_point + pivot_point
