@@ -18,11 +18,22 @@
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger):
+        """Split an IFC model into multiple models based on building storey
+
+        The new IFC model names will be named after the storey name in the
+        format of {i}-{name}.ifc, where {i} is an ascending number starting from
+        0 and {name} is the name of the storey.
+
+        Example:
+
+        .. code:: python
+
+            ifcpatch.execute({"input": model, "recipe": "SplitByBuildingStorey", "arguments": []})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
 
     def patch(self):
         import ifcopenshell

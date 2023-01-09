@@ -75,3 +75,8 @@ Alternatively, you can package it as an executable.
 
     $ python make.py
     $ ./dist/ifcpatch
+
+Patch recipes
+-------------
+
+You can view all built-in patches in IfcPatch here: :doc:`List of IfcPatch recipes <autoapi/ifcpatch/recipes/index>`.
