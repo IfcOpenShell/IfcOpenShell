@@ -233,6 +233,21 @@ class BIM_PT_collaboration(Panel):
         pass
 
 
+class BIM_PT_selection(Panel):
+    bl_label = "IFC Selection"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_geometry(Panel):
     bl_label = "IFC Geometry"
     bl_space_type = "PROPERTIES"
