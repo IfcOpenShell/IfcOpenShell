@@ -42,8 +42,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	const double slope = l->FlangeSlope().get_value_or(0.) * getValue(GV_PLANEANGLE_UNIT);
 #endif
 
-	double dy1 = 0.0f;
-	double dy2 = 0.0f;
+	double dy = 0.0f;
 	double f1 = 0.0f;
 	double f2 = 0.0f;
 	double fe1 = 0.0f;
@@ -59,8 +58,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 		fe1 = *l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if (hasSlope) {
-		dy1 = -d1 * tan(slope);
-		dy2 = x1 * tan(slope);
+		dy = (x1 - d1) * tan(slope);
 	}
 #endif
 
@@ -99,16 +97,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	double coords[24] = {
 		-x1,-y,
 		x1,-y,
-		x1,-y+ft1-dy2,
-		d1,-y+ft1+dy1,
-		d1,y-ft2-dy1,
-		x2,y-ft2+dy2,
+		x1,-y+ft1,
+		d1,-y+ft1+dy,
+		d1,y-ft2-dy,
+		x2,y-ft2,
 		x2,y,
 		-x2,y,
-		-x2,y-ft2+dy2,
-		-d1,y-ft2-dy1,
-		-d1,-y+ft1+dy1,
-		-x1,-y+ft1-dy2
+		-x2,y-ft2,
+		-d1,y-ft2-dy,
+		-d1,-y+ft1+dy,
+		-x1,-y+ft1
 	};
 	int fillets[8] = {2,3,4,5,8,9,10,11};
 	double radii[8] = {fe1,f1,f2,fe2,fe2,f2,f1,fe1};
