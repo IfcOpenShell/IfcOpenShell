@@ -26,7 +26,7 @@ TEST_FILE_DIR = Path("../../test/input/")
 
 
 class TestWrite:
-    def setup(self):
+    def setup_method(self):
         self.model = ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2.ifc")
 
     def assert_model_is_written(self, filename, format=None, zipped=False):
