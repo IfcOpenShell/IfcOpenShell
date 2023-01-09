@@ -33,7 +33,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a material
             aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")

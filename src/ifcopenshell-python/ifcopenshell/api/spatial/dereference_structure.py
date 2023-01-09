@@ -32,7 +32,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
             site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")

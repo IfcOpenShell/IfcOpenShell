@@ -32,7 +32,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # What?
             unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="HANDFULS")

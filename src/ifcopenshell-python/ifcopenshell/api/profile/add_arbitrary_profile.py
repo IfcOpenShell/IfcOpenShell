@@ -39,7 +39,9 @@ class Usecase:
         :return: The newly created IfcArbitraryClosedProfileDef
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A 10mm by 100mm rectangle, such that might be used as a wooden
             # skirting board or kick plate.

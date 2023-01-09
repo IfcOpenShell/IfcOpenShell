@@ -40,7 +40,9 @@ class Usecase:
         :return: The new IfcPostalAddress or IfcTelecomAddress
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             organisation = ifcopenshell.api.run("owner.add_organisation", model)
 

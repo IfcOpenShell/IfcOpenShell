@@ -21,7 +21,9 @@
 Typically used for opening an IFC via a filepath, or accessing one of the
 submodules.
 
-Example::
+Example:
+
+.. code:: python
 
     import ifcopenshell
     print(ifcopenshell.version) # v0.7.0-1b1fd1e6
@@ -143,7 +145,9 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     :returns: An entity instance
     :rtype: ifcopenshell.entity_instance.entity_instance
 
-    Example::
+    Example:
+
+    .. code:: python
 
         person = ifcopenshell.create_entity("IfcPerson") # #0=IfcPerson($,$,$,$,$,$,$,$)
         model = ifcopenshell.file()
@@ -165,7 +169,9 @@ def register_schema(schema):
     :param schema: A schema object
     :type schema: ifcopenshell.express.schema_class.SchemaClass
 
-    Example::
+    Example:
+
+    .. code:: python
 
         schema = ifcopenshell.express.parse("/path/to/ifc-custom.exp")
         ifcopenshell.register_schema(schema)

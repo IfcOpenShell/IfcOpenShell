@@ -46,7 +46,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Define a convenience function to add a task chained to a predecessor
             def add_task(model, name, predecessor, work_schedule):

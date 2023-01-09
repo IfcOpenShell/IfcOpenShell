@@ -64,7 +64,9 @@ class Usecase:
         :return: The IfcRelAggregate relationship instance
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
             element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")

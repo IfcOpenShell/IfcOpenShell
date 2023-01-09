@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifcopenshell.api.run("owner.add_person", model,
                 identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")

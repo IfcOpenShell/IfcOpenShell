@@ -28,7 +28,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a new surface style
             style = ifcopenshell.api.run("style.add_style", model)

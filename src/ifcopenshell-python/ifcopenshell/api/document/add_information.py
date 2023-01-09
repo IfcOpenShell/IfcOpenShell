@@ -37,7 +37,9 @@ class Usecase:
         :return: The newly created IfcDocumentInformation entity
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             document = ifcopenshell.api.run("document.add_information", model)
             # A document typically has a unique drawing or document name (which

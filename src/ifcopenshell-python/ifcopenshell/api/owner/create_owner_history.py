@@ -62,7 +62,9 @@ class Usecase:
         :return: The newly created IfcOwnerHistory element.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's imagine we're writing a small script, not large enough to be
             # its own fully branded application. In this case, let's use the

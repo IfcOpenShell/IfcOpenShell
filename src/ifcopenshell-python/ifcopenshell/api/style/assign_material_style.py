@@ -45,7 +45,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A model context is needed to store 3D geometry
             model3d = ifcopenshell.api.run("context.add_context", model, context_type="Model")

@@ -62,7 +62,9 @@ class Usecase:
             fittings are less important.
         :type element: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A completely empty distribution system
             system = ifcopenshell.api.run("system.add_system", model)

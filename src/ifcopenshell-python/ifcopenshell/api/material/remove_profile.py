@@ -29,7 +29,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # First, let's create a material set.
             material_set = ifcopenshell.api.run("material.add_profile_set", model,

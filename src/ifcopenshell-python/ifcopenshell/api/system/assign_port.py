@@ -37,7 +37,9 @@ class Usecase:
             IfcRelConnectsPortToElement for IFC2X3.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a duct
             duct = ifcopenshell.api.run("root.create_entity", model,

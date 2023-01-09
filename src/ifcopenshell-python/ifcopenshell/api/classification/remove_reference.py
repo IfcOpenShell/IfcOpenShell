@@ -33,7 +33,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             wall_type = model.by_type("IfcWallType")[0]
             classification = ifcopenshell.api.run("classification.add_classification",

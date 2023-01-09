@@ -61,7 +61,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifcopenshell.api.run("boundary.assign_connection_geometry", model,
                 rel_space_boundary=element,

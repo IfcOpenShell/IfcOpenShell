@@ -50,7 +50,9 @@ class Usecase:
         :return: The newly created IfcTimePeriod
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's create a new calendar.
             calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)

@@ -36,7 +36,9 @@ class Usecase:
             specified.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a simple linear load
             ifcopenshell.api.run("structural.add_structural_load", model)

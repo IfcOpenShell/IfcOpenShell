@@ -33,7 +33,9 @@ class Usecase:
         :return: The newly created IfcTaskTime.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's imagine we are creating a construction schedule.
             schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")

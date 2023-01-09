@@ -38,7 +38,9 @@ class Usecase:
         :return: The newly created IfcLibraryReference element
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
 

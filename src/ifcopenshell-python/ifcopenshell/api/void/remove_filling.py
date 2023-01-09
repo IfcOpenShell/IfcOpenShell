@@ -30,7 +30,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a wall
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")

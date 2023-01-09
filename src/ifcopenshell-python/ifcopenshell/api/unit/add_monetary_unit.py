@@ -30,7 +30,9 @@ class Usecase:
         :return: The newly created IfcMonetaryUnit
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # If you do all your cost plans in Zimbabwean dollars then nobody
             # knows how accurate the numbers are.

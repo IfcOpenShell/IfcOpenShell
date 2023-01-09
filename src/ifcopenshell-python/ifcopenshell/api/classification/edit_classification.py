@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             classification = model.by_type("IfcClassification")[0]
             # Change the name of the classification system to "Foo"

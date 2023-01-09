@@ -29,7 +29,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a material set for windows made out of aluminium and glass.
             material_set = ifcopenshell.api.run("material.add_material_set", model,

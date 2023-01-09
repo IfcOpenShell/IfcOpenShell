@@ -28,7 +28,9 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :return: dictionnary: key, value pair of psets' names and their properties' names & values
 
-    Example::
+    Example:
+
+    .. code:: python
         element = ifcopenshell.by_type("IfcBuildingElement")[0]
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
@@ -124,7 +126,9 @@ def get_predefined_type(element):
     :param element: The IFC Element entity
     :return: The predefined type of the element
 
-    Example::
+    Example:
+
+    .. code:: python
     element = ifcopenshell.by_type("IfcWall")[0]
     predefined_type = ifcopenshell.util.element.get_predefined_type(element)
     """
@@ -148,7 +152,9 @@ def get_type(element):
     :param element: The IFC Element entity
     :return: The Element Type entity defining the element
 
-    Example::
+    Example:
+
+    .. code:: python
     element = ifcopenshell.by_type("IfcWall")[0]
     element_type = ifcopenshell.util.element.get_type(element)
     """
@@ -197,7 +203,9 @@ def get_elements_by_material(ifc_file, material):
     :param material: The IFC Material entity
     :return: A list of elements using the to the material
 
-    Example::
+    Example:
+
+    .. code:: python
 
         material = file.by_type("IfcMaterial")[0]
         elements = ifcopenshell.util.element.get_elements_by_material(file, material)
@@ -232,7 +240,9 @@ def get_elements_by_style(ifc_file, style):
     :param style: The IFC Style entity
     :return: The elements related to the style
 
-    Example::
+    Example:
+
+    .. code:: python
 
         style = file.by_type("IfcSurfaceStyle")[0]
         elements = ifcopenshell.util.element.get_elements_by_style(file, style)
@@ -309,7 +319,9 @@ def get_container(element, should_get_direct=False):
     :type should_get_direct: bool
     :return: The direct or indirect container of the element or None.
 
-    Example::
+    Example:
+
+    .. code:: python
 
         element = file.by_type("IfcWall")[0]
         container = ifcopenshell.util.element.get_container(element)
@@ -334,7 +346,9 @@ def get_referenced_structures(element):
     :param element: The IFC element
     :type element: ifcopenshell.entity_instance.entity_instance
 
-    Example::
+    Example:
+
+    .. code:: python
 
         element = file.by_type("IfcWall")[0]
         print(ifcopenshell.util.element.get_referenced_structures(element))
@@ -353,7 +367,9 @@ def get_decomposition(element):
     :param element: The IFC element
     :return: The decomposition of the element
 
-    Example::
+    Example:
+
+    .. code:: python
 
         element = file.by_type("IfcProject")[0]
         decomposition = ifcopenshell.util.element.get_decomposition(element)
@@ -384,7 +400,9 @@ def get_grouped_by(element):
     :param element: The IFC element
     :return: All subelements of the group
 
-    Example::
+    Example:
+
+    .. code:: python
 
         element = file.by_type("IfcGroup")[0]
         subelements = ifcopenshell.util.element.get_group(element)
@@ -406,7 +424,9 @@ def get_aggregate(element):
     :param element: The IFC element
     :return: The aggregate of the element
 
-    Example::
+    Example:
+
+    .. code:: python
     element = file.by_type("IfcBeam")[0]
     aggregate = ifcopenshell.util.element.get_aggregate(element)
 
@@ -422,7 +442,9 @@ def get_parts(element):
     :param element: The IFC element
     :return: The parts of the element
 
-    Example::
+    Example:
+
+    .. code:: python
     element = file.by_type("IfcElementAssembly")[0]
     parts = ifcopenshell.util.element.get_parts(element)
 
