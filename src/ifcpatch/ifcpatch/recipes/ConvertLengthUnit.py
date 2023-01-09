@@ -24,14 +24,32 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger, unit="METERS"):
+        """Converts the length unit of a model to the specified unit
+
+        Allowed metric units include METERS, MILLIMETERS, CENTIMETERS, etc.
+        Allowed imperial units include INCHES, FEET, MILES.
+
+        :param unit: The name of the desired unit.
+        :type unit: str
+
+        Example:
+
+        .. code:: python
+
+            # Convert to millimeters
+            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": ["MILLIMETERS"]})
+
+            # Convert to feet
+            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": ["FEET"]})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
+        self.unit = unit
 
     def patch(self):
-        unit = {"is_metric": "METERS" in self.args[0], "raw": self.args[0]}
+        unit = {"is_metric": "METERS" in self.unit, "raw": self.unit}
         self.file_patched = ifcopenshell.api.run("project.create_file", version=self.file.schema)
         if self.file.schema == "IFC2X3":
             user = self.file_patched.add(self.file.by_type("IfcProject")[0].OwnerHistory.OwningUser)
