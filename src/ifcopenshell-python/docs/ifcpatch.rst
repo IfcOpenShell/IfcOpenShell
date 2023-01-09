@@ -50,7 +50,7 @@ In this example, we'll extract out all `IfcWall` elements.
     $ ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a ".IfcWall"
     $ cat output.ifc
 
-Here is a minimal example of how to use IfcDiff as a library:
+Here is a minimal example of how to use IfcPatch as a library:
 
 .. code-block:: python
 
