@@ -55,9 +55,7 @@ class Usecase:
             ifcopenshell.api.run("spatial.remove_container", model, product=wall)
         """
         self.file = file
-        self.settings = {"product": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"product": product}
 
     def execute(self):
         contained_in_structure = self.settings["product"].ContainedInStructure

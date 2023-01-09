@@ -18,34 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
-
-
-ASSIGNABLE_DICT = {
-    "IfcZone": ("IfcZone", "IfcSpace", "IfcSpatialZone"),
-    "IfcBuiltSystem": (
-        "IfcBuiltElement",
-        "IfcFurnishingElement",
-        "IfcElementAssembly",
-        "IfcTransportElement",
-    ),
-    "IfcBuildingSystem": (
-        "IfcBuildingElement",
-        "IfcFurnishingElement",
-        "IfcElementAssembly",
-        "IfcTransportElement",
-    ),
-    "IfcDistributionSystem": ("IfcDistributionElement",),
-    "IfcStructuralAnalysisModel": ("IfcStructuralMember", "IfcStructuralConnection"),
-    "IfcSystem": ("IfcProduct",),
-    "IfcGroup": ("IfcObjectDefinition",),
-}
-
-
-def is_assignable(product, system) -> bool:
-    for assignable in ASSIGNABLE_DICT.get(system.is_a(), ()):
-        if product.is_a(assignable):
-            return True
-    return False
+import ifcopenshell.util.system
 
 
 class Usecase:
@@ -82,7 +55,7 @@ class Usecase:
     def execute(self):
         system = self.settings["system"]
         product = self.settings["product"]
-        if not is_assignable(product, system):
+        if not ifcopenshell.util.system.is_assignable(product, system):
             raise TypeError(f"You cannot assign an {product.is_a()} to an {system.is_a()}")
 
         if not self.settings["system"].IsGroupedBy:

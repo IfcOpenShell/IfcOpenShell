@@ -5,6 +5,7 @@ import glob
 import pytest
 import tabulate
 
+import ifcopenshell.validate
 import ifcopenshell.express.rule_executor
 
 
