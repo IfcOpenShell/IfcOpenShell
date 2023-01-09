@@ -1357,6 +1357,13 @@ class IfcImporter:
     def create_spatial_decomposition_collections(self):
         for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
             self.create_spatial_decomposition_collection(self.project["blender"], rel_aggregate.RelatedObjects)
+
+        # Invalid IFCs may have orphaned spatial structure elements.
+        orphaned_spaces = [e for e in self.spatial_elements if e.GlobalId not in self.collections]
+        while orphaned_spaces:
+            self.create_spatial_decomposition_collection(self.project["blender"], orphaned_spaces)
+            orphaned_spaces = [e for e in self.spatial_elements if e.GlobalId not in self.collections]
+
         self.create_views_collection()
         self.create_type_collection()
 
