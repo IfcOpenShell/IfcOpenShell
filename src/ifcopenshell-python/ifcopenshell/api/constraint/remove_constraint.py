@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             objective = ifcopenshell.api.run("constraint.add_objective", model)
             ifcopenshell.api.run("constraint.remove_constraint", model,

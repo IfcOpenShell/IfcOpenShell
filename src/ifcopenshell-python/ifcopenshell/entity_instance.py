@@ -93,7 +93,9 @@ class entity_instance(object):
 
     An instantiated entity_instance will have methods of Python and the IFC class itself.
 
-    Example::
+    Example:
+
+    .. code:: python
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
@@ -268,7 +270,9 @@ class entity_instance(object):
         :returns: Either the name of the class, or a boolean if it passes the check
         :rtype: string|bool
 
-        Example::
+        Example:
+
+        .. code:: python
 
             f = ifcopenshell.file()
             f.create_entity('IfcPerson')
@@ -342,7 +346,9 @@ class entity_instance(object):
         :returns: A dictionary of properties and their corresponding values
         :rtype: dict
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifc_file = ifcopenshell.open(file_path)
             products = ifc_file.by_type("IfcProduct")

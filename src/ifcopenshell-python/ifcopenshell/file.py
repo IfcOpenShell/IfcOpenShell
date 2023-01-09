@@ -180,7 +180,9 @@ class file(object):
     Class has instance methods for filtering by element Id, Type, etc.
     Instantiated objects can be subscripted by Id or Guid
 
-    Example::
+    Example:
+
+    .. code:: python
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
@@ -247,7 +249,9 @@ class file(object):
         :returns: An entity instance
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             f = ifcopenshell.file()
             f.create_entity("IfcPerson")

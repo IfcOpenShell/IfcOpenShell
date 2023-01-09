@@ -62,7 +62,9 @@ class Usecase:
         :return: The added IfcClassification element
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Option 1: adding a custom clasification from scratch
             ifcopenshell.api.run("classification.add_classification", model,

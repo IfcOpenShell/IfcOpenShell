@@ -52,7 +52,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifcopenshell.api.run("georeference.add_georeferencing", model)
             # This is the simplest scenario, a defined CRS (GDA2020 / MGA Zone

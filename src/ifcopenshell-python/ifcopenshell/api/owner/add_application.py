@@ -49,7 +49,9 @@ class Usecase:
             application intended for computers to read.
         :type application_identifier: str, optional
 
-        Example::
+        Example:
+
+        .. code:: python
 
             application = ifcopenshell.api.run("owner.add_application", model)
         """

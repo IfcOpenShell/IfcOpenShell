@@ -26,7 +26,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
                 ifc_class="IfcCircleProfileDef")

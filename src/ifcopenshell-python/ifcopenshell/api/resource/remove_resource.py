@@ -23,7 +23,9 @@ class Usecase:
     def __init__(self, file, resource=None):
         """Removes a resource and all relationships
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Add our own crew
             crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")

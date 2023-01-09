@@ -36,7 +36,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             material_set = ifcopenshell.api.run("material.add_material_set", model,
                 name="Window", set_type="IfcMaterialList")

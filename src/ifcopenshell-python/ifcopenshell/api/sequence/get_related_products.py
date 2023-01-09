@@ -34,7 +34,9 @@ class Usecase:
         :return: A set of IfcProducts output by the IfcTask.
         :rtype: set[ifcopenshell.entity_instance.entity_instance]
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's imagine we are creating a construction schedule. All tasks
             # need to be part of a work schedule.

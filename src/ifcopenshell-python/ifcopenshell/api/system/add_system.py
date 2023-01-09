@@ -38,7 +38,9 @@ class Usecase:
         :return: The newly created IfcSystem.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A completely empty distribution system
             system = ifcopenshell.api.run("system.add_system", model)

@@ -46,7 +46,9 @@ class Usecase:
             IfcConversionBasedUnitWithOffset
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Some common imperial measurements
             length = ifcopenshell.api.run("unit.add_conversion_based_unit", model, name="inch")

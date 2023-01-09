@@ -36,7 +36,9 @@ class Usecase:
         :return: The new IfcRelFillsElement relationship
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A bit of preparation, let's create some geometric contexts since
             # we want to create some geometry for our wall and opening.

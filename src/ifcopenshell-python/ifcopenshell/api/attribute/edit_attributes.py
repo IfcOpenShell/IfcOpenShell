@@ -36,7 +36,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
             ifcopenshell.api.run("attribute.edit_attributes", model,

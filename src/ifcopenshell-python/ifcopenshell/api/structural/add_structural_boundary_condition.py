@@ -39,7 +39,9 @@ class Usecase:
         :return: The newly created IfcBoundaryCondition
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifcopenshell.api.run("structural.add_structural_boundary_condition", model, connection=connection)
         """

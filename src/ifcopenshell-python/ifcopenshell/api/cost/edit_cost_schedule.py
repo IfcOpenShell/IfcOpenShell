@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
             ifcopenshell.api.run("cost.edit_cost_schedule", model,

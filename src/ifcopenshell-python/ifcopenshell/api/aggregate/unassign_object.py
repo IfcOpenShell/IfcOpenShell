@@ -43,7 +43,9 @@ class Usecase:
             whole still contains any other parts.
         :rtype: ifcopenshell.entity_instance.entity_instance, None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
             subelement1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")

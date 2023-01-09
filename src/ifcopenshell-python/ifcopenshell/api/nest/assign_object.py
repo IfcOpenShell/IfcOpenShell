@@ -80,7 +80,9 @@ class Usecase:
         :return: The IfcRelNests relationship instance
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Faucets are designed to attach onto a sink through a predrilled hole.
             sink = ifcopenshell.api.run("root.create_entity", model,

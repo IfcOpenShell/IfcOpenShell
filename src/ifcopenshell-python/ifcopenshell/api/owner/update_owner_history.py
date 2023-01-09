@@ -37,7 +37,9 @@ class Usecase:
         :return: The updated IfcOwnerHistory element.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # See ifcopenshell.api.owner.create_owner_history for setup
             # [ ... example setup code ... ]

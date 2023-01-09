@@ -55,7 +55,9 @@ class Usecase:
         :return: The newly created IfcLibraryInformation
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifcopenshell.api.run("library.add_library", model, name="Brickschema")
         """

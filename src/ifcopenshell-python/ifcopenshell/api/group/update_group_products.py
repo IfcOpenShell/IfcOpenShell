@@ -34,7 +34,9 @@ class Usecase:
         :return: The IfcRelAssignsToGroup relationship
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
             ifcopenshell.api.run("group.update_group_products", model,

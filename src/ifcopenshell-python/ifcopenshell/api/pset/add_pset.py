@@ -63,7 +63,9 @@ class Usecase:
         :return: The newly created IfcPropertySet
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's imagine we have a new wall type.
             wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")

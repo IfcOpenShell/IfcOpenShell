@@ -33,7 +33,9 @@ class Usecase:
         :return: The newly created IfcResourceTime
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Add our own crew
             crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")

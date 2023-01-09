@@ -34,7 +34,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Assume we have a schedule with multiple items in it
             schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)

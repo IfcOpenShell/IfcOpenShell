@@ -60,7 +60,9 @@ class Usecase:
             class.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Add our own crew
             crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")

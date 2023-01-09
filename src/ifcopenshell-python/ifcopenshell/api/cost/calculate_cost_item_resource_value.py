@@ -44,7 +44,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # First, we need a cost schedule and item
             schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)

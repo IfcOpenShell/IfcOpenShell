@@ -34,7 +34,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's create two materials typically used for steel stud partition
             # walls with gypsum lining.

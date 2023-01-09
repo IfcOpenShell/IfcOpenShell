@@ -82,7 +82,9 @@ class Usecase:
         :return: The newly created IfcPropertySetTemplate
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a simple template that may be applied to all types
             ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")

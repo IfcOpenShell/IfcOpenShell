@@ -32,7 +32,9 @@ class Usecase:
         :return: The newly created IfcPersonAndOrganization
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             person = ifcopenshell.api.run("owner.add_person", model,
                 identification="lecorbycorbycorb", family_name="Curbosiar", given_name="Le")

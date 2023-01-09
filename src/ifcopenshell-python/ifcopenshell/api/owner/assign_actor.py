@@ -47,7 +47,9 @@ class Usecase:
         :return: The newly created IfcRelAssignsToActor relationship.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # We need to procure and install 2 of this particular pump type in our facility.
             pump_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcPumpType")

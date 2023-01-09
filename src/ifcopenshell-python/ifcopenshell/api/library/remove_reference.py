@@ -29,7 +29,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
             reference = ifcopenshell.api.run("library.add_reference", model, library=library)

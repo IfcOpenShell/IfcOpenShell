@@ -55,7 +55,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's imagine we have a new wall type.
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")

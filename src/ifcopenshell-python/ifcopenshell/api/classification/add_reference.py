@@ -84,7 +84,9 @@ class Usecase:
         :return: The newly added IfcClassificationReference
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Option 1: adding and assigning a new reference from scratch
             wall_type = model.by_type("IfcWallType")[0]

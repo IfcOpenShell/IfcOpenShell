@@ -33,7 +33,9 @@ class Usecase:
             IfcRelAssignsToControl is returned, otherwise None.
         :rtype: ifcopenshell.entity_instance.entity_instance, None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's relate a cost item and a product
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")

@@ -29,7 +29,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
             ifcopenshell.api.run("layer.remove_layer", model, layer=layer)

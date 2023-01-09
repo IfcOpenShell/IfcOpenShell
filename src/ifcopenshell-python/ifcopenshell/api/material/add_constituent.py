@@ -44,7 +44,9 @@ class Usecase:
         :return: The newly created IfcMaterialConstituent
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's imagine we have a window type that has an aluminium frame
             # and a glass glazing panel. Notice we are assigning to the type

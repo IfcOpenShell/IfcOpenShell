@@ -55,7 +55,9 @@ class Usecase:
         :return: The newly created IfcMaterial
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's create two materials with their respective categories
             concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")

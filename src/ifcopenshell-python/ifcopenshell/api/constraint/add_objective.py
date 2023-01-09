@@ -32,7 +32,9 @@ class Usecase:
         :return: The newly created IfcObjective entity
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a new objective for code compliance requirements
             objective = ifcopenshell.api.run("constraint.add_objective", model)

@@ -33,7 +33,9 @@ class Usecase:
         :return: The newly created IfcMetric entity
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             objective = ifcopenshell.api.run("constraint.add_objective", model)
             metric = ifcopenshell.api.run("constraint.add_metric", model,

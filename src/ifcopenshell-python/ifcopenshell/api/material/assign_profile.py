@@ -35,7 +35,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's imagine we have a steel I-beam. Notice we are assigning to
             # the type only, as all occurrences of that type will automatically

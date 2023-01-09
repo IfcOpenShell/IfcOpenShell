@@ -40,7 +40,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # See the example for ifcopenshell.api.sequence.cascade_schedule for
             # details of how to set up a basic set of tasks and calculate the

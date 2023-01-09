@@ -45,7 +45,9 @@ class Usecase:
         :return: The new IfcContextDependentUnit
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Boxes of things
             ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="BOXES")

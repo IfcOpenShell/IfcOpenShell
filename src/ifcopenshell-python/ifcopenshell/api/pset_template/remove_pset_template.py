@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a template.
             template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")

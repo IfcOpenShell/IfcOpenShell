@@ -29,7 +29,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a material set for steel stud partition walls.
             material_set = ifcopenshell.api.run("material.add_material_set", model,

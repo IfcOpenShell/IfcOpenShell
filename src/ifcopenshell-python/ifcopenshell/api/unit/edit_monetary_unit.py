@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # If you do all your cost plans in Zimbabwean dollars then nobody
             # knows how accurate the numbers are.

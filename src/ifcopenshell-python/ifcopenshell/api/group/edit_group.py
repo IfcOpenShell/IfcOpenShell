@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
             ifcopenshell.api.run("group.edit_group", model,

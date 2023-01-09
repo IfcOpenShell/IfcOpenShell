@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Whoops! We named it with a buildingSMART reserved "Pset_" prefix!
             template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="Pset_RiskFactors")

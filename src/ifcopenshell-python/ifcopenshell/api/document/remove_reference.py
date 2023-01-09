@@ -28,7 +28,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             document = ifcopenshell.api.run("document.add_information", model)
             reference = ifcopenshell.api.run("document.add_reference", model, information=document)

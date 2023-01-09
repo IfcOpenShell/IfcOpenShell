@@ -41,7 +41,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
             wood = ifcopenshell.api.run("material.add_material", model, name="TIM01", category="wood")

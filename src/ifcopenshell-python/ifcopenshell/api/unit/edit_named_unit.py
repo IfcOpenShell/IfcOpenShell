@@ -34,7 +34,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Boxes of things
             unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="BOXES")

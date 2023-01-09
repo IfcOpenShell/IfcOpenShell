@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Add our own crew
             crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")

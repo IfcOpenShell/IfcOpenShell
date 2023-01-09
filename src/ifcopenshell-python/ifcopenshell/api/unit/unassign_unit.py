@@ -26,7 +26,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # You need a project before you can assign units.
             ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")

@@ -107,7 +107,9 @@ class Usecase:
             IfcGeometricRepresentationSubContext entity
         :rtype: ifcopenshell.entity_instance.entity_instance, optional
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # If we plan to store 3D geometry in our IFC model, we have to setup
             # a "Model" context.

@@ -57,7 +57,9 @@ class Usecase:
             parameter
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             chair = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
             schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)

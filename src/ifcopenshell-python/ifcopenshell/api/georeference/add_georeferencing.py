@@ -35,7 +35,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifcopenshell.api.run("georeference.add_georeferencing", model)
         """

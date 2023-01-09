@@ -34,7 +34,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Programmatically generate a library. You could do this visually too.
             library = ifcopenshell.api.run("project.create_file")

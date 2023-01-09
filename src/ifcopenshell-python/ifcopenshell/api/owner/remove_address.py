@@ -29,7 +29,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             organisation = ifcopenshell.api.run("owner.add_organisation", model)
             address = ifcopenshell.api.run("owner.add_address", model,
