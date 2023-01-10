@@ -286,7 +286,7 @@ class ShapeBuilder:
         mirror_axes: Vector = Vector((1.0, 1.0)).freeze(),
         mirror_point: Vector = Vector((0.0, 0.0)).freeze(),
     ):
-        """mirror axes - along which axes mirror will be applied"""
+        """mirror_axes - along which axes mirror will be applied"""
         base = point_2d  # prevent mutating the argument
         mirror_axes = Vector( [-1 if i > 0 else 1 for i in mirror_axes] )
         relative_point = base - mirror_point
@@ -321,6 +321,10 @@ class ShapeBuilder:
         create_copy=False,
         placement_matrix=None,
     ):
+        """mirror_axes - along which axes mirror will be applied
+        
+        For example, mirroring A(1,0) by axis (1,0) will result in A'(-1,0)
+        """
         # > curve_or_item - could be a list of curves or items
         # > mirror_axes - could be a list of mirrors to apply to curve_or_item
         # multiple mirror_axes will result in multiple resulting curves
@@ -349,7 +353,7 @@ class ShapeBuilder:
                             co_base = placement_matrix @ co_base.to_3d()
                             co = self.mirror_2d_point(co_base.to_2d(), mirror_axes, mirror_point).to_3d()
                             co.z = co_base.z
-                            co = inverted_placement_matrix @ co
+                            co = (inverted_placement_matrix @ co).to_2d()
                         else:
                             co = self.mirror_2d_point(co_base, mirror_axes, mirror_point)
 
@@ -371,18 +375,24 @@ class ShapeBuilder:
                     new_position.z = base_position.z
                     c.Position.Location.Coordinates = new_position
 
+                    # TODO: add support for Z-axis too
+                    self.translate(c.SweptArea.OuterCurve, base_position.to_2d())
                     self.mirror(c.SweptArea.OuterCurve, mirror_axes, mirror_point, placement_matrix=placement_matrix)
+                    self.translate(c.SweptArea.OuterCurve, -new_position.to_2d())
 
                     if hasattr(c.SweptArea, "InnerCurves"):
                         for inner_curve in c.SweptArea.InnerCurves:
+                            self.translate(inner_curve, base_position)
                             self.mirror(inner_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix)
+                            self.translate(inner_curve, -new_position)
 
                     # extrusion converted to world space
                     base_extruded_direction = Vector(c.ExtrudedDirection.DirectionRatios)
                     extruded_direction = placement_matrix @ base_extruded_direction
 
                     # TODO: add support for Z-axis too
-                    new_direction = self.mirror_2d_point(extruded_direction.to_2d(), mirror_axes, mirror_point)
+                    # mirror point is ignored for extrusion direction
+                    new_direction = self.mirror_2d_point(extruded_direction.to_2d(), mirror_axes, mirror_point=V(0,0))
                     new_direction = new_direction.to_3d()
                     new_direction.z = extruded_direction.z
 
@@ -465,3 +475,6 @@ class ShapeBuilder:
             Items=items,
         )
         return representation
+
+    def deep_copy(self, element):
+        return ifcopenshell.util.element.copy_deep(self.ifc, element)
