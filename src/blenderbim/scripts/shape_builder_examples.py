@@ -1,5 +1,5 @@
 import ifcopenshell
-from ifcopenshell.util.representation import ShapeBuilder
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Vector
 
 V = lambda *x: Vector([float(i) for i in x])
