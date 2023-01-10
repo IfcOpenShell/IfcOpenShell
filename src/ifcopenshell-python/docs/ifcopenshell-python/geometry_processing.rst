@@ -76,7 +76,7 @@ related information in ``shape.geometry``:
         # Each style is named after the entity class if a default
         # material is applied. Otherwise, it is named "surface-style-{SurfaceStyle.name}"
         # All non-alphanumeric characters are replaced with a "-".
-        print(style.original_name)
+        print(style.original_name())
 
         # A more human readable name
         print(style.name)
