@@ -96,7 +96,6 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
 html_theme = "furo"
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -105,3 +104,8 @@ html_theme = "furo"
 html_static_path = ["_static"]
 
 html_css_files = ["custom.css"]
+
+# Code block styles. Dark styling helps important code examples "pop" on the
+# page even on light themes.
+pygments_style = "one-dark"
+pygments_dark_style = "one-dark"
