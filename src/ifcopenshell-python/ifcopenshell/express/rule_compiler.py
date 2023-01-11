@@ -658,7 +658,14 @@ def typeof(inst):
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
             yield '.'.join((schema_name, decl.name().lower()))
-            decl = decl.supertype()
+            if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
+                decl = decl.supertype()
+            else:
+                decl = decl.declared_type()
+                while isinstance(decl, ifcopenshell.ifcopenshell_wrapper.named_type):
+                    decl = decl.declared_type()
+                if not isinstance(decl, ifcopenshell.ifcopenshell_wrapper.type_declaration):
+                    break
     return express_set(inner())
 """, file=output, sep='\n')
 
