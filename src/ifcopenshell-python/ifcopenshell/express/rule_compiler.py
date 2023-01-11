@@ -8,6 +8,7 @@ import functools
 import itertools
 
 import ifcopenshell.express
+import ifcopenshell.express.express_parser
 
 import networkx as nx
 
@@ -331,7 +332,7 @@ def calc_{class_name}_{str(derived_attr.attribute_decl.redeclared_attribute.qual
 
 def process_domain_rule(context):
     return f"""
-assert {context.expression}
+assert ({context.expression}) is not False
 """
 
 def process_expression(context):
