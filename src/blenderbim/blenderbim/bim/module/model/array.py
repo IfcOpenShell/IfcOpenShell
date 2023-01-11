@@ -120,6 +120,7 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         props.y = data["y"]
         props.z = data["z"]
         props.is_editing = self.item
+        return {'FINISHED'}
 
 
 class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
