@@ -7,7 +7,7 @@ from codegen import indent
 
 
 def reverse_compile(s):
-    return s.strip().replace("len(", "SIZEOF(").replace("assert ", "")
+    return s.strip().replace("len(", "SIZEOF(").replace("assert ", "").replace(" is not False", "")
 
 
 @dataclass
