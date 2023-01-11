@@ -54,7 +54,14 @@ def typeof(inst):
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
             yield '.'.join((schema_name, decl.name().lower()))
-            decl = decl.supertype()
+            if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
+                decl = decl.supertype()
+            else:
+                decl = decl.declared_type()
+                while isinstance(decl, ifcopenshell.ifcopenshell_wrapper.named_type):
+                    decl = decl.declared_type()
+                if not isinstance(decl, ifcopenshell.ifcopenshell_wrapper.type_declaration):
+                    break
     return express_set(inner())
 
 class enum_namespace:
@@ -9888,7 +9895,7 @@ class IfcBoxAlignment_WR1:
     def __call__(self):
 
         
-        assert self in ['top-left','top-middle','top-right','middle-left','center','middle-right','bottom-left','bottom-middle','bottom-right']
+        assert (self in ['top-left','top-middle','top-right','middle-left','center','middle-right','bottom-left','bottom-middle','bottom-right']) is not False
         
 
 
@@ -9939,7 +9946,7 @@ class IfcCardinalPointReference_GreaterThanZero:
     def __call__(self):
 
         
-        assert self > 0
+        assert (self > 0) is not False
         
 
 
@@ -9990,7 +9997,7 @@ class IfcCompoundPlaneAngleMeasure_MinutesInRange:
     def __call__(self):
 
         
-        assert (abs(self[2 - 1])) < 60
+        assert ((abs(self[2 - 1])) < 60) is not False
         
 
 
@@ -10004,7 +10011,7 @@ class IfcCompoundPlaneAngleMeasure_SecondsInRange:
     def __call__(self):
 
         
-        assert (abs(self[3 - 1])) < 60
+        assert ((abs(self[3 - 1])) < 60) is not False
         
 
 
@@ -10018,7 +10025,7 @@ class IfcCompoundPlaneAngleMeasure_MicrosecondsInRange:
     def __call__(self):
 
         
-        assert (sizeof(self) == 3) or ((abs(self[4 - 1])) < 1000000)
+        assert ((sizeof(self) == 3) or ((abs(self[4 - 1])) < 1000000)) is not False
         
 
 
@@ -10032,7 +10039,7 @@ class IfcCompoundPlaneAngleMeasure_ConsistentSign:
     def __call__(self):
 
         
-        assert (((self[1 - 1]) >= 0) and ((self[2 - 1]) >= 0) and ((self[3 - 1]) >= 0) and ((sizeof(self) == 3) or ((self[4 - 1]) >= 0))) or (((self[1 - 1]) <= 0) and ((self[2 - 1]) <= 0) and ((self[3 - 1]) <= 0) and ((sizeof(self) == 3) or ((self[4 - 1]) <= 0)))
+        assert ((((self[1 - 1]) >= 0) and ((self[2 - 1]) >= 0) and ((self[3 - 1]) >= 0) and ((sizeof(self) == 3) or ((self[4 - 1]) >= 0))) or (((self[1 - 1]) <= 0) and ((self[2 - 1]) <= 0) and ((self[3 - 1]) <= 0) and ((sizeof(self) == 3) or ((self[4 - 1]) <= 0)))) is not False
         
 
 
@@ -10143,7 +10150,7 @@ class IfcDayInMonthNumber_ValidRange:
     def __call__(self):
 
         
-        assert 1 <= self <= 31
+        assert (1 <= self <= 31) is not False
         
 
 
@@ -10158,7 +10165,7 @@ class IfcDayInWeekNumber_ValidRange:
     def __call__(self):
 
         
-        assert 1 <= self <= 7
+        assert (1 <= self <= 7) is not False
         
 
 
@@ -10185,7 +10192,7 @@ class IfcDimensionCount_WR1:
     def __call__(self):
 
         
-        assert 0 < self <= 3
+        assert (0 < self <= 3) is not False
         
 
 
@@ -10359,7 +10366,7 @@ class IfcFontStyle_WR1:
     def __call__(self):
 
         
-        assert self in ['normal','italic','oblique']
+        assert (self in ['normal','italic','oblique']) is not False
         
 
 
@@ -10374,7 +10381,7 @@ class IfcFontVariant_WR1:
     def __call__(self):
 
         
-        assert self in ['normal','small-caps']
+        assert (self in ['normal','small-caps']) is not False
         
 
 
@@ -10389,7 +10396,7 @@ class IfcFontWeight_WR1:
     def __call__(self):
 
         
-        assert self in ['normal','small-caps','100','200','300','400','500','600','700','800','900']
+        assert (self in ['normal','small-caps','100','200','300','400','500','600','700','800','900']) is not False
         
 
 
@@ -10449,7 +10456,7 @@ class IfcHeatingValueMeasure_WR1:
     def __call__(self):
 
         
-        assert self > 0.
+        assert (self > 0.) is not False
         
 
 
@@ -10665,7 +10672,7 @@ class IfcMonthInYearNumber_ValidRange:
     def __call__(self):
 
         
-        assert 1 <= self <= 12
+        assert (1 <= self <= 12) is not False
         
 
 
@@ -10689,7 +10696,7 @@ class IfcNonNegativeLengthMeasure_NotNegative:
     def __call__(self):
 
         
-        assert self >= 0.
+        assert (self >= 0.) is not False
         
 
 
@@ -10704,7 +10711,7 @@ class IfcNormalisedRatioMeasure_WR1:
     def __call__(self):
 
         
-        assert 0.0 <= self <= 1.0
+        assert (0.0 <= self <= 1.0) is not False
         
 
 
@@ -10737,7 +10744,7 @@ class IfcPHMeasure_WR21:
     def __call__(self):
 
         
-        assert 0.0 <= self <= 14.0
+        assert (0.0 <= self <= 14.0) is not False
         
 
 
@@ -10794,7 +10801,7 @@ class IfcPositiveInteger_WR1:
     def __call__(self):
 
         
-        assert self > 0
+        assert (self > 0) is not False
         
 
 
@@ -10809,7 +10816,7 @@ class IfcPositiveLengthMeasure_WR1:
     def __call__(self):
 
         
-        assert self > 0.
+        assert (self > 0.) is not False
         
 
 
@@ -10824,7 +10831,7 @@ class IfcPositivePlaneAngleMeasure_WR1:
     def __call__(self):
 
         
-        assert self > 0.
+        assert (self > 0.) is not False
         
 
 
@@ -10839,7 +10846,7 @@ class IfcPositiveRatioMeasure_WR1:
     def __call__(self):
 
         
-        assert self > 0.
+        assert (self > 0.) is not False
         
 
 
@@ -11088,7 +11095,7 @@ class IfcSpecularRoughness_WR1:
     def __call__(self):
 
         
-        assert 0.0 <= self <= 1.0
+        assert (0.0 <= self <= 1.0) is not False
         
 
 
@@ -11181,7 +11188,7 @@ class IfcTextAlignment_WR1:
     def __call__(self):
 
         
-        assert self in ['left','right','center','justify']
+        assert (self in ['left','right','center','justify']) is not False
         
 
 
@@ -11196,7 +11203,7 @@ class IfcTextDecoration_WR1:
     def __call__(self):
 
         
-        assert self in ['none','underline','overline','line-through','blink']
+        assert (self in ['none','underline','overline','line-through','blink']) is not False
         
 
 
@@ -11220,7 +11227,7 @@ class IfcTextTransformation_WR1:
     def __call__(self):
 
         
-        assert self in ['capitalize','uppercase','lowercase','none']
+        assert (self in ['capitalize','uppercase','lowercase','none']) is not False
         
 
 
@@ -11388,7 +11395,7 @@ class IfcActorRole_WR1:
     def __call__(self):
         role = self.Role
         
-        assert (role != IfcRoleEnum.USERDEFINED) or ((role == IfcRoleEnum.USERDEFINED) and exists(self.UserDefinedRole))
+        assert ((role != IfcRoleEnum.USERDEFINED) or ((role == IfcRoleEnum.USERDEFINED) and exists(self.UserDefinedRole))) is not False
         
 
 
@@ -11403,7 +11410,7 @@ class IfcActuator_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcActuatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcActuatorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcActuatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcActuatorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -11417,7 +11424,7 @@ class IfcActuator_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcactuatortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcactuatortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -11432,7 +11439,7 @@ class IfcActuatorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcActuatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcActuatorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcActuatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcActuatorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -11447,7 +11454,7 @@ class IfcAddress_WR1:
     def __call__(self):
         purpose = self.Purpose
         
-        assert (not exists(purpose)) or ((purpose != IfcAddressTypeEnum.USERDEFINED) or ((purpose == IfcAddressTypeEnum.USERDEFINED) and exists(self.UserDefinedPurpose)))
+        assert ((not exists(purpose)) or ((purpose != IfcAddressTypeEnum.USERDEFINED) or ((purpose == IfcAddressTypeEnum.USERDEFINED) and exists(self.UserDefinedPurpose)))) is not False
         
 
 
@@ -11462,7 +11469,7 @@ class IfcAdvancedBrep_HasAdvancedFaces:
     def __call__(self):
 
         
-        assert (sizeof([afs for afs in self.Outer.CfsFaces if not 'ifc4x3_add1.ifcadvancedface' in typeof(afs)])) == 0
+        assert ((sizeof([afs for afs in self.Outer.CfsFaces if not 'ifc4x3_add1.ifcadvancedface' in typeof(afs)])) == 0) is not False
         
 
 
@@ -11477,7 +11484,7 @@ class IfcAdvancedBrepWithVoids_VoidsHaveAdvancedFaces:
     def __call__(self):
         voids = self.Voids
         
-        assert (sizeof([vsh for vsh in voids if (sizeof([afs for afs in vsh.CfsFaces if not 'ifc4x3_add1.ifcadvancedface' in typeof(afs)])) == 0])) == 0
+        assert ((sizeof([vsh for vsh in voids if (sizeof([afs for afs in vsh.CfsFaces if not 'ifc4x3_add1.ifcadvancedface' in typeof(afs)])) == 0])) == 0) is not False
         
 
 
@@ -11492,7 +11499,7 @@ class IfcAdvancedFace_ApplicableEdgeCurves:
     def __call__(self):
 
         
-        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in self.Bounds if 'ifc4x3_add1.ifcedgeloop' in typeof(bnds.Bound)] if not (sizeof([oe for oe in elpfbnds.Bound.EdgeList if not (sizeof(['ifc4x3_add1.ifcline','ifc4x3_add1.ifcconic','ifc4x3_add1.ifcpolyline','ifc4x3_add1.ifcbsplinecurve'] * typeof(oe.EdgeElement.EdgeGeometry))) == 1])) == 0])) == 0
+        assert ((sizeof([elpfbnds for elpfbnds in [bnds for bnds in self.Bounds if 'ifc4x3_add1.ifcedgeloop' in typeof(bnds.Bound)] if not (sizeof([oe for oe in elpfbnds.Bound.EdgeList if not (sizeof(['ifc4x3_add1.ifcline','ifc4x3_add1.ifcconic','ifc4x3_add1.ifcpolyline','ifc4x3_add1.ifcbsplinecurve'] * typeof(oe.EdgeElement.EdgeGeometry))) == 1])) == 0])) == 0) is not False
         
 
 
@@ -11506,7 +11513,7 @@ class IfcAdvancedFace_ApplicableSurface:
     def __call__(self):
 
         
-        assert (sizeof(['ifc4x3_add1.ifcelementarysurface','ifc4x3_add1.ifcsweptsurface','ifc4x3_add1.ifcbsplinesurface'] * typeof(self.FaceSurface))) == 1
+        assert ((sizeof(['ifc4x3_add1.ifcelementarysurface','ifc4x3_add1.ifcsweptsurface','ifc4x3_add1.ifcbsplinesurface'] * typeof(self.FaceSurface))) == 1) is not False
         
 
 
@@ -11520,7 +11527,7 @@ class IfcAdvancedFace_RequiresEdgeCurve:
     def __call__(self):
 
         
-        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in self.Bounds if 'ifc4x3_add1.ifcedgeloop' in typeof(bnds.Bound)] if not (sizeof([oe for oe in elpfbnds.Bound.EdgeList if not 'ifc4x3_add1.ifcedgecurve' in typeof(oe.EdgeElement)])) == 0])) == 0
+        assert ((sizeof([elpfbnds for elpfbnds in [bnds for bnds in self.Bounds if 'ifc4x3_add1.ifcedgeloop' in typeof(bnds.Bound)] if not (sizeof([oe for oe in elpfbnds.Bound.EdgeList if not 'ifc4x3_add1.ifcedgecurve' in typeof(oe.EdgeElement)])) == 0])) == 0) is not False
         
 
 
@@ -11535,7 +11542,7 @@ class IfcAirTerminal_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcAirTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcAirTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -11549,7 +11556,7 @@ class IfcAirTerminal_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcairterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcairterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -11564,7 +11571,7 @@ class IfcAirTerminalBox_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcAirTerminalBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalBoxTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcAirTerminalBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalBoxTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -11578,7 +11585,7 @@ class IfcAirTerminalBox_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcairterminalboxtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcairterminalboxtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -11593,7 +11600,7 @@ class IfcAirTerminalBoxType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcAirTerminalBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalBoxTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcAirTerminalBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalBoxTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -11608,7 +11615,7 @@ class IfcAirTerminalType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcAirTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcAirTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -11623,7 +11630,7 @@ class IfcAirToAirHeatRecovery_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -11637,7 +11644,7 @@ class IfcAirToAirHeatRecovery_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcairtoairheatrecoverytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcairtoairheatrecoverytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -11652,7 +11659,7 @@ class IfcAirToAirHeatRecoveryType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) or ((predefinedtype == IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -11667,7 +11674,7 @@ class IfcAlarm_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcAlarmTypeEnum.USERDEFINED) or ((predefinedtype == IfcAlarmTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcAlarmTypeEnum.USERDEFINED) or ((predefinedtype == IfcAlarmTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -11681,7 +11688,7 @@ class IfcAlarm_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcalarmtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcalarmtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -11696,7 +11703,7 @@ class IfcAlarmType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcAlarmTypeEnum.USERDEFINED) or ((predefinedtype == IfcAlarmTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcAlarmTypeEnum.USERDEFINED) or ((predefinedtype == IfcAlarmTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -11751,7 +11758,7 @@ class IfcApproval_HasIdentifierOrName:
         identifier = self.Identifier
         name = self.Name
         
-        assert exists(identifier) or exists(name)
+        assert (exists(identifier) or exists(name)) is not False
         
 
 
@@ -11769,7 +11776,7 @@ class IfcArbitraryClosedProfileDef_WR1:
     def __call__(self):
         outercurve = self.OuterCurve
         
-        assert outercurve.Dim == 2
+        assert (outercurve.Dim == 2) is not False
         
 
 
@@ -11783,7 +11790,7 @@ class IfcArbitraryClosedProfileDef_WR2:
     def __call__(self):
         outercurve = self.OuterCurve
         
-        assert not 'ifc4x3_add1.ifcline' in typeof(outercurve)
+        assert (not 'ifc4x3_add1.ifcline' in typeof(outercurve)) is not False
         
 
 
@@ -11797,7 +11804,7 @@ class IfcArbitraryClosedProfileDef_WR3:
     def __call__(self):
         outercurve = self.OuterCurve
         
-        assert not 'ifc4x3_add1.ifcoffsetcurve2d' in typeof(outercurve)
+        assert (not 'ifc4x3_add1.ifcoffsetcurve2d' in typeof(outercurve)) is not False
         
 
 
@@ -11812,7 +11819,7 @@ class IfcArbitraryOpenProfileDef_WR11:
     def __call__(self):
 
         
-        assert ('ifc4x3_add1.ifccenterlineprofiledef' in typeof(self)) or (self.ProfileType == IfcProfileTypeEnum.CURVE)
+        assert (('ifc4x3_add1.ifccenterlineprofiledef' in typeof(self)) or (self.ProfileType == IfcProfileTypeEnum.CURVE)) is not False
         
 
 
@@ -11826,7 +11833,7 @@ class IfcArbitraryOpenProfileDef_WR12:
     def __call__(self):
         curve = self.Curve
         
-        assert curve.Dim == 2
+        assert (curve.Dim == 2) is not False
         
 
 
@@ -11841,7 +11848,7 @@ class IfcArbitraryProfileDefWithVoids_WR1:
     def __call__(self):
 
         
-        assert self.ProfileType == area
+        assert (self.ProfileType == area) is not False
         
 
 
@@ -11855,7 +11862,7 @@ class IfcArbitraryProfileDefWithVoids_WR2:
     def __call__(self):
         innercurves = self.InnerCurves
         
-        assert (sizeof([temp for temp in innercurves if temp.Dim != 2])) == 0
+        assert ((sizeof([temp for temp in innercurves if temp.Dim != 2])) == 0) is not False
         
 
 
@@ -11869,7 +11876,7 @@ class IfcArbitraryProfileDefWithVoids_WR3:
     def __call__(self):
         innercurves = self.InnerCurves
         
-        assert (sizeof([temp for temp in innercurves if 'ifc4x3_add1.ifcline' in typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in innercurves if 'ifc4x3_add1.ifcline' in typeof(temp)])) == 0) is not False
         
 
 
@@ -11889,7 +11896,7 @@ class IfcAsymmetricIShapeProfileDef_ValidBottomFilletRadius:
         webthickness = self.WebThickness
         bottomflangefilletradius = self.BottomFlangeFilletRadius
         
-        assert (not exists(bottomflangefilletradius)) or (bottomflangefilletradius <= ((bottomflangewidth - webthickness) / 2.))
+        assert ((not exists(bottomflangefilletradius)) or (bottomflangefilletradius <= ((bottomflangewidth - webthickness) / 2.))) is not False
         
 
 
@@ -11905,7 +11912,7 @@ class IfcAsymmetricIShapeProfileDef_ValidFlangeThickness:
         bottomflangethickness = self.BottomFlangeThickness
         topflangethickness = self.TopFlangeThickness
         
-        assert (not exists(topflangethickness)) or ((bottomflangethickness + topflangethickness) < overalldepth)
+        assert ((not exists(topflangethickness)) or ((bottomflangethickness + topflangethickness) < overalldepth)) is not False
         
 
 
@@ -11921,7 +11928,7 @@ class IfcAsymmetricIShapeProfileDef_ValidTopFilletRadius:
         topflangewidth = self.TopFlangeWidth
         topflangefilletradius = self.TopFlangeFilletRadius
         
-        assert (not exists(topflangefilletradius)) or (topflangefilletradius <= ((topflangewidth - webthickness) / 2.))
+        assert ((not exists(topflangefilletradius)) or (topflangefilletradius <= ((topflangewidth - webthickness) / 2.))) is not False
         
 
 
@@ -11937,7 +11944,7 @@ class IfcAsymmetricIShapeProfileDef_ValidWebThickness:
         webthickness = self.WebThickness
         topflangewidth = self.TopFlangeWidth
         
-        assert (webthickness < bottomflangewidth) and (webthickness < topflangewidth)
+        assert ((webthickness < bottomflangewidth) and (webthickness < topflangewidth)) is not False
         
 
 
@@ -11952,7 +11959,7 @@ class IfcAudioVisualAppliance_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcAudioVisualApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcAudioVisualApplianceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcAudioVisualApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcAudioVisualApplianceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -11966,7 +11973,7 @@ class IfcAudioVisualAppliance_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcaudiovisualappliancetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcaudiovisualappliancetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -11981,7 +11988,7 @@ class IfcAudioVisualApplianceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcAudioVisualApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcAudioVisualApplianceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcAudioVisualApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcAudioVisualApplianceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -11996,7 +12003,7 @@ class IfcAxis1Placement_AxisIs3D:
     def __call__(self):
         axis = self.Axis
         
-        assert (not exists(axis)) or (axis.Dim == 3)
+        assert ((not exists(axis)) or (axis.Dim == 3)) is not False
         
 
 
@@ -12010,7 +12017,7 @@ class IfcAxis1Placement_LocationIs3D:
     def __call__(self):
 
         
-        assert self.Location.Dim == 3
+        assert (self.Location.Dim == 3) is not False
         
 
 
@@ -12024,7 +12031,7 @@ class IfcAxis1Placement_LocationIsCP:
     def __call__(self):
 
         
-        assert 'ifc4x3_add1.ifccartesianpoint' in typeof(self.Location)
+        assert ('ifc4x3_add1.ifccartesianpoint' in typeof(self.Location)) is not False
         
 
 
@@ -12046,7 +12053,7 @@ class IfcAxis2Placement2D_LocationIs2D:
     def __call__(self):
 
         
-        assert self.Location.Dim == 2
+        assert (self.Location.Dim == 2) is not False
         
 
 
@@ -12060,7 +12067,7 @@ class IfcAxis2Placement2D_LocationIsCP:
     def __call__(self):
 
         
-        assert 'ifc4x3_add1.ifccartesianpoint' in typeof(self.Location)
+        assert ('ifc4x3_add1.ifccartesianpoint' in typeof(self.Location)) is not False
         
 
 
@@ -12074,7 +12081,7 @@ class IfcAxis2Placement2D_RefDirIs2D:
     def __call__(self):
         refdirection = self.RefDirection
         
-        assert (not exists(refdirection)) or (refdirection.Dim == 2)
+        assert ((not exists(refdirection)) or (refdirection.Dim == 2)) is not False
         
 
 
@@ -12097,7 +12104,7 @@ class IfcAxis2Placement3D_AxisAndRefDirProvision:
         axis = self.Axis
         refdirection = self.RefDirection
         
-        assert not exists(axis) ^ exists(refdirection)
+        assert (not exists(axis) ^ exists(refdirection)) is not False
         
 
 
@@ -12111,7 +12118,7 @@ class IfcAxis2Placement3D_AxisIs3D:
     def __call__(self):
         axis = self.Axis
         
-        assert (not exists(axis)) or (axis.Dim == 3)
+        assert ((not exists(axis)) or (axis.Dim == 3)) is not False
         
 
 
@@ -12126,7 +12133,7 @@ class IfcAxis2Placement3D_AxisToRefDirPosition:
         axis = self.Axis
         refdirection = self.RefDirection
         
-        assert (not exists(axis)) or (not exists(refdirection)) or (IfcCrossProduct(axis,refdirection).Magnitude > 0.0)
+        assert ((not exists(axis)) or (not exists(refdirection)) or (IfcCrossProduct(axis,refdirection).Magnitude > 0.0)) is not False
         
 
 
@@ -12140,7 +12147,7 @@ class IfcAxis2Placement3D_LocationIs3D:
     def __call__(self):
 
         
-        assert self.Location.Dim == 3
+        assert (self.Location.Dim == 3) is not False
         
 
 
@@ -12154,7 +12161,7 @@ class IfcAxis2Placement3D_LocationIsCP:
     def __call__(self):
 
         
-        assert 'ifc4x3_add1.ifccartesianpoint' in typeof(self.Location)
+        assert ('ifc4x3_add1.ifccartesianpoint' in typeof(self.Location)) is not False
         
 
 
@@ -12168,7 +12175,7 @@ class IfcAxis2Placement3D_RefDirIs3D:
     def __call__(self):
         refdirection = self.RefDirection
         
-        assert (not exists(refdirection)) or (refdirection.Dim == 3)
+        assert ((not exists(refdirection)) or (refdirection.Dim == 3)) is not False
         
 
 
@@ -12191,7 +12198,7 @@ class IfcAxis2PlacementLinear_WR1:
     def __call__(self):
 
         
-        assert 'ifc4x3_add1.ifcpointbydistanceexpression' in typeof(self.Location)
+        assert ('ifc4x3_add1.ifcpointbydistanceexpression' in typeof(self.Location)) is not False
         
 
 
@@ -12206,7 +12213,7 @@ class IfcAxis2PlacementLinear_WR2:
         axis = self.Axis
         refdirection = self.RefDirection
         
-        assert (not exists(axis)) or (not exists(refdirection)) or (IfcCrossProduct(axis,refdirection).Magnitude > 0.0)
+        assert ((not exists(axis)) or (not exists(refdirection)) or (IfcCrossProduct(axis,refdirection).Magnitude > 0.0)) is not False
         
 
 
@@ -12221,7 +12228,7 @@ class IfcBSplineCurve_SameDim:
     def __call__(self):
         controlpointslist = self.ControlPointsList
         
-        assert (sizeof([temp for temp in controlpointslist if temp.Dim != (controlpointslist[1 - 1].Dim)])) == 0
+        assert ((sizeof([temp for temp in controlpointslist if temp.Dim != (controlpointslist[1 - 1].Dim)])) == 0) is not False
         
 
 
@@ -12255,7 +12262,7 @@ class IfcBSplineCurveWithKnots_ConsistentBSpline:
         knots = self.Knots
         upperindexonknots = self.UpperIndexOnKnots
         
-        assert IfcConstraintsParamBSpline(degree,upperindexonknots,upperindexoncontrolpoints,knotmultiplicities,knots)
+        assert (IfcConstraintsParamBSpline(degree,upperindexonknots,upperindexoncontrolpoints,knotmultiplicities,knots)) is not False
         
 
 
@@ -12270,7 +12277,7 @@ class IfcBSplineCurveWithKnots_CorrespondingKnotLists:
         knotmultiplicities = self.KnotMultiplicities
         upperindexonknots = self.UpperIndexOnKnots
         
-        assert sizeof(knotmultiplicities) == upperindexonknots
+        assert (sizeof(knotmultiplicities) == upperindexonknots) is not False
         
 
 
@@ -12317,7 +12324,7 @@ class IfcBSplineSurfaceWithKnots_CorrespondingULists:
         umultiplicities = self.UMultiplicities
         knotuupper = self.KnotUUpper
         
-        assert sizeof(umultiplicities) == knotuupper
+        assert (sizeof(umultiplicities) == knotuupper) is not False
         
 
 
@@ -12332,7 +12339,7 @@ class IfcBSplineSurfaceWithKnots_CorrespondingVLists:
         vmultiplicities = self.VMultiplicities
         knotvupper = self.KnotVUpper
         
-        assert sizeof(vmultiplicities) == knotvupper
+        assert (sizeof(vmultiplicities) == knotvupper) is not False
         
 
 
@@ -12348,7 +12355,7 @@ class IfcBSplineSurfaceWithKnots_UDirectionConstraints:
         uknots = self.UKnots
         knotuupper = self.KnotUUpper
         
-        assert IfcConstraintsParamBSpline(self.UDegree,knotuupper,self.UUpper,umultiplicities,uknots)
+        assert (IfcConstraintsParamBSpline(self.UDegree,knotuupper,self.UUpper,umultiplicities,uknots)) is not False
         
 
 
@@ -12364,7 +12371,7 @@ class IfcBSplineSurfaceWithKnots_VDirectionConstraints:
         vknots = self.VKnots
         knotvupper = self.KnotVUpper
         
-        assert IfcConstraintsParamBSpline(self.VDegree,knotvupper,self.VUpper,vmultiplicities,vknots)
+        assert (IfcConstraintsParamBSpline(self.VDegree,knotvupper,self.VUpper,vmultiplicities,vknots)) is not False
         
 
 
@@ -12393,7 +12400,7 @@ class IfcBeam_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcBeamTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcBeamTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12407,7 +12414,7 @@ class IfcBeam_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcbeamtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcbeamtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -12422,7 +12429,7 @@ class IfcBeamType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcBeamTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcBeamTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -12437,7 +12444,7 @@ class IfcBearing_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBearingTypeEnum.USERDEFINED) or ((predefinedtype == IfcBearingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBearingTypeEnum.USERDEFINED) or ((predefinedtype == IfcBearingTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12451,7 +12458,7 @@ class IfcBearing_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcbearingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcbearingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -12466,7 +12473,7 @@ class IfcBearingType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcBearingTypeEnum.USERDEFINED) or ((predefinedtype == IfcBearingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcBearingTypeEnum.USERDEFINED) or ((predefinedtype == IfcBearingTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -12481,7 +12488,7 @@ class IfcBlobTexture_RasterCodeByteStream:
     def __call__(self):
         rastercode = self.RasterCode
         
-        assert (blength(rastercode) % 8) == 0
+        assert ((blength(rastercode) % 8) == 0) is not False
         
 
 
@@ -12495,7 +12502,7 @@ class IfcBlobTexture_SupportedRasterFormat:
     def __call__(self):
 
         
-        assert self.RasterFormat in ['bmp','jpg','gif','png']
+        assert (self.RasterFormat in ['bmp','jpg','gif','png']) is not False
         
 
 
@@ -12513,7 +12520,7 @@ class IfcBoiler_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBoilerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBoilerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBoilerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBoilerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12527,7 +12534,7 @@ class IfcBoiler_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcboilertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcboilertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -12542,7 +12549,7 @@ class IfcBoilerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcBoilerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBoilerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcBoilerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBoilerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -12557,7 +12564,7 @@ class IfcBooleanClippingResult_FirstOperandType:
     def __call__(self):
         firstoperand = self.FirstOperand
         
-        assert ('ifc4x3_add1.ifcsweptareasolid' in typeof(firstoperand)) or ('ifc4x3_add1.ifcsweptdiscsolid' in typeof(firstoperand)) or ('ifc4x3_add1.ifcbooleanclippingresult' in typeof(firstoperand))
+        assert (('ifc4x3_add1.ifcsweptareasolid' in typeof(firstoperand)) or ('ifc4x3_add1.ifcsweptdiscsolid' in typeof(firstoperand)) or ('ifc4x3_add1.ifcbooleanclippingresult' in typeof(firstoperand))) is not False
         
 
 
@@ -12571,7 +12578,7 @@ class IfcBooleanClippingResult_OperatorType:
     def __call__(self):
         operator = self.Operator
         
-        assert operator == difference
+        assert (operator == difference) is not False
         
 
 
@@ -12585,7 +12592,7 @@ class IfcBooleanClippingResult_SecondOperandType:
     def __call__(self):
         secondoperand = self.SecondOperand
         
-        assert 'ifc4x3_add1.ifchalfspacesolid' in typeof(secondoperand)
+        assert ('ifc4x3_add1.ifchalfspacesolid' in typeof(secondoperand)) is not False
         
 
 
@@ -12600,7 +12607,7 @@ class IfcBooleanResult_FirstOperandClosed:
     def __call__(self):
         firstoperand = self.FirstOperand
         
-        assert (not 'ifc4x3_add1.ifctessellatedfaceset' in typeof(firstoperand)) or (exists(firstoperand.Closed) and firstoperand.Closed)
+        assert ((not 'ifc4x3_add1.ifctessellatedfaceset' in typeof(firstoperand)) or (exists(firstoperand.Closed) and firstoperand.Closed)) is not False
         
 
 
@@ -12615,7 +12622,7 @@ class IfcBooleanResult_SameDim:
         firstoperand = self.FirstOperand
         secondoperand = self.SecondOperand
         
-        assert firstoperand.Dim == secondoperand.Dim
+        assert (firstoperand.Dim == secondoperand.Dim) is not False
         
 
 
@@ -12629,7 +12636,7 @@ class IfcBooleanResult_SecondOperandClosed:
     def __call__(self):
         secondoperand = self.SecondOperand
         
-        assert (not 'ifc4x3_add1.ifctessellatedfaceset' in typeof(secondoperand)) or (exists(secondoperand.Closed) and secondoperand.Closed)
+        assert ((not 'ifc4x3_add1.ifctessellatedfaceset' in typeof(secondoperand)) or (exists(secondoperand.Closed) and secondoperand.Closed)) is not False
         
 
 
@@ -12657,7 +12664,7 @@ class IfcBoundaryCurve_IsClosed:
     def __call__(self):
 
         
-        assert self.ClosedCurve
+        assert (self.ClosedCurve) is not False
         
 
 
@@ -12698,7 +12705,7 @@ class IfcBoxedHalfSpace_UnboundedSurface:
     def __call__(self):
 
         
-        assert not 'ifc4x3_add1.ifccurveboundedplane' in typeof(self.BaseSurface)
+        assert (not 'ifc4x3_add1.ifccurveboundedplane' in typeof(self.BaseSurface)) is not False
         
 
 
@@ -12713,7 +12720,7 @@ class IfcBridge_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBridgeTypeEnum.USERDEFINED) or ((predefinedtype == IfcBridgeTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBridgeTypeEnum.USERDEFINED) or ((predefinedtype == IfcBridgeTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12728,7 +12735,7 @@ class IfcBridgePart_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBridgePartTypeEnum.USERDEFINED) or ((predefinedtype == IfcBridgePartTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBridgePartTypeEnum.USERDEFINED) or ((predefinedtype == IfcBridgePartTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12746,7 +12753,7 @@ class IfcBuildingElementPart_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBuildingElementPartTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingElementPartTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBuildingElementPartTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingElementPartTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12760,7 +12767,7 @@ class IfcBuildingElementPart_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcbuildingelementparttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcbuildingelementparttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -12775,7 +12782,7 @@ class IfcBuildingElementPartType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcBuildingElementPartTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingElementPartTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcBuildingElementPartTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingElementPartTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -12790,7 +12797,7 @@ class IfcBuildingElementProxy_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBuildingElementProxyTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingElementProxyTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBuildingElementProxyTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingElementProxyTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12804,7 +12811,7 @@ class IfcBuildingElementProxy_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcbuildingelementproxytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcbuildingelementproxytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -12818,7 +12825,7 @@ class IfcBuildingElementProxy_HasObjectName:
     def __call__(self):
 
         
-        assert exists(self.Name)
+        assert (exists(self.Name)) is not False
         
 
 
@@ -12833,7 +12840,7 @@ class IfcBuildingElementProxyType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcBuildingElementProxyTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingElementProxyTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcBuildingElementProxyTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingElementProxyTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -12851,7 +12858,7 @@ class IfcBuildingSystem_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBuildingSystemTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingSystemTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBuildingSystemTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuildingSystemTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12866,7 +12873,7 @@ class IfcBuiltElement_MaxOneMaterialAssociation:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in self.HasAssociations if 'ifc4x3_add1.ifcrelassociatesmaterial' in typeof(temp)])) <= 1
+        assert ((sizeof([temp for temp in self.HasAssociations if 'ifc4x3_add1.ifcrelassociatesmaterial' in typeof(temp)])) <= 1) is not False
         
 
 
@@ -12884,7 +12891,7 @@ class IfcBuiltSystem_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBuiltSystemTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuiltSystemTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBuiltSystemTypeEnum.USERDEFINED) or ((predefinedtype == IfcBuiltSystemTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12899,7 +12906,7 @@ class IfcBurner_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcBurnerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBurnerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcBurnerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBurnerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -12913,7 +12920,7 @@ class IfcBurner_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcburnertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcburnertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -12928,7 +12935,7 @@ class IfcBurnerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcBurnerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBurnerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcBurnerTypeEnum.USERDEFINED) or ((predefinedtype == IfcBurnerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -12944,7 +12951,7 @@ class IfcCShapeProfileDef_ValidGirth:
         depth = self.Depth
         girth = self.Girth
         
-        assert girth < (depth / 2.)
+        assert (girth < (depth / 2.)) is not False
         
 
 
@@ -12961,7 +12968,7 @@ class IfcCShapeProfileDef_ValidInternalFilletRadius:
         wallthickness = self.WallThickness
         internalfilletradius = self.InternalFilletRadius
         
-        assert (not exists(internalfilletradius)) or ((internalfilletradius <= ((width / 2.) - wallthickness)) and (internalfilletradius <= ((depth / 2.) - wallthickness)))
+        assert ((not exists(internalfilletradius)) or ((internalfilletradius <= ((width / 2.) - wallthickness)) and (internalfilletradius <= ((depth / 2.) - wallthickness)))) is not False
         
 
 
@@ -12977,7 +12984,7 @@ class IfcCShapeProfileDef_ValidWallThickness:
         width = self.Width
         wallthickness = self.WallThickness
         
-        assert (wallthickness < (width / 2.)) and (wallthickness < (depth / 2.))
+        assert ((wallthickness < (width / 2.)) and (wallthickness < (depth / 2.))) is not False
         
 
 
@@ -12992,7 +12999,7 @@ class IfcCableCarrierFitting_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCableCarrierFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierFittingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCableCarrierFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierFittingTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13006,7 +13013,7 @@ class IfcCableCarrierFitting_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccablecarrierfittingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccablecarrierfittingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13021,7 +13028,7 @@ class IfcCableCarrierFittingType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCableCarrierFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierFittingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCableCarrierFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierFittingTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13036,7 +13043,7 @@ class IfcCableCarrierSegment_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCableCarrierSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCableCarrierSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13050,7 +13057,7 @@ class IfcCableCarrierSegment_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccablecarriersegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccablecarriersegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13065,7 +13072,7 @@ class IfcCableCarrierSegmentType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCableCarrierSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCableCarrierSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableCarrierSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13080,7 +13087,7 @@ class IfcCableFitting_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCableFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableFittingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCableFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableFittingTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13094,7 +13101,7 @@ class IfcCableFitting_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccablefittingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccablefittingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13109,7 +13116,7 @@ class IfcCableFittingType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCableFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableFittingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCableFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableFittingTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13124,7 +13131,7 @@ class IfcCableSegment_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCableSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCableSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13138,7 +13145,7 @@ class IfcCableSegment_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccablesegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccablesegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13153,7 +13160,7 @@ class IfcCableSegmentType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCableSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCableSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcCableSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13168,7 +13175,7 @@ class IfcCaissonFoundation_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCaissonFoundationTypeEnum.USERDEFINED) or ((predefinedtype == IfcCaissonFoundationTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCaissonFoundationTypeEnum.USERDEFINED) or ((predefinedtype == IfcCaissonFoundationTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13182,7 +13189,7 @@ class IfcCaissonFoundation_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccaissonfoundationtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccaissonfoundationtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13197,7 +13204,7 @@ class IfcCaissonFoundationType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCaissonFoundationTypeEnum.USERDEFINED) or ((predefinedtype == IfcCaissonFoundationTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCaissonFoundationTypeEnum.USERDEFINED) or ((predefinedtype == IfcCaissonFoundationTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13212,7 +13219,7 @@ class IfcCartesianPoint_CP2Dor3D:
     def __call__(self):
         coordinates = self.Coordinates
         
-        assert hiindex(coordinates) >= 2
+        assert (hiindex(coordinates) >= 2) is not False
         
 
 
@@ -13241,7 +13248,7 @@ class IfcCartesianTransformationOperator_ScaleGreaterZero:
     def __call__(self):
         scl = self.Scl
         
-        assert scl > 0.0
+        assert (scl > 0.0) is not False
         
 
 
@@ -13270,7 +13277,7 @@ class IfcCartesianTransformationOperator2D_Axis1Is2D:
     def __call__(self):
 
         
-        assert (not exists(self.Axis1)) or (self.Axis1.Dim == 2)
+        assert ((not exists(self.Axis1)) or (self.Axis1.Dim == 2)) is not False
         
 
 
@@ -13284,7 +13291,7 @@ class IfcCartesianTransformationOperator2D_Axis2Is2D:
     def __call__(self):
 
         
-        assert (not exists(self.Axis2)) or (self.Axis2.Dim == 2)
+        assert ((not exists(self.Axis2)) or (self.Axis2.Dim == 2)) is not False
         
 
 
@@ -13298,7 +13305,7 @@ class IfcCartesianTransformationOperator2D_DimEqual2:
     def __call__(self):
 
         
-        assert self.Dim == 2
+        assert (self.Dim == 2) is not False
         
 
 
@@ -13320,7 +13327,7 @@ class IfcCartesianTransformationOperator2DnonUniform_Scale2GreaterZero:
     def __call__(self):
         scl2 = self.Scl2
         
-        assert scl2 > 0.0
+        assert (scl2 > 0.0) is not False
         
 
 
@@ -13342,7 +13349,7 @@ class IfcCartesianTransformationOperator3D_Axis1Is3D:
     def __call__(self):
 
         
-        assert (not exists(self.Axis1)) or (self.Axis1.Dim == 3)
+        assert ((not exists(self.Axis1)) or (self.Axis1.Dim == 3)) is not False
         
 
 
@@ -13356,7 +13363,7 @@ class IfcCartesianTransformationOperator3D_Axis2Is3D:
     def __call__(self):
 
         
-        assert (not exists(self.Axis2)) or (self.Axis2.Dim == 3)
+        assert ((not exists(self.Axis2)) or (self.Axis2.Dim == 3)) is not False
         
 
 
@@ -13370,7 +13377,7 @@ class IfcCartesianTransformationOperator3D_Axis3Is3D:
     def __call__(self):
         axis3 = self.Axis3
         
-        assert (not exists(axis3)) or (axis3.Dim == 3)
+        assert ((not exists(axis3)) or (axis3.Dim == 3)) is not False
         
 
 
@@ -13384,7 +13391,7 @@ class IfcCartesianTransformationOperator3D_DimIs3D:
     def __call__(self):
 
         
-        assert self.Dim == 3
+        assert (self.Dim == 3) is not False
         
 
 
@@ -13406,7 +13413,7 @@ class IfcCartesianTransformationOperator3DnonUniform_Scale2GreaterZero:
     def __call__(self):
         scl2 = self.Scl2
         
-        assert scl2 > 0.0
+        assert (scl2 > 0.0) is not False
         
 
 
@@ -13420,7 +13427,7 @@ class IfcCartesianTransformationOperator3DnonUniform_Scale3GreaterZero:
     def __call__(self):
         scl3 = self.Scl3
         
-        assert scl3 > 0.0
+        assert (scl3 > 0.0) is not False
         
 
 
@@ -13452,7 +13459,7 @@ class IfcChiller_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcChillerTypeEnum.USERDEFINED) or ((predefinedtype == IfcChillerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcChillerTypeEnum.USERDEFINED) or ((predefinedtype == IfcChillerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13466,7 +13473,7 @@ class IfcChiller_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcchillertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcchillertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13481,7 +13488,7 @@ class IfcChillerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcChillerTypeEnum.USERDEFINED) or ((predefinedtype == IfcChillerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcChillerTypeEnum.USERDEFINED) or ((predefinedtype == IfcChillerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13496,7 +13503,7 @@ class IfcChimney_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcChimneyTypeEnum.USERDEFINED) or ((predefinedtype == IfcChimneyTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcChimneyTypeEnum.USERDEFINED) or ((predefinedtype == IfcChimneyTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13510,7 +13517,7 @@ class IfcChimney_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcchimneytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcchimneytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13525,7 +13532,7 @@ class IfcChimneyType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcChimneyTypeEnum.USERDEFINED) or ((predefinedtype == IfcChimneyTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcChimneyTypeEnum.USERDEFINED) or ((predefinedtype == IfcChimneyTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13543,7 +13550,7 @@ class IfcCircleHollowProfileDef_WR1:
     def __call__(self):
         wallthickness = self.WallThickness
         
-        assert wallthickness < self.Radius
+        assert (wallthickness < self.Radius) is not False
         
 
 
@@ -13579,7 +13586,7 @@ class IfcCoil_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCoilTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoilTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCoilTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoilTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13593,7 +13600,7 @@ class IfcCoil_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccoiltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccoiltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13608,7 +13615,7 @@ class IfcCoilType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCoilTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoilTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCoilTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoilTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13632,7 +13639,7 @@ class IfcColumn_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcColumnTypeEnum.USERDEFINED) or ((predefinedtype == IfcColumnTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcColumnTypeEnum.USERDEFINED) or ((predefinedtype == IfcColumnTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13646,7 +13653,7 @@ class IfcColumn_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccolumntype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccolumntype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13661,7 +13668,7 @@ class IfcColumnType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcColumnTypeEnum.USERDEFINED) or ((predefinedtype == IfcColumnTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcColumnTypeEnum.USERDEFINED) or ((predefinedtype == IfcColumnTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13676,7 +13683,7 @@ class IfcCommunicationsAppliance_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCommunicationsApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcCommunicationsApplianceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCommunicationsApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcCommunicationsApplianceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13690,7 +13697,7 @@ class IfcCommunicationsAppliance_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccommunicationsappliancetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccommunicationsappliancetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13705,7 +13712,7 @@ class IfcCommunicationsApplianceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCommunicationsApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcCommunicationsApplianceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCommunicationsApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcCommunicationsApplianceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13720,7 +13727,7 @@ class IfcComplexProperty_WR21:
     def __call__(self):
         hasproperties = self.HasProperties
         
-        assert (sizeof([temp for temp in hasproperties if self == temp])) == 0
+        assert ((sizeof([temp for temp in hasproperties if self == temp])) == 0) is not False
         
 
 
@@ -13734,7 +13741,7 @@ class IfcComplexProperty_WR22:
     def __call__(self):
         hasproperties = self.HasProperties
         
-        assert IfcUniquePropertyName(hasproperties)
+        assert (IfcUniquePropertyName(hasproperties)) is not False
         
 
 
@@ -13749,7 +13756,7 @@ class IfcComplexPropertyTemplate_NoSelfReference:
     def __call__(self):
         haspropertytemplates = self.HasPropertyTemplates
         
-        assert (sizeof([temp for temp in haspropertytemplates if self == temp])) == 0
+        assert ((sizeof([temp for temp in haspropertytemplates if self == temp])) == 0) is not False
         
 
 
@@ -13763,7 +13770,7 @@ class IfcComplexPropertyTemplate_UniquePropertyNames:
     def __call__(self):
         haspropertytemplates = self.HasPropertyTemplates
         
-        assert IfcUniquePropertyTemplateNames(haspropertytemplates)
+        assert (IfcUniquePropertyTemplateNames(haspropertytemplates)) is not False
         
 
 
@@ -13779,7 +13786,7 @@ class IfcCompositeCurve_CurveContinuous:
         segments = self.Segments
         closedcurve = self.ClosedCurve
         
-        assert ((not closedcurve) and ((sizeof([temp for temp in segments if temp.Transition == discontinuous])) == 1)) or (closedcurve and ((sizeof([temp for temp in segments if temp.Transition == discontinuous])) == 0))
+        assert (((not closedcurve) and ((sizeof([temp for temp in segments if temp.Transition == discontinuous])) == 1)) or (closedcurve and ((sizeof([temp for temp in segments if temp.Transition == discontinuous])) == 0))) is not False
         
 
 
@@ -13793,7 +13800,7 @@ class IfcCompositeCurve_SameDim:
     def __call__(self):
         segments = self.Segments
         
-        assert (sizeof([temp for temp in segments if temp.Dim != (segments[1 - 1].Dim)])) == 0
+        assert ((sizeof([temp for temp in segments if temp.Dim != (segments[1 - 1].Dim)])) == 0) is not False
         
 
 
@@ -13823,7 +13830,7 @@ class IfcCompositeCurveOnSurface_SameSurface:
     def __call__(self):
         basissurface = self.BasisSurface
         
-        assert sizeof(basissurface) > 0
+        assert (sizeof(basissurface) > 0) is not False
         
 
 
@@ -13845,7 +13852,7 @@ class IfcCompositeCurveSegment_ParentIsBoundedCurve:
     def __call__(self):
         parentcurve = self.ParentCurve
         
-        assert 'ifc4x3_add1.ifcboundedcurve' in typeof(parentcurve)
+        assert ('ifc4x3_add1.ifcboundedcurve' in typeof(parentcurve)) is not False
         
 
 
@@ -13860,7 +13867,7 @@ class IfcCompositeProfileDef_InvariantProfileType:
     def __call__(self):
         profiles = self.Profiles
         
-        assert (sizeof([temp for temp in profiles if temp.ProfileType != (profiles[1 - 1].ProfileType)])) == 0
+        assert ((sizeof([temp for temp in profiles if temp.ProfileType != (profiles[1 - 1].ProfileType)])) == 0) is not False
         
 
 
@@ -13874,7 +13881,7 @@ class IfcCompositeProfileDef_NoRecursion:
     def __call__(self):
         profiles = self.Profiles
         
-        assert (sizeof([temp for temp in profiles if 'ifc4x3_add1.ifccompositeprofiledef' in typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in profiles if 'ifc4x3_add1.ifccompositeprofiledef' in typeof(temp)])) == 0) is not False
         
 
 
@@ -13889,7 +13896,7 @@ class IfcCompressor_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCompressorTypeEnum.USERDEFINED) or ((predefinedtype == IfcCompressorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCompressorTypeEnum.USERDEFINED) or ((predefinedtype == IfcCompressorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13903,7 +13910,7 @@ class IfcCompressor_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccompressortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccompressortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13918,7 +13925,7 @@ class IfcCompressorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCompressorTypeEnum.USERDEFINED) or ((predefinedtype == IfcCompressorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCompressorTypeEnum.USERDEFINED) or ((predefinedtype == IfcCompressorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -13933,7 +13940,7 @@ class IfcCondenser_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCondenserTypeEnum.USERDEFINED) or ((predefinedtype == IfcCondenserTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCondenserTypeEnum.USERDEFINED) or ((predefinedtype == IfcCondenserTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -13947,7 +13954,7 @@ class IfcCondenser_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccondensertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccondensertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -13962,7 +13969,7 @@ class IfcCondenserType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCondenserTypeEnum.USERDEFINED) or ((predefinedtype == IfcCondenserTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCondenserTypeEnum.USERDEFINED) or ((predefinedtype == IfcCondenserTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14001,7 +14008,7 @@ class IfcConstraint_WR11:
     def __call__(self):
         constraintgrade = self.ConstraintGrade
         
-        assert (constraintgrade != IfcConstraintEnum.USERDEFINED) or ((constraintgrade == IfcConstraintEnum.USERDEFINED) and exists(self.UserDefinedGrade))
+        assert ((constraintgrade != IfcConstraintEnum.USERDEFINED) or ((constraintgrade == IfcConstraintEnum.USERDEFINED) and exists(self.UserDefinedGrade))) is not False
         
 
 
@@ -14016,7 +14023,7 @@ class IfcConstructionEquipmentResource_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcConstructionEquipmentResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionEquipmentResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcConstructionEquipmentResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionEquipmentResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14031,7 +14038,7 @@ class IfcConstructionEquipmentResourceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcConstructionEquipmentResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionEquipmentResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))
+        assert ((predefinedtype != IfcConstructionEquipmentResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionEquipmentResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))) is not False
         
 
 
@@ -14046,7 +14053,7 @@ class IfcConstructionMaterialResource_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcConstructionMaterialResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionMaterialResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcConstructionMaterialResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionMaterialResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14061,7 +14068,7 @@ class IfcConstructionMaterialResourceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcConstructionMaterialResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionMaterialResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))
+        assert ((predefinedtype != IfcConstructionMaterialResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionMaterialResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))) is not False
         
 
 
@@ -14076,7 +14083,7 @@ class IfcConstructionProductResource_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcConstructionProductResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionProductResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcConstructionProductResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionProductResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14091,7 +14098,7 @@ class IfcConstructionProductResourceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcConstructionProductResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionProductResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))
+        assert ((predefinedtype != IfcConstructionProductResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcConstructionProductResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))) is not False
         
 
 
@@ -14121,7 +14128,7 @@ class IfcController_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcControllerTypeEnum.USERDEFINED) or ((predefinedtype == IfcControllerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcControllerTypeEnum.USERDEFINED) or ((predefinedtype == IfcControllerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14135,7 +14142,7 @@ class IfcController_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccontrollertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccontrollertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14150,7 +14157,7 @@ class IfcControllerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcControllerTypeEnum.USERDEFINED) or ((predefinedtype == IfcControllerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcControllerTypeEnum.USERDEFINED) or ((predefinedtype == IfcControllerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14171,7 +14178,7 @@ class IfcConveyorSegment_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcConveyorSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcConveyorSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcConveyorSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcConveyorSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14185,7 +14192,7 @@ class IfcConveyorSegment_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcconveyorsegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcconveyorsegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14200,7 +14207,7 @@ class IfcConveyorSegmentType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcConveyorSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcConveyorSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcConveyorSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcConveyorSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14215,7 +14222,7 @@ class IfcCooledBeam_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCooledBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcCooledBeamTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCooledBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcCooledBeamTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14229,7 +14236,7 @@ class IfcCooledBeam_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccooledbeamtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccooledbeamtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14244,7 +14251,7 @@ class IfcCooledBeamType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCooledBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcCooledBeamTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCooledBeamTypeEnum.USERDEFINED) or ((predefinedtype == IfcCooledBeamTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14259,7 +14266,7 @@ class IfcCoolingTower_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCoolingTowerTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoolingTowerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCoolingTowerTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoolingTowerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14273,7 +14280,7 @@ class IfcCoolingTower_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccoolingtowertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccoolingtowertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14288,7 +14295,7 @@ class IfcCoolingTowerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCoolingTowerTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoolingTowerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCoolingTowerTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoolingTowerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14307,7 +14314,7 @@ class IfcCoordinateReferenceSystem_NameOrWKT:
         name = self.Name
         wellknowntext = self.WellKnownText
         
-        assert (hiindex(wellknowntext) == 1) or exists(name)
+        assert ((hiindex(wellknowntext) == 1) or exists(name)) is not False
         
 
 
@@ -14334,7 +14341,7 @@ class IfcCourse_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCourseTypeEnum.USERDEFINED) or ((predefinedtype == IfcCourseTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCourseTypeEnum.USERDEFINED) or ((predefinedtype == IfcCourseTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14348,7 +14355,7 @@ class IfcCourse_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccoursetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccoursetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14363,7 +14370,7 @@ class IfcCourseType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCourseTypeEnum.USERDEFINED) or ((predefinedtype == IfcCourseTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCourseTypeEnum.USERDEFINED) or ((predefinedtype == IfcCourseTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14378,7 +14385,7 @@ class IfcCovering_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCoveringTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoveringTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCoveringTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoveringTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14392,7 +14399,7 @@ class IfcCovering_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccoveringtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccoveringtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14407,7 +14414,7 @@ class IfcCoveringType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCoveringTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoveringTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCoveringTypeEnum.USERDEFINED) or ((predefinedtype == IfcCoveringTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14422,7 +14429,7 @@ class IfcCrewResource_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCrewResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcCrewResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCrewResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcCrewResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14437,7 +14444,7 @@ class IfcCrewResourceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCrewResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcCrewResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))
+        assert ((predefinedtype != IfcCrewResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcCrewResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))) is not False
         
 
 
@@ -14466,7 +14473,7 @@ class IfcCurtainWall_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcCurtainWallTypeEnum.USERDEFINED) or ((predefinedtype == IfcCurtainWallTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcCurtainWallTypeEnum.USERDEFINED) or ((predefinedtype == IfcCurtainWallTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14480,7 +14487,7 @@ class IfcCurtainWall_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccurtainwalltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifccurtainwalltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14495,7 +14502,7 @@ class IfcCurtainWallType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcCurtainWallTypeEnum.USERDEFINED) or ((predefinedtype == IfcCurtainWallTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcCurtainWallTypeEnum.USERDEFINED) or ((predefinedtype == IfcCurtainWallTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14529,7 +14536,7 @@ class IfcCurveStyle_IdentifiableCurveStyle:
         curvewidth = self.CurveWidth
         curvecolour = self.CurveColour
         
-        assert exists(curvefont) or exists(curvewidth) or exists(curvecolour)
+        assert (exists(curvefont) or exists(curvewidth) or exists(curvecolour)) is not False
         
 
 
@@ -14543,7 +14550,7 @@ class IfcCurveStyle_MeasureOfWidth:
     def __call__(self):
         curvewidth = self.CurveWidth
         
-        assert (not exists(curvewidth)) or ('ifc4x3_add1.ifcpositivelengthmeasure' in typeof(curvewidth)) or (('ifc4x3_add1.ifcdescriptivemeasure' in typeof(curvewidth)) and (curvewidth == 'bylayer'))
+        assert ((not exists(curvewidth)) or ('ifc4x3_add1.ifcpositivelengthmeasure' in typeof(curvewidth)) or (('ifc4x3_add1.ifcdescriptivemeasure' in typeof(curvewidth)) and (curvewidth == 'bylayer'))) is not False
         
 
 
@@ -14564,7 +14571,7 @@ class IfcCurveStyleFontPattern_VisibleLengthGreaterEqualZero:
     def __call__(self):
         visiblesegmentlength = self.VisibleSegmentLength
         
-        assert visiblesegmentlength >= 0.
+        assert (visiblesegmentlength >= 0.) is not False
         
 
 
@@ -14582,7 +14589,7 @@ class IfcDamper_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcDamperTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcDamperTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14596,7 +14603,7 @@ class IfcDamper_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdampertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdampertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14611,7 +14618,7 @@ class IfcDamperType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcDamperTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcDamperTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14626,7 +14633,7 @@ class IfcDeepFoundation_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdeepfoundationtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdeepfoundationtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14644,7 +14651,7 @@ class IfcDerivedProfileDef_InvariantProfileType:
     def __call__(self):
         parentprofile = self.ParentProfile
         
-        assert self.ProfileType == parentprofile.ProfileType
+        assert (self.ProfileType == parentprofile.ProfileType) is not False
         
 
 
@@ -14659,7 +14666,7 @@ class IfcDerivedUnit_WR1:
     def __call__(self):
         elements = self.Elements
         
-        assert (sizeof(elements) > 1) or ((sizeof(elements) == 1) and ((elements[1 - 1].Exponent) != 1))
+        assert ((sizeof(elements) > 1) or ((sizeof(elements) == 1) and ((elements[1 - 1].Exponent) != 1))) is not False
         
 
 
@@ -14673,7 +14680,7 @@ class IfcDerivedUnit_WR2:
     def __call__(self):
         unittype = self.UnitType
         
-        assert (unittype != IfcDerivedUnitEnum.USERDEFINED) or ((unittype == IfcDerivedUnitEnum.USERDEFINED) and exists(self.UserDefinedType))
+        assert ((unittype != IfcDerivedUnitEnum.USERDEFINED) or ((unittype == IfcDerivedUnitEnum.USERDEFINED) and exists(self.UserDefinedType))) is not False
         
 
 
@@ -14701,7 +14708,7 @@ class IfcDirection_MagnitudeGreaterZero:
     def __call__(self):
         directionratios = self.DirectionRatios
         
-        assert (sizeof([tmp for tmp in directionratios if tmp != 0.0])) > 0
+        assert ((sizeof([tmp for tmp in directionratios if tmp != 0.0])) > 0) is not False
         
 
 
@@ -14725,7 +14732,7 @@ class IfcDirectrixCurveSweptAreaSolid_DirectrixBounded:
         startparam = self.StartParam
         endparam = self.EndParam
         
-        assert (exists(startparam) and exists(endparam)) or ((sizeof(['ifc4x3_add1.ifcconic','ifc4x3_add1.ifcboundedcurve'] * typeof(directrix))) == 1)
+        assert ((exists(startparam) and exists(endparam)) or ((sizeof(['ifc4x3_add1.ifcconic','ifc4x3_add1.ifcboundedcurve'] * typeof(directrix))) == 1)) is not False
         
 
 
@@ -14743,7 +14750,7 @@ class IfcDiscreteAccessory_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDiscreteAccessoryTypeEnum.USERDEFINED) or ((predefinedtype == IfcDiscreteAccessoryTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDiscreteAccessoryTypeEnum.USERDEFINED) or ((predefinedtype == IfcDiscreteAccessoryTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14757,7 +14764,7 @@ class IfcDiscreteAccessory_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdiscreteaccessorytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdiscreteaccessorytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14772,7 +14779,7 @@ class IfcDiscreteAccessoryType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcDiscreteAccessoryTypeEnum.USERDEFINED) or ((predefinedtype == IfcDiscreteAccessoryTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcDiscreteAccessoryTypeEnum.USERDEFINED) or ((predefinedtype == IfcDiscreteAccessoryTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14787,7 +14794,7 @@ class IfcDistributionBoard_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDistributionBoardTypeEnum.USERDEFINED) or ((predefinedtype == IfcDistributionBoardTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDistributionBoardTypeEnum.USERDEFINED) or ((predefinedtype == IfcDistributionBoardTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14801,7 +14808,7 @@ class IfcDistributionBoard_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdistributionboardtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdistributionboardtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14816,7 +14823,7 @@ class IfcDistributionBoardType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcDistributionBoardTypeEnum.USERDEFINED) or ((predefinedtype == IfcDistributionBoardTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcDistributionBoardTypeEnum.USERDEFINED) or ((predefinedtype == IfcDistributionBoardTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14831,7 +14838,7 @@ class IfcDistributionChamberElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDistributionChamberElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcDistributionChamberElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDistributionChamberElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcDistributionChamberElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14845,7 +14852,7 @@ class IfcDistributionChamberElement_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdistributionchamberelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdistributionchamberelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14860,7 +14867,7 @@ class IfcDistributionChamberElementType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcDistributionChamberElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcDistributionChamberElementTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcDistributionChamberElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcDistributionChamberElementTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -14899,7 +14906,7 @@ class IfcDistributionSystem_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDistributionSystemEnum.USERDEFINED) or ((predefinedtype == IfcDistributionSystemEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDistributionSystemEnum.USERDEFINED) or ((predefinedtype == IfcDistributionSystemEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14921,7 +14928,7 @@ class IfcDocumentReference_WR1:
         name = self.Name
         referenceddocument = self.ReferencedDocument
         
-        assert exists(name) ^ exists(referenceddocument)
+        assert (exists(name) ^ exists(referenceddocument)) is not False
         
 
 
@@ -14936,7 +14943,7 @@ class IfcDoor_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDoorTypeEnum.USERDEFINED) or ((predefinedtype == IfcDoorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDoorTypeEnum.USERDEFINED) or ((predefinedtype == IfcDoorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -14950,7 +14957,7 @@ class IfcDoor_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdoortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcdoortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -14966,7 +14973,7 @@ class IfcDoorLiningProperties_WR31:
         liningdepth = self.LiningDepth
         liningthickness = self.LiningThickness
         
-        assert not exists(liningdepth) and (not exists(liningthickness))
+        assert (not exists(liningdepth) and (not exists(liningthickness))) is not False
         
 
 
@@ -14981,7 +14988,7 @@ class IfcDoorLiningProperties_WR32:
         thresholddepth = self.ThresholdDepth
         thresholdthickness = self.ThresholdThickness
         
-        assert not exists(thresholddepth) and (not exists(thresholdthickness))
+        assert (not exists(thresholddepth) and (not exists(thresholdthickness))) is not False
         
 
 
@@ -14996,7 +15003,7 @@ class IfcDoorLiningProperties_WR33:
         transomthickness = self.TransomThickness
         transomoffset = self.TransomOffset
         
-        assert (exists(transomoffset) and exists(transomthickness)) ^ ((not exists(transomoffset)) and (not exists(transomthickness)))
+        assert ((exists(transomoffset) and exists(transomthickness)) ^ ((not exists(transomoffset)) and (not exists(transomthickness)))) is not False
         
 
 
@@ -15011,7 +15018,7 @@ class IfcDoorLiningProperties_WR34:
         casingthickness = self.CasingThickness
         casingdepth = self.CasingDepth
         
-        assert (exists(casingdepth) and exists(casingthickness)) ^ ((not exists(casingdepth)) and (not exists(casingthickness)))
+        assert ((exists(casingdepth) and exists(casingthickness)) ^ ((not exists(casingdepth)) and (not exists(casingthickness)))) is not False
         
 
 
@@ -15025,7 +15032,7 @@ class IfcDoorLiningProperties_WR35:
     def __call__(self):
 
         
-        assert (exists(lambda: self.DefinesType[1 - 1])) and ('ifc4x3_add1.ifcdoortype' in (typeof(self.DefinesType[1 - 1])))
+        assert ((exists(lambda: self.DefinesType[1 - 1])) and ('ifc4x3_add1.ifcdoortype' in (typeof(self.DefinesType[1 - 1])))) is not False
         
 
 
@@ -15040,7 +15047,7 @@ class IfcDoorPanelProperties_ApplicableToType:
     def __call__(self):
 
         
-        assert (exists(lambda: self.DefinesType[1 - 1])) and ('ifc4x3_add1.ifcdoortype' in (typeof(self.DefinesType[1 - 1])))
+        assert ((exists(lambda: self.DefinesType[1 - 1])) and ('ifc4x3_add1.ifcdoortype' in (typeof(self.DefinesType[1 - 1])))) is not False
         
 
 
@@ -15055,7 +15062,7 @@ class IfcDoorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcDoorTypeEnum.USERDEFINED) or ((predefinedtype == IfcDoorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcDoorTypeEnum.USERDEFINED) or ((predefinedtype == IfcDoorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15070,7 +15077,7 @@ class IfcDraughtingPreDefinedColour_PreDefinedColourNames:
     def __call__(self):
 
         
-        assert self.Name in ['black','red','green','blue','yellow','magenta','cyan','white','bylayer']
+        assert (self.Name in ['black','red','green','blue','yellow','magenta','cyan','white','bylayer']) is not False
         
 
 
@@ -15085,7 +15092,7 @@ class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
     def __call__(self):
 
         
-        assert self.Name in ['continuous','chain','chaindoubledash','dashed','dotted','bylayer']
+        assert (self.Name in ['continuous','chain','chaindoubledash','dashed','dotted','bylayer']) is not False
         
 
 
@@ -15100,7 +15107,7 @@ class IfcDuctFitting_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDuctFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctFittingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDuctFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctFittingTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15114,7 +15121,7 @@ class IfcDuctFitting_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcductfittingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcductfittingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15129,7 +15136,7 @@ class IfcDuctFittingType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcDuctFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctFittingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcDuctFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctFittingTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15144,7 +15151,7 @@ class IfcDuctSegment_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDuctSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDuctSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15158,7 +15165,7 @@ class IfcDuctSegment_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcductsegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcductsegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15173,7 +15180,7 @@ class IfcDuctSegmentType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcDuctSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcDuctSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15188,7 +15195,7 @@ class IfcDuctSilencer_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcDuctSilencerTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSilencerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcDuctSilencerTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSilencerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15202,7 +15209,7 @@ class IfcDuctSilencer_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcductsilencertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcductsilencertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15217,7 +15224,7 @@ class IfcDuctSilencerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcDuctSilencerTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSilencerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcDuctSilencerTypeEnum.USERDEFINED) or ((predefinedtype == IfcDuctSilencerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15232,7 +15239,7 @@ class IfcEarthworksCut_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcEarthworksCutTypeEnum.USERDEFINED) or ((predefinedtype == IfcEarthworksCutTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcEarthworksCutTypeEnum.USERDEFINED) or ((predefinedtype == IfcEarthworksCutTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15250,7 +15257,7 @@ class IfcEarthworksFill_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcEarthworksFillTypeEnum.USERDEFINED) or ((predefinedtype == IfcEarthworksFillTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcEarthworksFillTypeEnum.USERDEFINED) or ((predefinedtype == IfcEarthworksFillTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15272,7 +15279,7 @@ class IfcEdgeLoop_IsClosed:
         edgelist = self.EdgeList
         ne = self.Ne
         
-        assert (edgelist[1 - 1].EdgeStart) == (edgelist[ne - 1].EdgeEnd)
+        assert ((edgelist[1 - 1].EdgeStart) == (edgelist[ne - 1].EdgeEnd)) is not False
         
 
 
@@ -15286,7 +15293,7 @@ class IfcEdgeLoop_IsContinuous:
     def __call__(self):
 
         
-        assert IfcLoopHeadToTail(self)
+        assert (IfcLoopHeadToTail(self)) is not False
         
 
 
@@ -15308,7 +15315,7 @@ class IfcElectricAppliance_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcElectricApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricApplianceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcElectricApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricApplianceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15322,7 +15329,7 @@ class IfcElectricAppliance_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricappliancetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricappliancetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15337,7 +15344,7 @@ class IfcElectricApplianceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcElectricApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricApplianceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcElectricApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricApplianceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15352,7 +15359,7 @@ class IfcElectricDistributionBoard_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcElectricDistributionBoardTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricDistributionBoardTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcElectricDistributionBoardTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricDistributionBoardTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15366,7 +15373,7 @@ class IfcElectricDistributionBoard_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricdistributionboardtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricdistributionboardtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15381,7 +15388,7 @@ class IfcElectricDistributionBoardType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcElectricDistributionBoardTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricDistributionBoardTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcElectricDistributionBoardTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricDistributionBoardTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15396,7 +15403,7 @@ class IfcElectricFlowStorageDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15410,7 +15417,7 @@ class IfcElectricFlowStorageDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricflowstoragedevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricflowstoragedevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15425,7 +15432,7 @@ class IfcElectricFlowStorageDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15440,7 +15447,7 @@ class IfcElectricFlowTreatmentDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15454,7 +15461,7 @@ class IfcElectricFlowTreatmentDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricflowtreatmentdevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricflowtreatmentdevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15469,7 +15476,7 @@ class IfcElectricFlowTreatmentDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15484,7 +15491,7 @@ class IfcElectricGenerator_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcElectricGeneratorTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricGeneratorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcElectricGeneratorTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricGeneratorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15498,7 +15505,7 @@ class IfcElectricGenerator_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricgeneratortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricgeneratortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15513,7 +15520,7 @@ class IfcElectricGeneratorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcElectricGeneratorTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricGeneratorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcElectricGeneratorTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricGeneratorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15528,7 +15535,7 @@ class IfcElectricMotor_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcElectricMotorTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricMotorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcElectricMotorTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricMotorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15542,7 +15549,7 @@ class IfcElectricMotor_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricmotortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectricmotortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15557,7 +15564,7 @@ class IfcElectricMotorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcElectricMotorTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricMotorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcElectricMotorTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricMotorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15572,7 +15579,7 @@ class IfcElectricTimeControl_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcElectricTimeControlTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricTimeControlTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcElectricTimeControlTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricTimeControlTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15586,7 +15593,7 @@ class IfcElectricTimeControl_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectrictimecontroltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelectrictimecontroltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15601,7 +15608,7 @@ class IfcElectricTimeControlType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcElectricTimeControlTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricTimeControlTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcElectricTimeControlTypeEnum.USERDEFINED) or ((predefinedtype == IfcElectricTimeControlTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15619,7 +15626,7 @@ class IfcElementAssembly_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcElementAssemblyTypeEnum.USERDEFINED) or ((predefinedtype == IfcElementAssemblyTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcElementAssemblyTypeEnum.USERDEFINED) or ((predefinedtype == IfcElementAssemblyTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15633,7 +15640,7 @@ class IfcElementAssembly_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelementassemblytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcelementassemblytype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15648,7 +15655,7 @@ class IfcElementAssemblyType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcElementAssemblyTypeEnum.USERDEFINED) or ((predefinedtype == IfcElementAssemblyTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcElementAssemblyTypeEnum.USERDEFINED) or ((predefinedtype == IfcElementAssemblyTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15669,7 +15676,7 @@ class IfcElementQuantity_UniqueQuantityNames:
     def __call__(self):
         quantities = self.Quantities
         
-        assert IfcUniqueQuantityNames(quantities)
+        assert (IfcUniqueQuantityNames(quantities)) is not False
         
 
 
@@ -15702,7 +15709,7 @@ class IfcEngine_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcEngineTypeEnum.USERDEFINED) or ((predefinedtype == IfcEngineTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcEngineTypeEnum.USERDEFINED) or ((predefinedtype == IfcEngineTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15716,7 +15723,7 @@ class IfcEngine_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcenginetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcenginetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15731,7 +15738,7 @@ class IfcEngineType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcEngineTypeEnum.USERDEFINED) or ((predefinedtype == IfcEngineTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcEngineTypeEnum.USERDEFINED) or ((predefinedtype == IfcEngineTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15746,7 +15753,7 @@ class IfcEvaporativeCooler_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcEvaporativeCoolerTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporativeCoolerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcEvaporativeCoolerTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporativeCoolerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15760,7 +15767,7 @@ class IfcEvaporativeCooler_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcevaporativecoolertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcevaporativecoolertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15775,7 +15782,7 @@ class IfcEvaporativeCoolerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcEvaporativeCoolerTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporativeCoolerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcEvaporativeCoolerTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporativeCoolerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15790,7 +15797,7 @@ class IfcEvaporator_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcEvaporatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporatorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcEvaporatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporatorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15804,7 +15811,7 @@ class IfcEvaporator_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcevaporatortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcevaporatortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -15819,7 +15826,7 @@ class IfcEvaporatorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcEvaporatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporatorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcEvaporatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcEvaporatorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -15834,7 +15841,7 @@ class IfcEvent_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcEventTypeEnum.USERDEFINED) or ((predefinedtype == IfcEventTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcEventTypeEnum.USERDEFINED) or ((predefinedtype == IfcEventTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -15849,7 +15856,7 @@ class IfcEvent_CorrectTypeAssigned:
         eventtriggertype = self.EventTriggerType
         userdefinedeventtriggertype = self.UserDefinedEventTriggerType
         
-        assert (not exists(eventtriggertype)) or (eventtriggertype != IfcEventTriggerTypeEnum.USERDEFINED) or ((eventtriggertype == IfcEventTriggerTypeEnum.USERDEFINED) and exists(userdefinedeventtriggertype))
+        assert ((not exists(eventtriggertype)) or (eventtriggertype != IfcEventTriggerTypeEnum.USERDEFINED) or ((eventtriggertype == IfcEventTriggerTypeEnum.USERDEFINED) and exists(userdefinedeventtriggertype))) is not False
         
 
 
@@ -15868,7 +15875,7 @@ class IfcEventType_CorrectEventTriggerType:
         eventtriggertype = self.EventTriggerType
         userdefinedeventtriggertype = self.UserDefinedEventTriggerType
         
-        assert (eventtriggertype != IfcEventTriggerTypeEnum.USERDEFINED) or ((eventtriggertype == IfcEventTriggerTypeEnum.USERDEFINED) and exists(userdefinedeventtriggertype))
+        assert ((eventtriggertype != IfcEventTriggerTypeEnum.USERDEFINED) or ((eventtriggertype == IfcEventTriggerTypeEnum.USERDEFINED) and exists(userdefinedeventtriggertype))) is not False
         
 
 
@@ -15882,7 +15889,7 @@ class IfcEventType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcEventTypeEnum.USERDEFINED) or ((predefinedtype == IfcEventTypeEnum.USERDEFINED) and exists(self.ProcessType))
+        assert ((predefinedtype != IfcEventTypeEnum.USERDEFINED) or ((predefinedtype == IfcEventTypeEnum.USERDEFINED) and exists(self.ProcessType))) is not False
         
 
 
@@ -15905,7 +15912,7 @@ class IfcExternalReference_WR1:
         identification = self.Identification
         name = self.Name
         
-        assert exists(identification) or exists(location) or exists(name)
+        assert (exists(identification) or exists(location) or exists(name)) is not False
         
 
 
@@ -15938,7 +15945,7 @@ class IfcExtrudedAreaSolid_ValidExtrusionDirection:
     def __call__(self):
 
         
-        assert IfcDotProduct(IfcDirection(DirectionRatios=[0.0,0.0,1.0]),self.ExtrudedDirection) != 0.0
+        assert (IfcDotProduct(IfcDirection(DirectionRatios=[0.0,0.0,1.0]),self.ExtrudedDirection) != 0.0) is not False
         
 
 
@@ -15953,7 +15960,7 @@ class IfcExtrudedAreaSolidTapered_CorrectProfileAssignment:
     def __call__(self):
 
         
-        assert IfcTaperedSweptAreaProfiles(self.SweptArea,self.EndSweptArea)
+        assert (IfcTaperedSweptAreaProfiles(self.SweptArea,self.EndSweptArea)) is not False
         
 
 
@@ -15968,7 +15975,7 @@ class IfcFace_HasOuterBound:
     def __call__(self):
         bounds = self.Bounds
         
-        assert (sizeof([temp for temp in bounds if 'ifc4x3_add1.ifcfaceouterbound' in typeof(temp)])) <= 1
+        assert ((sizeof([temp for temp in bounds if 'ifc4x3_add1.ifcfaceouterbound' in typeof(temp)])) <= 1) is not False
         
 
 
@@ -16012,7 +16019,7 @@ class IfcFacilityPartCommon_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFacilityPartCommonTypeEnum.USERDEFINED) or ((predefinedtype == IfcFacilityPartCommonTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFacilityPartCommonTypeEnum.USERDEFINED) or ((predefinedtype == IfcFacilityPartCommonTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16030,7 +16037,7 @@ class IfcFan_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFanTypeEnum.USERDEFINED) or ((predefinedtype == IfcFanTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFanTypeEnum.USERDEFINED) or ((predefinedtype == IfcFanTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16044,7 +16051,7 @@ class IfcFan_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfantype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfantype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16059,7 +16066,7 @@ class IfcFanType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcFanTypeEnum.USERDEFINED) or ((predefinedtype == IfcFanTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcFanTypeEnum.USERDEFINED) or ((predefinedtype == IfcFanTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16074,7 +16081,7 @@ class IfcFastener_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFastenerTypeEnum.USERDEFINED) or ((predefinedtype == IfcFastenerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFastenerTypeEnum.USERDEFINED) or ((predefinedtype == IfcFastenerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16088,7 +16095,7 @@ class IfcFastener_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfastenertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfastenertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16103,7 +16110,7 @@ class IfcFastenerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcFastenerTypeEnum.USERDEFINED) or ((predefinedtype == IfcFastenerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcFastenerTypeEnum.USERDEFINED) or ((predefinedtype == IfcFastenerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16118,7 +16125,7 @@ class IfcFeatureElement_NotContained:
     def __call__(self):
         containedinstructure = self.ContainedInStructure
         
-        assert sizeof(containedinstructure) == 0
+        assert (sizeof(containedinstructure) == 0) is not False
         
 
 
@@ -16136,7 +16143,7 @@ class IfcFeatureElementSubtraction_HasNoSubtraction:
     def __call__(self):
 
         
-        assert sizeof(self.HasOpenings) == 0
+        assert (sizeof(self.HasOpenings) == 0) is not False
         
 
 
@@ -16150,7 +16157,7 @@ class IfcFeatureElementSubtraction_IsNotFilling:
     def __call__(self):
 
         
-        assert sizeof(self.FillsVoids) == 0
+        assert (sizeof(self.FillsVoids) == 0) is not False
         
 
 
@@ -16165,7 +16172,7 @@ class IfcFillAreaStyle_ConsistentHatchStyleDef:
     def __call__(self):
 
         
-        assert IfcCorrectFillAreaStyle(self.FillStyles)
+        assert (IfcCorrectFillAreaStyle(self.FillStyles)) is not False
         
 
 
@@ -16179,7 +16186,7 @@ class IfcFillAreaStyle_MaxOneColour:
     def __call__(self):
 
         
-        assert (sizeof([style for style in self.FillStyles if 'ifc4x3_add1.ifccolour' in typeof(style)])) <= 1
+        assert ((sizeof([style for style in self.FillStyles if 'ifc4x3_add1.ifccolour' in typeof(style)])) <= 1) is not False
         
 
 
@@ -16193,7 +16200,7 @@ class IfcFillAreaStyle_MaxOneExtHatchStyle:
     def __call__(self):
 
         
-        assert (sizeof([style for style in self.FillStyles if 'ifc4x3_add1.ifcexternallydefinedhatchstyle' in typeof(style)])) <= 1
+        assert ((sizeof([style for style in self.FillStyles if 'ifc4x3_add1.ifcexternallydefinedhatchstyle' in typeof(style)])) <= 1) is not False
         
 
 
@@ -16208,7 +16215,7 @@ class IfcFillAreaStyleHatching_PatternStart2D:
     def __call__(self):
         patternstart = self.PatternStart
         
-        assert (not exists(patternstart)) or (patternstart.Dim == 2)
+        assert ((not exists(patternstart)) or (patternstart.Dim == 2)) is not False
         
 
 
@@ -16222,7 +16229,7 @@ class IfcFillAreaStyleHatching_RefHatchLine2D:
     def __call__(self):
         pointofreferencehatchline = self.PointOfReferenceHatchLine
         
-        assert (not exists(pointofreferencehatchline)) or (pointofreferencehatchline.Dim == 2)
+        assert ((not exists(pointofreferencehatchline)) or (pointofreferencehatchline.Dim == 2)) is not False
         
 
 
@@ -16240,7 +16247,7 @@ class IfcFilter_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFilterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFilterTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFilterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFilterTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16254,7 +16261,7 @@ class IfcFilter_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfiltertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfiltertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16269,7 +16276,7 @@ class IfcFilterType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcFilterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFilterTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcFilterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFilterTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16284,7 +16291,7 @@ class IfcFireSuppressionTerminal_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFireSuppressionTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcFireSuppressionTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFireSuppressionTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcFireSuppressionTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16298,7 +16305,7 @@ class IfcFireSuppressionTerminal_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfiresuppressionterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfiresuppressionterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16313,7 +16320,7 @@ class IfcFireSuppressionTerminalType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcFireSuppressionTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcFireSuppressionTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcFireSuppressionTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcFireSuppressionTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16343,7 +16350,7 @@ class IfcFlowInstrument_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFlowInstrumentTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowInstrumentTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFlowInstrumentTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowInstrumentTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16357,7 +16364,7 @@ class IfcFlowInstrument_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcflowinstrumenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcflowinstrumenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16372,7 +16379,7 @@ class IfcFlowInstrumentType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcFlowInstrumentTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowInstrumentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcFlowInstrumentTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowInstrumentTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16387,7 +16394,7 @@ class IfcFlowMeter_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFlowMeterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowMeterTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFlowMeterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowMeterTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16401,7 +16408,7 @@ class IfcFlowMeter_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcflowmetertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcflowmetertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16416,7 +16423,7 @@ class IfcFlowMeterType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcFlowMeterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowMeterTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcFlowMeterTypeEnum.USERDEFINED) or ((predefinedtype == IfcFlowMeterTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16461,7 +16468,7 @@ class IfcFooting_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFootingTypeEnum.USERDEFINED) or ((predefinedtype == IfcFootingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFootingTypeEnum.USERDEFINED) or ((predefinedtype == IfcFootingTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16475,7 +16482,7 @@ class IfcFooting_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfootingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfootingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16490,7 +16497,7 @@ class IfcFootingType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcFootingTypeEnum.USERDEFINED) or ((predefinedtype == IfcFootingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcFootingTypeEnum.USERDEFINED) or ((predefinedtype == IfcFootingTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16511,7 +16518,7 @@ class IfcFurniture_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFurnitureTypeEnum.USERDEFINED) or ((predefinedtype == IfcFurnitureTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFurnitureTypeEnum.USERDEFINED) or ((predefinedtype == IfcFurnitureTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16525,7 +16532,7 @@ class IfcFurniture_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfurnituretype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcfurnituretype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16540,7 +16547,7 @@ class IfcFurnitureType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcFurnitureTypeEnum.USERDEFINED) or ((predefinedtype == IfcFurnitureTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcFurnitureTypeEnum.USERDEFINED) or ((predefinedtype == IfcFurnitureTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16555,7 +16562,7 @@ class IfcGeographicCRS_IsPlaneAngleUnit:
     def __call__(self):
         unit = self.Unit
         
-        assert (not exists(unit)) or (unit.UnitType == IfcUnitEnum.PLANEANGLEUNIT)
+        assert ((not exists(unit)) or (unit.UnitType == IfcUnitEnum.PLANEANGLEUNIT)) is not False
         
 
 
@@ -16570,7 +16577,7 @@ class IfcGeographicElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcGeographicElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcGeographicElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcGeographicElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcGeographicElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16584,7 +16591,7 @@ class IfcGeographicElement_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcgeographicelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcgeographicelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16599,7 +16606,7 @@ class IfcGeographicElementType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcGeographicElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcGeographicElementTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcGeographicElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcGeographicElementTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16614,7 +16621,7 @@ class IfcGeometricCurveSet_NoSurfaces:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in self.Elements if 'ifc4x3_add1.ifcsurface' in typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in self.Elements if 'ifc4x3_add1.ifcsurface' in typeof(temp)])) == 0) is not False
         
 
 
@@ -16629,7 +16636,7 @@ class IfcGeometricRepresentationContext_North2D:
     def __call__(self):
         truenorth = self.TrueNorth
         
-        assert (not exists(truenorth)) or (hiindex(truenorth.DirectionRatios) == 2)
+        assert ((not exists(truenorth)) or (hiindex(truenorth.DirectionRatios) == 2)) is not False
         
 
 
@@ -16647,7 +16654,7 @@ class IfcGeometricRepresentationSubContext_NoCoordOperation:
     def __call__(self):
 
         
-        assert sizeof(self.HasCoordinateOperation) == 0
+        assert (sizeof(self.HasCoordinateOperation) == 0) is not False
         
 
 
@@ -16661,7 +16668,7 @@ class IfcGeometricRepresentationSubContext_ParentNoSub:
     def __call__(self):
         parentcontext = self.ParentContext
         
-        assert not 'ifc4x3_add1.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)
+        assert (not 'ifc4x3_add1.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)) is not False
         
 
 
@@ -16676,7 +16683,7 @@ class IfcGeometricRepresentationSubContext_UserTargetProvided:
         targetview = self.TargetView
         userdefinedtargetview = self.UserDefinedTargetView
         
-        assert (targetview != IfcGeometricProjectionEnum.USERDEFINED) or ((targetview == IfcGeometricProjectionEnum.USERDEFINED) and exists(userdefinedtargetview))
+        assert ((targetview != IfcGeometricProjectionEnum.USERDEFINED) or ((targetview == IfcGeometricProjectionEnum.USERDEFINED) and exists(userdefinedtargetview))) is not False
         
 
 
@@ -16719,7 +16726,7 @@ class IfcGeometricSet_ConsistentDim:
     def __call__(self):
         elements = self.Elements
         
-        assert (sizeof([temp for temp in elements if temp.Dim != (elements[1 - 1].Dim)])) == 0
+        assert ((sizeof([temp for temp in elements if temp.Dim != (elements[1 - 1].Dim)])) == 0) is not False
         
 
 
@@ -16753,7 +16760,7 @@ class IfcGeotechnicalStratum_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcGeotechnicalStratumTypeEnum.USERDEFINED) or ((predefinedtype == IfcGeotechnicalStratumTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcGeotechnicalStratumTypeEnum.USERDEFINED) or ((predefinedtype == IfcGeotechnicalStratumTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16774,7 +16781,7 @@ class IfcGridAxis_WR1:
     def __call__(self):
         axiscurve = self.AxisCurve
         
-        assert axiscurve.Dim == 2
+        assert (axiscurve.Dim == 2) is not False
         
 
 
@@ -16790,7 +16797,7 @@ class IfcGridAxis_WR2:
         partofv = self.PartOfV
         partofu = self.PartOfU
         
-        assert (sizeof(partofu) == 1) ^ (sizeof(partofv) == 1) ^ (sizeof(partofw) == 1)
+        assert ((sizeof(partofu) == 1) ^ (sizeof(partofv) == 1) ^ (sizeof(partofw) == 1)) is not False
         
 
 
@@ -16819,7 +16826,7 @@ class IfcHeatExchanger_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcHeatExchangerTypeEnum.USERDEFINED) or ((predefinedtype == IfcHeatExchangerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcHeatExchangerTypeEnum.USERDEFINED) or ((predefinedtype == IfcHeatExchangerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16833,7 +16840,7 @@ class IfcHeatExchanger_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcheatexchangertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcheatexchangertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16848,7 +16855,7 @@ class IfcHeatExchangerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcHeatExchangerTypeEnum.USERDEFINED) or ((predefinedtype == IfcHeatExchangerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcHeatExchangerTypeEnum.USERDEFINED) or ((predefinedtype == IfcHeatExchangerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16863,7 +16870,7 @@ class IfcHumidifier_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcHumidifierTypeEnum.USERDEFINED) or ((predefinedtype == IfcHumidifierTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcHumidifierTypeEnum.USERDEFINED) or ((predefinedtype == IfcHumidifierTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16877,7 +16884,7 @@ class IfcHumidifier_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifchumidifiertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifchumidifiertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16892,7 +16899,7 @@ class IfcHumidifierType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcHumidifierTypeEnum.USERDEFINED) or ((predefinedtype == IfcHumidifierTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcHumidifierTypeEnum.USERDEFINED) or ((predefinedtype == IfcHumidifierTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -16911,7 +16918,7 @@ class IfcIShapeProfileDef_ValidFilletRadius:
         flangethickness = self.FlangeThickness
         filletradius = self.FilletRadius
         
-        assert (not exists(filletradius)) or ((filletradius <= ((overallwidth - webthickness) / 2.)) and (filletradius <= ((overalldepth - (2. * flangethickness)) / 2.)))
+        assert ((not exists(filletradius)) or ((filletradius <= ((overallwidth - webthickness) / 2.)) and (filletradius <= ((overalldepth - (2. * flangethickness)) / 2.)))) is not False
         
 
 
@@ -16926,7 +16933,7 @@ class IfcIShapeProfileDef_ValidFlangeThickness:
         overalldepth = self.OverallDepth
         flangethickness = self.FlangeThickness
         
-        assert (2. * flangethickness) < overalldepth
+        assert ((2. * flangethickness) < overalldepth) is not False
         
 
 
@@ -16941,7 +16948,7 @@ class IfcIShapeProfileDef_ValidWebThickness:
         overallwidth = self.OverallWidth
         webthickness = self.WebThickness
         
-        assert webthickness < overallwidth
+        assert (webthickness < overallwidth) is not False
         
 
 
@@ -16959,7 +16966,7 @@ class IfcImpactProtectionDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcImpactProtectionDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcImpactProtectionDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcImpactProtectionDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcImpactProtectionDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -16973,7 +16980,7 @@ class IfcImpactProtectionDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcimpactprotectiondevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcimpactprotectiondevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -16988,7 +16995,7 @@ class IfcImpactProtectionDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcImpactProtectionDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcImpactProtectionDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcImpactProtectionDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcImpactProtectionDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17006,7 +17013,7 @@ class IfcIndexedPolyCurve_Consecutive:
     def __call__(self):
         segments = self.Segments
         
-        assert (not exists(segments)) or IfcConsecutiveSegments(segments)
+        assert ((not exists(segments)) or IfcConsecutiveSegments(segments)) is not False
         
 
 
@@ -17036,7 +17043,7 @@ class IfcInterceptor_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcInterceptorTypeEnum.USERDEFINED) or ((predefinedtype == IfcInterceptorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcInterceptorTypeEnum.USERDEFINED) or ((predefinedtype == IfcInterceptorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17050,7 +17057,7 @@ class IfcInterceptor_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcinterceptortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcinterceptortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17065,7 +17072,7 @@ class IfcInterceptorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcInterceptorTypeEnum.USERDEFINED) or ((predefinedtype == IfcInterceptorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcInterceptorTypeEnum.USERDEFINED) or ((predefinedtype == IfcInterceptorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17080,7 +17087,7 @@ class IfcIntersectionCurve_DistinctSurfaces:
     def __call__(self):
 
         
-        assert (IfcAssociatedSurface(self.AssociatedGeometry[1 - 1])) != (IfcAssociatedSurface(self.AssociatedGeometry[2 - 1]))
+        assert ((IfcAssociatedSurface(self.AssociatedGeometry[1 - 1])) != (IfcAssociatedSurface(self.AssociatedGeometry[2 - 1]))) is not False
         
 
 
@@ -17094,7 +17101,7 @@ class IfcIntersectionCurve_TwoPCurves:
     def __call__(self):
 
         
-        assert sizeof(self.AssociatedGeometry) == 2
+        assert (sizeof(self.AssociatedGeometry) == 2) is not False
         
 
 
@@ -17118,7 +17125,7 @@ class IfcJunctionBox_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcJunctionBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcJunctionBoxTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcJunctionBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcJunctionBoxTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17132,7 +17139,7 @@ class IfcJunctionBox_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcjunctionboxtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcjunctionboxtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17147,7 +17154,7 @@ class IfcJunctionBoxType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcJunctionBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcJunctionBoxTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcJunctionBoxTypeEnum.USERDEFINED) or ((predefinedtype == IfcJunctionBoxTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17162,7 +17169,7 @@ class IfcKerb_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcKerbTypeEnum.USERDEFINED) or ((predefinedtype == IfcKerbTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcKerbTypeEnum.USERDEFINED) or ((predefinedtype == IfcKerbTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17176,7 +17183,7 @@ class IfcKerb_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifckerbtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifckerbtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17191,7 +17198,7 @@ class IfcKerbType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcKerbTypeEnum.USERDEFINED) or ((predefinedtype == IfcKerbTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcKerbTypeEnum.USERDEFINED) or ((predefinedtype == IfcKerbTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17208,7 +17215,7 @@ class IfcLShapeProfileDef_ValidThickness:
         width = self.Width
         thickness = self.Thickness
         
-        assert (thickness < depth) and ((not exists(width)) or (thickness < width))
+        assert ((thickness < depth) and ((not exists(width)) or (thickness < width))) is not False
         
 
 
@@ -17223,7 +17230,7 @@ class IfcLaborResource_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcLaborResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcLaborResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcLaborResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcLaborResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17238,7 +17245,7 @@ class IfcLaborResourceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcLaborResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcLaborResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))
+        assert ((predefinedtype != IfcLaborResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcLaborResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))) is not False
         
 
 
@@ -17256,7 +17263,7 @@ class IfcLamp_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcLampTypeEnum.USERDEFINED) or ((predefinedtype == IfcLampTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcLampTypeEnum.USERDEFINED) or ((predefinedtype == IfcLampTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17270,7 +17277,7 @@ class IfcLamp_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifclamptype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifclamptype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17285,7 +17292,7 @@ class IfcLampType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcLampTypeEnum.USERDEFINED) or ((predefinedtype == IfcLampTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcLampTypeEnum.USERDEFINED) or ((predefinedtype == IfcLampTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17309,7 +17316,7 @@ class IfcLightFixture_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcLightFixtureTypeEnum.USERDEFINED) or ((predefinedtype == IfcLightFixtureTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcLightFixtureTypeEnum.USERDEFINED) or ((predefinedtype == IfcLightFixtureTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17323,7 +17330,7 @@ class IfcLightFixture_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifclightfixturetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifclightfixturetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17338,7 +17345,7 @@ class IfcLightFixtureType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcLightFixtureTypeEnum.USERDEFINED) or ((predefinedtype == IfcLightFixtureTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcLightFixtureTypeEnum.USERDEFINED) or ((predefinedtype == IfcLightFixtureTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17375,7 +17382,7 @@ class IfcLine_SameDim:
         pnt = self.Pnt
         dir = self.Dir
         
-        assert dir.Dim == pnt.Dim
+        assert (dir.Dim == pnt.Dim) is not False
         
 
 
@@ -17399,7 +17406,7 @@ class IfcLiquidTerminal_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcLiquidTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcLiquidTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcLiquidTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcLiquidTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17413,7 +17420,7 @@ class IfcLiquidTerminal_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcliquidterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcliquidterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17428,7 +17435,7 @@ class IfcLiquidTerminalType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcLiquidTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcLiquidTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcLiquidTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcLiquidTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17444,7 +17451,7 @@ class IfcLocalPlacement_WR21:
         placementrelto = self.PlacementRelTo
         relativeplacement = self.RelativePlacement
         
-        assert IfcCorrectLocalPlacement(relativeplacement,placementrelto)
+        assert (IfcCorrectLocalPlacement(relativeplacement,placementrelto)) is not False
         
 
 
@@ -17474,7 +17481,7 @@ class IfcMarineFacility_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcMarineFacilityTypeEnum.USERDEFINED) or ((predefinedtype == IfcMarineFacilityTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcMarineFacilityTypeEnum.USERDEFINED) or ((predefinedtype == IfcMarineFacilityTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17489,7 +17496,7 @@ class IfcMarinePart_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcMarinePartTypeEnum.USERDEFINED) or ((predefinedtype == IfcMarinePartTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcMarinePartTypeEnum.USERDEFINED) or ((predefinedtype == IfcMarinePartTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17519,7 +17526,7 @@ class IfcMaterialDefinitionRepresentation_OnlyStyledRepresentations:
     def __call__(self):
         representations = self.Representations
         
-        assert (sizeof([temp for temp in representations if not 'ifc4x3_add1.ifcstyledrepresentation' in typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in representations if not 'ifc4x3_add1.ifcstyledrepresentation' in typeof(temp)])) == 0) is not False
         
 
 
@@ -17534,7 +17541,7 @@ class IfcMaterialLayer_NormalizedPriority:
     def __call__(self):
         priority = self.Priority
         
-        assert (not exists(priority)) or (0 <= priority <= 100)
+        assert ((not exists(priority)) or (0 <= priority <= 100)) is not False
         
 
 
@@ -17566,7 +17573,7 @@ class IfcMaterialProfile_NormalizedPriority:
     def __call__(self):
         priority = self.Priority
         
-        assert (not exists(priority)) or (0 <= priority <= 100)
+        assert ((not exists(priority)) or (0 <= priority <= 100)) is not False
         
 
 
@@ -17605,7 +17612,7 @@ class IfcMechanicalFastener_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcMechanicalFastenerTypeEnum.USERDEFINED) or ((predefinedtype == IfcMechanicalFastenerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcMechanicalFastenerTypeEnum.USERDEFINED) or ((predefinedtype == IfcMechanicalFastenerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17619,7 +17626,7 @@ class IfcMechanicalFastener_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmechanicalfastenertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmechanicalfastenertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17634,7 +17641,7 @@ class IfcMechanicalFastenerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcMechanicalFastenerTypeEnum.USERDEFINED) or ((predefinedtype == IfcMechanicalFastenerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcMechanicalFastenerTypeEnum.USERDEFINED) or ((predefinedtype == IfcMechanicalFastenerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17649,7 +17656,7 @@ class IfcMedicalDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcMedicalDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMedicalDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcMedicalDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMedicalDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17663,7 +17670,7 @@ class IfcMedicalDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmedicaldevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmedicaldevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17678,7 +17685,7 @@ class IfcMedicalDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcMedicalDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMedicalDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcMedicalDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMedicalDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17693,7 +17700,7 @@ class IfcMember_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcMemberTypeEnum.USERDEFINED) or ((predefinedtype == IfcMemberTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcMemberTypeEnum.USERDEFINED) or ((predefinedtype == IfcMemberTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17707,7 +17714,7 @@ class IfcMember_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmembertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmembertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17722,7 +17729,7 @@ class IfcMemberType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcMemberTypeEnum.USERDEFINED) or ((predefinedtype == IfcMemberTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcMemberTypeEnum.USERDEFINED) or ((predefinedtype == IfcMemberTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17748,7 +17755,7 @@ class IfcMobileTelecommunicationsAppliance_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17762,7 +17769,7 @@ class IfcMobileTelecommunicationsAppliance_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmobiletelecommunicationsappliancetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmobiletelecommunicationsappliancetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17777,7 +17784,7 @@ class IfcMobileTelecommunicationsApplianceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17795,7 +17802,7 @@ class IfcMooringDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcMooringDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMooringDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcMooringDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMooringDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17809,7 +17816,7 @@ class IfcMooringDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmooringdevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmooringdevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17824,7 +17831,7 @@ class IfcMooringDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcMooringDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMooringDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcMooringDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcMooringDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17839,7 +17846,7 @@ class IfcMotorConnection_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcMotorConnectionTypeEnum.USERDEFINED) or ((predefinedtype == IfcMotorConnectionTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcMotorConnectionTypeEnum.USERDEFINED) or ((predefinedtype == IfcMotorConnectionTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17853,7 +17860,7 @@ class IfcMotorConnection_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmotorconnectiontype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcmotorconnectiontype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17868,7 +17875,7 @@ class IfcMotorConnectionType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcMotorConnectionTypeEnum.USERDEFINED) or ((predefinedtype == IfcMotorConnectionTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcMotorConnectionTypeEnum.USERDEFINED) or ((predefinedtype == IfcMotorConnectionTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17883,7 +17890,7 @@ class IfcNamedUnit_WR1:
     def __call__(self):
 
         
-        assert IfcCorrectDimensions(self.UnitType,self.Dimensions)
+        assert (IfcCorrectDimensions(self.UnitType,self.Dimensions)) is not False
         
 
 
@@ -17898,7 +17905,7 @@ class IfcNavigationElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcNavigationElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcNavigationElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcNavigationElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcNavigationElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -17912,7 +17919,7 @@ class IfcNavigationElement_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcnavigationelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcnavigationelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -17927,7 +17934,7 @@ class IfcNavigationElementType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcNavigationElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcNavigationElementTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcNavigationElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcNavigationElementTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -17942,7 +17949,7 @@ class IfcObject_UniquePropertySetNames:
     def __call__(self):
         isdefinedby = self.IsDefinedBy
         
-        assert (sizeof(isdefinedby) == 0) or IfcUniqueDefinitionNames(isdefinedby)
+        assert ((sizeof(isdefinedby) == 0) or IfcUniqueDefinitionNames(isdefinedby)) is not False
         
 
 
@@ -17963,7 +17970,7 @@ class IfcObjective_WR21:
     def __call__(self):
         objectivequalifier = self.ObjectiveQualifier
         
-        assert (objectivequalifier != IfcObjectiveEnum.USERDEFINED) or ((objectivequalifier == IfcObjectiveEnum.USERDEFINED) and exists(self.UserDefinedQualifier))
+        assert ((objectivequalifier != IfcObjectiveEnum.USERDEFINED) or ((objectivequalifier == IfcObjectiveEnum.USERDEFINED) and exists(self.UserDefinedQualifier))) is not False
         
 
 
@@ -17978,7 +17985,7 @@ class IfcOccupant_WR31:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not predefinedtype == IfcOccupantTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        assert ((not predefinedtype == IfcOccupantTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
         
 
 
@@ -17996,7 +18003,7 @@ class IfcOffsetCurve2D_DimIs2D:
     def __call__(self):
         basiscurve = self.BasisCurve
         
-        assert basiscurve.Dim == 2
+        assert (basiscurve.Dim == 2) is not False
         
 
 
@@ -18011,7 +18018,7 @@ class IfcOffsetCurve3D_DimIs2D:
     def __call__(self):
         basiscurve = self.BasisCurve
         
-        assert basiscurve.Dim == 3
+        assert (basiscurve.Dim == 3) is not False
         
 
 
@@ -18029,7 +18036,7 @@ class IfcOpenCrossProfileDef_CorrectProfileType:
     def __call__(self):
 
         
-        assert self.ProfileType == IfcProfileTypeEnum.CURVE
+        assert (self.ProfileType == IfcProfileTypeEnum.CURVE) is not False
         
 
 
@@ -18044,7 +18051,7 @@ class IfcOpenCrossProfileDef_CorrespondingSlopeWidths:
         widths = self.Widths
         slopes = self.Slopes
         
-        assert sizeof(slopes) == sizeof(widths)
+        assert (sizeof(slopes) == sizeof(widths)) is not False
         
 
 
@@ -18059,7 +18066,7 @@ class IfcOpenCrossProfileDef_CorrespondingTags:
         slopes = self.Slopes
         tags = self.Tags
         
-        assert (not exists(tags)) or (sizeof(tags) == (sizeof(slopes) + 1))
+        assert ((not exists(tags)) or (sizeof(tags) == (sizeof(slopes) + 1))) is not False
         
 
 
@@ -18077,7 +18084,7 @@ class IfcOpeningElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcOpeningElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcOpeningElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcOpeningElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcOpeningElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18098,7 +18105,7 @@ class IfcOrientedEdge_EdgeElementNotOriented:
     def __call__(self):
         edgeelement = self.EdgeElement
         
-        assert not 'ifc4x3_add1.ifcorientededge' in typeof(edgeelement)
+        assert (not 'ifc4x3_add1.ifcorientededge' in typeof(edgeelement)) is not False
         
 
 
@@ -18132,7 +18139,7 @@ class IfcOutlet_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcOutletTypeEnum.USERDEFINED) or ((predefinedtype == IfcOutletTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcOutletTypeEnum.USERDEFINED) or ((predefinedtype == IfcOutletTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18146,7 +18153,7 @@ class IfcOutlet_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcoutlettype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcoutlettype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -18161,7 +18168,7 @@ class IfcOutletType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcOutletTypeEnum.USERDEFINED) or ((predefinedtype == IfcOutletTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcOutletTypeEnum.USERDEFINED) or ((predefinedtype == IfcOutletTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -18177,7 +18184,7 @@ class IfcOwnerHistory_CorrectChangeAction:
         changeaction = self.ChangeAction
         lastmodifieddate = self.LastModifiedDate
         
-        assert exists(lastmodifieddate) or ((not exists(lastmodifieddate)) and (not exists(changeaction))) or ((not exists(lastmodifieddate)) and exists(changeaction) and ((changeaction == IfcChangeActionEnum.NOTDEFINED) or (changeaction == IfcChangeActionEnum.NOCHANGE)))
+        assert (exists(lastmodifieddate) or ((not exists(lastmodifieddate)) and (not exists(changeaction))) or ((not exists(lastmodifieddate)) and exists(changeaction) and ((changeaction == IfcChangeActionEnum.NOTDEFINED) or (changeaction == IfcChangeActionEnum.NOCHANGE)))) is not False
         
 
 
@@ -18195,7 +18202,7 @@ class IfcPath_IsContinuous:
     def __call__(self):
 
         
-        assert IfcPathHeadToTail(self)
+        assert (IfcPathHeadToTail(self)) is not False
         
 
 
@@ -18210,7 +18217,7 @@ class IfcPavement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcPavementTypeEnum.USERDEFINED) or ((predefinedtype == IfcPavementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcPavementTypeEnum.USERDEFINED) or ((predefinedtype == IfcPavementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18224,7 +18231,7 @@ class IfcPavement_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpavementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpavementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -18239,7 +18246,7 @@ class IfcPavementType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcPavementTypeEnum.USERDEFINED) or ((predefinedtype == IfcPavementTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcPavementTypeEnum.USERDEFINED) or ((predefinedtype == IfcPavementTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -18254,7 +18261,7 @@ class IfcPcurve_DimIs2D:
     def __call__(self):
         referencecurve = self.ReferenceCurve
         
-        assert referencecurve.Dim == 2
+        assert (referencecurve.Dim == 2) is not False
         
 
 
@@ -18280,7 +18287,7 @@ class IfcPerson_IdentifiablePerson:
         familyname = self.FamilyName
         givenname = self.GivenName
         
-        assert exists(identification) or exists(familyname) or exists(givenname)
+        assert (exists(identification) or exists(familyname) or exists(givenname)) is not False
         
 
 
@@ -18296,7 +18303,7 @@ class IfcPerson_ValidSetOfNames:
         givenname = self.GivenName
         middlenames = self.MiddleNames
         
-        assert (not exists(middlenames)) or exists(familyname) or exists(givenname)
+        assert ((not exists(middlenames)) or exists(familyname) or exists(givenname)) is not False
         
 
 
@@ -18314,7 +18321,7 @@ class IfcPhysicalComplexQuantity_NoSelfReference:
     def __call__(self):
         hasquantities = self.HasQuantities
         
-        assert (sizeof([temp for temp in hasquantities if self == temp])) == 0
+        assert ((sizeof([temp for temp in hasquantities if self == temp])) == 0) is not False
         
 
 
@@ -18328,7 +18335,7 @@ class IfcPhysicalComplexQuantity_UniqueQuantityNames:
     def __call__(self):
         hasquantities = self.HasQuantities
         
-        assert IfcUniqueQuantityNames(hasquantities)
+        assert (IfcUniqueQuantityNames(hasquantities)) is not False
         
 
 
@@ -18349,7 +18356,7 @@ class IfcPile_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcPileTypeEnum.USERDEFINED) or ((predefinedtype == IfcPileTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcPileTypeEnum.USERDEFINED) or ((predefinedtype == IfcPileTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18363,7 +18370,7 @@ class IfcPile_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpiletype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpiletype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -18378,7 +18385,7 @@ class IfcPileType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcPileTypeEnum.USERDEFINED) or ((predefinedtype == IfcPileTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcPileTypeEnum.USERDEFINED) or ((predefinedtype == IfcPileTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -18393,7 +18400,7 @@ class IfcPipeFitting_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcPipeFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeFittingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcPipeFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeFittingTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18407,7 +18414,7 @@ class IfcPipeFitting_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpipefittingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpipefittingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -18422,7 +18429,7 @@ class IfcPipeFittingType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcPipeFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeFittingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcPipeFittingTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeFittingTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -18437,7 +18444,7 @@ class IfcPipeSegment_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcPipeSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcPipeSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeSegmentTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18451,7 +18458,7 @@ class IfcPipeSegment_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpipesegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpipesegmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -18466,7 +18473,7 @@ class IfcPipeSegmentType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcPipeSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcPipeSegmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcPipeSegmentTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -18481,7 +18488,7 @@ class IfcPixelTexture_MinPixelInS:
     def __call__(self):
         width = self.Width
         
-        assert width >= 1
+        assert (width >= 1) is not False
         
 
 
@@ -18495,7 +18502,7 @@ class IfcPixelTexture_MinPixelInT:
     def __call__(self):
         height = self.Height
         
-        assert height >= 1
+        assert (height >= 1) is not False
         
 
 
@@ -18509,7 +18516,7 @@ class IfcPixelTexture_NumberOfColours:
     def __call__(self):
         colourcomponents = self.ColourComponents
         
-        assert 1 <= colourcomponents <= 4
+        assert (1 <= colourcomponents <= 4) is not False
         
 
 
@@ -18523,7 +18530,7 @@ class IfcPixelTexture_PixelAsByteAndSameLength:
     def __call__(self):
         pixel = self.Pixel
         
-        assert (sizeof([temp for temp in pixel if ((blength(temp) % 8) == 0) and (blength(temp) == (blength(pixel[1 - 1])))])) == sizeof(pixel)
+        assert ((sizeof([temp for temp in pixel if ((blength(temp) % 8) == 0) and (blength(temp) == (blength(pixel[1 - 1])))])) == sizeof(pixel)) is not False
         
 
 
@@ -18539,7 +18546,7 @@ class IfcPixelTexture_SizeOfPixelList:
         height = self.Height
         pixel = self.Pixel
         
-        assert sizeof(pixel) == (width * height)
+        assert (sizeof(pixel) == (width * height)) is not False
         
 
 
@@ -18571,7 +18578,7 @@ class IfcPlate_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcPlateTypeEnum.USERDEFINED) or ((predefinedtype == IfcPlateTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcPlateTypeEnum.USERDEFINED) or ((predefinedtype == IfcPlateTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18585,7 +18592,7 @@ class IfcPlate_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcplatetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcplatetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -18600,7 +18607,7 @@ class IfcPlateType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcPlateTypeEnum.USERDEFINED) or ((predefinedtype == IfcPlateTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcPlateTypeEnum.USERDEFINED) or ((predefinedtype == IfcPlateTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -18632,7 +18639,7 @@ class IfcPolyLoop_AllPointsSameDim:
     def __call__(self):
         polygon = self.Polygon
         
-        assert (sizeof([temp for temp in polygon if temp.Dim != (polygon[1 - 1].Dim)])) == 0
+        assert ((sizeof([temp for temp in polygon if temp.Dim != (polygon[1 - 1].Dim)])) == 0) is not False
         
 
 
@@ -18647,7 +18654,7 @@ class IfcPolygonalBoundedHalfSpace_BoundaryDim:
     def __call__(self):
         polygonalboundary = self.PolygonalBoundary
         
-        assert polygonalboundary.Dim == 2
+        assert (polygonalboundary.Dim == 2) is not False
         
 
 
@@ -18661,7 +18668,7 @@ class IfcPolygonalBoundedHalfSpace_BoundaryType:
     def __call__(self):
         polygonalboundary = self.PolygonalBoundary
         
-        assert (sizeof(typeof(polygonalboundary) * ['ifc4x3_add1.ifcpolyline','ifc4x3_add1.ifccompositecurve','ifc4x3_add1.ifcindexedpolycurve'])) == 1
+        assert ((sizeof(typeof(polygonalboundary) * ['ifc4x3_add1.ifcpolyline','ifc4x3_add1.ifccompositecurve','ifc4x3_add1.ifcindexedpolycurve'])) == 1) is not False
         
 
 
@@ -18679,7 +18686,7 @@ class IfcPolyline_SameDim:
     def __call__(self):
         points = self.Points
         
-        assert (sizeof([temp for temp in points if temp.Dim != (points[1 - 1].Dim)])) == 0
+        assert ((sizeof([temp for temp in points if temp.Dim != (points[1 - 1].Dim)])) == 0) is not False
         
 
 
@@ -18695,7 +18702,7 @@ class IfcPolynomialCurve_CorrectPositionDim:
         position = self.Position
         coefficientsz = self.CoefficientsZ
         
-        assert ((position.Dim == 2) and (not exists(coefficientsz))) or (position.Dim == 3)
+        assert (((position.Dim == 2) and (not exists(coefficientsz))) or (position.Dim == 3)) is not False
         
 
 
@@ -18711,7 +18718,7 @@ class IfcPolynomialCurve_ValidCoefficients:
         coefficientsy = self.CoefficientsY
         coefficientsz = self.CoefficientsZ
         
-        assert (exists(coefficientsx) and exists(coefficientsy)) or (exists(coefficientsx) and exists(coefficientsz)) or (exists(coefficientsy) and exists(coefficientsz)) or (exists(coefficientsx) and exists(coefficientsy) and exists(coefficientsz))
+        assert ((exists(coefficientsx) and exists(coefficientsy)) or (exists(coefficientsx) and exists(coefficientsz)) or (exists(coefficientsy) and exists(coefficientsz)) or (exists(coefficientsx) and exists(coefficientsy) and exists(coefficientsz))) is not False
         
 
 
@@ -18729,7 +18736,7 @@ class IfcPositioningElement_HasPlacement:
     def __call__(self):
 
         
-        assert exists(self.ObjectPlacement)
+        assert (exists(self.ObjectPlacement)) is not False
         
 
 
@@ -18750,7 +18757,7 @@ class IfcPostalAddress_WR1:
         postalcode = self.PostalCode
         country = self.Country
         
-        assert exists(internallocation) or exists(addresslines) or exists(postalbox) or exists(postalcode) or exists(town) or exists(region) or exists(country)
+        assert (exists(internallocation) or exists(addresslines) or exists(postalbox) or exists(postalcode) or exists(town) or exists(region) or exists(country)) is not False
         
 
 
@@ -18786,7 +18793,7 @@ class IfcPresentationLayerAssignment_ApplicableItems:
     def __call__(self):
         assigneditems = self.AssignedItems
         
-        assert (sizeof([temp for temp in assigneditems if (sizeof(typeof(temp) * ['ifc4x3_add1.ifcshaperepresentation','ifc4x3_add1.ifcgeometricrepresentationitem','ifc4x3_add1.ifcmappeditem'])) == 1])) == sizeof(assigneditems)
+        assert ((sizeof([temp for temp in assigneditems if (sizeof(typeof(temp) * ['ifc4x3_add1.ifcshaperepresentation','ifc4x3_add1.ifcgeometricrepresentationitem','ifc4x3_add1.ifcmappeditem'])) == 1])) == sizeof(assigneditems)) is not False
         
 
 
@@ -18801,7 +18808,7 @@ class IfcPresentationLayerWithStyle_ApplicableOnlyToItems:
     def __call__(self):
         assigneditems = self.AssignedItems
         
-        assert (sizeof([temp for temp in assigneditems if (sizeof(typeof(temp) * ['ifc4x3_add1.ifcgeometricrepresentationitem','ifc4x3_add1.ifcmappeditem'])) >= 1])) == sizeof(assigneditems)
+        assert ((sizeof([temp for temp in assigneditems if (sizeof(typeof(temp) * ['ifc4x3_add1.ifcgeometricrepresentationitem','ifc4x3_add1.ifcmappeditem'])) >= 1])) == sizeof(assigneditems)) is not False
         
 
 
@@ -18819,7 +18826,7 @@ class IfcProcedure_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcProcedureTypeEnum.USERDEFINED) or ((predefinedtype == IfcProcedureTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcProcedureTypeEnum.USERDEFINED) or ((predefinedtype == IfcProcedureTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18833,7 +18840,7 @@ class IfcProcedure_HasName:
     def __call__(self):
 
         
-        assert exists(self.Name)
+        assert (exists(self.Name)) is not False
         
 
 
@@ -18848,7 +18855,7 @@ class IfcProcedureType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcProcedureTypeEnum.USERDEFINED) or ((predefinedtype == IfcProcedureTypeEnum.USERDEFINED) and exists(self.ProcessType))
+        assert ((predefinedtype != IfcProcedureTypeEnum.USERDEFINED) or ((predefinedtype == IfcProcedureTypeEnum.USERDEFINED) and exists(self.ProcessType))) is not False
         
 
 
@@ -18867,7 +18874,7 @@ class IfcProduct_PlacementForShapeRepresentation:
         objectplacement = self.ObjectPlacement
         representation = self.Representation
         
-        assert (exists(representation) and exists(objectplacement)) or (exists(representation) and ((sizeof([temp for temp in representation.Representations if 'ifc4x3_add1.ifcshaperepresentation' in typeof(temp)])) == 0)) or (not exists(representation))
+        assert ((exists(representation) and exists(objectplacement)) or (exists(representation) and ((sizeof([temp for temp in representation.Representations if 'ifc4x3_add1.ifcshaperepresentation' in typeof(temp)])) == 0)) or (not exists(representation))) is not False
         
 
 
@@ -18882,7 +18889,7 @@ class IfcProductDefinitionShape_OnlyShapeModel:
     def __call__(self):
         representations = self.Representations
         
-        assert (sizeof([temp for temp in representations if not 'ifc4x3_add1.ifcshapemodel' in typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in representations if not 'ifc4x3_add1.ifcshapemodel' in typeof(temp)])) == 0) is not False
         
 
 
@@ -18906,7 +18913,7 @@ class IfcProject_CorrectContext:
     def __call__(self):
 
         
-        assert (not exists(self.RepresentationContexts)) or ((sizeof([temp for temp in self.RepresentationContexts if 'ifc4x3_add1.ifcgeometricrepresentationsubcontext' in typeof(temp)])) == 0)
+        assert ((not exists(self.RepresentationContexts)) or ((sizeof([temp for temp in self.RepresentationContexts if 'ifc4x3_add1.ifcgeometricrepresentationsubcontext' in typeof(temp)])) == 0)) is not False
         
 
 
@@ -18920,7 +18927,7 @@ class IfcProject_HasName:
     def __call__(self):
 
         
-        assert exists(self.Name)
+        assert (exists(self.Name)) is not False
         
 
 
@@ -18934,7 +18941,7 @@ class IfcProject_NoDecomposition:
     def __call__(self):
 
         
-        assert sizeof(self.Decomposes) == 0
+        assert (sizeof(self.Decomposes) == 0) is not False
         
 
 
@@ -18955,7 +18962,7 @@ class IfcProjectedCRS_IsLengthUnit:
     def __call__(self):
         mapunit = self.MapUnit
         
-        assert (not exists(mapunit)) or (mapunit.UnitType == IfcUnitEnum.LENGTHUNIT)
+        assert ((not exists(mapunit)) or (mapunit.UnitType == IfcUnitEnum.LENGTHUNIT)) is not False
         
 
 
@@ -18970,7 +18977,7 @@ class IfcProjectionElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcProjectionElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcProjectionElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcProjectionElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcProjectionElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -18992,7 +18999,7 @@ class IfcPropertyBoundedValue_SameUnitLowerSet:
         lowerboundvalue = self.LowerBoundValue
         setpointvalue = self.SetPointValue
         
-        assert (not exists(lowerboundvalue)) or (not exists(setpointvalue)) or (typeof(lowerboundvalue) == typeof(setpointvalue))
+        assert ((not exists(lowerboundvalue)) or (not exists(setpointvalue)) or (typeof(lowerboundvalue) == typeof(setpointvalue))) is not False
         
 
 
@@ -19007,7 +19014,7 @@ class IfcPropertyBoundedValue_SameUnitUpperLower:
         upperboundvalue = self.UpperBoundValue
         lowerboundvalue = self.LowerBoundValue
         
-        assert (not exists(upperboundvalue)) or (not exists(lowerboundvalue)) or (typeof(upperboundvalue) == typeof(lowerboundvalue))
+        assert ((not exists(upperboundvalue)) or (not exists(lowerboundvalue)) or (typeof(upperboundvalue) == typeof(lowerboundvalue))) is not False
         
 
 
@@ -19022,7 +19029,7 @@ class IfcPropertyBoundedValue_SameUnitUpperSet:
         upperboundvalue = self.UpperBoundValue
         setpointvalue = self.SetPointValue
         
-        assert (not exists(upperboundvalue)) or (not exists(setpointvalue)) or (typeof(upperboundvalue) == typeof(setpointvalue))
+        assert ((not exists(upperboundvalue)) or (not exists(setpointvalue)) or (typeof(upperboundvalue) == typeof(setpointvalue))) is not False
         
 
 
@@ -19041,7 +19048,7 @@ class IfcPropertyDependencyRelationship_NoSelfReference:
         dependingproperty = self.DependingProperty
         dependantproperty = self.DependantProperty
         
-        assert dependingproperty != dependantproperty
+        assert (dependingproperty != dependantproperty) is not False
         
 
 
@@ -19057,7 +19064,7 @@ class IfcPropertyEnumeratedValue_WR21:
         enumerationvalues = self.EnumerationValues
         enumerationreference = self.EnumerationReference
         
-        assert (not exists(enumerationreference)) or (not exists(enumerationvalues)) or ((sizeof([temp for temp in enumerationvalues if temp in enumerationreference.EnumerationValues])) == sizeof(enumerationvalues))
+        assert ((not exists(enumerationreference)) or (not exists(enumerationvalues)) or ((sizeof([temp for temp in enumerationvalues if temp in enumerationreference.EnumerationValues])) == sizeof(enumerationvalues))) is not False
         
 
 
@@ -19072,7 +19079,7 @@ class IfcPropertyEnumeration_WR01:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in self.EnumerationValues if not (typeof(self.EnumerationValues[1 - 1])) == typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in self.EnumerationValues if not (typeof(self.EnumerationValues[1 - 1])) == typeof(temp)])) == 0) is not False
         
 
 
@@ -19087,7 +19094,7 @@ class IfcPropertyListValue_WR31:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in self.ListValues if not (typeof(self.ListValues[1 - 1])) == typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in self.ListValues if not (typeof(self.ListValues[1 - 1])) == typeof(temp)])) == 0) is not False
         
 
 
@@ -19105,7 +19112,7 @@ class IfcPropertySet_ExistsName:
     def __call__(self):
 
         
-        assert exists(self.Name)
+        assert (exists(self.Name)) is not False
         
 
 
@@ -19119,7 +19126,7 @@ class IfcPropertySet_UniquePropertyNames:
     def __call__(self):
         hasproperties = self.HasProperties
         
-        assert IfcUniquePropertyName(hasproperties)
+        assert (IfcUniquePropertyName(hasproperties)) is not False
         
 
 
@@ -19137,7 +19144,7 @@ class IfcPropertySetTemplate_ExistsName:
     def __call__(self):
 
         
-        assert exists(self.Name)
+        assert (exists(self.Name)) is not False
         
 
 
@@ -19151,7 +19158,7 @@ class IfcPropertySetTemplate_UniquePropertyNames:
     def __call__(self):
         haspropertytemplates = self.HasPropertyTemplates
         
-        assert IfcUniquePropertyTemplateNames(haspropertytemplates)
+        assert (IfcUniquePropertyTemplateNames(haspropertytemplates)) is not False
         
 
 
@@ -19170,7 +19177,7 @@ class IfcPropertyTableValue_WR21:
         definingvalues = self.DefiningValues
         definedvalues = self.DefinedValues
         
-        assert ((not exists(definingvalues)) and (not exists(definedvalues))) or (sizeof(definingvalues) == sizeof(definedvalues))
+        assert (((not exists(definingvalues)) and (not exists(definedvalues))) or (sizeof(definingvalues) == sizeof(definedvalues))) is not False
         
 
 
@@ -19184,7 +19191,7 @@ class IfcPropertyTableValue_WR22:
     def __call__(self):
         definingvalues = self.DefiningValues
         
-        assert (not exists(definingvalues)) or ((sizeof([temp for temp in self.DefiningValues if typeof(temp) != (typeof(self.DefiningValues[1 - 1]))])) == 0)
+        assert ((not exists(definingvalues)) or ((sizeof([temp for temp in self.DefiningValues if typeof(temp) != (typeof(self.DefiningValues[1 - 1]))])) == 0)) is not False
         
 
 
@@ -19198,7 +19205,7 @@ class IfcPropertyTableValue_WR23:
     def __call__(self):
         definedvalues = self.DefinedValues
         
-        assert (not exists(definedvalues)) or ((sizeof([temp for temp in self.DefinedValues if typeof(temp) != (typeof(self.DefinedValues[1 - 1]))])) == 0)
+        assert ((not exists(definedvalues)) or ((sizeof([temp for temp in self.DefinedValues if typeof(temp) != (typeof(self.DefinedValues[1 - 1]))])) == 0)) is not False
         
 
 
@@ -19219,7 +19226,7 @@ class IfcProtectiveDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcProtectiveDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcProtectiveDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcProtectiveDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcProtectiveDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19233,7 +19240,7 @@ class IfcProtectiveDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcprotectivedevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcprotectivedevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -19248,7 +19255,7 @@ class IfcProtectiveDeviceTrippingUnit_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED) or ((predefinedtype == IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED) or ((predefinedtype == IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19262,7 +19269,7 @@ class IfcProtectiveDeviceTrippingUnit_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcprotectivedevicetrippingunittype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcprotectivedevicetrippingunittype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -19277,7 +19284,7 @@ class IfcProtectiveDeviceTrippingUnitType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED) or ((predefinedtype == IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED) or ((predefinedtype == IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -19292,7 +19299,7 @@ class IfcProtectiveDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcProtectiveDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcProtectiveDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcProtectiveDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcProtectiveDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -19307,7 +19314,7 @@ class IfcPump_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcPumpTypeEnum.USERDEFINED) or ((predefinedtype == IfcPumpTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcPumpTypeEnum.USERDEFINED) or ((predefinedtype == IfcPumpTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19321,7 +19328,7 @@ class IfcPump_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpumptype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcpumptype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -19336,7 +19343,7 @@ class IfcPumpType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcPumpTypeEnum.USERDEFINED) or ((predefinedtype == IfcPumpTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcPumpTypeEnum.USERDEFINED) or ((predefinedtype == IfcPumpTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -19351,7 +19358,7 @@ class IfcQuantityArea_WR21:
     def __call__(self):
 
         
-        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.AREAUNIT)
+        assert ((not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.AREAUNIT)) is not False
         
 
 
@@ -19365,7 +19372,7 @@ class IfcQuantityArea_WR22:
     def __call__(self):
         areavalue = self.AreaValue
         
-        assert areavalue >= 0.
+        assert (areavalue >= 0.) is not False
         
 
 
@@ -19380,7 +19387,7 @@ class IfcQuantityCount_WR21:
     def __call__(self):
         countvalue = self.CountValue
         
-        assert countvalue >= 0
+        assert (countvalue >= 0) is not False
         
 
 
@@ -19395,7 +19402,7 @@ class IfcQuantityLength_WR21:
     def __call__(self):
 
         
-        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.LENGTHUNIT)
+        assert ((not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.LENGTHUNIT)) is not False
         
 
 
@@ -19409,7 +19416,7 @@ class IfcQuantityLength_WR22:
     def __call__(self):
         lengthvalue = self.LengthValue
         
-        assert lengthvalue >= 0.
+        assert (lengthvalue >= 0.) is not False
         
 
 
@@ -19430,7 +19437,7 @@ class IfcQuantityTime_WR21:
     def __call__(self):
 
         
-        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.TIMEUNIT)
+        assert ((not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.TIMEUNIT)) is not False
         
 
 
@@ -19444,7 +19451,7 @@ class IfcQuantityTime_WR22:
     def __call__(self):
         timevalue = self.TimeValue
         
-        assert timevalue >= 0.
+        assert (timevalue >= 0.) is not False
         
 
 
@@ -19459,7 +19466,7 @@ class IfcQuantityVolume_WR21:
     def __call__(self):
 
         
-        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.VOLUMEUNIT)
+        assert ((not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.VOLUMEUNIT)) is not False
         
 
 
@@ -19473,7 +19480,7 @@ class IfcQuantityVolume_WR22:
     def __call__(self):
         volumevalue = self.VolumeValue
         
-        assert volumevalue >= 0.
+        assert (volumevalue >= 0.) is not False
         
 
 
@@ -19488,7 +19495,7 @@ class IfcQuantityWeight_WR21:
     def __call__(self):
 
         
-        assert (not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.MASSUNIT)
+        assert ((not exists(self.Unit)) or (self.Unit.UnitType == IfcUnitEnum.MASSUNIT)) is not False
         
 
 
@@ -19502,7 +19509,7 @@ class IfcQuantityWeight_WR22:
     def __call__(self):
         weightvalue = self.WeightValue
         
-        assert weightvalue >= 0.
+        assert (weightvalue >= 0.) is not False
         
 
 
@@ -19517,7 +19524,7 @@ class IfcRail_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRailTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRailTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19531,7 +19538,7 @@ class IfcRail_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcrailtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcrailtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -19546,7 +19553,7 @@ class IfcRailType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcRailTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcRailTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -19561,7 +19568,7 @@ class IfcRailing_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRailingTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailingTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRailingTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailingTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19575,7 +19582,7 @@ class IfcRailing_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcrailingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcrailingtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -19590,7 +19597,7 @@ class IfcRailingType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcRailingTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailingTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcRailingTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailingTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -19605,7 +19612,7 @@ class IfcRailway_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRailwayTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailwayTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRailwayTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailwayTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19620,7 +19627,7 @@ class IfcRailwayPart_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRailwayPartTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailwayPartTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRailwayPartTypeEnum.USERDEFINED) or ((predefinedtype == IfcRailwayPartTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19635,7 +19642,7 @@ class IfcRamp_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRampTypeEnum.USERDEFINED) or ((predefinedtype == IfcRampTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRampTypeEnum.USERDEFINED) or ((predefinedtype == IfcRampTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19649,7 +19656,7 @@ class IfcRamp_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcramptype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcramptype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -19664,7 +19671,7 @@ class IfcRampFlight_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRampFlightTypeEnum.USERDEFINED) or ((predefinedtype == IfcRampFlightTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRampFlightTypeEnum.USERDEFINED) or ((predefinedtype == IfcRampFlightTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19678,7 +19685,7 @@ class IfcRampFlight_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcrampflighttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcrampflighttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -19693,7 +19700,7 @@ class IfcRampFlightType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcRampFlightTypeEnum.USERDEFINED) or ((predefinedtype == IfcRampFlightTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcRampFlightTypeEnum.USERDEFINED) or ((predefinedtype == IfcRampFlightTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -19708,7 +19715,7 @@ class IfcRampType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcRampTypeEnum.USERDEFINED) or ((predefinedtype == IfcRampTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcRampTypeEnum.USERDEFINED) or ((predefinedtype == IfcRampTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -19723,7 +19730,7 @@ class IfcRationalBSplineCurveWithKnots_SameNumOfWeightsAndPoints:
     def __call__(self):
         weightsdata = self.WeightsData
         
-        assert sizeof(weightsdata) == sizeof(self.ControlPointsList)
+        assert (sizeof(weightsdata) == sizeof(self.ControlPointsList)) is not False
         
 
 
@@ -19737,7 +19744,7 @@ class IfcRationalBSplineCurveWithKnots_WeightsGreaterZero:
     def __call__(self):
 
         
-        assert IfcCurveWeightsPositive(self)
+        assert (IfcCurveWeightsPositive(self)) is not False
         
 
 
@@ -19759,7 +19766,7 @@ class IfcRationalBSplineSurfaceWithKnots_CorrespondingWeightsDataLists:
     def __call__(self):
         weightsdata = self.WeightsData
         
-        assert (sizeof(weightsdata) == sizeof(self.ControlPointsList)) and ((sizeof(weightsdata[1 - 1])) == (sizeof(self.ControlPointsList[1 - 1])))
+        assert ((sizeof(weightsdata) == sizeof(self.ControlPointsList)) and ((sizeof(weightsdata[1 - 1])) == (sizeof(self.ControlPointsList[1 - 1])))) is not False
         
 
 
@@ -19773,7 +19780,7 @@ class IfcRationalBSplineSurfaceWithKnots_WeightValuesGreaterZero:
     def __call__(self):
 
         
-        assert IfcSurfaceWeightsPositive(self)
+        assert (IfcSurfaceWeightsPositive(self)) is not False
         
 
 
@@ -19798,7 +19805,7 @@ class IfcRectangleHollowProfileDef_ValidInnerRadius:
         wallthickness = self.WallThickness
         innerfilletradius = self.InnerFilletRadius
         
-        assert (not exists(innerfilletradius)) or ((innerfilletradius <= ((self.XDim / 2.) - wallthickness)) and (innerfilletradius <= ((self.YDim / 2.) - wallthickness)))
+        assert ((not exists(innerfilletradius)) or ((innerfilletradius <= ((self.XDim / 2.) - wallthickness)) and (innerfilletradius <= ((self.YDim / 2.) - wallthickness)))) is not False
         
 
 
@@ -19812,7 +19819,7 @@ class IfcRectangleHollowProfileDef_ValidOuterRadius:
     def __call__(self):
         outerfilletradius = self.OuterFilletRadius
         
-        assert (not exists(outerfilletradius)) or ((outerfilletradius <= (self.XDim / 2.)) and (outerfilletradius <= (self.YDim / 2.)))
+        assert ((not exists(outerfilletradius)) or ((outerfilletradius <= (self.XDim / 2.)) and (outerfilletradius <= (self.YDim / 2.)))) is not False
         
 
 
@@ -19826,7 +19833,7 @@ class IfcRectangleHollowProfileDef_ValidWallThickness:
     def __call__(self):
         wallthickness = self.WallThickness
         
-        assert (wallthickness < (self.XDim / 2.)) and (wallthickness < (self.YDim / 2.))
+        assert ((wallthickness < (self.XDim / 2.)) and (wallthickness < (self.YDim / 2.))) is not False
         
 
 
@@ -19848,7 +19855,7 @@ class IfcRectangularTrimmedSurface_U1AndU2Different:
         u1 = self.U1
         u2 = self.U2
         
-        assert u1 != u2
+        assert (u1 != u2) is not False
         
 
 
@@ -19865,7 +19872,7 @@ class IfcRectangularTrimmedSurface_UsenseCompatible:
         u2 = self.U2
         usense = self.Usense
         
-        assert (('ifc4x3_add1.ifcelementarysurface' in typeof(basissurface)) and (not 'ifc4x3_add1.ifcplane' in typeof(basissurface))) or ('ifc4x3_add1.ifcsurfaceofrevolution' in typeof(basissurface)) or (usense == (u2 > u1))
+        assert ((('ifc4x3_add1.ifcelementarysurface' in typeof(basissurface)) and (not 'ifc4x3_add1.ifcplane' in typeof(basissurface))) or ('ifc4x3_add1.ifcsurfaceofrevolution' in typeof(basissurface)) or (usense == (u2 > u1))) is not False
         
 
 
@@ -19880,7 +19887,7 @@ class IfcRectangularTrimmedSurface_V1AndV2Different:
         v1 = self.V1
         v2 = self.V2
         
-        assert v1 != v2
+        assert (v1 != v2) is not False
         
 
 
@@ -19896,7 +19903,7 @@ class IfcRectangularTrimmedSurface_VsenseCompatible:
         v2 = self.V2
         vsense = self.Vsense
         
-        assert vsense == (v2 > v1)
+        assert (vsense == (v2 > v1)) is not False
         
 
 
@@ -19923,7 +19930,7 @@ class IfcReinforcedSoil_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcReinforcedSoilTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcedSoilTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcReinforcedSoilTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcedSoilTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19944,7 +19951,7 @@ class IfcReinforcingBar_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcReinforcingBarTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcingBarTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcReinforcingBarTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcingBarTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -19958,7 +19965,7 @@ class IfcReinforcingBar_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcreinforcingbartype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcreinforcingbartype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -19974,7 +19981,7 @@ class IfcReinforcingBarType_BendingShapeCodeProvided:
         bendingshapecode = self.BendingShapeCode
         bendingparameters = self.BendingParameters
         
-        assert (not exists(bendingparameters)) or exists(bendingshapecode)
+        assert ((not exists(bendingparameters)) or exists(bendingshapecode)) is not False
         
 
 
@@ -19988,7 +19995,7 @@ class IfcReinforcingBarType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcReinforcingBarTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcingBarTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcReinforcingBarTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcingBarTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -20009,7 +20016,7 @@ class IfcReinforcingMesh_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcReinforcingMeshTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcingMeshTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcReinforcingMeshTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcingMeshTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -20023,7 +20030,7 @@ class IfcReinforcingMesh_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcreinforcingmeshtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcreinforcingmeshtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -20039,7 +20046,7 @@ class IfcReinforcingMeshType_BendingShapeCodeProvided:
         bendingshapecode = self.BendingShapeCode
         bendingparameters = self.BendingParameters
         
-        assert (not exists(bendingparameters)) or exists(bendingshapecode)
+        assert ((not exists(bendingparameters)) or exists(bendingshapecode)) is not False
         
 
 
@@ -20053,7 +20060,7 @@ class IfcReinforcingMeshType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcReinforcingMeshTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcingMeshTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcReinforcingMeshTypeEnum.USERDEFINED) or ((predefinedtype == IfcReinforcingMeshTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -20072,7 +20079,7 @@ class IfcRelAggregates_NoSelfReference:
         relatingobject = self.RelatingObject
         relatedobjects = self.RelatedObjects
         
-        assert (sizeof([temp for temp in relatedobjects if relatingobject == temp])) == 0
+        assert ((sizeof([temp for temp in relatedobjects if relatingobject == temp])) == 0) is not False
         
 
 
@@ -20090,7 +20097,7 @@ class IfcRelAssignsToActor_NoSelfReference:
     def __call__(self):
         relatingactor = self.RelatingActor
         
-        assert (sizeof([temp for temp in self.RelatedObjects if relatingactor == temp])) == 0
+        assert ((sizeof([temp for temp in self.RelatedObjects if relatingactor == temp])) == 0) is not False
         
 
 
@@ -20105,7 +20112,7 @@ class IfcRelAssignsToControl_NoSelfReference:
     def __call__(self):
         relatingcontrol = self.RelatingControl
         
-        assert (sizeof([temp for temp in self.RelatedObjects if relatingcontrol == temp])) == 0
+        assert ((sizeof([temp for temp in self.RelatedObjects if relatingcontrol == temp])) == 0) is not False
         
 
 
@@ -20120,7 +20127,7 @@ class IfcRelAssignsToGroup_NoSelfReference:
     def __call__(self):
         relatinggroup = self.RelatingGroup
         
-        assert (sizeof([temp for temp in self.RelatedObjects if relatinggroup == temp])) == 0
+        assert ((sizeof([temp for temp in self.RelatedObjects if relatinggroup == temp])) == 0) is not False
         
 
 
@@ -20138,7 +20145,7 @@ class IfcRelAssignsToProcess_NoSelfReference:
     def __call__(self):
         relatingprocess = self.RelatingProcess
         
-        assert (sizeof([temp for temp in self.RelatedObjects if relatingprocess == temp])) == 0
+        assert ((sizeof([temp for temp in self.RelatedObjects if relatingprocess == temp])) == 0) is not False
         
 
 
@@ -20153,7 +20160,7 @@ class IfcRelAssignsToProduct_NoSelfReference:
     def __call__(self):
         relatingproduct = self.RelatingProduct
         
-        assert (sizeof([temp for temp in self.RelatedObjects if relatingproduct == temp])) == 0
+        assert ((sizeof([temp for temp in self.RelatedObjects if relatingproduct == temp])) == 0) is not False
         
 
 
@@ -20168,7 +20175,7 @@ class IfcRelAssignsToResource_NoSelfReference:
     def __call__(self):
         relatingresource = self.RelatingResource
         
-        assert (sizeof([temp for temp in self.RelatedObjects if relatingresource == temp])) == 0
+        assert ((sizeof([temp for temp in self.RelatedObjects if relatingresource == temp])) == 0) is not False
         
 
 
@@ -20201,7 +20208,7 @@ class IfcRelAssociatesMaterial_AllowedElements:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in self.RelatedObjects if (sizeof(typeof(temp) * ['ifc4x3_add1.ifcelement','ifc4x3_add1.ifcelementtype','ifc4x3_add1.ifcstructuralmember','ifc4x3_add1.ifcport'])) == 0])) == 0
+        assert ((sizeof([temp for temp in self.RelatedObjects if (sizeof(typeof(temp) * ['ifc4x3_add1.ifcelement','ifc4x3_add1.ifcelementtype','ifc4x3_add1.ifcstructuralmember','ifc4x3_add1.ifcport'])) == 0])) == 0) is not False
         
 
 
@@ -20215,7 +20222,7 @@ class IfcRelAssociatesMaterial_NoVoidElement:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in self.RelatedObjects if ('ifc4x3_add1.ifcfeatureelementsubtraction' in typeof(temp)) or ('ifc4x3_add1.ifcvirtualelement' in typeof(temp))])) == 0
+        assert ((sizeof([temp for temp in self.RelatedObjects if ('ifc4x3_add1.ifcfeatureelementsubtraction' in typeof(temp)) or ('ifc4x3_add1.ifcvirtualelement' in typeof(temp))])) == 0) is not False
         
 
 
@@ -20237,7 +20244,7 @@ class IfcRelConnectsElements_NoSelfReference:
         relatingelement = self.RelatingElement
         relatedelement = self.RelatedElement
         
-        assert relatingelement != relatedelement
+        assert (relatingelement != relatedelement) is not False
         
 
 
@@ -20252,7 +20259,7 @@ class IfcRelConnectsPathElements_NormalizedRelatedPriorities:
     def __call__(self):
         relatedpriorities = self.RelatedPriorities
         
-        assert (sizeof(relatedpriorities) == 0) or ((sizeof([temp for temp in relatedpriorities if 0 <= temp <= 100])) == sizeof(relatedpriorities))
+        assert ((sizeof(relatedpriorities) == 0) or ((sizeof([temp for temp in relatedpriorities if 0 <= temp <= 100])) == sizeof(relatedpriorities))) is not False
         
 
 
@@ -20266,7 +20273,7 @@ class IfcRelConnectsPathElements_NormalizedRelatingPriorities:
     def __call__(self):
         relatingpriorities = self.RelatingPriorities
         
-        assert (sizeof(relatingpriorities) == 0) or ((sizeof([temp for temp in relatingpriorities if 0 <= temp <= 100])) == sizeof(relatingpriorities))
+        assert ((sizeof(relatingpriorities) == 0) or ((sizeof([temp for temp in relatingpriorities if 0 <= temp <= 100])) == sizeof(relatingpriorities))) is not False
         
 
 
@@ -20285,7 +20292,7 @@ class IfcRelConnectsPorts_NoSelfReference:
         relatingport = self.RelatingPort
         relatedport = self.RelatedPort
         
-        assert relatingport != relatedport
+        assert (relatingport != relatedport) is not False
         
 
 
@@ -20312,7 +20319,7 @@ class IfcRelContainedInSpatialStructure_WR31:
     def __call__(self):
         relatedelements = self.RelatedElements
         
-        assert (sizeof([temp for temp in relatedelements if 'ifc4x3_add1.ifcspatialstructureelement' in typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in relatedelements if 'ifc4x3_add1.ifcspatialstructureelement' in typeof(temp)])) == 0) is not False
         
 
 
@@ -20334,7 +20341,7 @@ class IfcRelDeclares_NoSelfReference:
         relatingcontext = self.RelatingContext
         relateddefinitions = self.RelatedDefinitions
         
-        assert (sizeof([temp for temp in relateddefinitions if relatingcontext == temp])) == 0
+        assert ((sizeof([temp for temp in relateddefinitions if relatingcontext == temp])) == 0) is not False
         
 
 
@@ -20358,7 +20365,7 @@ class IfcRelDefinesByProperties_NoRelatedTypeObject:
     def __call__(self):
 
         
-        assert (sizeof([types for types in self.RelatedObjects if 'ifc4x3_add1.ifctypeobject' in typeof(types)])) == 0
+        assert ((sizeof([types for types in self.RelatedObjects if 'ifc4x3_add1.ifctypeobject' in typeof(types)])) == 0) is not False
         
 
 
@@ -20386,7 +20393,7 @@ class IfcRelInterferesElements_NoSelfReference:
         relatingelement = self.RelatingElement
         relatedelement = self.RelatedElement
         
-        assert relatingelement != relatedelement
+        assert (relatingelement != relatedelement) is not False
         
 
 
@@ -20402,7 +20409,7 @@ class IfcRelNests_NoSelfReference:
         relatingobject = self.RelatingObject
         relatedobjects = self.RelatedObjects
         
-        assert (sizeof([temp for temp in relatedobjects if relatingobject == temp])) == 0
+        assert ((sizeof([temp for temp in relatedobjects if relatingobject == temp])) == 0) is not False
         
 
 
@@ -20418,7 +20425,7 @@ class IfcRelPositions_NoSelfReference:
         relatingpositioningelement = self.RelatingPositioningElement
         relatedproducts = self.RelatedProducts
         
-        assert (sizeof([temp for temp in relatedproducts if relatingpositioningelement == temp])) == 0
+        assert ((sizeof([temp for temp in relatedproducts if relatingpositioningelement == temp])) == 0) is not False
         
 
 
@@ -20436,7 +20443,7 @@ class IfcRelReferencedInSpatialStructure_AllowedRelatedElements:
     def __call__(self):
         relatedelements = self.RelatedElements
         
-        assert (sizeof([temp for temp in relatedelements if ('ifc4x3_add1.ifcspatialstructureelement' in typeof(temp)) and (not 'ifc4x3_add1.ifcspace' in typeof(temp))])) == 0
+        assert ((sizeof([temp for temp in relatedelements if ('ifc4x3_add1.ifcspatialstructureelement' in typeof(temp)) and (not 'ifc4x3_add1.ifcspace' in typeof(temp))])) == 0) is not False
         
 
 
@@ -20452,7 +20459,7 @@ class IfcRelSequence_AvoidInconsistentSequence:
         relatingprocess = self.RelatingProcess
         relatedprocess = self.RelatedProcess
         
-        assert relatingprocess != relatedprocess
+        assert (relatingprocess != relatedprocess) is not False
         
 
 
@@ -20467,7 +20474,7 @@ class IfcRelSequence_CorrectSequenceType:
         sequencetype = self.SequenceType
         userdefinedsequencetype = self.UserDefinedSequenceType
         
-        assert (sequencetype != IfcSequenceEnum.USERDEFINED) or ((sequencetype == IfcSequenceEnum.USERDEFINED) and exists(userdefinedsequencetype))
+        assert ((sequencetype != IfcSequenceEnum.USERDEFINED) or ((sequencetype == IfcSequenceEnum.USERDEFINED) and exists(userdefinedsequencetype))) is not False
         
 
 
@@ -20486,7 +20493,7 @@ class IfcRelSpaceBoundary_CorrectPhysOrVirt:
         relatedbuildingelement = self.RelatedBuildingElement
         physicalorvirtualboundary = self.PhysicalOrVirtualBoundary
         
-        assert ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Physical) and (not 'ifc4x3_add1.ifcvirtualelement' in typeof(relatedbuildingelement))) or ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Virtual) and (('ifc4x3_add1.ifcvirtualelement' in typeof(relatedbuildingelement)) or ('ifc4x3_add1.ifcopeningelement' in typeof(relatedbuildingelement)))) or (physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.NotDefined)
+        assert (((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Physical) and (not 'ifc4x3_add1.ifcvirtualelement' in typeof(relatedbuildingelement))) or ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Virtual) and (('ifc4x3_add1.ifcvirtualelement' in typeof(relatedbuildingelement)) or ('ifc4x3_add1.ifcopeningelement' in typeof(relatedbuildingelement)))) or (physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.NotDefined)) is not False
         
 
 
@@ -20513,7 +20520,7 @@ class IfcReparametrisedCompositeCurveSegment_PositiveLengthParameter:
     def __call__(self):
         paramlength = self.ParamLength
         
-        assert paramlength > 0.0
+        assert (paramlength > 0.0) is not False
         
 
 
@@ -20537,7 +20544,7 @@ class IfcRepresentationMap_ApplicableMappedRepr:
     def __call__(self):
         mappedrepresentation = self.MappedRepresentation
         
-        assert 'ifc4x3_add1.ifcshapemodel' in typeof(mappedrepresentation)
+        assert ('ifc4x3_add1.ifcshapemodel' in typeof(mappedrepresentation)) is not False
         
 
 
@@ -20567,7 +20574,7 @@ class IfcRevolvedAreaSolid_AxisDirectionInXY:
     def __call__(self):
         axis = self.Axis
         
-        assert (axis.Z.DirectionRatios[3 - 1]) == 0.0
+        assert ((axis.Z.DirectionRatios[3 - 1]) == 0.0) is not False
         
 
 
@@ -20581,7 +20588,7 @@ class IfcRevolvedAreaSolid_AxisStartInXY:
     def __call__(self):
         axis = self.Axis
         
-        assert ('ifc4x3_add1.ifccartesianpoint' in typeof(axis.Location)) and ((axis.Location.Coordinates[3 - 1]) == 0.0)
+        assert (('ifc4x3_add1.ifccartesianpoint' in typeof(axis.Location)) and ((axis.Location.Coordinates[3 - 1]) == 0.0)) is not False
         
 
 
@@ -20603,7 +20610,7 @@ class IfcRevolvedAreaSolidTapered_CorrectProfileAssignment:
     def __call__(self):
 
         
-        assert IfcTaperedSweptAreaProfiles(self.SweptArea,self.EndSweptArea)
+        assert (IfcTaperedSweptAreaProfiles(self.SweptArea,self.EndSweptArea)) is not False
         
 
 
@@ -20625,7 +20632,7 @@ class IfcRigidOperation_SameCoordinateType:
         firstcoordinate = self.FirstCoordinate
         secondcoordinate = self.SecondCoordinate
         
-        assert (('ifc4x3_add1.ifclengthmeasure' in typeof(firstcoordinate)) and ('ifc4x3_add1.ifclengthmeasure' in typeof(secondcoordinate))) or (('ifc4x3_add1.ifcplaneanglemeasure' in typeof(firstcoordinate)) and ('ifc4x3_add1.ifcplaneanglemeasure' in typeof(secondcoordinate)))
+        assert ((('ifc4x3_add1.ifclengthmeasure' in typeof(firstcoordinate)) and ('ifc4x3_add1.ifclengthmeasure' in typeof(secondcoordinate))) or (('ifc4x3_add1.ifcplaneanglemeasure' in typeof(firstcoordinate)) and ('ifc4x3_add1.ifcplaneanglemeasure' in typeof(secondcoordinate)))) is not False
         
 
 
@@ -20640,7 +20647,7 @@ class IfcRoad_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRoadTypeEnum.USERDEFINED) or ((predefinedtype == IfcRoadTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRoadTypeEnum.USERDEFINED) or ((predefinedtype == IfcRoadTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -20655,7 +20662,7 @@ class IfcRoadPart_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRoadPartTypeEnum.USERDEFINED) or ((predefinedtype == IfcRoadPartTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRoadPartTypeEnum.USERDEFINED) or ((predefinedtype == IfcRoadPartTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -20670,7 +20677,7 @@ class IfcRoof_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcRoofTypeEnum.USERDEFINED) or ((predefinedtype == IfcRoofTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcRoofTypeEnum.USERDEFINED) or ((predefinedtype == IfcRoofTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -20684,7 +20691,7 @@ class IfcRoof_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcrooftype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcrooftype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -20699,7 +20706,7 @@ class IfcRoofType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcRoofTypeEnum.USERDEFINED) or ((predefinedtype == IfcRoofTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcRoofTypeEnum.USERDEFINED) or ((predefinedtype == IfcRoofTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -20717,7 +20724,7 @@ class IfcRoundedRectangleProfileDef_ValidRadius:
     def __call__(self):
         roundingradius = self.RoundingRadius
         
-        assert (roundingradius <= (self.XDim / 2.)) and (roundingradius <= (self.YDim / 2.))
+        assert ((roundingradius <= (self.XDim / 2.)) and (roundingradius <= (self.YDim / 2.))) is not False
         
 
 
@@ -20740,7 +20747,7 @@ class IfcSanitaryTerminal_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSanitaryTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcSanitaryTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSanitaryTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcSanitaryTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -20754,7 +20761,7 @@ class IfcSanitaryTerminal_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsanitaryterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsanitaryterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -20769,7 +20776,7 @@ class IfcSanitaryTerminalType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSanitaryTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcSanitaryTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSanitaryTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcSanitaryTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -20787,7 +20794,7 @@ class IfcSeamCurve_SameSurface:
     def __call__(self):
 
         
-        assert (IfcAssociatedSurface(self.AssociatedGeometry[1 - 1])) == (IfcAssociatedSurface(self.AssociatedGeometry[2 - 1]))
+        assert ((IfcAssociatedSurface(self.AssociatedGeometry[1 - 1])) == (IfcAssociatedSurface(self.AssociatedGeometry[2 - 1]))) is not False
         
 
 
@@ -20801,7 +20808,7 @@ class IfcSeamCurve_TwoPCurves:
     def __call__(self):
 
         
-        assert sizeof(self.AssociatedGeometry) == 2
+        assert (sizeof(self.AssociatedGeometry) == 2) is not False
         
 
 
@@ -20825,7 +20832,7 @@ class IfcSectionedSolid_ConsistentProfileTypes:
     def __call__(self):
         crosssections = self.CrossSections
         
-        assert (sizeof([temp for temp in crosssections if (crosssections[1 - 1].ProfileType) != temp.ProfileType])) == 0
+        assert ((sizeof([temp for temp in crosssections if (crosssections[1 - 1].ProfileType) != temp.ProfileType])) == 0) is not False
         
 
 
@@ -20839,7 +20846,7 @@ class IfcSectionedSolid_DirectrixIs3D:
     def __call__(self):
         directrix = self.Directrix
         
-        assert directrix.Dim == 3
+        assert (directrix.Dim == 3) is not False
         
 
 
@@ -20853,7 +20860,7 @@ class IfcSectionedSolid_SectionsSameType:
     def __call__(self):
         crosssections = self.CrossSections
         
-        assert (sizeof([temp for temp in crosssections if (typeof(crosssections[1 - 1])) != typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in crosssections if (typeof(crosssections[1 - 1])) != typeof(temp)])) == 0) is not False
         
 
 
@@ -20869,7 +20876,7 @@ class IfcSectionedSolidHorizontal_CorrespondingSectionPositions:
         crosssections = self.CrossSections
         crosssectionpositions = self.CrossSectionPositions
         
-        assert sizeof(crosssections) == sizeof(crosssectionpositions)
+        assert (sizeof(crosssections) == sizeof(crosssectionpositions)) is not False
         
 
 
@@ -20883,7 +20890,7 @@ class IfcSectionedSolidHorizontal_NoLongitudinalOffsets:
     def __call__(self):
         crosssectionpositions = self.CrossSectionPositions
         
-        assert (sizeof([temp for temp in crosssectionpositions if exists(temp.Location.OffsetLongitudinal)])) == 0
+        assert ((sizeof([temp for temp in crosssectionpositions if exists(temp.Location.OffsetLongitudinal)])) == 0) is not False
         
 
 
@@ -20898,7 +20905,7 @@ class IfcSectionedSpine_ConsistentProfileTypes:
     def __call__(self):
         crosssections = self.CrossSections
         
-        assert (sizeof([temp for temp in crosssections if (crosssections[1 - 1].ProfileType) != temp.ProfileType])) == 0
+        assert ((sizeof([temp for temp in crosssections if (crosssections[1 - 1].ProfileType) != temp.ProfileType])) == 0) is not False
         
 
 
@@ -20913,7 +20920,7 @@ class IfcSectionedSpine_CorrespondingSectionPositions:
         crosssections = self.CrossSections
         crosssectionpositions = self.CrossSectionPositions
         
-        assert sizeof(crosssections) == sizeof(crosssectionpositions)
+        assert (sizeof(crosssections) == sizeof(crosssectionpositions)) is not False
         
 
 
@@ -20927,7 +20934,7 @@ class IfcSectionedSpine_SpineCurveDim:
     def __call__(self):
         spinecurve = self.SpineCurve
         
-        assert spinecurve.Dim == 3
+        assert (spinecurve.Dim == 3) is not False
         
 
 
@@ -20949,7 +20956,7 @@ class IfcSectionedSurface_AreaProfileTypes:
     def __call__(self):
         crosssections = self.CrossSections
         
-        assert (sizeof([temp for temp in crosssections if temp.ProfileType == IfcProfileTypeEnum.CURVE])) == 0
+        assert ((sizeof([temp for temp in crosssections if temp.ProfileType == IfcProfileTypeEnum.CURVE])) == 0) is not False
         
 
 
@@ -20964,7 +20971,7 @@ class IfcSectionedSurface_CorrespondingSectionPositions:
         crosssectionpositions = self.CrossSectionPositions
         crosssections = self.CrossSections
         
-        assert sizeof(crosssections) == sizeof(crosssectionpositions)
+        assert (sizeof(crosssections) == sizeof(crosssectionpositions)) is not False
         
 
 
@@ -20978,7 +20985,7 @@ class IfcSectionedSurface_DirectrixIs3D:
     def __call__(self):
         directrix = self.Directrix
         
-        assert directrix.Dim == 3
+        assert (directrix.Dim == 3) is not False
         
 
 
@@ -20992,7 +20999,7 @@ class IfcSectionedSurface_NoOffsets:
     def __call__(self):
         crosssectionpositions = self.CrossSectionPositions
         
-        assert (sizeof([temp for temp in crosssectionpositions if exists(temp.Location.OffsetLateral) or exists(temp.Location.OffsetVertical) or exists(temp.Location.OffsetLongitudinal)])) == 0
+        assert ((sizeof([temp for temp in crosssectionpositions if exists(temp.Location.OffsetLateral) or exists(temp.Location.OffsetVertical) or exists(temp.Location.OffsetLongitudinal)])) == 0) is not False
         
 
 
@@ -21006,7 +21013,7 @@ class IfcSectionedSurface_SectionsSameType:
     def __call__(self):
         crosssections = self.CrossSections
         
-        assert (sizeof([temp for temp in crosssections if (typeof(crosssections[1 - 1])) != typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in crosssections if (typeof(crosssections[1 - 1])) != typeof(temp)])) == 0) is not False
         
 
 
@@ -21032,7 +21039,7 @@ class IfcSensor_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSensorTypeEnum.USERDEFINED) or ((predefinedtype == IfcSensorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSensorTypeEnum.USERDEFINED) or ((predefinedtype == IfcSensorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21046,7 +21053,7 @@ class IfcSensor_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsensortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsensortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21061,7 +21068,7 @@ class IfcSensorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSensorTypeEnum.USERDEFINED) or ((predefinedtype == IfcSensorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSensorTypeEnum.USERDEFINED) or ((predefinedtype == IfcSensorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21079,7 +21086,7 @@ class IfcShadingDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcShadingDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcShadingDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcShadingDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcShadingDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21093,7 +21100,7 @@ class IfcShadingDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcshadingdevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcshadingdevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21108,7 +21115,7 @@ class IfcShadingDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcShadingDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcShadingDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcShadingDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcShadingDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21126,7 +21133,7 @@ class IfcShapeModel_WR11:
     def __call__(self):
         ofshapeaspect = self.OfShapeAspect
         
-        assert (sizeof(self.OfProductRepresentation) == 1) ^ (sizeof(self.RepresentationMap) == 1) ^ (sizeof(ofshapeaspect) == 1)
+        assert ((sizeof(self.OfProductRepresentation) == 1) ^ (sizeof(self.RepresentationMap) == 1) ^ (sizeof(ofshapeaspect) == 1)) is not False
         
 
 
@@ -21141,7 +21148,7 @@ class IfcShapeRepresentation_CorrectContext:
     def __call__(self):
 
         
-        assert 'ifc4x3_add1.ifcgeometricrepresentationcontext' in typeof(self.ContextOfItems)
+        assert ('ifc4x3_add1.ifcgeometricrepresentationcontext' in typeof(self.ContextOfItems)) is not False
         
 
 
@@ -21155,7 +21162,7 @@ class IfcShapeRepresentation_CorrectItemsForType:
     def __call__(self):
 
         
-        assert IfcShapeRepresentationTypes(self.RepresentationType,self.Items)
+        assert (IfcShapeRepresentationTypes(self.RepresentationType,self.Items)) is not False
         
 
 
@@ -21169,7 +21176,7 @@ class IfcShapeRepresentation_HasRepresentationIdentifier:
     def __call__(self):
 
         
-        assert exists(self.RepresentationIdentifier)
+        assert (exists(self.RepresentationIdentifier)) is not False
         
 
 
@@ -21183,7 +21190,7 @@ class IfcShapeRepresentation_HasRepresentationType:
     def __call__(self):
 
         
-        assert exists(self.RepresentationType)
+        assert (exists(self.RepresentationType)) is not False
         
 
 
@@ -21197,7 +21204,7 @@ class IfcShapeRepresentation_NoTopologicalItem:
     def __call__(self):
         items = self.Items
         
-        assert (sizeof([temp for temp in items if ('ifc4x3_add1.ifctopologicalrepresentationitem' in typeof(temp)) and (not (sizeof(['ifc4x3_add1.ifcvertexpoint','ifc4x3_add1.ifcedgecurve','ifc4x3_add1.ifcfacesurface'] * typeof(temp))) == 1)])) == 0
+        assert ((sizeof([temp for temp in items if ('ifc4x3_add1.ifctopologicalrepresentationitem' in typeof(temp)) and (not (sizeof(['ifc4x3_add1.ifcvertexpoint','ifc4x3_add1.ifcedgecurve','ifc4x3_add1.ifcfacesurface'] * typeof(temp))) == 1)])) == 0) is not False
         
 
 
@@ -21220,7 +21227,7 @@ class IfcSign_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSignTypeEnum.USERDEFINED) or ((predefinedtype == IfcSignTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSignTypeEnum.USERDEFINED) or ((predefinedtype == IfcSignTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21234,7 +21241,7 @@ class IfcSign_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsigntype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsigntype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21249,7 +21256,7 @@ class IfcSignType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSignTypeEnum.USERDEFINED) or ((predefinedtype == IfcSignTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSignTypeEnum.USERDEFINED) or ((predefinedtype == IfcSignTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21264,7 +21271,7 @@ class IfcSignal_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSignalTypeEnum.USERDEFINED) or ((predefinedtype == IfcSignalTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSignalTypeEnum.USERDEFINED) or ((predefinedtype == IfcSignalTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21278,7 +21285,7 @@ class IfcSignal_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsignaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsignaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21293,7 +21300,7 @@ class IfcSignalType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSignalTypeEnum.USERDEFINED) or ((predefinedtype == IfcSignalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSignalTypeEnum.USERDEFINED) or ((predefinedtype == IfcSignalTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21320,7 +21327,7 @@ class IfcSlab_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSlabTypeEnum.USERDEFINED) or ((predefinedtype == IfcSlabTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSlabTypeEnum.USERDEFINED) or ((predefinedtype == IfcSlabTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21334,7 +21341,7 @@ class IfcSlab_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcslabtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcslabtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21349,7 +21356,7 @@ class IfcSlabType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSlabTypeEnum.USERDEFINED) or ((predefinedtype == IfcSlabTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSlabTypeEnum.USERDEFINED) or ((predefinedtype == IfcSlabTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21367,7 +21374,7 @@ class IfcSolarDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSolarDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSolarDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSolarDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSolarDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21381,7 +21388,7 @@ class IfcSolarDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsolardevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsolardevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21396,7 +21403,7 @@ class IfcSolarDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSolarDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSolarDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSolarDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSolarDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21419,7 +21426,7 @@ class IfcSpace_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSpaceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSpaceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21433,7 +21440,7 @@ class IfcSpace_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcspacetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcspacetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21448,7 +21455,7 @@ class IfcSpaceHeater_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSpaceHeaterTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceHeaterTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSpaceHeaterTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceHeaterTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21462,7 +21469,7 @@ class IfcSpaceHeater_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcspaceheatertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcspaceheatertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21477,7 +21484,7 @@ class IfcSpaceHeaterType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSpaceHeaterTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceHeaterTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSpaceHeaterTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceHeaterTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21492,7 +21499,7 @@ class IfcSpaceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSpaceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSpaceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpaceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21513,7 +21520,7 @@ class IfcSpatialStructureElement_WR41:
     def __call__(self):
 
         
-        assert (hiindex(self.Decomposes) == 1) and ('ifc4x3_add1.ifcrelaggregates' in (typeof(self.Decomposes[1 - 1]))) and (('ifc4x3_add1.ifcproject' in (typeof(self.Decomposes[1 - 1].RelatingObject))) or ('ifc4x3_add1.ifcspatialstructureelement' in (typeof(self.Decomposes[1 - 1].RelatingObject))))
+        assert ((hiindex(self.Decomposes) == 1) and ('ifc4x3_add1.ifcrelaggregates' in (typeof(self.Decomposes[1 - 1]))) and (('ifc4x3_add1.ifcproject' in (typeof(self.Decomposes[1 - 1].RelatingObject))) or ('ifc4x3_add1.ifcspatialstructureelement' in (typeof(self.Decomposes[1 - 1].RelatingObject))))) is not False
         
 
 
@@ -21531,7 +21538,7 @@ class IfcSpatialZone_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSpatialZoneTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpatialZoneTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSpatialZoneTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpatialZoneTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21545,7 +21552,7 @@ class IfcSpatialZone_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcspatialzonetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcspatialzonetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21560,7 +21567,7 @@ class IfcSpatialZoneType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSpatialZoneTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpatialZoneTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSpatialZoneTypeEnum.USERDEFINED) or ((predefinedtype == IfcSpatialZoneTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21584,7 +21591,7 @@ class IfcStackTerminal_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcStackTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcStackTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcStackTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcStackTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21598,7 +21605,7 @@ class IfcStackTerminal_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcstackterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcstackterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21613,7 +21620,7 @@ class IfcStackTerminalType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStackTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcStackTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcStackTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcStackTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21628,7 +21635,7 @@ class IfcStair_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcStairTypeEnum.USERDEFINED) or ((predefinedtype == IfcStairTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcStairTypeEnum.USERDEFINED) or ((predefinedtype == IfcStairTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21642,7 +21649,7 @@ class IfcStair_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcstairtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcstairtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21657,7 +21664,7 @@ class IfcStairFlight_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcStairFlightTypeEnum.USERDEFINED) or ((predefinedtype == IfcStairFlightTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcStairFlightTypeEnum.USERDEFINED) or ((predefinedtype == IfcStairFlightTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21671,7 +21678,7 @@ class IfcStairFlight_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcstairflighttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcstairflighttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -21686,7 +21693,7 @@ class IfcStairFlightType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStairFlightTypeEnum.USERDEFINED) or ((predefinedtype == IfcStairFlightTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcStairFlightTypeEnum.USERDEFINED) or ((predefinedtype == IfcStairFlightTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21701,7 +21708,7 @@ class IfcStairType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStairTypeEnum.USERDEFINED) or ((predefinedtype == IfcStairTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcStairTypeEnum.USERDEFINED) or ((predefinedtype == IfcStairTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -21722,7 +21729,7 @@ class IfcStructuralAnalysisModel_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcAnalysisModelTypeEnum.USERDEFINED) or ((predefinedtype == IfcAnalysisModelTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((predefinedtype != IfcAnalysisModelTypeEnum.USERDEFINED) or ((predefinedtype == IfcAnalysisModelTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -21743,7 +21750,7 @@ class IfcStructuralCurveAction_HasObjectType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStructuralCurveActivityTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        assert ((predefinedtype != IfcStructuralCurveActivityTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
         
 
 
@@ -21757,7 +21764,7 @@ class IfcStructuralCurveAction_ProjectedIsGlobal:
     def __call__(self):
         projectedortrue = self.ProjectedOrTrue
         
-        assert (not exists(projectedortrue)) or ((projectedortrue != projected_length) or (self.GlobalOrLocal == global_coords))
+        assert ((not exists(projectedortrue)) or ((projectedortrue != projected_length) or (self.GlobalOrLocal == global_coords))) is not False
         
 
 
@@ -21771,7 +21778,7 @@ class IfcStructuralCurveAction_SuitablePredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert predefinedtype != IfcStructuralCurveActivityTypeEnum.EQUIDISTANT
+        assert (predefinedtype != IfcStructuralCurveActivityTypeEnum.EQUIDISTANT) is not False
         
 
 
@@ -21789,7 +21796,7 @@ class IfcStructuralCurveMember_HasObjectType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStructuralCurveMemberTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        assert ((predefinedtype != IfcStructuralCurveMemberTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
         
 
 
@@ -21807,7 +21814,7 @@ class IfcStructuralCurveReaction_HasObjectType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStructuralCurveActivityTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        assert ((predefinedtype != IfcStructuralCurveActivityTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
         
 
 
@@ -21821,7 +21828,7 @@ class IfcStructuralCurveReaction_SuitablePredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStructuralCurveActivityTypeEnum.SINUS) and (predefinedtype != IfcStructuralCurveActivityTypeEnum.PARABOLA)
+        assert ((predefinedtype != IfcStructuralCurveActivityTypeEnum.SINUS) and (predefinedtype != IfcStructuralCurveActivityTypeEnum.PARABOLA)) is not False
         
 
 
@@ -21839,7 +21846,7 @@ class IfcStructuralLinearAction_ConstPredefinedType:
     def __call__(self):
 
         
-        assert self.PredefinedType == IfcStructuralCurveActivityTypeEnum.CONST
+        assert (self.PredefinedType == IfcStructuralCurveActivityTypeEnum.CONST) is not False
         
 
 
@@ -21853,7 +21860,7 @@ class IfcStructuralLinearAction_SuitableLoadType:
     def __call__(self):
 
         
-        assert (sizeof(['ifc4x3_add1.ifcstructuralloadlinearforce','ifc4x3_add1.ifcstructuralloadtemperature'] * typeof(self.AppliedLoad))) == 1
+        assert ((sizeof(['ifc4x3_add1.ifcstructuralloadlinearforce','ifc4x3_add1.ifcstructuralloadtemperature'] * typeof(self.AppliedLoad))) == 1) is not False
         
 
 
@@ -21871,7 +21878,7 @@ class IfcStructuralLoadCase_IsLoadCasePredefinedType:
     def __call__(self):
 
         
-        assert self.PredefinedType == IfcLoadGroupTypeEnum.LOAD_CASE
+        assert (self.PredefinedType == IfcLoadGroupTypeEnum.LOAD_CASE) is not False
         
 
 
@@ -21887,7 +21894,7 @@ class IfcStructuralLoadConfiguration_ValidListSize:
         values = self.Values
         locations = self.Locations
         
-        assert (not exists(locations)) or (sizeof(locations) == sizeof(values))
+        assert ((not exists(locations)) or (sizeof(locations) == sizeof(values))) is not False
         
 
 
@@ -21904,7 +21911,7 @@ class IfcStructuralLoadGroup_HasObjectType:
         actiontype = self.ActionType
         actionsource = self.ActionSource
         
-        assert ((predefinedtype != IfcLoadGroupTypeEnum.USERDEFINED) and (actiontype != IfcActionTypeEnum.USERDEFINED) and (actionsource != IfcActionSourceTypeEnum.USERDEFINED)) or exists(self.ObjectType)
+        assert (((predefinedtype != IfcLoadGroupTypeEnum.USERDEFINED) and (actiontype != IfcActionTypeEnum.USERDEFINED) and (actionsource != IfcActionSourceTypeEnum.USERDEFINED)) or exists(self.ObjectType)) is not False
         
 
 
@@ -21949,7 +21956,7 @@ class IfcStructuralPlanarAction_ConstPredefinedType:
     def __call__(self):
 
         
-        assert self.PredefinedType == IfcStructuralSurfaceActivityTypeEnum.CONST
+        assert (self.PredefinedType == IfcStructuralSurfaceActivityTypeEnum.CONST) is not False
         
 
 
@@ -21963,7 +21970,7 @@ class IfcStructuralPlanarAction_SuitableLoadType:
     def __call__(self):
 
         
-        assert (sizeof(['ifc4x3_add1.ifcstructuralloadplanarforce','ifc4x3_add1.ifcstructuralloadtemperature'] * typeof(self.AppliedLoad))) == 1
+        assert ((sizeof(['ifc4x3_add1.ifcstructuralloadplanarforce','ifc4x3_add1.ifcstructuralloadtemperature'] * typeof(self.AppliedLoad))) == 1) is not False
         
 
 
@@ -21978,7 +21985,7 @@ class IfcStructuralPointAction_SuitableLoadType:
     def __call__(self):
 
         
-        assert (sizeof(['ifc4x3_add1.ifcstructuralloadsingleforce','ifc4x3_add1.ifcstructuralloadsingledisplacement'] * typeof(self.AppliedLoad))) == 1
+        assert ((sizeof(['ifc4x3_add1.ifcstructuralloadsingleforce','ifc4x3_add1.ifcstructuralloadsingledisplacement'] * typeof(self.AppliedLoad))) == 1) is not False
         
 
 
@@ -21996,7 +22003,7 @@ class IfcStructuralPointReaction_SuitableLoadType:
     def __call__(self):
 
         
-        assert (sizeof(['ifc4x3_add1.ifcstructuralloadsingleforce','ifc4x3_add1.ifcstructuralloadsingledisplacement'] * typeof(self.AppliedLoad))) == 1
+        assert ((sizeof(['ifc4x3_add1.ifcstructuralloadsingleforce','ifc4x3_add1.ifcstructuralloadsingledisplacement'] * typeof(self.AppliedLoad))) == 1) is not False
         
 
 
@@ -22014,7 +22021,7 @@ class IfcStructuralResultGroup_HasObjectType:
     def __call__(self):
         theorytype = self.TheoryType
         
-        assert (theorytype != IfcAnalysisTheoryTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        assert ((theorytype != IfcAnalysisTheoryTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
         
 
 
@@ -22029,7 +22036,7 @@ class IfcStructuralSurfaceAction_HasObjectType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStructuralSurfaceActivityTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        assert ((predefinedtype != IfcStructuralSurfaceActivityTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
         
 
 
@@ -22043,7 +22050,7 @@ class IfcStructuralSurfaceAction_ProjectedIsGlobal:
     def __call__(self):
         projectedortrue = self.ProjectedOrTrue
         
-        assert (not exists(projectedortrue)) or ((projectedortrue != projected_length) or (self.GlobalOrLocal == global_coords))
+        assert ((not exists(projectedortrue)) or ((projectedortrue != projected_length) or (self.GlobalOrLocal == global_coords))) is not False
         
 
 
@@ -22061,7 +22068,7 @@ class IfcStructuralSurfaceMember_HasObjectType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStructuralSurfaceMemberTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        assert ((predefinedtype != IfcStructuralSurfaceMemberTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
         
 
 
@@ -22079,7 +22086,7 @@ class IfcStructuralSurfaceReaction_HasPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcStructuralSurfaceActivityTypeEnum.USERDEFINED) or exists(self.ObjectType)
+        assert ((predefinedtype != IfcStructuralSurfaceActivityTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
         
 
 
@@ -22097,7 +22104,7 @@ class IfcStyledItem_ApplicableItem:
     def __call__(self):
         item = self.Item
         
-        assert not 'ifc4x3_add1.ifcstyleditem' in typeof(item)
+        assert (not 'ifc4x3_add1.ifcstyleditem' in typeof(item)) is not False
         
 
 
@@ -22112,7 +22119,7 @@ class IfcStyledRepresentation_OnlyStyledItems:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in self.Items if not 'ifc4x3_add1.ifcstyleditem' in typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in self.Items if not 'ifc4x3_add1.ifcstyleditem' in typeof(temp)])) == 0) is not False
         
 
 
@@ -22127,7 +22134,7 @@ class IfcSubContractResource_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSubContractResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSubContractResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSubContractResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSubContractResourceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22142,7 +22149,7 @@ class IfcSubContractResourceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSubContractResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSubContractResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))
+        assert ((predefinedtype != IfcSubContractResourceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSubContractResourceTypeEnum.USERDEFINED) and exists(self.ResourceType))) is not False
         
 
 
@@ -22168,7 +22175,7 @@ class IfcSurfaceCurve_CurveIs3D:
     def __call__(self):
         curve3d = self.Curve3D
         
-        assert curve3d.Dim == 3
+        assert (curve3d.Dim == 3) is not False
         
 
 
@@ -22182,7 +22189,7 @@ class IfcSurfaceCurve_CurveIsNotPcurve:
     def __call__(self):
         curve3d = self.Curve3D
         
-        assert not 'ifc4x3_add1.ifcpcurve' in typeof(curve3d)
+        assert (not 'ifc4x3_add1.ifcpcurve' in typeof(curve3d)) is not False
         
 
 
@@ -22207,7 +22214,7 @@ class IfcSurfaceFeature_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSurfaceFeatureTypeEnum.USERDEFINED) or ((predefinedtype == IfcSurfaceFeatureTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSurfaceFeatureTypeEnum.USERDEFINED) or ((predefinedtype == IfcSurfaceFeatureTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22222,7 +22229,7 @@ class IfcSurfaceOfLinearExtrusion_DepthGreaterZero:
     def __call__(self):
         depth = self.Depth
         
-        assert depth > 0.
+        assert (depth > 0.) is not False
         
 
 
@@ -22253,7 +22260,7 @@ class IfcSurfaceReinforcementArea_NonnegativeArea1:
     def __call__(self):
         surfacereinforcement1 = self.SurfaceReinforcement1
         
-        assert (not exists(surfacereinforcement1)) or (((surfacereinforcement1[1 - 1]) >= 0.) and ((surfacereinforcement1[2 - 1]) >= 0.) and ((sizeof(surfacereinforcement1) == 1) or ((surfacereinforcement1[1 - 1]) >= 0.)))
+        assert ((not exists(surfacereinforcement1)) or (((surfacereinforcement1[1 - 1]) >= 0.) and ((surfacereinforcement1[2 - 1]) >= 0.) and ((sizeof(surfacereinforcement1) == 1) or ((surfacereinforcement1[1 - 1]) >= 0.)))) is not False
         
 
 
@@ -22267,7 +22274,7 @@ class IfcSurfaceReinforcementArea_NonnegativeArea2:
     def __call__(self):
         surfacereinforcement2 = self.SurfaceReinforcement2
         
-        assert (not exists(surfacereinforcement2)) or (((surfacereinforcement2[1 - 1]) >= 0.) and ((surfacereinforcement2[2 - 1]) >= 0.) and ((sizeof(surfacereinforcement2) == 1) or ((surfacereinforcement2[1 - 1]) >= 0.)))
+        assert ((not exists(surfacereinforcement2)) or (((surfacereinforcement2[1 - 1]) >= 0.) and ((surfacereinforcement2[2 - 1]) >= 0.) and ((sizeof(surfacereinforcement2) == 1) or ((surfacereinforcement2[1 - 1]) >= 0.)))) is not False
         
 
 
@@ -22281,7 +22288,7 @@ class IfcSurfaceReinforcementArea_NonnegativeArea3:
     def __call__(self):
         shearreinforcement = self.ShearReinforcement
         
-        assert (not exists(shearreinforcement)) or (shearreinforcement >= 0.)
+        assert ((not exists(shearreinforcement)) or (shearreinforcement >= 0.)) is not False
         
 
 
@@ -22297,7 +22304,7 @@ class IfcSurfaceReinforcementArea_SurfaceAndOrShearAreaSpecified:
         surfacereinforcement2 = self.SurfaceReinforcement2
         shearreinforcement = self.ShearReinforcement
         
-        assert exists(surfacereinforcement1) or exists(surfacereinforcement2) or exists(shearreinforcement)
+        assert (exists(surfacereinforcement1) or exists(surfacereinforcement2) or exists(shearreinforcement)) is not False
         
 
 
@@ -22312,7 +22319,7 @@ class IfcSurfaceStyle_MaxOneExtDefined:
     def __call__(self):
 
         
-        assert (sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcexternallydefinedsurfacestyle' in typeof(style)])) <= 1
+        assert ((sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcexternallydefinedsurfacestyle' in typeof(style)])) <= 1) is not False
         
 
 
@@ -22326,7 +22333,7 @@ class IfcSurfaceStyle_MaxOneLighting:
     def __call__(self):
 
         
-        assert (sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcsurfacestylelighting' in typeof(style)])) <= 1
+        assert ((sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcsurfacestylelighting' in typeof(style)])) <= 1) is not False
         
 
 
@@ -22340,7 +22347,7 @@ class IfcSurfaceStyle_MaxOneRefraction:
     def __call__(self):
 
         
-        assert (sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcsurfacestylerefraction' in typeof(style)])) <= 1
+        assert ((sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcsurfacestylerefraction' in typeof(style)])) <= 1) is not False
         
 
 
@@ -22354,7 +22361,7 @@ class IfcSurfaceStyle_MaxOneShading:
     def __call__(self):
 
         
-        assert (sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcsurfacestyleshading' in typeof(style)])) <= 1
+        assert ((sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcsurfacestyleshading' in typeof(style)])) <= 1) is not False
         
 
 
@@ -22368,7 +22375,7 @@ class IfcSurfaceStyle_MaxOneTextures:
     def __call__(self):
 
         
-        assert (sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcsurfacestylewithtextures' in typeof(style)])) <= 1
+        assert ((sizeof([style for style in self.Styles if 'ifc4x3_add1.ifcsurfacestylewithtextures' in typeof(style)])) <= 1) is not False
         
 
 
@@ -22401,7 +22408,7 @@ class IfcSweptAreaSolid_SweptAreaType:
     def __call__(self):
         sweptarea = self.SweptArea
         
-        assert sweptarea.ProfileType == IfcProfileTypeEnum.Area
+        assert (sweptarea.ProfileType == IfcProfileTypeEnum.Area) is not False
         
 
 
@@ -22418,7 +22425,7 @@ class IfcSweptDiskSolid_DirectrixBounded:
         startparam = self.StartParam
         endparam = self.EndParam
         
-        assert (exists(startparam) and exists(endparam)) or ((sizeof(['ifc4x3_add1.ifcconic','ifc4x3_add1.ifcboundedcurve'] * typeof(directrix))) == 1)
+        assert ((exists(startparam) and exists(endparam)) or ((sizeof(['ifc4x3_add1.ifcconic','ifc4x3_add1.ifcboundedcurve'] * typeof(directrix))) == 1)) is not False
         
 
 
@@ -22432,7 +22439,7 @@ class IfcSweptDiskSolid_DirectrixDim:
     def __call__(self):
         directrix = self.Directrix
         
-        assert directrix.Dim == 3
+        assert (directrix.Dim == 3) is not False
         
 
 
@@ -22447,7 +22454,7 @@ class IfcSweptDiskSolid_InnerRadiusSize:
         radius = self.Radius
         innerradius = self.InnerRadius
         
-        assert (not exists(innerradius)) or (radius > innerradius)
+        assert ((not exists(innerradius)) or (radius > innerradius)) is not False
         
 
 
@@ -22462,7 +22469,7 @@ class IfcSweptDiskSolidPolygonal_CorrectRadii:
     def __call__(self):
         filletradius = self.FilletRadius
         
-        assert (not exists(filletradius)) or (filletradius >= self.Radius)
+        assert ((not exists(filletradius)) or (filletradius >= self.Radius)) is not False
         
 
 
@@ -22476,7 +22483,7 @@ class IfcSweptDiskSolidPolygonal_DirectrixIsPolyline:
     def __call__(self):
 
         
-        assert ('ifc4x3_add1.ifcpolyline' in typeof(self.Directrix)) or (('ifc4x3_add1.ifcindexedpolycurve' in typeof(self.Directrix)) and (not exists(self.Directrix.Segments)))
+        assert (('ifc4x3_add1.ifcpolyline' in typeof(self.Directrix)) or (('ifc4x3_add1.ifcindexedpolycurve' in typeof(self.Directrix)) and (not exists(self.Directrix.Segments)))) is not False
         
 
 
@@ -22491,7 +22498,7 @@ class IfcSweptSurface_SweptCurveType:
     def __call__(self):
         sweptcurve = self.SweptCurve
         
-        assert sweptcurve.ProfileType == IfcProfileTypeEnum.Curve
+        assert (sweptcurve.ProfileType == IfcProfileTypeEnum.Curve) is not False
         
 
 
@@ -22506,7 +22513,7 @@ class IfcSwitchingDevice_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSwitchingDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSwitchingDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSwitchingDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSwitchingDeviceTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22520,7 +22527,7 @@ class IfcSwitchingDevice_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcswitchingdevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcswitchingdevicetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -22535,7 +22542,7 @@ class IfcSwitchingDeviceType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcSwitchingDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSwitchingDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcSwitchingDeviceTypeEnum.USERDEFINED) or ((predefinedtype == IfcSwitchingDeviceTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -22553,7 +22560,7 @@ class IfcSystemFurnitureElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSystemFurnitureElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcSystemFurnitureElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSystemFurnitureElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcSystemFurnitureElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22567,7 +22574,7 @@ class IfcSystemFurnitureElement_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsystemfurnitureelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcsystemfurnitureelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -22582,7 +22589,7 @@ class IfcSystemFurnitureElementType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcSystemFurnitureElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcSystemFurnitureElementTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcSystemFurnitureElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcSystemFurnitureElementTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -22598,7 +22605,7 @@ class IfcTShapeProfileDef_ValidFlangeThickness:
         depth = self.Depth
         flangethickness = self.FlangeThickness
         
-        assert flangethickness < depth
+        assert (flangethickness < depth) is not False
         
 
 
@@ -22613,7 +22620,7 @@ class IfcTShapeProfileDef_ValidWebThickness:
         flangewidth = self.FlangeWidth
         webthickness = self.WebThickness
         
-        assert webthickness < flangewidth
+        assert (webthickness < flangewidth) is not False
         
 
 
@@ -22628,7 +22635,7 @@ class IfcTable_WR1:
     def __call__(self):
         rows = self.Rows
         
-        assert (sizeof([temp for temp in rows if hiindex(temp.RowCells) != (hiindex(rows[1 - 1].RowCells))])) == 0
+        assert ((sizeof([temp for temp in rows if hiindex(temp.RowCells) != (hiindex(rows[1 - 1].RowCells))])) == 0) is not False
         
 
 
@@ -22642,7 +22649,7 @@ class IfcTable_WR2:
     def __call__(self):
         numberofheadings = self.NumberOfHeadings
         
-        assert 0 <= numberofheadings <= 1
+        assert (0 <= numberofheadings <= 1) is not False
         
 
 
@@ -22684,7 +22691,7 @@ class IfcTank_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcTankTypeEnum.USERDEFINED) or ((predefinedtype == IfcTankTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcTankTypeEnum.USERDEFINED) or ((predefinedtype == IfcTankTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22698,7 +22705,7 @@ class IfcTank_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctanktype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctanktype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -22713,7 +22720,7 @@ class IfcTankType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTankTypeEnum.USERDEFINED) or ((predefinedtype == IfcTankTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcTankTypeEnum.USERDEFINED) or ((predefinedtype == IfcTankTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -22728,7 +22735,7 @@ class IfcTask_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcTaskTypeEnum.USERDEFINED) or ((predefinedtype == IfcTaskTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcTaskTypeEnum.USERDEFINED) or ((predefinedtype == IfcTaskTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22742,7 +22749,7 @@ class IfcTask_HasName:
     def __call__(self):
 
         
-        assert exists(self.Name)
+        assert (exists(self.Name)) is not False
         
 
 
@@ -22763,7 +22770,7 @@ class IfcTaskType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTaskTypeEnum.USERDEFINED) or ((predefinedtype == IfcTaskTypeEnum.USERDEFINED) and exists(self.ProcessType))
+        assert ((predefinedtype != IfcTaskTypeEnum.USERDEFINED) or ((predefinedtype == IfcTaskTypeEnum.USERDEFINED) and exists(self.ProcessType))) is not False
         
 
 
@@ -22783,7 +22790,7 @@ class IfcTelecomAddress_MinimumDataProvided:
         wwwhomepageurl = self.WWWHomePageURL
         messagingids = self.MessagingIDs
         
-        assert exists(telephonenumbers) or exists(facsimilenumbers) or exists(pagernumber) or exists(electronicmailaddresses) or exists(wwwhomepageurl) or exists(messagingids)
+        assert (exists(telephonenumbers) or exists(facsimilenumbers) or exists(pagernumber) or exists(electronicmailaddresses) or exists(wwwhomepageurl) or exists(messagingids)) is not False
         
 
 
@@ -22798,7 +22805,7 @@ class IfcTendon_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcTendonTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcTendonTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22812,7 +22819,7 @@ class IfcTendon_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctendontype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctendontype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -22827,7 +22834,7 @@ class IfcTendonAnchor_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcTendonAnchorTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonAnchorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcTendonAnchorTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonAnchorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22841,7 +22848,7 @@ class IfcTendonAnchor_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctendonanchortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctendonanchortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -22856,7 +22863,7 @@ class IfcTendonAnchorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTendonAnchorTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonAnchorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcTendonAnchorTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonAnchorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -22871,7 +22878,7 @@ class IfcTendonConduit_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTendonConduitTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonConduitTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((predefinedtype != IfcTendonConduitTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonConduitTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -22885,7 +22892,7 @@ class IfcTendonConduit_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctendonconduittype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctendonconduittype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -22900,7 +22907,7 @@ class IfcTendonConduitType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTendonConduitTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonConduitTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcTendonConduitTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonConduitTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -22915,7 +22922,7 @@ class IfcTendonType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTendonTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcTendonTypeEnum.USERDEFINED) or ((predefinedtype == IfcTendonTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -22944,7 +22951,7 @@ class IfcTextLiteralWithExtent_WR31:
     def __call__(self):
         extent = self.Extent
         
-        assert not 'ifc4x3_add1.ifcplanarbox' in typeof(extent)
+        assert (not 'ifc4x3_add1.ifcplanarbox' in typeof(extent)) is not False
         
 
 
@@ -22962,7 +22969,7 @@ class IfcTextStyleFontModel_MeasureOfFontSize:
     def __call__(self):
 
         
-        assert ('ifc4x3_add1.ifclengthmeasure' in typeof(self.FontSize)) and (self.FontSize > 0.)
+        assert (('ifc4x3_add1.ifclengthmeasure' in typeof(self.FontSize)) and (self.FontSize > 0.)) is not False
         
 
 
@@ -23019,7 +23026,7 @@ class IfcTopologyRepresentation_WR21:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in self.Items if not 'ifc4x3_add1.ifctopologicalrepresentationitem' in typeof(temp)])) == 0
+        assert ((sizeof([temp for temp in self.Items if not 'ifc4x3_add1.ifctopologicalrepresentationitem' in typeof(temp)])) == 0) is not False
         
 
 
@@ -23033,7 +23040,7 @@ class IfcTopologyRepresentation_WR22:
     def __call__(self):
 
         
-        assert exists(self.RepresentationType)
+        assert (exists(self.RepresentationType)) is not False
         
 
 
@@ -23047,7 +23054,7 @@ class IfcTopologyRepresentation_WR23:
     def __call__(self):
 
         
-        assert IfcTopologyRepresentationTypes(self.RepresentationType,self.Items)
+        assert (IfcTopologyRepresentationTypes(self.RepresentationType,self.Items)) is not False
         
 
 
@@ -23063,7 +23070,7 @@ class IfcToroidalSurface_MajorLargerMinor:
         majorradius = self.MajorRadius
         minorradius = self.MinorRadius
         
-        assert minorradius < majorradius
+        assert (minorradius < majorradius) is not False
         
 
 
@@ -23078,7 +23085,7 @@ class IfcTrackElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcTrackElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcTrackElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcTrackElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcTrackElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23092,7 +23099,7 @@ class IfcTrackElement_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctrackelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctrackelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23107,7 +23114,7 @@ class IfcTrackElementType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTrackElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcTrackElementTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcTrackElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcTrackElementTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23122,7 +23129,7 @@ class IfcTransformer_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcTransformerTypeEnum.USERDEFINED) or ((predefinedtype == IfcTransformerTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcTransformerTypeEnum.USERDEFINED) or ((predefinedtype == IfcTransformerTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23136,7 +23143,7 @@ class IfcTransformer_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctransformertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctransformertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23151,7 +23158,7 @@ class IfcTransformerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTransformerTypeEnum.USERDEFINED) or ((predefinedtype == IfcTransformerTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcTransformerTypeEnum.USERDEFINED) or ((predefinedtype == IfcTransformerTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23166,7 +23173,7 @@ class IfcTransportElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcTransportElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcTransportElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcTransportElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcTransportElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23180,7 +23187,7 @@ class IfcTransportElement_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctransportelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctransportelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23195,7 +23202,7 @@ class IfcTransportElementType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTransportElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcTransportElementTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcTransportElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcTransportElementTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23227,7 +23234,7 @@ class IfcTriangulatedIrregularNetwork_NotClosed:
     def __call__(self):
 
         
-        assert self.Closed == False
+        assert (self.Closed == False) is not False
         
 
 
@@ -23242,7 +23249,7 @@ class IfcTrimmedCurve_NoTrimOfBoundedCurves:
     def __call__(self):
         basiscurve = self.BasisCurve
         
-        assert not 'ifc4x3_add1.ifcboundedcurve' in typeof(basiscurve)
+        assert (not 'ifc4x3_add1.ifcboundedcurve' in typeof(basiscurve)) is not False
         
 
 
@@ -23256,7 +23263,7 @@ class IfcTrimmedCurve_Trim1ValuesConsistent:
     def __call__(self):
         trim1 = self.Trim1
         
-        assert (hiindex(trim1) == 1) or ((typeof(trim1[1 - 1])) != (typeof(trim1[2 - 1])))
+        assert ((hiindex(trim1) == 1) or ((typeof(trim1[1 - 1])) != (typeof(trim1[2 - 1])))) is not False
         
 
 
@@ -23270,7 +23277,7 @@ class IfcTrimmedCurve_Trim2ValuesConsistent:
     def __call__(self):
         trim2 = self.Trim2
         
-        assert (hiindex(trim2) == 1) or ((typeof(trim2[1 - 1])) != (typeof(trim2[2 - 1])))
+        assert ((hiindex(trim2) == 1) or ((typeof(trim2[1 - 1])) != (typeof(trim2[2 - 1])))) is not False
         
 
 
@@ -23285,7 +23292,7 @@ class IfcTubeBundle_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcTubeBundleTypeEnum.USERDEFINED) or ((predefinedtype == IfcTubeBundleTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcTubeBundleTypeEnum.USERDEFINED) or ((predefinedtype == IfcTubeBundleTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23299,7 +23306,7 @@ class IfcTubeBundle_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctubebundletype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifctubebundletype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23314,7 +23321,7 @@ class IfcTubeBundleType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcTubeBundleTypeEnum.USERDEFINED) or ((predefinedtype == IfcTubeBundleTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcTubeBundleTypeEnum.USERDEFINED) or ((predefinedtype == IfcTubeBundleTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23329,7 +23336,7 @@ class IfcTypeObject_NameRequired:
     def __call__(self):
 
         
-        assert exists(self.Name)
+        assert (exists(self.Name)) is not False
         
 
 
@@ -23343,7 +23350,7 @@ class IfcTypeObject_UniquePropertySetNames:
     def __call__(self):
         haspropertysets = self.HasPropertySets
         
-        assert (not exists(haspropertysets)) or IfcUniquePropertySetNames(haspropertysets)
+        assert ((not exists(haspropertysets)) or IfcUniquePropertySetNames(haspropertysets)) is not False
         
 
 
@@ -23361,7 +23368,7 @@ class IfcTypeProduct_ApplicableOccurrence:
     def __call__(self):
 
         
-        assert (not exists(lambda: self.Types[1 - 1])) or ((sizeof([temp for temp in self.Types[1 - 1].RelatedObjects if not 'ifc4x3_add1.ifcproduct' in typeof(temp)])) == 0)
+        assert ((not exists(lambda: self.Types[1 - 1])) or ((sizeof([temp for temp in self.Types[1 - 1].RelatedObjects if not 'ifc4x3_add1.ifcproduct' in typeof(temp)])) == 0)) is not False
         
 
 
@@ -23380,7 +23387,7 @@ class IfcUShapeProfileDef_ValidFlangeThickness:
         depth = self.Depth
         flangethickness = self.FlangeThickness
         
-        assert flangethickness < (depth / 2.)
+        assert (flangethickness < (depth / 2.)) is not False
         
 
 
@@ -23395,7 +23402,7 @@ class IfcUShapeProfileDef_ValidWebThickness:
         flangewidth = self.FlangeWidth
         webthickness = self.WebThickness
         
-        assert webthickness < flangewidth
+        assert (webthickness < flangewidth) is not False
         
 
 
@@ -23410,7 +23417,7 @@ class IfcUnitAssignment_WR01:
     def __call__(self):
         units = self.Units
         
-        assert IfcCorrectUnitAssignment(units)
+        assert (IfcCorrectUnitAssignment(units)) is not False
         
 
 
@@ -23425,7 +23432,7 @@ class IfcUnitaryControlElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcUnitaryControlElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryControlElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcUnitaryControlElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryControlElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23439,7 +23446,7 @@ class IfcUnitaryControlElement_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcunitarycontrolelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcunitarycontrolelementtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23454,7 +23461,7 @@ class IfcUnitaryControlElementType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcUnitaryControlElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryControlElementTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcUnitaryControlElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryControlElementTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23469,7 +23476,7 @@ class IfcUnitaryEquipment_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcUnitaryEquipmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryEquipmentTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcUnitaryEquipmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryEquipmentTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23483,7 +23490,7 @@ class IfcUnitaryEquipment_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcunitaryequipmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcunitaryequipmenttype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23498,7 +23505,7 @@ class IfcUnitaryEquipmentType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcUnitaryEquipmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryEquipmentTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcUnitaryEquipmentTypeEnum.USERDEFINED) or ((predefinedtype == IfcUnitaryEquipmentTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23513,7 +23520,7 @@ class IfcValve_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcValveTypeEnum.USERDEFINED) or ((predefinedtype == IfcValveTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcValveTypeEnum.USERDEFINED) or ((predefinedtype == IfcValveTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23527,7 +23534,7 @@ class IfcValve_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcvalvetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcvalvetype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23542,7 +23549,7 @@ class IfcValveType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcValveTypeEnum.USERDEFINED) or ((predefinedtype == IfcValveTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcValveTypeEnum.USERDEFINED) or ((predefinedtype == IfcValveTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23557,7 +23564,7 @@ class IfcVector_MagGreaterOrEqualZero:
     def __call__(self):
         magnitude = self.Magnitude
         
-        assert magnitude >= 0.0
+        assert (magnitude >= 0.0) is not False
         
 
 
@@ -23579,7 +23586,7 @@ class IfcVehicle_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcVehicleTypeEnum.USERDEFINED) or ((predefinedtype == IfcVehicleTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcVehicleTypeEnum.USERDEFINED) or ((predefinedtype == IfcVehicleTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23593,7 +23600,7 @@ class IfcVehicle_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcvehicletype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcvehicletype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23608,7 +23615,7 @@ class IfcVehicleType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcVehicleTypeEnum.USERDEFINED) or ((predefinedtype == IfcVehicleTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcVehicleTypeEnum.USERDEFINED) or ((predefinedtype == IfcVehicleTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23632,7 +23639,7 @@ class IfcVibrationDamper_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcVibrationDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationDamperTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcVibrationDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationDamperTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23646,7 +23653,7 @@ class IfcVibrationDamper_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcvibrationdampertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcvibrationdampertype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23661,7 +23668,7 @@ class IfcVibrationDamperType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcVibrationDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationDamperTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcVibrationDamperTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationDamperTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23676,7 +23683,7 @@ class IfcVibrationIsolator_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcVibrationIsolatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationIsolatorTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcVibrationIsolatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationIsolatorTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23690,7 +23697,7 @@ class IfcVibrationIsolator_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcvibrationisolatortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcvibrationisolatortype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23705,7 +23712,7 @@ class IfcVibrationIsolatorType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcVibrationIsolatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationIsolatorTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcVibrationIsolatorTypeEnum.USERDEFINED) or ((predefinedtype == IfcVibrationIsolatorTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23720,7 +23727,7 @@ class IfcVirtualElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcVirtualElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcVirtualElementTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcVirtualElementTypeEnum.USERDEFINED) or ((predefinedtype == IfcVirtualElementTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23738,7 +23745,7 @@ class IfcVoidingFeature_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcVoidingFeatureTypeEnum.USERDEFINED) or ((predefinedtype == IfcVoidingFeatureTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcVoidingFeatureTypeEnum.USERDEFINED) or ((predefinedtype == IfcVoidingFeatureTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23753,7 +23760,7 @@ class IfcWall_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcWallTypeEnum.USERDEFINED) or ((predefinedtype == IfcWallTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcWallTypeEnum.USERDEFINED) or ((predefinedtype == IfcWallTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23767,7 +23774,7 @@ class IfcWall_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcwalltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcwalltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23782,7 +23789,7 @@ class IfcWallStandardCase_HasMaterialLayerSetUsage:
     def __call__(self):
 
         
-        assert (sizeof([temp for temp in usedin(self,'ifc4x3_add1.ifcrelassociates.relatedobjects') if ('ifc4x3_add1.ifcrelassociatesmaterial' in typeof(temp)) and ('ifc4x3_add1.ifcmateriallayersetusage' in typeof(temp.RelatingMaterial))])) == 1
+        assert ((sizeof([temp for temp in usedin(self,'ifc4x3_add1.ifcrelassociates.relatedobjects') if ('ifc4x3_add1.ifcrelassociatesmaterial' in typeof(temp)) and ('ifc4x3_add1.ifcmateriallayersetusage' in typeof(temp.RelatingMaterial))])) == 1) is not False
         
 
 
@@ -23797,7 +23804,7 @@ class IfcWallType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcWallTypeEnum.USERDEFINED) or ((predefinedtype == IfcWallTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcWallTypeEnum.USERDEFINED) or ((predefinedtype == IfcWallTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23812,7 +23819,7 @@ class IfcWasteTerminal_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcWasteTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcWasteTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcWasteTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcWasteTerminalTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23826,7 +23833,7 @@ class IfcWasteTerminal_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcwasteterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcwasteterminaltype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23841,7 +23848,7 @@ class IfcWasteTerminalType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcWasteTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcWasteTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcWasteTerminalTypeEnum.USERDEFINED) or ((predefinedtype == IfcWasteTerminalTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23859,7 +23866,7 @@ class IfcWindow_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcWindowTypeEnum.USERDEFINED) or ((predefinedtype == IfcWindowTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcWindowTypeEnum.USERDEFINED) or ((predefinedtype == IfcWindowTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23873,7 +23880,7 @@ class IfcWindow_CorrectTypeAssigned:
     def __call__(self):
         istypedby = self.IsTypedBy
         
-        assert (sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcwindowtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))
+        assert ((sizeof(istypedby) == 0) or ('ifc4x3_add1.ifcwindowtype' in (typeof(self.IsTypedBy[1 - 1].RelatingType)))) is not False
         
 
 
@@ -23889,7 +23896,7 @@ class IfcWindowLiningProperties_WR31:
         liningdepth = self.LiningDepth
         liningthickness = self.LiningThickness
         
-        assert not exists(liningdepth) and (not exists(liningthickness))
+        assert (not exists(liningdepth) and (not exists(liningthickness))) is not False
         
 
 
@@ -23904,7 +23911,7 @@ class IfcWindowLiningProperties_WR32:
         firsttransomoffset = self.FirstTransomOffset
         secondtransomoffset = self.SecondTransomOffset
         
-        assert not (not exists(firsttransomoffset)) and exists(secondtransomoffset)
+        assert (not (not exists(firsttransomoffset)) and exists(secondtransomoffset)) is not False
         
 
 
@@ -23919,7 +23926,7 @@ class IfcWindowLiningProperties_WR33:
         firstmullionoffset = self.FirstMullionOffset
         secondmullionoffset = self.SecondMullionOffset
         
-        assert not (not exists(firstmullionoffset)) and exists(secondmullionoffset)
+        assert (not (not exists(firstmullionoffset)) and exists(secondmullionoffset)) is not False
         
 
 
@@ -23933,7 +23940,7 @@ class IfcWindowLiningProperties_WR34:
     def __call__(self):
 
         
-        assert (exists(lambda: self.DefinesType[1 - 1])) and ('ifc4x3_add1.ifcwindowtype' in (typeof(self.DefinesType[1 - 1])))
+        assert ((exists(lambda: self.DefinesType[1 - 1])) and ('ifc4x3_add1.ifcwindowtype' in (typeof(self.DefinesType[1 - 1])))) is not False
         
 
 
@@ -23948,7 +23955,7 @@ class IfcWindowPanelProperties_ApplicableToType:
     def __call__(self):
 
         
-        assert (exists(lambda: self.DefinesType[1 - 1])) and ('ifc4x3_add1.ifcwindowtype' in (typeof(self.DefinesType[1 - 1])))
+        assert ((exists(lambda: self.DefinesType[1 - 1])) and ('ifc4x3_add1.ifcwindowtype' in (typeof(self.DefinesType[1 - 1])))) is not False
         
 
 
@@ -23963,7 +23970,7 @@ class IfcWindowType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (predefinedtype != IfcWindowTypeEnum.USERDEFINED) or ((predefinedtype == IfcWindowTypeEnum.USERDEFINED) and exists(self.ElementType))
+        assert ((predefinedtype != IfcWindowTypeEnum.USERDEFINED) or ((predefinedtype == IfcWindowTypeEnum.USERDEFINED) and exists(self.ElementType))) is not False
         
 
 
@@ -23978,7 +23985,7 @@ class IfcWorkCalendar_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcWorkCalendarTypeEnum.USERDEFINED) or ((predefinedtype == IfcWorkCalendarTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcWorkCalendarTypeEnum.USERDEFINED) or ((predefinedtype == IfcWorkCalendarTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -23996,7 +24003,7 @@ class IfcWorkPlan_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcWorkPlanTypeEnum.USERDEFINED) or ((predefinedtype == IfcWorkPlanTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcWorkPlanTypeEnum.USERDEFINED) or ((predefinedtype == IfcWorkPlanTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -24011,7 +24018,7 @@ class IfcWorkSchedule_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert (not exists(predefinedtype)) or (predefinedtype != IfcWorkScheduleTypeEnum.USERDEFINED) or ((predefinedtype == IfcWorkScheduleTypeEnum.USERDEFINED) and exists(self.ObjectType))
+        assert ((not exists(predefinedtype)) or (predefinedtype != IfcWorkScheduleTypeEnum.USERDEFINED) or ((predefinedtype == IfcWorkScheduleTypeEnum.USERDEFINED) and exists(self.ObjectType))) is not False
         
 
 
@@ -24030,7 +24037,7 @@ class IfcZShapeProfileDef_ValidFlangeThickness:
         depth = self.Depth
         flangethickness = self.FlangeThickness
         
-        assert flangethickness < (depth / 2.)
+        assert (flangethickness < (depth / 2.)) is not False
         
 
 
@@ -24045,7 +24052,7 @@ class IfcZone_WR1:
     def __call__(self):
 
         
-        assert (sizeof(self.IsGroupedBy) == 0) or ((sizeof([temp for temp in self.IsGroupedBy[1 - 1].RelatedObjects if not ('ifc4x3_add1.ifczone' in typeof(temp)) or ('ifc4x3_add1.ifcspace' in typeof(temp)) or ('ifc4x3_add1.ifcspatialzone' in typeof(temp))])) == 0)
+        assert ((sizeof(self.IsGroupedBy) == 0) or ((sizeof([temp for temp in self.IsGroupedBy[1 - 1].RelatedObjects if not ('ifc4x3_add1.ifczone' in typeof(temp)) or ('ifc4x3_add1.ifcspace' in typeof(temp)) or ('ifc4x3_add1.ifcspatialzone' in typeof(temp))])) == 0)) is not False
         
 
 
@@ -24065,7 +24072,7 @@ class IfcRepresentationContextSameWCS:
                     if isdifferent == True:
                         break
         
-        assert isdifferent == False
+        assert (isdifferent == False) is not False
         
 
 
@@ -24080,7 +24087,7 @@ class IfcSingleProjectInstance:
 
 
         
-        assert sizeof(IfcProject) <= 1
+        assert (sizeof(IfcProject) <= 1) is not False
         
 
 
