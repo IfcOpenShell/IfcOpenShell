@@ -535,7 +535,7 @@ class FilterModelElements(Operator):
         sel_element_ids = [e.id() for e in query]
         bpy.ops.object.select_all(action="DESELECT")
 
-        for obj in bpy.data.scenes["Scene"].objects:
+        for obj in context.visible_objects:
             obj.hide_set(False)  # reset 3d view
 
             if self.option == "select":
