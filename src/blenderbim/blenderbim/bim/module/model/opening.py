@@ -442,6 +442,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             or not obj.data.BIMMeshProperties.ifc_definition_id
         ):
             return {"FINISHED"}
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         booleans = []
         for item in representation.Items:
@@ -458,6 +459,9 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     boolean_obj = self.create_half_space_solid()
                     position = boolean.BaseSurface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+                    position[0][3] *= unit_scale
+                    position[1][3] *= unit_scale
+                    position[2][3] *= unit_scale
                     boolean_obj.matrix_world = obj.matrix_world @ position
             else:
                 settings = ifcopenshell.geom.settings()
