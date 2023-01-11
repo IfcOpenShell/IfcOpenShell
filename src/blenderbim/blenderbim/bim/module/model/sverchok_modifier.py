@@ -155,7 +155,7 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
                 "edges": output_node.inputs["Edges"].sv_get(deepcopy=False, default=[]),
                 "polygons": output_node.inputs["Polygons"].sv_get(deepcopy=False, default=[]),
             }
-            # sv_get returns array of arrays of 1 element, for convenience we reduce it to just 1 level array
+            # sv_get returns array of 1 element arrays, for convenience we reduce it to just 1 level array
             def try_first_element(x):
                 return x[0] if x else x
 
