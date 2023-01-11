@@ -206,7 +206,7 @@ def log_internal_cpp_errors(filename, logger):
     import re
     import bisect
 
-    chr_offset_re = re.compile("at offset (\d+)\s*")
+    chr_offset_re = re.compile(r"at offset (\d+)\s*")
 
     log = ifcopenshell.get_log()
     msgs = list(map(json.loads, filter(None, log.split("\n"))))
