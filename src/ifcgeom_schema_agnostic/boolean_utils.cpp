@@ -620,18 +620,6 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 		}
 	}
 
-	{
-		TopoDS_Compound C;
-		BRep_Builder BB;
-		BB.MakeCompound(C);
-		
-		for (auto& w : wires) {
-			BB.Add(C, w);
-		}
-
-		BRepTools::Write(C, "debug.brep");
-	}
-
 	shape_index = 0;
 	edge_index = 0;
 
