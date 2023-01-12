@@ -80,7 +80,9 @@ class Usecase:
             ifc_class.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a new surface style
             style = ifcopenshell.api.run("style.add_style", model)

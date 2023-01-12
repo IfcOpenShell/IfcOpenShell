@@ -26,7 +26,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's create a new calendar.
             calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)

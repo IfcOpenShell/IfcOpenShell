@@ -42,7 +42,9 @@ class Usecase:
         :return: The IfcRelAssociatesDocument relationship
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             document = ifcopenshell.api.run("document.add_information", model)
             ifcopenshell.api.run("document.edit_information", model,

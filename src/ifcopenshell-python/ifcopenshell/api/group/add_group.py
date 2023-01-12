@@ -39,7 +39,9 @@ class Usecase:
         :return: The newly created IfcGroup
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
         """

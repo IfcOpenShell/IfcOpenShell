@@ -69,7 +69,7 @@ class IfcClassData:
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             ]
-        return [(e, e, get_entity_doc(version, e).get("description", "")) for e in products]
+        return [(e, e, (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
 
     @classmethod
     def ifc_classes(cls):
@@ -80,7 +80,7 @@ class IfcClassData:
         if ifc_product == "IfcElementType":
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         version = tool.Ifc.get_schema()
-        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
+        return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def ifc_predefined_types(cls):
@@ -92,7 +92,7 @@ class IfcClassData:
             if attribute.name() == "PredefinedType":
                 types_enum.extend(
                     [
-                        (e, e, get_predefined_type_doc(version, ifc_class, e))
+                        (e, e, get_predefined_type_doc(version, ifc_class, e) or "")
                         for e in attribute.type_of_attribute().declared_type().enumeration_items()
                     ]
                 )
@@ -120,7 +120,7 @@ class IfcClassData:
         )
         version = tool.Ifc.get_schema()
         for ifc_class, _, _ in cls.data["ifc_classes"]:
-            class_doc = get_entity_doc(version, ifc_class)
+            class_doc = get_entity_doc(version, ifc_class) or {}
             predefined_types = class_doc.get("predefined_types", {})
             suggestions[ifc_class].extend(predefined_types.keys())
         return suggestions

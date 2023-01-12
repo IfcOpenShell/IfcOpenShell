@@ -34,7 +34,9 @@ class Usecase:
         :return: The newly created element depending on the specified ifc_class.
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
                 ifc_class="IfcCircleProfileDef")

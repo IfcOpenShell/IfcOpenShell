@@ -117,6 +117,7 @@ classes = [
     ui.BIM_PT_project_info,
     ui.BIM_PT_project_setup,
     ui.BIM_PT_collaboration,
+    ui.BIM_PT_selection,
     ui.BIM_PT_geometry,
     ui.BIM_PT_services,
     ui.BIM_PT_structural,

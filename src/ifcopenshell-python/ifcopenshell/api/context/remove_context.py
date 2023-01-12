@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
             # Revit had a bug where they incorrectly called the body representation a "Facetation"

@@ -15,3 +15,28 @@ section img {
     box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
     border-radius: 5px;
 }
+.location-scene img {
+    display: inline;
+    border-radius: 0px;
+    box-shadow: none;
+    vertical-align: middle;
+    margin-top: -3px;
+}
+.location-scene p {
+    margin: 0.75rem;
+}
+.location-scene {
+    border: 1px solid var(--color-admonition-title);
+    background-color: var(--color-admonition-title-background);
+    border-radius: 5px;
+    font-style: italic;
+    color: var(--color-admonition-title);
+}
+img.icon {
+    width: auto;
+    height: auto;
+    border-radius: 0px;
+    box-shadow: none;
+    vertical-align: middle;
+    vertical-align: middle;
+}

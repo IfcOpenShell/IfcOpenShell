@@ -68,7 +68,9 @@ class Usecase:
         :return: The IfcRelContainedInSpatialStructure relationship instance
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
             site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")

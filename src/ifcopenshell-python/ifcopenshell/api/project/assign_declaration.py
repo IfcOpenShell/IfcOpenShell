@@ -43,7 +43,9 @@ class Usecase:
         :return: The new IfcRelDeclares relationship
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Programmatically generate a library. You could do this visually too.
             library = ifcopenshell.api.run("project.create_file")

@@ -55,9 +55,7 @@ class json_logger:
         self.instance = instance
 
     def log(self, level, message, *args, **kwargs):
-        self.statements.append(
-            log_entry_type(level, message % args, kwargs.get("instance"))._asdict()
-        )
+        self.statements.append(log_entry_type(level, message % args, kwargs.get("instance"))._asdict())
 
     def __getattr__(self, level):
         return functools.partial(self.log, level, instance=self.instance)
@@ -104,14 +102,8 @@ def annotate_inst_attr_pos(inst, pos):
 
 
 def format(val):
-    if (
-        isinstance(val, tuple)
-        and val
-        and isinstance(val[0], ifcopenshell.entity_instance)
-    ):
-        return "[\n%s\n    ]" % "\n".join(
-            "      {}. {}".format(*x) for x in enumerate(val, start=1)
-        )
+    if isinstance(val, tuple) and val and isinstance(val[0], ifcopenshell.entity_instance):
+        return "[\n%s\n    ]" % "\n".join("      {}. {}".format(*x) for x in enumerate(val, start=1))
     else:
         return repr(val)
 
@@ -127,22 +119,21 @@ def assert_valid_inverse(attr, val, schema):
         b1 = attr.bound1()
         b2 = attr.bound2()
 
-        attr_formatted = (
-            f"{attr.name()} : {aggr} [{b1}:{b2}] OF {ent_ref} FOR {attr_ref}"
-        )
+        attr_formatted = f"{attr.name()} : {aggr} [{b1}:{b2}] OF {ent_ref} FOR {attr_ref}"
 
-        raise ValidationError(
-            f"With inverse:\n    {attr_formatted}\nValue:\n    {format(val)}\nNot valid\n"
-        )
+        raise ValidationError(f"With inverse:\n    {attr_formatted}\nValue:\n    {format(val)}\nNot valid\n")
     return True
 
+
 select_members_cache = {}
+
+
 def get_select_members(schema, ty):
     cache_key = schema.name(), ty.name()
     from_cache = select_members_cache.get(cache_key)
     if from_cache:
         return from_cache
-    
+
     def inner(ty):
         if isinstance(ty, select_type):
             for st in ty.select_list():
@@ -152,10 +143,11 @@ def get_select_members(schema, ty):
             for st in ty.subtypes():
                 yield from inner(st)
         elif isinstance(ty, type_declaration):
-            yield ty.name()        
-    
+            yield ty.name()
+
     v = select_members_cache[cache_key] = set(inner(ty))
     return v
+
 
 def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
     type_wrappers = (named_type,)
@@ -177,9 +169,7 @@ def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
         else:
             invalid = type(val) != simple_type_python
     elif isinstance(attr_type, (entity_type, type_declaration)):
-        invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(
-            attr_type.name()
-        )
+        invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
     elif isinstance(attr_type, select_type):
         val_to_use = val
         if isinstance(schema.declaration_by_name(val.is_a()), enumeration_type):
@@ -200,20 +190,14 @@ def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
     elif isinstance(attr_type, aggregation_type):
         b1, b2 = attr_type.bound1(), attr_type.bound2()
         ty = attr_type.type_of_element()
-        invalid = (
-            len(val) < b1
-            or (b2 != -1 and len(val) > b2)
-            or not all(assert_valid(ty, v, schema) for v in val)
-        )
+        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2) or not all(assert_valid(ty, v, schema) for v in val)
     else:
         raise NotImplementedError("Not impl %s %s" % (type(attr_type), attr_type))
 
     if no_throw:
-        return not invalid  
+        return not invalid
     elif invalid:
-        raise ValidationError(
-            f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n"
-        )
+        raise ValidationError(f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n")
     else:
         return True
 
@@ -222,7 +206,7 @@ def log_internal_cpp_errors(filename, logger):
     import re
     import bisect
 
-    chr_offset_re = re.compile("at offset (\d+)\s*")
+    chr_offset_re = re.compile(r"at offset (\d+)\s*")
 
     log = ifcopenshell.get_log()
     msgs = list(map(json.loads, filter(None, log.split("\n"))))
@@ -239,9 +223,7 @@ def log_internal_cpp_errors(filename, logger):
 
         for offsets, msg in zip(chr_offsets, msgs):
             if offsets:
-                line = lines[bisect.bisect_left(cs, int(offsets[0]))].decode(
-                    "ascii", errors="ignore"
-                )
+                line = lines[bisect.bisect_left(cs, int(offsets[0]))].decode("ascii", errors="ignore")
                 m = chr_offset_re.sub("", msg["message"])
 
                 if hasattr(logger, "set_instance"):
@@ -250,18 +232,21 @@ def log_internal_cpp_errors(filename, logger):
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
 
+
 entity_attribute_map = {}
+
+
 def get_entity_attributes(schema, entity):
     cache_key = schema.name(), entity
     from_cache = entity_attribute_map.get(cache_key)
     if from_cache:
         return from_cache
-    
+
     entity_attrs = (
         ent := schema.declaration_by_name(entity),
         ent.all_attributes(),
     )
-    
+
     entity_attribute_map[cache_key] = entity_attrs
     return entity_attrs
 
@@ -285,16 +270,16 @@ def validate(f, logger, express_rules=False):
     It is recommended to supply the path to the file, so that internal C++ errors reported during the parse stage
     are also captured.
     """
-    
+
     # Originally there was no way in Python to distinguish on an entity instance attribute value whether the
     # value supplied in the model was NIL ($) or 'missing because derived in subtype' (*). For validation this
     # however this may be important, and hence a feature switch has been implemented to return *-values as
     # instances of a dedicated type `ifcopenshell.ifcopenshell_wrapper.attribute_value_derived`.
-    attribute_value_derived_org = ifcopenshell.ifcopenshell_wrapper.get_feature('use_attribute_value_derived')
-    ifcopenshell.ifcopenshell_wrapper.set_feature('use_attribute_value_derived', True)
-    
+    attribute_value_derived_org = ifcopenshell.ifcopenshell_wrapper.get_feature("use_attribute_value_derived")
+    ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", True)
+
     filename = None
-    
+
     if not isinstance(f, ifcopenshell.file):
 
         # get_log() clears log existing output
@@ -313,7 +298,7 @@ def validate(f, logger, express_rules=False):
             logger.set_instance(inst)
 
         entity, attrs = get_entity_attributes(schema, inst.is_a())
-        
+
         if entity.is_abstract():
             e = "Entity %s is abstract" % entity.name()
             if hasattr(logger, "set_instance"):
@@ -341,9 +326,7 @@ def validate(f, logger, express_rules=False):
                 has_invalid_value = True
 
         if not has_invalid_value:
-            for i, (attr, val, is_derived) in enumerate(
-                zip(attrs, values, entity.derived())
-            ):
+            for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
 
                 if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
                     if hasattr(logger, "set_instance"):
@@ -401,10 +384,11 @@ def validate(f, logger, express_rules=False):
         log_internal_cpp_errors(filename, logger)
 
     # Restore the original value for 'use_attribute_value_derived'
-    ifcopenshell.ifcopenshell_wrapper.set_feature('use_attribute_value_derived', attribute_value_derived_org)
+    ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", attribute_value_derived_org)
 
     if express_rules:
         ifcopenshell.express.rule_executor.run(f, logger)
+
 
 if __name__ == "__main__":
     import sys

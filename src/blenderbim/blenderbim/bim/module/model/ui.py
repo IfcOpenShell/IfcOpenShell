@@ -385,7 +385,9 @@ class BIM_PT_sverchok(bpy.types.Panel):
         if not SverchokData.is_loaded:
             SverchokData.load()
 
-        self.layout.label(text="Requires SVERCHOK addon to be enabled.", icon="SEQUENCE_COLOR_02")
+        if not SverchokData.data["has_sverchok"]:
+            self.layout.label(text="Requires Sverchok Add-on", icon="ERROR")
+            return
 
         props = context.active_object.BIMSverchokProperties
         self.layout.prop_search(props, "node_group", bpy.data, "node_groups")

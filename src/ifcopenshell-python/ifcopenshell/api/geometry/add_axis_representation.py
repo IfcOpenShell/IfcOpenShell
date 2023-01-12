@@ -60,7 +60,9 @@ class Usecase:
         :return: The newly created IfcShapeRepresentation entity
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             context = ifcopenshell.util.representation.get_context(model, "Plan", "Axis", "GRAPH_VIEW")
             axis = ifcopenshell.api.run("geometry.add_axis_representation", model,

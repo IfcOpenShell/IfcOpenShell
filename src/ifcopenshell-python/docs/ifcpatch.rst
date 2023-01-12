@@ -50,7 +50,7 @@ In this example, we'll extract out all `IfcWall` elements.
     $ ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a ".IfcWall"
     $ cat output.ifc
 
-Here is a minimal example of how to use IfcDiff as a library:
+Here is a minimal example of how to use IfcPatch as a library:
 
 .. code-block:: python
 
@@ -75,3 +75,8 @@ Alternatively, you can package it as an executable.
 
     $ python make.py
     $ ./dist/ifcpatch
+
+Patch recipes
+-------------
+
+You can view all built-in patches in IfcPatch here: :doc:`List of IfcPatch recipes <autoapi/ifcpatch/recipes/index>`.

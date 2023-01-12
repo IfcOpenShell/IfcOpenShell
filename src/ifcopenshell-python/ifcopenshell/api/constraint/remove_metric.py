@@ -29,7 +29,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             objective = ifcopenshell.api.run("constraint.add_objective", model)
             metric = ifcopenshell.api.run("constraint.add_metric", model,

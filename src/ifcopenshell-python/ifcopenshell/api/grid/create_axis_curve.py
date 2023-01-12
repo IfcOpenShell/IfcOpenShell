@@ -39,7 +39,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A pretty standard rectangular grid, with only two axes.
             grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")

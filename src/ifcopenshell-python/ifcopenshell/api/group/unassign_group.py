@@ -33,7 +33,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
             furniture = model.by_type("IfcFurniture")

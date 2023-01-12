@@ -1,35 +1,43 @@
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger):
+        """Allow ArchiCAD IFC spaces to open as Revit rooms
+
+        The underlying problem is that Revit does not bring in IFC spaces as
+        spaces / rooms in Revit when you link an IFC in Revit. This has been
+        broken for at least 3 years and counting. This is a problem typically
+        for ArchiCAD architects who want to send rooms to MEP folks using
+        Revit.
+        
+        See bug: https://github.com/Autodesk/revit-ifc/issues/15
+        
+        The solution is to open an IFC in Revit instead of linking it, which
+        will convert IFC spaces into Revit rooms. However, there are very
+        specific scenarios where Revit will convert these rooms, which have
+        been painstakingly reverse engineered through trial and error.
+        Firstly, the rooms should have a lower bound with a Z value matching
+        the Z value of the storey it is on. Secondly, although faceted breps
+        do work in some scenarios (I assume Revit has an internal topological
+        analysis tool), conversion to an extruded area solid yield much more
+        robust results. Finally, changing the Precision value to an obscene
+        number very strangely seems to cause a lot more rooms to be converted
+        successfully.
+        
+        This patch is designed to only work on ArchiCAD IFC exports where the
+        only contents of the IFC is IFC space and `nothing else`. It also
+        requires you to run it using Blender, as the geometric modification
+        uses the Blender geometry engine.
+
+        Example:
+
+        .. code:: python
+
+            ifcpatch.execute({"input": model, "recipe": "FixArchiCADToRevitSpaces", "arguments": []})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
 
     def patch(self):
-        # The underlying problem is that Revit does not bring in IFC spaces as
-        # spaces / rooms in Revit when you link an IFC in Revit. This has been
-        # broken for at least 3 years and counting. This is a problem typically
-        # for ArchiCAD architects who want to send rooms to MEP folks using
-        # Revit.
-        #
-        # See bug: https://github.com/Autodesk/revit-ifc/issues/15
-        #
-        # The solution is to open an IFC in Revit instead of linking it, which
-        # will convert IFC spaces into Revit rooms. However, there are very
-        # specific scenarios where Revit will convert these rooms, which have
-        # been painstakingly reverse engineered through trial and error.
-        # Firstly, the rooms should have a lower bound with a Z value matching
-        # the Z value of the storey it is on. Secondly, although faceted breps
-        # do work in some scenarios (I assume Revit has an internal topological
-        # analysis tool), conversion to an extruded area solid yield much more
-        # robust results. Finally, changing the Precision value to an obscene
-        # number very strangely seems to cause a lot more rooms to be converted
-        # successfully.
-        #
-        # This patch is designed to only work on ArchiCAD IFC exports where the
-        # only contents of the IFC is IFC space and _nothing else_. It also
-        # requires you to run it using Blender, as the geometric modification
-        # uses the Blender geometry engine.
         import bpy
         from blenderbim.bim.ifc import IfcStore
         from mathutils import Vector, Matrix

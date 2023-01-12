@@ -39,7 +39,9 @@ class Usecase:
         :return: The created IFC file object.
         :rtype: ifcopenshell.file.file
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Start a new model.
             model = ifcopenshell.api.run("project.create_file")

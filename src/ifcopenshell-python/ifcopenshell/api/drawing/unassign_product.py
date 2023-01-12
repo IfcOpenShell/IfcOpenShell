@@ -37,7 +37,9 @@ class Usecase:
         :return: The created IfcRelAssignsToProduct relationship
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
             annotation = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcAnnotation")

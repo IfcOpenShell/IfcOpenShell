@@ -48,7 +48,9 @@ class Usecase:
         :return: The newly created IfcActor or IfcOccupant
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Setup an organisation with a single role
             organisation = ifcopenshell.api.run("owner.add_organisation", model,

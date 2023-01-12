@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             text = model.createIfcTextLiteral()
             ifcopenshell.api.run("drawing.edit_text_literal", model,

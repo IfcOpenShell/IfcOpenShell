@@ -43,7 +43,9 @@ class Usecase:
         :return: The newly created IfcRelAssignsToControl
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # One common usecase is to assign a calendar to a task
             calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)

@@ -35,7 +35,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a material list for aluminium windows.
             material_set = ifcopenshell.api.run("material.add_material_set", model,

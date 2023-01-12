@@ -39,7 +39,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Remember, all geometry needs to specify the context it is part of first.
             # See ifcopenshell.api.context.add_context for details.

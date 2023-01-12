@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             document = ifcopenshell.api.run("document.add_information", model)
             ifcopenshell.api.run("document.edit_information", model,

@@ -32,7 +32,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A completely empty distribution system
             system = ifcopenshell.api.run("system.add_system", model)

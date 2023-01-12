@@ -90,15 +90,15 @@ def create_simple_2dcurve(coords, fillets, fillet_radius, closed=True, ifc_file=
     ifc_curve = None
     if ifc_file:
         ifc_points = ifc_file.createIfcCartesianPointList2D(points)
-        ifc_segements = []
+        ifc_segments = []
         for segment in segments:
             segment = [i+1 for i in segment]
             if len(segment) == 2:
-                ifc_segements.append( ifc_file.createIfcLineIndex( segment ))
+                ifc_segments.append( ifc_file.createIfcLineIndex( segment ))
             elif len(segment) == 3:
-                ifc_segements.append( ifc_file.createIfcArcIndex( segment ))
+                ifc_segments.append( ifc_file.createIfcArcIndex( segment ))
 
-        ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segements)
+        ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
 
     return (points, segments, ifc_curve)
 

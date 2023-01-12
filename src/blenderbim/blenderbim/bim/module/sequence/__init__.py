@@ -116,7 +116,7 @@ classes = (
     prop.Task,
     prop.TaskResource,
     prop.TaskProduct,
-    prop.BIMDuration,
+    prop.ISODuration,
     prop.BIMWorkScheduleProperties,
     prop.BIMTaskTreeProperties,
     prop.BIMTaskTypeColor,

@@ -403,17 +403,15 @@ class Pset:
 class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
     def set_qto_result(cls, result): pass
+    def assign_base_qto_to_object(cls, object): pass
     def get_pset_qto_object_ifc_info(cls, object): pass
-    def get_pset_qto_properties(cls, object): pass
-    def get_pset_qto_name(cls, object): pass
-    def get_applicable_pset_names(cls, object): pass
+    def get_applicable_quantity_names(cls, object): pass
+    def get_qto_applicable_name(cls, object): pass
     def edit_qto(cls, object, calculated_quantities): pass
-    def get_pset_qto_id(cls, object): pass
-    def get_pset_qto_name(cls, object): pass
+    def get_qto_entity(cls, object): pass
     def get_new_quantity(cls, object, quantity_name, alternative_prop_names): pass
     def get_rounded_value(cls, new_quantity): pass
     def get_calculated_quantities(cls, object, pset_qto_properties): pass
-    def assign_pset_qto_to_selected_object(cls, object): pass
 
 @interface
 class Resource:

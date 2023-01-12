@@ -35,7 +35,9 @@ class Usecase:
         :return: The IfcRelAggregates relationship
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # This will hold all our construction schedules
             work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")

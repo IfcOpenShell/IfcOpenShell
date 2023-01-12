@@ -362,23 +362,35 @@ class CopyRepresentation(bpy.types.Operator, Operator):
 class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
         element = tool.Ifc.get_entity(obj)
-        if element:
-            IfcStore.delete_element(element)
-            if getattr(element, "FillsVoids", None):
-                self.remove_filling(element)
-            if element.is_a("IfcOpeningElement"):
-                if element.HasFillings:
-                    for rel in element.HasFillings:
-                        self.remove_filling(rel.RelatedBuildingElement)
-                else:
-                    if element.VoidsElements:
-                        self.delete_opening_element(element)
+        if not element:
+            return
+        IfcStore.delete_element(element)
+        if obj.users_collection and obj.users_collection[0].name == obj.name:
+            parent = ifcopenshell.util.element.get_aggregate(element)
+            if not parent:
+                parent = ifcopenshell.util.element.get_container(element)
+            if parent:
+                parent_obj = tool.Ifc.get_object(parent)
+                if parent_obj:
+                    parent_collection = bpy.data.collections.get(parent_obj.name)
+                    for child in obj.users_collection[0].children:
+                        parent_collection.children.link(child)
+            bpy.data.collections.remove(obj.users_collection[0])
+        if getattr(element, "FillsVoids", None):
+            self.remove_filling(element)
+        if element.is_a("IfcOpeningElement"):
+            if element.HasFillings:
+                for rel in element.HasFillings:
+                    self.remove_filling(rel.RelatedBuildingElement)
             else:
-                if getattr(element, "HasOpenings", None):
-                    for rel in element.HasOpenings:
-                        self.delete_opening_element(rel.RelatedOpeningElement)
-                for port in ifcopenshell.util.system.get_ports(element):
-                    self.remove_port(port)
+                if element.VoidsElements:
+                    self.delete_opening_element(element)
+        else:
+            if getattr(element, "HasOpenings", None):
+                for rel in element.HasOpenings:
+                    self.delete_opening_element(rel.RelatedOpeningElement)
+            for port in ifcopenshell.util.system.get_ports(element):
+                self.remove_port(port)
 
     def delete_opening_element(self, element):
         bpy.ops.bim.remove_opening(opening_id=element.id())
@@ -479,8 +491,6 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
             # This is the only difference
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
-        for collection in collections_to_delete:
-            bpy.data.collections.remove(collection)
         return {"FINISHED"}
 
     def get_collection_objects_and_children(self, collection):

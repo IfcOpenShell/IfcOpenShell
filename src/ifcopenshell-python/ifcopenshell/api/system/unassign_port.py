@@ -35,7 +35,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a duct
             duct = ifcopenshell.api.run("root.create_entity", model,

@@ -37,7 +37,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's create a material set to store our profiles.
             material_set = ifcopenshell.api.run("material.add_profile_set", model,

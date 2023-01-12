@@ -28,7 +28,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Setup an organisation with a single role
             organisation = ifcopenshell.api.run("owner.add_organisation", model,

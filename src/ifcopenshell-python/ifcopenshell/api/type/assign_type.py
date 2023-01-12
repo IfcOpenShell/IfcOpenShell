@@ -90,7 +90,9 @@ class Usecase:
         :return: The IfcRelDefinesByType relationship
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A furniture type. This would correlate to a particular model in a
             # manufacturer's catalogue. Like an Ikea sofa :)

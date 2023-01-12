@@ -53,7 +53,9 @@ class Usecase:
         :return: The copied product
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # We have a wall
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")

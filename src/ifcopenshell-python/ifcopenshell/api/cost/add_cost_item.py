@@ -37,7 +37,9 @@ class Usecase:
         :return: The newly created IfcCostItem
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # The very first cost item must be in a cost schedule
             schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)

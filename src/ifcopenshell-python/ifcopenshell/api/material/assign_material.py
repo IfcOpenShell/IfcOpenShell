@@ -67,7 +67,9 @@ class Usecase:
         :return: The IfcRelAssociatesMaterial entity
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's start with a simple concrete material
             concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")

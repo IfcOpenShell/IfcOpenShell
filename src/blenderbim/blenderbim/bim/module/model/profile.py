@@ -418,6 +418,8 @@ class DumbProfileJoiner:
         self.body = copy.deepcopy(body)
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
         usage = None
+        if not material or not material.is_a("IfcMaterialProfileSet"):
+            return
         if material.is_a("IfcMaterialProfileSetUsage"):
             usage = material
             material = material.ForProfileSet

@@ -45,7 +45,9 @@ class Usecase:
         :return: The newly created IfcSIUnit
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Millimeters and square meters
             length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")

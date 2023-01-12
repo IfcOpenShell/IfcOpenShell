@@ -66,7 +66,9 @@ class Usecase:
         :return: The newly created material set element
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's imagine we have a wall type that has two layers of
             # gypsum with steel studs inside. Notice we are assigning to

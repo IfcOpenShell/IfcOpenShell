@@ -1024,6 +1024,10 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return bool(bpy.context.scene.BIMWorkScheduleProperties.visualisation_start)
+
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
@@ -1089,6 +1093,11 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
     bl_label = "Visualise Work Schedule Date Range"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        has_start, has_finish = bpy.context.scene.BIMWorkScheduleProperties.visualisation_start, bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish
+        return bool(has_start and has_finish)
 
     def execute(self, context):
         core.visualise_work_schedule_date_range(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))

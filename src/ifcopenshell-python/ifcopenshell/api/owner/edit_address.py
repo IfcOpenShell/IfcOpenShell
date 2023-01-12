@@ -31,7 +31,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # A snail mail address
             postal = ifcopenshell.api.run("owner.add_address", model,

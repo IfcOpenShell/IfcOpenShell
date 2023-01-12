@@ -33,7 +33,9 @@ class Usecase:
         :return: The newly created IfcStructuralAnalysisModel
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create a fresh blank structural analysis
             analysis = ifcopenshell.api.run("structural.add_structural_analysis_model", model)

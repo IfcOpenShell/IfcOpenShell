@@ -41,7 +41,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Let's create a schedule of rates with a single rate in it of 5.0
             rate_tables = ifcopenshell.api.run("cost.add_cost_schedule", model,

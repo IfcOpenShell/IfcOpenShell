@@ -30,7 +30,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             classification = model.by_type("IfcClassification")[0]
             ifcopenshell.api.run("classification.remove_classification", model,

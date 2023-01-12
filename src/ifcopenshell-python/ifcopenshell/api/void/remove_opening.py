@@ -32,7 +32,9 @@ class Usecase:
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             # Create an oprhaned opening. Note that an orphaned opening is
             # invalid, as an opening can only exist when voiding another

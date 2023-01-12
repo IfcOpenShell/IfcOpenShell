@@ -8,6 +8,7 @@ import functools
 import itertools
 
 import ifcopenshell.express
+import ifcopenshell.express.express_parser
 
 import networkx as nx
 
@@ -331,7 +332,7 @@ def calc_{class_name}_{str(derived_attr.attribute_decl.redeclared_attribute.qual
 
 def process_domain_rule(context):
     return f"""
-assert {context.expression}
+assert ({context.expression}) is not False
 """
 
 def process_expression(context):
@@ -657,7 +658,14 @@ def typeof(inst):
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
             yield '.'.join((schema_name, decl.name().lower()))
-            decl = decl.supertype()
+            if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
+                decl = decl.supertype()
+            else:
+                decl = decl.declared_type()
+                while isinstance(decl, ifcopenshell.ifcopenshell_wrapper.named_type):
+                    decl = decl.declared_type()
+                if not isinstance(decl, ifcopenshell.ifcopenshell_wrapper.type_declaration):
+                    break
     return express_set(inner())
 """, file=output, sep='\n')
 

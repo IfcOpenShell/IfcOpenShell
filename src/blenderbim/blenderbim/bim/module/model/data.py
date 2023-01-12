@@ -177,6 +177,7 @@ class AuthoringData:
             for e in tool.Ifc.get().by_type("IfcElementType")
             + tool.Ifc.get().by_type("IfcDoorStyle")
             + tool.Ifc.get().by_type("IfcWindowStyle")
+            + tool.Ifc.get().by_type("IfcSpaceType")
         }
         results.extend([(c, c, "") for c in sorted(classes)])
         return results
@@ -384,7 +385,7 @@ class SverchokData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {"parameters": cls.parameters(), "has_sverchok": cls.has_sverchok()}
 
     @classmethod
     def parameters(cls):
@@ -395,3 +396,12 @@ class SverchokData:
             if parameters:
                 parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
+
+    @classmethod
+    def has_sverchok(cls):
+        try:
+            import sverchok
+
+            return True
+        except:
+            return False
