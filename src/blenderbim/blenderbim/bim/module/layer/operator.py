@@ -18,9 +18,11 @@
 
 import bpy
 import json
-import ifcopenshell.util.attribute
 import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.attribute
 import blenderbim.bim.helper
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.layer.data import Data
 
@@ -181,4 +183,20 @@ class UnassignPresentationLayer(bpy.types.Operator):
             **{"item": self.file.by_id(item.BIMMeshProperties.ifc_definition_id), "layer": self.file.by_id(self.layer)}
         )
         Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class SelectLayerProducts(bpy.types.Operator):
+    bl_idname = "bim.select_layer_products"
+    bl_label = "Select Layer Products"
+    bl_options = {"REGISTER", "UNDO"}
+    layer: bpy.props.IntProperty()
+
+    def execute(self, context):
+        elements = ifcopenshell.util.element.get_elements_by_layer(tool.Ifc.get(), tool.Ifc.get().by_id(self.layer))
+        for obj in context.visible_objects:
+            obj.select_set(False)
+            element = tool.Ifc.get_entity(obj)
+            if element and element in elements:
+                obj.select_set(True)
         return {"FINISHED"}

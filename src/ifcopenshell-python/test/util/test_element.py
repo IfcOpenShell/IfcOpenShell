@@ -441,9 +441,7 @@ class TestGetElementsByRepresentation(test.bootstrap.IFC4):
                 self.file.createIfcShapeRepresentation(
                     Items=[
                         self.file.createIfcMappedItem(
-                            MappingSource=self.file.createIfcRepresentationMap(
-                                MappedRepresentation=representation
-                            )
+                            MappingSource=self.file.createIfcRepresentationMap(MappedRepresentation=representation)
                         )
                     ]
                 )
@@ -456,6 +454,16 @@ class TestGetElementsByRepresentation(test.bootstrap.IFC4):
         representation = self.file.createIfcShapeRepresentation()
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
         assert subject.get_elements_by_representation(self.file, representation) == {element}
+
+
+class TestGetElementsByLayer(test.bootstrap.IFC4):
+    def test_getting_the_elements_of_a_layer(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        layer = ifcopenshell.api.run("layer.add_layer", self.file)
+        representation = self.file.createIfcShapeRepresentation()
+        element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
+        ifcopenshell.api.run("layer.assign_layer", self.file, item=representation, layer=layer)
+        assert list(subject.get_elements_by_layer(self.file, layer)) == [element]
 
 
 class TestGetlayers(test.bootstrap.IFC4):
