@@ -91,11 +91,17 @@ class BIM_UL_layers(UIList):
             row.operator("bim.disable_editing_layer", text="", icon="FREEZE", emboss=False)
 
             if context.scene.BIMLayerProperties.active_layer_id == item.ifc_definition_id:
+                op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.layer = item.ifc_definition_id
                 row.operator("bim.edit_presentation_layer", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_layer", text="", icon="CANCEL")
             elif context.scene.BIMLayerProperties.active_layer_id:
+                op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.layer = item.ifc_definition_id
                 row.operator("bim.remove_presentation_layer", text="", icon="X").layer = item.ifc_definition_id
             else:
+                op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.layer = item.ifc_definition_id
                 op = row.operator("bim.enable_editing_layer", text="", icon="GREASEPENCIL")
                 op.layer = item.ifc_definition_id
                 row.operator("bim.remove_presentation_layer", text="", icon="X").layer = item.ifc_definition_id
