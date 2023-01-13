@@ -47,6 +47,8 @@ def get_pset_props(context, obj, obj_type):
         return bpy.data.objects.get(obj).PsetProperties
     elif obj_type == "Material":
         return bpy.data.materials.get(obj).PsetProperties
+    elif obj_type == "MaterialSet":
+        return bpy.data.objects.get(obj).MaterialSetPsetProperties
     elif obj_type == "Task":
         return context.scene.TaskPsetProperties
     elif obj_type == "Resource":

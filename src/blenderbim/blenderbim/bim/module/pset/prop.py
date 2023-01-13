@@ -82,6 +82,21 @@ def get_material_pset_names(self, context):
     return psetnames[ifc_class]
 
 
+def get_material_set_pset_names(self, context):
+    global psetnames
+    element = tool.Ifc.get_entity(context.active_object)
+    if not element:
+        return []
+    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+    if not material or "Set" not in material.is_a():
+        return []
+    ifc_class = material.is_a()
+    if ifc_class not in psetnames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
+    return psetnames[ifc_class]
+
+
 def get_task_qto_names(self, context):
     global qtonames
     ifc_class = "IfcTask"
@@ -180,6 +195,13 @@ class MaterialPsetProperties(PropertyGroup):
     active_pset_name: StringProperty(name="Pset Name")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_material_pset_names, name="Pset Name")
+
+
+class MaterialSetPsetProperties(PropertyGroup):
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
+    pset_name: EnumProperty(items=get_material_set_pset_names, name="Pset Name")
 
 
 class TaskPsetProperties(PropertyGroup):

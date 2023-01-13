@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.tool as tool
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import prop_with_search
@@ -23,6 +24,7 @@ from blenderbim.bim.module.pset.data import (
     ObjectPsetsData,
     ObjectQtosData,
     MaterialPsetsData,
+    MaterialSetPsetsData,
     TaskQtosData,
     ResourceQtosData,
     ResourcePsetsData,
@@ -75,6 +77,8 @@ def get_active_pset_obj_name(context, obj_type):
         return context.active_object.name
     elif obj_type == "Material":
         return context.active_object.active_material.name
+    elif obj_type == "MaterialSet":
+        return context.active_object.name
     return ""
 
 
@@ -268,6 +272,40 @@ class BIM_PT_material_psets(Panel):
 
         for pset in MaterialPsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Material")
+
+
+class BIM_PT_material_set_psets(Panel):
+    bl_label = "IFC Material Set Property Sets"
+    bl_idname = "BIM_PT_material_set_psets"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_object_material"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        if not tool.Ifc.get() or tool.Ifc.get().schema == "IFC2X3":
+            return False  # We don't support material psets in IFC2X3 because they suck
+        if not tool.Ifc.get_entity(context.active_object):
+            return False
+        return True
+
+    def draw(self, context):
+        if not MaterialSetPsetsData.is_loaded:
+            MaterialSetPsetsData.load()
+
+        props = context.active_object.MaterialSetPsetProperties
+        row = self.layout.row(align=True)
+        prop_with_search(row, props, "pset_name", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj = context.active_object.name
+        op.obj_type = "MaterialSet"
+
+        for pset in MaterialSetPsetsData.data["psets"]:
+            draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "MaterialSet")
 
 
 class BIM_PT_task_qtos(Panel):
