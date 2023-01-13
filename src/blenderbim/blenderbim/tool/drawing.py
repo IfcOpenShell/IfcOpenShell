@@ -898,3 +898,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         if tool.Ifc.get_schema() == "IFC2X3":
             return reference.ReferenceToDocument[0]
         return reference.ReferencedDocument
+    @classmethod
+    def select_assigned_product(cls):
+        obj = cls.get_active_object()
+        element = tool.Ifc.get_entity(obj)
+        product = cls.get_assigned_product(element)
+        if product:
+            tool.Ifc.get_object(product).select_set(True)

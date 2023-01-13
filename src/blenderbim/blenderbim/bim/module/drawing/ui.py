@@ -314,6 +314,7 @@ class BIM_PT_product_assignments(Panel):
             row = self.layout.row(align=True)
             row.label(text=ProductAssignmentsData.data["relating_product"] or "No Relating Product", icon="OBJECT_DATA")
             row.operator("bim.enable_editing_assigned_product", icon="GREASEPENCIL", text="")
+            row.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
 
 
 class BIM_PT_text(Panel):
