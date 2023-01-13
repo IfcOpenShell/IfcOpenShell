@@ -1,6 +1,9 @@
 name: ci-ifcopenshell-conda-daily
 
 on:
+  push:
+      paths:
+        - .github/workflows/ci-ifcopenshell-conda-daily.yml
   workflow_run:
     workflows: ["ci"]
     types:
