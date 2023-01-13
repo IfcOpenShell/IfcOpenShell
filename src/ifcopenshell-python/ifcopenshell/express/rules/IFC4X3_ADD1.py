@@ -30,8 +30,9 @@ def usedin(inst, ref_name):
 
 
 class express_set(set):
-    def __rmul__(self, other):
+    def __mul__(self, other):
         return express_set(set(other) & self)
+    __rmul__ = __mul__
     def __add__(self, other):
         def make_list(v):
             # Comply with 12.6.3 Union operator
