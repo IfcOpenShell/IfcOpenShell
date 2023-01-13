@@ -39,7 +39,7 @@ jobs:
           { name: macOS, distver: macos-12, upload: 'false' }
         ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
       - name: Download MacOSX SDK
@@ -58,8 +58,10 @@ jobs:
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell --no-remove-work-dir
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
+        working-directory: ./conda
       - name: build & test ifcopenshell
         if: ${{ matrix.platform.upload == 'false' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --no-remove-work-dir
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge
+        working-directory: ./conda
