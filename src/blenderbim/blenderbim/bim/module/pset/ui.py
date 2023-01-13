@@ -92,11 +92,8 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
     obj_name = get_active_pset_obj_name(context, obj_type)
     if not props.active_pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
-        if "Qto" in pset["Name"]:
-            op = row.operator("bim.guess_all_quantities", icon="FILE_REFRESH", text="")
-            op.pset_id = pset_id
-            op.obj_name = obj_name
-            op.obj_type = obj_type
+        if "Qto" in pset["Name"] and "Base" in pset["Name"]:
+            op = row.operator("bim.calculate_all_quantities", icon="MOD_EDGESPLIT", text="")
         op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
         op.pset_id = pset_id
         op.obj = obj_name
