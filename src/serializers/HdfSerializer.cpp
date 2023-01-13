@@ -616,19 +616,26 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 
 	auto element_group = write((const IfcGeom::Element*)o);
 
+	/*
+	// For now we disable softlinks, as it can't be safely used with delete()
+	// @todo we can still cache the serialization or read it from the file probably for a comparible speedup.
+
 	auto it = group_cache_.find(o->geometry().id());
 	if (it != group_cache_.end()) {
 		H5Lcreate_soft(it->second.c_str(), element_group.getLocId(), o->geometry().id().c_str(), H5P_DEFAULT, H5P_DEFAULT);
 		return;
 	}
+	*/
 
 	H5::Group representation_group = createRepresentationGroup(element_group, o->geometry().id());
 
+	/*
 	const size_t len = H5Iget_name(representation_group.getId(), NULL, 0);
 	char* name_buffer = new char[len];
 	H5Iget_name(representation_group.getId(), name_buffer, len + 1);
 	group_cache_.insert(it, { o->geometry().id(), name_buffer });		
 	delete[] name_buffer;
+	*/
 
 	std::list<std::string> brep_strings;
 	size_t num_parts = std::distance(o->geometry().begin(), o->geometry().end());
