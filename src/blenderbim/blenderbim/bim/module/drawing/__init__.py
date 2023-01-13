@@ -63,6 +63,7 @@ classes = (
     operator.ResizeText,
     operator.SaveDrawingStyle,
     operator.SelectDocIfcFile,
+    operator.SelectAssignedProduct,
     prop.Variable,
     prop.Drawing,
     prop.Schedule,

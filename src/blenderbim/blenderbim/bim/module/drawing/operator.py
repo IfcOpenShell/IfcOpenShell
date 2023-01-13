@@ -1363,3 +1363,11 @@ class ContractSheet(bpy.types.Operator):
             sheet.is_expanded = False
         core.load_sheets(tool.Drawing)
         return {"FINISHED"}
+
+class SelectAssignedProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.select_assigned_product"
+    bl_label = "Select Assigned Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.select_assigned_product(tool.Drawing)

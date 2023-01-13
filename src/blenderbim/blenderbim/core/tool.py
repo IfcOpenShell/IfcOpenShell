@@ -198,6 +198,7 @@ class Drawing:
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
+    def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, group, collection): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
