@@ -136,7 +136,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			TopoDS_Shape temp;
 			double d;
 			if (util::fit_halfspace(s1, s2, temp, d, getValue(GV_PRECISION))) {
-				if (d < getValue(GV_PRECISION)) {
+				// #2665 we also set a precision-independent treshold, because in the boolean op routine
+				// the working fuzziness might still be increased.
+				if (d < getValue(GV_PRECISION) * 20. || d < 0.00002) {
 					Logger::Message(Logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", l);
 					continue;
 				} else {
