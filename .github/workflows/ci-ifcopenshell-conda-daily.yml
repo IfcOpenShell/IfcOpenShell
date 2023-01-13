@@ -34,12 +34,12 @@ jobs:
           { name: py311, distver: '3.11'}
         ]
         platform: [
-          { name: Windows, distver: windows-2022, upload: 'false' },
-          { name: Windows, distver: windows-2019, upload: 'true' },
-          { name: Linux, distver: ubuntu-20.04,  upload: 'true' },
-          { name: Linux, distver: ubuntu-22.04,  upload: 'false' },
-          { name: macOS, distver: macos-11, upload: 'true' },
-          { name: macOS, distver: macos-12, upload: 'false' }
+          { name: Windows, distver: windows-2022, upload: 'true' },
+#           { name: Windows, distver: windows-2019, upload: 'true' },
+#           { name: Linux, distver: ubuntu-20.04,  upload: 'true' },
+          { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
+#           { name: macOS, distver: macos-11, upload: 'true' },
+          { name: macOS, distver: macos-12, upload: 'true' }
         ]
     steps:
       - uses: actions/checkout@v3
