@@ -23,6 +23,7 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 from mathutils import geometry
 from mathutils import Vector
@@ -207,6 +208,10 @@ def get_obj_ifc_definition_id(context, obj, obj_type):
         return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
     elif obj_type == "Material":
         return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "MaterialSet":
+        return ifcopenshell.util.element.get_material(
+            tool.Ifc.get_entity(bpy.data.objects.get(obj)), should_skip_usage=True
+        ).id()
     elif obj_type == "Task":
         return context.scene.BIMTaskTreeProperties.tasks[
             context.scene.BIMWorkScheduleProperties.active_task_index
