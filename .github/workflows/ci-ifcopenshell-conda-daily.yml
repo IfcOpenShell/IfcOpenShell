@@ -4,10 +4,14 @@ on:
   push:
       paths:
         - .github/workflows/ci-ifcopenshell-conda-daily.yml
-  workflow_run:
-    workflows: ["ci"]
-    types:
-      - completed
+  schedule:
+  #         ┌───────────── minute (0 - 59)
+  #         │  ┌───────────── hour (0 - 23)
+  #         │  │ ┌───────────── day of the month (1 - 31)
+  #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+  #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+  #         *  * * * *
+  - cron: "49 23 * * *" # 11min before utc midnight every day
 
 jobs:
   activate:
@@ -29,16 +33,12 @@ jobs:
       fail-fast: false
       matrix:
         pyver: [
-          # { name: py39, distver: '3.9' },
           { name: py310, distver: '3.10'},
           { name: py311, distver: '3.11'}
         ]
         platform: [
           { name: Windows, distver: windows-2022, upload: 'true' },
-#           { name: Windows, distver: windows-2019, upload: 'true' },
-#           { name: Linux, distver: ubuntu-20.04,  upload: 'true' },
           { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
-#           { name: macOS, distver: macos-11, upload: 'true' },
           { name: macOS, distver: macos-12, upload: 'true' }
         ]
     steps:
