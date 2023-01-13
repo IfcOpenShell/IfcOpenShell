@@ -1,9 +1,14 @@
 #ifndef BASE_UTILS_H
 #define BASE_UTILS_H
 
-#include <gp_Ax3.hxx>
 #include <gp_Pln.hxx>
 #include <gp_Pnt.hxx>
+#include <gp_Ax3.hxx>
+#include <gp_Ax2d.hxx>
+#include <gp_Trsf2d.hxx>
+#include <gp_GTrsf2d.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_GTrsf.hxx>
 
 #include <TopTools_ListOfShape.hxx>
 #include <TopoDS_Wire.hxx>
