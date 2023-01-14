@@ -3,7 +3,7 @@ import uuid
 import warnings
 import zipfile
 from pathlib import Path
-from typing import Any, Optional, TypeVar
+from typing import Any, NoReturn, Optional, TypeVar
 
 import bcf.v3.model as mdl
 from bcf.inmemory_zipfile import InMemoryZipFile, ZipFileInterface
@@ -224,13 +224,13 @@ class BcfXml:
         self.topics[topic_handler.guid] = topic_handler
         return topic_handler
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, BcfXml):
-            raise TypeError("Equality needs a BcfXml object.")
+    def __eq__(self, other: object) -> bool | NoReturn:
         return (
             self.version == other.version
             and self.project_info == other.project_info
             and self.extensions == other.extensions
+            if isinstance(other, BcfXml)
+            else NotImplemented
         )
 
     # region Deprecated methods
