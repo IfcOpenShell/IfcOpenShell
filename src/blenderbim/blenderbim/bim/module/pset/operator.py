@@ -447,7 +447,7 @@ class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
         return context.active_object
 
     def _execute(self, context):
-        QtoCore.calculate_all_qtos(tool.Ifc, tool.Qto, selected_objects = context.selected_objects)
+        QtoCore.calculate_all_qtos(tool.Qto, selected_objects = [context.active_object])
 
 
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
