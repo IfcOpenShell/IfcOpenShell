@@ -3,9 +3,11 @@ import datetime
 import uuid
 import zipfile
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, NoReturn, Optional
 
+import numpy as np
 from ifcopenshell import entity_instance
+from numpy.typing import NDArray
 from xsdata.models.datatype import XmlDateTime
 
 import bcf.v2.model as mdl
@@ -226,15 +228,29 @@ class TopicHandler:
         new_viewpoint = VisualizationInfoHandler.create_new(element, self._xml_handler)
         self.add_visinfo_handler(new_viewpoint)
 
+    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float_], *guids: str) -> None:
+        """
+        Add a viewpoint tergeting an IFC element to the topic.
+
+        Args:
+            element: The IFC element.
+        """
+        vi_handler = VisualizationInfoHandler.create_from_point_and_guids(
+            position, *guids, xml_handler=self._xml_handler
+        )
+        self.add_visinfo_handler(vi_handler)
+
     def add_visinfo_handler(self, new_viewpoint: VisualizationInfoHandler) -> None:
         self.viewpoints[new_viewpoint.guid] = new_viewpoint
         self.markup.viewpoints.append(mdl.ViewPoint(viewpoint=new_viewpoint.guid, guid=new_viewpoint.guid))
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TopicHandler):
-            raise TypeError("Equality needs a BcfXml object.")
+    def __eq__(self, other: object) -> bool | NoReturn:
         return (
-            self.markup == other.markup
-            and self.viewpoints == other.viewpoints
-            and self.bim_snippet == other.bim_snippet
+            (
+                self.markup == other.markup
+                and self.viewpoints == other.viewpoints
+                and self.bim_snippet == other.bim_snippet
+            )
+            if isinstance(other, TopicHandler)
+            else NotImplemented
         )

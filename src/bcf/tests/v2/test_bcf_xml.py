@@ -47,12 +47,16 @@ def test_bcf_edit_saveas(xml_handler, build_sample) -> None:
             modified_path = Path(tmp_dir) / "edited.bcf"
             parsed.save(modified_path)
             with BcfXml.load(modified_path, xml_handler=xml_handler) as modified_parsed:
-                assert modified_parsed == bcf
-                parsed_th = modified_parsed.topics[orig_th.guid]
-                assert parsed_th.markup != orig_th.markup
-                assert parsed_th.markup == parsed.topics[orig_th.guid].markup
-                assert parsed_th.viewpoints == orig_th.viewpoints
-                assert parsed_th.bim_snippet == orig_th.bim_snippet
+                _assert_modified_parsed(modified_parsed, bcf, orig_th, parsed)
+
+
+def _assert_modified_parsed(modified_parsed, bcf, orig_th, parsed):
+    assert modified_parsed == bcf
+    parsed_th = modified_parsed.topics[orig_th.guid]
+    assert parsed_th.markup != orig_th.markup
+    assert parsed_th.markup == parsed.topics[orig_th.guid].markup
+    assert parsed_th.viewpoints == orig_th.viewpoints
+    assert parsed_th.bim_snippet == orig_th.bim_snippet
 
 
 def test_bcf_edit(xml_handler, build_sample) -> None:
@@ -66,13 +70,8 @@ def test_bcf_edit(xml_handler, build_sample) -> None:
                 th.topic.title = "New Topic Title"
             parsed.save()
             with BcfXml.load(file_path, xml_handler=xml_handler) as modified_parsed:
-                assert modified_parsed == bcf
+                _assert_modified_parsed(modified_parsed, bcf, orig_th, parsed)
                 assert len(modified_parsed.topics) == 1
-                parsed_th = modified_parsed.topics[orig_th.guid]
-                assert parsed_th.markup != orig_th.markup
-                assert parsed_th.markup == parsed.topics[orig_th.guid].markup
-                assert parsed_th.viewpoints == orig_th.viewpoints
-                assert parsed_th.bim_snippet == orig_th.bim_snippet
 
 
 def test_save_no_filename(build_sample) -> None:
@@ -112,11 +111,16 @@ def test_massive_bcf(xml_handler) -> None:
         bcf.save(file_path)
 
 
-def test_equality_with_wrong_object() -> None:
-    with pytest.raises(TypeError):
-        build_sample[0] == "Wrong object"
+def test_equality_with_wrong_object(build_sample) -> None:
+    assert build_sample[0] != "Wrong object"
 
 
-def test_topic_equality_with_wrong_object() -> None:
-    with pytest.raises(TypeError):
-        build_sample[1] == "Wrong object"
+def test_topic_equality_with_wrong_object(build_sample) -> None:
+    assert build_sample[1] != "Wrong object"
+
+
+def test_bcf_get_set_version(build_sample) -> None:
+    bcf = build_sample[0]
+    assert bcf.version.version_id == "2.1"
+    bcf.version.version_id = "2.0"
+    assert bcf.version.version_id == "2.0"
