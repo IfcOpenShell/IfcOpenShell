@@ -40,11 +40,11 @@ def calculate_all_qtos(qto, selected_objects):
 
 def guess_all_qtos(qto, selected_objects):
     for obj in selected_objects:
-        if not qto.get_pset_qto_object_ifc_info(obj):
+        if not qto.get_qto_entity(obj):
             print(f"There is no pset qto instance associated to object {obj.name}")
             continue
 
-        applicable_quantity_names = qto.get_base_quantities_name(obj)
+        applicable_quantity_names = qto.get_applicable_quantity_names(obj)
 
         calculated_quantities = qto.get_calculated_quantities(obj, applicable_quantity_names)
 
