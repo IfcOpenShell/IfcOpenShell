@@ -194,11 +194,12 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator):
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
-    filename_ext = ".bcf"
+    filter_glob: bpy.props.StringProperty( default='*.bcf;*.json', options={'HIDDEN'} )
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
-        if ".json" not in bpy.data.filepath:
+        _, extension = os.path.splitext(self.filepath)
+        if extension != ".json":
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
@@ -207,9 +208,10 @@ class ExecuteIfcClash(bpy.types.Operator):
     def execute(self, context):
         from ifcclash import ifcclash
 
-        settings = ifcclash.ClashSettings()
-        if ".json" not in self.filepath:
+        _, extension = os.path.splitext(self.filepath)
+        if extension != ".json":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
+        settings = ifcclash.ClashSettings()
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
@@ -271,6 +273,7 @@ class SelectIfcClashResults(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         with open(self.filepath) as f:
             clash_sets = json.load(f)
@@ -304,14 +307,14 @@ class SmartClashGroup(bpy.types.Operator):
         return context.scene.BIMClashProperties.clash_results_path
 
     def execute(self, context):
-        import ifcclash
-
-        settings = ifcclash.IfcClashSettings()
+        from ifcclash import ifcclash
+        
+        settings = ifcclash.ClashSettings()
         self.filepath = bpy.path.ensure_ext(context.scene.BIMClashProperties.clash_results_path, ".json")
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
-        ifc_clasher = ifcclash.IfcClasher(settings)
+        ifc_clasher = ifcclash.Clasher(settings)
 
         with open(self.filepath) as f:
             clash_sets = json.load(f)
