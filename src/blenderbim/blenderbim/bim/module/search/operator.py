@@ -523,7 +523,7 @@ class FilterModelElements(Operator):
             selection += "["
 
             if f.selector == "IfcPropertySet":
-                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}="{f.value}"'
+                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}{f.comparison}{f.value}'
             elif f.selector == "Attribute":
                 selection += f'{f.attribute} {"!" if f.negation else ""}= "{f.value}"'
 
