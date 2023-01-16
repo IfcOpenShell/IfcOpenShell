@@ -50,7 +50,8 @@ def get_subtypes(entity):
 
 def reassign_class(ifc_file, element, new_class):
     try:
-        new_element = ifc_file.create_entity(new_class)
+        new_element = ifcopenshell.create_entity(new_class)
+        new_element.GlobalId = element.GlobalId
     except:
         print(f"Class of {element} could not be changed to {new_class}")
         return element
@@ -63,6 +64,7 @@ def reassign_class(ifc_file, element, new_class):
     for inverse in ifc_file.get_inverse(element):
         ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
     ifc_file.remove(element)
+    ifc_file.add(new_element, element.id())
     return new_element
 
 
