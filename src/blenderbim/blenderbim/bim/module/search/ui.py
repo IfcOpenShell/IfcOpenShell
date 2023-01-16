@@ -224,7 +224,7 @@ class IfcSelectorUI:
             row.prop(f, "selector", text="")
 
             if f.selector == "Attribute":
-                row.prop(f, "attribute", text="")
+                row.prop_search(f, "active_option", f, "options", text="", results_are_suggestions=True)
                 row.prop(
                     f,
                     "negation",
