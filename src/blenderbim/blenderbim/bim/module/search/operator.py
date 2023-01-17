@@ -480,7 +480,7 @@ class FilterModelElements(Operator):
         self.update_model_view(context, selection)
         return {"FINISHED"}
 
-    def add_groups(self, selector):
+    def add_groups(self, selector:str) -> str:
         selection = ""
         for group_index, group in enumerate(selector.groups):
             if group_index != 0:
@@ -491,7 +491,7 @@ class FilterModelElements(Operator):
             selection += ")" if len(selector.groups) > 1 else ""
         return selection
 
-    def add_queries(self, selection, group):
+    def add_queries(self, selection: str, group: str) -> str:
         for query_index, query in enumerate(group.queries):
             if query_index != 0:
                 selection += " & " if query.and_or == "and" else " | "
@@ -513,8 +513,10 @@ class FilterModelElements(Operator):
                 selection += f"@ #{query.sub_options[index].global_id}"
         return selection
 
-    def add_filters(self, selection, query):
+    def add_filters(self, selection: str, query: str) -> str:
         for f_index, f in enumerate(query.filters):
+            
+            comparison_operator = f.comparison
 
             if f_index != 0:
                 selection += " & " if f.and_or == "and" else " | "
@@ -523,19 +525,23 @@ class FilterModelElements(Operator):
             selection += "["
 
             if f.selector == "IfcPropertySet":
-                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}="{f.value}"'
+                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}{comparison_operator} "{f.value}"'
             elif f.selector == "Attribute":
-                selection += f'{f.attribute} {"!" if f.negation else ""}= "{f.value}"'
+                # we're using the prop_search functionality in blender which returns the index of the option.  Sometimes the user can override this and enter a value that doesn't exist in the list.  In this case there is no index and we need to handle it. @vulevukusej
+                pattern = re.compile(r'^[0-9]+:')
+                match = pattern.search(f.active_option)
+                
+                selection += f'{f.active_option.split(": ")[1] if match else f.active_option} {"!" if f.negation else ""}{comparison_operator} "{f.value}"'
 
             selection += "]"
         return selection
 
-    def update_model_view(self, context, selection):
+    def update_model_view(self, context, selection: str) -> None:
         query = Selector.parse(IfcStore.file, selection)
         sel_element_ids = [e.id() for e in query]
         bpy.ops.object.select_all(action="DESELECT")
 
-        for obj in context.visible_objects:
+        for obj in bpy.data.scenes["Scene"].objects:
             obj.hide_set(False)  # reset 3d view
 
             if self.option == "select":
