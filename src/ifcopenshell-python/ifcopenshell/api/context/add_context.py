@@ -218,6 +218,6 @@ class Usecase:
 
     def create_2d_origin(self):
         self.origin = self.file.createIfcAxis2Placement2D(
-            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
-            self.file.createIfcDirection((1.0, 0.0, 0.0)),
+            self.file.createIfcCartesianPoint((0.0, 0.0)),
+            self.file.createIfcDirection((1.0, 0.0)),
         )

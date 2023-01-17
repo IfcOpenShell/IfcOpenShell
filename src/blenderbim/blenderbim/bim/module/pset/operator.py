@@ -27,6 +27,7 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.pset as core
+import blenderbim.core.qto as QtoCore
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
@@ -47,6 +48,8 @@ def get_pset_props(context, obj, obj_type):
         return bpy.data.objects.get(obj).PsetProperties
     elif obj_type == "Material":
         return bpy.data.materials.get(obj).PsetProperties
+    elif obj_type == "MaterialSet":
+        return bpy.data.objects.get(obj).MaterialSetPsetProperties
     elif obj_type == "Task":
         return context.scene.TaskPsetProperties
     elif obj_type == "Resource":
@@ -331,6 +334,7 @@ class AddQto(bpy.types.Operator, Operator):
     bl_idname = "bim.add_qto"
     bl_label = "Add Qto"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add Quantity Take Off"
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
@@ -432,31 +436,18 @@ class GuessQuantity(bpy.types.Operator):
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
 
 
-class GuessAllQuantities(bpy.types.Operator):
-    bl_idname = "bim.guess_all_quantities"
-    bl_label = "Guess All Quantities"
+class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_all_quantities"
+    bl_label = "Calculate All Quantities"
     bl_options = {"REGISTER", "UNDO"}
-    pset_id: bpy.props.IntProperty()
-    obj_name: bpy.props.StringProperty()
-    obj_type: bpy.props.StringProperty()
+    bl_description = "Calculate all quantities for all selected objects"
 
-    def execute(self, context):
-        self.qto_calculator = QtoCalculator()
-        obj = context.active_object
-        bpy.ops.bim.enable_pset_editing(pset_id=self.pset_id, obj=self.obj_name, obj_type=self.obj_type)
-        for prop in obj.PsetProperties.properties:
-            if (
-                "length" in prop.name.lower()
-                or "area" in prop.name.lower()
-                or "volume" in prop.name.lower()
-                or "width" in prop.name.lower()
-                or "height" in prop.name.lower()
-                or "depth" in prop.name.lower()
-                or "perimeter" in prop.name.lower()
-            ):
-                bpy.ops.bim.guess_quantity(prop=prop.name)
-        bpy.ops.bim.edit_pset(obj=self.obj_name, obj_type=self.obj_type)
-        return {"FINISHED"}
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
+
+    def _execute(self, context):
+        QtoCore.calculate_all_qtos(tool.Qto, selected_objects = [context.active_object])
 
 
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
