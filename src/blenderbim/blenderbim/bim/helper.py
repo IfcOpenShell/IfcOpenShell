@@ -212,6 +212,8 @@ def get_obj_ifc_definition_id(context, obj, obj_type):
         return ifcopenshell.util.element.get_material(
             tool.Ifc.get_entity(bpy.data.objects.get(obj)), should_skip_usage=True
         ).id()
+    elif obj_type == "MaterialSetItem":
+        return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
     elif obj_type == "Task":
         return context.scene.BIMTaskTreeProperties.tasks[
             context.scene.BIMWorkScheduleProperties.active_task_index
