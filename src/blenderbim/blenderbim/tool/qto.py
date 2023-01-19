@@ -25,6 +25,7 @@ from mathutils import Vector
 from ifcopenshell import util
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
+import blenderbim.bim.schema
 
 
 class Qto(blenderbim.core.tool.Qto):
@@ -42,87 +43,55 @@ class Qto(blenderbim.core.tool.Qto):
         bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
 
     @classmethod
-    def assign_base_qto_to_object(cls, obj):
-        file = tool.Ifc.get()
-        entity = tool.Ifc.get_entity(obj)
-        pset_qto_name = cls.get_qto_applicable_name(obj)
-        ifcopenshell.api.run(
-            "pset.add_qto",
-            file,
-            **{
-                "product": entity,
-                "name": pset_qto_name,
-            },
-        )
+    def add_object_base_qto(cls, obj):
+        product = tool.Ifc.get_entity(obj)
+        cls.add_product_base_qto(product)
 
     @classmethod
-    def get_applicable_quantity_names(cls, obj):
-        file = tool.Ifc.get()
-        schema = file.schema
-        pset_qto = util.pset.PsetQto(schema)
-        qto_name = cls.get_qto_applicable_name(obj)
-        properties_templates = pset_qto.get_by_name(qto_name).get_info()['HasPropertyTemplates']
-        applicable_quantity_names = [a.get_info()['Name'] for a in properties_templates]
-        return applicable_quantity_names
-
-    @classmethod
-    def get_qto_applicable_name(cls, obj):
-        entity = tool.Ifc.get_entity(obj)
-        ifc_class = entity.get_info()['type']
-        qto_applicable_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(ifc_class, qto_only=True)
-        qto_applicable_name = [q for q in qto_applicable_names if "Qto_" in q and "Base" in q][0]
-        return qto_applicable_name
-
-    @classmethod
-    def edit_qto(cls, obj, calculated_quantities):
-        file = tool.Ifc.get()
-        pset_qto_applicable_name = cls.get_qto_applicable_name(obj)
-        qto_entity = cls.get_qto_entity(obj)
-
-        ifcopenshell.api.run("pset.edit_qto",
-                file,
-                qto = qto_entity, properties = calculated_quantities,
+    def add_product_base_qto(cls, product):
+        base_quantity_name = cls.get_applicable_base_quantity_name(product)
+        if base_quantity_name:
+            return tool.Ifc.run(
+                "pset.add_qto",
+                product=product,
+                name=base_quantity_name,
             )
 
     @classmethod
-    def get_qto_entity(cls, obj):
-        file = tool.Ifc.get()
-        entity = tool.Ifc.get_entity(obj)
-        qto_applicable_name = cls.get_qto_applicable_name(obj)
-        qto_entity = tool.Pset.get_element_pset(entity, qto_applicable_name)
-        return qto_entity
+    def get_applicable_quantity_names(cls, qto_name):
+        pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
+        return (
+            [property.Name for property in pset_template.HasPropertyTemplates]
+            if hasattr(pset_template, "HasPropertyTemplates")
+            else []
+        )
+
+    @classmethod
+    def get_applicable_base_quantity_name(cls, product=None):
+        if not product:
+            return
+        applicable_qto_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(product.is_a(), qto_only=True)
+        return next((qto_name for qto_name in applicable_qto_names if "Qto_" in qto_name and "Base" in qto_name), None)
 
     @classmethod
     def get_new_calculated_quantity(cls, qto_name, quantity_name, obj):
-        calculator = QtoCalculator()
-        new_quantity = calculator.calculate_quantity(qto_name, quantity_name, obj)
-        return new_quantity
+        return QtoCalculator().calculate_quantity(qto_name, quantity_name, obj)
 
     @classmethod
     def get_new_guessed_quantity(cls, obj, quantity_name, alternative_prop_names):
-        calculator = QtoCalculator()
-        new_quantity = calculator.guess_quantity(quantity_name, alternative_prop_names, obj)
+        return QtoCalculator().guess_quantity(quantity_name, alternative_prop_names, obj)
 
     @classmethod
     def get_rounded_value(cls, new_quantity):
         return round(new_quantity, 3)
 
     @classmethod
-    def get_calculated_quantities(cls, obj, applicable_quantity_names):
-        calculated_quantities = {}
-        qto_name = cls.get_qto_applicable_name(obj)
-        calculator = QtoCalculator()
-
-        for quantity_name in applicable_quantity_names:
-            if not cls.has_calculator(qto_name, quantity_name):
-                continue
-            else:
-                new_quantity = calculator.calculate_quantity(qto_name, quantity_name, obj)
-                new_quantity = cls.get_rounded_value(new_quantity)
-
-            calculated_quantities[quantity_name] = new_quantity
-
-        return calculated_quantities
+    def calculate_object_quantities(cls, calculator, qto_name, obj):
+        return {
+            quantity_name: cls.get_rounded_value(calculator.calculate_quantity(qto_name, quantity_name, obj))
+            for quantity_name in cls.get_applicable_quantity_names(qto_name) or []
+            if cls.has_calculator(qto_name, quantity_name)
+        }
 
     @classmethod
     def has_calculator(cls, qto_name, quantity_name):
@@ -132,8 +101,8 @@ class Qto(blenderbim.core.tool.Qto):
     def get_guessed_quantities(cls, obj, pset_qto_properties):
         calculated_quantities = {}
         for pset_qto_property in pset_qto_properties:
-            quantity_name = pset_qto_property.get_info()['Name']
-            alternative_prop_names = [p.get_info()['Name'] for p in pset_qto_properties]
+            quantity_name = pset_qto_property.get_info()["Name"]
+            alternative_prop_names = [p.get_info()["Name"] for p in pset_qto_properties]
 
             new_quantity = cls.get_new_guessed_quantity(obj, quantity_name, alternative_prop_names)
 
@@ -146,3 +115,15 @@ class Qto(blenderbim.core.tool.Qto):
 
         return calculated_quantities
 
+    @classmethod
+    def get_base_qto(cls, product):
+        if not hasattr(product, "IsDefinedBy"):
+            return
+        for rel in product.IsDefinedBy or []:
+            if not (
+                rel.is_a("IfcRelDefinesByProperties")
+                and "Base" in rel.RelatingPropertyDefinition.Name
+                and "Qto_" in rel.RelatingPropertyDefinition.Name
+            ):
+                continue
+            return rel.RelatingPropertyDefinition

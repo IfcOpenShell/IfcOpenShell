@@ -172,30 +172,30 @@ class QuantifyObjects(bpy.types.Operator):
             PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
-class AssignPsetQto(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.assign_pset_qto"
+class AssignBaseQto(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_objects_base_qto"
     bl_label = "Assign IFC Object Quantity Set"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Assign IFC quantity set to selected object"
 
     @classmethod
     def poll(cls, context):
-        return context.active_object and context.selected_objects
+        return tool.Ifc.get() and context.selected_objects
 
     def _execute(self, context):
-        core.assign_pset_qto(tool.Qto, selected_objects = context.selected_objects)
+        core.assign_objects_base_qto(tool.Ifc, tool.Qto, selected_objects = context.selected_objects)
         return {"FINISHED"}
 
-class CalculateAllQtos(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.calculate_all_qtos"
+class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_all_quantities"
     bl_label = "Calculate all quantities"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Calculate all possible quantities and assign them to selected object"
 
     @classmethod
     def poll(cls, context):
-        return context.active_object and context.selected_objects
+        return tool.Ifc.get() and context.selected_objects
 
     def _execute(self, context):
-        core.calculate_all_qtos(tool.Qto, selected_objects = context.selected_objects)
+        core.calculate_objects_base_quantities(tool.Ifc, tool.Qto, QtoCalculator(), selected_objects = context.selected_objects)
         return {"FINISHED"}
