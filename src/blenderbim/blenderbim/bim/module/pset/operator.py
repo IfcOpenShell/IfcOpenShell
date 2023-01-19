@@ -438,20 +438,6 @@ class GuessQuantity(bpy.types.Operator):
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
 
 
-class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.calculate_all_quantities"
-    bl_label = "Calculate All Quantities"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Calculate all quantities for all selected objects"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object
-
-    def _execute(self, context):
-        QtoCore.calculate_all_qtos(tool.Qto, selected_objects = [context.active_object])
-
-
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
     bl_idname = "bim.copy_property_to_selection"
     bl_label = "Copy Property To Selection"

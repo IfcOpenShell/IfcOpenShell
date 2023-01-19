@@ -53,7 +53,7 @@ class BIM_PT_qto_utilities(Panel):
         row.operator("bim.quantify_objects", icon="COPYDOWN", text="")
         
         row = layout.row(align=True)
-        row.operator("bim.assign_pset_qto")
+        row.operator("bim.assign_objects_base_qto")
 
         row = layout.row(align=True)
-        row.operator("bim.calculate_all_qtos")
+        row.operator("bim.calculate_all_quantities", icon="MOD_EDGESPLIT")

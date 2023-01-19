@@ -28,7 +28,6 @@ classes = (
     operator.EnablePsetEditing,
     operator.GuessQuantity,
     operator.CalculateQuantity,
-    operator.CalculateAllQuantities,
     operator.RemovePset,
     operator.TogglePsetExpansion,
     operator.BIM_OT_add_property_to_edit,
