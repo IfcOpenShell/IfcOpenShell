@@ -695,10 +695,10 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def select_products(cls, products):
-        for obj in bpy.context.visible_objects:
-            obj.select_set(False)
-            if obj.BIMObjectProperties.ifc_definition_id in [product.id() for product in products]:
-                obj.select_set(True)
+        [obj.select_set(False) for obj in bpy.context.selected_objects]
+        for product in products:
+            obj = tool.Ifc.get_object(product)
+            obj.select_set(True) if obj else None
 
     @classmethod
     def add_task_column(cls, column_type, name, data_type):
