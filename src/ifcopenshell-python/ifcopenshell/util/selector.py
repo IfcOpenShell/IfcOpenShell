@@ -212,15 +212,26 @@ class Selector:
             key = ".".join(key.split(".")[1:])
         elif "." in key and key.split(".")[0] == "material":
             try:
-                material_definition = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-                key = ".".join(key.split(".")[1:])
-                materials = [inst for inst in cls.file.traverse(material_definition) if inst.is_a('IfcMaterial')]
-                for material in materials:
-                    info = material.get_info()
-                    if key in info and info[key] == value:
-                        element = material
+                material_definition = ifcopenshell.util.element.get_material(
+                    element, should_skip_usage=True
+                )
                 if not material_definition:
                     return None
+                key = ".".join(key.split(".")[1:])
+                if value:
+                    materials = [
+                        inst
+                        for inst in cls.file.traverse(material_definition)
+                        if inst.is_a("IfcMaterial")
+                    ]
+                    for material in materials or []:
+                        info = material.get_info()
+                        if key in info and info[key] == value:
+                            element = material
+                if material_definition.is_a("IfcMaterialLayerSet"):
+                    info = material_definition.get_info()
+                    if key in info:
+                        return info[key]
             except:
                 return
         elif "." in key and key.split(".")[0] == "container":
