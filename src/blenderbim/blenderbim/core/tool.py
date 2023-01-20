@@ -475,6 +475,7 @@ class Sequence:
     def contract_all_tasks(cls): pass
     def contract_task(cls, task): pass
     def create_task_tree(cls, work_schedule): pass
+    def create_bars(cls, tasks):pass
     def disable_editing_rel_sequence(cls): pass
     def disable_editing_task_time(cls): pass
     def disable_editing_task(cls): pass

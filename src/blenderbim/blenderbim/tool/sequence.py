@@ -817,6 +817,121 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def create_bars(cls, tasks):
+        full_bar_thickness = 0.2
+        size = 1.0
+        vertical_spacing = 3.5
+        vertical_increment = 0
+        size_to_duration_ratio = 1 / 30
+        margin = 0.2
+
+        def process_task_data(task, settings):
+            task_start_date = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+            finish_date = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
+
+            if not (task_start_date and finish_date):
+                return
+            else:
+                total_frames = settings["end_frame"] - settings["start_frame"]
+                duration = settings["viz_finish"] - settings["viz_start"]
+                task_start_frame = round(
+                    settings["start_frame"] + (((task_start_date - settings["viz_start"]) / duration) * total_frames)
+                )
+                task_finish_frame = round(
+                    settings["start_frame"] + (((finish_date - settings["viz_start"]) / duration) * total_frames)
+                )
+                return {
+                    "name": task.Name if task.Name else "Unnamed",
+                    "start_date": task_start_date,
+                    "finish_date": finish_date,
+                    "start_frame": task_start_frame,
+                    "finish_frame": task_finish_frame,
+                }
+
+        def create_task_bar_data(tasks, vertical_increment, collection):
+            props = bpy.context.scene.BIMWorkScheduleProperties
+            settings = {
+                "viz_start": parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
+                if props.visualisation_start
+                else None,
+                "viz_finish": parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
+                if props.visualisation_finish
+                else None,
+                "start_frame": bpy.context.scene.frame_start,
+                "end_frame": bpy.context.scene.frame_end,
+            }
+
+            material_progress, material_full = get_animation_materials()
+            empty = bpy.data.objects.new("collection_origin", None)
+            link_collection(empty, collection)
+            for task in tasks:
+                task_data = process_task_data(task, settings)
+                if task_data:
+                    position_shift = task_data["start_frame"] * size_to_duration_ratio
+                    bar_size = (task_data["finish_frame"] - task_data["start_frame"]) * size_to_duration_ratio
+
+                    color_progress = bpy.context.scene.BIMAnimationProperties.color_progress
+                    bar = add_bar(
+                        material=material_progress,
+                        vertical_increment=vertical_increment,
+                        collection=collection,
+                        parent=empty,
+                        task=task_data,
+                        scale=True,
+                        color=(color_progress.r, color_progress.g, color_progress.b, 1.0),
+                        shift_x=position_shift,
+                        name=task_data["name"] + "/Progress Bar",
+                    )
+
+                    color_full = bpy.context.scene.BIMAnimationProperties.color_full
+                    bar2 = add_bar(
+                        material=material_full,
+                        vertical_increment=vertical_increment,
+                        parent=empty,
+                        collection=collection,
+                        task=task_data,
+                        color=(color_full.r, color_full.g, color_full.b, 1.0),
+                        shift_x=position_shift,
+                        name=task_data["name"] + "/Full Bar",
+                    )
+                    bar2.color = (color_full.r, color_full.g, color_full.b, 1.0)
+
+                    bar2.scale = (full_bar_thickness, bar_size, 1)
+                    shift_object(bar2, y=((size + full_bar_thickness) / 2))
+
+                    start_text = add_text(
+                        task_data["start_date"].strftime("%d/%m/%y"),
+                        0,
+                        "RIGHT",
+                        vertical_increment,
+                        parent=empty,
+                        collection=collection,
+                    )
+                    start_text.name = task_data["name"] + "/Start Date"
+                    shift_object(start_text, x=position_shift - margin, y=-(size + full_bar_thickness))
+
+                    task_text = add_text(
+                        task_data["name"],
+                        0,
+                        "RIGHT",
+                        vertical_increment,
+                        parent=empty,
+                        collection=collection,
+                    )
+                    task_text.name = task_data["name"] + "/Task Name"
+                    shift_object(task_text, x=position_shift, y=0.2)
+                    finish_text = add_text(
+                        task_data["finish_date"].strftime("%d/%m/%y"),
+                        bar_size,
+                        "LEFT",
+                        vertical_increment,
+                        parent=empty,
+                        collection=collection,
+                    )
+                    finish_text.name = task_data["name"] + "/Finish Date"
+                    shift_object(finish_text, x=position_shift + margin, y=-(size + full_bar_thickness))
+                vertical_increment += vertical_spacing
+            return empty.select_set(True) if empty else None
+
         def set_material(name, r, g, b):
             material = bpy.data.materials.new(name)
             material.use_nodes = True
@@ -834,94 +949,25 @@ class Sequence(blenderbim.core.tool.Sequence):
                 material_full = set_material("color_full", 1.0, 0.0, 0.0)
             return material_progress, material_full
 
-        vertical_spacing = 0.5
-        size_ratio = 1 / 20
-        collection = bpy.data.collections.new("Bar Visual")
-        bpy.context.scene.collection.children.link(collection)
-
-        lead_bar_thickness = 0.2
-        size = 1.0
-
-        def create_task_bar_data(tasks, vertical_spacing):
-            props = bpy.context.scene.BIMWorkScheduleProperties
-            viz_start = (
-                parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
-                if props.visualisation_start
-                else None
-            )
-            viz_finish = parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
-
-            start_frame = bpy.context.scene.frame_start
-            end_frame = bpy.context.scene.frame_end
-            total_frames = end_frame - start_frame
-            task_data = []
-
-            material_progress, material_full = get_animation_materials()
-            for task in tasks:
-                task_start_date = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
-                finish_date = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
-                if task_start_date and finish_date:
-                    duration = viz_finish - viz_start
-                    task_start_frame = round(start_frame + (((task_start_date - viz_start) / duration) * total_frames))
-                    task_finish_frame = round(start_frame + (((finish_date - viz_start) / duration) * total_frames))
-                    data = {
-                        "Name": task.Name if task.Name else "Unnamed",
-                        "StartDate": task_start_date,
-                        "FinishDate": finish_date,
-                        "Start_frame": task_start_frame,
-                        "Finish_frame": task_finish_frame,
-                        "bar": None,
-                    }
-                    bar = add_bar(
-                        size=1, material=material_progress, vertical_spacing=vertical_spacing, task=data, animate=True
-                    )
-                    color_progress = bpy.context.scene.BIMAnimationProperties.color_progress
-                    bar.color = (color_progress.r, color_progress.g, color_progress.b, 1.0)
-
-                    bar2 = add_bar(
-                        size=1, material=material_full, vertical_spacing=vertical_spacing, task=data, animate=False
-                    )
-                    color_full = bpy.context.scene.BIMAnimationProperties.color_full
-                    bar2.color = (color_full.r, color_full.g, color_full.b, 1.0)
-
-                    bar_size = (data["Finish_frame"] - data["Start_frame"]) * size_ratio
-                    bar2.scale = (lead_bar_thickness, bar_size, 1)
-
-                    shift_object(bar2, x=-((size + lead_bar_thickness) / 2))
-
-                    start_text = add_text(
-                        data["StartDate"].strftime("%d/%m/%y"), 0, "RIGHT", vertical_spacing, collection
-                    )
-
-                    add_text(data["Name"], 0, "LEFT", vertical_spacing, collection)
-
-                    finish_text = add_text(
-                        data["FinishDate"].strftime("%d/%m/%y"), bar_size, "LEFT", vertical_spacing, collection
-                    )
-
-                    shift_object(start_text, y=-(size + lead_bar_thickness))
-
-                    shift_object(finish_text, y=-(size + lead_bar_thickness))
-
-                    vertical_spacing += 5
-                    collection.objects.link(bar)
-                    collection.objects.link(bar2)
-
-            return
-
-        def animate_bar(bar, task):
-            scale = (1, size_ratio, 1)
+        def animate_scale(bar, task):
+            scale = (1, size_to_duration_ratio, 1)
             bar.scale = scale
-            bar.keyframe_insert(data_path="scale", frame=task["Start_frame"])
-            scale2 = (1, (task["Finish_frame"] - task["Start_frame"]) * size_ratio, 1)
+            bar.keyframe_insert(data_path="scale", frame=task["start_frame"])
+            scale2 = (1, (task["finish_frame"] - task["start_frame"]) * size_to_duration_ratio, 1)
             bar.scale = scale2
-            bar.keyframe_insert(data_path="scale", frame=task["Finish_frame"])
+            bar.keyframe_insert(data_path="scale", frame=task["finish_frame"])
 
-        def place_bar(bar, vertical_spacing):
+        def animate_color(bar, task, color):
+            bar.keyframe_insert(data_path="color", frame=task["start_frame"])
+            bar.color = color
+            bar.keyframe_insert(data_path="color", frame=task["start_frame"] + 1)
+            bar.color = color
+
+        def place_bar(bar, vertical_increment):
             for vertex in bar.data.vertices:
                 vertex.co[1] += 0.5
-            bpy.ops.transform.rotate(value=1.5708, orient_axis="Z")
-            bpy.ops.transform.translate(value=(0, -vertical_spacing, 0), orient_type="GLOBAL")
+            bar.rotation_euler[2] = -1.5708
+            shift_object(bar, y=-vertical_increment)
 
         def shift_object(obj, x=0.0, y=0.0, z=0.0):
             vec = mathutils.Vector((x, y, z))
@@ -930,26 +976,74 @@ class Sequence(blenderbim.core.tool.Sequence):
             vec_rot = vec @ inv
             obj.location = obj.location + vec_rot
 
-        def add_text(text, x_position, align, vertical_spacing, collection=None):
-            bpy.ops.object.text_add()
-            bpy.context.object.data.align_x = align
-            bpy.context.object.data.align_y = "CENTER"
-            bpy.ops.transform.translate(value=(x_position, -(vertical_spacing - 1), 0), orient_type="GLOBAL")
-            bpy.context.object.data.body = text
+        def link_collection(obj, collection):
             if collection:
-                collection.objects.link(bpy.context.object)
-            return bpy.context.object
+                collection.objects.link(obj)
+                if obj.name in bpy.context.scene.collection.objects.keys():
+                    bpy.context.scene.collection.objects.unlink(obj)
+            return obj
 
-        def add_bar(size, material, vertical_spacing, task=None, animate=False):
-            bpy.ops.mesh.primitive_plane_add(size=size)
-            bpy.context.object.data.materials.append(material)
-            place_bar(bpy.context.object, vertical_spacing)
-            if task and animate:
-                animate_bar(bpy.context.object, task)
-            return bpy.context.object
+        def create_plane(material, collection, vertical_increment):
+            x = 0.5
+            y = 0.5
+            vert = [(-x, -y, 0.0), (x, -y, 0.0), (-x, y, 0.0), (x, y, 0.0)]
+            fac = [(0, 1, 3, 2)]
+            mesh = bpy.data.meshes.new("PL")
+            mesh.from_pydata(vert, [], fac)
+            obj = bpy.data.objects.new("PL", mesh)
+            obj.data.materials.append(material)
+            place_bar(obj, vertical_increment)
+            link_collection(obj, collection)
+            return obj
+
+        def add_text(text, x_position, align, vertical_increment, parent=None, collection=None):
+            data = bpy.data.curves.new(type="FONT", name="Timeline")
+            data.align_x = align
+            data.align_y = "CENTER"
+
+            data.body = text
+            obj = bpy.data.objects.new(name="Unnamed", object_data=data)
+            link_collection(obj, collection)
+            shift_object(obj, x=x_position, y=-(vertical_increment - 1))
+            if parent:
+                obj.parent = parent
+            return obj
+
+        def add_bar(
+            material,
+            vertical_increment,
+            parent=None,
+            collection=None,
+            task=None,
+            color=False,
+            scale=False,
+            shift_x=None,
+            name=None,
+        ):
+            plane = create_plane(material, collection, vertical_increment)
+            if parent:
+                plane.parent = parent
+            if color:
+                animate_color(plane, task, color)
+            if scale:
+                animate_scale(plane, task)
+            if shift_x:
+                shift_object(plane, x=shift_x)
+            if name:
+                plane.name = name
+            return plane
+
+        if "Bar Visual" in bpy.data.collections:
+            collection = bpy.data.collections["Bar Visual"]
+            for obj in collection.objects:
+                bpy.data.objects.remove(obj)
+
+        else:
+            collection = bpy.data.collections.new("Bar Visual")
+            bpy.context.scene.collection.children.link(collection)
 
         if tasks:
-            data = create_task_bar_data(tasks, vertical_spacing)
+            create_task_bar_data(tasks, vertical_increment, collection)
 
     @classmethod
     def enable_editing_task_animation_colors(cls):
