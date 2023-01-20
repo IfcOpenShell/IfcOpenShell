@@ -63,6 +63,8 @@ class Usecase:
             definition=self.settings["task"],
             relating_context=self.file.by_type("IfcContext")[0],
         )
+        if self.settings["task"].TaskTime:
+            self.file.remove(self.settings["task"].TaskTime)
         for inverse in self.file.get_inverse(self.settings["task"]):
             if inverse.is_a("IfcRelSequence"):
                 self.file.remove(inverse)
@@ -72,13 +74,43 @@ class Usecase:
                         ifcopenshell.api.run(
                             "sequence.remove_task", self.file, task=related_object
                         )
-                elif inverse.RelatedObjects == tuple(self.settings["task"]):
+                elif not inverse.RelatedObjects:
                     self.file.remove(inverse)
             elif inverse.is_a("IfcRelAssignsToControl"):
-                if len(inverse.RelatedObjects) == 1:
+                if (
+                    inverse.RelatingControl == self.settings["task"]
+                    or len(inverse.RelatedObjects) == 1
+                ):
                     self.file.remove(inverse)
                 else:
                     related_objects = list(inverse.RelatedObjects)
                     related_objects.remove(self.settings["task"])
                     inverse.RelatedObjects = related_objects
+            elif inverse.is_a("IfcRelDefinesByProperties"):
+                print(inverse.RelatingPropertyDefinition.Name)
+                ifcopenshell.api.run(
+                    "pset.remove_pset",
+                    self.file,
+                    product=self.settings["task"],
+                    pset=inverse.RelatingPropertyDefinition,
+                )
+            elif inverse.is_a("IfcRelAssignsToProcess"):
+                if (
+                    inverse.RelatingProcess == self.settings["task"]
+                    or len(inverse.RelatedObjects) == 1
+                ):
+                    self.file.remove(inverse)
+            elif inverse.is_a("IfcRelAssignsToProduct"):
+                if (
+                    inverse.RelatingProduct == self.settings["task"]
+                    or len(inverse.RelatedObjects) == 1
+                ):
+                    self.file.remove(inverse)
+                else:
+                    related_objects = list(inverse.RelatedObjects)
+                    related_objects.remove(self.settings["task"])
+                    inverse.RelatedObjects = related_objects
+            elif inverse.is_a("IfcRelAssignsToProcess"):
+                self.file.remove(inverse)
+
         self.file.remove(self.settings["task"])
