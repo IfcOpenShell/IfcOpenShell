@@ -464,61 +464,8 @@ class GenerateGanttChart(bpy.types.Operator):
     work_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
-        self.json = []
-        self.sequence_type_map = {
-            None: "FS",
-            "START_START": "SS",
-            "START_FINISH": "SF",
-            "FINISH_START": "FS",
-            "FINISH_FINISH": "FF",
-            "USERDEFINED": "FS",
-            "NOTDEFINED": "FS",
-        }
-        Data.load(self.file)
-        for task_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
-            self.create_new_task_json(task_id)
-        with open(os.path.join(context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
-            with open(os.path.join(context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
-                f.write(pystache.render(t.read(), {"json_data": json.dumps(self.json)}))
-        webbrowser.open("file://" + os.path.join(context.scene.BIMProperties.data_dir, "gantt", "index.html"))
+        core.generate_gantt_chart(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
         return {"FINISHED"}
-
-    def create_new_task_json(self, task_id):
-        task = self.file.by_id(task_id)
-        data = {
-            "pID": task.id(),
-            "pName": task.Name,
-            "pCaption": task.Name,
-            "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
-            "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
-            "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
-            "pPlanEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
-            "pMile": 1 if task.IsMilestone else 0,
-            "pComp": 0,
-            "pGroup": 1 if task.IsNestedBy else 0,
-            "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
-            "pOpen": 1,
-            "pCost": 1,
-            "ifcduration": task.TaskTime.ScheduleDuration if task.TaskTime else "",
-        }
-        if task.TaskTime and task.TaskTime.IsCritical:
-            data["pClass"] = "gtaskred"
-        elif data["pGroup"]:
-            data["pClass"] = "ggroupblack"
-        elif data["pMile"]:
-            data["pClass"] = "gmilestone"
-        else:
-            data["pClass"] = "gtaskblue"
-        data["pDepend"] = ",".join(
-            [
-                "{}{}".format(rel.RelatingProcess.id(), self.sequence_type_map[rel.SequenceType])
-                for rel in task.IsSuccessorFrom or []
-            ]
-        )
-        self.json.append(data)
-        for task_id in Data.tasks[task_id]["RelatedObjects"]:
-            self.create_new_task_json(task_id)
 
 
 class AddWorkCalendar(bpy.types.Operator, tool.Ifc.Operator):
@@ -1097,7 +1044,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         has_start, has_finish = bpy.context.scene.BIMWorkScheduleProperties.visualisation_start, bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish
-        return bool(has_start and has_finish)
+        return bool(has_start and has_finish) and not "-" in (has_start, has_finish)
 
     def execute(self, context):
         core.visualise_work_schedule_date_range(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
@@ -1363,4 +1310,14 @@ class DisableEditingTaskAnimationColors(bpy.types.Operator):
 
     def execute(self, context):
         core.disable_editing_task_animation_colors(tool.Sequence)
+        return {"FINISHED"}
+
+class CopyTask(bpy.types.Operator):
+    bl_idname = "bim.copy_task"
+    bl_label = "Copy Task"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.copy_task(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         return {"FINISHED"}
