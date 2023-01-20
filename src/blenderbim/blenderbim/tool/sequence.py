@@ -1064,6 +1064,14 @@ class Sequence(blenderbim.core.tool.Sequence):
                         "PredefinedType": ["CONSTRUCTION", "INSTALLATION"],
                         "Color": (0.0, 1.0, 0.0),
                     },
+                    "OPERATION": {
+                        "PredefinedType": ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"],
+                        "Color": (0.0, 0.0, 1.0),
+                    },
+                    "MOVEMENT_TO": {
+                        "PredefinedType": ["LOGISTIC", "MOVE"],
+                        "Color": (1.0, 1.0, 0.0),
+                    },
                     "DESTRUCTION": {
                         "PredefinedType": ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"],
                         "Color": (1.0, 0.0, 0.0),
@@ -1071,14 +1079,6 @@ class Sequence(blenderbim.core.tool.Sequence):
                     "MOVEMENT_FROM": {
                         "PredefinedType": ["LOGISTIC", "MOVE"],
                         "Color": (1.0, 0.5, 0.0),
-                    },
-                    "MOVEMENT_TO": {
-                        "PredefinedType": ["LOGISTIC", "MOVE"],
-                        "Color": (1.0, 1.0, 0.0),
-                    },
-                    "OPERATION": {
-                        "PredefinedType": ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"],
-                        "Color": (0.0, 0.0, 1.0),
                     },
                     "USERDEFINED": {
                         "PredefinedType": ["USERDEFINED", "NOTDEFINED"],
@@ -1091,8 +1091,12 @@ class Sequence(blenderbim.core.tool.Sequence):
                             predefined_type_item = props.task_colors_components_outputs.add()
                         elif group in ["MOVEMENT_FROM", "DESTRUCTION"]:
                             predefined_type_item = props.task_colors_components_inputs.add()
-                        else:
-                            predefined_type_item = props.task_colors_components_outputs.add()
+                        elif group == "USERDEFINED":
+                            predefined_type_item = props.task_colors_components_inputs.add()
+                            predefined_type_item2 = props.task_colors_components_outputs.add()
+                            predefined_type_item2.name = predefined_type
+                            predefined_type_item2.color = data["Color"]
+                        # TO DO: consider cases where users confuses inputs and outputs
                         predefined_type_item.name = predefined_type
                         predefined_type_item.color = data["Color"]
 
