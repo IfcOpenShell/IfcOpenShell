@@ -131,7 +131,9 @@ class Selector:
 
         if not inverse_relationship:
             return results
-        return cls.parse_inverse_relationship(results, inverse_relationship.children[0].data)
+        return cls.parse_inverse_relationship(
+            results, inverse_relationship.children[0].data
+        )
 
     @classmethod
     def parse_inverse_relationship(cls, elements, inverse_relationship):
@@ -163,8 +165,13 @@ class Selector:
             if cls.elements is None:
                 elements = cls.file.by_type(class_selector.children[0])
             else:
-                elements = [e for e in cls.elements if e.is_a(class_selector.children[0])]
-        if len(class_selector.children) > 1 and class_selector.children[1].data == "filter":
+                elements = [
+                    e for e in cls.elements if e.is_a(class_selector.children[0])
+                ]
+        if (
+            len(class_selector.children) > 1
+            and class_selector.children[1].data == "filter"
+        ):
             return cls.filter_elements(elements, class_selector.children[1])
         return elements
 
@@ -194,7 +201,9 @@ class Selector:
             element_value = cls.get_element_value(element, key, value)
             if element_value is None and value is not None and "not" not in comparison:
                 continue
-            if comparison and cls.filter_element(element, element_value, comparison, value):
+            if comparison and cls.filter_element(
+                element, element_value, comparison, value
+            ):
                 results.append(element)
             elif not comparison and element_value:
                 results.append(element)
@@ -228,10 +237,7 @@ class Selector:
                         info = material.get_info()
                         if key in info and info[key] == value:
                             element = material
-                if material_definition.is_a("IfcMaterialLayerSet"):
-                    info = material_definition.get_info()
-                    if key in info:
-                        return info[key]
+                element = material_definition 
             except:
                 return
         elif "." in key and key.split(".")[0] == "container":
