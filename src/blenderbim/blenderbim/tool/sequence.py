@@ -18,10 +18,13 @@
 
 import bpy
 import re
+import os
 import isodate
 import ifcopenshell
 import ifcopenshell.util.sequence
 import ifcopenshell.util.date
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
 import json
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -30,6 +33,8 @@ import blenderbim.bim.module.sequence.helper as helper
 from dateutil import parser
 from datetime import datetime
 import mathutils
+import pystache
+import webbrowser
 
 
 class Sequence(blenderbim.core.tool.Sequence):
@@ -1271,3 +1276,61 @@ class Sequence(blenderbim.core.tool.Sequence):
         obj.data.BIMDateTextProperties.start = bpy.context.scene.BIMWorkScheduleProperties.visualisation_start
         obj.data.BIMDateTextProperties.finish = bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish
         append_handler(animate_text_handler)
+
+    @classmethod
+    def create_tasks_json(cls, work_schedule=None):
+        sequence_type_map = {
+            None: "FS",
+            "START_START": "SS",
+            "START_FINISH": "SF",
+            "FINISH_START": "FS",
+            "FINISH_FINISH": "FF",
+            "USERDEFINED": "FS",
+            "NOTDEFINED": "FS",
+        }
+
+        tasks_json = []
+        for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+            cls.create_new_task_json(task, tasks_json, sequence_type_map)
+        return tasks_json
+
+    @classmethod
+    def create_new_task_json(cls, task, json, type_map=None):
+        task_time = task.TaskTime
+        data = {
+            "pID": task.id(),
+            "pName": task.Name,
+            "pCaption": task.Name,
+            "pStart": task_time.ScheduleStart if task_time else "",
+            "pEnd": task_time.ScheduleFinish if task_time else "",
+            "pPlanStart": task_time.ScheduleStart if task_time else "",
+            "pPlanEnd": task_time.ScheduleFinish if task_time else "",
+            "pMile": 1 if task.IsMilestone else 0,
+            "pComp": 0,
+            "pGroup": 1 if task.IsNestedBy else 0,
+            "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
+            "pOpen": 1,
+            "pCost": 1,
+            "ifcduration": task_time.ScheduleDuration if task_time else "",
+        }
+
+        if task_time and task_time.IsCritical:
+            data["pClass"] = "gtaskred"
+        elif data["pGroup"]:
+            data["pClass"] = "ggroupblack"
+        elif data["pMile"]:
+            data["pClass"] = "gmilestone"
+        else:
+            data["pClass"] = "gtaskblue"
+
+        data["pDepend"] = ",".join([f"{rel.RelatingProcess.id()}{type_map[rel.SequenceType]}" for rel in task.IsSuccessorFrom or []])
+        json.append(data)
+        for nested_task in ifcopenshell.util.sequence.get_nested_tasks(task):
+            cls.create_new_task_json(nested_task, json, type_map)
+
+    @classmethod
+    def generate_gantt_browser_chart(cls, task_json):
+        with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
+            with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
+                f.write(pystache.render(t.read(), {"json_data": json.dumps(task_json)}))
+        webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))

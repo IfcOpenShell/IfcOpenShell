@@ -501,7 +501,7 @@ class Sequence:
     def expand_task(cls, task): pass
     def find_related_output_tasks(cls, column): pass
     def get_active_task(cls): pass
-    def get_active_work_schedule_id(cls): pass
+    def get_active_work_schedule(cls): pass
     def get_checked_tasks(cls): pass
     def get_direct_nested_tasks(cls, task):pass
     def get_direct_task_outputs(cls, task): pass
