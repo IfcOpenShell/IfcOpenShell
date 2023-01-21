@@ -28,28 +28,28 @@ class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
         assert isinstance(subject(), blenderbim.core.tool.Qto)
 
-
 class TestGetRadiusOfSelectedVertices(test.bim.bootstrap.NewFile):
     def test_run(self):
         bpy.ops.mesh.primitive_circle_add()
         assert round(subject.get_radius_of_selected_vertices(bpy.data.objects.get("Circle")), 3) == 1
-
 
 class TestSetQtoResult(test.bim.bootstrap.NewFile):
     def test_run(self):
         subject.set_qto_result(123.4567)
         assert bpy.context.scene.BIMQtoProperties.qto_result == "123.457"
 
-class TestGetPsetQtoObjectIfcInfo(test.bim.bootstrap.NewFile):
+
+class TestGetBaseQto(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()
         wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         tool.Ifc.link(wall, wall_obj)
-        pset_qto = ifcopenshell.api.run("pset.add_qto", ifc, product=wall, name="Qto_foo")
-        assert subject.get_pset_qto_object_ifc_info(wall_obj)['Qto_foo']['id'] == pset_qto.get_info()['id']
-        assert list(subject.get_pset_qto_object_ifc_info(wall_obj).keys())[0] == pset_qto.get_info()['Name']
+        product = tool.Ifc.get_entity(wall_obj)
+        pset_qto = ifcopenshell.api.run("pset.add_qto", ifc, product=wall, name="Qto_Basefoo")
+        assert subject.get_base_qto(product).id() == pset_qto.get_info()['id']
+        assert subject.get_base_qto(product).Name == pset_qto.Name
 
     def test_isempty(self):
         ifc = ifcopenshell.file()
@@ -57,4 +57,5 @@ class TestGetPsetQtoObjectIfcInfo(test.bim.bootstrap.NewFile):
         wall = ifc.createIfcWall()
         wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         tool.Ifc.link(wall, wall_obj)
-        assert not subject.get_pset_qto_object_ifc_info(wall_obj) == True
+        product = tool.Ifc.get_entity(wall_obj)
+        assert not subject.get_base_qto(product) == True

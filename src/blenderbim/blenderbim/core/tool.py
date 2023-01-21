@@ -410,7 +410,6 @@ class Qto:
     def calculate_object_quantities(cls, calculator, baste_qto, object): pass
     def add_object_base_qto(cls, object): pass
     def add_product_base_qto(cls, product): pass
-    def get_applicable_base_quantity_names(cls, product): pass
     def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
     def get_new_guessed_quantity(cls, object, qto_name, quantity_name, ): pass
 
