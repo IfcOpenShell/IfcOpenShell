@@ -187,6 +187,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         else:
             name = document.DocumentId or "X"
         name += " - " + (document.Name or "Unnamed")
+        if not hasattr(document, "Scope"):
+            return
         if document.Scope == "DOCUMENTATION":
             return os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", name + ".svg")
         elif document.Scope == "SCHEDULE":
