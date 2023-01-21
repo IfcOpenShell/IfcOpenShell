@@ -1078,7 +1078,7 @@ class LevelDecorator(BaseDecorator):
     def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
         self.draw_lines(context, obj, verts, idxs, topo)
-        self.draw_labels(context, obj, splines)
+        self.draw_labels(context, obj, self.get_splines(obj))
 
 
 class PlanLevelDecorator(LevelDecorator):
