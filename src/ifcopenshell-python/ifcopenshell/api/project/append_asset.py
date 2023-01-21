@@ -22,11 +22,70 @@ import ifcopenshell.api.owner.settings
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, library=None, element=None):
+        """Appends an asset from a library into the active project
+
+        A BIM library asset may be a type product (e.g. wall type), product
+        (e.g. pump), material, profile, or cost schedule.
+
+        This copies the asset from the specified library file into the active
+        project. It handles all details like ensuring that product materials,
+        styles, properties, quantities, and so on are preserved.
+
+        If an asset contains geometry, the geometric contexts are also
+        intelligentely transplanted such that existing equivalent contexts are
+        reused.
+
+        Do not mix units.
+
+        :param library: The file object containing the asset.
+        :type library: ifcopenshell.file.file
+        :param element: An element in the library file of the asset. It may be
+            an IfcTypeProduct, IfcProduct, IfcMaterial, IfcCostSchedule, or
+            IfcProfileDef.
+        :type library: ifcopenshell.entity_instance.entity_instance
+        :return: The appended element
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # Programmatically generate a library. You could do this visually too.
+            library = ifcopenshell.api.run("project.create_file")
+            root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
+            context = ifcopenshell.api.run("root.create_entity", library,
+                ifc_class="IfcProjectLibrary", name="Demo Library")
+            ifcopenshell.api.run("project.assign_declaration", library, definition=context, relating_context=root)
+
+            # Assign units for our example library
+            unit = ifcopenshell.api.run("unit.add_si_unit", library,
+                unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+            ifcopenshell.api.run("unit.assign_unit", library, units=[unit])
+
+            # Let's create a single asset of a 200mm thick concrete wall
+            wall_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType", name="WAL01")
+            concrete = ifcopenshell.api.run("material.add_material", self.file, name="CON", category="concrete")
+            rel = ifcopenshell.api.run("material.assign_material", library,
+                product=wall_type, type="IfcMaterialLayerSet")
+            layer = ifcopenshell.api.run("material.add_layer", library,
+                layer_set=rel.RelatingMaterial, material=concrete)
+            layer.Name = "Structure"
+            layer.LayerThickness = 200
+
+            # Mark our wall type as a reusable asset in our library.
+            ifcopenshell.api.run("project.assign_declaration", library,
+                definition=wall_type, relating_context=context)
+
+            # Let's imagine we're starting a new project
+            model = ifcopenshell.api.run("project.create_file")
+            project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="Test")
+
+            # Now we can easily append our wall type from our libary
+            wall_type = ifcopenshell.api.run("project.append_asset", model, library=library, element=wall_type)
+        """
         self.file = file
-        self.settings = {"library": None, "element": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"library": library, "element": element}
 
     def execute(self):
         self.added_elements = {}
@@ -61,19 +120,7 @@ class Usecase:
         element = self.add_element(self.settings["element"])
         if not element.HasRepresentation:
             return element
-        added_contexts = [
-            e
-            for e in self.file.traverse(element.HasRepresentation[0])
-            if e.is_a("IfcGeometricRepresentationContext")
-        ]
-        for added_context in added_contexts:
-            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
-            if not equivalent_existing_context:
-                equivalent_existing_context = self.create_equivalent_context(added_context)
-            for inverse in self.file.get_inverse(added_context):
-                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-        for added_context in added_contexts:
-            ifcopenshell.util.element.remove_deep(self.file, added_context)
+        self.reuse_existing_contexts()
         return element
 
     def append_cost_schedule(self):
@@ -95,20 +142,12 @@ class Usecase:
             return element
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
-            "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties"],
+            "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
-        added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
-        for added_context in added_contexts:
-            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
-            if not equivalent_existing_context:
-                equivalent_existing_context = self.create_equivalent_context(added_context)
-            for inverse in self.file.get_inverse(added_context):
-                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-        for added_context in added_contexts:
-            ifcopenshell.util.element.remove_deep(self.file, added_context)
+        self.reuse_existing_contexts()
         return element
 
     def append_product(self):
@@ -124,15 +163,7 @@ class Usecase:
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
-        added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
-        for added_context in added_contexts:
-            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
-            if not equivalent_existing_context:
-                equivalent_existing_context = self.create_equivalent_context(added_context)
-            for inverse in self.file.get_inverse(added_context):
-                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-        for added_context in added_contexts:
-            ifcopenshell.util.element.remove_deep2(self.file, added_context)
+        self.reuse_existing_contexts()
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:
@@ -158,8 +189,8 @@ class Usecase:
             return self.added_elements[element.id()]
         new = self.file.add(element)
         self.added_elements[element.id()] = new
-        self.check_inverses(element)
         for subelement in self.settings["library"].traverse(element):
+            self.added_elements[subelement.id()] = self.file.add(subelement)
             self.check_inverses(subelement)
         return new
 
@@ -207,6 +238,17 @@ class Usecase:
             return True
         return False
 
+    def reuse_existing_contexts(self):
+        added_contexts = set([e for e in self.added_elements.values() if e.is_a("IfcGeometricRepresentationContext")])
+        for added_context in added_contexts:
+            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
+            if not equivalent_existing_context:
+                equivalent_existing_context = self.create_equivalent_context(added_context)
+            for inverse in self.file.get_inverse(added_context):
+                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
+        for added_context in added_contexts:
+            ifcopenshell.util.element.remove_deep2(self.file, added_context)
+
     def get_equivalent_existing_context(self, added_context):
         for context in self.existing_contexts:
             if context.is_a() != added_context.is_a():
@@ -238,6 +280,8 @@ class Usecase:
                 target_view=added_context.TargetView,
             )
         return ifcopenshell.api.run(
-            "context.add_context", self.file, context_type=added_context.ContextType,
-            context_identifier=added_context.ContextIdentifier
+            "context.add_context",
+            self.file,
+            context_type=added_context.ContextType,
+            context_identifier=added_context.ContextIdentifier,
         )

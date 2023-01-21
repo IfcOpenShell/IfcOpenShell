@@ -21,11 +21,32 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, ifc_class="IfcDistributionSystem"):
+        """Add a new distribution system
+
+        A distribution system is a group of distribution elements, like ducts,
+        pipes, pumps, filters, fans, and so on that distribute a medium (air,
+        liquid, or electricity) throughout a facility. Systems may be
+        hierarchical, with larger systems composed of smaller subsystems.
+
+        :param ifc_class: The type of system, chosen from IfcDistributionSystem
+            for mechanical, electrical, communications, plumbing, fire, or
+            security systems. Alternatively you may choose IfcBuildingSystem for
+            specialised building facade systems or similar. For IFC2X3, choose
+            IfcSystem.
+        :type ifc_class: str
+        :return: The newly created IfcSystem.
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # A completely empty distribution system
+            system = ifcopenshell.api.run("system.add_system", model)
+        """
         self.file = file
-        self.settings = {"ifc_class": "IfcSystem"}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"ifc_class": ifc_class}
 
     def execute(self):
         return self.file.create_entity(

@@ -14,6 +14,9 @@ compile-time when using C++ and at run-time when using Python.
    :caption: Contents:
 
    ifcopenshell/installation
+   ifcopenshell/geometry_iterator
+   ifcopenshell/geometry_settings
+   ifcopenshell/boolean_process
 
 Indices and tables
 ------------------

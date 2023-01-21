@@ -131,9 +131,16 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         sprops = context.scene.BIMSpatialProperties
+        # Track decompositions so they can be recreated after the operation
+        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
+        old_to_new = {}
         containers = [tool.Ifc.get().by_id(c.ifc_definition_id) for c in sprops.containers if c.is_selected]
         for obj in context.selected_objects:
-            core.copy_to_container(tool.Ifc, tool.Spatial, obj=obj, containers=containers)
+            result_objs = core.copy_to_container(tool.Ifc, tool.Spatial, obj=obj, containers=containers)
+            if result_objs:
+                old_to_new[tool.Ifc.get_entity(obj)] = result_objs
+        # Recreate decompositions
+        tool.Root.recreate_decompositions(relationships, old_to_new)
         blenderbim.bim.handler.purge_module_data()
 
 

@@ -21,14 +21,40 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, definition=None, relating_context=None):
+        """Unassigns an object to a project or project library
+
+        Typically used to remove an asset from a project library.
+
+        :param definition: The object you want to undeclare. Typically an asset.
+        :type definition: ifcopenshell.entity_instance.entity_instance
+        :param relating_context: The IfcProject, or more commonly the
+            IfcProjectLibrary that you want the object to no longer be part of.
+        :type relating_context: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Programmatically generate a library. You could do this visually too.
+            library = ifcopenshell.api.run("project.create_file")
+            root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
+            context = ifcopenshell.api.run("root.create_entity", library,
+                ifc_class="IfcProjectLibrary", name="Demo Library")
+
+            # It's necessary to say our library is part of our project.
+            ifcopenshell.api.run("project.assign_declaration", library, definition=context, relating_context=root)
+
+            # Remove the library from our project
+            ifcopenshell.api.run("project.unassign_declaration", library, definition=context, relating_context=root)
+        """
         self.file = file
         self.settings = {
-            "definition": None,
-            "relating_context": None,
+            "definition": definition,
+            "relating_context": relating_context,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if not self.settings["definition"].HasContext:

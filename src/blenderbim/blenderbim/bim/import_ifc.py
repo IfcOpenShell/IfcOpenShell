@@ -112,7 +112,7 @@ class MaterialCreator:
 
     def parse_representation(self, representation):
         has_parsed = False
-        representation_items = self.resolve_all_representation_items(representation)
+        representation_items = self.resolve_all_stylable_representation_items(representation)
         for item in representation_items:
             if self.parse_representation_item(item):
                 has_parsed = True
@@ -153,11 +153,19 @@ class MaterialCreator:
             ]
             self.mesh.polygons.foreach_set("material_index", material_index)
 
-    def resolve_all_representation_items(self, representation):
+    def resolve_all_stylable_representation_items(self, representation):
         items = []
         for item in representation.Items:
             if item.is_a("IfcMappedItem"):
                 items.extend(item.MappingSource.MappedRepresentation.Items)
+            if item.is_a("IfcBooleanResult"):
+                operand = item.FirstOperand
+                while True:
+                    items.append(operand)
+                    if operand.is_a("IfcBooleanResult"):
+                        operand = operand.FirstOperand
+                    else:
+                        break
             items.append(item)
         return items
 
@@ -177,11 +185,11 @@ class IfcImporter:
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.settings_2d.set(self.settings.STRICT_TOLERANCE, True)
         self.project = None
+        self.has_existing_project = False
         self.collections = {}
         self.elements = set()
         self.type_collection = None
         self.type_products = {}
-        self.openings = {}
         self.meshes = {}
         self.mesh_shapes = {}
         self.time = 0
@@ -189,6 +197,7 @@ class IfcImporter:
         self.added_data = {}
         self.native_elements = set()
         self.native_data = {}
+        self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
 
@@ -206,7 +215,6 @@ class IfcImporter:
 
     def execute(self):
         bpy.context.window_manager.progress_begin(0, 100)
-        self.progress = 0
         self.profile_code("Starting import process")
         self.load_file()
         self.profile_code("Loading file")
@@ -224,8 +232,6 @@ class IfcImporter:
         self.profile_code("Process context filter")
         self.create_collections()
         self.profile_code("Create collections")
-        self.create_openings_collection()
-        self.profile_code("Create opening collection")
         self.create_materials()
         self.profile_code("Create materials")
         self.create_styles()
@@ -322,15 +328,23 @@ class IfcImporter:
             self.elements = self.file.by_type("IfcElement")
             self.annotations = set(self.file.by_type("IfcAnnotation"))
 
+        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
         if self.ifc_import_settings.is_coordinating:
-            self.elements = [e for e in self.elements if e.Representation and not e.is_a("IfcFeatureElement")]
+            self.elements = [e for e in self.elements if e.Representation]
 
         self.elements = set(self.elements[offset:offset_limit])
 
         if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
-            self.element_types = set(self.file.by_type("IfcElementType"))
+            if self.file.schema in ("IFC2X3", "IFC4"):
+                self.element_types = set(
+                    self.file.by_type("IfcElementType")
+                    + self.file.by_type("IfcDoorStyle")
+                    + self.file.by_type("IfcWindowStyle")
+                )
+            else:
+                self.element_types = set(self.file.by_type("IfcElementType"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
@@ -400,7 +414,7 @@ class IfcImporter:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
                 return True
-            elif (
+            elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
                 items[0].is_a("IfcSweptDiskSolid")
                 and len({i.is_a() for i in items}) == 1
                 and len({i.Radius for i in items}) == 1
@@ -514,14 +528,21 @@ class IfcImporter:
 
     def does_element_likely_have_geometry_far_away(self, element):
         for representation in element.Representation.Representations:
-            for subelement in self.file.traverse(representation):
-                if subelement.is_a("IfcCartesianPointList3D"):
-                    for point in subelement.CoordList:
-                        if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
+            items = []
+            for item in representation.Items:
+                if item.is_a("IfcMappedItem"):
+                    items.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    items.append(item)
+            for item in items:
+                for subelement in self.file.traverse(item):
+                    if subelement.is_a("IfcCartesianPointList3D"):
+                        for point in subelement.CoordList:
+                            if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
+                                return True
+                    if subelement.is_a("IfcCartesianPoint"):
+                        if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
                             return True
-                if subelement.is_a("IfcCartesianPoint"):
-                    if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
-                        return True
 
     def apply_blender_offset_to_matrix_world(self, obj, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -724,12 +745,12 @@ class IfcImporter:
                 self.incrementally_merge_objects()
             shape = iterator.get()
             if shape:
-                product = self.file.by_id(shape.guid)
+                product = self.file.by_id(shape.id)
                 if self.body_contexts:
                     self.create_product(product, shape)
                     results.add(product)
                 else:
-                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
+                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.id):
                         # We only load a single context, and we prioritise the Body context. See #1290.
                         pass
                     else:
@@ -879,7 +900,7 @@ class IfcImporter:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                product = self.file.by_id(shape.guid)
+                product = self.file.by_id(shape.id)
                 self.create_product(product, shape)
                 results.add(product)
             if not iterator.next():
@@ -890,6 +911,11 @@ class IfcImporter:
     def create_product(self, element, shape=None, mesh=None):
         if element is None:
             return
+
+        if self.has_existing_project:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                return obj
 
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
@@ -928,10 +954,6 @@ class IfcImporter:
         elif hasattr(element, "ObjectPlacement"):
             self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element)))
 
-        self.add_opening_relation(element, obj)
-
-        if element.is_a("IfcOpeningElement"):
-            obj.display_type = "WIRE"
         return obj
 
     def get_representation_item_material_name(self, item):
@@ -1247,7 +1269,6 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        project_collection.children[self.opening_collection.name].hide_viewport = True
         project_collection.children[self.type_collection.name].hide_viewport = True
 
     def clean_mesh(self):
@@ -1269,11 +1290,6 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
         IfcStore.edited_objs.clear()
-
-    def add_opening_relation(self, element, obj):
-        if not element.is_a("IfcOpeningElement"):
-            return
-        self.openings[element.GlobalId] = obj
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
@@ -1314,7 +1330,13 @@ class IfcImporter:
                 )
 
     def create_project(self):
-        self.project = {"ifc": self.file.by_type("IfcProject")[0]}
+        project = self.file.by_type("IfcProject")[0]
+        self.project = {"ifc": project}
+        obj = tool.Ifc.get_object(project)
+        if obj:
+            self.project["blender"] = obj.users_collection[0]
+            self.has_existing_project = True
+            return
         self.project["blender"] = bpy.data.collections.new(
             "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
         )
@@ -1335,6 +1357,13 @@ class IfcImporter:
     def create_spatial_decomposition_collections(self):
         for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
             self.create_spatial_decomposition_collection(self.project["blender"], rel_aggregate.RelatedObjects)
+
+        # Invalid IFCs may have orphaned spatial structure elements.
+        orphaned_spaces = [e for e in self.spatial_elements if e.GlobalId not in self.collections]
+        while orphaned_spaces:
+            self.create_spatial_decomposition_collection(self.project["blender"], orphaned_spaces)
+            orphaned_spaces = [e for e in self.spatial_elements if e.GlobalId not in self.collections]
+
         self.create_views_collection()
         self.create_type_collection()
 
@@ -1367,10 +1396,17 @@ class IfcImporter:
         for element in related_objects:
             if element not in self.spatial_elements:
                 continue
-            global_id = element.GlobalId
-            collection = bpy.data.collections.new(self.get_name(element))
-            self.collections[global_id] = collection
-            parent.children.link(collection)
+            is_existing = False
+            if self.has_existing_project:
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    is_existing = True
+                    collection = obj.users_collection[0]
+                    self.collections[element.GlobalId] = collection
+            if not is_existing:
+                collection = bpy.data.collections.new(self.get_name(element))
+                self.collections[element.GlobalId] = collection
+                parent.children.link(collection)
             if element.IsDecomposedBy:
                 for rel_aggregate in element.IsDecomposedBy:
                     self.create_spatial_decomposition_collection(collection, rel_aggregate.RelatedObjects)
@@ -1381,7 +1417,11 @@ class IfcImporter:
             rel_aggregates += [e.Decomposes[0] for e in self.elements if e.Decomposes]
             rel_aggregates = set(rel_aggregates)
         else:
-            rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
+            rel_aggregates = [
+                a
+                for a in self.file.by_type("IfcRelAggregates")
+                if a.RelatingObject.is_a("IfcElement") or a.RelatingObject.is_a("IfcElementType")
+            ]
 
         if len(rel_aggregates) > 10000:
             # More than 10,000 collections makes Blender unhappy
@@ -1404,10 +1444,10 @@ class IfcImporter:
             parent = ifcopenshell.util.element.get_container(aggregate["element"])
             if parent:
                 self.collections[parent.GlobalId].children.link(aggregate["collection"])
-
-    def create_openings_collection(self):
-        self.opening_collection = bpy.data.collections.new("IfcOpeningElements")
-        self.project["blender"].children.link(self.opening_collection)
+                continue
+            if aggregate["element"].is_a("IfcElementType"):
+                self.type_collection.children.link(aggregate["collection"])
+                continue
 
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
@@ -1485,13 +1525,21 @@ class IfcImporter:
         if surface_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
             blender_material.use_nodes = True
             bsdf = blender_material.node_tree.nodes["Principled BSDF"]
-            if surface_style.DiffuseColour and surface_style.DiffuseColour.is_a("IfcColourRgb"):
-                bsdf.inputs["Base Color"].default_value = (
-                    surface_style.DiffuseColour.Red,
-                    surface_style.DiffuseColour.Green,
-                    surface_style.DiffuseColour.Blue,
-                    1,
-                )
+            if surface_style.DiffuseColour:
+                if surface_style.DiffuseColour.is_a("IfcColourRgb"):
+                    bsdf.inputs["Base Color"].default_value = (
+                        surface_style.DiffuseColour.Red,
+                        surface_style.DiffuseColour.Green,
+                        surface_style.DiffuseColour.Blue,
+                        1,
+                    )
+                elif surface_style.DiffuseColour.is_a("IfcNormalisedRatioMeasure"):
+                    bsdf.inputs["Base Color"].default_value = (
+                        surface_style.SurfaceColour.Red * surface_style.DiffuseColour.wrappedValue,
+                        surface_style.SurfaceColour.Green * surface_style.DiffuseColour.wrappedValue,
+                        surface_style.SurfaceColour.Blue * surface_style.DiffuseColour.wrappedValue,
+                        1,
+                    )
             if surface_style.SpecularColour and surface_style.SpecularColour.is_a("IfcNormalisedRatioMeasure"):
                 bsdf.inputs["Metallic"].default_value = surface_style.SpecularColour.wrappedValue
             if surface_style.SpecularHighlight and surface_style.SpecularHighlight.is_a("IfcSpecularRoughness"):
@@ -1653,8 +1701,6 @@ class IfcImporter:
             return self.collections[element.GlobalId].objects.link(obj)
         elif element.is_a("IfcTypeObject"):
             return self.type_collection.objects.link(obj)
-        elif element.is_a("IfcOpeningElement"):
-            return self.opening_collection.objects.link(obj)
         elif element.is_a("IfcStructuralMember"):
             return self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
@@ -1965,7 +2011,7 @@ class IfcImporter:
     def set_default_context(self):
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
-                bpy.context.scene.BIMProperties.contexts = str(subcontext.id())
+                bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
                 break
 
     def link_element(self, element, obj):

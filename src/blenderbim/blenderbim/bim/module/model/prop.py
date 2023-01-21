@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,14 +17,22 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
-from bpy.types import PropertyGroup
+from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
+from bpy.types import PropertyGroup, NodeTree
 
 
 def get_ifc_class(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
     return AuthoringData.data["ifc_classes"]
+
+
+def get_type_class(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["type_class"]
 
 
 def get_relating_type(self, context):
@@ -39,41 +47,79 @@ def get_relating_type_browser(self, context):
     return AuthoringData.data["relating_types_ids_browser"]
 
 
+def get_type_predefined_type(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["type_predefined_type"]
+
+
+def store_cursor_position(context, event, cursor=True, window=True):
+    browser_state = context.scene.BIMModelProperties.constr_browser_state
+    if cursor:
+        browser_state.cursor_x, browser_state.cursor_y = event.mouse_x, event.mouse_y
+    if window:
+        browser_state.window_x, browser_state.window_y = event.mouse_x, event.mouse_y
+
+
 def update_icon_id(self, context, browser=False):
-    ifc_class = self.ifc_class_browser if browser else self.ifc_class
-    relating_type_id = self.relating_type_id_browser if browser else self.relating_type_id
-    relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
-    if (
-        ifc_class not in AuthoringData.data["preview_constr_types"]
-        or relating_type_id not in AuthoringData.data["preview_constr_types"][ifc_class]
-    ) and relating_type is not None:
-        if not AuthoringData.assetize_relating_type_from_selection(browser=browser):
-            return
-    self.icon_id = AuthoringData.data["preview_constr_types"][ifc_class][relating_type_id]["icon_id"]
+    if context == "lost_context" or (context.region is not None and context.region.type != "TOOL_HEADER"):
+        ifc_class = self.ifc_class_browser if browser else self.ifc_class
+        relating_type_id = self.relating_type_id_browser if browser else self.relating_type_id
+        # relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
+
+        if ifc_class not in self.constr_classes or relating_type_id not in self.constr_classes[ifc_class].constr_types:
+            try:
+                AuthoringData.assetize_relating_type_from_selection(browser=browser)
+            except ConstrTypeEntityNotFound:
+                return
+
+        def set_icon(update_interval_seconds=1e-4):
+            if (
+                ifc_class not in self.constr_classes
+                or relating_type_id not in self.constr_classes[ifc_class].constr_types
+            ):
+                return update_interval_seconds
+            else:
+                self.icon_id = self.constr_classes[ifc_class].constr_types[relating_type_id].icon_id
+
+        bpy.app.timers.register(set_icon)
 
 
 def update_ifc_class(self, context):
-    AuthoringData.load_ifc_classes()
-    AuthoringData.load_relating_types()
-    if not self.updating:
-        update_icon_id(self, context)
+    bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
+    AuthoringData.data["relating_types_ids"] = AuthoringData.relating_types()
+    AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
+
+
+def update_type_class(self, context):
+    AuthoringData.data["total_types"] = AuthoringData.total_types()
+    AuthoringData.data["total_pages"] = AuthoringData.total_pages()
+    AuthoringData.data["prev_page"] = AuthoringData.prev_page()
+    AuthoringData.data["next_page"] = AuthoringData.next_page()
+    AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
+    AuthoringData.data["type_predefined_type"] = AuthoringData.type_predefined_type()
 
 
 def update_ifc_class_browser(self, context):
-    AuthoringData.load_ifc_classes()
-    AuthoringData.load_relating_types_browser()
-    if self.updating:
-        return
-    ifc_class = self.ifc_class_browser
-    relating_type_info = AuthoringData.relating_type_info(ifc_class)
-    if relating_type_info is None or not relating_type_info.fully_loaded:
-        AuthoringData.assetize_constr_class(ifc_class)
+    if context.region is not None and context.region.type != "TOOL_HEADER":
+        AuthoringData.load_ifc_classes()
+        AuthoringData.load_relating_types_browser()
+        if self.updating:
+            return
+        ifc_class = self.ifc_class_browser
+        constr_class_info = AuthoringData.constr_class_info(ifc_class)
+
+        if constr_class_info is None or not constr_class_info.fully_loaded:
+            AuthoringData.assetize_constr_class(ifc_class)
 
 
 def update_relating_type(self, context):
     AuthoringData.load_relating_types()
-    if not self.updating:
-        update_icon_id(self, context)
+    AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
+
+
+def update_type_page(self, context):
+    AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
 
 
 def update_relating_type_browser(self, context):
@@ -89,14 +135,42 @@ def update_relating_type_by_name(self, context):
         self.relating_type_id = relating_type_id
 
 
+def get_constr_class_info(props, ifc_class):
+    return props.constr_classes[ifc_class] if ifc_class in props.constr_classes else None
+
+
 def update_preview_multiple(self, context):
-    if self.preview_multiple_constr_types:
-        ifc_class = self.ifc_class
-        relating_type_info = AuthoringData.relating_type_info(ifc_class)
-        if relating_type_info is None or not relating_type_info.fully_loaded:
-            AuthoringData.assetize_constr_class(ifc_class)
-    else:
-        update_relating_type(self, context)
+    if context.region is not None and context.region.type != "TOOL_HEADER":
+        if self.preview_multiple_constr_types:
+            ifc_class = self.ifc_class
+            constr_class_info = get_constr_class_info(self, ifc_class)
+            if constr_class_info is None or not constr_class_info.fully_loaded:
+                AuthoringData.assetize_constr_class(ifc_class)
+        else:
+            update_relating_type(self, context)
+
+
+class ConstrTypeInfo(PropertyGroup):
+    name: bpy.props.StringProperty(name="Construction type ID")
+    icon_id: bpy.props.IntProperty(name="Icon ID")
+    object: bpy.props.PointerProperty(name="Object", type=bpy.types.Object)
+
+
+class ConstrClassInfo(PropertyGroup):
+    name: bpy.props.StringProperty(name="Construction class")
+    constr_types: bpy.props.CollectionProperty(type=ConstrTypeInfo)
+    fully_loaded: bpy.props.BoolProperty(default=False)
+
+
+class ConstrBrowserState(PropertyGroup):
+    cursor_x: bpy.props.IntProperty()
+    cursor_y: bpy.props.IntProperty()
+    window_x: bpy.props.IntProperty()
+    window_y: bpy.props.IntProperty()
+    far_away_x: bpy.props.IntProperty(default=10)  # lower left corner to temporarily warp the mouse
+    far_away_y: bpy.props.IntProperty(default=10)  # useful to close popup operators
+    updating: bpy.props.BoolProperty()
+    update_delay: bpy.props.FloatProperty(default=3e-2)
 
 
 class BIMModelProperties(PropertyGroup):
@@ -120,6 +194,8 @@ class BIMModelProperties(PropertyGroup):
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type}
+    constr_classes: bpy.props.CollectionProperty(type=ConstrClassInfo)
+    constr_browser_state: bpy.props.PointerProperty(type=ConstrBrowserState)
     extrusion_depth: bpy.props.FloatProperty(default=42.0)
     cardinal_point: bpy.props.EnumProperty(
         items=(
@@ -148,13 +224,77 @@ class BIMModelProperties(PropertyGroup):
         default="5",
     )
     length: bpy.props.FloatProperty(default=42.0)
+    openings: bpy.props.CollectionProperty(type=ObjProperty)
+    x: bpy.props.FloatProperty(name="X", default=0.5)
+    y: bpy.props.FloatProperty(name="Y", default=0.5)
+    z: bpy.props.FloatProperty(name="Z", default=0.5)
+    rl1: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like walls, doors, flooring, skirting, etc
+    rl2: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like windows, other hosted furniture
+    x_angle: bpy.props.FloatProperty(name="X Angle", default=0)
+    type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
+    type_template: bpy.props.EnumProperty(
+        items=(
+            ("MESH", "Custom Mesh", ""),
+            ("LAYERSET_AXIS2", "Vertical Layers", ""),
+            ("LAYERSET_AXIS3", "Horizontal Layers", ""),
+            ("PROFILESET", "Extruded Profile", ""),
+            ("EMPTY", "Non-Geometric Type", ""),
+        ),
+        name="Type Template",
+        default="MESH",
+    )
+    type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
+    type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
 
 
-def get_relating_type_info(self, context):
-    return AuthoringData.relating_types(ifc_class=self.name)
+class BIMArrayProperties(PropertyGroup):
+    is_editing: bpy.props.IntProperty(default=-1)
+    count: bpy.props.IntProperty(name="Count", default=0)
+    x: bpy.props.FloatProperty(name="X", default=0)
+    y: bpy.props.FloatProperty(name="Y", default=0)
+    z: bpy.props.FloatProperty(name="Z", default=0)
 
 
-class ConstrTypeInfo(PropertyGroup):
-    name: bpy.props.StringProperty(name="Construction class")
-    relating_type: bpy.props.EnumProperty(name="Construction type", items=get_relating_type_info)
-    fully_loaded: bpy.props.BoolProperty(default=False)
+class BIMStairProperties(PropertyGroup):
+    stair_types = (
+        ("CONCRETE", "Concrete", ""),
+        ("WOOD/STEEL", "Wood / Steel", ""),
+    )
+
+    is_editing: bpy.props.IntProperty(default=-1)
+    width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01)
+    height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01)
+    number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
+    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01)
+    tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01)
+    base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0)
+    top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0)
+    has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
+    stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
+
+    def get_props_kwargs(self):
+        if self.stair_type == "CONCRETE":
+            return {
+                "stair_type": self.stair_type,
+                "width": self.width,
+                "height": self.height,
+                "number_of_treads": self.number_of_treads,
+                "tread_depth": self.tread_depth,
+                "tread_run": self.tread_run,
+                "base_slab_depth": self.base_slab_depth,
+                "top_slab_depth": self.top_slab_depth,
+                "has_top_nib": self.has_top_nib,
+            }
+        elif self.stair_type == "WOOD/STEEL":
+            return {
+                "stair_type": self.stair_type,
+                "width": self.width,
+                "height": self.height,
+                "number_of_treads": self.number_of_treads,
+                "tread_depth": self.tread_depth,
+                "tread_run": self.tread_run,
+            }
+
+
+class BIMSverchokProperties(PropertyGroup):
+    node_group: bpy.props.PointerProperty(name="Node Group", type=NodeTree)

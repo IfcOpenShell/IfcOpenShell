@@ -18,7 +18,29 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file):
+        """Add empty georeferencing entities to a model
+
+        By default, models are not georeferenced. Georeferencing requires two
+        entities: a definition of the projected coordinated reference system
+        (CRS) used, and the transformation parameters between any local coordinate
+        system and that projected CRS if any.
+
+        This function will create the entities to store the projected CRS and
+        map conversion transformation, but will leave all the parameters blank.
+        It is this the users responsibility to specify the correct
+        georeferencing parameters. See
+        ifcopenshell.api.georeference.edit_georeferencing.
+
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            ifcopenshell.api.run("georeference.add_georeferencing", model)
+        """
         self.file = file
 
     def execute(self):

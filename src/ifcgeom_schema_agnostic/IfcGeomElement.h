@@ -25,6 +25,7 @@
 
 #include "../ifcparse/Argument.h"
 #include "../ifcparse/IfcGlobalId.h"
+#include "../ifcparse/IfcLogger.h"
 
 #include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"

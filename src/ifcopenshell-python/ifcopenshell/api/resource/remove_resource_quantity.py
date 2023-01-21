@@ -20,11 +20,30 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, resource=None):
+        """Removes the base quantity of a resource
+
+        Example:
+
+        .. code:: python
+
+            # Add our own crew
+            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+
+            # Add some labour to our crew.
+            labour = ifcopenshell.api.run("resource.add_resource", model,
+                parent_resource=crew, ifc_class="IfcLaborResource")
+
+            # Labour resource is quantified in terms of time.
+            ifcopenshell.api.run("resource.add_resource_quantity", model,
+                resource=labour, ifc_class="IfcQuantityTime")
+
+            # Let's say we only want to store the resource but no quantities,
+            # let's clean up our mess and remove the quantity.
+            ifcopenshell.api.run("resource.remove_resource_quantity", model, resource=labour)
+        """
         self.file = file
-        self.settings = {"resource": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"resource": resource}
 
     def execute(self):
         old_quantity = self.settings["resource"].BaseQuantity

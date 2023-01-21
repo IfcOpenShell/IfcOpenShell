@@ -1,12 +1,14 @@
-name: Publish-ifcopenshell-multiplatform
+name: ci-ifcopenshell-pypi
 
 on:
-  push:
-    paths:
-      - '.github/workflows/ci-ifcopenshell-pypi.yml'
-      - 'src/ifcopenshell-python/ifcopenshell/**'
-    branches:
-      - v0.7.0
+  schedule:
+    #         ┌───────────── minute (0 - 59)
+    #         │  ┌───────────── hour (0 - 23)
+    #         │  │ ┌───────────── day of the month (1 - 31)
+    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         *  * * * *
+    - cron: "49 23 1 * *" # 11min before utc midnight
 
 env:
   major: 0
@@ -29,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py36, py37, py38, py39, py310]
+        pyver: [py36, py37, py38, py39, py310, py311]
         config:
           - {
             name: "Windows Build",
@@ -60,12 +62,12 @@ jobs:
       - name: Compile
         run: |
           pip install build
-          cp -r src/ifcopenshell-python src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          cd src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
       - name: Publish a Python distribution to PyPI
         uses: ortega2247/pypi-upload-action@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist
+          packages_dir: src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist

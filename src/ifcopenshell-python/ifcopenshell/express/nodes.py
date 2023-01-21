@@ -24,6 +24,7 @@ import string
 import operator
 import collections
 
+import bootstrap
 
 class Node:
     def __init__(self, s, loc, tokens, rule=None):
@@ -57,10 +58,18 @@ class ListNode:
         self.rule = rule or (type(self).__name__)
         self.tokens = tokens.asList()
         self.dict_tokens = collections.defaultdict(list)
+
+        rules_as_list = set()
         for t in self.tokens:
             r = getattr(t, 'rule', None)
             if r:
-                self.dict_tokens[r].append(t)                
+                rules_as_list.add(r)
+                self.dict_tokens[r].append(t)
+                
+        for r, t in tokens.asDict().items():
+            if r not in rules_as_list:
+                self.dict_tokens[r].append(t)
+                
         self.flat = sum([getattr(t, "flat", [t]) for t in self.tokens], [])
 
     def __repr__(self):
@@ -68,9 +77,10 @@ class ListNode:
 
     def __iter__(self):
         return iter(self.tokens)
-
-    def __getitem__(self, i):
-        return self.tokens[i]
+    
+    # Somehow indexing messes up the pyparsing results, so instead of x[0] use list(x)[0]
+    # def __getitem__(self, i):
+    #     return self.tokens[i]
 
     def init(self):
         pass
@@ -115,7 +125,7 @@ class TypeDeclaration(Node):
         self.where = []
         clause = self.where_clause
         if clause:
-            clause = clause[0]
+            clause = list(clause[0])
 
             self.where = [(r.simple_id, format_clause(r.expression[0])) for r in clause[1::2]]
 
@@ -170,7 +180,7 @@ class EntityDeclaration(Node):
         self.where = []
         clause = [r for r in self.entity_body[0] if r.rule == "where_clause"]
         if clause:
-            clause = clause[0]
+            clause = list(clause[0])
 
             self.where = [(r.simple_id, format_clause(r.expression[0])) for r in clause[1::2]]
 
@@ -178,7 +188,7 @@ class EntityDeclaration(Node):
         clause = [r for r in self.entity_body[0] if r.rule == "unique_clause"]
         if clause:
             clause = clause[0]
-            self.unique = [(r[0], r[2].simple_id) for r in clause[1::2]]
+            self.unique = [(r[0], r[2].simple_id) for r in map(list, list(clause)[1::2])]
 
     def __repr__(self):
         strm = io.StringIO()
@@ -222,7 +232,7 @@ class EntityDeclaration(Node):
 
 
 class EnumerationType(Node):
-    values = property(lambda self: self.enumeration_type[2][1::2])
+    values = property(lambda self: list(self.enumeration_type[2])[1::2])
 
     def __repr__(self):
         return "ENUMERATION OF (" + ",".join(self.values) + ")"
@@ -241,29 +251,160 @@ def do_try(fn):
     except: pass
 
 
+def get_rule_id(x):
+    if not isinstance(x, str):
+        x = type(x).__name__
+    matches = [k for k, v in bootstrap.actions.items() if v == x]
+    if matches:
+        return matches[0]
+
+rule_dependencies = {
+    k: list(map(operator.attrgetter('contents'), bootstrap.reduce(lambda x, y: x | y, (bootstrap.find_bytype(e, bootstrap.Keyword) for e in [v])))) \
+    for k, v in bootstrap.express
+}
+
+all_rules = [k for k, e in bootstrap.express]
+
+rule_definitions = {k: v for k, v in bootstrap.express}
+
 def to_tree(x, key=None):
-    def get_rule_id(x):
-        from bootstrap import actions
-        ty = type(x).__name__
-        matches = [k for k, v in actions.items() if v == ty]
-        if matches:
-            return matches[0]
         
     def prune(di):
-        import bootstrap
-        rule_dependencies = {
-            k: list(map(operator.attrgetter('contents'), bootstrap.reduce(lambda x, y: x | y, (bootstrap.find_bytype(e, bootstrap.Keyword) for e in [v])))) \
-            for k, v in bootstrap.express
-        }        
-        subrules = list(filter(str.islower, rule_dependencies[key]))
-        return {k: v for k, v in di.items() if k in subrules}
+        # translate class names back to grammar rules if nested actions are encountered
+        di = {get_rule_id(k) or k: v for k, v in di.items()}
+        
+        def replace_synonyms(x):
+            for y in x:
+                yield y
+                if False: # y in di:
+                    # production element from grammar is found in parsed data,
+                    # return that.
+
+                    # we now always explore other synonym, because more often than not we loose data otherwise
+                    yield y
+                else:
+                    # lookup rule
+                    rule = [e for k, e in bootstrap.express if k == y][0]
+
+                    def is_synonym(rl):
+                        if isinstance(rl, bootstrap.Term) and isinstance(rl.contents, bootstrap.Keyword):
+                            return rl.contents.contents
+
+                    # is this a synonym? then processs that
+                    if S := is_synonym(rule):
+                        yield S
+                        # Do this recursively
+                        yield from replace_synonyms([S])
+                    
+                    # is this a concatenation with zero or more synonyms? then also processs that
+                    # @todo catches:
+                    #    - simple_expression = term { add_like_op term } .
+                    # but should probably also work on
+                    #    - a = b { b }
+                    # in which case the second Concat would be eliminated
+                    elif isinstance(rule, bootstrap.Concat) and \
+                            len(rule.contents) == 2 and \
+                            is_synonym(rule.contents[0]) and \
+                            isinstance(rule.contents[1].contents, bootstrap.Repeated) and \
+                            isinstance(rule.contents[1].contents.contents[0], bootstrap.Concat) and \
+                            str(rule.contents[1].contents.contents[0].contents[1]) == str(rule.contents[0]):
+                        S = is_synonym(rule.contents[0])
+                        yield S
+                        # Do this recursively
+                        yield from replace_synonyms([S])
+
+        subrules = list(replace_synonyms(rule_dependencies[key]))
+
+        if key == "aggregation_types":
+            # hack hack hack apparently the parser can't distinguish these
+            subrules += list(replace_synonyms(rule_dependencies["general_aggregation_types"]))
+        
+        if rule_dependencies[key] and not subrules:
+            # sometimes an intermediate production rule is missing
+            # from the pyparsing output, e.g from parameter to simple_expression
+            # directly. Recover from this.
+            subrules = sum(map(rule_dependencies.__getitem__, rule_dependencies[key]), [])
+        
+        if not isinstance(rule_definitions[key], bootstrap.Union):
+            # Filter out terminals when not a union. E.g no
+            # reason to retain TYPE, END_TYPE, but operators
+            # such as IN, LIKE should be retained.
+            subrules = list(filter(str.islower, subrules))
+
+        vs = list(di.values())
+
+        return {k: v for k, v in di.items() if k in subrules or (k == key and len(vs) == 1 and vs[0] not in all_rules)}
+        
+    def simplify(di):
+        if isinstance(di, list):
+            if set(map(type, di)) == {str} and set(map(len, di)) == {1}:
+                return "".join(di)
+            return [simplify(v) for v in di]
+        elif isinstance(di, dict) and len(di) == 1 and next(iter(di.values())) == {}:
+            return next(iter(di.keys()))
+        elif isinstance(di, dict):
+            return {k: simplify(v) for k, v in di.items()}
+        else:
+            return di
         
     if isinstance(x, ListNode):
-        return to_tree(x.dict_tokens, key=get_rule_id(x) or key)
-    if isinstance(x, Node,):
-        return to_tree(x.tokens, key=get_rule_id(x) or key)
+        d = to_tree(x.dict_tokens, key=get_rule_id(x) or key)
+
+        if key == 'if_stmt':
+            # The definition of if statement if (roughy):
+            #   'if' expr 'then' stmt+ 'else' stmt+
+            # this causes stmt to be joined under the same
+            # dict key. The code below creates an artifical
+            # `else_stmt` that collects the second group
+            # of stmts.
+
+            statements = x.dict_tokens['stmt']
+            
+            else_index = None
+            if_nesting = 0
+            for i, tk in enumerate(x.flat): 
+                if tk == 'if': if_nesting += 1
+                if tk == 'end_if': if_nesting -= 1
+                if tk == 'else' and if_nesting == 1:
+                    else_index = i
+
+            if else_index:
+                indices = []
+                for s in statements:
+                    for i in range(max(indices, default=0), len(x.flat)):
+                        if x.flat[i:i+len(s.flat)] == s.flat:
+                            indices.append(i)
+                            break
+
+                assert len(indices) == len(statements)
+                before_else = [i < else_index for i in indices]
+
+                else_stmt = [st for b, st in zip(before_else, d['stmt']) if not b]
+                d['stmt'] = [st for b, st in zip(before_else, d['stmt']) if b]
+
+                if else_stmt:
+                    d['else_stmt'] = else_stmt
+        
+        if key == 'formal_parameter':
+            # Not so pretty hack to fix the overwriting of simple_id-like
+            # ast nodes. The full solution would probably to register parse
+            # actions. And directly reassign.
+            pid = d['parameter_id'][0][0]
+            d['parameter_id'][0] = x.flat[:x.flat.index(pid)+1:2]
+
+        if key is None:
+            return {get_rule_id(x): d}
+        return d
+    elif isinstance(x, Node):
+        d = to_tree(x.tokens, key=get_rule_id(x) or key)
+        if key is None:
+            return {get_rule_id(x): d}
+        return d
     elif isinstance(x, dict):
-        return prune({k: to_tree(v, key=k) for k, v in x.items()})
+        # d = {k: to_tree(v, key=k) for k, v in x.items()}
+        # not fully understood, but when finding specific node Types and production rules, prioritize the former
+        d = {get_rule_id(k) or k: to_tree(v, key=k) for k, v in sorted(x.items(), key=lambda p: get_rule_id(p[0]) is not None)}
+        return simplify(prune(d))
     elif isinstance(x, list):
         return [to_tree(v, key=key) for v in x]
     else:
@@ -306,7 +447,7 @@ class AggregationType(Node):
 
 
 class SelectType(Node):
-    values = property(lambda self: self.select_type[1][1::2])
+    values = property(lambda self: list(self.select_type[1])[1::2])
 
     def __repr__(self):
         return "SELECT (" + ",".join(map(str, self.values)) + ")"
@@ -321,7 +462,7 @@ class SuperTypeExpression(Node):
         else:
             constraint = self.supertype_rule[0]
         return [
-            s[0][0].simple_id for s in constraint.subtype_constraint[0].supertype_expression[0][0][0].one_of[0][2::2]
+            list(list(s)[0])[0].simple_id for s in list(list(list(constraint.subtype_constraint[0].supertype_expression[0])[0])[0].one_of[0])[2::2]
         ]
 
     sub_types = property(get_sub_types)
@@ -418,7 +559,7 @@ class WidthSpec(Node):
     fixed = property(lambda self: self.FIXED is not None)
 
     def init(self):
-        self.width = int("".join(self.width[0].flat))
+        self.width = int("".join(list(self.width)[0].flat))
 
     def __repr__(self):
         return "(%d)%s" % (self.width, " fixed" if self.fixed else "")
@@ -432,3 +573,16 @@ class StringType(Node):
         if self.width:
             s += " " + repr(self.width)
         return s
+
+
+class ProcedureDeclaration(ListNode):
+    @property
+    def name(self):
+        return self.flat[1]
+        
+        
+class FunctionDeclaration(ProcedureDeclaration):
+    pass
+    
+class RuleDeclaration(ProcedureDeclaration):
+    pass

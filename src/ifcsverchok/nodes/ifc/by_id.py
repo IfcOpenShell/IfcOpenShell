@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -17,31 +16,39 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import bpy
-import ifcopenshell
 import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
+from sverchok.data_structure import updateNode, flatten_data
 
 
 class SvIfcById(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcById"
     bl_label = "IFC By Id"
-    file: StringProperty(name="file", update=updateNode)
-    id: StringProperty(name="id", update=updateNode)
+    id: StringProperty(
+        name="Id(s)",
+        update=updateNode,
+    )
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "file").prop_name = "file"
         self.inputs.new("SvStringsSocket", "id").prop_name = "id"
-        self.outputs.new("SvStringsSocket", "entity")
+        self.outputs.new("SvStringsSocket", "Entities")
+
+    def draw_buttons(self, context, layout):
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Get IFC element by step id. Takes one or multiple step ids."
 
     def process(self):
-        self.sv_input_names = ["file", "id"]
-        super().process()
-
-    def process_ifc(self, file, id):
-        self.outputs["entity"].sv_set([[file.by_id(int(id))]])
+        self.ids = flatten_data(self.inputs["id"].sv_get(), target_level=1)
+        if not self.ids[0]:
+            return
+        self.file = SvIfcStore.get_file()
+        self.entities = [self.file.by_id(int(step_id)) for step_id in self.ids]
+        self.outputs["Entities"].sv_set(self.entities)
 
 
 def register():

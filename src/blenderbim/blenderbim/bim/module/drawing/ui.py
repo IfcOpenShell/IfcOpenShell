@@ -170,13 +170,16 @@ class BIM_PT_drawings(Panel):
             if self.props.active_drawing_index < len(self.props.drawings):
                 active_drawing = self.props.drawings[self.props.active_drawing_index]
                 row = self.layout.row(align=True)
-                row.alignment = "RIGHT"
+                col = row.column()
+                col.alignment = "LEFT"
+                col.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
+                col = row.column()
+                col.alignment = "RIGHT"
                 op = row.operator("bim.open_view", icon="URL", text="")
                 op.view = active_drawing.name
                 op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
                 op.drawing = active_drawing.ifc_definition_id
                 row.operator("bim.create_drawing", text="", icon="OUTPUT")
-                row.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
@@ -311,6 +314,7 @@ class BIM_PT_product_assignments(Panel):
             row = self.layout.row(align=True)
             row.label(text=ProductAssignmentsData.data["relating_product"] or "No Relating Product", icon="OBJECT_DATA")
             row.operator("bim.enable_editing_assigned_product", icon="GREASEPENCIL", text="")
+            row.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
 
 
 class BIM_PT_text(Panel):
@@ -373,7 +377,7 @@ class BIM_PT_annotation_utilities(Panel):
         op.data_type = "curve"
         op = row.operator("bim.add_annotation", text="Angle", icon="DRIVER_ROTATIONAL_DIFFERENCE")
         op.object_type = "ANGLE"
-        op.data_type = "mesh"
+        op.data_type = "curve"
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Radius", icon="FORWARD")
@@ -421,6 +425,7 @@ class BIM_PT_annotation_utilities(Panel):
 
         row = layout.row(align=True)
         row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
+        row.enabled = context.scene.camera is not None
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):

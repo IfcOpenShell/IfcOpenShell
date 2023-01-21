@@ -18,11 +18,26 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, reference=None):
+        """Remove a document reference
+
+        All associations with objects are removed.
+
+        :param reference: The IfcDocumentReference to remove
+        :type reference: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            document = ifcopenshell.api.run("document.add_information", model)
+            reference = ifcopenshell.api.run("document.add_reference", model, information=document)
+            ifcopenshell.api.run("document.remove_reference", model, reference=reference)
+        """
         self.file = file
-        self.settings = {"reference": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"reference": reference}
 
     def execute(self):
         for rel in self.settings["reference"].DocumentRefForObjects or []:

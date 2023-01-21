@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -22,12 +22,35 @@ import ifcopenshell
 
 class Usecase:
     def __init__(self, version: str = "IFC4"):
-        """Create File
+        """Create a blank IFC model file object
 
-        Create a new IFC file object
+        Create a new IFC file object based on the nominated schema version. The
+        schema version you choose determines what type of IFC data you can store
+        in this model. The file is blank and contains no entities.
 
-        :param version: The schema version of the IFC file. Choose from "IFC2X3" or "IFC4".
-        :return: file: The created IFC file object.
+        It also sets up header data for STEP file serialisation, such as the
+        current timestamp, IfcOpenShell as the preprocessor, and defaults to a
+        DesignTransferView MVD.
+
+        :param version: The schema version of the IFC file. Choose from
+            "IFC2X3", "IFC4", or "IFC4X3". If you have loaded in a custom
+            schema, you may specify that schema identifier here too.
+        :type version: str, optional
+        :return: The created IFC file object.
+        :rtype: ifcopenshell.file.file
+
+        Example:
+
+        .. code:: python
+
+            # Start a new model.
+            model = ifcopenshell.api.run("project.create_file")
+
+            # It's currently a blank model, so typically the first thing we do
+            # is create a project in it.
+            project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="Test")
+
+            # ... and off we go!
         """
         self.settings = {"version": version}
 

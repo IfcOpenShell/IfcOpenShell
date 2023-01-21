@@ -18,11 +18,30 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, work_time=None):
+        """Removes a work time
+
+        :param work_time: The IfcWorkTime to remove.
+        :type work_time: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's create a new calendar.
+            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+
+            # Let's start defining the times that we work during the week.
+            work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+                work_calendar=calendar, time_type="WorkingTimes")
+
+            # And remove it immediately
+            ifcopenshell.api.run("sequence.remove_work_time", model, work_time=work_time)
+        """
         self.file = file
-        self.settings = {"work_time": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"work_time": work_time}
 
     def execute(self):
         self.file.remove(self.settings["work_time"])

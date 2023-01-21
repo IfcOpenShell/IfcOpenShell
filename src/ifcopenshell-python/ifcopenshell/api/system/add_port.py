@@ -21,13 +21,40 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, element=None):
+        """Adds a new distribution port to an element
+
+        A distribution port represents a connection point on an element, where
+        a distribution element may be connected to another distribution element.
+        For example, a duct segment will typically have two ports, one at either
+        end, because you can attach another segment or fitting to either end of
+        the duct segment.
+
+        This will both add a distribution port and automatically assign it to a
+        distribution element.
+
+        :param element: The IfcDistributionElement you want to add a
+            distribution port to.
+        :type element: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created IfcDistributionPort
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # Create a duct
+            duct = ifcopenshell.api.run("root.create_entity", model,
+                ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
+
+            # Create 2 ports, one for either end.
+            port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
+            port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
+        """
         self.file = file
         self.settings = {
-            "element": None,
+            "element": element,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         port = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDistributionPort")

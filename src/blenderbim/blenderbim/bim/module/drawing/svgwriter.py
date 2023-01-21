@@ -34,6 +34,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 from mathutils import Vector
 from mathutils import geometry
 from blenderbim.bim.ifc import IfcStore
+from bpy_extras import view3d_utils
 
 
 class External(svgwrite.container.Group):
@@ -619,19 +620,49 @@ class SvgWriter:
             )
 
     def draw_angle_annotations(self, obj):
+        points = obj.data.splines[0].points
+        region = bpy.context.region
+        region_3d = bpy.context.area.spaces.active.region_3d
+        points_chunked = [points[i:i+3] for i in range(len(points)-2)]
+
+        for points_chunk in points_chunked:
+            points_2d = [view3d_utils.location_3d_to_region_2d(region, region_3d, p.co.xyz) for p in points_chunk]
+
+            edge0 = points_2d[0] - points_2d[1]
+            edge1 = points_2d[2] - points_2d[1]
+            angle_radius = min(edge0.length, edge1.length)
+            dir0 = edge0.normalized()
+            dir1 = edge1.normalized()
+            dir2 = ((dir0 + dir1) / 2).normalized()
+
+            # calculate p3 which is the center of the arc
+            # to use draw_svg_3point_arc()
+            p3 = points_2d[1] + dir2 * angle_radius
+
+            # make all edges the same radius
+            p0 = points_2d[1] + dir0 * angle_radius
+            p2 = points_2d[1] + dir1 * angle_radius
+            points_chunk = [view3d_utils.region_2d_to_origin_3d(region, region_3d, p) for p in [p0, p3, p2]]
+            # points = [p.co.xyz for p in bpy.context.object.data.splines[0].points[:3]]
+
+            bm = bmesh.new()
+            bm.verts.index_update()
+            bm.edges.index_update()
+            new_verts = [bm.verts.new(p) for p in points_chunk]
+            new_edges = [bm.edges.new( (new_verts[e[0]], new_verts[e[1]]) ) for e in ((0, 1), (1, 2))]
+            self.draw_svg_3point_arc(obj, bm)
+
+    def draw_svg_3point_arc(self, obj, bm):
         # This implementation uses an SVG arc, which means that it can only draw
         # arcs that are orthogonal to the view (e.g. not arcs in 3D).
         # Gosh this is bad code :(
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+
+        points = [v.co for v in bm.verts][:3]
+        center = tool.Cad.get_center_of_arc(points, obj)
         classes = self.get_attribute_classes(obj)
         matrix_world = obj.matrix_world
-
-        points = [v.co for v in obj.data.vertices][:3]
-        center = tool.Cad.get_center_of_arc(points, obj)
-
-        bm = bmesh.new()
-        bm.from_mesh(obj.data)
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
         bm.verts.ensure_lookup_table()
         arc_end_verts = [v for v in bm.verts if len(v.link_edges) == 1]
         arc_end_pts = [matrix_world @ v.co for v in arc_end_verts]
@@ -680,11 +711,11 @@ class SvgWriter:
 
         # Center of gravity of all vertices, used to help position the text
         cog = Vector((0, 0, 0))
-        for vert in obj.data.vertices:
-            cog += vert.co
-        cog = matrix_world @ (cog / len(obj.data.vertices))
+        for point in points:
+            cog += point
+        cog = matrix_world @ (cog / len(points))
 
-        radius = ((matrix_world @ obj.data.vertices[0].co) - center).length
+        radius = ((matrix_world @ points[0]) - center).length
 
         arc_midpoint = center + ((cog - center).normalized() * radius)
 

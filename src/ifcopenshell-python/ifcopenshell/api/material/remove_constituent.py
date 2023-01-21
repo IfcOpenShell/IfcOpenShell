@@ -18,11 +18,41 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, constituent=None):
+        """Removes a constituent from a constituent set
+
+        Note that it is invalid to have zero items in a set, so you should leave
+        at least one constituent to ensure a valid IFC dataset.
+
+        :param constituent: The IfcMaterialConstituent entity you want to remove
+        :type constituent: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Create a material set for windows made out of aluminium and glass.
+            material_set = ifcopenshell.api.run("material.add_material_set", model,
+                name="Window", set_type="IfcMaterialConstituentSet")
+
+            aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
+            glass = ifcopenshell.api.run("material.add_material", model, name="GLZ01", category="glass")
+
+            # Now let's use those materials as two constituents in our set.
+            framing = ifcopenshell.api.run("material.add_constituent", model,
+                constituent_set=material_set, material=aluminium)
+            glazing = ifcopenshell.api.run("material.add_constituent", model,
+                constituent_set=material_set, material=glass)
+
+            # Let's remove the glass constituent. Note that we should not remove
+            # the framing, at this would mean there are no constituents which is
+            # invalid.
+            ifcopenshell.api.run("material.remove_constituent", model, constituent=glazing)
+        """
         self.file = file
-        self.settings = {"constituent": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"constituent": constituent}
 
     def execute(self):
         self.file.remove(self.settings["constituent"])

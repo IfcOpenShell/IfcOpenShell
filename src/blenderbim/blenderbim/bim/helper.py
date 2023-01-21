@@ -23,8 +23,11 @@ import math
 import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
+from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 from mathutils import geometry
 from mathutils import Vector
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -41,16 +44,25 @@ def draw_attribute(attribute, layout, copy_operator=None):
         return
     if value_name == "enum_value":
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
+    elif attribute.name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"]:
+        propis = bpy.context.scene.BIMWorkScheduleProperties
+        for item in propis.durations_attributes:
+            if item.name == attribute.name:
+                duration_props = item
+                layout.label(text=attribute.name)
+                layout.prop(duration_props, "years", text="Y")
+                layout.prop(duration_props, "months", text="M")
+                layout.prop(duration_props, "days", text="D")
+                layout.prop(duration_props, "hours", text="H")
+                layout.prop(duration_props, "minutes", text="Min")
+                layout.prop(duration_props, "seconds", text="S")
+                break
     else:
         layout.prop(
             attribute,
             value_name,
             text=attribute.name,
         )
-    if "ScheduleDuration" in attribute.name:
-        layout.prop(bpy.context.scene.BIMDuration, "duration_days", text="D")
-        layout.prop(bpy.context.scene.BIMDuration, "duration_hours", text="H")
-        layout.prop(bpy.context.scene.BIMDuration, "duration_minutes", text="M")
 
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
@@ -83,6 +95,7 @@ def import_attribute(attribute, props, data, callback=None):
     new.is_null = data[attribute.name()] is None
     new.is_optional = attribute.optional()
     new.data_type = data_type if isinstance(data_type, str) else ""
+    new.ifc_class = data["type"]
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
 
     if is_handled_by_callback:
@@ -90,19 +103,66 @@ def import_attribute(attribute, props, data, callback=None):
     elif is_handled_by_callback is False:
         props.remove(len(props) - 1)
     elif data_type == "string":
-        new.string_value = "" if new.is_null else data[attribute.name()]
+        new.string_value = "" if new.is_null else str(data[attribute.name()])
         if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
             new.is_uri = True
     elif data_type == "boolean":
-        new.bool_value = False if new.is_null else data[attribute.name()]
+        new.bool_value = False if new.is_null else bool(data[attribute.name()])
     elif data_type == "integer":
-        new.int_value = 0 if new.is_null else data[attribute.name()]
+        new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
-        new.float_value = 0.0 if new.is_null else data[attribute.name()]
+        new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
-        new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-        if data[attribute.name()]:
-            new.enum_value = data[attribute.name()]
+        enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
+        new.enum_items = json.dumps(enum_items)
+        add_attribute_enum_items_descriptions(new, enum_items)
+        if data[new.name]:
+            new.enum_value = data[new.name]
+    add_attribute_description(new, data)
+    add_attribute_min_max(new)
+
+
+ATTRIBUTE_MIN_MAX_CONSTRAINTS = {"IfcMaterialLayer": {"Priority": {"value_min": 0, "value_max": 100}}}
+
+
+def add_attribute_min_max(attribute_blender):
+    if attribute_blender.ifc_class in ATTRIBUTE_MIN_MAX_CONSTRAINTS:
+        constraints = ATTRIBUTE_MIN_MAX_CONSTRAINTS[attribute_blender.ifc_class].get(attribute_blender.name, {})
+        for constraint, value in constraints.items():
+            setattr(attribute_blender, constraint, value)
+            setattr(attribute_blender, constraint + "_constraint", True)
+
+
+def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
+    attribute_blender.enum_descriptions.clear()
+    if isinstance(enum_items, dict):
+        enum_items = enum_items.keys()
+    version = tool.Ifc.get_schema()
+    for enum_item in enum_items:
+        new_enum_description = attribute_blender.enum_descriptions.add()
+        try:
+            description = get_predefined_type_doc(version, attribute_blender.ifc_class, enum_item) or ""
+        except KeyError:  # TODO this only supports predefined type enums. Add support for other types of enums ?
+            description = ""
+        new_enum_description.name = description
+
+
+def add_attribute_description(attribute_blender, attribute_ifc=None):
+    if not attribute_blender.name:
+        return
+    version = tool.Ifc.get_schema()
+    description = ""
+    try:
+        description = get_attribute_doc(version, attribute_blender.ifc_class, attribute_blender.name)
+    except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
+        doc = get_property_doc(version, attribute_blender.ifc_class, attribute_blender.name)
+        if doc:
+            description = doc.get("description", "")
+        else:  # It's a custom property set. Check if this attribute has a description
+            if attribute_ifc is not None:
+                description = getattr(attribute_ifc, "Description", "")
+    if description:
+        attribute_blender.description = description
 
 
 def export_attributes(props, callback=None):
@@ -118,14 +178,18 @@ def export_attributes(props, callback=None):
 def prop_with_search(layout, data, prop_name, **kwargs):
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
-    # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
-    row.context_pointer_set(name="data", data=data)
     row.prop(data, prop_name, **kwargs)
-    op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
-    op.prop_name = prop_name
+    try:
+        if len(get_enum_items(data, prop_name)) > 10:
+            # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
+            row.context_pointer_set(name="data", data=data)
+            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+            op.prop_name = prop_name
+    except TypeError:  # Prop is not iterable
+        pass
 
 
-def get_enum_items(data, prop_name, context):
+def get_enum_items(data, prop_name, context=None):
     # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
     # Or throws an error in the console when the items callback returns an empty list
     # See https://blender.stackexchange.com/q/215781/86891
@@ -135,7 +199,7 @@ def get_enum_items(data, prop_name, context):
         return
     if not isinstance(items, (list, tuple)):
         # items are retrieved through a callback, not a static list :
-        items = items(data, context)
+        items = items(data, context or bpy.context)
     return items
 
 
@@ -144,6 +208,12 @@ def get_obj_ifc_definition_id(context, obj, obj_type):
         return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
     elif obj_type == "Material":
         return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "MaterialSet":
+        return ifcopenshell.util.element.get_material(
+            tool.Ifc.get_entity(bpy.data.objects.get(obj)), should_skip_usage=True
+        ).id()
+    elif obj_type == "MaterialSetItem":
+        return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
     elif obj_type == "Task":
         return context.scene.BIMTaskTreeProperties.tasks[
             context.scene.BIMWorkScheduleProperties.active_task_index

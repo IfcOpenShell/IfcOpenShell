@@ -18,11 +18,30 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, organisation=None, attributes=None):
+        """Edits the attributes of an IfcOrganization
+
+        For more information about the attributes and data types of an
+        IfcOrganization, consult the IFC documentation.
+
+        :param organisation: The IfcOrganization entity you want to edit
+        :type organisation: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            organisation = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="AWB", name="Architects With Ballpens")
+            ifcopenshell.api.run("owner.edit_organisation", model, organisation=organisation,
+                attributes={"name": "Architects Without Ballpens"})
+        """
         self.file = file
-        self.settings = {"organisation": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"organisation": organisation, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

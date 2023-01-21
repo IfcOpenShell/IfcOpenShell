@@ -18,11 +18,26 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, library=None):
+        """Removes a library
+
+        All references along with their relationships will also be removed. Any
+        products which have relationships to this library will not be removed.
+
+        :param library: The IfcLibraryInformation entity you want to remove
+        :type library: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+            ifcopenshell.api.run("library.remove_library", model, library=library)
+        """
         self.file = file
-        self.settings = {"library": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"library": library}
 
     def execute(self):
         for reference in set(self.settings["library"].HasLibraryReferences or []):

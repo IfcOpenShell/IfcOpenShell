@@ -18,11 +18,31 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, information=None, attributes=None):
+        """Edits the attributes of an IfcDocumentInformation
+
+        For more information about the attributes and data types of an
+        IfcDocumentInformation, consult the IFC documentation.
+
+        :param reference: The IfcDocumentInformation entity you want to edit
+        :type reference: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            document = ifcopenshell.api.run("document.add_information", model)
+            ifcopenshell.api.run("document.edit_information", model,
+                information=document,
+                attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
+                "Location": "A-GA-6100 - Overall Plan.pdf"})
+        """
         self.file = file
-        self.settings = {"information": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"information": information, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

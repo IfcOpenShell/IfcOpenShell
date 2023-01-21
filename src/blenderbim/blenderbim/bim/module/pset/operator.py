@@ -27,11 +27,13 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.pset as core
+import blenderbim.core.qto as QtoCore
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
+from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 
 
 class Operator:
@@ -46,6 +48,10 @@ def get_pset_props(context, obj, obj_type):
         return bpy.data.objects.get(obj).PsetProperties
     elif obj_type == "Material":
         return bpy.data.materials.get(obj).PsetProperties
+    elif obj_type == "MaterialSet":
+        return bpy.data.objects.get(obj).MaterialSetPsetProperties
+    elif obj_type == "MaterialSetItem":
+        return bpy.data.objects.get(obj).MaterialSetItemPsetProperties
     elif obj_type == "Task":
         return context.scene.TaskPsetProperties
     elif obj_type == "Resource":
@@ -100,13 +106,13 @@ class EnablePsetEditing(bpy.types.Operator):
             if not prop_template.is_a("IfcSimplePropertyTemplate"):
                 continue  # Other types not yet supported
             if prop_template.TemplateType == "P_SINGLEVALUE":
-                self.load_single_value(prop_template, data)
+                self.load_single_value(pset_template, prop_template, data)
             elif prop_template.TemplateType.startswith("Q_"):
-                self.load_single_value(prop_template, data)
+                self.load_single_value(pset_template, prop_template, data)
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 self.load_enumerated_value(prop_template, data)
 
-    def load_single_value(self, prop_template, data):
+    def load_single_value(self, pset_template, prop_template, data):
         prop = self.props.properties.add()
         prop.name = prop_template.Name
         prop.value_type = "IfcPropertySingleValue"
@@ -115,16 +121,20 @@ class EnablePsetEditing(bpy.types.Operator):
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
         metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
+        metadata.has_calculator = bool(mapper.get(pset_template.Name, {}).get(prop_template.Name, None))
         metadata.data_type = self.get_data_type(prop_template)
 
         if metadata.data_type == "string":
-            metadata.string_value = "" if metadata.is_null else data[prop_template.Name]
+            metadata.string_value = "" if metadata.is_null else str(data[prop_template.Name])
         elif metadata.data_type == "integer":
-            metadata.int_value = 0 if metadata.is_null else data[prop_template.Name]
+            metadata.int_value = 0 if metadata.is_null else int(data[prop_template.Name])
         elif metadata.data_type == "float":
-            metadata.float_value = 0.0 if metadata.is_null else data[prop_template.Name]
+            metadata.float_value = 0.0 if metadata.is_null else float(data[prop_template.Name])
         elif metadata.data_type == "boolean":
-            metadata.bool_value = False if metadata.is_null else data[prop_template.Name]
+            metadata.bool_value = False if metadata.is_null else bool(data[prop_template.Name])
+
+        metadata.ifc_class = pset_template.Name
+        blenderbim.bim.helper.add_attribute_description(metadata, prop_template)
 
     def get_data_type(self, prop_template):
         if prop_template.TemplateType in ["Q_LENGTH", "Q_AREA", "Q_VOLUME", "Q_WEIGHT", "Q_TIME"]:
@@ -326,6 +336,7 @@ class AddQto(bpy.types.Operator, Operator):
     bl_idname = "bim.add_qto"
     bl_label = "Add Qto"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add Quantity Take Off"
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
@@ -342,6 +353,43 @@ class AddQto(bpy.types.Operator, Operator):
             },
         )
         Data.load(IfcStore.get_file(), ifc_definition_id)
+
+
+class CalculateQuantity(bpy.types.Operator):
+    bl_idname = "bim.calculate_quantity"
+    bl_label = "Calculate Quantity"
+    bl_options = {"REGISTER", "UNDO"}
+    prop: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.qto_calculator = QtoCalculator()
+        obj = context.active_object
+        prop = obj.PsetProperties.properties.get(self.prop)
+        prop.metadata.float_value = self.calculate_quantity(obj, context)
+        return {"FINISHED"}
+
+    def calculate_quantity(self, obj, context):
+        quantity = self.qto_calculator.calculate_quantity(obj.PsetProperties.active_pset_name, self.prop, obj)
+        prefix, name = self.get_blender_prefix_name(context)
+        quantity = ifcopenshell.util.unit.convert(quantity, None, "METRE", prefix, name)
+        return round(quantity, 3)
+
+    def get_prefix_name(self, value):
+        if "/" in value:
+            return value.split("/")
+        return None, value
+
+    def get_blender_prefix_name(self, context):
+        unit_settings = context.scene.unit_settings
+        if unit_settings.system == "IMPERIAL":
+            if unit_settings.length_unit == "INCHES":
+                return None, "inch"
+            elif unit_settings.length_unit == "FEET":
+                return None, "foot"
+        elif unit_settings.system == "METRIC":
+            if unit_settings.length_unit == "METERS":
+                return None, "METRE"
+            return unit_settings.length_unit[0 : -len("METERS")], "METRE"
 
 
 class GuessQuantity(bpy.types.Operator):
@@ -388,33 +436,6 @@ class GuessQuantity(bpy.types.Operator):
             if unit_settings.length_unit == "METERS":
                 return None, "METRE"
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
-
-
-class GuessAllQuantities(bpy.types.Operator):
-    bl_idname = "bim.guess_all_quantities"
-    bl_label = "Guess All Quantities"
-    bl_options = {"REGISTER", "UNDO"}
-    pset_id: bpy.props.IntProperty()
-    obj_name: bpy.props.StringProperty()
-    obj_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        self.qto_calculator = QtoCalculator()
-        obj = context.active_object
-        bpy.ops.bim.enable_pset_editing(pset_id=self.pset_id, obj=self.obj_name, obj_type=self.obj_type)
-        for prop in obj.PsetProperties.properties:
-            if (
-                "length" in prop.name.lower()
-                or "area" in prop.name.lower()
-                or "volume" in prop.name.lower()
-                or "width" in prop.name.lower()
-                or "height" in prop.name.lower()
-                or "depth" in prop.name.lower()
-                or "perimeter" in prop.name.lower()
-            ):
-                bpy.ops.bim.guess_quantity(prop=prop.name)
-        bpy.ops.bim.edit_pset(obj=self.obj_name, obj_type=self.obj_type)
-        return {"FINISHED"}
 
 
 class CopyPropertyToSelection(bpy.types.Operator, Operator):

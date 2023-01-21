@@ -24,15 +24,11 @@ from blenderbim.bim.ifc import IfcStore
 class BIM_PT_search(Panel):
     bl_label = "IFC Search"
     bl_idname = "BIM_PT_search"
-    bl_options = {"DEFAULT_CLOSED"}
+    # bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration"
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
+    bl_parent_id = "BIM_PT_selection"
 
     def draw(self, context):
         props = context.scene.BIMSearchProperties
@@ -111,11 +107,7 @@ class BIM_PT_IFCSelector(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration"
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
+    bl_parent_id = "BIM_PT_selection"
 
     def draw(self, context):
         layout = self.layout
@@ -232,7 +224,7 @@ class IfcSelectorUI:
             row.prop(f, "selector", text="")
 
             if f.selector == "Attribute":
-                row.prop(f, "attribute", text="")
+                row.prop_search(f, "active_option", f, "options", text="", results_are_suggestions=True)
                 row.prop(
                     f,
                     "negation",

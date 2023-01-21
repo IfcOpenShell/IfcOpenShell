@@ -24,6 +24,7 @@
 #include <gp_Trsf2d.hxx>
 #include <gp_Ax2d.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -44,7 +45,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement2D* l, gp_Trsf2d
 
 	gp_Ax2d axis(gp_Pnt2d(P.X(),P.Y()), gp_Dir2d(V.X(),V.Y()));
 	
-	if (!axis_equal(axis, gp_Ax2d(), getValue(GV_PRECISION))) {
+	if (!util::axis_equal(axis, gp_Ax2d(), getValue(GV_PRECISION))) {
 		trsf.SetTransformation(axis, gp_Ax2d());
 	}
 

@@ -26,6 +26,7 @@ from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
+from blenderbim.bim.module.model.data import AuthoringData
 from ifcopenshell.api.material.data import Data as MaterialData
 from ifcopenshell.api.type.data import Data as TypeData
 
@@ -301,3 +302,4 @@ def setDefaultProperties(scene):
         drawing_style.name = "Blender Default"
         drawing_style.render_type = "DEFAULT"
         bpy.ops.bim.save_drawing_style(index="2")
+        AuthoringData.type_thumbnails = {}

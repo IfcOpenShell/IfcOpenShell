@@ -74,3 +74,7 @@ def create_project(ifc, project, schema=None, template=None):
 
     if template:
         project.append_all_types_from_template(template)
+
+    project.load_default_thumbnails()
+    project.set_default_context()
+    project.set_default_modeling_dimensions()

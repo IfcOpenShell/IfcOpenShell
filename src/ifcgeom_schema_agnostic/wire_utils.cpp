@@ -2,11 +2,14 @@
 
 #include "../ifcparse/IfcLogger.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../ifcgeom_schema_agnostic/boolean_utils.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
+#include <ShapeFix_Wire.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -19,6 +22,9 @@
 #include <ShapeExtend_WireData.hxx>
 #include <Standard_Version.hxx>
 #include <GeomAPI_ExtremaCurveCurve.hxx>
+#include <BRepOffsetAPI_Sewing.hxx>
+#include <ShapeFix_Solid.hxx>
+#include <ShapeFix_ShapeTolerance.hxx>
 
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm_ext/push_back.hpp>
@@ -73,12 +79,22 @@ bool IfcGeom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_P
 		return false;
 	}
 
-	plane = gp_Pln(center / n, gp_Dir(x, y, z));
+	gp_Vec v(x, y, z);
+	// @todo the epsilon passed to us here is the maximum allowed deviation of
+	// the given points to the constructed plane. When doing triangulation and
+	// obtaining a 2d points for the Delaunay, infinity is passed here, so this
+	// can't for assessing degenerativeness.
+	if (v.SquareMagnitude() < 1.e-7) {
+		Logger::Warning("Degenerate face boundary in normal estimation");
+		return false;
+	}
+
+	plane = gp_Pln(center / n, v);
 
 	exp.Init(wire);
 	for (; exp.More(); exp.Next()) {
-		const TopoDS_Vertex& v = exp.CurrentVertex();
-		current = BRep_Tool::Pnt(v);
+		const TopoDS_Vertex& vrt = exp.CurrentVertex();
+		current = BRep_Tool::Pnt(vrt);
 		if (plane.SquareDistance(current) > eps2) {
 			return false;
 		}
@@ -342,13 +358,31 @@ namespace {
 	};
 }
 
-bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires, double eps, double eps_real) {
+namespace {
+	double get_wire_intersection_tolerance(const IfcGeom::util::wire_tolerance_settings& settings, const TopoDS_Wire& wire) {
+		if (settings.use_wire_intersection_tolerance) {
+			// This corresponds to faceset_helper::epsilon
+			if (settings.vertex_clustering_epsilon > 0.) {
+				return settings.vertex_clustering_epsilon / 3.;
+			} else {
+				return (std::min)(IfcGeom::util::min_edge_length(wire) / 2., settings.precision * 10.);
+			}
+		} else {
+			return 0.;
+		}
+	}
+}
+
+bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires, const wire_tolerance_settings& settings) {
+	double eps = get_wire_intersection_tolerance(settings, wire);
+	double eps_real = settings.precision;
+	
 	if (!wire.Closed()) {
 		wires.Append(wire);
 		return false;
 	}
 
-	int n = IfcGeom::Kernel::count(wire, TopAbs_EDGE);
+	int n = util::count(wire, TopAbs_EDGE);
 	if (n < 3) {
 		wires.Append(wire);
 		return false;
@@ -496,11 +530,15 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfS
 							}
 						}
 
+						ShapeFix_Wire sfw;
+						sfw.Load(mw.Wire());
+						sfw.Perform();
+
 						// Recursively process both cuts
 
 						// @todo this is a change in behaviour with eps precomputed from the kernel
 						// instead of adaptively calculated for the successive iterations.
-						wire_intersections(mw.Wire(), wires, eps, eps_real);
+						wire_intersections(sfw.Wire(), wires, settings);
 					}
 
 					return true;
@@ -555,4 +593,360 @@ void IfcGeom::util::select_largest(const TopTools_ListOfShape& shapes, TopoDS_Sh
 			largest = it.Value();
 		}
 	}
+}
+
+
+bool IfcGeom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, TColgp_SequenceOfPnt& p) {
+	TopExp_Explorer exp(w, TopAbs_EDGE);
+	for (; exp.More(); exp.Next()) {
+		double a, b;
+		Handle_Geom_Curve crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+			return false;
+		}
+	}
+
+	exp.ReInit();
+
+	int i = 0;
+	for (; exp.More(); exp.Next(), ++i) {
+		TopoDS_Vertex v1, v2;
+		TopExp::Vertices(TopoDS::Edge(exp.Current()), v1, v2, true);
+		if (exp.More()) {
+			if (i == 0) {
+				p.Append(BRep_Tool::Pnt(v1));
+			}
+			p.Append(BRep_Tool::Pnt(v2));
+		}
+	}
+
+	return true;
+}
+
+void IfcGeom::util::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, TopoDS_Wire& w, bool close) {
+	BRepBuilderAPI_MakePolygon builder;
+	for (int i = 1; i <= p.Length(); ++i) {
+		builder.Add(p.Value(i));
+	}
+	if (close) {
+		builder.Close();
+	}
+	w = builder.Wire();
+}
+
+void IfcGeom::util::remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
+	const int start = closed ? 1 : 2;
+	const int end = polygon.Length() - (closed ? 0 : 1);
+	std::vector<bool> to_remove(polygon.Length(), false);
+	for (int i = start; i <= end; ++i) {
+		const gp_Pnt& a = polygon.Value(((i - 2 + polygon.Length()) % polygon.Length()) + 1);
+		const gp_Pnt& b = polygon.Value(i);
+		const gp_Pnt& c = polygon.Value((i % polygon.Length()) + 1);
+		const gp_Vec d1 = c.XYZ() - a.XYZ();
+		const gp_Vec d2 = b.XYZ() - a.XYZ();
+		const double dt = d2.Dot(d1) / d1.Dot(d1);
+		const gp_Vec d3 = d1.Scaled(dt);
+		const gp_Pnt b2 = a.XYZ() + d3.XYZ();
+		if (b.Distance(b2) < tol) {
+			to_remove[i - 1] = true;
+		}
+	}
+	for (int i = (int)to_remove.size() - 1; i >= 0; --i) {
+		if (to_remove[i]) {
+			polygon.Remove(i + 1);
+		}
+	}
+}
+
+void IfcGeom::util::remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
+	tol *= tol;
+
+	for (;;) {
+		bool removed = false;
+		int n = polygon.Length() - (closed ? 0 : 1);
+		for (int i = 1; i <= n; ++i) {
+			// wrap around to the first point in case of a closed loop
+			int j = (i % polygon.Length()) + 1;
+			double dist = polygon.Value(i).SquareDistance(polygon.Value(j));
+			if (dist < tol) {
+				// do not remove the first or last point to
+				// maintain connectivity with other wires
+				if ((closed && j == 1) || (!closed && j == n)) polygon.Remove(i);
+				else polygon.Remove(j);
+				removed = true;
+				break;
+			}
+		}
+		if (!removed) break;
+	}
+}
+
+
+namespace {
+
+	// Returns the vertex part of an TopoDS_Edge edge that is not TopoDS_Vertex vertex
+	TopoDS_Vertex find_other(const TopoDS_Edge& edge, const TopoDS_Vertex& vertex) {
+		TopExp_Explorer exp(edge, TopAbs_VERTEX);
+		while (exp.More()) {
+			if (!exp.Current().IsSame(vertex)) {
+				return TopoDS::Vertex(exp.Current());
+			}
+			exp.Next();
+		}
+		return TopoDS_Vertex();
+	}
+
+	TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const TopTools_IndexedDataMapOfShapeListOfShape& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
+		const TopTools_ListOfShape& edges = vertex_to_edges.FindFromKey(current);
+		TopTools_ListIteratorOfListOfShape eit;
+		for (eit.Initialize(edges); eit.More(); eit.Next()) {
+			const TopoDS_Edge& edge = TopoDS::Edge(eit.Value());
+			if (edge.IsSame(previous_edge)) continue;
+			if (edge_set.Contains(edge)) {
+				return edge;
+			}
+		}
+		return TopoDS_Edge();
+	}
+
+}
+
+bool IfcGeom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape, double tol) {
+	BRepOffsetAPI_Sewing sew;
+	sew.Add(shape);
+
+	TopTools_IndexedDataMapOfShapeListOfShape edge_to_faces;
+	TopTools_IndexedDataMapOfShapeListOfShape vertex_to_edges;
+	std::set<int> visited;
+	TopTools_IndexedMapOfShape edge_set;
+
+	TopExp::MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, edge_to_faces);
+
+	const int num_edges = edge_to_faces.Extent();
+	for (int i = 1; i <= num_edges; ++i) {
+		const TopTools_ListOfShape& faces = edge_to_faces.FindFromIndex(i);
+		const int count = faces.Extent();
+		// Find only the non-manifold edges: Edges that are only part of a
+		// single face and therefore part of the wire(s) we want to fill.
+		if (count == 1) {
+			const TopoDS_Shape& edge = edge_to_faces.FindKey(i);
+			TopExp::MapShapesAndAncestors(edge, TopAbs_VERTEX, TopAbs_EDGE, vertex_to_edges);
+			edge_set.Add(edge);
+		}
+	}
+
+	const int num_verts = vertex_to_edges.Extent();
+	TopoDS_Vertex first, current;
+	TopoDS_Edge previous_edge;
+
+	// Now loop over all the vertices that are part of the wire(s) to be filled
+	for (int i = 1; i <= num_verts; ++i) {
+		first = current = TopoDS::Vertex(vertex_to_edges.FindKey(i));
+		// We keep track of the vertices we already used
+		if (visited.find(vertex_to_edges.FindIndex(current)) != visited.end()) {
+			continue;
+		}
+		// Given these vertices, try to find closed loops and create new
+		// wires out of them.
+		BRepBuilderAPI_MakeWire w;
+		for (;;) {
+			visited.insert(vertex_to_edges.FindIndex(current));
+			// Find the edge that the current vertex is part of and points
+			// away from the previous vertex (null for the first vertex).
+			TopoDS_Edge edge = find_next(edge_set, vertex_to_edges, current, previous_edge);
+			if (edge.IsNull()) {
+				return false;
+			}
+			TopoDS_Vertex other = find_other(edge, current);
+			if (other.IsNull()) {
+				// Dealing with a conical edge probably, for some reason
+				// this works better than adding the edge directly.
+				double u1, u2;
+				Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u1, u2);
+				w.Add(BRepBuilderAPI_MakeEdge(crv, u1, u2));
+				break;
+			} else {
+				w.Add(edge);
+			}
+			// See if the starting point of this loop has been reached. Note that
+			// additional wires after this one potentially will be created.
+			if (other.IsSame(first)) {
+				break;
+			}
+			previous_edge = edge;
+			current = other;
+		}
+		sew.Add(BRepBuilderAPI_MakeFace(w));
+		previous_edge.Nullify();
+	}
+
+	sew.Perform();
+	shape = sew.SewedShape();
+
+	try {
+		ShapeFix_Solid solid;
+		solid.LimitTolerance(tol);
+		shape = solid.SolidFromShell(TopoDS::Shell(shape));
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error creating solid");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error creating solid");
+	}
+
+	return true;
+}
+
+
+bool IfcGeom::util::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
+	try {
+		wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
+		return true;
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error converting curve to wire");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error converting curve to wire");
+	}
+	return false;
+}
+
+
+void IfcGeom::util::assert_closed_wire(TopoDS_Wire& wire, double tol) {
+	if (wire.Closed() == 0) {
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(wire, v0, v1);
+
+		gp_Pnt p1 = BRep_Tool::Pnt(v0);
+		gp_Pnt p2 = BRep_Tool::Pnt(v1);
+
+		if (p1.Distance(p2) > tol) {
+			BRepBuilderAPI_MakeWire mw;
+			mw.Add(wire);
+			mw.Add(BRepBuilderAPI_MakeEdge(v0, v1).Edge());
+			wire = mw.Wire();
+		}
+
+		Logger::Warning("Wire not closed");
+	}
+}
+
+bool IfcGeom::util::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& face, const IfcGeom::util::wire_tolerance_settings& settings) {
+	TopoDS_Wire wire = w;
+
+	TopTools_ListOfShape results;
+
+	if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
+		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+		util::select_largest(results, wire);
+	}
+
+	bool is_2d = true;
+	TopExp_Explorer exp(wire, TopAbs_EDGE);
+	for (; exp.More(); exp.Next()) {
+		double a, b;
+		// @todo this does not handle fillets
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+			is_2d = false;
+			break;
+		}
+		Handle(Geom_Line) line = Handle(Geom_Line)::DownCast(crv);
+		if (line->Lin().Direction().Z() > ALMOST_ZERO) {
+			is_2d = false;
+			break;
+		}
+	}
+
+	if (!is_2d) {
+		// For 2d wires (e.g. profiles) a higher tolerance for plane fitting is never required.
+		ShapeFix_ShapeTolerance FTol;
+		FTol.SetTolerance(wire, settings.precision, TopAbs_WIRE);
+	}
+
+	BRepBuilderAPI_MakeFace mf(wire, false);
+	BRepBuilderAPI_FaceError er = mf.Error();
+
+	if (er != BRepBuilderAPI_FaceDone) {
+		Logger::Error("Failed to create face.");
+		return false;
+	}
+	face = mf.Face();
+
+	return true;
+}
+
+bool IfcGeom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compound& faces, const IfcGeom::util::wire_tolerance_settings& settings) {
+	bool is_2d = true;
+	TopExp_Explorer exp(w, TopAbs_EDGE);
+	for (; exp.More(); exp.Next()) {
+		double a, b;
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+			is_2d = false;
+			break;
+		}
+		Handle(Geom_Line) line = Handle(Geom_Line)::DownCast(crv);
+		if (line->Lin().Direction().Z() > ALMOST_ZERO) {
+			is_2d = false;
+			break;
+		}
+	}
+
+	TopTools_ListOfShape results;
+	if (settings.use_wire_intersection_check && util::wire_intersections(w, results, settings)) {
+		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+	} else {
+		results.Clear();
+		results.Append(w);
+	}
+
+	TopoDS_Compound C;
+	BRep_Builder B;
+	B.MakeCompound(faces);
+
+	std::list<std::pair<double, TopoDS_Face>> face_list;
+	double max_area = 0.;
+
+	TopTools_ListIteratorOfListOfShape it(results);
+	for (; it.More(); it.Next()) {
+		const TopoDS_Wire& wire = TopoDS::Wire(it.Value());
+		if (!is_2d) {
+			// For 2d wires (e.g. profiles) a higher tolerance for plane fitting is never required.
+			ShapeFix_ShapeTolerance FTol;
+			FTol.SetTolerance(wire, settings.precision, TopAbs_WIRE);
+		}
+
+		BRepBuilderAPI_MakeFace mf(wire, false);
+		BRepBuilderAPI_FaceError er = mf.Error();
+
+		if (er != BRepBuilderAPI_FaceDone) {
+			Logger::Error("Failed to create face.");
+			continue;
+		}
+
+		TopoDS_Face face = mf.Face();
+		const double m = face_area(face);
+
+		face_list.push_back({ m, face });
+		if (m > max_area) {
+			max_area = m;
+		}
+	}
+
+	for (auto& p : face_list) {
+		if (p.first >= max_area / 10.) {
+			B.Add(faces, p.second);
+		} else {
+			Logger::Warning("Ignoring self-intersection loop with area " + boost::lexical_cast<std::string>(p.first));
+		}
+	}
+
+	return true;
 }

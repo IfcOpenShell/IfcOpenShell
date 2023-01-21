@@ -78,7 +78,7 @@ class ValidateIfcFile(bpy.types.Operator):
 
         logger = logging.getLogger("validate")
         logger.setLevel(logging.DEBUG)
-        ifcopenshell.validate.validate(IfcStore.get_file(), logger)
+        ifcopenshell.validate.validate(IfcStore.get_file(), logger, express_rules=True)
         return {"FINISHED"}
 
 

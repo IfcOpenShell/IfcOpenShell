@@ -21,11 +21,44 @@ import ifcopenshell.util.unit
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, name="foot", conversion_offset=None):
+        """Add a conversion based unit
+
+        If you're in one of those countries who don't use SI units, you're
+        probably simply using SI units converted into another unit. If you want
+        to use _those_ units, you can create a conversion based unit with this
+        function. You can choose from one of: inch, foot, yard, mile, square
+        inch, square foot, square yard, acre, square mile, cubic inch, cubic
+        foot, cubic yard, litre, fluid ounce UK, fluid ounce US, pint UK, pint
+        US, gallon UK, gallon US, degree, ounce, pound, ton UK, ton US, lbf,
+        kip, psi, ksi, minute, hour, day, btu, and fahrenheit.
+
+        :param name: A converted name chosen from the list above.
+        :type name: str
+        :param conversion_offset: If you want to offset the conversion further
+            by a set number, you may specify it here. For example, fahrenheit is
+            1.8 * kelvin - 459.67. The -459.67 is the conversion offset. Note
+            that this is just an example and you don't actually need to specify
+            that for fahrenheit as it's built into this API function. For
+            advanced users only.
+        :type conversion_offset: float
+        :return: The new IfcConversionBasedUnit or
+            IfcConversionBasedUnitWithOffset
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # Some common imperial measurements
+            length = ifcopenshell.api.run("unit.add_conversion_based_unit", model, name="inch")
+            area = ifcopenshell.api.run("unit.add_conversion_based_unit", model, name="square foot")
+
+            # Make it our default units, if we are doing an imperial building
+            ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
+        """
         self.file = file
-        self.settings = {"name": "foot", "conversion_offset": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"name": name, "conversion_offset": conversion_offset}
 
     def execute(self):
         unit_type = ifcopenshell.util.unit.imperial_types.get(self.settings["name"], "USERDEFINED")

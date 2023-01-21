@@ -18,11 +18,34 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, role=None, attributes=None):
+        """Edits the attributes of an IfcActorRole
+
+        For more information about the attributes and data types of an
+        IfcActorRole, consult the IFC documentation.
+
+        :param role: The IfcActorRole entity you want to edit
+        :type role: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            person = ifcopenshell.api.run("owner.add_person", model,
+                identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
+
+            # By default, the role is an architect
+            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=person)
+
+            # But Bob is not an architect
+            ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "CONSTRUCTIONMANAGER"})
+        """
         self.file = file
-        self.settings = {"role": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"role": role, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

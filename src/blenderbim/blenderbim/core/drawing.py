@@ -259,3 +259,6 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
 
         if reference_obj and ifc.is_edited(reference_obj):
             drawing_tool.sync_object_representation(reference_obj)
+
+def select_assigned_product(drawing):
+    drawing.select_assigned_product()

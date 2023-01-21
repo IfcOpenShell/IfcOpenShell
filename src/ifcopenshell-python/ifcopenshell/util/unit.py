@@ -469,7 +469,9 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
 def calculate_unit_scale(file):
     """Returns a unit scale factor to convert to and from IFC project length units and SI meters
 
-    Example::
+    Example:
+
+    .. code:: python
 
         ifc_project_length * unit_scale = si_meters
         si_meters / unit_scale = ifc_project_length
@@ -477,6 +479,8 @@ def calculate_unit_scale(file):
     :returns: The scale factor
     :rtype: float
     """
+    if not file.by_type("IfcUnitAssignment"):
+        return 1
     units = file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:

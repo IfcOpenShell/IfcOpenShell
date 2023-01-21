@@ -18,11 +18,26 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, group=None):
+        """Removes a group
+
+        All products assigned to the group will remain, but the relationship to
+        the group will be removed.
+
+        :param group: The IfcGroup entity you want to remove
+        :type group: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+            ifcopenshell.api.run("group.remove_group", model, group=group)
+        """
         self.file = file
-        self.settings = {"group": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"group": group}
 
     def execute(self):
         for rel in self.settings["group"].IsGroupedBy or []:

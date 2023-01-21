@@ -23,11 +23,70 @@ import ifcopenshell.util.placement
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger, x=None, y=None, z=None, ax=None, ay=None, az=None):
+        """Offset and rotate all object placements in a model
+
+        Every physical object in an IFC model has an object placement, a
+        matrix dictating where it is in XYZ space and its rotation.
+
+        Sometimes, models will have their models offset incorrectly into map
+        coordinates (i.e. very large coordinates) when they should be using
+        local coordinates, or vice versa, or simply be using wrong coordinates.
+
+        In some cases, models will even be rotated, especially with mixups where
+        Y is up instead of Z, coming from low quality BIM software.
+
+        This patch lets you translate, and optionally rotate (either rotate 2D
+        in plan view along the Z axis, or rotate in 3D across any axis) the
+        entire IFC model.
+
+        :param x: The X coordinate to offset by in project length units.
+        :type x: float
+        :param y: The Y coordinate to offset by in project length units.
+        :type y: float
+        :param z: The Z coordinate to offset by in project length units.
+        :type z: float
+        :param ax: An optional angle to rotate by. If only this angle is
+            specified, it is treated as the angle to rotate in plan view (i.e.
+            around the Z axis). If all angle parameters are specified, then it
+            is treated as the angle to rotate around the X axis. Angles are in
+            decimal degrees.
+        :type ax: float,optional
+        :param ay: An optional angle to rotate by for 3D rotations along the Y
+            axis. Angles are in decimal degrees.
+        :type ay: float,optional
+        :param az: An optional angle to rotate by for 3D rotations along the Z
+            axis. Angles are in decimal degrees.
+        :type az: float,optional
+
+        Example:
+
+        .. code:: python
+
+            # Offset a model by 100 units in both the X and Y axis.
+            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [100,100,0]})
+
+            # Rotate by 90 degrees, but don't do any offset
+            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [0,0,0,90]})
+
+            # Some crazy 3D rotation and offset
+            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [12.5,5,2,90,90,45]})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
+        self.x = x
+        self.y = y
+        self.z = z
+        self.ax = ax
+        self.ay = ay
+        self.az = az
+        if self.ay is not None:
+            self.angle_type = "3D"
+        elif self.ay is not None:
+            self.angle_type = "2D"
+        else:
+            self.angle_type = None
 
     def patch(self):
         absolute_placements = []
@@ -41,17 +100,17 @@ class Patcher:
         absolute_placements = set(absolute_placements)
 
         transformation = self.identity_matrix()
-        if len(self.args) == 4:
-            angle = float(self.args[3])
+        if self.angle_type == "2D":
+            angle = float(self.ax)
             if angle:
                 transformation = self.z_rotation_matrix(math.radians(angle), transformation)
-        elif len(self.args) == 6:
-            for arg in (("x", float(self.args[3])), ("y", float(self.args[4])), ("z", float(self.args[5]))):
+        elif self.angle_type == "3D":
+            for arg in (("x", float(self.ax)), ("y", float(self.ay)), ("z", float(self.az))):
                 if arg[1]:
                     transformation = getattr(self, f"{arg[0]}_rotation_matrix")(math.radians(arg[1]), transformation)
-        transformation[0][3] += float(self.args[0])
-        transformation[1][3] += float(self.args[1])
-        transformation[2][3] += float(self.args[2])
+        transformation[0][3] += float(self.x)
+        transformation[1][3] += float(self.y)
+        transformation[2][3] += float(self.z)
 
         for placement in absolute_placements:
             placement.RelativePlacement = self.get_relative_placement(

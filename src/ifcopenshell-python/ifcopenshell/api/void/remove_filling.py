@@ -18,11 +18,40 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, element=None):
+        """Remove a filling relationship
+
+        If an element is filling an opening, this removes the relationship such
+        that the opening and element both still exist, but the element no longer
+        fills the opening.
+
+        :param element: The element filling an opening.
+        :type element: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Create a wall
+            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+            # Create an opening, such as for a service penetration with fire and
+            # acoustic requirements.
+            opening = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcOpeningElement")
+
+            # Create a door
+            door = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcDoor")
+
+            # The door will now fill the opening.
+            ifcopenshell.api.run("void.add_filling", model, opening=opening, element=door)
+
+            # Not anymore!
+            ifcopenshell.api.run("void.remove_filling", model, element=door)
+        """
         self.file = file
-        self.settings = {"element": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"element": element}
 
     def execute(self):
         for rel in self.file.by_type("IfcRelFillsElement"):

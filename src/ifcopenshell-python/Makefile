@@ -15,7 +15,10 @@ ifeq ($(PYVERSION), py39)
 PYNUMBER:=39
 endif
 ifeq ($(PYVERSION), py310)
-PYNUMBER:=31
+PYNUMBER:=310
+endif
+ifeq ($(PYVERSION), py311)
+PYNUMBER:=311
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -35,6 +38,13 @@ ifeq ($(PLATFORM), macosm1)
 ifeq ($(PYVERSION), py36)
 # Pure Evil. Let me know if you're the first to file a bug report.
 PYNUMBER:=37
+endif
+endif
+
+ifeq ($(PLATFORM), macos)
+ifeq ($(PYVERSION), py311)
+# Pure Evil. Let me know if you're the first to file a bug report.
+PYNUMBER:=310
 endif
 endif
 
@@ -77,7 +87,7 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-4fb910f-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-6180d73-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
 ifeq ($(PLATFORM), win)
@@ -87,7 +97,7 @@ else
 endif
 	rm -rf dist/working
 	python -m build
-	cd dist && mv ifcopenshell_python-0.7.0-py3-none-any.whl ifcopenshell_python-0.7.0-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	cd dist && mv ifcopenshell-0.7.0-py3-none-any.whl ifcopenshell-0.7.0-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 	rm -rf dist/ifcopenshell
-	rm -rf dist/ifcopenshell_python.egg-info
-	rm -rf dist/ifcopenshell-python-0.7.0.tar.gz
+	rm -rf dist/ifcopenshell.egg-info
+	rm -rf dist/ifcopenshell-0.7.0.tar.gz

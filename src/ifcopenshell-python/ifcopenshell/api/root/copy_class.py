@@ -17,15 +17,54 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.system
 import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None):
+        """Copies a product
+
+        The following relationships are also duplicated:
+
+        * The copy will have the same object placement coordinates as the
+          original.
+        * The copy will have duplicated property sets, properties, and quantities
+        * The copy will have all nested distribution ports copied too
+        * The copy will be part of the same aggregate
+        * The copy will be contained in the same spatial structure
+        * The copy, if it is an occurrence, will have the same type
+        * Voids are duplicated too
+        * The copy will have the same material as the original. Parametric
+          material set usages will be copied.
+
+        Be warned that:
+
+        * Representations are _not_ copied. Copying representations is an
+          expensive operation so for now the user is responsible for handling
+          representations.
+        * Filled voids are not copied, as there is no guarantee that the filling
+          will also be copied.
+        * Path connectivity is not copied, as there is no guarantee that the
+          connections are still valid.
+
+        :param product: The IfcProduct to copy.
+        :type param: ifcopenshell.entity_instance.entity_instance
+        :return: The copied product
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # We have a wall
+            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+            # And now we have two
+            wall_copy = ifcopenshell.api.run("root.copy_class", model, product=wall)
+        """
         self.file = file
-        self.settings = {"product": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"product": product}
 
     def execute(self):
         result = ifcopenshell.util.element.copy(self.file, self.settings["product"])
@@ -69,6 +108,20 @@ class Usecase:
                 continue
             elif inverse.is_a("IfcRelDefinesByType") and inverse.RelatingType == from_element:
                 continue
+            elif inverse.is_a("IfcRelVoidsElement") and inverse.RelatingBuildingElement == from_element:
+                opening = inverse.RelatedOpeningElement
+                # We don't copy filled openings, since there is no guarantee the filling is also copied
+                if not opening.HasFillings:
+                    new_opening = ifcopenshell.api.run("root.copy_class", self.file, product=opening)
+                    new_opening.VoidsElements[0].RelatingBuildingElement = to_element
+                    if new_opening.ObjectPlacement and new_opening.ObjectPlacement.is_a("IfcLocalPlacement"):
+                        if to_element.ObjectPlacement:
+                            new_opening.ObjectPlacement.PlacementRelTo = to_element.ObjectPlacement
+                    # For now, we do copy opening representations
+                    if opening.Representation:
+                        new_opening.Representation = ifcopenshell.util.element.copy_deep(
+                            self.file, opening.Representation, exclude=["IfcGeometricRepresentationContext"]
+                        )
             elif inverse.is_a("IfcRelFillsElement"):
                 continue
             elif inverse.is_a("IfcRelConnectsPathElements"):

@@ -40,25 +40,25 @@ class TestCopyClass:
         root.is_opening_element("element").should_be_called().will_return(False)
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
-    def test_copy_with_new_geometry_added_afresh_for_speed(self, ifc, collector, geometry, root):
+    def test_copy_with_new_geometry_copied_from_the_old(self, ifc, collector, geometry, root):
+        # Originally, geometry was added fresh from the Blender mesh instead of
+        # copied. This was faster (though I cannot recreate it now) but had the
+        # bigger problem of not preserving non-mesh geometry and openings.
         ifc.get_entity("obj").should_be_called().will_return("original_element")
         root.get_object_representation("obj").should_be_called().will_return("representation")
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
         root.get_element_type("element").should_be_called().will_return("type")
         root.does_type_have_representations("type").should_be_called().will_return(False)
-
+        root.copy_representation("original_element", "element").should_be_called()
         root.get_representation_context("representation").should_be_called().will_return("context")
-        geometry.get_ifc_representation_class("element", "representation").should_be_called().will_return(
-            "ifc_representation_class"
-        )
-        geometry.get_profile_set_usage("element").should_be_called().will_return("profile_set_usage")
-        root.run_geometry_add_representation(
-            obj="obj",
-            context="context",
-            ifc_representation_class="ifc_representation_class",
-            profile_set_usage="profile_set_usage",
-        ).should_be_called()
+        root.get_element_representation("element", "context").should_be_called().will_return("new_representation")
+        geometry.change_object_data("obj", "data", is_global=True).should_be_called()
+        geometry.get_representation_name("new_representation").should_be_called().will_return("name")
+        geometry.rename_object("data", "name").should_be_called()
+        geometry.link("new_representation", "data").should_be_called()
+        root.assign_body_styles("element", "obj").should_be_called()
+        geometry.duplicate_object_data("obj").should_be_called().will_return("data")
         collector.assign("obj").should_be_called()
         root.is_opening_element("element").should_be_called().will_return(False)
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
@@ -74,7 +74,7 @@ class TestCopyClass:
         root.is_opening_element("element").should_be_called().will_return(False)
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
-    def test_copied_openings_have_dynamic_voids_added(self, ifc, collector, root):
+    def test_copied_openings_are_tracked_for_special_visualiation(self, ifc, collector, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
         root.get_object_representation("obj").should_be_called().will_return(None)
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
@@ -86,7 +86,7 @@ class TestCopyClass:
         root.link_object_data("type_obj", "obj").should_be_called()
         collector.assign("obj").should_be_called()
         root.is_opening_element("element").should_be_called().will_return(True)
-        root.add_dynamic_opening_voids("element", "obj").should_be_called()
+        root.add_tracked_opening("obj").should_be_called()
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
 

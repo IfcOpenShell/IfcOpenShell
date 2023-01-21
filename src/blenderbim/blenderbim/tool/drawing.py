@@ -38,7 +38,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def create_annotation_object(cls, drawing, object_type):
         data_type = {
-            "ANGLE": "mesh",
+            "ANGLE": "curve",
             "BREAKLINE": "mesh",
             "DIAMETER": "curve",
             "DIMENSION": "curve",
@@ -187,6 +187,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         else:
             name = document.DocumentId or "X"
         name += " - " + (document.Name or "Unnamed")
+        if not hasattr(document, "Scope"):
+            return
         if document.Scope == "DOCUMENTATION":
             return os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", name + ".svg")
         elif document.Scope == "SCHEDULE":
@@ -898,3 +900,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         if tool.Ifc.get_schema() == "IFC2X3":
             return reference.ReferenceToDocument[0]
         return reference.ReferencedDocument
+    @classmethod
+    def select_assigned_product(cls):
+        obj = cls.get_active_object()
+        element = tool.Ifc.get_entity(obj)
+        product = cls.get_assigned_product(element)
+        if product:
+            tool.Ifc.get_object(product).select_set(True)

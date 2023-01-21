@@ -32,6 +32,12 @@ from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
+from math import acos, pi
+
+
+def ccw(A, B, C):
+    """whether a-b-c located in counter-clockwise order in 2d space"""
+    return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
 
 
 class BaseDecorator:
@@ -66,6 +72,42 @@ class BaseDecorator:
         }
     }
 
+    bool check_counterclockwise(in vec4 A, in vec4 B, in vec4 C) {
+        return (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x);
+    }
+
+    void angle_circle_head(
+        in vec4 circle_start, in float circle_angle,
+        in bool counterclockwise,
+        out vec4 head[CIRCLE_SEGS+1], out float angle_segs) {
+        
+        // 1 added to CIRCLE_SEGS because we're number of vertices
+        // for n segments is n+1
+        
+        float angle_d;
+        angle_d = PI * 2 / CIRCLE_SEGS; // 30d
+        // need to bottom clamp it to 1, otherwise it causes Blender crash at extruding the curve
+        angle_segs = max(1, ceil(circle_angle / angle_d));
+        angle_d = circle_angle / angle_segs;
+        
+        for(int i = 0; i < (angle_segs + 1); i++) {
+            float angle = angle_d * i;
+            if (counterclockwise) {
+                head[i] = vec4(
+                    circle_start.x *  cos(-angle) + circle_start.y * sin(-angle),
+                    circle_start.x * -sin(-angle) + circle_start.y * cos(-angle),
+                    0, 0
+                );
+            } else {
+                 head[i] = vec4(
+                    circle_start.x *  cos(angle) + circle_start.y * sin(angle),
+                    circle_start.x * -sin(angle) + circle_start.y * cos(angle),
+                    0, 0
+                );
+            }
+        }
+    }
+
     void cross_head(in vec4 dir, in float size, out vec4 head[3]) {
         vec4 nose = dir * size;
         float c = cos(PI/2), s = sin(PI/2);
@@ -79,12 +121,15 @@ class BaseDecorator:
     uniform mat4 viewMatrix;
     in vec3 pos;
     in uint topo;
+    in vec3 next_vert;
     out vec4 gl_Position;
     out uint type;
+    out vec4 v_next_vert;
 
     void main() {
         gl_Position = viewMatrix * vec4(pos, 1.0);
         type = topo;
+        v_next_vert = viewMatrix * vec4(next_vert, 1.0);
     }
     """
 
@@ -267,7 +312,13 @@ class BaseDecorator:
         """perform actual drawing stuff"""
         raise NotImplementedError()
 
-    def draw_lines(self, context, obj, vertices, indices, topology=None, is_scale_dependant=True):
+    def draw_lines(
+        self, context, obj, vertices, indices, topology=None, is_scale_dependant=True, fill_next_vertices=False
+    ):
+        # use is_scale_dependant = False if shader is not using uniform viewportDrawingScale
+        # otherwise uniform will be discarded during the optimization process
+        # and you will get "ValueError: GPUShader.uniform_float: uniform viewportDrawingScale not found"
+
         region = context.region
         region3d = context.region_data
         color = context.scene.DocProperties.decorations_colour
@@ -276,11 +327,17 @@ class BaseDecorator:
         fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
         if topology:
             fmt.attr_add(id="topo", comp_type="U8", len=1, fetch_mode="INT")
+        if fill_next_vertices:
+            fmt.attr_add(id="next_vert", comp_type="F32", len=3, fetch_mode="FLOAT")
 
         vbo = GPUVertBuf(len=len(vertices), format=fmt)
         vbo.attr_fill(id="pos", data=vertices)
         if topology:
             vbo.attr_fill(id="topo", data=topology)
+
+        if fill_next_vertices:
+            shifted_vertices = vertices[1:] + [vertices[0]]
+            vbo.attr_fill(id="next_vert", data=shifted_vertices)
 
         ibo = GPUIndexBuf(type="LINES", seq=indices)
 
@@ -357,7 +414,7 @@ class BaseDecorator:
             pos += Vector((-sin, cos)) * gap
 
         blf.enable(font_id, blf.ROTATION)
-        blf.position(font_id, pos.x, pos.y, 0)
+        blf.position(font_id, pos.x, pos.y, 0) if hasattr(pos, "x") else blf.position(font_id, 0, 0, 0)
 
         blf.rotation(font_id, ang)
         blf.color(font_id, *color)
@@ -478,6 +535,132 @@ class DimensionDecorator(BaseDecorator):
             length = (v1 - v0).length
             text = self.format_value(context, length)
             self.draw_label(context, text, p0 + (dir) * 0.5, dir)
+
+
+class AngleDecorator(BaseDecorator):
+    """Decorator for angle objects
+    - each edge of a segment with arrow
+    - every non-last edge has angle circle
+    - every circle is labeled with angle in degrees
+    """
+
+    objecttype = "ANGLE"
+
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 8.0
+        #define CIRCLE_SIZE 6.0
+    """
+    )
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+    in vec4 v_next_vert[];
+    
+    // per edge shader
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        vec4 p2 = v_next_vert[1];
+        uint t0 = type[0], t1 = type[1];
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 p2w = CLIP2WIN(p2);
+        vec4 edge0 = p1w - p0w, dir = normalize(edge0);
+
+        vec4 p;
+        // draw a segment line
+        p = p0w;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge with angle circle for the non-last segment
+        if (t1 == 0u) { // draws only on internal vertex
+            edge0 = p0w - p1w;
+            vec4 dir0 = normalize(edge0);
+            vec4 edge1 = p2w - p1w;
+            vec4 dir1 = normalize(edge1);
+
+            float angle_circle_size = min( length(edge0), length(edge1) );
+            vec4 circle_start = dir0 * angle_circle_size;
+            vec4 circle_end = dir1 * angle_circle_size;
+
+            float cos_a = dot( edge0, edge1 ) / ( length(edge0) * length(edge1) );
+            float circle_angle = acos(cos_a);
+
+            vec4 circle_head_data[CIRCLE_SEGS+1];
+            float angle_segs;
+            bool counterclockwise = check_counterclockwise(p2w, p1w, p0w);
+            angle_circle_head(
+                circle_start,
+                circle_angle,
+                counterclockwise,
+                circle_head_data,
+                angle_segs);
+
+            for(int i=0; i<angle_segs+1; i++) {
+                p = p1w + circle_head_data[i];
+                gl_Position = WIN2CLIP(p);
+                EmitVertex();
+            }
+            EndPrimitive();
+        }
+    }
+    """
+
+    def decorate(self, context, obj):
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(context, obj, verts, idxs, topo, fill_next_vertices=True, is_scale_dependant=False)
+        self.draw_labels(context, obj, verts, idxs)
+
+    def draw_labels(self, context, obj, vertices, indices):
+        region = context.region
+        region3d = context.region_data
+
+        last_segment_i = len(indices) - 1
+        for edge_i, edge_vertices in enumerate(indices):
+            if edge_i == last_segment_i:
+                continue
+
+            # draw angle label
+            i0, i1 = edge_vertices
+            v0 = Vector(vertices[i0])
+            v1 = Vector(vertices[i1])
+            v2 = Vector(vertices[i1 + 1])
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            p2 = location_3d_to_region_2d(region, region3d, v2)
+
+            edge0 = p0 - p1
+            edge1 = p2 - p1
+            cos_a = edge0.dot(edge1) / (edge0.length * edge1.length)
+            circle_angle = acos(cos_a) / pi * 180
+
+            text = f"{int(circle_angle)}d"
+
+            # TODO: set label position pased on p1
+            # + y relative to p0p1 if p0p1p2 is clockwise
+            # - y relative to p0p1 if p0p1p2 is counter-clockwise
+            # counter_clockwise = ccw(p0, p1, p2)
+            # label_position = (p1 + Vector( (0, 10) ) * (1 if counter_clockwise else -1)) + edge1 * 0.1
+            label_position = p1 + edge1 * 0.1
+
+            # TODO: set label direction based on the first edge (p0, p1)
+            label_dir = Vector((1, 0))
+            self.draw_label(context, text, label_position, label_dir)
 
 
 class DiameterDecorator(DimensionDecorator):
@@ -895,8 +1078,7 @@ class LevelDecorator(BaseDecorator):
     def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
         self.draw_lines(context, obj, verts, idxs, topo)
-        splines = self.get_splines(obj)
-        self.draw_labels(context, obj, splines)
+        self.draw_labels(context, obj, self.get_splines(obj))
 
 
 class PlanLevelDecorator(LevelDecorator):
@@ -1585,6 +1767,7 @@ class TextDecorator(BaseDecorator):
 class DecorationsHandler:
     decorators_classes = [
         DimensionDecorator,
+        AngleDecorator,
         GridDecorator,
         HiddenDecorator,
         LeaderDecorator,

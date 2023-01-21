@@ -18,15 +18,35 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, identification="HSeldon", family_name="Seldon", given_name="Hari"):
+        """Adds a new person
+
+        Persons are used to identify a legal or liable representative of an
+        organisation or point of contact.
+
+        :param identification: The computer readable unique identification of
+            the person. For example, their username in a CDE or alias.
+        :type identification: str, optional
+        :param family_name: The family name
+        :type family_name: str, optional
+        :param given_name: The given name
+        :type given_name: str, optional
+        :return: The newly created IfcPerson
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            ifcopenshell.api.run("owner.add_person", model,
+                identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
+        """
         self.file = file
         self.settings = {
-            "identification": "HSeldon",
-            "family_name": "Seldon",
-            "given_name": "Hari",
+            "identification": identification,
+            "family_name": family_name,
+            "given_name": given_name,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         data = {"FamilyName": self.settings["family_name"], "GivenName": self.settings["given_name"]}

@@ -22,23 +22,24 @@ def copy_class(ifc, collector, geometry, root, obj=None):
     if not element:
         return
     representation = root.get_object_representation(obj)
-    element = ifc.run("root.copy_class", product=element)
-    ifc.link(element, obj)
-    relating_type = root.get_element_type(element)
+    new = ifc.run("root.copy_class", product=element)
+    ifc.link(new, obj)
+    relating_type = root.get_element_type(new)
     if relating_type and root.does_type_have_representations(relating_type):
-        ifc.run("type.map_type_representations", related_object=element, relating_type=relating_type)
+        ifc.run("type.map_type_representations", related_object=new, relating_type=relating_type)
         root.link_object_data(ifc.get_object(relating_type), obj)
-    else:
-        if representation:
-            root.run_geometry_add_representation(
-                obj=obj,
-                context=root.get_representation_context(representation),
-                ifc_representation_class=geometry.get_ifc_representation_class(element, representation),
-                profile_set_usage=geometry.get_profile_set_usage(element),
-            )
+    elif representation:
+        root.copy_representation(element, new)
+        new_representation = root.get_element_representation(new, root.get_representation_context(representation))
+        data = geometry.duplicate_object_data(obj)
+        geometry.change_object_data(obj, data, is_global=True)
+        geometry.rename_object(data, geometry.get_representation_name(new_representation))
+        geometry.link(new_representation, data)
+        root.assign_body_styles(new, obj)
     collector.assign(obj)
-    if root.is_opening_element(element):
-        root.add_dynamic_opening_voids(element, obj)
+    if root.is_opening_element(new):
+        root.add_tracked_opening(obj)
+    return new
 
 
 def assign_class(

@@ -136,7 +136,6 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
                 obj=obj,
                 representation=representation,
                 should_reload=self.should_reload,
-                enable_dynamic_voids=self.disable_opening_subtractions,
                 is_global=self.should_switch_all_meshes,
                 should_sync_changes_first=True,
             )
@@ -293,7 +292,6 @@ class UpdateParametricRepresentation(bpy.types.Operator):
             obj=obj,
             representation=tool.Ifc.get().by_id(props.ifc_definition_id),
             should_reload=True,
-            enable_dynamic_voids=False,
             is_global=True,
             should_sync_changes_first=False,
         )
@@ -364,29 +362,41 @@ class CopyRepresentation(bpy.types.Operator, Operator):
 class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
         element = tool.Ifc.get_entity(obj)
-        if element:
-            IfcStore.delete_element(element)
-            if getattr(element, "FillsVoids", None):
-                self.remove_filling(element)
-            if element.is_a("IfcOpeningElement"):
+        if not element:
+            return
+        IfcStore.delete_element(element)
+        if obj.users_collection and obj.users_collection[0].name == obj.name:
+            parent = ifcopenshell.util.element.get_aggregate(element)
+            if not parent:
+                parent = ifcopenshell.util.element.get_container(element)
+            if parent:
+                parent_obj = tool.Ifc.get_object(parent)
+                if parent_obj:
+                    parent_collection = bpy.data.collections.get(parent_obj.name)
+                    for child in obj.users_collection[0].children:
+                        parent_collection.children.link(child)
+            bpy.data.collections.remove(obj.users_collection[0])
+        if getattr(element, "FillsVoids", None):
+            self.remove_filling(element)
+        if element.is_a("IfcOpeningElement"):
+            if element.HasFillings:
                 for rel in element.HasFillings:
                     self.remove_filling(rel.RelatedBuildingElement)
+            else:
                 if element.VoidsElements:
                     self.delete_opening_element(element)
-            else:
-                if getattr(element, "HasOpenings", None):
-                    for rel in element.HasOpenings:
-                        self.delete_opening_element(rel.RelatedOpeningElement)
-                for port in ifcopenshell.util.system.get_ports(element):
-                    self.remove_port(port)
+        else:
+            if getattr(element, "HasOpenings", None):
+                for rel in element.HasOpenings:
+                    self.delete_opening_element(rel.RelatedOpeningElement)
+            for port in ifcopenshell.util.system.get_ports(element):
+                self.remove_port(port)
 
     def delete_opening_element(self, element):
-        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
-        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
+        bpy.ops.bim.remove_opening(opening_id=element.id())
 
     def remove_filling(self, element):
-        obj = IfcStore.get_element(element.id())
-        bpy.ops.bim.remove_filling(obj=obj.name)
+        bpy.ops.bim.remove_filling(filling=element.id())
 
     def remove_port(self, port):
         blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
@@ -481,8 +491,6 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
             # This is the only difference
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
-        for collection in collections_to_delete:
-            bpy.data.collections.remove(collection)
         return {"FINISHED"}
 
     def get_collection_objects_and_children(self, collection):
@@ -533,6 +541,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     def _execute(self, context):
         self.new_active_obj = None
+        # Track decompositions so they can be recreated after the operation
+        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
+        old_to_new = {}
         for obj in context.selected_objects:
             new_obj = obj.copy()
             if obj.data:
@@ -543,8 +554,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
-            # This is the only difference
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            # Copy the actual class
+            new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            if new:
+                old_to_new[tool.Ifc.get_entity(obj)] = [new]
+        # Recreate decompositions
+        tool.Root.recreate_decompositions(relationships, old_to_new)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
 
@@ -581,6 +596,9 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
 
     def _execute(self, context):
         self.new_active_obj = None
+        # Track decompositions so they can be recreated after the operation
+        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
+        old_to_new = {}
         for obj in context.selected_objects:
             new_obj = obj.copy()
             if obj == context.active_object:
@@ -589,8 +607,12 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
-            # This is the only difference
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            # Copy the actual class
+            new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            if new:
+                old_to_new[tool.Ifc.get_entity(obj)] = new
+        # Recreate decompositions
+        tool.Root.recreate_decompositions(relationships, old_to_new)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
