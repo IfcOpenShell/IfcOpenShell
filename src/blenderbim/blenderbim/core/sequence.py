@@ -497,7 +497,14 @@ def disable_editing_task_animation_colors(sequence):
 
 def visualise_work_schedule_date_range(sequence, work_schedule=None):
     settings = sequence.get_animation_settings()
-    product_frames = sequence.get_animation_product_frames(work_schedule, settings)
-    sequence.load_task_animation_colors()
-    sequence.animate_objects(settings, product_frames)
-    sequence.add_text_animation_handler(settings)
+    if settings:
+        product_frames = sequence.get_animation_product_frames(work_schedule, settings)
+        sequence.load_task_animation_colors()
+        sequence.animate_objects(settings, product_frames)
+        sequence.add_text_animation_handler(settings)
+        add_task_bars(sequence)
+
+
+def generate_gantt_chart(sequence, work_schedule):
+    json = sequence.create_tasks_json(work_schedule)
+    sequence.generate_gantt_browser_chart(json)

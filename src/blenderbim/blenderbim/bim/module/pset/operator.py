@@ -50,6 +50,8 @@ def get_pset_props(context, obj, obj_type):
         return bpy.data.materials.get(obj).PsetProperties
     elif obj_type == "MaterialSet":
         return bpy.data.objects.get(obj).MaterialSetPsetProperties
+    elif obj_type == "MaterialSetItem":
+        return bpy.data.objects.get(obj).MaterialSetItemPsetProperties
     elif obj_type == "Task":
         return context.scene.TaskPsetProperties
     elif obj_type == "Resource":
@@ -434,20 +436,6 @@ class GuessQuantity(bpy.types.Operator):
             if unit_settings.length_unit == "METERS":
                 return None, "METRE"
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
-
-
-class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.calculate_all_quantities"
-    bl_label = "Calculate All Quantities"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Calculate all quantities for all selected objects"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object
-
-    def _execute(self, context):
-        QtoCore.calculate_all_qtos(tool.Qto, selected_objects = [context.active_object])
 
 
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
