@@ -404,14 +404,16 @@ class Pset:
 class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
     def set_qto_result(cls, result): pass
-    def assign_base_qto_to_object(cls, object): pass
-    def get_applicable_quantity_names(cls, object): pass
-    def get_qto_applicable_name(cls, object): pass
-    def edit_qto(cls, object, calculated_quantities): pass
-    def get_qto_entity(cls, object): pass
-    def get_new_quantity(cls, object, quantity_name, alternative_prop_names): pass
+    def get_applicable_quantity_names(cls, qto_name): pass
+    def get_applicable_base_quantity_name(cls, object): pass
     def get_rounded_value(cls, new_quantity): pass
-    def get_calculated_quantities(cls, object, pset_qto_properties): pass
+    def calculate_object_quantities(cls, calculator, baste_qto, object): pass
+    def add_object_base_qto(cls, object): pass
+    def add_product_base_qto(cls, product): pass
+    def get_applicable_base_quantity_names(cls, product): pass
+    def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
+    def get_new_guessed_quantity(cls, object, qto_name, quantity_name, ): pass
+
 
 @interface
 class Resource:
@@ -473,6 +475,7 @@ class Sequence:
     def contract_all_tasks(cls): pass
     def contract_task(cls, task): pass
     def create_task_tree(cls, work_schedule): pass
+    def create_bars(cls, tasks):pass
     def disable_editing_rel_sequence(cls): pass
     def disable_editing_task_time(cls): pass
     def disable_editing_task(cls): pass
@@ -499,7 +502,7 @@ class Sequence:
     def expand_task(cls, task): pass
     def find_related_output_tasks(cls, column): pass
     def get_active_task(cls): pass
-    def get_active_work_schedule_id(cls): pass
+    def get_active_work_schedule(cls): pass
     def get_checked_tasks(cls): pass
     def get_direct_nested_tasks(cls, task):pass
     def get_direct_task_outputs(cls, task): pass

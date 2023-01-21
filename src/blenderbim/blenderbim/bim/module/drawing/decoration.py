@@ -414,7 +414,7 @@ class BaseDecorator:
             pos += Vector((-sin, cos)) * gap
 
         blf.enable(font_id, blf.ROTATION)
-        blf.position(font_id, pos.x, pos.y, 0)
+        blf.position(font_id, pos.x, pos.y, 0) if hasattr(pos, "x") else blf.position(font_id, 0, 0, 0)
 
         blf.rotation(font_id, ang)
         blf.color(font_id, *color)
@@ -1078,7 +1078,7 @@ class LevelDecorator(BaseDecorator):
     def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
         self.draw_lines(context, obj, verts, idxs, topo)
-        self.draw_labels(context, obj, splines)
+        self.draw_labels(context, obj, self.get_splines(obj))
 
 
 class PlanLevelDecorator(LevelDecorator):
