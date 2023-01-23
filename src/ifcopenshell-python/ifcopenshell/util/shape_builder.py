@@ -42,25 +42,48 @@ class ShapeBuilder:
             segments.append( (len(points),1) )
         if position_offset:
             points = [Vector(p) + position_offset for p in points]
-        ifc_points = self.ifc.createIfcCartesianPointList2D(points)
+
+        dimensions = len(points[0])
+        if dimensions == 2:
+            ifc_points = self.ifc.createIfcCartesianPointList2D(points)
+        elif dimensions == 3:
+            ifc_points = self.ifc.createIfcCartesianPointList3D(points)
+
         ifc_segments = [ self.ifc.createIfcLineIndex( segment ) for segment in segments]
         ifc_curve = self.ifc.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
     def get_rectangle_coords(self, 
         size:Vector = Vector( (1., 1.) ).freeze(),
-        position:Vector = Vector( (0., 0.) ).freeze()):
+        position:Vector = None):
+
+        dimensions = len(size)
+
+        if not position:
+            position = Vector([0]*dimensions)
+
+        # adds support both 2d and 3d sizes
+        non_empty_coords = [i for i, v in enumerate(size) if v]
+        id_matrix = Matrix.Identity(dimensions)
+
         points = [
             position,
-            position + size * Vector( (0, 1)),
+            position + size * id_matrix[non_empty_coords[0]],
             position + size,
-            position + size * Vector( (1, 0))
+            position + size * id_matrix[non_empty_coords[1]]
         ]
         return points
 
     def rectangle(self, 
         size:Vector = Vector( (1., 1.) ).freeze(),
-        position:Vector = Vector( (0., 0.) ).freeze()):
+        position:Vector = None):
+        """
+        function supports both 2d and 3d rectangle sizes
+
+        if `position` not specified zero-vector will be used
+
+        returns IfcIndexedPolyCurve
+        """
         # < IfcIndexedPolyCurve
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
 
