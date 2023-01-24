@@ -50,7 +50,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
         ("bim.hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
-        ("bim.hotkey", {"type": "S", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_S")]}),
+        ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
@@ -167,8 +167,8 @@ class BimToolUI:
             row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_S")
-            row.operator("bim.hotkey", text="Split").hotkey = "S_S"
+            row.label(text="", icon="EVENT_K")
+            row.operator("bim.hotkey", text="Split").hotkey = "S_K"
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_R")
@@ -461,7 +461,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         elif self.active_class in ("IfcBeam", "IfcBeamStandardCase", "IfcMember", "IfcMemberStandardCase"):
             bpy.ops.bim.rotate_90(axis="Y")
 
-    def hotkey_S_S(self):
+    def hotkey_S_K(self):
         if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.split_wall()
 
