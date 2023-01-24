@@ -85,8 +85,9 @@ class BimToolUI:
 
         if context.region.type == "TOOL_HEADER":
             cls.draw_header_interface()
-        elif context.region.type == "UI":
-            cls.draw_sidebar_interface()
+        elif context.region.type in ("UI", "WINDOW"):
+            # same interface for both n-panel sidebar and object properties
+            cls.draw_basic_bim_tool_interface()
 
         if context.active_object and context.selected_objects:
             cls.draw_edit_object_interface(context)
@@ -296,19 +297,7 @@ class BimToolUI:
 
     @classmethod
     def draw_header_interface(cls):
-        row = cls.layout.row(align=True)
-        if AuthoringData.data["ifc_classes"]:
-            row.label(text="", icon="FILE_VOLUME")
-            row.prop(data=cls.props, property="ifc_class", text="")
-            row = cls.layout.row(align=True)
-            if AuthoringData.data["relating_types_ids"]:
-                row.label(text="", icon="FILE_3D")
-                prop_with_search(row, cls.props, "relating_type_id", text="")
-            else:
-                row.label(text="No Construction Type", icon="FILE_3D")
-            row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
-        else:
-            row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID")
+        cls.draw_type_selection_interface()
 
         if AuthoringData.data["ifc_classes"]:
             #row = cls.layout.row()
@@ -324,19 +313,26 @@ class BimToolUI:
                 op.relating_type_id = int(cls.props.relating_type_id)
 
     @classmethod
-    def draw_sidebar_interface(cls):
+    def draw_type_selection_interface(cls):
+        # shared by both sidebar and header
         row = cls.layout.row(align=True)
         if AuthoringData.data["ifc_classes"]:
             row.label(text="", icon="FILE_VOLUME")
             prop_with_search(row, cls.props, "ifc_class", text="")
+
+            row = cls.layout.row(align=True)
+            if AuthoringData.data["relating_types_ids"]:
+                row.label(text="", icon="FILE_3D")
+                prop_with_search(row, cls.props, "relating_type_id", text="")
+            else:
+                row.label(text="No Construction Type", icon="FILE_3D")
         else:
             row.label(text="No Construction Class", icon="FILE_VOLUME")
-        row = cls.layout.row(align=True)
-        if AuthoringData.data["relating_types_ids"]:
-            row.label(text="", icon="FILE_3D")
-            prop_with_search(row, cls.props, "relating_type_id", text="")
-        else:
-            row.label(text="No Construction Type", icon="FILE_3D")
+        row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text='')
+
+    @classmethod
+    def draw_basic_bim_tool_interface(cls):
+        cls.draw_type_selection_interface()
 
         box = cls.layout.box()
         if AuthoringData.data["type_thumbnail"]:
