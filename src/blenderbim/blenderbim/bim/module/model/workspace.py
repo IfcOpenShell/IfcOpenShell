@@ -164,11 +164,11 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
-            row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
+            op = row.operator("bim.hotkey", text="Flip"); op.hotkey = "S_F"; op.bim_operator = "flip_wall"
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_K")
-            row.operator("bim.hotkey", text="Split").hotkey = "S_K"
+            op = row.operator("bim.hotkey", text="Split"); op.hotkey = "S_K"; op.bim_operator = "split_wall"
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_R")
@@ -357,6 +357,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
+    bim_operator: bpy.props.StringProperty()
     x: bpy.props.FloatProperty(name="X", default=0.5)
     y: bpy.props.FloatProperty(name="Y", default=0.5)
     z: bpy.props.FloatProperty(name="Z", default=0.5)
@@ -364,6 +365,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
+
+    @classmethod
+    def description(cls, context, operator):
+        return "" if not operator.bim_operator else getattr(bpy.ops.bim, operator.bim_operator).__doc__
 
     def _execute(self, context):
         self.props = context.scene.BIMModelProperties
