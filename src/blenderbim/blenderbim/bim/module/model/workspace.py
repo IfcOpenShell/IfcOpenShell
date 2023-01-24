@@ -42,6 +42,27 @@ class BimTool(WorkSpaceTool):
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
         #("bim.sync_modeling", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
+
+        # replicate default blender selection behaviour with click and box selection
+        # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
+        # https://github.com/blender/blender/blob/master/release/scripts/presets/keyconfig/keymap_data/blender_default.py
+        # the code is the data from evaluating km_3d_view_tool_select() and km_3d_view_tool_select_box()
+
+        # TODO: call blender_default.py functions instead of copying?
+        # from evaluating km_3d_view_tool_select()
+        # https://github.com/blender/blender/blob/4815d0706fb57d6e4f897dbb4e9aba9d2323cdce/release/scripts/presets/keyconfig/keymap_data/blender_default.py#L6710
+        ('view3d.select_box', {'type': 'LEFTMOUSE', 'value': 'CLICK_DRAG'}, None), 
+        ('view3d.select_box', {'type': 'LEFTMOUSE', 'value': 'CLICK_DRAG', 'shift': True}, {'properties': [('mode', 'ADD')]}), 
+        ('view3d.select_box', {'type': 'LEFTMOUSE', 'value': 'CLICK_DRAG', 'ctrl': True}, {'properties': [('mode', 'SUB')]}), 
+        ('view3d.select_box', {'type': 'LEFTMOUSE', 'value': 'CLICK_DRAG', 'shift': True, 'ctrl': True}, {'properties': [('mode', 'AND')]}),
+
+        # from evaluating km_3d_view_tool_select()
+        # https://github.com/blender/blender/blob/4815d0706fb57d6e4f897dbb4e9aba9d2323cdce/release/scripts/presets/keyconfig/keymap_data/blender_default.py#L6734
+        ('view3d.select', {'type': 'LEFTMOUSE', 'value': 'CLICK'}, {'properties': [('deselect_all', True)]}), 
+        ('view3d.select', {'type': 'LEFTMOUSE', 'value': 'CLICK', 'shift': True}, {'properties': [('toggle', True)]}), 
+        ('view3d.select', {'type': 'LEFTMOUSE', 'value': 'CLICK', 'alt': True}, {'properties': [('enumerate', True)]}), 
+        ('view3d.select', {'type': 'LEFTMOUSE', 'value': 'CLICK', 'shift': True, 'alt': True}, {'properties': [('toggle', True), ('enumerate', True)]}),
+
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
