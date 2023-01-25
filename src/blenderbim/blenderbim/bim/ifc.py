@@ -96,7 +96,11 @@ class IfcStore:
             try:
                 IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
             except:
-                return
+                os.remove(IfcStore.cache_path)
+                try:
+                    IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
+                except:
+                    return
         return IfcStore.cache
 
     @staticmethod
