@@ -429,6 +429,7 @@ class BIM_PT_window(bpy.types.Panel):
             row.label(text="Window parameters", icon="OUTLINER_OB_LATTICE")
 
             window_data = WindowData.data["parameters"]["data"]
+            number_of_panels, panels_data = props.window_types_panels[props.window_type]
 
             if props.is_editing != -1:
                 row = self.layout.row(align=True)
@@ -446,7 +447,6 @@ class BIM_PT_window(bpy.types.Panel):
 
                 panel_props = props.get_panel_kwargs()
                 self.layout.label(text="Panel properties")
-                number_of_panels = len(props.window_types_panels[props.window_type])
 
                 panel_box = self.layout.box()
                 row = panel_box.row()
@@ -492,7 +492,6 @@ class BIM_PT_window(bpy.types.Panel):
 
                 panel_props = props.get_panel_kwargs()
                 self.layout.label(text="Panel properties")
-                number_of_panels = len(props.window_types_panels[props.window_type])
 
                 panel_box = self.layout.box()
                 row = panel_box.row()

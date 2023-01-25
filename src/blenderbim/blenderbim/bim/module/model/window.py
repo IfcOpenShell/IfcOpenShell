@@ -36,6 +36,7 @@ from pprint import pprint
 
 from os.path import basename, dirname
 import json
+import collections
 
 
 V = lambda *x: Vector([float(i) for i in x])
@@ -55,16 +56,20 @@ def update_window_modifier_representation(context):
             "LiningOffset": props.lining_offset,
             "LiningToPanelOffsetX": props.lining_to_panel_offset_x,
             "LiningToPanelOffsetY": props.lining_to_panel_offset_y,
+            "MullionThickness": props.mullion_thickness,
+            "FirstMullionOffset": props.first_mullion_offset,
+            "SecondMullionOffset": props.second_mullion_offset,
+            "TransomThickness": props.transom_thickness,
+            "FirstTransomOffset": props.first_transom_offset,
+            "SecondTransomOffset": props.second_transom_offset,
         },
         "panel_properties": [],
     }
-    number_of_panels = len(props.window_types_panels[props.window_type])
+    number_of_panels, panels_data = props.window_types_panels[props.window_type]
     for panel_i in range(number_of_panels):
         panel_data = {
             "FrameDepth": props.frame_depth[panel_i],
             "FrameThickness": props.frame_thickness[panel_i],
-            "RelativeWidth": props.relative_width[panel_i],
-            "RelativeHeight": props.relative_height[panel_i],
         }
         representation_data["panel_properties"].append(panel_data)
 
@@ -97,10 +102,8 @@ def update_window_modifier_representation(context):
 def replace_representation_for_object(ifc_file, ifc_context, obj, new_representation):
     ifc_element = tool.Ifc.get_entity(obj)
     old_representation = ifcopenshell.util.representation.get_representation(
-        ifc_element, 
-        ifc_context.ContextType, 
-        ifc_context.ContextIdentifier, 
-        ifc_context.TargetView)
+        ifc_element, ifc_context.ContextType, ifc_context.ContextIdentifier, ifc_context.TargetView
+    )
 
     if old_representation:
         for inverse in ifc_file.get_inverse(old_representation):
@@ -121,14 +124,24 @@ def replace_representation_for_object(ifc_file, ifc_context, obj, new_representa
         )
 
 
-def create_bm_window_closed_profile(bm, size: Vector, thickness: float, position: Vector):
+def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, position: Vector):
+    """thickness of the profile is defined as list in the following order: (LEFT, TOP, RIGHT, BOTTOM)
+
+    thickness can be also defined just as 1 float value.
+    """
+
+    if not isinstance(thickness, collections.abc.Iterable):
+        thickness = [thickness] * 4
+
+    th_left, th_up, th_right, th_bottom = thickness
+
     width, depth, height = size
 
     verts = [
-        (0, [thickness, 0.0, thickness]),
-        (1, [width - thickness, 0.0, thickness]),
-        (2, [thickness, 0.0, height - thickness]),
-        (3, [width - thickness, 0.0, height - thickness]),
+        (0, [th_left, 0.0, th_bottom]),
+        (1, [width - th_right, 0.0, th_bottom]),
+        (2, [th_left, 0.0, height - th_up]),
+        (3, [width - th_right, 0.0, height - th_up]),
         (4, [0.0, 0.0, 0.0]),
         (5, [0.0, 0.0, height]),
         (6, [width, 0.0, 0.0]),
@@ -151,10 +164,10 @@ def create_bm_window_closed_profile(bm, size: Vector, thickness: float, position
     ]
 
     faces = [
-        (0, (2, 3, 7, 5)),
-        (1, (5, 4, 0, 2)),
-        (2, (1, 0, 4, 6)),
-        (3, (7, 3, 1, 6)),
+        (0, (5, 7, 3, 2)),
+        (1, (2, 0, 4, 5)),
+        (2, (6, 4, 0, 1)),
+        (3, (6, 1, 3, 7)),
     ]
 
     bm.verts.index_update()
@@ -187,28 +200,79 @@ def update_window_modifier_bmesh(context):
     lining_depth = props.lining_depth * si_conversion
     overall_height = props.overall_height * si_conversion
     lining_to_panel_offset_x = props.lining_to_panel_offset_x * si_conversion
+    lining_thickness = props.lining_thickness * si_conversion
+
+    mullion_thickness = props.mullion_thickness * si_conversion / 2
+    first_mullion_offset = props.first_mullion_offset * si_conversion
+    second_mullion_offset = props.second_mullion_offset * si_conversion
+    transom_thickness = props.transom_thickness * si_conversion / 2
+    first_transom_offset = props.first_transom_offset * si_conversion
+    second_transom_offset = props.second_transom_offset * si_conversion
+
+    glass_thickness = 10 * si_conversion
 
     bm = bmesh.new()
+    panel_schema = list(reversed(panel_schema))
 
-    for row_i, panel_row in enumerate(reversed(panel_schema)):
+    # TODO: need more readable way to define panel width and height
+    unique_rows_in_col = [len(set(row[column_i] for row in panel_schema)) for column_i in range(len(panel_schema[0]))]
+    for row_i, panel_row in enumerate(panel_schema):
         accumulated_width = 0
+        unique_cols = len(set(panel_row))
+
         for column_i, panel_i in enumerate(panel_row):
+            # calculate current panel dimensions
+            if unique_cols > 1:
+                if column_i == 0:
+                    panel_width = first_mullion_offset
+                elif column_i == unique_cols - 1:
+                    panel_width = overall_width - accumulated_width
+                else:
+                    panel_width = second_mullion_offset - accumulated_width
+            else:
+                panel_width = overall_width
+
+            if unique_rows_in_col[column_i] > 1:
+                if row_i == 0:
+                    panel_height = first_transom_offset
+                elif row_i == unique_rows_in_col[column_i] - 1:
+                    panel_height = overall_height - accumulated_height[column_i]
+                else:
+                    panel_height = second_transom_offset - accumulated_height[column_i]
+            else:
+                panel_height = overall_height
+
             if panel_i in built_panels:
-                accumulated_height[column_i] += props.relative_height[panel_i]
-                accumulated_width += props.relative_width[panel_i]
+                accumulated_height[column_i] += panel_height
+                accumulated_width += panel_width
                 continue
 
             frame_depth = props.frame_depth[panel_i] * si_conversion
             frame_thickness = props.frame_thickness[panel_i] * si_conversion
-            glass_thickness = 10 * si_conversion
 
             # create lining
             lining_size = V(
-                overall_width * props.relative_width[panel_i],
+                panel_width,
                 lining_depth,
-                overall_height * props.relative_height[panel_i],
+                panel_height,
             )
-            thickness = props.lining_thickness * si_conversion
+
+            # calculate lining thickness
+            # taking into account mullions and transoms
+            thickness = [lining_thickness] * 4
+            # mullion thickness
+            if unique_cols > 1:
+                if column_i != 0:
+                    thickness[0] = mullion_thickness  # left column
+                if column_i != unique_cols - 1:
+                    thickness[2] = mullion_thickness  # right column
+            # transom thickness
+            if unique_rows_in_col[column_i] > 1:
+                if row_i != 0:
+                    thickness[3] = transom_thickness  # bottom row
+                if row_i != unique_rows_in_col[column_i] - 1:
+                    thickness[1] = transom_thickness  # top row
+
             lining_verts = create_bm_window_closed_profile(bm, lining_size, thickness, V(0, 0, 0))
 
             # add panel
@@ -239,15 +303,13 @@ def update_window_modifier_bmesh(context):
             bmesh.ops.translate(bm, vec=glass_position, verts=glass_verts)
 
             # translate panel
-            accumulated_offset = V(accumulated_width, 0, accumulated_height[column_i]) * V(
-                overall_width, 0, overall_height
-            )
+            accumulated_offset = V(accumulated_width, 0, accumulated_height[column_i])
             bmesh.ops.translate(bm, vec=accumulated_offset, verts=lining_verts + panel_verts + glass_verts)
 
             built_panels.append(panel_i)
 
-            accumulated_height[column_i] += props.relative_height[panel_i]
-            accumulated_width += props.relative_width[panel_i]
+            accumulated_height[column_i] += panel_height
+            accumulated_width += panel_width
 
     bmesh.ops.translate(bm, vec=V(0, props.lining_offset * si_conversion, 0), verts=bm.verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
