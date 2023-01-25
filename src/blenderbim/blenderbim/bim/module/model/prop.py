@@ -301,15 +301,9 @@ class BIMSverchokProperties(PropertyGroup):
 
 
 def window_type_prop_update(self, context):
-    panels_data = self.window_types_panels[self.window_type]
-    for i in range(3):
-        try:
-            width, height = panels_data[i]
-        except IndexError:
-            width, height = (0.0, 0.0)
-
-        self.relative_width[i] = width
-        self.relative_height[i] = height
+    number_of_panels, panels_data = self.window_types_panels[self.window_type]
+    self.first_mullion_offset, self.second_mullion_offset = panels_data[0]
+    self.first_transom_offset, self.second_transom_offset = panels_data[1]
 
 
 class BIMWindowProperties(PropertyGroup):
@@ -325,17 +319,17 @@ class BIMWindowProperties(PropertyGroup):
         ("TRIPLE_PANEL_VERTICAL", "TRIPLE_PANEL_VERTICAL", ""),
     )
 
-    # default panel relative dimensions
+    # number of panels and default mullion/transom values
     window_types_panels = {
-        "SINGLE_PANEL":            ((1.0, 1.0),                           ),
-        "DOUBLE_PANEL_HORIZONTAL": ((1.0, 0.5),  (1.0, 0.5),              ),
-        "DOUBLE_PANEL_VERTICAL":   ((0.5, 1.0),  (0.5, 1.0),              ),
-        "TRIPLE_PANEL_BOTTOM":     ((0.5, 0.5),  (0.5, 0.5),  (1.0, 0.5), ),
-        "TRIPLE_PANEL_TOP":        ((1.0, 0.5),  (0.5, 0.5),  (0.5, 0.5), ),
-        "TRIPLE_PANEL_LEFT":       ((0.5, 1.0),  (0.5, 0.5),  (0.5, 0.5), ),
-        "TRIPLE_PANEL_RIGHT":      ((0.5, 0.5),  (0.5, 1.0),  (0.5, 0.5), ),
-        "TRIPLE_PANEL_HORIZONTAL": ((1.0, 1/3), (1.0, 1/3), (1.0, 1/3),),
-        "TRIPLE_PANEL_VERTICAL":   ((1/3, 1.0), (1/3, 1.0), (1/3, 1.0),),
+        "SINGLE_PANEL":            (1, ((0,   0  ), (0,   0  ))),
+        "DOUBLE_PANEL_HORIZONTAL": (2, ((0,   0  ), (450, 0  ))),
+        "DOUBLE_PANEL_VERTICAL":   (2, ((300, 0  ), (0,   0  ))),
+        "TRIPLE_PANEL_BOTTOM":     (3, ((300, 0  ), (450, 0  ))),
+        "TRIPLE_PANEL_TOP":        (3, ((300, 0  ), (450, 0  ))),
+        "TRIPLE_PANEL_LEFT":       (3, ((300, 0  ), (450, 0  ))),
+        "TRIPLE_PANEL_RIGHT":      (3, ((300, 0  ), (450, 0  ))),
+        "TRIPLE_PANEL_HORIZONTAL": (3, ((0,   0  ), (300, 600))),
+        "TRIPLE_PANEL_VERTICAL":   (3, ((200, 400), (0,   0  ))),
     }
 
     is_editing: bpy.props.IntProperty(default=-1)
@@ -351,14 +345,16 @@ class BIMWindowProperties(PropertyGroup):
     lining_offset: bpy.props.FloatProperty(name="Lining Offset", default=50)
     lining_to_panel_offset_x: bpy.props.FloatProperty(name="Lining to Panel Offset X", default=25)
     lining_to_panel_offset_y: bpy.props.FloatProperty(name="Lining to Panel Offset Y", default=25)
-    mullion_thickness: bpy.props.FloatProperty(name="(not used) Mullion Thickness")
-    transom_thickness: bpy.props.FloatProperty(name="(not used) Transom Thickness")
+    mullion_thickness: bpy.props.FloatProperty(name="Mullion Thickness", default=50)
+    first_mullion_offset: bpy.props.FloatProperty(name="First Mullion Offset", default=300)
+    second_mullion_offset: bpy.props.FloatProperty(name="Second Mullion Offset", default=450)
+    transom_thickness: bpy.props.FloatProperty(name="Transom Thickness", default=50)
+    first_transom_offset: bpy.props.FloatProperty(name="First Transom Offset", default=300)
+    second_transom_offset: bpy.props.FloatProperty(name="Second Transom Offset", default=600)
 
     # panel_properties
     frame_depth: bpy.props.FloatVectorProperty(name="Frame Depth", size=3, default=[35] * 3)
     frame_thickness: bpy.props.FloatVectorProperty(name="Frame Thickness", size=3, default=[35] * 3)
-    relative_width: bpy.props.FloatVectorProperty(name="Relative Width", size=3, default=[1, 0, 0])
-    relative_height: bpy.props.FloatVectorProperty(name="Relative Height", size=3, default=[1, 0, 0])
 
     def get_general_kwargs(self):
         return {
@@ -368,20 +364,46 @@ class BIMWindowProperties(PropertyGroup):
         }
 
     def get_lining_kwargs(self):
-        return {
+        kwargs = {
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
             "lining_offset": self.lining_offset,
             "lining_to_panel_offset_x": self.lining_to_panel_offset_x,
             "lining_to_panel_offset_y": self.lining_to_panel_offset_y,
-            "mullion_thickness": self.mullion_thickness,
-            "transom_thickness": self.transom_thickness,
         }
+
+        if self.window_type in (
+            "DOUBLE_PANEL_VERTICAL",
+            "TRIPLE_PANEL_BOTTOM",
+            "TRIPLE_PANEL_TOP",
+            "TRIPLE_PANEL_LEFT",
+            "TRIPLE_PANEL_RIGHT",
+            "TRIPLE_PANEL_VERTICAL",
+        ):
+            kwargs["mullion_thickness"] = self.mullion_thickness
+            kwargs["first_mullion_offset"] = self.first_mullion_offset
+
+        if self.window_type in (
+            "DOUBLE_PANEL_HORIZONTAL",
+            "TRIPLE_PANEL_BOTTOM",
+            "TRIPLE_PANEL_TOP",
+            "TRIPLE_PANEL_LEFT",
+            "TRIPLE_PANEL_RIGHT",
+            "TRIPLE_PANEL_HORIZONTAL",
+        ):
+            kwargs["transom_thickness"] = self.transom_thickness
+            kwargs["first_transom_offset"] = self.first_transom_offset
+
+        if self.window_type in ("TRIPLE_PANEL_VERTICAL",):
+            kwargs["second_mullion_offset"] = self.second_mullion_offset
+
+        if self.window_type in ("TRIPLE_PANEL_HORIZONTAL",):
+            kwargs["second_transom_offset"] = self.second_transom_offset
+
+        return kwargs
 
     def get_panel_kwargs(self):
         return {
             "frame_depth": self.frame_depth,
             "frame_thickness": self.frame_thickness,
-            "relative_width": self.relative_width,
-            "relative_height": self.relative_height,
         }
