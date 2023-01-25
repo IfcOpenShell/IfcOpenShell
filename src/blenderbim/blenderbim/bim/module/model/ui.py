@@ -424,13 +424,13 @@ class BIM_PT_window(bpy.types.Panel):
 
         props = context.active_object.BIMWindowProperties
 
-        if WindowData.data['parameters']:
+        if WindowData.data["parameters"]:
             row = self.layout.row(align=True)
             row.label(text="Window parameters", icon="OUTLINER_OB_LATTICE")
 
-            window_data = WindowData.data['parameters']['data']
+            window_data = WindowData.data["parameters"]["data"]
 
-            if props.is_editing != - 1:
+            if props.is_editing != -1:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_window", icon="CHECKMARK", text="Finish editing")
                 row.operator("bim.cancel_editing_window", icon="CANCEL", text="")
@@ -440,30 +440,30 @@ class BIM_PT_window(bpy.types.Panel):
                     self.layout.prop(props, prop)
 
                 lining_props = props.get_lining_kwargs()
-                self.layout.label(text='Lining properties')
+                self.layout.label(text="Lining properties")
                 for prop in lining_props:
                     self.layout.prop(props, prop)
 
                 panel_props = props.get_panel_kwargs()
-                self.layout.label(text='Panel properties')
+                self.layout.label(text="Panel properties")
                 number_of_panels = len(props.window_types_panels[props.window_type])
 
                 panel_box = self.layout.box()
                 row = panel_box.row()
-                cols = [row.column(align=True) for i in range(number_of_panels+1)]
+                cols = [row.column(align=True) for i in range(number_of_panels + 1)]
 
-                cols[0].label(text='')
-                
+                cols[0].label(text="")
+
                 for panel_i in range(number_of_panels):
-                    r = cols[panel_i+1].row()
-                    r.alignment = 'CENTER'
-                    r.label(text=f'#{panel_i}')
-                    r = cols[panel_i+1].row()
+                    r = cols[panel_i + 1].row()
+                    r.alignment = "CENTER"
+                    r.label(text=f"#{panel_i}")
+                    r = cols[panel_i + 1].row()
 
                 for prop in panel_props:
                     cols[0].label(text=f"{props.bl_rna.properties[prop].name}")
                     for panel_i in range(number_of_panels):
-                        cols[panel_i+1].prop(props, prop, index=panel_i, text='')
+                        cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
 
                 update_window_modifier_bmesh(context)
 
@@ -481,45 +481,46 @@ class BIM_PT_window(bpy.types.Panel):
                     row.label(text=str(prop_value))
 
                 lining_props = props.get_lining_kwargs()
-                self.layout.label(text='Lining properties')
+                self.layout.label(text="Lining properties")
                 lining_box = self.layout.box()
                 for prop in lining_props:
-                    prop_value = window_data['lining_properties'][prop]
+                    prop_value = window_data["lining_properties"][prop]
                     prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
                     row = lining_box.row(align=True)
                     row.label(text=f"{props.bl_rna.properties[prop].name}")
                     row.label(text=str(prop_value))
 
                 panel_props = props.get_panel_kwargs()
-                self.layout.label(text='Panel properties')
+                self.layout.label(text="Panel properties")
                 number_of_panels = len(props.window_types_panels[props.window_type])
 
                 panel_box = self.layout.box()
                 row = panel_box.row()
-                cols = [row.column(align=True) for i in range(number_of_panels+1)]
-                cols[0].label(text='')
-                
+                cols = [row.column(align=True) for i in range(number_of_panels + 1)]
+                cols[0].label(text="")
+
                 for panel_i in range(number_of_panels):
-                    r = cols[panel_i+1].row()
-                    r.alignment = 'CENTER'
-                    r.label(text=f'#{panel_i}')
-                    r = cols[panel_i+1].row()
+                    r = cols[panel_i + 1].row()
+                    r.alignment = "CENTER"
+                    r.label(text=f"#{panel_i}")
+                    r = cols[panel_i + 1].row()
 
                 # TODO: align property values more evenly
                 for prop in panel_props:
                     cols[0].row().label(text=f"{props.bl_rna.properties[prop].name}")
                     for panel_i in range(number_of_panels):
-                        r = cols[panel_i+1].row()
-                        r.alignment = 'CENTER'
-                        prop_value = window_data['panel_properties'][prop][panel_i]
+                        r = cols[panel_i + 1].row()
+                        r.alignment = "CENTER"
+                        prop_value = window_data["panel_properties"][prop][panel_i]
                         prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
                         r.label(text=str(prop_value))
-                        r = cols[panel_i+1].row()
+                        r = cols[panel_i + 1].row()
 
         else:
             row = self.layout.row()
             row.label(text="No Window Found")
             row.operator("bim.add_window", icon="ADD", text="")
+
 
 class BIM_MT_model(Menu):
     bl_idname = "BIM_MT_model"

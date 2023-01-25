@@ -361,7 +361,7 @@ class EnableEditingStair(bpy.types.Operator, tool.Ifc.Operator):
             setattr(props, prop_name, data[prop_name])
 
         props.is_editing = 1
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
 class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):

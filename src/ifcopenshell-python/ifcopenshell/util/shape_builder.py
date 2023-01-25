@@ -30,6 +30,7 @@ sign = lambda x: x and (1, -1)[x < 0]
 # is applied twice during one run to the same element
 # which might produce undesirable results
 
+
 class ShapeBuilder:
     def __init__(self, ifc_file):
         self.ifc = ifc_file
@@ -60,7 +61,7 @@ class ShapeBuilder:
         dimensions = len(size)
 
         if not position:
-            position = Vector([0]*dimensions)
+            position = Vector([0] * dimensions)
 
         # adds support both 2d and 3d sizes
         non_empty_coords = [i for i, v in enumerate(size) if v]
@@ -70,7 +71,7 @@ class ShapeBuilder:
             position,
             position + size * id_matrix[non_empty_coords[0]],
             position + size,
-            position + size * id_matrix[non_empty_coords[1]]
+            position + size * id_matrix[non_empty_coords[1]],
         ]
         return points
 
@@ -132,7 +133,7 @@ class ShapeBuilder:
             V(0, -y_axis_radius),
         )
         if position_offset:
-            trim_points = [points[i]+position_offset for i in trim_points_mask]
+            trim_points = [points[i] + position_offset for i in trim_points_mask]
         else:
             trim_points = [points[i] for i in trim_points_mask]
         return trim_points
@@ -148,7 +149,7 @@ class ShapeBuilder:
     ):
         """
         Ellipse trimming points should be specified in counter clockwise order.
-        
+
         For example, if you need to get the part of the ellipse ABOVE y-axis, you need to use mask (0,2). Below y-axis - (2,0)
 
         For more information about trim_points_mask check builder.get_trim_points_from_mask
@@ -157,7 +158,9 @@ class ShapeBuilder:
         for further extrusion.
         """
         direction = self.ifc.createIfcDirection(ref_x_direction)
-        ifc_position = self.ifc.createIfcAxis2Placement2D(self.ifc.createIfcCartesianPoint(position), RefDirection=direction)
+        ifc_position = self.ifc.createIfcAxis2Placement2D(
+            self.ifc.createIfcCartesianPoint(position), RefDirection=direction
+        )
         ifc_ellipse = self.ifc.createIfcEllipse(Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius)
 
         if not trim_points:
@@ -239,11 +242,10 @@ class ShapeBuilder:
 
         return processed_objects if multiple_objects else processed_objects[0]
 
-    def rotate_2d_point(self, point_2d:Vector, angle=90, 
-            pivot_point:Vector = Vector( (0., 0.)).freeze(),
-            counter_clockwise=False
+    def rotate_2d_point(
+        self, point_2d: Vector, angle=90, pivot_point: Vector = Vector((0.0, 0.0)).freeze(), counter_clockwise=False
     ):
-        
+
         # > angle - in degrees
         # < rotated Vector
 
@@ -345,7 +347,7 @@ class ShapeBuilder:
         placement_matrix=None,
     ):
         """mirror_axes - along which axes mirror will be applied
-        
+
         For example, mirroring A(1,0) by axis (1,0) will result in A'(-1,0)
         """
         # > curve_or_item - could be a list of curves or items
@@ -415,7 +417,7 @@ class ShapeBuilder:
 
                     # TODO: add support for Z-axis too
                     # mirror point is ignored for extrusion direction
-                    new_direction = self.mirror_2d_point(extruded_direction.to_2d(), mirror_axes, mirror_point=V(0,0))
+                    new_direction = self.mirror_2d_point(extruded_direction.to_2d(), mirror_axes, mirror_point=V(0, 0))
                     new_direction = new_direction.to_3d()
                     new_direction.z = extruded_direction.z
 

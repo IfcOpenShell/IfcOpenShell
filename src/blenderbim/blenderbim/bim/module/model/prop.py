@@ -303,7 +303,7 @@ class BIMSverchokProperties(PropertyGroup):
 def window_type_prop_update(self, context):
     panels_data = self.window_types_panels[self.window_type]
     for i in range(3):
-        try: 
+        try:
             width, height = panels_data[i]
         except IndexError:
             width, height = (0.0, 0.0)
@@ -311,51 +311,54 @@ def window_type_prop_update(self, context):
         self.relative_width[i] = width
         self.relative_height[i] = height
 
+
 class BIMWindowProperties(PropertyGroup):
     window_types = (
-        ('SINGLE_PANEL', 'SINGLE_PANEL', ''),
-        ('DOUBLE_PANEL_HORIZONTAL', 'DOUBLE_PANEL_HORIZONTAL', ''),
-        ('DOUBLE_PANEL_VERTICAL', 'DOUBLE_PANEL_VERTICAL', ''),
-        ('TRIPLE_PANEL_BOTTOM', 'TRIPLE_PANEL_BOTTOM', ''),
-        ('TRIPLE_PANEL_TOP', 'TRIPLE_PANEL_TOP', ''),
-        ('TRIPLE_PANEL_LEFT', 'TRIPLE_PANEL_LEFT', ''),
-        ('TRIPLE_PANEL_RIGHT', 'TRIPLE_PANEL_RIGHT', ''),
-        ('TRIPLE_PANEL_HORIZONTAL', 'TRIPLE_PANEL_HORIZONTAL', ''),
-        ('TRIPLE_PANEL_VERTICAL', 'TRIPLE_PANEL_VERTICAL', ''),
+        ("SINGLE_PANEL", "SINGLE_PANEL", ""),
+        ("DOUBLE_PANEL_HORIZONTAL", "DOUBLE_PANEL_HORIZONTAL", ""),
+        ("DOUBLE_PANEL_VERTICAL", "DOUBLE_PANEL_VERTICAL", ""),
+        ("TRIPLE_PANEL_BOTTOM", "TRIPLE_PANEL_BOTTOM", ""),
+        ("TRIPLE_PANEL_TOP", "TRIPLE_PANEL_TOP", ""),
+        ("TRIPLE_PANEL_LEFT", "TRIPLE_PANEL_LEFT", ""),
+        ("TRIPLE_PANEL_RIGHT", "TRIPLE_PANEL_RIGHT", ""),
+        ("TRIPLE_PANEL_HORIZONTAL", "TRIPLE_PANEL_HORIZONTAL", ""),
+        ("TRIPLE_PANEL_VERTICAL", "TRIPLE_PANEL_VERTICAL", ""),
     )
 
     # default panel relative dimensions
     window_types_panels = {
-        'SINGLE_PANEL':            ((1.0, 1.0),                           ),
-        'DOUBLE_PANEL_HORIZONTAL': ((1.0, 0.5),  (1.0, 0.5),              ),
-        'DOUBLE_PANEL_VERTICAL':   ((0.5, 1.0),  (0.5, 1.0),              ),
-        'TRIPLE_PANEL_BOTTOM':     ((0.5, 0.5),  (0.5, 0.5),  (1.0, 0.5), ),
-        'TRIPLE_PANEL_TOP':        ((1.0, 0.5),  (0.5, 0.5),  (0.5, 0.5), ),
-        'TRIPLE_PANEL_LEFT':       ((0.5, 1.0),  (0.5, 0.5),  (0.5, 0.5), ),
-        'TRIPLE_PANEL_RIGHT':      ((0.5, 0.5),  (0.5, 1.0),  (0.5, 0.5), ),
-        'TRIPLE_PANEL_HORIZONTAL': ((1.0, 1/3), (1.0, 1/3), (1.0, 1/3),),
-        'TRIPLE_PANEL_VERTICAL':   ((1/3, 1.0), (1/3, 1.0), (1/3, 1.0),),
+        "SINGLE_PANEL":            ((1.0, 1.0),                           ),
+        "DOUBLE_PANEL_HORIZONTAL": ((1.0, 0.5),  (1.0, 0.5),              ),
+        "DOUBLE_PANEL_VERTICAL":   ((0.5, 1.0),  (0.5, 1.0),              ),
+        "TRIPLE_PANEL_BOTTOM":     ((0.5, 0.5),  (0.5, 0.5),  (1.0, 0.5), ),
+        "TRIPLE_PANEL_TOP":        ((1.0, 0.5),  (0.5, 0.5),  (0.5, 0.5), ),
+        "TRIPLE_PANEL_LEFT":       ((0.5, 1.0),  (0.5, 0.5),  (0.5, 0.5), ),
+        "TRIPLE_PANEL_RIGHT":      ((0.5, 0.5),  (0.5, 1.0),  (0.5, 0.5), ),
+        "TRIPLE_PANEL_HORIZONTAL": ((1.0, 1/3), (1.0, 1/3), (1.0, 1/3),),
+        "TRIPLE_PANEL_VERTICAL":   ((1/3, 1.0), (1/3, 1.0), (1/3, 1.0),),
     }
 
     is_editing: bpy.props.IntProperty(default=-1)
-    window_type: bpy.props.EnumProperty(name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update)
-    overall_height: bpy.props.FloatProperty(name='Overall Height', default=900)
-    overall_width: bpy.props.FloatProperty(name='Overall Width', default=600)
+    window_type: bpy.props.EnumProperty(
+        name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update
+    )
+    overall_height: bpy.props.FloatProperty(name="Overall Height", default=900)
+    overall_width: bpy.props.FloatProperty(name="Overall Width", default=600)
 
     # lining properties
-    lining_depth: bpy.props.FloatProperty(name='Lining Depth', default=50)
-    lining_thickness: bpy.props.FloatProperty(name='Lining Thickness', default=50)
-    lining_offset: bpy.props.FloatProperty(name='Lining Offset', default=50)
-    lining_to_panel_offset_x: bpy.props.FloatProperty(name='Lining to Panel Offset X', default=25)
-    lining_to_panel_offset_y: bpy.props.FloatProperty(name='Lining to Panel Offset Y', default=25)
-    mullion_thickness: bpy.props.FloatProperty(name='(not used) Mullion Thickness')
-    transom_thickness: bpy.props.FloatProperty(name='(not used) Transom Thickness')
+    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=50)
+    lining_thickness: bpy.props.FloatProperty(name="Lining Thickness", default=50)
+    lining_offset: bpy.props.FloatProperty(name="Lining Offset", default=50)
+    lining_to_panel_offset_x: bpy.props.FloatProperty(name="Lining to Panel Offset X", default=25)
+    lining_to_panel_offset_y: bpy.props.FloatProperty(name="Lining to Panel Offset Y", default=25)
+    mullion_thickness: bpy.props.FloatProperty(name="(not used) Mullion Thickness")
+    transom_thickness: bpy.props.FloatProperty(name="(not used) Transom Thickness")
 
     # panel_properties
-    frame_depth: bpy.props.FloatVectorProperty(name='Frame Depth', size=3, default=[35]*3)
-    frame_thickness: bpy.props.FloatVectorProperty(name='Frame Thickness', size=3, default=[35]*3)
-    relative_width: bpy.props.FloatVectorProperty(name='Relative Width', size=3, default=[1,0,0])
-    relative_height: bpy.props.FloatVectorProperty(name='Relative Height', size=3, default=[1,0,0])
+    frame_depth: bpy.props.FloatVectorProperty(name="Frame Depth", size=3, default=[35] * 3)
+    frame_thickness: bpy.props.FloatVectorProperty(name="Frame Thickness", size=3, default=[35] * 3)
+    relative_width: bpy.props.FloatVectorProperty(name="Relative Width", size=3, default=[1, 0, 0])
+    relative_height: bpy.props.FloatVectorProperty(name="Relative Height", size=3, default=[1, 0, 0])
 
     def get_general_kwargs(self):
         return {
