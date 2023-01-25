@@ -171,7 +171,7 @@ def create_bm_window_closed_profile(bm, size: Vector, thickness: float, position
 
     bmesh.ops.translate(bm, vec=position, verts=new_verts + translate_verts)
 
-    return new_verts
+    return new_verts + translate_verts
 
 
 def update_window_modifier_bmesh(context):
