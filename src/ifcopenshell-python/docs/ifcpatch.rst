@@ -57,7 +57,8 @@ Here is a minimal example of how to use IfcPatch as a library:
     import ifcpatch
 
     output = ifcpatch.execute({
-        "input": ifcopenshell.open("input.ifc"),
+        "input": "input.ifc",
+        "file": ifcopenshell.open("input.ifc"),
         "recipe": "ExtractElements",
         "arguments": [".IfcWall"],
     })
