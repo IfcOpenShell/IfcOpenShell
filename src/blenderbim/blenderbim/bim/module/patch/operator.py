@@ -82,7 +82,8 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
         output = ifcpatch.execute(
             {
-                "input": ifcopenshell.open(props.ifc_patch_input),
+                "input": props.ifc_patch_input,
+                "file": ifcopenshell.open(props.ifc_patch_input),
                 "recipe": props.ifc_patch_recipes,
                 "arguments": arguments,
                 "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),

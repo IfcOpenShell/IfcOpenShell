@@ -37,8 +37,10 @@ def execute(args):
     :param args: A dictionary of arguments, corresponding to the parameters
         listed subsequent to this in this docstring.
     :type args: dict
-    :param input: An IFC model to apply the patch recipe to.
-    :type input: ifcopenshell.file.file
+    :param input: A filepath to the incoming IFC file.
+    :type input: str
+    :param file: An IFC model to apply the patch recipe to.
+    :type file: ifcopenshell.file.file
     :param recipe: The name of the recipe. This is the same as the filename of
         the recipe. E.g. "ExtractElements".
     :type recipe: str
@@ -57,7 +59,8 @@ def execute(args):
     .. code:: python
 
         output = ifcpatch.execute({
-            "input": ifcopenshell.open("input.ifc"),
+            "input": "input.ifc",
+            "file": ifcopenshell.open("input.ifc"),
             "recipe": "ExtractElements",
             "arguments": [".IfcWall"],
         })
@@ -70,9 +73,9 @@ def execute(args):
     recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
     recipe = getattr(recipes, args["recipe"])
     if recipe.Patcher.__init__.__doc__ is not None:
-        patcher = recipe.Patcher(args["input"], ifc_file, logger, *args["arguments"])
+        patcher = recipe.Patcher(args["input"], args["file"], logger, *args["arguments"])
     else:
-        patcher = recipe.Patcher(args["input"], ifc_file, logger, args["arguments"])
+        patcher = recipe.Patcher(args["input"], args["file"], logger, args["arguments"])
     patcher.patch()
     output = getattr(patcher, "file_patched", patcher.file)
     return output
