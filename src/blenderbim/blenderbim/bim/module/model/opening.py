@@ -255,6 +255,7 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                         is_global=True,
                         should_sync_changes_first=False,
                     )
+                    tool.Geometry.clear_cache(building_element)
         return {"FINISHED"}
 
 
