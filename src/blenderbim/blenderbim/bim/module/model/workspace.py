@@ -274,8 +274,12 @@ class BimToolUI:
             "IfcDoor",
             "IfcDoorStandardCase",
         ):
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="rl", text="RL")
+            if AuthoringData.data["active_class"] in ("IfcWindow", "IfcWindowStandardCase"):
+                row = cls.layout.row(align=True)
+                row.prop(data=cls.props, property="rl2", text="RL")
+            elif AuthoringData.data["active_class"] in ("IfcDoor", "IfcDoorStandardCase"):
+                row = cls.layout.row(align=True)
+                row.prop(data=cls.props, property="rl1", text="RL")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
