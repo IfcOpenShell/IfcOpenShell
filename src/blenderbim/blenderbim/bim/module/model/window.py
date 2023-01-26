@@ -106,6 +106,7 @@ def replace_representation_for_object(ifc_file, ifc_context, obj, new_representa
         for inverse in ifc_file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
         core.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=new_representation,

@@ -106,6 +106,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=voided_obj,
             representation=representation,
@@ -248,6 +249,7 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 if body:
                     blenderbim.core.geometry.switch_representation(
+                        tool.Ifc,
                         tool.Geometry,
                         obj=building_obj,
                         representation=body,
@@ -255,7 +257,6 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                         is_global=True,
                         should_sync_changes_first=False,
                     )
-                    tool.Geometry.clear_cache(building_element)
         return {"FINISHED"}
 
 
@@ -417,6 +418,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         tool.Model.clear_scene_openings()
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj1,
             representation=representation,
@@ -548,6 +550,7 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body:
                     blenderbim.core.geometry.switch_representation(
+                        tool.Ifc,
                         tool.Geometry,
                         obj=upstream_obj,
                         representation=body,
@@ -630,6 +633,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
 
             body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
                 tool.Geometry,
                 obj=obj,
                 representation=body,
