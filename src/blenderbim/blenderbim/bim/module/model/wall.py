@@ -500,6 +500,7 @@ class DumbWallGenerator:
         return (
             bpy.context.scene.grease_pencil
             and len(bpy.context.scene.grease_pencil.layers) == 1
+            and bpy.context.scene.grease_pencil.layers[0].info == "Note"
             and bpy.context.scene.grease_pencil.layers[0].active_frame.strokes
         )
 
