@@ -515,6 +515,7 @@ class DumbProfileJoiner:
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=new_body,
