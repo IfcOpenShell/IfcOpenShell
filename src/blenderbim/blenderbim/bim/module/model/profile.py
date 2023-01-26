@@ -180,6 +180,7 @@ class DumbProfileGenerator:
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
         )
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,

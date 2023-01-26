@@ -201,6 +201,7 @@ class DumbSlabGenerator:
         )
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,

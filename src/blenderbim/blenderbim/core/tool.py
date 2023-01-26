@@ -410,7 +410,6 @@ class Qto:
     def calculate_object_quantities(cls, calculator, baste_qto, object): pass
     def add_object_base_qto(cls, object): pass
     def add_product_base_qto(cls, product): pass
-    def get_applicable_base_quantity_names(cls, product): pass
     def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
     def get_new_guessed_quantity(cls, object, qto_name, quantity_name, ): pass
 
@@ -658,7 +657,6 @@ class Unit:
     def export_unit_attributes(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
     def get_scene_unit_si_prefix(cls): pass
-    def get_si_name_from_unit_type(cls, unit_type): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
     def is_scene_unit_metric(cls): pass

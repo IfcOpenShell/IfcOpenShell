@@ -78,6 +78,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj1,
             representation=representation,
@@ -113,6 +114,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id),
