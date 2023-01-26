@@ -62,6 +62,7 @@ jobs:
          -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
          -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
          -DGLTF_SUPPORT=On \
+         -DJSON_INCLUDE_DIR=/usr/include \
          ../cmake
         make -j $(nproc)
         make install
