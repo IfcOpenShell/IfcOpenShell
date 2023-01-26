@@ -23,6 +23,7 @@ import math
 import bmesh
 import mathutils
 import webbrowser
+import subprocess
 import numpy as np
 import blenderbim.core.tool
 import blenderbim.core.geometry
