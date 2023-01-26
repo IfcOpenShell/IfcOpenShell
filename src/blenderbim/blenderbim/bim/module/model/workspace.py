@@ -41,28 +41,40 @@ class BimTool(WorkSpaceTool):
     bl_keymap = (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
-        #("bim.sync_modeling", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
-
+        # ("bim.sync_modeling", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # replicate default blender selection behaviour with click and box selection
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
         # https://github.com/blender/blender/blob/master/release/scripts/presets/keyconfig/keymap_data/blender_default.py
         # the code is the data from evaluating km_3d_view_tool_select() and km_3d_view_tool_select_box()
-
         # TODO: call blender_default.py functions instead of copying?
         # from evaluating km_3d_view_tool_select()
         # https://github.com/blender/blender/blob/4815d0706fb57d6e4f897dbb4e9aba9d2323cdce/release/scripts/presets/keyconfig/keymap_data/blender_default.py#L6710
-        ('view3d.select_box', {'type': 'LEFTMOUSE', 'value': 'CLICK_DRAG'}, None), 
-        ('view3d.select_box', {'type': 'LEFTMOUSE', 'value': 'CLICK_DRAG', 'shift': True}, {'properties': [('mode', 'ADD')]}), 
-        ('view3d.select_box', {'type': 'LEFTMOUSE', 'value': 'CLICK_DRAG', 'ctrl': True}, {'properties': [('mode', 'SUB')]}), 
-        ('view3d.select_box', {'type': 'LEFTMOUSE', 'value': 'CLICK_DRAG', 'shift': True, 'ctrl': True}, {'properties': [('mode', 'AND')]}),
-
+        ("view3d.select_box", {"type": "LEFTMOUSE", "value": "CLICK_DRAG"}, None),
+        (
+            "view3d.select_box",
+            {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True},
+            {"properties": [("mode", "ADD")]},
+        ),
+        (
+            "view3d.select_box",
+            {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "ctrl": True},
+            {"properties": [("mode", "SUB")]},
+        ),
+        (
+            "view3d.select_box",
+            {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True, "ctrl": True},
+            {"properties": [("mode", "AND")]},
+        ),
         # from evaluating km_3d_view_tool_select()
         # https://github.com/blender/blender/blob/4815d0706fb57d6e4f897dbb4e9aba9d2323cdce/release/scripts/presets/keyconfig/keymap_data/blender_default.py#L6734
-        ('view3d.select', {'type': 'LEFTMOUSE', 'value': 'CLICK'}, {'properties': [('deselect_all', True)]}), 
-        ('view3d.select', {'type': 'LEFTMOUSE', 'value': 'CLICK', 'shift': True}, {'properties': [('toggle', True)]}), 
-        ('view3d.select', {'type': 'LEFTMOUSE', 'value': 'CLICK', 'alt': True}, {'properties': [('enumerate', True)]}), 
-        ('view3d.select', {'type': 'LEFTMOUSE', 'value': 'CLICK', 'shift': True, 'alt': True}, {'properties': [('toggle', True), ('enumerate', True)]}),
-
+        ("view3d.select", {"type": "LEFTMOUSE", "value": "CLICK"}, {"properties": [("deselect_all", True)]}),
+        ("view3d.select", {"type": "LEFTMOUSE", "value": "CLICK", "shift": True}, {"properties": [("toggle", True)]}),
+        ("view3d.select", {"type": "LEFTMOUSE", "value": "CLICK", "alt": True}, {"properties": [("enumerate", True)]}),
+        (
+            "view3d.select",
+            {"type": "LEFTMOUSE", "value": "CLICK", "shift": True, "alt": True},
+            {"properties": [("toggle", True), ("enumerate", True)]},
+        ),
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
@@ -99,7 +111,7 @@ class BimToolUI:
         if not AuthoringData.is_loaded:
             AuthoringData.load()
 
-        #if ifc_classes and relating_types_ids and not cls.props.icon_id and not is_tool_header:
+        # if ifc_classes and relating_types_ids and not cls.props.icon_id and not is_tool_header:
         #    # hack Dion won't like to show a preview also on the first time the sidebar is shown
         #    bpy.app.timers.register(lambda: prop.update_ifc_class(cls.props, "lost_context"))
         #    bpy.app.timers.register(lambda: prop.update_relating_type(cls.props, "lost_context"))
@@ -185,11 +197,15 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
-            op = row.operator("bim.hotkey", text="Flip"); op.hotkey = "S_F"; op.bim_operator = "flip_wall"
+            op = row.operator("bim.hotkey", text="Flip")
+            op.hotkey = "S_F"
+            op.bim_operator = "flip_wall"
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_K")
-            op = row.operator("bim.hotkey", text="Split"); op.hotkey = "S_K"; op.bim_operator = "split_wall"
+            op = row.operator("bim.hotkey", text="Split")
+            op.hotkey = "S_K"
+            op.bim_operator = "split_wall"
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_R")
@@ -224,7 +240,9 @@ class BimToolUI:
             op.cardinal_point = int(cls.props.cardinal_point)
 
             row = cls.layout.row(align=True)
-            label = "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
+            label = (
+                "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
+            )
             row.prop(data=cls.props, property="extrusion_depth", text=label)
             op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
             op.depth = cls.props.extrusion_depth
@@ -321,8 +339,8 @@ class BimToolUI:
         cls.draw_type_selection_interface()
 
         if AuthoringData.data["ifc_classes"]:
-            #row = cls.layout.row()
-            #row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
+            # row = cls.layout.row()
+            # row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -349,7 +367,7 @@ class BimToolUI:
                 row.label(text="No Construction Type", icon="FILE_3D")
         else:
             row.label(text="No Construction Class", icon="FILE_VOLUME")
-        row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text='')
+        row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
 
     @classmethod
     def draw_basic_bim_tool_interface(cls):
