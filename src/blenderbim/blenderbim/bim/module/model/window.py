@@ -191,9 +191,7 @@ def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, positio
 def update_window_modifier_bmesh(context):
     obj = context.object
     props = obj.BIMWindowProperties
-    # blender interprets all values as if they are in meters
-    # so no need to convert to blender scene units, just convert to meters
-    si_conversion = 0.001
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
     accumulated_height = [0] * len(panel_schema[0])
     built_panels = []
@@ -211,7 +209,7 @@ def update_window_modifier_bmesh(context):
     first_transom_offset = props.first_transom_offset * si_conversion
     second_transom_offset = props.second_transom_offset * si_conversion
 
-    glass_thickness = 10 * si_conversion
+    glass_thickness = 10 * 0.001 * si_conversion
 
     bm = bmesh.new()
     panel_schema = list(reversed(panel_schema))
@@ -334,6 +332,17 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
+
+        si_coversion = 0.001 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for prop_name in props.bl_rna.properties.keys():
+            if prop_name in ("rna_type", "name", "is_editing", "window_type"):
+                continue
+            prop_value = getattr(props, prop_name)
+            if type(prop_value) is float:
+                prop_value = prop_value * si_coversion
+            elif type(prop_value) is bpy.types.bpy_prop_array:
+                prop_value = [el * si_coversion for el in prop_value]
+            setattr(props, prop_name, prop_value)
 
         window_data = props.get_general_kwargs()
         lining_props = props.get_lining_kwargs()

@@ -29,15 +29,15 @@ from mathutils import Vector
 # - order of rows is from top of the window to bottom
 
 DEFAULT_PANEL_SCHEMAS = {
-    "SINGLE_PANEL": [[0]],
-    "DOUBLE_PANEL_HORIZONTAL": [[0], [1]],
-    "DOUBLE_PANEL_VERTICAL": [[0, 1]],
-    "TRIPLE_PANEL_BOTTOM": [[0, 1], [2, 2]],
-    "TRIPLE_PANEL_TOP": [[0, 0], [1, 2]],
-    "TRIPLE_PANEL_LEFT": [[0, 1], [0, 2]],
-    "TRIPLE_PANEL_RIGHT": [[0, 1], [2, 1]],
-    "TRIPLE_PANEL_HORIZONTAL": [[0], [1], [2]],
-    "TRIPLE_PANEL_VERTICAL": [[0, 1, 2]],
+    "SINGLE_PANEL":            [[0]],
+    "DOUBLE_PANEL_HORIZONTAL": [[0],    [1]],
+    "DOUBLE_PANEL_VERTICAL":   [[0, 1]],
+    "TRIPLE_PANEL_BOTTOM":     [[0, 1], [2, 2]],
+    "TRIPLE_PANEL_TOP":        [[0, 0], [1, 2]],
+    "TRIPLE_PANEL_LEFT":       [[0, 1], [0, 2]],
+    "TRIPLE_PANEL_RIGHT":      [[0, 1], [2, 1]],
+    "TRIPLE_PANEL_HORIZONTAL": [[0],    [1],   [2]],
+    "TRIPLE_PANEL_VERTICAL":   [[0, 1, 2]],
 }
 
 
@@ -96,8 +96,8 @@ class Usecase:
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         builder = ShapeBuilder(self.file)
-        overall_height = self.convert_si_to_unit(self.settings["overall_height"])
-        overall_width = self.convert_si_to_unit(self.settings["overall_width"])
+        overall_height = self.settings["overall_height"]
+        overall_width = self.settings["overall_width"]
 
         if self.settings["context"].TargetView == "ELEVATION_VIEW":
             rect = builder.rectangle(V(overall_width, 0, overall_height))
@@ -110,19 +110,19 @@ class Usecase:
         built_panels = []
         window_items = []
 
-        lining_thickness = self.convert_si_to_unit(self.settings["lining_properties"]["LiningThickness"])
-        lining_depth = self.convert_si_to_unit(self.settings["lining_properties"]["LiningDepth"])
-        lining_offset = self.convert_si_to_unit(self.settings["lining_properties"]["LiningOffset"])
-        lining_panel_offset_x = self.convert_si_to_unit(self.settings["lining_properties"]["LiningToPanelOffsetX"])
-        lining_panel_offset_y = self.convert_si_to_unit(self.settings["lining_properties"]["LiningToPanelOffsetY"])
+        lining_thickness = self.settings["lining_properties"]["LiningThickness"]
+        lining_depth = self.settings["lining_properties"]["LiningDepth"]
+        lining_offset = self.settings["lining_properties"]["LiningOffset"]
+        lining_panel_offset_x = self.settings["lining_properties"]["LiningToPanelOffsetX"]
+        lining_panel_offset_y = self.settings["lining_properties"]["LiningToPanelOffsetY"]
         glass_thickness = self.convert_si_to_unit(10)
 
-        mullion_thickness = self.convert_si_to_unit(self.settings["lining_properties"]["MullionThickness"]) / 2
-        first_mullion_offset = self.convert_si_to_unit(self.settings["lining_properties"]["FirstMullionOffset"])
-        second_mullion_offset = self.convert_si_to_unit(self.settings["lining_properties"]["SecondMullionOffset"])
-        transom_thickness = self.convert_si_to_unit(self.settings["lining_properties"]["TransomThickness"]) / 2
-        first_transom_offset = self.convert_si_to_unit(self.settings["lining_properties"]["FirstTransomOffset"])
-        second_transom_offset = self.convert_si_to_unit(self.settings["lining_properties"]["SecondTransomOffset"])
+        mullion_thickness = self.settings["lining_properties"]["MullionThickness"] / 2
+        first_mullion_offset = self.settings["lining_properties"]["FirstMullionOffset"]
+        second_mullion_offset = self.settings["lining_properties"]["SecondMullionOffset"]
+        transom_thickness = self.settings["lining_properties"]["TransomThickness"] / 2
+        first_transom_offset = self.settings["lining_properties"]["FirstTransomOffset"]
+        second_transom_offset = self.settings["lining_properties"]["SecondTransomOffset"]
 
         panel_schema = list(reversed(panel_schema))
 
@@ -162,9 +162,9 @@ class Usecase:
                     continue
 
                 cur_panel = panels[panel_i]
+                panel_depth = cur_panel["FrameDepth"]
+                panel_thickness = cur_panel["FrameThickness"]
                 current_items = []
-                panel_depth = self.convert_si_to_unit(cur_panel["FrameDepth"])
-                panel_thickness = self.convert_si_to_unit(cur_panel["FrameThickness"])
 
                 panel_actual_width = panel_width - lining_panel_offset_x * 2
                 panel_actual_height = panel_height - lining_panel_offset_x * 2

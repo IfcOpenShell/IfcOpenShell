@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
+import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
@@ -302,10 +304,15 @@ class BIMSverchokProperties(PropertyGroup):
 
 def window_type_prop_update(self, context):
     number_of_panels, panels_data = self.window_types_panels[self.window_type]
+
+    si_coversion = 0.001 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    panels_data = [[v * si_coversion for v in data] for data in panels_data]
+
     self.first_mullion_offset, self.second_mullion_offset = panels_data[0]
     self.first_transom_offset, self.second_transom_offset = panels_data[1]
 
 
+# default prop values are in mm and converted later
 class BIMWindowProperties(PropertyGroup):
     window_types = (
         ("SINGLE_PANEL", "SINGLE_PANEL", ""),
