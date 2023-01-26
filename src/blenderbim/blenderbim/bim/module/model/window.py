@@ -191,7 +191,9 @@ def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, positio
 def update_window_modifier_bmesh(context):
     obj = context.object
     props = obj.BIMWindowProperties
-    si_conversion = 0.001 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    # blender interprets all values as if they are in meters
+    # so no need to convert to blender scene units, just convert to meters
+    si_conversion = 0.001
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
     accumulated_height = [0] * len(panel_schema[0])
     built_panels = []
