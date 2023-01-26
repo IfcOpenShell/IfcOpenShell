@@ -19,9 +19,10 @@
 import os
 import bpy
 import json
-import textwrap
 import time
 import logging
+import textwrap
+import tempfile
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
