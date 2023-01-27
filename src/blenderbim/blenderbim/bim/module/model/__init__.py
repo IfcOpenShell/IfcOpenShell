@@ -119,6 +119,7 @@ classes = (
     sverchok_modifier.DeleteSverchokGraph,
     sverchok_modifier.ImportSverchokGraph,
     sverchok_modifier.ExportSverchokGraph,
+    window.BIM_OT_add_window,
     window.AddWindow,
     window.CancelEditingWindow,
     window.FinishEditingWindow,
@@ -139,6 +140,7 @@ def register():
     bpy.types.Object.BIMWindowProperties = bpy.props.PointerProperty(type=prop.BIMWindowProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.append(window.add_object_button)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
     wm = bpy.context.window_manager
@@ -160,6 +162,7 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.remove(window.add_object_button)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
