@@ -1243,6 +1243,8 @@ class SectionLevelDecorator(LevelDecorator):
             v1 = verts[1]
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
+            if not p0 or not p1:
+                continue
             dir = p1 - p0
             if dir.length < 1:
                 continue
