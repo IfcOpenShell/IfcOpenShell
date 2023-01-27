@@ -76,9 +76,11 @@ class Usecase:
                 ifcopenshell.api.run("grid.remove_grid_axis", self.file, axis=axis)
 
         # TODO: remove object placement and other relationships
-        ignored = set()
-        while inverses := set(self.file.get_inverse(self.settings["product"])) - ignored:
-            inverse = next(iter(inverses))
+        for inverse_id in [i.id() for i in self.file.get_inverse(self.settings["product"])]:
+            try:
+                inverse = self.file.by_id(inverse_id)
+            except:
+                continue
             if inverse.is_a("IfcRelDefinesByProperties"):
                 ifcopenshell.api.run(
                     "pset.remove_pset",
@@ -117,6 +119,4 @@ class Usecase:
                     self.file.remove(inverse)
             elif inverse.is_a("IfcRelConnectsPathElements"):
                 self.file.remove(inverse)
-            else:
-                ignored.add(inverse)
         self.file.remove(self.settings["product"])
