@@ -339,6 +339,7 @@ class BIMWindowProperties(PropertyGroup):
         "TRIPLE_PANEL_VERTICAL":   (3, ((200, 400), (0,   0  ))),
     }
 
+    window_added_previously: bpy.props.BoolProperty(default=False)
     is_editing: bpy.props.IntProperty(default=-1)
     window_type: bpy.props.EnumProperty(
         name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update

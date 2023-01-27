@@ -370,16 +370,18 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
 
-        si_coversion = 0.001 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        for prop_name in props.bl_rna.properties.keys():
-            if prop_name in ("rna_type", "name", "is_editing", "window_type"):
-                continue
-            prop_value = getattr(props, prop_name)
-            if type(prop_value) is float:
-                prop_value = prop_value * si_coversion
-            elif type(prop_value) is bpy.types.bpy_prop_array:
-                prop_value = [el * si_coversion for el in prop_value]
-            setattr(props, prop_name, prop_value)
+        # need to make sure all default props will have correct units
+        si_conversion = 0.001 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        if not props.window_added_previously:
+            for prop_name in props.bl_rna.properties.keys():
+                if prop_name in ("rna_type", "name", "is_editing", "window_type", "window_added_previously"):
+                    continue
+                prop_value = getattr(props, prop_name)
+                if type(prop_value) is float:
+                    prop_value = prop_value * si_conversion
+                elif type(prop_value) is bpy.types.bpy_prop_array:
+                    prop_value = [el * si_conversion for el in prop_value]
+                setattr(props, prop_name, prop_value)
 
         window_data = props.get_general_kwargs()
         lining_props = props.get_lining_kwargs()
@@ -470,10 +472,24 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         pset = ifcopenshell.util.element.get_psets(element)
         data = json.loads(pset["BBIM_Window"]["Data"])
+        data.update(data.pop("lining_properties"))
+        data.update(data.pop("panel_properties"))
+
         # required since we could load pset from .ifc and BIMWindowProperties won't be set
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
-
+        
+        # need to make sure all props that weren't used before
+        # will have correct units
+        si_conversion = 0.001 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        props_bl_rna = props.bl_rna.properties
+        for prop_name in props_bl_rna.keys():
+            if prop_name in data:
+                continue
+            if prop_name in ("rna_type", "name", "is_editing", "window_added_previously"):
+                continue
+            setattr(props, prop_name, props_bl_rna[prop_name].default*si_conversion)
+            
         props.is_editing = 1
         return {"FINISHED"}
 
@@ -485,12 +501,14 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        props = obj.BIMWindowProperties
         element = tool.Ifc.get_entity(obj)
         obj.BIMWindowProperties.is_editing = -1
 
         pset = ifcopenshell.util.element.get_psets(element)
         pset = tool.Ifc.get().by_id(pset["BBIM_Window"]["id"])
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        props.window_added_previously = True
 
         return {"FINISHED"}
 
