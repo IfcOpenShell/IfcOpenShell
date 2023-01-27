@@ -108,20 +108,20 @@ def replace_representation_for_object(ifc_file, ifc_context, obj, new_representa
     if old_representation:
         for inverse in ifc_file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-        core.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=new_representation,
-            should_reload=True,
-            is_global=False,
-            should_sync_changes_first=True,
-        )
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
     else:
         ifcopenshell.api.run(
             "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
         )
+    core.switch_representation(
+        tool.Ifc,
+        tool.Geometry,
+        obj=obj,
+        representation=new_representation,
+        should_reload=True,
+        is_global=False,
+        should_sync_changes_first=True,
+    )
 
 
 def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, position: Vector):
@@ -322,6 +322,43 @@ def update_window_modifier_bmesh(context):
     obj.data.update()
 
 
+class BIM_OT_add_window(Operator):
+    bl_idname = "mesh.add_window"
+    bl_label = "Window"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            self.report({"ERROR"}, "You need to start IFC project first to create a window.")
+            return {"CANCELLED"}
+
+        if context.object is not None:
+            spawn_location = context.object.location.copy()
+            context.object.select_set(False)
+        else:
+            spawn_location = bpy.context.scene.cursor.location.copy()
+
+        mesh = bpy.data.meshes.new("IfcWindow")
+        obj = bpy.data.objects.new("IfcWindow", mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        obj.location = spawn_location
+        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        element = blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcWindow",
+            should_add_representation=False
+        )
+        bpy.context.view_layer.objects.active = None
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        bpy.ops.bim.add_window()
+        return {"FINISHED"}
+
+
 # UI operators
 class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_window"
@@ -456,3 +493,7 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
 
         return {"FINISHED"}
+
+
+def add_object_button(self, context):
+    self.layout.operator(BIM_OT_add_window.bl_idname, icon="PLUGIN")
