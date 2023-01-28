@@ -63,5 +63,5 @@ def calculate_object_base_quantities(ifc, qto, calculator, obj):
             product=product,
             name=base_quantity_name,
         )
-    calculated_quantities = qto.calculate_object_quantities(calculator, base_quantity_name, obj)
+    calculated_quantities = qto.get_calculated_object_quantities(calculator, base_quantity_name, obj)
     ifc.run("pset.edit_qto", qto=base_qto, properties=calculated_quantities)
