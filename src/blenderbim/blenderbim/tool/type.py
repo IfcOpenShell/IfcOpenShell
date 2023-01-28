@@ -101,6 +101,7 @@ class Type(blenderbim.core.tool.Type):
         cls, obj=None, representation=None, should_reload=None, is_global=None
     ):
         return blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,

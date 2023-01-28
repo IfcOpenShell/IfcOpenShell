@@ -168,7 +168,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
-        select_and_activate_single_object(context, obj)
+        if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:
+            pass
+        else:
+            select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
     @staticmethod
@@ -499,6 +502,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
             blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
                 tool.Geometry,
                 obj=obj,
                 representation=representation,

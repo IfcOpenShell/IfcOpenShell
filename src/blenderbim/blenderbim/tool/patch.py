@@ -32,5 +32,5 @@ class Patch(blenderbim.core.tool.Patch):
     @classmethod
     def run_migrate_patch(cls, infile, outfile, schema):
         log = os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log")
-        output = ifcpatch.execute({"input": ifcopenshell.open(infile), "recipe": "Migrate", "arguments": [schema]})
+        output = ifcpatch.execute({"input": infile, "file": ifcopenshell.open(infile), "recipe": "Migrate", "arguments": [schema]})
         ifcpatch.write(output, outfile)

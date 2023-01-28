@@ -180,6 +180,7 @@ class DumbProfileGenerator:
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
         )
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -418,7 +419,7 @@ class DumbProfileJoiner:
         self.body = copy.deepcopy(body)
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
         usage = None
-        if not material or not material.is_a("IfcMaterialProfileSet"):
+        if not material or (not material.is_a("IfcMaterialProfileSet") and not material.is_a("IfcMaterialProfileSetUsage")):
             return
         if material.is_a("IfcMaterialProfileSetUsage"):
             usage = material
@@ -514,6 +515,7 @@ class DumbProfileJoiner:
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=new_body,

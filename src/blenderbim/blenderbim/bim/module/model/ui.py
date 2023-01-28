@@ -19,10 +19,10 @@
 import bpy
 import blenderbim.tool as tool
 from bpy.types import Panel, Operator, Menu
-from blenderbim.bim.module.model.data import AuthoringData, ArrayData, StairData, SverchokData
+from blenderbim.bim.module.model.data import AuthoringData, ArrayData, StairData, SverchokData, WindowData
 from blenderbim.bim.module.model.prop import store_cursor_position
 from blenderbim.bim.module.model.stair import update_stair_modifier
-from blenderbim.bim.module.model.sverchok_modifier import update_sverchok_modifier
+from blenderbim.bim.module.model.window import update_window_modifier_bmesh
 
 from blenderbim.bim.helper import prop_with_search
 
@@ -404,6 +404,121 @@ class BIM_PT_sverchok(bpy.types.Panel):
         row = self.layout.row()
         row.operator("bim.export_sverchok_graph", text="Export to JSON", icon="FILE_BACKUP")
         row.enabled = bool(props.node_group)
+
+
+class BIM_PT_window(bpy.types.Panel):
+    bl_label = "IFC Window"
+    bl_idname = "BIM_PT_window"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "modifier"
+
+    @classmethod
+    def poll(cls, context):
+        # always display modifier if it's IFC object
+        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+
+    def draw(self, context):
+        if not WindowData.is_loaded:
+            WindowData.load()
+
+        props = context.active_object.BIMWindowProperties
+
+        if WindowData.data["parameters"]:
+            row = self.layout.row(align=True)
+            row.label(text="Window parameters", icon="OUTLINER_OB_LATTICE")
+
+            window_data = WindowData.data["parameters"]["data"]
+            number_of_panels, panels_data = props.window_types_panels[props.window_type]
+
+            if props.is_editing != -1:
+                row = self.layout.row(align=True)
+                row.operator("bim.finish_editing_window", icon="CHECKMARK", text="Finish editing")
+                row.operator("bim.cancel_editing_window", icon="CANCEL", text="")
+
+                general_props = props.get_general_kwargs()
+                for prop in general_props:
+                    self.layout.prop(props, prop)
+
+                lining_props = props.get_lining_kwargs()
+                self.layout.label(text="Lining properties")
+                for prop in lining_props:
+                    self.layout.prop(props, prop)
+
+                panel_props = props.get_panel_kwargs()
+                self.layout.label(text="Panel properties")
+
+                panel_box = self.layout.box()
+                row = panel_box.row()
+                cols = [row.column(align=True) for i in range(number_of_panels + 1)]
+
+                cols[0].label(text="")
+
+                for panel_i in range(number_of_panels):
+                    r = cols[panel_i + 1].row()
+                    r.alignment = "CENTER"
+                    r.label(text=f"#{panel_i}")
+                    r = cols[panel_i + 1].row()
+
+                for prop in panel_props:
+                    cols[0].label(text=f"{props.bl_rna.properties[prop].name}")
+                    for panel_i in range(number_of_panels):
+                        cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
+
+                update_window_modifier_bmesh(context)
+
+            else:
+                row.operator("bim.enable_editing_window", icon="GREASEPENCIL", text="")
+                row.operator("bim.remove_window", icon="X", text="")
+
+                box = self.layout.box()
+                general_props = props.get_general_kwargs()
+                for prop in general_props:
+                    prop_value = window_data[prop]
+                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                    row = box.row(align=True)
+                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=str(prop_value))
+
+                lining_props = props.get_lining_kwargs()
+                self.layout.label(text="Lining properties")
+                lining_box = self.layout.box()
+                for prop in lining_props:
+                    prop_value = window_data["lining_properties"][prop]
+                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                    row = lining_box.row(align=True)
+                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=str(prop_value))
+
+                panel_props = props.get_panel_kwargs()
+                self.layout.label(text="Panel properties")
+
+                panel_box = self.layout.box()
+                row = panel_box.row()
+                cols = [row.column(align=True) for i in range(number_of_panels + 1)]
+                cols[0].label(text="")
+
+                for panel_i in range(number_of_panels):
+                    r = cols[panel_i + 1].row()
+                    r.alignment = "CENTER"
+                    r.label(text=f"#{panel_i}")
+                    r = cols[panel_i + 1].row()
+
+                # TODO: align property values more evenly
+                for prop in panel_props:
+                    cols[0].row().label(text=f"{props.bl_rna.properties[prop].name}")
+                    for panel_i in range(number_of_panels):
+                        r = cols[panel_i + 1].row()
+                        r.alignment = "CENTER"
+                        prop_value = window_data["panel_properties"][prop][panel_i]
+                        prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                        r.label(text=str(prop_value))
+                        r = cols[panel_i + 1].row()
+
+        else:
+            row = self.layout.row()
+            row.label(text="No Window Found")
+            row.operator("bim.add_window", icon="ADD", text="")
 
 
 class BIM_MT_model(Menu):

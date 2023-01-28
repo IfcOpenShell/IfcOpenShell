@@ -1736,7 +1736,7 @@ class IfcImporter:
 
     def get_drawing_group(self, element):
         for rel in element.HasAssignments or []:
-            if rel.is_a("IfcRelAssignsToGroup"):
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
                 return rel.RelatingGroup
 
     def get_element_matrix(self, element):

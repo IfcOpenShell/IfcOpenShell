@@ -23,6 +23,7 @@ import math
 import bmesh
 import mathutils
 import webbrowser
+import subprocess
 import numpy as np
 import blenderbim.core.tool
 import blenderbim.core.geometry
@@ -187,6 +188,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         else:
             name = document.DocumentId or "X"
         name += " - " + (document.Name or "Unnamed")
+        if not hasattr(document, "Scope"):
+            return
         if document.Scope == "DOCUMENTATION":
             return os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", name + ".svg")
         elif document.Scope == "SCHEDULE":

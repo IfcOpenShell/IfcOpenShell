@@ -386,7 +386,6 @@ class Model(blenderbim.core.tool.Model):
                         ifcopenshell.api.run(
                             "pset.edit_pset",
                             tool.Ifc.get(),
-                            product=child_element,
                             pset=tool.Ifc.get().by_id(child_pset["id"]),
                             properties={"Data": None},
                         )
