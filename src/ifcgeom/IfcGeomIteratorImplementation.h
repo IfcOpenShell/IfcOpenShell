@@ -132,7 +132,11 @@ namespace IfcGeom {
 		MAKE_TYPE_NAME(IteratorImplementation_)(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 
+		// When single-threaded
 		MAKE_TYPE_NAME(Kernel) kernel;
+
+		// When multi-threaded
+		std::vector<MAKE_TYPE_NAME(Kernel)*> kernel_pool;
 
 		IteratorSettings settings;
 		IfcParse::IfcFile* ifc_file;
@@ -312,7 +316,6 @@ namespace IfcGeom {
 				conc_threads = tasks_.size();
 			}
 
-			std::vector<MAKE_TYPE_NAME(Kernel)*> kernel_pool;
 			kernel_pool.reserve(conc_threads);
 			for (unsigned i = 0; i < conc_threads; ++i) {
 				kernel_pool.push_back(new MAKE_TYPE_NAME(Kernel)(kernel));
@@ -1217,6 +1220,10 @@ namespace IfcGeom {
 
 			for (auto& p : all_processed_elements_) {
 				delete p;
+			}
+
+			for (auto& k : kernel_pool) {
+				delete k;
 			}
 
 			free_shapes();
