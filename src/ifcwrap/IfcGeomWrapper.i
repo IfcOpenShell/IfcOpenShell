@@ -204,6 +204,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	%}
 }
 
+%newobject construct_iterator_with_include_exclude;
+%newobject construct_iterator_with_include_exclude_globalid;
+%newobject construct_iterator_with_include_exclude_id;
 
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
@@ -229,10 +232,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return new IfcGeom::Iterator(settings, file, {af}, num_threads);
 	}
 %}
-
-%newobject construct_iterator_with_include_exclude;
-%newobject construct_iterator_with_include_exclude_globalid;
-%newobject construct_iterator_with_include_exclude_id;
 
 %extend IfcGeom::Representation::Triangulation {
 	%pythoncode %{
