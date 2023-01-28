@@ -1,5 +1,5 @@
 import ifcopenshell
-from ifcopenshell.util.representation import ShapeBuilder
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Vector
 
 V = lambda *x: Vector([float(i) for i in x])
@@ -66,6 +66,7 @@ def simple_uses():
 
     ifc_file.write("tmp.ifc")
 
+
 def generate_desk_test():
     ifc_file = ifcopenshell.file()
     desks = [
@@ -79,6 +80,7 @@ def generate_desk_test():
     print(f"table: {table}")
 
     ifc_file.write("tmp.ifc")
+
 
 def mirror_placement_test():
     ifc_file = ifcopenshell.api.run("project.create_file")
@@ -153,6 +155,7 @@ def mirror_placement_test():
 
     ifc_file.write("tmp.ifc")
 
+
 def curve_between_two_points_test():
     ifc_file = ifcopenshell.api.run("project.create_file")
     project = ifcopenshell.api.run(
@@ -217,6 +220,7 @@ def curve_between_two_points_test():
 
     ifc_file.write("tmp.ifc")
 
+
 def generate_simple_desk(ifc_file, width, depth, height):
     # > width, depth, height in mm
     width, depth, height = [i / 1000 for i in (width, depth, height)]
@@ -225,6 +229,7 @@ def generate_simple_desk(ifc_file, width, depth, height):
     profile = builder.profile(rectangle_curve, "simple_desk")
     extruded_area = builder.extrude(profile, height)
     return extruded_area
+
 
 def generate_table(ifc_file, width, depth, height, countertop_thickness=20, leg_size=40, leg_offset=50):
     # > width, depth, height in mm

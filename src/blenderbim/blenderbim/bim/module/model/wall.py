@@ -294,6 +294,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 wall_objs.append(obj)
             else:
                 blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
                     tool.Geometry,
                     obj=obj,
                     representation=representation,
@@ -499,6 +500,7 @@ class DumbWallGenerator:
         return (
             bpy.context.scene.grease_pencil
             and len(bpy.context.scene.grease_pencil.layers) == 1
+            and bpy.context.scene.grease_pencil.layers[0].info == "Note"
             and bpy.context.scene.grease_pencil.layers[0].active_frame.strokes
         )
 
@@ -648,6 +650,7 @@ class DumbWallGenerator:
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
         )
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -874,6 +877,7 @@ class DumbWallJoiner:
 
         body = ifcopenshell.util.representation.get_representation(element1, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=wall1,
             representation=body,
@@ -1184,6 +1188,7 @@ class DumbWallJoiner:
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=new_body,

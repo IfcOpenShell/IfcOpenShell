@@ -502,6 +502,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
             blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
                 tool.Geometry,
                 obj=obj,
                 representation=representation,

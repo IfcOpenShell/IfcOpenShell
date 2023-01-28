@@ -132,6 +132,7 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
             if not representation:
                 continue
             core.switch_representation(
+                tool.Ifc,
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
@@ -288,6 +289,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         self.file.by_id(parameter.step_id)[parameter.index] = parameter.value
         show_representation_parameters = bool(props.ifc_parameters)
         core.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=tool.Ifc.get().by_id(props.ifc_definition_id),

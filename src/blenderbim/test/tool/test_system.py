@@ -165,7 +165,7 @@ class TestImportSystems(NewFile):
         zone = ifc.createIfcZone()
         subject.import_systems()
         props = bpy.context.scene.BIMSystemProperties
-        assert len(props.systems) == 1
+        assert len(props.systems) == 2
         assert props.systems[0].ifc_definition_id == system.id()
         assert props.systems[0].name == "Unnamed"
         assert props.systems[0].ifc_class == "IfcDistributionSystem"

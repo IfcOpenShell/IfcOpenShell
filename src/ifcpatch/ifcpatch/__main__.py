@@ -31,7 +31,7 @@ parser.add_argument("-a", "--arguments", nargs="+", help="Specify custom argumen
 args = vars(parser.parse_args())
 
 print("# Loading IFC file ...")
-args["input"] = ifcopenshell.open(args["input"])
+args["file"] = ifcopenshell.open(args["input"])
 
 print("# Patching ...")
 output = ifcpatch.execute(args)

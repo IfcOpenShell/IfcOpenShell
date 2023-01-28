@@ -39,7 +39,6 @@ class TestSetQtoResult(test.bim.bootstrap.NewFile):
         subject.set_qto_result(123.4567)
         assert bpy.context.scene.BIMQtoProperties.qto_result == "123.457"
 
-
 class TestGetApplicableQuantityNames(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -122,8 +121,6 @@ class TestAddProductBaseQto(test.bim.bootstrap.NewFile):
         base_qto = subject.add_product_base_qto(wall)
         assert base_qto.Name == "Qto_WallBaseQuantities"
 
-
-
 class TestGetBaseQto(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -144,3 +141,4 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         tool.Ifc.link(wall, wall_obj)
         product = tool.Ifc.get_entity(wall_obj)
         assert not subject.get_base_qto(product) == True
+

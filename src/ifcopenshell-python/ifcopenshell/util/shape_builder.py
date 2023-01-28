@@ -30,6 +30,7 @@ sign = lambda x: x and (1, -1)[x < 0]
 # is applied twice during one run to the same element
 # which might produce undesirable results
 
+
 class ShapeBuilder:
     def __init__(self, ifc_file):
         self.ifc = ifc_file
@@ -42,25 +43,48 @@ class ShapeBuilder:
             segments.append( (len(points),1) )
         if position_offset:
             points = [Vector(p) + position_offset for p in points]
-        ifc_points = self.ifc.createIfcCartesianPointList2D(points)
+
+        dimensions = len(points[0])
+        if dimensions == 2:
+            ifc_points = self.ifc.createIfcCartesianPointList2D(points)
+        elif dimensions == 3:
+            ifc_points = self.ifc.createIfcCartesianPointList3D(points)
+
         ifc_segments = [ self.ifc.createIfcLineIndex( segment ) for segment in segments]
         ifc_curve = self.ifc.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
     def get_rectangle_coords(self, 
         size:Vector = Vector( (1., 1.) ).freeze(),
-        position:Vector = Vector( (0., 0.) ).freeze()):
+        position:Vector = None):
+
+        dimensions = len(size)
+
+        if not position:
+            position = Vector([0] * dimensions)
+
+        # adds support both 2d and 3d sizes
+        non_empty_coords = [i for i, v in enumerate(size) if v]
+        id_matrix = Matrix.Identity(dimensions)
+
         points = [
             position,
-            position + size * Vector( (0, 1)),
+            position + size * id_matrix[non_empty_coords[0]],
             position + size,
-            position + size * Vector( (1, 0))
+            position + size * id_matrix[non_empty_coords[1]],
         ]
         return points
 
     def rectangle(self, 
         size:Vector = Vector( (1., 1.) ).freeze(),
-        position:Vector = Vector( (0., 0.) ).freeze()):
+        position:Vector = None):
+        """
+        function supports both 2d and 3d rectangle sizes
+
+        if `position` not specified zero-vector will be used
+
+        returns IfcIndexedPolyCurve
+        """
         # < IfcIndexedPolyCurve
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
 
@@ -109,7 +133,7 @@ class ShapeBuilder:
             V(0, -y_axis_radius),
         )
         if position_offset:
-            trim_points = [points[i]+position_offset for i in trim_points_mask]
+            trim_points = [points[i] + position_offset for i in trim_points_mask]
         else:
             trim_points = [points[i] for i in trim_points_mask]
         return trim_points
@@ -125,7 +149,7 @@ class ShapeBuilder:
     ):
         """
         Ellipse trimming points should be specified in counter clockwise order.
-        
+
         For example, if you need to get the part of the ellipse ABOVE y-axis, you need to use mask (0,2). Below y-axis - (2,0)
 
         For more information about trim_points_mask check builder.get_trim_points_from_mask
@@ -134,7 +158,9 @@ class ShapeBuilder:
         for further extrusion.
         """
         direction = self.ifc.createIfcDirection(ref_x_direction)
-        ifc_position = self.ifc.createIfcAxis2Placement2D(self.ifc.createIfcCartesianPoint(position), RefDirection=direction)
+        ifc_position = self.ifc.createIfcAxis2Placement2D(
+            self.ifc.createIfcCartesianPoint(position), RefDirection=direction
+        )
         ifc_ellipse = self.ifc.createIfcEllipse(Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius)
 
         if not trim_points:
@@ -216,11 +242,10 @@ class ShapeBuilder:
 
         return processed_objects if multiple_objects else processed_objects[0]
 
-    def rotate_2d_point(self, point_2d:Vector, angle=90, 
-            pivot_point:Vector = Vector( (0., 0.)).freeze(),
-            counter_clockwise=False
+    def rotate_2d_point(
+        self, point_2d: Vector, angle=90, pivot_point: Vector = Vector((0.0, 0.0)).freeze(), counter_clockwise=False
     ):
-        
+
         # > angle - in degrees
         # < rotated Vector
 
@@ -286,7 +311,7 @@ class ShapeBuilder:
         mirror_axes: Vector = Vector((1.0, 1.0)).freeze(),
         mirror_point: Vector = Vector((0.0, 0.0)).freeze(),
     ):
-        """mirror axes - along which axes mirror will be applied"""
+        """mirror_axes - along which axes mirror will be applied"""
         base = point_2d  # prevent mutating the argument
         mirror_axes = Vector( [-1 if i > 0 else 1 for i in mirror_axes] )
         relative_point = base - mirror_point
@@ -321,6 +346,10 @@ class ShapeBuilder:
         create_copy=False,
         placement_matrix=None,
     ):
+        """mirror_axes - along which axes mirror will be applied
+
+        For example, mirroring A(1,0) by axis (1,0) will result in A'(-1,0)
+        """
         # > curve_or_item - could be a list of curves or items
         # > mirror_axes - could be a list of mirrors to apply to curve_or_item
         # multiple mirror_axes will result in multiple resulting curves
@@ -349,7 +378,7 @@ class ShapeBuilder:
                             co_base = placement_matrix @ co_base.to_3d()
                             co = self.mirror_2d_point(co_base.to_2d(), mirror_axes, mirror_point).to_3d()
                             co.z = co_base.z
-                            co = inverted_placement_matrix @ co
+                            co = (inverted_placement_matrix @ co).to_2d()
                         else:
                             co = self.mirror_2d_point(co_base, mirror_axes, mirror_point)
 
@@ -371,18 +400,24 @@ class ShapeBuilder:
                     new_position.z = base_position.z
                     c.Position.Location.Coordinates = new_position
 
+                    # TODO: add support for Z-axis too
+                    self.translate(c.SweptArea.OuterCurve, base_position.to_2d())
                     self.mirror(c.SweptArea.OuterCurve, mirror_axes, mirror_point, placement_matrix=placement_matrix)
+                    self.translate(c.SweptArea.OuterCurve, -new_position.to_2d())
 
                     if hasattr(c.SweptArea, "InnerCurves"):
                         for inner_curve in c.SweptArea.InnerCurves:
+                            self.translate(inner_curve, base_position)
                             self.mirror(inner_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix)
+                            self.translate(inner_curve, -new_position)
 
                     # extrusion converted to world space
                     base_extruded_direction = Vector(c.ExtrudedDirection.DirectionRatios)
                     extruded_direction = placement_matrix @ base_extruded_direction
 
                     # TODO: add support for Z-axis too
-                    new_direction = self.mirror_2d_point(extruded_direction.to_2d(), mirror_axes, mirror_point)
+                    # mirror point is ignored for extrusion direction
+                    new_direction = self.mirror_2d_point(extruded_direction.to_2d(), mirror_axes, mirror_point=V(0, 0))
                     new_direction = new_direction.to_3d()
                     new_direction.z = extruded_direction.z
 
@@ -465,3 +500,6 @@ class ShapeBuilder:
             Items=items,
         )
         return representation
+
+    def deep_copy(self, element):
+        return ifcopenshell.util.element.copy_deep(self.ifc, element)
