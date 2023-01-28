@@ -146,23 +146,32 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     material_type: bpy.props.StringProperty()
-
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        material_type = self.material_type or obj.BIMObjectMaterialProperties.material_type
         self.file = IfcStore.get_file()
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        ifcopenshell.api.run(
-            "material.assign_material",
-            self.file,
-            **{
-                "product": element,
-                "type": material_type,
-                "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
-            },
-        )
-        Data.load(IfcStore.get_file())
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
+        else:
+            objects = context.selected_objects
+        active_obj = context.active_object
+        active_object_material_type = self.material_type or active_obj.BIMObjectMaterialProperties.material_type
+        active_object_material = active_obj.BIMObjectMaterialProperties.material
+        for obj in objects:
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            ifcopenshell.api.run(
+                "material.assign_material",
+                self.file,
+                **{
+                    "product": element,
+                    "type": active_object_material_type,
+                    "material": self.file.by_id(int(active_object_material)),
+                },
+            )
+            Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+
+
+        
+        
 
 
 class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -172,13 +181,18 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "material.unassign_material",
-            self.file,
-            **{"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
-        )
+
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
+        else:
+            objects = context.selected_objects
+        for obj in objects:
+            ifcopenshell.api.run(
+                "material.unassign_material",
+                self.file,
+                **{"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
+            )
         Data.purge()
 
 
@@ -467,18 +481,21 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        props = obj.BIMObjectMaterialProperties
-        product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
+        active_obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        props = active_obj.BIMObjectMaterialProperties
+        product_data = Data.products[active_obj.BIMObjectProperties.ifc_definition_id]
+
+        objects = context.selected_objects
 
         if props.active_material_set_item_id != 0:  # We were editing a material layer set item
             bpy.ops.bim.edit_material_set_item(material_set_item=props.active_material_set_item_id)
 
         if product_data["type"] == "IfcMaterial":
-            bpy.ops.bim.unassign_material(obj=obj.name)
-            bpy.ops.bim.assign_material(obj=obj.name, material_type="IfcMaterial")
-            Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
-            bpy.ops.bim.disable_editing_assigned_material(obj=obj.name)
+            for obj in objects:
+                bpy.ops.bim.unassign_material(obj=obj.name)
+                bpy.ops.bim.assign_material(obj=obj.name, material_type="IfcMaterial")
+                Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+            bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)
             return {"FINISHED"}
 
         material_set = self.file.by_id(self.material_set)
@@ -488,7 +505,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
             self.file,
             **{"element": material_set, "attributes": attributes},
         )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file(), active_obj.BIMObjectProperties.ifc_definition_id)
 
         if self.material_set_usage:
             material_set_usage = self.file.by_id(self.material_set_usage)
@@ -516,7 +533,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
             Data.load_layers()
         elif material_set.is_a("IfcMaterialProfileSet"):
             Data.load_profiles()
-        bpy.ops.bim.disable_editing_assigned_material(obj=obj.name)
+        bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)
 
 
 class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
