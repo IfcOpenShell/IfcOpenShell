@@ -75,7 +75,7 @@ def update_diagram_scale(self, context):
     if "|" not in scale:
         return
     human_scale, scale = scale.split("|")
-    element = tool.Ifc.get_entity(context.active_object)
+    element = tool.Ifc.get_entity(self.id_data)
     if not element:
         return
     pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
