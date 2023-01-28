@@ -700,3 +700,10 @@ class TestCopyDeepIFC4(test.bootstrap.IFC4):
         rel.RelatedObjects = [element]
         rel2 = subject.copy_deep(self.file, rel, exclude=["IfcWall"])
         assert rel.RelatedObjects == rel2.RelatedObjects
+
+    def test_copying_an_element_recursively_with_aggregates_with_an_exclude_callback(self):
+        element = self.file.createIfcWall(Name="name")
+        rel = self.file.createIfcRelAggregates()
+        rel.RelatedObjects = [element]
+        rel2 = subject.copy_deep(self.file, rel, exclude_callback=lambda x: x.is_a("IfcWall"))
+        assert rel.RelatedObjects == rel2.RelatedObjects

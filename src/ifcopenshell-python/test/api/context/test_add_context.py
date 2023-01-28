@@ -38,8 +38,8 @@ class TestAddContext(test.bootstrap.IFC4):
         assert context.ContextType == "Plan"
         assert context.is_a() == "IfcGeometricRepresentationContext"
         assert context.WorldCoordinateSystem.is_a() == "IfcAxis2Placement2D"
-        assert context.WorldCoordinateSystem.Location.Coordinates == (0, 0, 0)
-        assert context.WorldCoordinateSystem.RefDirection.DirectionRatios == (1, 0, 0)
+        assert context.WorldCoordinateSystem.Location.Coordinates == (0, 0)
+        assert context.WorldCoordinateSystem.RefDirection.DirectionRatios == (1, 0)
         assert context.CoordinateSpaceDimension == 2
 
     def test_defaulting_to_3d_with_an_unknown_context_type(self):

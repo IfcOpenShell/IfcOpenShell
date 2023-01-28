@@ -666,7 +666,7 @@ def copy(ifc_file, element):
     return new
 
 
-def copy_deep(ifc_file, element, exclude=None):
+def copy_deep(ifc_file, element, exclude=None, exclude_callback=None):
     """
     Recursively copy an element and all of its directly related subelements.
 
@@ -679,6 +679,10 @@ def copy_deep(ifc_file, element, exclude=None):
     :param exclude: An optional list of strings of IFC class names to not copy.
         If any of the subelement is this class, it will not be copied and the
         original instance will be referenced.
+    :type exclude: list[str],optional
+    :param exclude_callback: A callback to determine whether or not to exclude
+        an entity or not. Returns True to exclude and False to exclude.
+    :type exclude_callback: function,optional
     :return: The newly copied element
     :rtype: ifcopenshell.entity_instance.entity_instance
     """
@@ -687,13 +691,21 @@ def copy_deep(ifc_file, element, exclude=None):
         if attribute is None:
             continue
         if isinstance(attribute, ifcopenshell.entity_instance):
-            if not exclude or (exclude and not any([attribute.is_a(e) for e in exclude])):
+            if exclude and any([attribute.is_a(e) for e in exclude]):
+                pass
+            elif exclude_callback and exclude_callback(attribute):
+                pass
+            else:
                 attribute = copy_deep(ifc_file, attribute, exclude=exclude)
         elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
-            if not exclude or (exclude and not any([attribute[0].is_a(e) for e in exclude])):
+            if exclude and any([attribute[0].is_a(e) for e in exclude]):
+                pass
+            elif exclude_callback and exclude_callback(attribute[0]):
+                pass
+            else:
                 attribute = list(attribute)
                 for j, item in enumerate(attribute):
-                    attribute[j] = copy_deep(ifc_file, item, exclude=exclude)
+                    attribute[j] = copy_deep(ifc_file, item, exclude=exclude, exclude_callback=exclude_callback)
         if new.attribute_name(i) == "GlobalId":
             new[i] = ifcopenshell.guid.new()
         else:
