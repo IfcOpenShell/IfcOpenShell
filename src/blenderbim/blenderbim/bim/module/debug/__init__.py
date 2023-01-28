@@ -30,6 +30,7 @@ classes = (
     operator.ProfileImportIFC,
     operator.PurgeHdf5Cache,
     operator.PurgeIfcLinks,
+    operator.ConvertToBlender,
     operator.RewindInspector,
     operator.SelectExpressFile,
     operator.SelectHighPolygonMeshes,

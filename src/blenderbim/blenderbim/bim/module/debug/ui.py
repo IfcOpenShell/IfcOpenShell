@@ -55,6 +55,9 @@ class BIM_PT_debug(Panel):
         row.operator("bim.purge_ifc_links")
 
         row = layout.row()
+        row.operator("bim.converttoblender")
+
+        row = layout.row()
         row.operator("bim.create_all_shapes")
 
         row = layout.row()
