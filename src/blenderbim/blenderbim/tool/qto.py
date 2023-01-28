@@ -45,7 +45,7 @@ class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def add_object_base_qto(cls, obj):
         product = tool.Ifc.get_entity(obj)
-        cls.add_product_base_qto(product)
+        return cls.add_product_base_qto(product)
 
     @classmethod
     def add_product_base_qto(cls, product):
@@ -86,7 +86,7 @@ class Qto(blenderbim.core.tool.Qto):
         return round(new_quantity, 3)
 
     @classmethod
-    def calculate_object_quantities(cls, calculator, qto_name, obj):
+    def get_calculated_object_quantities(cls, calculator, qto_name, obj):
         return {
             quantity_name: cls.get_rounded_value(calculator.calculate_quantity(qto_name, quantity_name, obj))
             for quantity_name in cls.get_applicable_quantity_names(qto_name) or []
