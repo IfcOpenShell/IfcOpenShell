@@ -50,18 +50,21 @@ class Root(blenderbim.core.tool.Root):
 
     @classmethod
     def copy_representation(cls, source, dest):
+        def exclude_callback(attribute):
+            return attribute.is_a("IfcProfileDef") and attribute.ProfileName
+
         if dest.is_a("IfcProduct"):
             if not source.Representation:
                 return
             dest.Representation = ifcopenshell.util.element.copy_deep(
-                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext", "IfcProfileDef"]
+                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback
             )
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
                 return
             dest.RepresentationMaps = [
                 ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext", "IfcProfileDef"]
+                    tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback
                 )
                 for m in source.RepresentationMaps
             ]

@@ -654,7 +654,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         if not profile:
 
             def msg(self, context):
-                self.layout.label(text="INVALID PROFILE: " + indices[1])
+                self.layout.label(text="INVALID PROFILE")
 
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             DecorationsHandler.install(context)
@@ -667,6 +667,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
