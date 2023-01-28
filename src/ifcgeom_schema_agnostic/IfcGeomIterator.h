@@ -107,6 +107,10 @@ namespace IfcGeom {
 			}
 		}
 
+		~Iterator() {
+			delete implementation_;
+		}
+
 		bool initialize() {
 			if (implementation_) {
 				return implementation_->initialize();
