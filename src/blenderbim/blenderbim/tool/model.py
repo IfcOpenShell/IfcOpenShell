@@ -228,8 +228,8 @@ class Model(blenderbim.core.tool.Model):
             radius = cls.convert_unit_to_si(curve.Radius)
             cls.vertices.extend(
                 [
-                    position @ Vector((center[0], center[1] - curve.Radius, 0.0)),
-                    position @ Vector((center[0], center[1] + curve.Radius, 0.0)),
+                    position @ Vector((center[0], center[1] - radius, 0.0)),
+                    position @ Vector((center[0], center[1] + radius, 0.0)),
                 ]
             )
             cls.circles.append([offset, offset + 1])
