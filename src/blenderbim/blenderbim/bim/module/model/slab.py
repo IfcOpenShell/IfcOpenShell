@@ -299,6 +299,7 @@ class DumbSlabPlaner:
                 for inverse in tool.Ifc.get().get_inverse(representation):
                     ifcopenshell.util.element.replace_attribute(inverse, representation, new_rep)
                 blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
                     tool.Geometry,
                     obj=obj,
                     representation=new_rep,
@@ -325,6 +326,7 @@ class DumbSlabPlaner:
             )
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -531,6 +533,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.view3d.slvs_delete_entity(index=nm["slvs_index"])
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -583,6 +586,7 @@ class DisableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=body,
