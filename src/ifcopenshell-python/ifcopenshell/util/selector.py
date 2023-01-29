@@ -238,6 +238,8 @@ class Selector:
                         if key in info and info[key] == value:
                             element = material
                 element = material_definition 
+                if not element:
+                    return None
             except:
                 return
         elif "." in key and key.split(".")[0] == "container":
