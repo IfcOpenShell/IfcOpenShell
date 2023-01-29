@@ -128,10 +128,6 @@ class BIM_PT_object_material(Panel):
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMObjectMaterialProperties
         self.mprops = context.scene.BIMMaterialProperties
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-        if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         if not ObjectMaterialData.data["materials"]:
             row = self.layout.row(align=True)

@@ -18,7 +18,6 @@
 
 import bpy
 from ifcopenshell.util.doc import get_entity_doc
-from ifcopenshell.api.material.data import Data
 import blenderbim.tool as tool
 from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
 from blenderbim.bim.ifc import IfcStore
