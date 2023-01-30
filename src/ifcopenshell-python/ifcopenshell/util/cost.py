@@ -23,6 +23,82 @@ arithmetic_operator_symbols = {"ADD": "+", "DIVIDE": "/", "MULTIPLY": "*", "SUBT
 symbol_arithmetic_operators = {"+": "ADD", "/": "DIVIDE", "*": "MULTIPLY", "-": "SUBTRACT"}
 
 
+def get_primitive_applied_value(applied_value):
+    if not applied_value:
+        return 0.0
+    elif isinstance(applied_value, float):
+        return applied_value
+    elif hasattr(applied_value, "wrappedValue") and isinstance(applied_value.wrappedValue, float):
+        return applied_value.wrappedValue
+    elif applied_value.is_a("IfcMeasureWithUnit"):
+        return applied_value.ValueComponent
+    assert False, "Applied value {applied_value} not implemented"
+
+
+def get_total_quantity(root_element):
+    if root_element.is_a("IfcCostItem"):
+        return sum([q[3] for q in root_element.CostQuantities or []]) or 1.0
+    elif root_element.is_a("IfcConstructionResource"):
+        return root_element.BaseQuantity[3] if root_element.BaseQuantity else 1.0
+
+
+def calculate_applied_value(root_element, cost_value, category_filter=None):
+    if cost_value.ArithmeticOperator and cost_value.Components:
+        component_values = []
+        for component in cost_value.Components:
+            component_values.append(calculate_applied_value(root_element, component, category_filter))
+        if cost_value.ArithmeticOperator == "ADD":
+            return sum(component_values)
+        result = component_values.pop(0)
+        if cost_value.ArithmeticOperator == "DIVIDE":
+            for value in component_values:
+                try:
+                    result /= value
+                except ZeroDivisionError:
+                    pass
+        elif cost_value.ArithmeticOperator == "MULTIPLY":
+            for value in component_values:
+                result *= value
+        elif cost_value.ArithmeticOperator == "SUBTRACT":
+            for value in component_values:
+                result -= value
+        return result
+    if cost_value.Category is None:
+        return get_primitive_applied_value(cost_value.AppliedValue)
+    elif cost_value.Category == "*":
+        if root_element.IsNestedBy:
+            return sum_child_root_elements(root_element)
+        else:
+            return get_primitive_applied_value(cost_value.AppliedValue)
+    elif cost_value.Category:
+        if root_element.IsNestedBy:
+            return sum_child_root_elements(root_element, category_filter=cost_value.Category)
+        else:
+            return get_primitive_applied_value(cost_value.AppliedValue)
+    return 0
+
+
+def sum_child_root_elements(root_element, category_filter=None):
+    result = 0
+    for rel in root_element.IsNestedBy:
+        for child_root_element in rel.RelatedObjects:
+            if root_element.is_a("IfcCostItem"):
+                values = child_root_element.CostValues
+            elif root_element.is_a("IfcConstructionResource"):
+                values = child_root_element.BaseCosts
+            for child_cost_value in values or []:
+                if category_filter and child_cost_value.Category != category_filter:
+                    continue
+                child_applied_value = calculate_applied_value(child_root_element, child_cost_value)
+                child_quantity = get_total_quantity(child_root_element)
+                if child_cost_value.UnitBasis:
+                    value_component = child_cost_value.UnitBasis.ValueComponent.wrappedValue
+                    result += child_quantity / value_component * child_applied_value
+                else:
+                    result += child_quantity * child_applied_value
+    return result
+
+
 def serialise_cost_value(cost_value):
     result = _serialise_cost_value(cost_value)
     if result and result[0] == "(" and result[-1] == ")":
