@@ -265,7 +265,8 @@ class Helper:
 
         inner_loops.remove(outer_loop)
 
-        points = [v.co for v in bm.verts]
+        # Copy vectors to prevent random data mangling after bmesh is freed.
+        points = [Vector(list(v.co)) for v in bm.verts]
 
         bm.to_mesh(mesh)
         mesh.update()
