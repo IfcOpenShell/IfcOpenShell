@@ -342,7 +342,6 @@ class BIM_OT_add_window(Operator):
 
         mesh = bpy.data.meshes.new("IfcWindow")
         obj = bpy.data.objects.new("IfcWindow", mesh)
-        bpy.context.scene.collection.objects.link(obj)
         obj.location = spawn_location
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
@@ -353,6 +352,7 @@ class BIM_OT_add_window(Operator):
             ifc_class="IfcWindow",
             should_add_representation=False
         )
+        bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
@@ -370,6 +370,10 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
+
+        if element.is_a() not in ("IfcWindow", "IfcWindowType"):
+            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType type to add a stair.")
+            return {"CANCELLED"}
 
         # need to make sure all default props will have correct units
         if not props.window_added_previously:
