@@ -21,7 +21,6 @@ import logging
 import ifcopenshell.api
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.boundary.data import Data
 import blenderbim.bim.import_ifc as import_ifc
 
 
@@ -49,7 +48,7 @@ class Loader:
         if not boundary.ConnectionGeometry:
             return None
         surface = boundary.ConnectionGeometry.SurfaceOnRelatingElement
-        # workaround for invalid geometry provided by Revit. See https://github.com/IfcOpenShell/IfcOpenShell/issues/635#issuecomment-770366838
+        # Workaround for invalid geometry provided by Revit. See https://github.com/Autodesk/revit-ifc/issues/270
         if surface.is_a("IfcCurveBoundedPlane") and not getattr(surface, "InnerBoundaries", None):
             surface.InnerBoundaries = ()
         shape = ifcopenshell.geom.create_shape(self.settings, surface)
@@ -69,8 +68,7 @@ class Loader:
         self.ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         self.ifc_importer.file = self.ifc_file
 
-    def load_boundary(self, boundary_id, blender_space):
-        boundary = self.ifc_file.by_id(boundary_id)
+    def load_boundary(self, boundary, blender_space):
         obj = tool.Ifc.get_object(boundary)
         if obj:
             return obj
@@ -90,12 +88,8 @@ class LoadProjectSpaceBoundaries(bpy.types.Operator):
 
     def execute(self, context):
         loader = Loader()
-        if not Data.is_loaded:
-            Data.load(tool.Ifc.get())
-        for space_id, boundaries_id in Data.spaces.items():
-            blender_space = tool.Ifc.get_object(tool.Ifc.get().by_id(space_id))
-            for boundary_id in boundaries_id:
-                loader.load_boundary(boundary_id, blender_space)
+        for rel in tool.Ifc.get().by_type("IfcRelSpaceBoundary"):
+            loader.load_boundary(rel, tool.Ifc.get_object(rel.RelatingSpace))
         return {"FINISHED"}
 
 
@@ -107,10 +101,9 @@ class LoadBoundary(bpy.types.Operator):
 
     def execute(self, context):
         loader = Loader()
-        blender_space = context.active_object
         for obj in context.visible_objects:
             obj.select_set(False)
-        obj = loader.load_boundary(self.boundary_id, blender_space)
+        obj = loader.load_boundary(tool.Ifc.get().by_id(self.boundary_id), context.active_object)
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
         return {"FINISHED"}
@@ -122,13 +115,10 @@ class LoadSpaceBoundaries(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        blender_space = context.active_object
-        oprops = context.active_object.BIMObjectProperties
         loader = Loader()
-        if not Data.is_loaded:
-            Data.load(tool.Ifc.get())
-        for boundary_id in Data.spaces.get(oprops.ifc_definition_id, []):
-            loader.load_boundary(boundary_id, blender_space)
+        element = tool.Ifc.get_entity(context.active_object)
+        for rel in element.BoundedBy or []:
+            loader.load_boundary(rel, context.active_object)
         return {"FINISHED"}
 
 
@@ -140,10 +130,8 @@ class SelectProjectBoundaries(bpy.types.Operator):
     def execute(self, context):
         for obj in context.visible_objects:
             obj.select_set(False)
-        ifc_file = tool.Ifc.get()
-        for boundary_id in Data.boundaries:
-            boundary = ifc_file.by_id(boundary_id)
-            obj = tool.Ifc.get_object(boundary)
+        for rel in tool.Ifc.get().by_type("IfcRelSpaceBoundary"):
+            obj = tool.Ifc.get_object(rel)
             if obj:
                 obj.select_set(True)
         return {"FINISHED"}
