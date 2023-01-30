@@ -241,6 +241,8 @@ class BIMModelProperties(PropertyGroup):
             ("LAYERSET_AXIS3", "Horizontal Layers", ""),
             ("PROFILESET", "Extruded Profile", ""),
             ("EMPTY", "Non-Geometric Type", ""),
+            ("WINDOW", "Window", ""),
+            ("STAIR", "Stair", ""),
         ),
         name="Type Template",
         default="MESH",

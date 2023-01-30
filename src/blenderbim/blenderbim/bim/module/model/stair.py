@@ -224,8 +224,8 @@ class BIM_OT_add_clever_stair(Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        ifcfile = tool.Ifc.get()
-        if not ifcfile:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a stair.")
             return {"CANCELLED"}
 
@@ -235,11 +235,10 @@ class BIM_OT_add_clever_stair(Operator):
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 
-        mesh = bpy.data.meshes.new("StairFlight")
+        mesh = bpy.data.meshes.new("IfcStairFlight")
         obj = bpy.data.objects.new("StairFlight", mesh)
-        bpy.context.scene.collection.objects.link(obj)
         obj.location = spawn_location
-        body_context = ifcopenshell.util.representation.get_context(ifcfile, "Model", "Body", "MODEL_VIEW")
+        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -249,6 +248,7 @@ class BIM_OT_add_clever_stair(Operator):
             should_add_representation=True,
             context=body_context,
         )
+        bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
@@ -267,8 +267,8 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMStairProperties
 
-        if not element.is_a("IfcStairFlight"):
-            self.report({"ERROR"}, "Object has to be IfcStairFlight type to add a stair.")
+        if element.is_a() not in ("IfcStairFlight", "IfcStairFlightType"):
+            self.report({"ERROR"}, "Object has to be IfcStairFlight/IfcStairFlightType to add a stair.")
             return {"CANCELLED"}
 
         # need to make sure all default props will have correct units
@@ -296,11 +296,12 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         update_stair_modifier(context)
 
         # update IfcStairFlight properties
-        element.NumberOfRisers = props.number_of_treads + 1
-        element.NumberOfTreads = props.number_of_treads
-        element.RiserHeight = props.height / element.NumberOfRisers
-        element.TreadLength = props.tread_depth
         element.PredefinedType = "STRAIGHT"
+        if element.is_a("IfcStairFlight"):
+            element.NumberOfRisers = props.number_of_treads + 1
+            element.NumberOfTreads = props.number_of_treads
+            element.RiserHeight = props.height / element.NumberOfRisers
+            element.TreadLength = props.tread_depth
         return {"FINISHED"}
 
 
@@ -348,12 +349,12 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         # update IfcStairFlight properties
+        element.PredefinedType = "STRAIGHT"
         if element.is_a("IfcStairFlight"):
             element.NumberOfRisers = props.number_of_treads + 1
             element.NumberOfTreads = props.number_of_treads
             element.RiserHeight = props.height / element.NumberOfRisers
             element.TreadLength = props.tread_depth
-            element.PredefinedType = "STRAIGHT"
         return {"FINISHED"}
 
 
