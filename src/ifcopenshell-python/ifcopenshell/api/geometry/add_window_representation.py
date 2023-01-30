@@ -43,58 +43,66 @@ DEFAULT_PANEL_SCHEMAS = {
 
 class Usecase:
     def __init__(self, file, **settings):
+        """units in settings expected to be in ifc project units"""
         self.file = file
         # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindow.htm
         # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowTypePartitioningEnum.htm
         # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowLiningProperties.htm
         # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowPanelProperties.htm
-        self.settings = {
-            "context": None,  # IfcGeometricRepresentationContext
-            # SINGLE_PANEL, DOUBLE_PANEL_HORIZONTAL, DOUBLE_PANEL_VERTICAL,
-            # TRIPLE_PANEL_BOTTOM, TRIPLE_PANEL_HORIZONTAL, TRIPLE_PANEL_LEFT, TRIPLE_PANEL_RIGHT, TRIPLE_PANEL_TOP, TRIPLE_PANEL_VERTICAL
-            "partition_type": "SINGLE_PANEL",
-            "overall_height": 900,
-            "overall_width": 600,
-            "lining_properties": {
-                "LiningDepth": 50,
-                "LiningThickness": 50,
-                "LiningOffset": 50,  # offset to the wall
-                "LiningToPanelOffsetX": 25,
-                "LiningToPanelOffsetY": 25,
-                # applies to DoublePanelVertical, TriplePanelBottom, TriplePanelTop, TriplePanelLeft, TriplePanelRight
-                # mullion - horizontal distance between panels
-                "MullionThickness": 50,
-                "FirstMullionOffset": 300,  # distance from the first lining to the mullion center
-                # applies to TriplePanelVertical
-                "SecondMullionOffset": 450,  # distance from the first lining to the second mullion
-                # applies to DoublePanelHorizontal, TriplePanelBottom, TriplePanelTop, TriplePanelLeft, TriplePanelRight
-                # works similar way to mullion
-                "TransomThickness": 50,
-                "FirstTransomOffset": 300,
-                # applies to TriplePanelHorizontal
-                "SecondTransomOffset": 600,
-                "ShapeAspectStyle": None,  # DEPRECATED
-            },
-            "panel_properties": [
-                {
-                    "FrameDepth": 35,  # by Y
-                    "FrameThickness": 35,  # by X
-                    # BOTTOM, LEFT, MIDDLE, RIGHT, TOP
-                    "PanelPosition": ...,
-                    # defines the basic ways to describe how window panels operate
-                    # how it's hanged, how it opens
-                    "OperationType": None,
+        self.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(self.file)}
+        self.settings.update(
+            {
+                "context": None,  # IfcGeometricRepresentationContext
+                # SINGLE_PANEL, DOUBLE_PANEL_HORIZONTAL, DOUBLE_PANEL_VERTICAL,
+                # TRIPLE_PANEL_BOTTOM, TRIPLE_PANEL_HORIZONTAL, TRIPLE_PANEL_LEFT,
+                # TRIPLE_PANEL_RIGHT, TRIPLE_PANEL_TOP, TRIPLE_PANEL_VERTICAL
+                "partition_type": "SINGLE_PANEL",
+                "overall_height": self.convert_si_to_unit(0.9),
+                "overall_width": self.convert_si_to_unit(0.6),
+                "lining_properties": {
+                    "LiningDepth": self.convert_si_to_unit(0.050),
+                    "LiningThickness": self.convert_si_to_unit(0.050),
+                    "LiningOffset": self.convert_si_to_unit(0.050),  # offset to the wall
+                    "LiningToPanelOffsetX": self.convert_si_to_unit(0.025),
+                    "LiningToPanelOffsetY": self.convert_si_to_unit(0.025),
+                    # applies to DoublePanelVertical, TriplePanelBottom, TriplePanelTop,
+                    # TriplePanelLeft, TriplePanelRight
+                    # mullion - horizontal distance between panels
+                    "MullionThickness": self.convert_si_to_unit(0.050),
+                    # distance from the first lining to the mullion center
+                    "FirstMullionOffset": self.convert_si_to_unit(0.3),
+                    # applies to TriplePanelVertical
+                    # distance from the first lining to the second mullion
+                    "SecondMullionOffset": self.convert_si_to_unit(0.45),
+                    # applies to DoublePanelHorizontal, TriplePanelBottom, TriplePanelTop,
+                    # TriplePanelLeft, TriplePanelRight
+                    # works similar way to mullion
+                    "TransomThickness": self.convert_si_to_unit(0.050),
+                    "FirstTransomOffset": self.convert_si_to_unit(0.3),
+                    # applies to TriplePanelHorizontal
+                    "SecondTransomOffset": self.convert_si_to_unit(0.6),
                     "ShapeAspectStyle": None,  # DEPRECATED
                 },
-            ],
-        }
+                "panel_properties": [
+                    {
+                        "FrameDepth": self.convert_si_to_unit(0.035),  # by Y
+                        "FrameThickness": self.convert_si_to_unit(0.035),  # by X
+                        # BOTTOM, LEFT, MIDDLE, RIGHT, TOP
+                        "PanelPosition": ...,  # NEVER USED
+                        # defines the basic ways to describe how window panels operate
+                        # how it's hanged, how it opens
+                        "OperationType": None,  # NEVER USED
+                        "ShapeAspectStyle": None,  # DEPRECATED
+                    },
+                ],
+            }
+        )
 
         for key, value in settings.items():
             self.settings[key] = value
         self.settings["panel_schema"] = DEFAULT_PANEL_SCHEMAS[self.settings["partition_type"]]
 
     def execute(self):
-        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         builder = ShapeBuilder(self.file)
         overall_height = self.settings["overall_height"]
         overall_width = self.settings["overall_width"]
@@ -115,7 +123,7 @@ class Usecase:
         lining_offset = self.settings["lining_properties"]["LiningOffset"]
         lining_panel_offset_x = self.settings["lining_properties"]["LiningToPanelOffsetX"]
         lining_panel_offset_y = self.settings["lining_properties"]["LiningToPanelOffsetY"]
-        glass_thickness = self.convert_si_to_unit(10)
+        glass_thickness = self.convert_si_to_unit(0.01)
 
         mullion_thickness = self.settings["lining_properties"]["MullionThickness"] / 2
         first_mullion_offset = self.settings["lining_properties"]["FirstMullionOffset"]
@@ -331,4 +339,4 @@ class Usecase:
         return representation
 
     def convert_si_to_unit(self, value):
-        return value * 0.001 / self.settings["unit_scale"]
+        return value / self.settings["unit_scale"]
