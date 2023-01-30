@@ -243,6 +243,30 @@ def close_operator_panel(event):
     bpy.app.timers.register(move_back, first_interval=0.01)
 
 
+def convert_property_group_from_si(property_group, skip_props=()):
+    """Method converts property group values from si to current ifc project units
+
+    based on default values of the properties.
+
+    List of properties to skip can be supplied in `skip_props`."""
+    conversion_k = 1.0 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    skip_props = ("rna_type", "name") + skip_props
+    for prop_name in property_group.bl_rna.properties.keys():
+        if prop_name in skip_props:
+            continue
+        prop_bl_rna = property_group.bl_rna.properties[prop_name]
+        if prop_bl_rna.array_length > 0:
+            prop_value = prop_bl_rna.default_array
+        else:
+            prop_value = prop_bl_rna.default
+
+        if type(prop_value) is float:
+            prop_value = prop_value * conversion_k
+        elif type(prop_value) is bpy.types.bpy_prop_array:
+            prop_value = [el * conversion_k for el in prop_value]
+        setattr(property_group, prop_name, prop_value)
+
+
 class IfcHeaderExtractor:
     def __init__(self, filepath: str):
         self.filepath = filepath

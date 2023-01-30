@@ -29,6 +29,7 @@ from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SC
 import blenderbim
 import blenderbim.tool as tool
 import blenderbim.core.geometry as core
+from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
 
 from mathutils import Vector
@@ -209,7 +210,7 @@ def update_window_modifier_bmesh(context):
     first_transom_offset = props.first_transom_offset * si_conversion
     second_transom_offset = props.second_transom_offset * si_conversion
 
-    glass_thickness = 10 * 0.001 * si_conversion
+    glass_thickness = 0.01 * si_conversion
 
     bm = bmesh.new()
     panel_schema = list(reversed(panel_schema))
@@ -371,17 +372,8 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMWindowProperties
 
         # need to make sure all default props will have correct units
-        si_conversion = 0.001 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if not props.window_added_previously:
-            for prop_name in props.bl_rna.properties.keys():
-                if prop_name in ("rna_type", "name", "is_editing", "window_type", "window_added_previously"):
-                    continue
-                prop_value = getattr(props, prop_name)
-                if type(prop_value) is float:
-                    prop_value = prop_value * si_conversion
-                elif type(prop_value) is bpy.types.bpy_prop_array:
-                    prop_value = [el * si_conversion for el in prop_value]
-                setattr(props, prop_name, prop_value)
+            convert_property_group_from_si(props, skip_props=("is_editing", "window_type", "window_added_previously"))
 
         window_data = props.get_general_kwargs()
         lining_props = props.get_lining_kwargs()
@@ -478,18 +470,13 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         # required since we could load pset from .ifc and BIMWindowProperties won't be set
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
-        
+
         # need to make sure all props that weren't used before
         # will have correct units
-        si_conversion = 0.001 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        props_bl_rna = props.bl_rna.properties
-        for prop_name in props_bl_rna.keys():
-            if prop_name in data:
-                continue
-            if prop_name in ("rna_type", "name", "is_editing", "window_added_previously"):
-                continue
-            setattr(props, prop_name, props_bl_rna[prop_name].default*si_conversion)
-            
+        skip_props = ("is_editing", "window_type", "window_added_previously")
+        skip_props += tuple(data.keys())
+        convert_property_group_from_si(props, skip_props=skip_props)
+
         props.is_editing = 1
         return {"FINISHED"}
 
