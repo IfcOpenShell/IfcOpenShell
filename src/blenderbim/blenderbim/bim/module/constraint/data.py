@@ -21,23 +21,39 @@ import blenderbim.tool as tool
 
 
 def refresh():
-    SpaceBoundariesData.is_loaded = False
+    ConstraintsData.is_loaded = False
+    ObjectConstraintsData.is_loaded = False
 
 
-class SpaceBoundariesData:
+class ConstraintsData:
     data = {}
     is_loaded = False
 
     @classmethod
     def load(cls):
-        cls.data = {"boundaries": cls.boundaries()}
+        cls.data = {"total_objectives": cls.total_objectives()}
         cls.is_loaded = True
 
     @classmethod
-    def boundaries(cls):
+    def total_objectives(cls):
+        return len(tool.Ifc.get().by_type("IfcObjective"))
+
+
+class ObjectConstraintsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"constraints": cls.constraints()}
+        cls.is_loaded = True
+
+    @classmethod
+    def constraints(cls):
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        for rel in element.BoundedBy or []:
-            description = f"{rel.id()} > {rel.RelatedBuildingElement.is_a()}/{rel.RelatedBuildingElement.Name}"
-            results.append({"id": rel.id(), "description": description})
+        for rel in element.HasAssociations or []:
+            if rel.is_a("IfcRelAssociatesConstraint"):
+                constraint = rel.RelatingConstraint
+                results.append({"id": constraint.id(), "type": constraint.is_a(), "name": constraint.Name or "Unnamed"})
         return results
