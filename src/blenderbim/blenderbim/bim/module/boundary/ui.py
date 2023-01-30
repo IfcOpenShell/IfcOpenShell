@@ -21,7 +21,7 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
-from ifcopenshell.api.boundary.data import Data
+from blenderbim.bim.module.boundary.data import SpaceBoundariesData
 
 
 class BIM_PT_SceneBoundaries(Panel):
@@ -129,28 +129,22 @@ class BIM_PT_SpaceBoundaries(Panel):
             return False
         if not IfcStore.get_element(props.ifc_definition_id):
             return False
-        valid_classes = ("IfcSpace", "IfcExternalSpatialElement")
-        entity = IfcStore.get_file().by_id(props.ifc_definition_id)
-        for ifc_class in valid_classes:
-            if entity.is_a(ifc_class):
+        element = tool.Ifc.get_entity(context.active_object)
+        for ifc_class in ("IfcSpace", "IfcExternalSpatialElement"):
+            if element.is_a(ifc_class):
                 return True
         return False
 
     def draw(self, context):
+        if not SpaceBoundariesData.is_loaded:
+            SpaceBoundariesData.load()
+
         self.props = context.active_object.BIMObjectProperties
         self.ifc_file = tool.Ifc.get()
         row = self.layout.row()
         row.operator("bim.load_space_boundaries")
-        if not Data.is_loaded:
-            Data.load(self.ifc_file)
-        for boundary_id in Data.spaces.get(self.props.ifc_definition_id, []):
-            boundary_data = Data.boundaries[boundary_id]
-            building_element = self.ifc_file.by_id(boundary_data["RelatedBuildingElement"])
+        for boundary in SpaceBoundariesData.data["boundaries"]:
             row = self.layout.row()
-            if building_element:
-                bld_el_description = f"{building_element.is_a()}/{building_element.Name}"
-            else:
-                bld_el_description = None
-            row.label(text=f"{boundary_id} > {bld_el_description}", icon="GHOST_ENABLED")
+            row.label(text=boundary["description"], icon="GHOST_ENABLED")
             op = row.operator("bim.load_boundary", text="", icon="RESTRICT_SELECT_OFF")
-            op.boundary_id = boundary_id
+            op.boundary_id = boundary["id"]
