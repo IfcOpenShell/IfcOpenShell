@@ -23,6 +23,8 @@ import ifcopenshell
 
 def refresh():
     SequenceData.is_loaded = False
+    WorkPlansData.is_loaded = False
+    TaskICOMData.is_loaded = False
 
 
 class SequenceData:
@@ -216,3 +218,62 @@ class SequenceData:
                     if rel.RelatingControl.is_a("IfcWorkCalendar"):
                         data["HasAssignmentsWorkCalendar"].append(rel.RelatingControl.id())
             cls.data["tasks"][task.id()] = data
+
+
+class WorkPlansData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "total_work_plans": cls.total_work_plans(),
+            "work_plans": cls.work_plans(),
+            "has_work_schedules": cls.has_work_schedules(),
+            "active_work_plan_schedules": cls.active_work_plan_schedules(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def total_work_plans(cls):
+        return len(tool.Ifc.get().by_type("IfcWorkPlan"))
+
+    @classmethod
+    def work_plans(cls):
+        results = []
+        for work_plan in tool.Ifc.get().by_type("IfcWorkPlan"):
+            results.append({"id": work_plan.id(), "name": work_plan.Name or "Unnamed"})
+        return results
+
+    @classmethod
+    def has_work_schedules(cls):
+        return len(tool.Ifc.get().by_type("IfcWorkSchedule"))
+
+    @classmethod
+    def active_work_plan_schedules(cls):
+        if not self.props.active_work_plan_id:
+            return []
+        for rel in tool.Ifc.get().by_id(self.props.active_work_plan_id).IsDecomposedBy:
+            for related_object in rel.RelatedObjects:
+                results.append({"id": work_schedule.id(), "name": work_schedule.Name or "Unnamed"})
+        return results
+
+
+class TaskICOMData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"can_active_resource_be_assigned": cls.can_active_resource_be_assigned()}
+        cls.is_loaded = True
+
+    @classmethod
+    def can_active_resource_be_assigned(cls):
+        resource_props = bpy.context.scene.BIMResourceProperties
+        resource_tprops = bpy.context.scene.BIMResourceTreeProperties
+        total_resources = len(resource_tprops.resources)
+        if total_resources and resource_props.active_resource_index < total_resources:
+            resource_id = resource_tprops.resources[resource_props.active_resource_index].ifc_definition_id
+            return not tool.Ifc.get().by_id(resource_id).is_a("IfcCrewResource")
+        return False

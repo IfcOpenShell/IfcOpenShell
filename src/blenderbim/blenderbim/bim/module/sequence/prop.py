@@ -21,7 +21,6 @@ import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.resource.data import Data as ResourceData
 from blenderbim.bim.module.sequence.data import SequenceData
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
