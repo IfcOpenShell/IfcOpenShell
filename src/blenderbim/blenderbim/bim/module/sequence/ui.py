@@ -21,8 +21,7 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.module.sequence.data import SequenceData
-from ifcopenshell.api.resource.data import Data as ResourceData
+from blenderbim.bim.module.sequence.data import WorkPlansData, SequenceData, TaskICOMData
 
 
 class BIM_PT_work_plans(Panel):
@@ -40,40 +39,37 @@ class BIM_PT_work_plans(Panel):
         return file and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not SequenceData.is_loaded:
-            SequenceData.load()
+        if not WorkPlansData.is_loaded:
+            WorkPlansData.load()
         self.props = context.scene.BIMWorkPlanProperties
 
         row = self.layout.row()
-        if SequenceData.data["has_work_plans"]:
-            row.label(
-                text="{} Work Plans Found".format(SequenceData.data["number_of_work_plans_loaded"]),
-                icon="TEXT",
-            )
+        if WorkPlansData.data["total_work_plans"]:
+            row.label(text=f"{WorkPlansData.data['total_work_plans']} Work Plans Found", icon="TEXT")
         else:
             row.label(text="No Work Plans found.", icon="TEXT")
         row.operator("bim.add_work_plan", icon="ADD", text="")
-        for work_plan_id, work_plan in SequenceData.data["work_plans"].items():
-            self.draw_work_plan_ui(work_plan_id, work_plan)
+        for work_plan in WorkPlansData.data["work_plans"]:
+            self.draw_work_plan_ui(work_plan)
 
-    def draw_work_plan_ui(self, work_plan_id, work_plan):
+    def draw_work_plan_ui(self, work_plan):
         row = self.layout.row(align=True)
-        row.label(text=work_plan["Name"] or "Unnamed", icon="TEXT")
+        row.label(text=work_plan["name"], icon="TEXT")
 
-        if self.props.active_work_plan_id == work_plan_id:
+        if self.props.active_work_plan_id == work_plan["id"]:
             if self.props.editing_type == "ATTRIBUTES":
                 row.operator("bim.edit_work_plan", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_work_plan", text="", icon="CANCEL")
         elif self.props.active_work_plan_id:
-            row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan_id
+            row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan["id"]
         else:
             op = row.operator("bim.enable_editing_work_plan_schedules", text="", icon="LINENUMBERS_ON")
-            op.work_plan = work_plan_id
+            op.work_plan = work_plan["id"]
             op = row.operator("bim.enable_editing_work_plan", text="", icon="GREASEPENCIL")
-            op.work_plan = work_plan_id
-            row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan_id
+            op.work_plan = work_plan["id"]
+            row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan["id"]
 
-        if self.props.active_work_plan_id == work_plan_id:
+        if self.props.active_work_plan_id == work_plan["id"]:
             if self.props.editing_type == "ATTRIBUTES":
                 self.draw_editable_ui()
             elif self.props.editing_type == "SCHEDULES":
@@ -83,22 +79,18 @@ class BIM_PT_work_plans(Panel):
         draw_attributes(self.props.work_plan_attributes, self.layout)
 
     def draw_work_schedule_ui(self):
-        if not SequenceData.is_loaded:
-            SequenceData.load()
-
-        if SequenceData.data["has_work_schedules"]:
+        if WorkPlansData.data["has_work_schedules"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "work_schedules", text="")
             op = row.operator("bim.assign_work_schedule", text="", icon="ADD")
             op.work_plan = self.props.active_work_plan_id
             op.work_schedule = int(self.props.work_schedules)
-            for work_schedule_id in SequenceData.data["work_plans"][self.props.active_work_plan_id]["IsDecomposedBy"]:
-                work_schedule = SequenceData.data["work_schedules"][work_schedule_id]
+            for work_schedule in WorkPlansData.data["active_work_plan_schedules"]:
                 row = self.layout.row(align=True)
-                row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
+                row.label(text=work_schedule["name"], icon="LINENUMBERS_ON")
                 op = row.operator("bim.unassign_work_schedule", text="", icon="X")
                 op.work_plan = self.props.active_work_plan_id
-                op.work_schedule = int(self.props.work_schedules)
+                op.work_schedule = work_schedule["id"]
         else:
             row = self.layout.row()
             row.label(text="No schedules found. See Work Schedule Panel", icon="INFO")
@@ -409,6 +401,9 @@ class BIM_PT_task_icom(Panel):
         return False
 
     def draw(self, context):
+        if not TaskICOMData.is_loaded:
+            TaskICOMData.load()
+
         self.props = context.scene.BIMWorkScheduleProperties
         self.tprops = context.scene.BIMTaskTreeProperties
         task = self.tprops.tasks[self.props.active_task_index]
@@ -449,17 +444,10 @@ class BIM_PT_task_icom(Panel):
         op = row2.operator("bim.calculate_task_duration", text="", icon="TEMP")
         op.task = task.ifc_definition_id
 
-        resource_props = context.scene.BIMResourceProperties
-        resource_tprops = context.scene.BIMResourceTreeProperties
-        total_resources = len(resource_tprops.resources)
-        if total_resources and context.scene.BIMResourceProperties.active_resource_index < total_resources:
-            resource_id = resource_tprops.resources[resource_props.active_resource_index].ifc_definition_id
-            ResourceData.load(IfcStore.get_file())
-            resource = ResourceData.resources[resource_id]
-            if resource["type"] != "IfcCrewResource":
-                op = row2.operator("bim.assign_process", icon="ADD", text="")
-                op.task = task.ifc_definition_id
-                op.related_object_type = "RESOURCE"
+        if TaskICOMData.data["can_active_resource_be_assigned"]:
+            op = row2.operator("bim.assign_process", icon="ADD", text="")
+            op.task = task.ifc_definition_id
+            op.related_object_type = "RESOURCE"
 
         if total_task_resources and self.props.active_task_resource_index < total_task_resources:
             op = row2.operator("bim.unassign_process", icon="REMOVE", text="")

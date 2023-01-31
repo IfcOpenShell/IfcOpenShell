@@ -31,8 +31,6 @@ from datetime import datetime
 from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
-from ifcopenshell.api.sequence.data import Data
-from ifcopenshell.api.resource.data import Data as ResourceData
 
 
 class AddWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
@@ -543,7 +541,6 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc.file = self.file
         p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p62ifc.execute()
-        Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
@@ -570,7 +567,6 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         p6xer2ifc.file = self.file
         p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p6xer2ifc.execute()
-        Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
@@ -597,7 +593,6 @@ class ImportPP(bpy.types.Operator, ImportHelper):
         pp2ifc.file = self.file
         pp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         pp2ifc.execute()
-        Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
@@ -624,7 +619,6 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
         msp2ifc.file = self.file
         msp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         msp2ifc.execute()
-        Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
