@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bpy.utils
+import bpy.utils.previews
 import ifcopenshell.util.doc
 import blenderbim.tool as tool
 
