@@ -203,6 +203,9 @@ class Drawing:
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def update_text_value(cls, obj): pass
+    def is_drawing_active(cls): pass
+    def is_camera_orthographic(cls): pass
+    def activate_view(cls, camera): pass
 
 
 @interface

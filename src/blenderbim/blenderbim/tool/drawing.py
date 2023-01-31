@@ -901,6 +901,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         if tool.Ifc.get_schema() == "IFC2X3":
             return reference.ReferenceToDocument[0]
         return reference.ReferencedDocument
+
     @classmethod
     def select_assigned_product(cls):
         obj = cls.get_active_object()
@@ -908,3 +909,43 @@ class Drawing(blenderbim.core.tool.Drawing):
         product = cls.get_assigned_product(element)
         if product:
             tool.Ifc.get_object(product).select_set(True)
+
+    @classmethod
+    def is_drawing_active(cls):
+        camera = bpy.context.scene.camera
+        return (camera and camera.type == "CAMERA" and
+                camera.BIMObjectProperties.ifc_definition_id and
+                any(a.type == 'VIEW_3D' for a in bpy.context.screen.areas))
+
+    @classmethod
+    def is_camera_orthographic(cls):
+        camera = bpy.context.scene.camera
+        return True if (camera and camera.data.type == "ORTHO") else False
+
+    @classmethod
+    def activate_view(cls, camera):
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        is_local_view = area.spaces[0].local_view is not None
+        if is_local_view:
+            bpy.ops.view3d.localview()
+            bpy.context.scene.camera = camera
+            bpy.ops.view3d.localview()
+        else:
+            bpy.context.scene.camera = camera
+        area.spaces[0].region_3d.view_perspective = "CAMERA"
+        views_collection = bpy.data.collections.get("Views")
+        for collection in views_collection.children:
+            # We assume the project collection is at the top level
+            for project_collection in bpy.context.view_layer.layer_collection.children:
+                # We assume a convention that the 'Views' collection is directly
+                # in the project collection
+                if (
+                    "Views" in project_collection.children
+                    and collection.name in project_collection.children["Views"].children
+                ):
+                    project_collection.children["Views"].children[collection.name].hide_viewport = True
+                    bpy.data.collections.get(collection.name).hide_render = True
+
+                    project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
+        bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+        tool.Spatial.set_active_object(camera)

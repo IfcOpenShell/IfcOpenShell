@@ -106,7 +106,7 @@ class AddDrawing(bpy.types.Operator, Operator):
 
 
 class CreateDrawing(bpy.types.Operator):
-    """Creates a svg drawing
+    """Creates/refreshes a .svg drawing
 
     Only available if :
     - IFC file is created
@@ -118,13 +118,10 @@ class CreateDrawing(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        camera = context.scene.camera
-        return (
-            IfcStore.get_file()
-            and camera
-            and camera.type == "CAMERA"
-            and camera.data.type == "ORTHO"
-            and camera.BIMObjectProperties.ifc_definition_id
+        return bool(
+            tool.Ifc.get()
+            and tool.Drawing.is_camera_orthographic()
+            and tool.Drawing.is_drawing_active()
         )
 
     def execute(self, context):
@@ -686,39 +683,18 @@ class OpenView(bpy.types.Operator):
 
 
 class ActivateView(bpy.types.Operator):
+    """
+    Activates the selected drawing view
+    """
+
     bl_idname = "bim.activate_view"
     bl_label = "Activate View"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Activates the selected drawing view"
     drawing: bpy.props.IntProperty()
 
     def execute(self, context):
-        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(self.drawing))
-        if not camera:
-            return {"FINISHED"}
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        is_local_view = area.spaces[0].local_view is not None
-        if is_local_view:
-            bpy.ops.view3d.localview()
-            context.scene.camera = camera
-            bpy.ops.view3d.localview()
-        else:
-            context.scene.camera = camera
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
-        views_collection = bpy.data.collections.get("Views")
-        for collection in views_collection.children:
-            # We assume the project collection is at the top level
-            for project_collection in context.view_layer.layer_collection.children:
-                # We assume a convention that the 'Views' collection is directly
-                # in the project collection
-                if (
-                    "Views" in project_collection.children
-                    and collection.name in project_collection.children["Views"].children
-                ):
-                    project_collection.children["Views"].children[collection.name].hide_viewport = True
-                    bpy.data.collections.get(collection.name).hide_render = True
-
-                    project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
-        bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+        core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         bpy.context.scene.DocProperties.active_drawing_id = self.drawing
         bpy.ops.bim.activate_drawing_style()
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
