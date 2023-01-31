@@ -356,13 +356,25 @@ class BIMWindowProperties(PropertyGroup):
     lining_to_panel_offset_x: bpy.props.FloatProperty(name="Lining to Panel Offset X", default=0.025)
     lining_to_panel_offset_y: bpy.props.FloatProperty(name="Lining to Panel Offset Y", default=0.025)
     mullion_thickness: bpy.props.FloatProperty(name="Mullion Thickness", default=0.050)
-    first_mullion_offset: bpy.props.FloatProperty(name="First Mullion Offset", default=0.3)
-    second_mullion_offset: bpy.props.FloatProperty(name="Second Mullion Offset", default=0.45)
+    first_mullion_offset: bpy.props.FloatProperty(
+        name="First Mullion Offset", 
+        description="Distance from the first lining to the first mullion center",    
+        default=0.3)
+    second_mullion_offset: bpy.props.FloatProperty(
+        name="Second Mullion Offset", 
+        description="Distance from the first lining to the second mullion center",        
+        default=0.45)
     transom_thickness: bpy.props.FloatProperty(name="Transom Thickness", default=0.050)
-    first_transom_offset: bpy.props.FloatProperty(name="First Transom Offset", default=0.3)
-    second_transom_offset: bpy.props.FloatProperty(name="Second Transom Offset", default=0.6)
+    first_transom_offset: bpy.props.FloatProperty(
+        name="First Transom Offset", 
+        description="Distance from the first lining to the first transom center",
+        default=0.3)
+    second_transom_offset: bpy.props.FloatProperty(
+        name="Second Transom Offset", 
+        description="Distance from the first lining to the second transom center",
+        default=0.6)
 
-    # panel_properties
+    # panel properties
     frame_depth: bpy.props.FloatVectorProperty(name="Frame Depth", size=3, default=[0.035] * 3)
     frame_thickness: bpy.props.FloatVectorProperty(name="Frame Thickness", size=3, default=[0.035] * 3)
 
@@ -417,3 +429,93 @@ class BIMWindowProperties(PropertyGroup):
             "frame_depth": self.frame_depth,
             "frame_thickness": self.frame_thickness,
         }
+
+
+class BIMDoorProperties(PropertyGroup):
+    door_types = (
+        ("DOUBLE_SWING_LEFT", "DOUBLE_SWING_LEFT", ""),
+        ("DOUBLE_SWING_RIGHT", "DOUBLE_SWING_RIGHT", ""),
+    )
+
+    door_added_previously: bpy.props.BoolProperty(default=False)
+    is_editing: bpy.props.IntProperty(default=-1)
+    door_type: bpy.props.EnumProperty(
+        name="Door Operation Type", items=door_types, default="DOUBLE_SWING_LEFT"
+    )
+    overall_height: bpy.props.FloatProperty(name="Overall Height", default=1.2)
+    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6)
+
+    # lining properties
+    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050)
+    lining_thickness: bpy.props.FloatProperty(name="Lining Thickness", default=0.050)
+    lining_offset: bpy.props.FloatProperty(name="Lining Offset", default=0.0)
+    lining_to_panel_offset_x: bpy.props.FloatProperty(name="Lining to Panel Offset X", default=0.025)
+    lining_to_panel_offset_y: bpy.props.FloatProperty(name="Lining to Panel Offset Y", default=0.025)
+
+    transom_thickness: bpy.props.FloatProperty(name="Transom Thickness", default=0.050)
+    transom_offset: bpy.props.FloatProperty(
+        name="Transom Offset",
+        description="Distance from the bottom door opening " \
+            "to the beginning of the transom (unlike windows)",
+        default=0.875)
+
+    casing_thickness: bpy.props.FloatProperty(name="Casing Thickness", default=0.075)
+    casing_depth: bpy.props.FloatProperty(name="Casing Depth", default=0.005)
+    
+    threshold_thickness: bpy.props.FloatProperty(name="Threshold Thickness", default=0.025)
+    threshold_depth: bpy.props.FloatProperty(name="Threshold Depth", default=0.1)
+    threshold_offset: bpy.props.FloatProperty(name="Threshold Offset", default=0.025)
+
+    # panel properties
+    panel_depth: bpy.props.FloatProperty(name="Panel Depth", default=0.035)
+    panel_width_ratio: bpy.props.FloatProperty(
+        name="Panel Width Ratio", 
+        description="Width of this panel, given as ratio " \
+            "relative to the total clear opening width of the door", 
+        default=1.0, soft_min=0, soft_max=1)
+    frame_thickness: bpy.props.FloatProperty(name="Window Frame Thickness", default=0.035)
+    frame_depth: bpy.props.FloatProperty(name="Window Frame Depth", default=0.035)
+
+    def get_general_kwargs(self):
+        return {
+            "door_type": self.door_type,
+            "overall_height": self.overall_height,
+            "overall_width": self.overall_width,
+        }
+
+    def get_lining_kwargs(self):
+        kwargs = {
+            "lining_depth": self.lining_depth,
+            "lining_thickness": self.lining_thickness,
+            "lining_offset": self.lining_offset,
+            "lining_to_panel_offset_x": self.lining_to_panel_offset_x,
+            "lining_to_panel_offset_y": self.lining_to_panel_offset_y,
+        }
+
+        kwargs['transom_thickness'] = self.transom_thickness
+        if self.transom_thickness:
+            kwargs['transom_offset'] = self.transom_offset
+
+        if not self.lining_offset:
+            kwargs['casing_thickness'] = self.casing_thickness
+            if self.casing_thickness:
+                kwargs['casing_depth'] = self.casing_depth
+        
+        kwargs['threshold_thickness'] = self.threshold_thickness
+        if self.threshold_thickness:
+            kwargs['threshold_depth'] = self.threshold_depth
+            kwargs['threshold_offset'] = self.threshold_offset
+
+        return kwargs
+
+    def get_panel_kwargs(self):
+        kwargs = {
+            "panel_depth": self.panel_depth,
+            "panel_width_ratio": self.panel_width_ratio
+        }
+
+        if self.transom_thickness:
+            kwargs['frame_thickness'] = self.frame_thickness
+            kwargs['frame_depth'] = self.frame_depth
+
+        return kwargs

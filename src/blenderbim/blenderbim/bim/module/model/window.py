@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>, @Andrej730
+# Copyright (C) 2023 @Andrej730
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -125,10 +125,11 @@ def replace_representation_for_object(ifc_file, ifc_context, obj, new_representa
     )
 
 
-def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, position: Vector):
-    """thickness of the profile is defined as list in the following order: (LEFT, TOP, RIGHT, BOTTOM)
+def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0,0,0)):
+    """`thickness` of the profile is defined as list in the following order: 
+    `(LEFT, TOP, RIGHT, BOTTOM)`
 
-    thickness can be also defined just as 1 float value.
+    `thickness` can be also defined just as 1 float value.
     """
 
     if not isinstance(thickness, collections.abc.Iterable):
@@ -189,6 +190,52 @@ def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, positio
     return new_verts + translate_verts
 
 
+def create_bm_box(bm, size:Vector=V(1,1,1).freeze(), position:Vector=V(0,0,0).freeze()):
+    """create a box of `size`, position box first vertex at `position`"""
+    box_verts = bmesh.ops.create_cube(bm, size=1)['verts']
+    bmesh.ops.translate(bm, vec=-box_verts[0].co, verts=box_verts)
+    bmesh.ops.scale(bm, vec=size, verts=box_verts)
+    bmesh.ops.translate(bm, vec=position, verts=box_verts)
+    return box_verts
+
+
+def create_bm_window(bm,
+    lining_size: Vector,
+    lining_thickness,
+    lining_to_panel_offset_x,
+    lining_to_panel_offset_y_full,
+    frame_size,
+    frame_thickness,
+    glass_thickness,
+    position: Vector):
+    # window lining
+    window_lining_verts = create_bm_window_frame(bm, lining_size, lining_thickness)
+
+    # window frame
+    frame_position = V(
+        lining_to_panel_offset_x,
+        lining_to_panel_offset_y_full,
+        lining_to_panel_offset_x
+    )
+    frame_verts = create_bm_window_frame(bm, frame_size, frame_thickness, frame_position)
+
+    # window glass
+    glass_size = frame_size - V(frame_thickness*2, 0, frame_thickness*2)
+    glass_size.y = glass_thickness
+    glass_position = frame_position + V(
+        frame_thickness,
+        frame_size.y / 2 - glass_thickness / 2,
+        frame_thickness
+    )
+
+    glass_verts = create_bm_box(bm, glass_size, glass_position)
+
+    translated_verts = window_lining_verts + frame_verts + glass_verts
+    bmesh.ops.translate(bm, vec=position, verts=translated_verts)
+
+    return (window_lining_verts, frame_verts, glass_verts)
+
+
 def update_window_modifier_bmesh(context):
     obj = context.object
     props = obj.BIMWindowProperties
@@ -201,7 +248,9 @@ def update_window_modifier_bmesh(context):
     lining_depth = props.lining_depth * si_conversion
     overall_height = props.overall_height * si_conversion
     lining_to_panel_offset_x = props.lining_to_panel_offset_x * si_conversion
+    lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion
     lining_thickness = props.lining_thickness * si_conversion
+    lining_offset = props.lining_offset
 
     mullion_thickness = props.mullion_thickness * si_conversion / 2
     first_mullion_offset = props.first_mullion_offset * si_conversion
@@ -251,8 +300,8 @@ def update_window_modifier_bmesh(context):
             frame_depth = props.frame_depth[panel_i] * si_conversion
             frame_thickness = props.frame_thickness[panel_i] * si_conversion
 
-            # create lining
-            lining_size = V(
+            # add window
+            window_lining_size = V(
                 panel_width,
                 lining_depth,
                 panel_height,
@@ -260,59 +309,43 @@ def update_window_modifier_bmesh(context):
 
             # calculate lining thickness
             # taking into account mullions and transoms
-            thickness = [lining_thickness] * 4
+            window_lining_thickness = [lining_thickness] * 4
             # mullion thickness
             if unique_cols > 1:
                 if column_i != 0:
-                    thickness[0] = mullion_thickness  # left column
+                    window_lining_thickness[0] = mullion_thickness  # left column
                 if column_i != unique_cols - 1:
-                    thickness[2] = mullion_thickness  # right column
+                    window_lining_thickness[2] = mullion_thickness  # right column
             # transom thickness
             if unique_rows_in_col[column_i] > 1:
                 if row_i != 0:
-                    thickness[3] = transom_thickness  # bottom row
+                    window_lining_thickness[3] = transom_thickness  # bottom row
                 if row_i != unique_rows_in_col[column_i] - 1:
-                    thickness[1] = transom_thickness  # top row
+                    window_lining_thickness[1] = transom_thickness  # top row
 
-            lining_verts = create_bm_window_closed_profile(bm, lining_size, thickness, V(0, 0, 0))
-
-            # add panel
-            panel_size = lining_size.copy()
-            panel_size.y = frame_depth
-            panel_size = panel_size - V(lining_to_panel_offset_x * 2, 0, lining_to_panel_offset_x * 2)
-
-            panel_position = V(
-                props.lining_to_panel_offset_x * si_conversion,
-                ((props.lining_depth - props.frame_depth[panel_i]) + props.lining_to_panel_offset_y) * si_conversion,
-                props.lining_to_panel_offset_x * si_conversion,
-            )
-            thickness = props.frame_thickness[panel_i] * si_conversion
-            panel_verts = create_bm_window_closed_profile(bm, panel_size, thickness, panel_position)
-
-            # add glass
-            glass_verts = bmesh.ops.create_cube(bm, size=1)["verts"]
-            bmesh.ops.translate(bm, vec=-glass_verts[0].co, verts=glass_verts)
-            glass_size = panel_size
-            glass_size.y = glass_thickness
-            glass_size = glass_size - V(frame_thickness * 2, 0, frame_thickness)
-            glass_position = panel_position + V(
+            frame_size = window_lining_size.copy()
+            frame_size.y = frame_depth
+            frame_size = frame_size - V(lining_to_panel_offset_x * 2, 0, lining_to_panel_offset_x * 2)
+           
+            window_position = V(accumulated_width, 0, accumulated_height[column_i])
+            lining_verts, panel_verts, glass_verts = create_bm_window(
+                bm, 
+                window_lining_size,
+                window_lining_thickness,
+                lining_to_panel_offset_x,
+                (lining_depth - frame_depth) + lining_to_panel_offset_y,
+                frame_size,
                 frame_thickness,
-                frame_depth / 2 - glass_thickness / 2,
-                frame_thickness,
+                glass_thickness,
+                window_position
             )
-            bmesh.ops.scale(bm, vec=glass_size, verts=glass_verts)
-            bmesh.ops.translate(bm, vec=glass_position, verts=glass_verts)
-
-            # translate panel
-            accumulated_offset = V(accumulated_width, 0, accumulated_height[column_i])
-            bmesh.ops.translate(bm, vec=accumulated_offset, verts=lining_verts + panel_verts + glass_verts)
 
             built_panels.append(panel_i)
 
             accumulated_height[column_i] += panel_height
             accumulated_width += panel_width
 
-    bmesh.ops.translate(bm, vec=V(0, props.lining_offset * si_conversion, 0), verts=bm.verts)
+    bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=bm.verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
     if bpy.context.object.mode == "EDIT":
