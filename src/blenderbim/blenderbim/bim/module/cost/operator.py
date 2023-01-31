@@ -239,6 +239,8 @@ class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
             contracted_cost_items.remove(props.active_cost_item_index)
         props.contracted_cost_items = json.dumps(contracted_cost_items)
         bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
+        if props.active_cost_item_id == self.cost_item:
+            props.active_cost_item_id = 0
         return {"FINISHED"}
 
 
