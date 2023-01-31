@@ -19,7 +19,6 @@
 import bpy
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.resource.data import Data
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -53,7 +52,6 @@ def updateResourceName(self, context):
         self.file,
         **{"resource": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
     )
-    Data.load(IfcStore.get_file())
     if props.active_resource_id == self.ifc_definition_id:
         attribute = props.resource_attributes.get("Name")
         attribute.string_value = self.name
