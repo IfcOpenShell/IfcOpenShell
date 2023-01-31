@@ -122,7 +122,6 @@ class BaseDecorator:
     in vec3 pos;
     in uint topo;
     in vec3 next_vert;
-    out vec4 gl_Position;
     out uint type;
     out vec4 v_next_vert;
 
@@ -984,7 +983,6 @@ class HiddenDecorator(BaseDecorator):
     FRAG_GLSL = """
     uniform float viewportDrawingScale;
     uniform vec4 color;
-    in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
 
@@ -1043,7 +1041,6 @@ class MiscDecorator(BaseDecorator):
 
     FRAG_GLSL = """
     uniform vec4 color;
-    in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
 
@@ -1401,7 +1398,6 @@ class GridDecorator(BaseDecorator):
 
     FRAG_GLSL = """
     uniform vec4 color;
-    in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
 
