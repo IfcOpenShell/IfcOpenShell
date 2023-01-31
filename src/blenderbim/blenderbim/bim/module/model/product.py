@@ -32,6 +32,7 @@ from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.prop import store_cursor_position
+from blenderbim.bim.helper import draw_image_for_ifc_profile
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
@@ -370,30 +371,8 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
                 material = ifcopenshell.util.element.get_material(element)
                 if material and material.is_a("IfcMaterialProfileSet"):
                     profile = material.MaterialProfiles[0].Profile
-                    settings = ifcopenshell.geom.settings()
-                    settings.set(settings.INCLUDE_CURVES, True)
-                    shape = ifcopenshell.geom.create_shape(settings, profile)
-                    verts = shape.verts
-                    edges = shape.edges
-                    grouped_verts = [[verts[i], verts[i + 1]] for i in range(0, len(verts), 3)]
-                    grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+                    draw_image_for_ifc_profile(draw, profile, size)
 
-                    max_x = max([v[0] for v in grouped_verts])
-                    min_x = min([v[0] for v in grouped_verts])
-                    max_y = max([v[1] for v in grouped_verts])
-                    min_y = min([v[1] for v in grouped_verts])
-
-                    dim_x = max_x - min_x
-                    dim_y = max_y - min_y
-                    max_dim = max([dim_x, dim_y])
-                    scale = 100 / max_dim
-
-                    for vert in grouped_verts:
-                        vert[0] = round(scale * (vert[0] - min_x)) + ((size / 2) - scale * (dim_x / 2))
-                        vert[1] = round(scale * (vert[1] - min_y)) + ((size / 2) - scale * (dim_y / 2))
-
-                    for e in grouped_edges:
-                        draw.line((tuple(grouped_verts[e[0]]), tuple(grouped_verts[e[1]])), fill="white", width=2)
                 elif material and material.is_a("IfcMaterialLayerSet"):
                     thicknesses = [l.LayerThickness for l in material.MaterialLayers]
                     total_thickness = sum(thicknesses)

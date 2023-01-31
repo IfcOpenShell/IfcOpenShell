@@ -27,6 +27,7 @@ def refresh():
 
 class ProfileData:
     data = {}
+    preview_collection = bpy.utils.previews.new()
     is_loaded = False
 
     @classmethod
