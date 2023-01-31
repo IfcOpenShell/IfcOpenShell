@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+from . import ui, prop, operator, data
 
 classes = (
     operator.AddProfileDef,
@@ -43,3 +43,5 @@ def register():
 
 def unregister():
     del bpy.types.Scene.BIMProfileProperties
+    if data.ProfileData.preview_collection:
+        bpy.utils.previews.remove(data.ProfileData.preview_collection)
