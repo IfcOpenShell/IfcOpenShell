@@ -85,7 +85,8 @@ def generate_thumbnail_for_active_profile():
     # save generated image to preview collection
     profile_id_str = str(profile_id)
     if profile_id_str in preview_collection:
-        del preview_collection[profile_id_str]
-    preview_image = preview_collection.new(profile_id_str)
+        preview_image = preview_collection[profile_id_str]
+    else:
+        preview_image = preview_collection.new(profile_id_str)
     preview_image.image_size = size, size
     preview_image.image_pixels_float = pixels

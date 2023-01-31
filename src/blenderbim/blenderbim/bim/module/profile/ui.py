@@ -47,13 +47,15 @@ class BIM_PT_profiles(Panel):
             preview_collection = ProfileData.preview_collection
             box = self.layout.box()
             profile_id = self.props.profiles[self.props.active_profile_index].ifc_definition_id
-            preview_image = preview_collection.get(str(profile_id), None)
 
-            if preview_image:
-                box.template_icon(icon_value=preview_image.icon_id, scale=5)
+            profile_id_str = str(profile_id)
+            if profile_id_str in preview_collection:
+                preview_image = preview_collection[profile_id_str]
             else:
-                # TODO: test if called multiple times before one is loaded
+                preview_image = preview_collection.new(profile_id_str)
                 generate_thumbnail_for_active_profile()
+
+            box.template_icon(icon_value=preview_image.icon_id, scale=5)
 
         row = self.layout.row(align=True)
         row.label(text=f"{ProfileData.data['total_profiles']} Named Profiles Found", icon="SNAP_GRID")
