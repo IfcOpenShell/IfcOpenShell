@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.bim.helper import prop_with_search
 import bpy
+import blenderbim.tool as tool
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.helper import draw_attributes
 
 
@@ -40,9 +41,14 @@ class BIM_PT_patch(bpy.types.Panel):
         row = layout.row()
         prop_with_search(row, props, "ifc_patch_recipes")
 
-        row = layout.row(align=True)
-        row.prop(props, "ifc_patch_input")
-        row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
+        if tool.Ifc.get():
+            row = self.layout.row()
+            row.prop(props, "should_load_from_memory")
+
+        if not tool.Ifc.get() or not props.should_load_from_memory:
+            row = layout.row(align=True)
+            row.prop(props, "ifc_patch_input")
+            row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
 
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_output")
