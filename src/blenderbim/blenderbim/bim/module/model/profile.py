@@ -32,8 +32,6 @@ import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix
-from ifcopenshell.api.pset.data import Data as PsetData
-from ifcopenshell.api.material.data import Data as MaterialData
 from blenderbim.bim.module.geometry.helper import Helper
 
 
@@ -191,7 +189,6 @@ class DumbProfileGenerator:
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
-        MaterialData.load(self.file)
 
         if link_to_scene:
             obj.select_set(True)

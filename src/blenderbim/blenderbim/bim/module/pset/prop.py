@@ -18,10 +18,10 @@
 
 import bpy
 import blenderbim.bim.schema
-from blenderbim.bim.prop import Attribute, StrProperty
 import ifcopenshell
-from ifcopenshell.api.pset.data import Data
+import ifcopenshell.util.element
 import blenderbim.tool as tool
+from blenderbim.bim.prop import Attribute, StrProperty
 from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
@@ -62,14 +62,12 @@ def get_pset_names(self, context):
     obj = context.active_object
     if not obj.BIMObjectProperties.ifc_definition_id:
         return []
-    if obj.BIMObjectProperties.ifc_definition_id not in Data.products:
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
     ifc_class = element.is_a()
     if ifc_class not in psetnames:
         psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
-    assigned_names = [Data.psets[p]["Name"] for p in Data.products[obj.BIMObjectProperties.ifc_definition_id]["psets"]]
+    assigned_names = ifcopenshell.util.element.get_psets(element, psets_only=True).keys()
     return [p for p in psetnames[ifc_class] if p[0] not in assigned_names]
 
 

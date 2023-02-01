@@ -22,7 +22,6 @@ import blenderbim.core.context as core
 import blenderbim.bim.module.context.data
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.context.data import Data
 
 
 class Operator:

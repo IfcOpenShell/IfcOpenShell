@@ -20,7 +20,6 @@ import re
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
-from ifcopenshell.api.group.data import Data
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore

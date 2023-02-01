@@ -32,8 +32,6 @@ import blenderbim.core.root
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.pset.data import Data as PsetData
-from ifcopenshell.api.material.data import Data as MaterialData
 from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
 
@@ -660,7 +658,6 @@ class DumbWallGenerator:
         )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
-        MaterialData.load(self.file)
         obj.select_set(True)
         return obj
 
@@ -719,7 +716,6 @@ def calculate_quantities(usecase_path, ifc_file, settings):
             "NetVolume": round(net_volume, 2),
         },
     )
-    PsetData.load(ifc_file, obj.BIMObjectProperties.ifc_definition_id)
 
 
 class DumbWallPlaner:
@@ -789,7 +785,6 @@ class DumbWallJoiner:
         connection = "ATEND" if connection > 0.5 else "ATSTART"
 
         wall2 = self.duplicate_wall(wall1)
-        MaterialData.load(tool.Ifc.get())
         element2 = tool.Ifc.get_entity(wall2)
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")

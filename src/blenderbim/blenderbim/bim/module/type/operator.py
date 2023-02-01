@@ -26,9 +26,6 @@ import blenderbim.core.geometry
 import blenderbim.core.type as core
 import blenderbim.core.root
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.type.data import Data
-from ifcopenshell.api.geometry.data import Data as GeometryData
-from ifcopenshell.api.material.data import Data as MaterialData
 
 
 class Operator:
@@ -55,10 +52,6 @@ class AssignType(bpy.types.Operator, Operator):
         for obj in related_objects:
             core.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=type)
             oprops = obj.BIMObjectProperties
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
-            GeometryData.load(IfcStore.get_file(), oprops.ifc_definition_id)
-            MaterialData.load(IfcStore.get_file(), oprops.ifc_definition_id)
-        MaterialData.load(IfcStore.get_file())
 
 
 class UnassignType(bpy.types.Operator):
@@ -84,7 +77,6 @@ class UnassignType(bpy.types.Operator):
                     "related_object": self.file.by_id(oprops.ifc_definition_id),
                 },
             )
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         return {"FINISHED"}
 
 

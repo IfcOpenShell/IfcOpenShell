@@ -34,7 +34,6 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
-from ifcopenshell.api.context.data import Data as ContextData
 
 
 class CreateProject(bpy.types.Operator):

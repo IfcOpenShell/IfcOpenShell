@@ -37,8 +37,6 @@ from bpy.types import SpaceView3D
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees, sin, cos, radians
 from mathutils import Vector, Matrix
-from ifcopenshell.api.pset.data import Data as PsetData
-from ifcopenshell.api.material.data import Data as MaterialData
 from blenderbim.bim.module.geometry.helper import Helper
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
@@ -118,7 +116,6 @@ def calculate_quantities(usecase_path, ifc_file, settings):
         )
 
     ifcopenshell.api.run("pset.edit_qto", ifc_file, should_run_listeners=False, qto=qto, properties=properties)
-    PsetData.load(ifc_file, obj.BIMObjectProperties.ifc_definition_id)
 
 
 class DumbSlabGenerator:
@@ -228,7 +225,6 @@ class DumbSlabGenerator:
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer3"})
-        MaterialData.load(self.file)
         obj.select_set(True)
         return obj
 
