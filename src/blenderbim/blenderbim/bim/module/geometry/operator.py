@@ -31,9 +31,6 @@ import blenderbim.core.root
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector
-from ifcopenshell.api.geometry.data import Data
-from ifcopenshell.api.context.data import Data as ContextData
-from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.root.prop import get_contexts
@@ -168,9 +165,6 @@ class UpdateRepresentation(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        if not ContextData.is_loaded:
-            ContextData.load(IfcStore.get_file())
-
         if context.active_object and context.active_object.mode != "OBJECT":
             # Ensure mode is object to prevent invalid mesh data causing CTD
             bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
@@ -266,7 +260,6 @@ class UpdateRepresentation(bpy.types.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
-        Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         if obj.data.BIMMeshProperties.ifc_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
 

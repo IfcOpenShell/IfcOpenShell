@@ -18,7 +18,6 @@
 
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
-from ifcopenshell.api.material.data import Data
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
 from blenderbim.bim.helper import prop_with_search

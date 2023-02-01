@@ -23,7 +23,6 @@ import ifcopenshell.util.attribute
 import blenderbim.tool as tool
 import blenderbim.core.document as core
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.document.data import Data
 
 
 class LoadProjectDocuments(bpy.types.Operator, tool.Ifc.Operator):

@@ -33,7 +33,6 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.prop import store_cursor_position
 from blenderbim.bim.helper import draw_image_for_ifc_profile
-from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop

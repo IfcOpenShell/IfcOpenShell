@@ -30,8 +30,6 @@ import blenderbim.core.pset as core
 import blenderbim.core.qto as QtoCore
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.pset.data import Data
-from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 
@@ -85,23 +83,22 @@ class EnablePsetEditing(bpy.types.Operator):
         self.props = get_pset_props(context, self.obj, self.obj_type)
         self.props.properties.clear()
         ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
-        Data.load(IfcStore.get_file(), ifc_definition_id)
-        data = Data.psets if self.pset_id in Data.psets else Data.qtos
-        pset_data = data[self.pset_id]
-        self.props.active_pset_name = pset_data["Name"]
+        pset = tool.Ifc.get().by_id(self.pset_id)
+        self.props.active_pset_name = pset.Name
 
-        pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(pset_data["Name"])
+        pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(pset.Name)
 
         if pset_template:
-            self.load_from_pset_template(pset_template, pset_data)
+            self.load_from_pset_template(pset_template, pset)
         else:
-            self.load_from_pset_data(pset_data)
+            self.load_from_pset_data(pset)
 
         self.props.active_pset_id = self.pset_id
         return {"FINISHED"}
 
-    def load_from_pset_template(self, pset_template, pset_data):
-        data = {Data.properties[p]["Name"]: Data.properties[p]["NominalValue"] for p in pset_data["Properties"]}
+    def load_from_pset_template(self, pset_template, pset):
+        data = ifcopenshell.util.element.get_property_definition(pset)
+        del data["id"]
         for prop_template in pset_template.HasPropertyTemplates:
             if not prop_template.is_a("IfcSimplePropertyTemplate"):
                 continue  # Other types not yet supported
@@ -173,21 +170,26 @@ class EnablePsetEditing(bpy.types.Operator):
             setattr(new, data_type, enum)
             new.is_selected = enum in selected_enum_items
 
-    def load_from_pset_data(self, pset_data):
-        for prop_id in pset_data["Properties"]:
-            prop = Data.properties[prop_id]
+    def load_from_pset_data(self, pset):
+        if pset.is_a("IfcElementQuantity"):
+            props = pset.Quantities
+        elif pset.is_a("IfcPropertySet"):
+            props = pset.HasProperties
+        elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
+            props = pset.Properties
 
-            if prop["type"] == "IfcPropertyEnumeratedValue":
+        for prop in props:
+            if prop.is_a("IfcPropertyEnumeratedValue"):
                 simple_prop = self.props.properties.add()
                 simple_prop.value_type = "IfcPropertyEnumeratedValue"
                 metadata = simple_prop.metadata
-                metadata.name = prop["Name"]
+                metadata.name = prop.Name
                 metadata.is_null = len(simple_prop.enumerated_value.enumerated_values) == 0
                 metadata.is_optional = True
-                metadata.set_value(prop["EnumerationReference"].EnumerationValues[0].wrappedValue)
+                metadata.set_value(prop.EnumerationReference.EnumerationValues[0].wrappedValue)
 
-                enum_items = [v.wrappedValue for v in prop["EnumerationReference"].EnumerationValues]
-                selected_enum_items = [v.wrappedValue for v in prop["EnumerationValues"]]
+                enum_items = [v.wrappedValue for v in prop.EnumerationReference.EnumerationValues]
+                selected_enum_items = [v.wrappedValue for v in prop.EnumerationValues]
                 data_type = metadata.get_value_name()
 
                 for enum in enum_items:
@@ -195,11 +197,14 @@ class EnablePsetEditing(bpy.types.Operator):
                     setattr(new, data_type, enum)
                     new.is_selected = enum in selected_enum_items
             else:
-                value = prop["NominalValue"]
+                if prop.is_a("IfcSimplePropertyTemplate"):
+                    value = prop.NominalValue.wrappedValue
+                elif prop.is_a("IfcPhysicalSimpleQuantity"):
+                    value = prop[3]
                 new_prop = self.props.properties.add()
                 metadata = new_prop.metadata
                 metadata.set_value(value)
-                metadata.name = prop["Name"]
+                metadata.name = prop.Name
                 metadata.is_null = value is None
                 metadata.is_optional = True
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
@@ -236,7 +241,6 @@ class EditPset(bpy.types.Operator, Operator):
         if self.properties:
             properties = json.loads(self.properties)
         else:
-            data = Data.psets if pset_id in Data.psets else Data.qtos
             for prop in props.properties:
                 if prop.value_type == "IfcPropertySingleValue":
                     properties[prop.metadata.name] = prop.metadata.get_value()
@@ -246,7 +250,7 @@ class EditPset(bpy.types.Operator, Operator):
                         e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected
                     ]
 
-        if pset_id in Data.psets:
+        if tool.Ifc.get().by_id(pset_id).is_a("IfcPropertySet"):
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 self.file,
@@ -270,9 +274,7 @@ class EditPset(bpy.types.Operator, Operator):
                     "properties": properties,
                 },
             )
-            CostData.purge()
             bpy.ops.bim.load_cost_item_quantities()
-        Data.load(IfcStore.get_file(), ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
 
 
@@ -302,7 +304,6 @@ class RemovePset(bpy.types.Operator, Operator):
                 ifcopenshell.api.run(
                     "pset.remove_pset", tool.Ifc.get(), product=element, pset=tool.Ifc.get().by_id(pset["id"])
                 )
-                Data.load(IfcStore.get_file(), ifc_definition_id)
 
 
 class AddPset(bpy.types.Operator, Operator):
@@ -329,7 +330,6 @@ class AddPset(bpy.types.Operator, Operator):
             element = tool.Ifc.get().by_id(ifc_definition_id)
             if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
                 ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=pset_name)
-                Data.load(IfcStore.get_file(), ifc_definition_id)
 
 
 class AddQto(bpy.types.Operator, Operator):
@@ -352,7 +352,6 @@ class AddQto(bpy.types.Operator, Operator):
                 "name": props.qto_name,
             },
         )
-        Data.load(IfcStore.get_file(), ifc_definition_id)
 
 
 class CalculateQuantity(bpy.types.Operator):
@@ -536,7 +535,6 @@ class BIM_OT_rename_parameters(bpy.types.Operator):
                     continue
                 if prop2map.existing_property_name == obj_prop.Name:
                     obj_prop.Name = prop2map.new_property_name
-                    Data.load(IfcStore.get_file(), ifc_element.id())
 
 
 class BIM_OT_add_edit_custom_property(bpy.types.Operator):
@@ -572,7 +570,6 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
                 ifcopenshell.api.run(
                     "pset.edit_pset", self.file, pset=new_pset, properties={prop.property_name: value_ifc_entity}
                 )
-        Data.load(IfcStore.get_file(), ifc_definition_id)
         self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}
 
@@ -634,7 +631,6 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator):
                         )
                     except KeyError:
                         pass  # Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej
-                    Data.load(IfcStore.get_file(), ifc_definition_id)
 
         self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}

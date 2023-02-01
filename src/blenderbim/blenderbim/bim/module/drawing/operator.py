@@ -44,8 +44,6 @@ from mathutils import Vector
 from timeit import default_timer as timer
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.group.data import Data as GroupData
-from ifcopenshell.api.pset.data import Data as PsetData
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
