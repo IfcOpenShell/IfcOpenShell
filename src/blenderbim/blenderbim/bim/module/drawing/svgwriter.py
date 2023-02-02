@@ -196,6 +196,10 @@ class SvgWriter:
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
                 rl = helper.format_distance(rl)
             else:
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                rl /= unit_scale
+                rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
+                rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
             text_style = {
                 "font-size": annotation.Annotator.get_svg_text_size(2.5),
@@ -600,6 +604,10 @@ class SvgWriter:
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
                 rl = helper.format_distance(rl)
             else:
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                rl /= unit_scale
+                rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
+                rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
             if projected_points[0].x > projected_points[-1].x:
                 text_anchor = "end"
