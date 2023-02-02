@@ -75,7 +75,10 @@ def datetime2ifc(dt, ifc_type):
     if isinstance(dt, str):
         if ifc_type == "IfcDuration":
             return dt
-        dt = datetime.datetime.fromisoformat(dt)
+        try:
+            dt = datetime.datetime.fromisoformat(dt)
+        except:
+            dt = datetime.time.fromisoformat(dt)
 
     if ifc_type == "IfcDuration":
         return isodate.duration_isoformat(dt)
