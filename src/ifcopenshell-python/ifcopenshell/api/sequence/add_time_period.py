@@ -18,6 +18,7 @@
 
 import ifcopenshell.api
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 from datetime import datetime
 from datetime import timedelta
 
@@ -93,4 +94,8 @@ class Usecase:
         time_periods = list(self.settings["recurrence_pattern"].TimePeriods or [])
         time_periods.append(time_period)
         self.settings["recurrence_pattern"].TimePeriods = time_periods
+
+        ifcopenshell.util.sequence.is_working_day.cache_clear()
+        ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()
+
         return time_period

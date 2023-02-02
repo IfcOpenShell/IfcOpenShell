@@ -168,7 +168,7 @@ def is_calendar_applicable(day, calendar):
 
 
 def is_day_in_work_time(day, work_time):
-    is_day_in_work_time = False
+    is_day_in_work_time = True
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
     if work_time.Start:
