@@ -23,6 +23,7 @@ import blf
 import bgl
 import math
 import bmesh
+import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 from functools import reduce
@@ -1150,6 +1151,7 @@ class PlanLevelDecorator(LevelDecorator):
     """
 
     def draw_labels(self, context, obj, splines):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         region = context.region
         region3d = context.region_data
         for verts in splines:
@@ -1160,7 +1162,10 @@ class PlanLevelDecorator(LevelDecorator):
             dir = p1 - p0
             if dir.length < 1:
                 continue
-            text = "RL " + self.format_value(context, verts[-1].z)
+            z = verts[-1].z / unit_scale
+            z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
+            z *= unit_scale
+            text = "RL " + self.format_value(context, z)
             self.draw_label(context, text, p0, dir, gap=8, center=False)
 
 
@@ -1233,6 +1238,7 @@ class SectionLevelDecorator(LevelDecorator):
     """
 
     def draw_labels(self, context, obj, splines):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         region = context.region
         region3d = context.region_data
         for verts in splines:
@@ -1245,7 +1251,10 @@ class SectionLevelDecorator(LevelDecorator):
             dir = p1 - p0
             if dir.length < 1:
                 continue
-            text = "RL " + self.format_value(context, verts[-1].z)
+            z = verts[-1].z / unit_scale
+            z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
+            z *= unit_scale
+            text = "RL " + self.format_value(context, z)
             self.draw_label(context, text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
 
 
