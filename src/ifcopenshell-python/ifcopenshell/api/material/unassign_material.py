@@ -75,7 +75,11 @@ class Usecase:
         for rel in self.settings["product"].HasAssociations:
             if rel.is_a("IfcRelAssociatesMaterial"):
                 if rel.RelatingMaterial.is_a() in ["IfcMaterialLayerSetUsage", "IfcMaterialProfileSetUsage"]:
-                    self.file.remove(rel.RelatingMaterial)
+                    # Usages cannot be unassigned, as all occurrences of a type
+                    # which has a parametric material must use the parametric
+                    # material. Instead, unassign the parametric material from
+                    # the type.
+                    continue
                 if len(rel.RelatedObjects) == 1:
                     self.file.remove(rel)
                     continue
