@@ -142,26 +142,20 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     material_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-
-        if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
-        else:
-            objects = context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         active_obj = context.active_object
         active_object_material_type = self.material_type or active_obj.BIMObjectMaterialProperties.material_type
-        active_object_material = active_obj.BIMObjectMaterialProperties.material
+        material = tool.Ifc.get().by_id(int(active_obj.BIMObjectMaterialProperties.material))
         for obj in objects:
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            ifcopenshell.api.run(
-                "material.assign_material",
-                self.file,
-                **{
-                    "product": element,
-                    "type": active_object_material_type,
-                    "material": self.file.by_id(int(active_object_material)),
-                },
-            )
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                ifcopenshell.api.run(
+                    "material.assign_material",
+                    tool.Ifc.get(),
+                    product=element,
+                    type=active_object_material_type,
+                    material=material,
+                )
 
 
 class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -171,18 +165,11 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-
-        if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
-        else:
-            objects = context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         for obj in objects:
-            ifcopenshell.api.run(
-                "material.unassign_material",
-                self.file,
-                **{"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
-            )
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element)
 
 
 class AddConstituent(bpy.types.Operator, tool.Ifc.Operator):
