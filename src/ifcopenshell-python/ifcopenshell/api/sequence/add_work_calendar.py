@@ -67,7 +67,7 @@ class Usecase:
                 parent=work_time, recurrence_type="WEEKLY")
 
             # State that we work from weekdays 1 to 5 (i.e. Monday to Friday), 9am to 5pm
-            ifcopenshell.api.run("sequence.edit_recurrence_pattern", mdoel,
+            ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
                 recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
             ifcopenshell.api.run("sequence.add_time_period", model,
                 recurrence_pattern=pattern, start_time="09:00", end_time="17:00")
