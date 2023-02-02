@@ -89,7 +89,7 @@ Scenario: Unassign material - single material
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
     And I press "bim.assign_material"
     When I press "bim.unassign_material"
-    Then nothing happens
+    Then the object "IfcWall/Cube" does not have the material "Default"
 
 Scenario: Enable editing assigned material - single material
     Given an empty IFC project
@@ -132,10 +132,6 @@ Scenario: Edit assigned material - single material
 
 Scenario: Assign material - material layer set
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -144,14 +140,10 @@ Scenario: Assign material - material layer set
     And I press "bim.add_material(obj='')"
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
-    Then nothing happens
+    Then the object "IfcWallType/Empty" does not have the material "Default"
 
 Scenario: Unassign material - material layer set
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -219,10 +211,6 @@ Scenario: Edit assigned material - material layer set
 
 Scenario: Assign material - material profile set
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -231,14 +219,10 @@ Scenario: Assign material - material profile set
     And I press "bim.add_material(obj='')"
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
-    Then nothing happens
+    Then the object "IfcWallType/Empty" does not have the material "Default"
 
 Scenario: Unassign material - material profile set
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"

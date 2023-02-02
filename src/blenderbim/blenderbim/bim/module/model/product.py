@@ -527,3 +527,29 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
             continue
 
         obj.data.materials.append(IfcStore.get_element(material[0].id()))
+
+
+
+def ensure_material_unassigned(usecase_path, ifc_file, settings):
+    elements = [settings["product"]]
+    if elements[0].is_a("IfcElementType"):
+        elements.extend(ifcopenshell.util.element.get_types(elements[0]))
+    for element in elements:
+        obj = tool.Ifc.get_object(element)
+        if not obj or not obj.data:
+            continue
+        element_material = ifcopenshell.util.element.get_material(element)
+        if element_material:
+            continue
+        to_remove = []
+        for i, slot in enumerate(obj.material_slots):
+            if not slot.material:
+                continue
+            material = tool.Ifc.get_entity(slot.material)
+            if material:
+                to_remove.append(i)
+        total_removed = 0
+        for i in to_remove:
+            obj.active_material_index = i - total_removed
+            bpy.ops.object.material_slot_remove({'object': obj})
+            total_removed += 1
