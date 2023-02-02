@@ -64,8 +64,8 @@ class Usecase:
 
     def execute(self):
         if self.settings["is_recurring"]:
-            task_time = self.file.create_entity("IfcTaskTime")
-        else:
             task_time = self.file.create_entity("IfcTaskTimeRecurring")
+        else:
+            task_time = self.file.create_entity("IfcTaskTime")
         self.settings["task"].TaskTime = task_time
         return task_time
