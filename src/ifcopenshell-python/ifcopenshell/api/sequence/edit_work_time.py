@@ -44,10 +44,11 @@ class Usecase:
             work_time = ifcopenshell.api.run("sequence.add_work_time", model,
                 work_calendar=calendar, time_type="WorkingTimes")
 
-            # Edit our work time to state that the work time only applies after
-            # a start date.
+            # If we don't specify any recurring time periods in our work time,
+            # we need to specify a start and end date of the work time. It
+            # starts at 0:00 on the start date and 24:00 at the end date.
             ifcopenshell.api.run("sequence.edit_work_time", model,
-                work_time=work_time, attributes={"StartDate": "2000-01-01"})
+                work_time=work_time, attributes={"StartDate": "2000-01-01", "FinishDate": "2000-01-02"})
         """
         self.file = file
         self.settings = {"work_time": work_time, "attributes": attributes or {}}
