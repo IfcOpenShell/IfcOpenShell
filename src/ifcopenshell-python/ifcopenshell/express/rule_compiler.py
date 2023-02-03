@@ -648,7 +648,9 @@ class express_set(set):
     __radd__ = __add__
     def __repr__(self):
         return repr(set(self))
-
+    def __getitem__(self, k):
+        # @todo this is obviously not stable, but should be good enough?
+        return list(self)[k]
 
 def typeof(inst):
     if not inst:
