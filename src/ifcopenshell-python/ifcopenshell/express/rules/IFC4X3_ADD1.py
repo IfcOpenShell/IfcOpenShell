@@ -44,7 +44,9 @@ class express_set(set):
     __radd__ = __add__
     def __repr__(self):
         return repr(set(self))
-
+    def __getitem__(self, k):
+        # @todo this is obviously not stable, but should be good enough?
+        return list(self)[k]
 
 def typeof(inst):
     if not inst:
@@ -11470,7 +11472,7 @@ class IfcAdvancedBrep_HasAdvancedFaces:
     def __call__(self):
 
         
-        assert ((sizeof([afs for afs in self.Outer.CfsFaces if not 'ifc4x3_add1.ifcadvancedface' in typeof(afs)])) == 0) is not False
+        assert ((sizeof([afs for afs in self.Outer.CfsFaces if not ('ifc4x3_add1.ifcadvancedface' in typeof(afs))])) == 0) is not False
         
 
 
@@ -11485,7 +11487,7 @@ class IfcAdvancedBrepWithVoids_VoidsHaveAdvancedFaces:
     def __call__(self):
         voids = self.Voids
         
-        assert ((sizeof([vsh for vsh in voids if (sizeof([afs for afs in vsh.CfsFaces if not 'ifc4x3_add1.ifcadvancedface' in typeof(afs)])) == 0])) == 0) is not False
+        assert ((sizeof([vsh for vsh in voids if (sizeof([afs for afs in vsh.CfsFaces if not ('ifc4x3_add1.ifcadvancedface' in typeof(afs))])) == 0])) == 0) is not False
         
 
 
@@ -11500,7 +11502,7 @@ class IfcAdvancedFace_ApplicableEdgeCurves:
     def __call__(self):
 
         
-        assert ((sizeof([elpfbnds for elpfbnds in [bnds for bnds in self.Bounds if 'ifc4x3_add1.ifcedgeloop' in typeof(bnds.Bound)] if not (sizeof([oe for oe in elpfbnds.Bound.EdgeList if not (sizeof(['ifc4x3_add1.ifcline','ifc4x3_add1.ifcconic','ifc4x3_add1.ifcpolyline','ifc4x3_add1.ifcbsplinecurve'] * typeof(oe.EdgeElement.EdgeGeometry))) == 1])) == 0])) == 0) is not False
+        assert ((sizeof([elpfbnds for elpfbnds in [bnds for bnds in self.Bounds if 'ifc4x3_add1.ifcedgeloop' in typeof(bnds.Bound)] if not ((sizeof([oe for oe in elpfbnds.Bound.EdgeList if not ((sizeof(['ifc4x3_add1.ifcline','ifc4x3_add1.ifcconic','ifc4x3_add1.ifcpolyline','ifc4x3_add1.ifcbsplinecurve'] * typeof(oe.EdgeElement.EdgeGeometry))) == 1)])) == 0)])) == 0) is not False
         
 
 
@@ -11528,7 +11530,7 @@ class IfcAdvancedFace_RequiresEdgeCurve:
     def __call__(self):
 
         
-        assert ((sizeof([elpfbnds for elpfbnds in [bnds for bnds in self.Bounds if 'ifc4x3_add1.ifcedgeloop' in typeof(bnds.Bound)] if not (sizeof([oe for oe in elpfbnds.Bound.EdgeList if not 'ifc4x3_add1.ifcedgecurve' in typeof(oe.EdgeElement)])) == 0])) == 0) is not False
+        assert ((sizeof([elpfbnds for elpfbnds in [bnds for bnds in self.Bounds if 'ifc4x3_add1.ifcedgeloop' in typeof(bnds.Bound)] if not ((sizeof([oe for oe in elpfbnds.Bound.EdgeList if not ('ifc4x3_add1.ifcedgecurve' in typeof(oe.EdgeElement))])) == 0)])) == 0) is not False
         
 
 
@@ -11791,7 +11793,7 @@ class IfcArbitraryClosedProfileDef_WR2:
     def __call__(self):
         outercurve = self.OuterCurve
         
-        assert (not 'ifc4x3_add1.ifcline' in typeof(outercurve)) is not False
+        assert (not ('ifc4x3_add1.ifcline' in typeof(outercurve))) is not False
         
 
 
@@ -11805,7 +11807,7 @@ class IfcArbitraryClosedProfileDef_WR3:
     def __call__(self):
         outercurve = self.OuterCurve
         
-        assert (not 'ifc4x3_add1.ifcoffsetcurve2d' in typeof(outercurve)) is not False
+        assert (not ('ifc4x3_add1.ifcoffsetcurve2d' in typeof(outercurve))) is not False
         
 
 
@@ -12105,7 +12107,7 @@ class IfcAxis2Placement3D_AxisAndRefDirProvision:
         axis = self.Axis
         refdirection = self.RefDirection
         
-        assert (not exists(axis) ^ exists(refdirection)) is not False
+        assert (not (exists(axis) ^ exists(refdirection))) is not False
         
 
 
@@ -12608,7 +12610,7 @@ class IfcBooleanResult_FirstOperandClosed:
     def __call__(self):
         firstoperand = self.FirstOperand
         
-        assert ((not 'ifc4x3_add1.ifctessellatedfaceset' in typeof(firstoperand)) or (exists(firstoperand.Closed) and firstoperand.Closed)) is not False
+        assert ((not ('ifc4x3_add1.ifctessellatedfaceset' in typeof(firstoperand))) or (exists(firstoperand.Closed) and firstoperand.Closed)) is not False
         
 
 
@@ -12637,7 +12639,7 @@ class IfcBooleanResult_SecondOperandClosed:
     def __call__(self):
         secondoperand = self.SecondOperand
         
-        assert ((not 'ifc4x3_add1.ifctessellatedfaceset' in typeof(secondoperand)) or (exists(secondoperand.Closed) and secondoperand.Closed)) is not False
+        assert ((not ('ifc4x3_add1.ifctessellatedfaceset' in typeof(secondoperand))) or (exists(secondoperand.Closed) and secondoperand.Closed)) is not False
         
 
 
@@ -12706,7 +12708,7 @@ class IfcBoxedHalfSpace_UnboundedSurface:
     def __call__(self):
 
         
-        assert (not 'ifc4x3_add1.ifccurveboundedplane' in typeof(self.BaseSurface)) is not False
+        assert (not ('ifc4x3_add1.ifccurveboundedplane' in typeof(self.BaseSurface))) is not False
         
 
 
@@ -14974,7 +14976,7 @@ class IfcDoorLiningProperties_WR31:
         liningdepth = self.LiningDepth
         liningthickness = self.LiningThickness
         
-        assert (not exists(liningdepth) and (not exists(liningthickness))) is not False
+        assert (not (exists(liningdepth) and (not exists(liningthickness)))) is not False
         
 
 
@@ -14989,7 +14991,7 @@ class IfcDoorLiningProperties_WR32:
         thresholddepth = self.ThresholdDepth
         thresholdthickness = self.ThresholdThickness
         
-        assert (not exists(thresholddepth) and (not exists(thresholdthickness))) is not False
+        assert (not (exists(thresholddepth) and (not exists(thresholdthickness)))) is not False
         
 
 
@@ -16669,7 +16671,7 @@ class IfcGeometricRepresentationSubContext_ParentNoSub:
     def __call__(self):
         parentcontext = self.ParentContext
         
-        assert (not 'ifc4x3_add1.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)) is not False
+        assert (not ('ifc4x3_add1.ifcgeometricrepresentationsubcontext' in typeof(parentcontext))) is not False
         
 
 
@@ -17527,7 +17529,7 @@ class IfcMaterialDefinitionRepresentation_OnlyStyledRepresentations:
     def __call__(self):
         representations = self.Representations
         
-        assert ((sizeof([temp for temp in representations if not 'ifc4x3_add1.ifcstyledrepresentation' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in representations if not ('ifc4x3_add1.ifcstyledrepresentation' in typeof(temp))])) == 0) is not False
         
 
 
@@ -17986,7 +17988,7 @@ class IfcOccupant_WR31:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert ((not predefinedtype == IfcOccupantTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
+        assert ((not (predefinedtype == IfcOccupantTypeEnum.USERDEFINED)) or exists(self.ObjectType)) is not False
         
 
 
@@ -18106,7 +18108,7 @@ class IfcOrientedEdge_EdgeElementNotOriented:
     def __call__(self):
         edgeelement = self.EdgeElement
         
-        assert (not 'ifc4x3_add1.ifcorientededge' in typeof(edgeelement)) is not False
+        assert (not ('ifc4x3_add1.ifcorientededge' in typeof(edgeelement))) is not False
         
 
 
@@ -18890,7 +18892,7 @@ class IfcProductDefinitionShape_OnlyShapeModel:
     def __call__(self):
         representations = self.Representations
         
-        assert ((sizeof([temp for temp in representations if not 'ifc4x3_add1.ifcshapemodel' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in representations if not ('ifc4x3_add1.ifcshapemodel' in typeof(temp))])) == 0) is not False
         
 
 
@@ -19080,7 +19082,7 @@ class IfcPropertyEnumeration_WR01:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.EnumerationValues if not (typeof(self.EnumerationValues[1 - 1])) == typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.EnumerationValues if not ((typeof(self.EnumerationValues[1 - 1])) == typeof(temp))])) == 0) is not False
         
 
 
@@ -19095,7 +19097,7 @@ class IfcPropertyListValue_WR31:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.ListValues if not (typeof(self.ListValues[1 - 1])) == typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.ListValues if not ((typeof(self.ListValues[1 - 1])) == typeof(temp))])) == 0) is not False
         
 
 
@@ -19873,7 +19875,7 @@ class IfcRectangularTrimmedSurface_UsenseCompatible:
         u2 = self.U2
         usense = self.Usense
         
-        assert ((('ifc4x3_add1.ifcelementarysurface' in typeof(basissurface)) and (not 'ifc4x3_add1.ifcplane' in typeof(basissurface))) or ('ifc4x3_add1.ifcsurfaceofrevolution' in typeof(basissurface)) or (usense == (u2 > u1))) is not False
+        assert ((('ifc4x3_add1.ifcelementarysurface' in typeof(basissurface)) and (not ('ifc4x3_add1.ifcplane' in typeof(basissurface)))) or ('ifc4x3_add1.ifcsurfaceofrevolution' in typeof(basissurface)) or (usense == (u2 > u1))) is not False
         
 
 
@@ -20444,7 +20446,7 @@ class IfcRelReferencedInSpatialStructure_AllowedRelatedElements:
     def __call__(self):
         relatedelements = self.RelatedElements
         
-        assert ((sizeof([temp for temp in relatedelements if ('ifc4x3_add1.ifcspatialstructureelement' in typeof(temp)) and (not 'ifc4x3_add1.ifcspace' in typeof(temp))])) == 0) is not False
+        assert ((sizeof([temp for temp in relatedelements if ('ifc4x3_add1.ifcspatialstructureelement' in typeof(temp)) and (not ('ifc4x3_add1.ifcspace' in typeof(temp)))])) == 0) is not False
         
 
 
@@ -20494,7 +20496,7 @@ class IfcRelSpaceBoundary_CorrectPhysOrVirt:
         relatedbuildingelement = self.RelatedBuildingElement
         physicalorvirtualboundary = self.PhysicalOrVirtualBoundary
         
-        assert (((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Physical) and (not 'ifc4x3_add1.ifcvirtualelement' in typeof(relatedbuildingelement))) or ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Virtual) and (('ifc4x3_add1.ifcvirtualelement' in typeof(relatedbuildingelement)) or ('ifc4x3_add1.ifcopeningelement' in typeof(relatedbuildingelement)))) or (physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.NotDefined)) is not False
+        assert (((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Physical) and (not ('ifc4x3_add1.ifcvirtualelement' in typeof(relatedbuildingelement)))) or ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Virtual) and (('ifc4x3_add1.ifcvirtualelement' in typeof(relatedbuildingelement)) or ('ifc4x3_add1.ifcopeningelement' in typeof(relatedbuildingelement)))) or (physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.NotDefined)) is not False
         
 
 
@@ -21205,7 +21207,7 @@ class IfcShapeRepresentation_NoTopologicalItem:
     def __call__(self):
         items = self.Items
         
-        assert ((sizeof([temp for temp in items if ('ifc4x3_add1.ifctopologicalrepresentationitem' in typeof(temp)) and (not (sizeof(['ifc4x3_add1.ifcvertexpoint','ifc4x3_add1.ifcedgecurve','ifc4x3_add1.ifcfacesurface'] * typeof(temp))) == 1)])) == 0) is not False
+        assert ((sizeof([temp for temp in items if ('ifc4x3_add1.ifctopologicalrepresentationitem' in typeof(temp)) and (not ((sizeof(['ifc4x3_add1.ifcvertexpoint','ifc4x3_add1.ifcedgecurve','ifc4x3_add1.ifcfacesurface'] * typeof(temp))) == 1))])) == 0) is not False
         
 
 
@@ -22105,7 +22107,7 @@ class IfcStyledItem_ApplicableItem:
     def __call__(self):
         item = self.Item
         
-        assert (not 'ifc4x3_add1.ifcstyleditem' in typeof(item)) is not False
+        assert (not ('ifc4x3_add1.ifcstyleditem' in typeof(item))) is not False
         
 
 
@@ -22120,7 +22122,7 @@ class IfcStyledRepresentation_OnlyStyledItems:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.Items if not 'ifc4x3_add1.ifcstyleditem' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.Items if not ('ifc4x3_add1.ifcstyleditem' in typeof(temp))])) == 0) is not False
         
 
 
@@ -22190,7 +22192,7 @@ class IfcSurfaceCurve_CurveIsNotPcurve:
     def __call__(self):
         curve3d = self.Curve3D
         
-        assert (not 'ifc4x3_add1.ifcpcurve' in typeof(curve3d)) is not False
+        assert (not ('ifc4x3_add1.ifcpcurve' in typeof(curve3d))) is not False
         
 
 
@@ -22952,7 +22954,7 @@ class IfcTextLiteralWithExtent_WR31:
     def __call__(self):
         extent = self.Extent
         
-        assert (not 'ifc4x3_add1.ifcplanarbox' in typeof(extent)) is not False
+        assert (not ('ifc4x3_add1.ifcplanarbox' in typeof(extent))) is not False
         
 
 
@@ -23027,7 +23029,7 @@ class IfcTopologyRepresentation_WR21:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.Items if not 'ifc4x3_add1.ifctopologicalrepresentationitem' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.Items if not ('ifc4x3_add1.ifctopologicalrepresentationitem' in typeof(temp))])) == 0) is not False
         
 
 
@@ -23250,7 +23252,7 @@ class IfcTrimmedCurve_NoTrimOfBoundedCurves:
     def __call__(self):
         basiscurve = self.BasisCurve
         
-        assert (not 'ifc4x3_add1.ifcboundedcurve' in typeof(basiscurve)) is not False
+        assert (not ('ifc4x3_add1.ifcboundedcurve' in typeof(basiscurve))) is not False
         
 
 
@@ -23369,7 +23371,7 @@ class IfcTypeProduct_ApplicableOccurrence:
     def __call__(self):
 
         
-        assert ((not exists(lambda: self.Types[1 - 1])) or ((sizeof([temp for temp in self.Types[1 - 1].RelatedObjects if not 'ifc4x3_add1.ifcproduct' in typeof(temp)])) == 0)) is not False
+        assert ((not (exists(lambda: self.Types[1 - 1]))) or ((sizeof([temp for temp in self.Types[1 - 1].RelatedObjects if not ('ifc4x3_add1.ifcproduct' in typeof(temp))])) == 0)) is not False
         
 
 
@@ -23897,7 +23899,7 @@ class IfcWindowLiningProperties_WR31:
         liningdepth = self.LiningDepth
         liningthickness = self.LiningThickness
         
-        assert (not exists(liningdepth) and (not exists(liningthickness))) is not False
+        assert (not (exists(liningdepth) and (not exists(liningthickness)))) is not False
         
 
 
@@ -23912,7 +23914,7 @@ class IfcWindowLiningProperties_WR32:
         firsttransomoffset = self.FirstTransomOffset
         secondtransomoffset = self.SecondTransomOffset
         
-        assert (not (not exists(firsttransomoffset)) and exists(secondtransomoffset)) is not False
+        assert (not ((not exists(firsttransomoffset)) and exists(secondtransomoffset))) is not False
         
 
 
@@ -23927,7 +23929,7 @@ class IfcWindowLiningProperties_WR33:
         firstmullionoffset = self.FirstMullionOffset
         secondmullionoffset = self.SecondMullionOffset
         
-        assert (not (not exists(firstmullionoffset)) and exists(secondmullionoffset)) is not False
+        assert (not ((not exists(firstmullionoffset)) and exists(secondmullionoffset))) is not False
         
 
 
@@ -24053,7 +24055,7 @@ class IfcZone_WR1:
     def __call__(self):
 
         
-        assert ((sizeof(self.IsGroupedBy) == 0) or ((sizeof([temp for temp in self.IsGroupedBy[1 - 1].RelatedObjects if not ('ifc4x3_add1.ifczone' in typeof(temp)) or ('ifc4x3_add1.ifcspace' in typeof(temp)) or ('ifc4x3_add1.ifcspatialzone' in typeof(temp))])) == 0)) is not False
+        assert ((sizeof(self.IsGroupedBy) == 0) or ((sizeof([temp for temp in self.IsGroupedBy[1 - 1].RelatedObjects if not (('ifc4x3_add1.ifczone' in typeof(temp)) or ('ifc4x3_add1.ifcspace' in typeof(temp)) or ('ifc4x3_add1.ifcspatialzone' in typeof(temp)))])) == 0)) is not False
         
 
 
@@ -24069,7 +24071,7 @@ class IfcRepresentationContextSameWCS:
         if sizeof(IfcGeometricRepresentationContext) > 1:
             for i in range(2, hiindex(IfcGeometricRepresentationContext) + 1):
                 if (IfcGeometricRepresentationContext[1 - 1].WorldCoordinateSystem) != (IfcGeometricRepresentationContext[i - 1].WorldCoordinateSystem):
-                    isdifferent = (not IfcSameValidPrecision(IfcGeometricRepresentationContext[1 - 1].Precision,IfcGeometricRepresentationContext[i - 1].Precision)) or (not IfcSameAxis2Placement(IfcGeometricRepresentationContext[1 - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[i - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[1 - 1].Precision))
+                    isdifferent = (not (IfcSameValidPrecision(IfcGeometricRepresentationContext[1 - 1].Precision,IfcGeometricRepresentationContext[i - 1].Precision))) or (not (IfcSameAxis2Placement(IfcGeometricRepresentationContext[1 - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[i - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[1 - 1].Precision)))
                     if isdifferent == True:
                         break
         
@@ -24388,13 +24390,13 @@ def IfcCorrectUnitAssignment(units):
     monetaryunitnumber = 0
     namedunitnames = express_set([])
     derivedunitnames = express_set([])
-    namedunitnumber = sizeof([temp for temp in units if ('ifc4x3_add1.ifcnamedunit' in typeof(temp)) and (not temp.UnitType == IfcUnitEnum.USERDEFINED)])
-    derivedunitnumber = sizeof([temp for temp in units if ('ifc4x3_add1.ifcderivedunit' in typeof(temp)) and (not temp.UnitType == IfcDerivedUnitEnum.USERDEFINED)])
+    namedunitnumber = sizeof([temp for temp in units if ('ifc4x3_add1.ifcnamedunit' in typeof(temp)) and (not (temp.UnitType == IfcUnitEnum.USERDEFINED))])
+    derivedunitnumber = sizeof([temp for temp in units if ('ifc4x3_add1.ifcderivedunit' in typeof(temp)) and (not (temp.UnitType == IfcDerivedUnitEnum.USERDEFINED))])
     monetaryunitnumber = sizeof([temp for temp in units if 'ifc4x3_add1.ifcmonetaryunit' in typeof(temp)])
     for i in range(1, sizeof(units) + 1):
-        if ('ifc4x3_add1.ifcnamedunit' in (typeof(units[i - 1]))) and (not (units[i - 1].UnitType) == IfcUnitEnum.USERDEFINED):
+        if ('ifc4x3_add1.ifcnamedunit' in (typeof(units[i - 1]))) and (not ((units[i - 1].UnitType) == IfcUnitEnum.USERDEFINED)):
             namedunitnames = namedunitnames + (units[i - 1].UnitType)
-        if ('ifc4x3_add1.ifcderivedunit' in (typeof(units[i - 1]))) and (not (units[i - 1].UnitType) == IfcDerivedUnitEnum.USERDEFINED):
+        if ('ifc4x3_add1.ifcderivedunit' in (typeof(units[i - 1]))) and (not ((units[i - 1].UnitType) == IfcDerivedUnitEnum.USERDEFINED)):
             derivedunitnames = derivedunitnames + (units[i - 1].UnitType)
     return (sizeof(namedunitnames) == namedunitnumber) and (sizeof(derivedunitnames) == derivedunitnumber) and (monetaryunitnumber <= 1)
 

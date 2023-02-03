@@ -44,7 +44,9 @@ class express_set(set):
     __radd__ = __add__
     def __repr__(self):
         return repr(set(self))
-
+    def __getitem__(self, k):
+        # @todo this is obviously not stable, but should be good enough?
+        return list(self)[k]
 
 def typeof(inst):
     if not inst:
@@ -8002,7 +8004,7 @@ class IfcArbitraryClosedProfileDef_WR2:
     def __call__(self):
         outercurve = self.OuterCurve
         
-        assert (not 'ifc2x3.ifcline' in typeof(outercurve)) is not False
+        assert (not ('ifc2x3.ifcline' in typeof(outercurve))) is not False
         
 
 
@@ -8016,7 +8018,7 @@ class IfcArbitraryClosedProfileDef_WR3:
     def __call__(self):
         outercurve = self.OuterCurve
         
-        assert (not 'ifc2x3.ifcoffsetcurve2d' in typeof(outercurve)) is not False
+        assert (not ('ifc2x3.ifcoffsetcurve2d' in typeof(outercurve))) is not False
         
 
 
@@ -8103,7 +8105,7 @@ class IfcAsset_WR1:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not 'ifc2x3.ifcelement' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not ('ifc2x3.ifcelement' in typeof(temp))])) == 0) is not False
         
 
 
@@ -8251,7 +8253,7 @@ class IfcAxis2Placement3D_WR5:
         axis = self.Axis
         refdirection = self.RefDirection
         
-        assert (not exists(axis) ^ exists(refdirection)) is not False
+        assert (not (exists(axis) ^ exists(refdirection))) is not False
         
 
 
@@ -8441,7 +8443,7 @@ class IfcBoxedHalfSpace_WR1:
     def __call__(self):
 
         
-        assert (not 'ifc2x3.ifccurveboundedplane' in typeof(self.BaseSurface)) is not False
+        assert (not ('ifc2x3.ifccurveboundedplane' in typeof(self.BaseSurface))) is not False
         
 
 
@@ -9160,7 +9162,7 @@ class IfcConstructionMaterialResource_WR2:
     def __call__(self):
 
         
-        assert ((not exists(lambda: self.ResourceOf[1 - 1])) or ((self.ResourceOf[1 - 1].RelatedObjectsType) == IfcObjectTypeEnum.PRODUCT)) is not False
+        assert ((not (exists(lambda: self.ResourceOf[1 - 1]))) or ((self.ResourceOf[1 - 1].RelatedObjectsType) == IfcObjectTypeEnum.PRODUCT)) is not False
         
 
 
@@ -9189,7 +9191,7 @@ class IfcConstructionProductResource_WR2:
     def __call__(self):
 
         
-        assert ((not exists(lambda: self.ResourceOf[1 - 1])) or ((self.ResourceOf[1 - 1].RelatedObjectsType) == IfcObjectTypeEnum.PRODUCT)) is not False
+        assert ((not (exists(lambda: self.ResourceOf[1 - 1]))) or ((self.ResourceOf[1 - 1].RelatedObjectsType) == IfcObjectTypeEnum.PRODUCT)) is not False
         
 
 
@@ -9466,7 +9468,7 @@ class IfcDimensionCalloutRelationship_WR13:
     def __call__(self):
 
         
-        assert (not 'ifc2x3.ifcdimensioncurvedirectedcallout' in typeof(self.RelatedDraughtingCallout)) is not False
+        assert (not ('ifc2x3.ifcdimensioncurvedirectedcallout' in typeof(self.RelatedDraughtingCallout))) is not False
         
 
 
@@ -9509,7 +9511,7 @@ class IfcDimensionCurve_WR53:
     def __call__(self):
         annotatedbysymbols = self.AnnotatedBySymbols
         
-        assert ((sizeof([dct for dct in annotatedbysymbols if not 'ifc2x3.ifcdimensioncurveterminator' in typeof(dct)])) == 0) is not False
+        assert ((sizeof([dct for dct in annotatedbysymbols if not ('ifc2x3.ifcdimensioncurveterminator' in typeof(dct))])) == 0) is not False
         
 
 
@@ -9697,7 +9699,7 @@ class IfcDoorLiningProperties_WR31:
         liningdepth = self.LiningDepth
         liningthickness = self.LiningThickness
         
-        assert (not (not exists(liningdepth)) and exists(liningthickness)) is not False
+        assert (not ((not exists(liningdepth)) and exists(liningthickness))) is not False
         
 
 
@@ -9712,7 +9714,7 @@ class IfcDoorLiningProperties_WR32:
         thresholddepth = self.ThresholdDepth
         thresholdthickness = self.ThresholdThickness
         
-        assert (not (not exists(thresholddepth)) and exists(thresholdthickness)) is not False
+        assert (not ((not exists(thresholddepth)) and exists(thresholdthickness))) is not False
         
 
 
@@ -10238,7 +10240,7 @@ class IfcFillAreaStyleHatching_WR21:
     def __call__(self):
         startofnexthatchline = self.StartOfNextHatchLine
         
-        assert (not 'ifc2x3.ifctwodirectionrepeatfactor' in typeof(startofnexthatchline)) is not False
+        assert (not ('ifc2x3.ifctwodirectionrepeatfactor' in typeof(startofnexthatchline))) is not False
         
 
 
@@ -10452,7 +10454,7 @@ class IfcGeometricRepresentationSubContext_WR31:
     def __call__(self):
         parentcontext = self.ParentContext
         
-        assert (not 'ifc2x3.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)) is not False
+        assert (not ('ifc2x3.ifcgeometricrepresentationsubcontext' in typeof(parentcontext))) is not False
         
 
 
@@ -10677,7 +10679,7 @@ class IfcInventory_WR41:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not ('ifc2x3.ifcspace' in typeof(temp)) or ('ifc2x3.ifcasset' in typeof(temp)) or ('ifc2x3.ifcfurnishingelement' in typeof(temp))])) == 0) is not False
+        assert ((sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not (('ifc2x3.ifcspace' in typeof(temp)) or ('ifc2x3.ifcasset' in typeof(temp)) or ('ifc2x3.ifcfurnishingelement' in typeof(temp)))])) == 0) is not False
         
 
 
@@ -10836,7 +10838,7 @@ class IfcMaterialDefinitionRepresentation_WR11:
     def __call__(self):
         representations = self.Representations
         
-        assert ((sizeof([temp for temp in representations if not 'ifc2x3.ifcstyledrepresentation' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in representations if not ('ifc2x3.ifcstyledrepresentation' in typeof(temp))])) == 0) is not False
         
 
 
@@ -11078,7 +11080,7 @@ class IfcOccupant_WR31:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert ((not predefinedtype == IfcOccupantTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
+        assert ((not (predefinedtype == IfcOccupantTypeEnum.USERDEFINED)) or exists(self.ObjectType)) is not False
         
 
 
@@ -11144,7 +11146,7 @@ class IfcOrientedEdge_WR1:
     def __call__(self):
         edgeelement = self.EdgeElement
         
-        assert (not 'ifc2x3.ifcorientededge' in typeof(edgeelement)) is not False
+        assert (not ('ifc2x3.ifcorientededge' in typeof(edgeelement))) is not False
         
 
 
@@ -11549,7 +11551,7 @@ class IfcProcedure_WR1:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.Decomposes if not 'ifc2x3.ifcrelnests' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.Decomposes if not ('ifc2x3.ifcrelnests' in typeof(temp))])) == 0) is not False
         
 
 
@@ -11563,7 +11565,7 @@ class IfcProcedure_WR2:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.IsDecomposedBy if not 'ifc2x3.ifcrelnests' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.IsDecomposedBy if not ('ifc2x3.ifcrelnests' in typeof(temp))])) == 0) is not False
         
 
 
@@ -11610,7 +11612,7 @@ class IfcProduct_WR1:
         objectplacement = self.ObjectPlacement
         representation = self.Representation
         
-        assert ((exists(representation) and exists(objectplacement)) or (exists(representation) and (not 'ifc2x3.ifcproductdefinitionshape' in typeof(representation))) or (not exists(representation))) is not False
+        assert ((exists(representation) and exists(objectplacement)) or (exists(representation) and (not ('ifc2x3.ifcproductdefinitionshape' in typeof(representation)))) or (not exists(representation))) is not False
         
 
 
@@ -11625,7 +11627,7 @@ class IfcProductDefinitionShape_WR11:
     def __call__(self):
         representations = self.Representations
         
-        assert ((sizeof([temp for temp in representations if not 'ifc2x3.ifcshapemodel' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in representations if not ('ifc2x3.ifcshapemodel' in typeof(temp))])) == 0) is not False
         
 
 
@@ -11779,7 +11781,7 @@ class IfcPropertyEnumeration_WR01:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.EnumerationValues if not (typeof(self.EnumerationValues[1 - 1])) == typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.EnumerationValues if not ((typeof(self.EnumerationValues[1 - 1])) == typeof(temp))])) == 0) is not False
         
 
 
@@ -11794,7 +11796,7 @@ class IfcPropertyListValue_WR31:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.ListValues if not (typeof(self.ListValues[1 - 1])) == typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.ListValues if not ((typeof(self.ListValues[1 - 1])) == typeof(temp))])) == 0) is not False
         
 
 
@@ -12245,7 +12247,7 @@ class IfcRectangularTrimmedSurface_WR3:
         u2 = self.U2
         usense = self.Usense
         
-        assert ((('ifc2x3.ifcelementarysurface' in typeof(basissurface)) and (not 'ifc2x3.ifcplane' in typeof(basissurface))) or ('ifc2x3.ifcsurfaceofrevolution' in typeof(basissurface)) or (usense == (u2 > u1))) is not False
+        assert ((('ifc2x3.ifcelementarysurface' in typeof(basissurface)) and (not ('ifc2x3.ifcplane' in typeof(basissurface)))) or ('ifc2x3.ifcsurfaceofrevolution' in typeof(basissurface)) or (usense == (u2 > u1))) is not False
         
 
 
@@ -12471,7 +12473,7 @@ class IfcRelAssociates_WR21:
     def __call__(self):
         relatedobjects = self.RelatedObjects
         
-        assert ((sizeof([temp for temp in relatedobjects if not ('ifc2x3.ifcobjectdefinition' in typeof(temp)) or ('ifc2x3.ifcpropertydefinition' in typeof(temp))])) == 0) is not False
+        assert ((sizeof([temp for temp in relatedobjects if not (('ifc2x3.ifcobjectdefinition' in typeof(temp)) or ('ifc2x3.ifcpropertydefinition' in typeof(temp)))])) == 0) is not False
         
 
 
@@ -12518,7 +12520,7 @@ class IfcRelAssociatesMaterial_WR22:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.RelatedObjects if (not 'ifc2x3.ifcproduct' in typeof(temp)) and (not 'ifc2x3.ifctypeproduct' in typeof(temp))])) == 0) is not False
+        assert ((sizeof([temp for temp in self.RelatedObjects if (not ('ifc2x3.ifcproduct' in typeof(temp))) and (not ('ifc2x3.ifctypeproduct' in typeof(temp)))])) == 0) is not False
         
 
 
@@ -12634,7 +12636,7 @@ class IfcRelNests_WR1:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.RelatedObjects if not typeof(self.RelatingObject) == typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.RelatedObjects if not (typeof(self.RelatingObject) == typeof(temp))])) == 0) is not False
         
 
 
@@ -12685,7 +12687,7 @@ class IfcRelSchedulesCostItems_WR11:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.RelatedObjects if not 'ifc2x3.ifccostitem' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.RelatedObjects if not ('ifc2x3.ifccostitem' in typeof(temp))])) == 0) is not False
         
 
 
@@ -12734,7 +12736,7 @@ class IfcRelSpaceBoundary_WR1:
         relatedbuildingelement = self.RelatedBuildingElement
         physicalorvirtualboundary = self.PhysicalOrVirtualBoundary
         
-        assert (((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Physical) and (exists(relatedbuildingelement) and (not 'ifc2x3.ifcvirtualelement' in typeof(relatedbuildingelement)))) or ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Virtual) and ((not exists(relatedbuildingelement)) or ('ifc2x3.ifcvirtualelement' in typeof(relatedbuildingelement)))) or (physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.NotDefined)) is not False
+        assert (((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Physical) and (exists(relatedbuildingelement) and (not ('ifc2x3.ifcvirtualelement' in typeof(relatedbuildingelement))))) or ((physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.Virtual) and ((not exists(relatedbuildingelement)) or ('ifc2x3.ifcvirtualelement' in typeof(relatedbuildingelement)))) or (physicalorvirtualboundary == IfcPhysicalOrVirtualEnum.NotDefined)) is not False
         
 
 
@@ -12931,7 +12933,7 @@ class IfcServiceLifeFactor_WR31:
     def __call__(self):
         predefinedtype = self.PredefinedType
         
-        assert ((not predefinedtype == IfcServiceLifeFactorTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
+        assert ((not (predefinedtype == IfcServiceLifeFactorTypeEnum.USERDEFINED)) or exists(self.ObjectType)) is not False
         
 
 
@@ -12978,7 +12980,7 @@ class IfcShapeRepresentation_WR22:
     def __call__(self):
         items = self.Items
         
-        assert ((sizeof([temp for temp in items if ('ifc2x3.ifctopologicalrepresentationitem' in typeof(temp)) and (not (sizeof(['ifc2x3.ifcvertexpoint','ifc2x3.ifcedgecurve','ifc2x3.ifcfacesurface'] * typeof(temp))) == 1)])) == 0) is not False
+        assert ((sizeof([temp for temp in items if ('ifc2x3.ifctopologicalrepresentationitem' in typeof(temp)) and (not ((sizeof(['ifc2x3.ifcvertexpoint','ifc2x3.ifcedgecurve','ifc2x3.ifcfacesurface'] * typeof(temp))) == 1))])) == 0) is not False
         
 
 
@@ -13365,7 +13367,7 @@ class IfcStructuralSurfaceMemberVarying_WR62:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.VaryingThicknessLocation.ShapeRepresentations if not sizeof(temp.Items) == 1])) == 0) is not False
+        assert ((sizeof([temp for temp in self.VaryingThicknessLocation.ShapeRepresentations if not (sizeof(temp.Items) == 1)])) == 0) is not False
         
 
 
@@ -13379,7 +13381,7 @@ class IfcStructuralSurfaceMemberVarying_WR63:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.VaryingThicknessLocation.ShapeRepresentations if not ('ifc2x3.ifccartesianpoint' in (typeof(temp.Items[1 - 1]))) or ('ifc2x3.ifcpointonsurface' in (typeof(temp.Items[1 - 1])))])) == 0) is not False
+        assert ((sizeof([temp for temp in self.VaryingThicknessLocation.ShapeRepresentations if not (('ifc2x3.ifccartesianpoint' in (typeof(temp.Items[1 - 1]))) or ('ifc2x3.ifcpointonsurface' in (typeof(temp.Items[1 - 1]))))])) == 0) is not False
         
 
 
@@ -13401,7 +13403,7 @@ class IfcStructuredDimensionCallout_WR31:
     def __call__(self):
         contents = self.Contents
         
-        assert ((sizeof([ato for ato in [con for con in self.contents if 'ifc2x3.ifcannotationtextoccurrence' in typeof(con)] if not ato.Name in ['dimensionvalue','tolerancevalue','unittext','prefixtext','suffixtext']])) == 0) is not False
+        assert ((sizeof([ato for ato in [con for con in self.contents if 'ifc2x3.ifcannotationtextoccurrence' in typeof(con)] if not (ato.Name in ['dimensionvalue','tolerancevalue','unittext','prefixtext','suffixtext'])])) == 0) is not False
         
 
 
@@ -13433,7 +13435,7 @@ class IfcStyledItem_WR12:
     def __call__(self):
         item = self.Item
         
-        assert (not 'ifc2x3.ifcstyleditem' in typeof(item)) is not False
+        assert (not ('ifc2x3.ifcstyleditem' in typeof(item))) is not False
         
 
 
@@ -13448,7 +13450,7 @@ class IfcStyledRepresentation_WR21:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.Items if not 'ifc2x3.ifcstyleditem' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.Items if not ('ifc2x3.ifcstyleditem' in typeof(temp))])) == 0) is not False
         
 
 
@@ -13640,7 +13642,7 @@ class IfcSweptSurface_WR1:
     def __call__(self):
         sweptcurve = self.SweptCurve
         
-        assert (not 'ifc2x3.ifcderivedprofiledef' in typeof(sweptcurve)) is not False
+        assert (not ('ifc2x3.ifcderivedprofiledef' in typeof(sweptcurve))) is not False
         
 
 
@@ -13801,7 +13803,7 @@ class IfcTask_WR1:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.Decomposes if not 'ifc2x3.ifcrelnests' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.Decomposes if not ('ifc2x3.ifcrelnests' in typeof(temp))])) == 0) is not False
         
 
 
@@ -13815,7 +13817,7 @@ class IfcTask_WR2:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.IsDecomposedBy if not 'ifc2x3.ifcrelnests' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.IsDecomposedBy if not ('ifc2x3.ifcrelnests' in typeof(temp))])) == 0) is not False
         
 
 
@@ -13887,7 +13889,7 @@ class IfcTextLiteralWithExtent_WR31:
     def __call__(self):
         extent = self.Extent
         
-        assert (not 'ifc2x3.ifcplanarbox' in typeof(extent)) is not False
+        assert (not ('ifc2x3.ifcplanarbox' in typeof(extent))) is not False
         
 
 
@@ -13962,7 +13964,7 @@ class IfcTimeSeriesSchedule_WR41:
     def __call__(self):
         timeseriesscheduletype = self.TimeSeriesScheduleType
         
-        assert ((not timeseriesscheduletype == IfcTimeSeriesScheduleTypeEnum.USERDEFINED) or exists(self.ObjectType)) is not False
+        assert ((not (timeseriesscheduletype == IfcTimeSeriesScheduleTypeEnum.USERDEFINED)) or exists(self.ObjectType)) is not False
         
 
 
@@ -13983,7 +13985,7 @@ class IfcTopologyRepresentation_WR21:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.Items if not 'ifc2x3.ifctopologicalrepresentationitem' in typeof(temp)])) == 0) is not False
+        assert ((sizeof([temp for temp in self.Items if not ('ifc2x3.ifctopologicalrepresentationitem' in typeof(temp))])) == 0) is not False
         
 
 
@@ -14066,7 +14068,7 @@ class IfcTrimmedCurve_WR43:
     def __call__(self):
         basiscurve = self.BasisCurve
         
-        assert (not 'ifc2x3.ifcboundedcurve' in typeof(basiscurve)) is not False
+        assert (not ('ifc2x3.ifcboundedcurve' in typeof(basiscurve))) is not False
         
 
 
@@ -14114,7 +14116,7 @@ class IfcTypeProduct_WR41:
     def __call__(self):
 
         
-        assert ((not exists(lambda: self.ObjectTypeOf[1 - 1])) or ((sizeof([temp for temp in self.ObjectTypeOf[1 - 1].RelatedObjects if not 'ifc2x3.ifcproduct' in typeof(temp)])) == 0)) is not False
+        assert ((not (exists(lambda: self.ObjectTypeOf[1 - 1]))) or ((sizeof([temp for temp in self.ObjectTypeOf[1 - 1].RelatedObjects if not ('ifc2x3.ifcproduct' in typeof(temp))])) == 0)) is not False
         
 
 
@@ -14303,7 +14305,7 @@ class IfcWindowLiningProperties_WR31:
         liningdepth = self.LiningDepth
         liningthickness = self.LiningThickness
         
-        assert (not (not exists(liningdepth)) and exists(liningthickness)) is not False
+        assert (not ((not exists(liningdepth)) and exists(liningthickness))) is not False
         
 
 
@@ -14318,7 +14320,7 @@ class IfcWindowLiningProperties_WR32:
         firsttransomoffset = self.FirstTransomOffset
         secondtransomoffset = self.SecondTransomOffset
         
-        assert (not (not exists(firsttransomoffset)) and exists(secondtransomoffset)) is not False
+        assert (not ((not exists(firsttransomoffset)) and exists(secondtransomoffset))) is not False
         
 
 
@@ -14333,7 +14335,7 @@ class IfcWindowLiningProperties_WR33:
         firstmullionoffset = self.FirstMullionOffset
         secondmullionoffset = self.SecondMullionOffset
         
-        assert (not (not exists(firstmullionoffset)) and exists(secondmullionoffset)) is not False
+        assert (not ((not exists(firstmullionoffset)) and exists(secondmullionoffset))) is not False
         
 
 
@@ -14405,7 +14407,7 @@ class IfcZone_WR1:
     def __call__(self):
 
         
-        assert ((sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not ('ifc2x3.ifczone' in typeof(temp)) or ('ifc2x3.ifcspace' in typeof(temp))])) == 0) is not False
+        assert ((sizeof([temp for temp in self.IsGroupedBy.RelatedObjects if not (('ifc2x3.ifczone' in typeof(temp)) or ('ifc2x3.ifcspace' in typeof(temp)))])) == 0) is not False
         
 
 
@@ -14421,7 +14423,7 @@ class IfcRepresentationContextSameWCS:
         if sizeof(IfcGeometricRepresentationContext) > 1:
             for i in range(2, hiindex(IfcGeometricRepresentationContext) + 1):
                 if (IfcGeometricRepresentationContext[1 - 1].WorldCoordinateSystem) != (IfcGeometricRepresentationContext[i - 1].WorldCoordinateSystem):
-                    isdifferent = (not IfcSameValidPrecision(IfcGeometricRepresentationContext[1 - 1].Precision,IfcGeometricRepresentationContext[i - 1].Precision)) or (not IfcSameAxis2Placement(IfcGeometricRepresentationContext[1 - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[i - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[1 - 1].Precision))
+                    isdifferent = (not (IfcSameValidPrecision(IfcGeometricRepresentationContext[1 - 1].Precision,IfcGeometricRepresentationContext[i - 1].Precision))) or (not (IfcSameAxis2Placement(IfcGeometricRepresentationContext[1 - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[i - 1].WorldCoordinateSystem,IfcGeometricRepresentationContext[1 - 1].Precision)))
                     if isdifferent == True:
                         break
         
@@ -14702,25 +14704,25 @@ def IfcCorrectObjectAssignment(constraint, objects):
     if constraint == IfcObjectTypeEnum.NOTDEFINED:
         return True
     elif constraint == IfcObjectTypeEnum.PRODUCT:
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcproduct' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not ('ifc2x3.ifcproduct' in typeof(temp))])
         return count == 0
     elif constraint == IfcObjectTypeEnum.PROCESS:
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcprocess' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not ('ifc2x3.ifcprocess' in typeof(temp))])
         return count == 0
     elif constraint == IfcObjectTypeEnum.CONTROL:
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifccontrol' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not ('ifc2x3.ifccontrol' in typeof(temp))])
         return count == 0
     elif constraint == IfcObjectTypeEnum.RESOURCE:
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcresource' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not ('ifc2x3.ifcresource' in typeof(temp))])
         return count == 0
     elif constraint == IfcObjectTypeEnum.ACTOR:
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcactor' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not ('ifc2x3.ifcactor' in typeof(temp))])
         return count == 0
     elif constraint == IfcObjectTypeEnum.GROUP:
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcgroup' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not ('ifc2x3.ifcgroup' in typeof(temp))])
         return count == 0
     elif constraint == IfcObjectTypeEnum.PROJECT:
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcproject' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not ('ifc2x3.ifcproject' in typeof(temp))])
         return count == 0
     else:
         return None
@@ -14732,13 +14734,13 @@ def IfcCorrectUnitAssignment(units):
     monetaryunitnumber = 0
     namedunitnames = express_set([])
     derivedunitnames = express_set([])
-    namedunitnumber = sizeof([temp for temp in units if ('ifc2x3.ifcnamedunit' in typeof(temp)) and (not temp.UnitType == IfcUnitEnum.USERDEFINED)])
-    derivedunitnumber = sizeof([temp for temp in units if ('ifc2x3.ifcderivedunit' in typeof(temp)) and (not temp.UnitType == IfcDerivedUnitEnum.USERDEFINED)])
+    namedunitnumber = sizeof([temp for temp in units if ('ifc2x3.ifcnamedunit' in typeof(temp)) and (not (temp.UnitType == IfcUnitEnum.USERDEFINED))])
+    derivedunitnumber = sizeof([temp for temp in units if ('ifc2x3.ifcderivedunit' in typeof(temp)) and (not (temp.UnitType == IfcDerivedUnitEnum.USERDEFINED))])
     monetaryunitnumber = sizeof([temp for temp in units if 'ifc2x3.ifcmonetaryunit' in typeof(temp)])
     for i in range(1, sizeof(units) + 1):
-        if ('ifc2x3.ifcnamedunit' in (typeof(units[i - 1]))) and (not (units[i - 1].UnitType) == IfcUnitEnum.USERDEFINED):
+        if ('ifc2x3.ifcnamedunit' in (typeof(units[i - 1]))) and (not ((units[i - 1].UnitType) == IfcUnitEnum.USERDEFINED)):
             namedunitnames = namedunitnames + (units[i - 1].UnitType)
-        if ('ifc2x3.ifcderivedunit' in (typeof(units[i - 1]))) and (not (units[i - 1].UnitType) == IfcDerivedUnitEnum.USERDEFINED):
+        if ('ifc2x3.ifcderivedunit' in (typeof(units[i - 1]))) and (not ((units[i - 1].UnitType) == IfcDerivedUnitEnum.USERDEFINED)):
             derivedunitnames = derivedunitnames + (units[i - 1].UnitType)
     return (sizeof(namedunitnames) == namedunitnumber) and (sizeof(derivedunitnames) == derivedunitnumber) and (monetaryunitnumber <= 1)
 
@@ -15174,7 +15176,7 @@ def IfcUniquePropertyName(properties):
 
 def IfcValidCalendarDate(date):
 
-    if not 1 <= date.DayComponent <= 31:
+    if not (1 <= date.DayComponent <= 31):
         return False
     if date.MonthComponent == 4:
         return 1 <= date.DayComponent <= 30
