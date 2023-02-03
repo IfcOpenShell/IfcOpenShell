@@ -116,7 +116,7 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
     def _execute(self, context):
         target = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
         is_subcontext = target.is_a("IfcGeometricRepresentationSubContext")
-        for obj in context.selected_objects:
+        for obj in set(context.selected_objects + [context.active_object]):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
