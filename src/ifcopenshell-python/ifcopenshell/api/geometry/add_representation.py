@@ -153,7 +153,7 @@ class Usecase:
         elif self.settings["context"].ContextIdentifier == "Axis":
             return self.create_curve2d_representation()
         elif self.settings["context"].ContextIdentifier == "Body":
-            pass
+            return self.create_annotation2d_representation()
         elif self.settings["context"].ContextIdentifier == "Box":
             pass
         elif self.settings["context"].ContextIdentifier == "Clearance":
