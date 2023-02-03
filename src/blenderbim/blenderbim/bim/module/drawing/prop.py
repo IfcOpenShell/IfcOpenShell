@@ -75,8 +75,14 @@ def update_diagram_scale(self, context):
     if "|" not in scale:
         return
     human_scale, scale = scale.split("|")
-    element = tool.Ifc.get_entity(self.id_data)
-    if not element:
+    try:
+        element = (
+            tool.Ifc.get()
+            .by_id(self.id_data.BIMMeshProperties.ifc_definition_id)
+            .OfProductRepresentation[0]
+            .ShapeOfProduct[0]
+        )
+    except:
         return
     pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
     if pset:
