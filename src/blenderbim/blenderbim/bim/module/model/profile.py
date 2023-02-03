@@ -263,6 +263,8 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
+        for obj in selected_objs:
+            tool.Geometry.clear_scale(obj)
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}

@@ -198,11 +198,12 @@ class UpdateRepresentation(bpy.types.Operator):
             settings = tool.Boundary.get_assign_connection_geometry_settings(obj)
             ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
             return
-        elif material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
-            # These objects are parametrically based on an axis and should not be modified as a mesh
-            return
 
         core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+        if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
+            # These objects are parametrically based on an axis and should not be modified as a mesh
+            return
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
