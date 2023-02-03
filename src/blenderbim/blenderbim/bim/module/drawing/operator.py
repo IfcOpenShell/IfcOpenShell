@@ -116,11 +116,7 @@ class CreateDrawing(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bool(
-            tool.Ifc.get()
-            and tool.Drawing.is_camera_orthographic()
-            and tool.Drawing.is_drawing_active()
-        )
+        return bool(tool.Ifc.get() and tool.Drawing.is_camera_orthographic() and tool.Drawing.is_drawing_active())
 
     def execute(self, context):
         self.camera = context.scene.camera
@@ -300,54 +296,120 @@ class CreateDrawing(bpy.types.Operator):
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
             ifc_cache_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
 
-            # Get all representation contexts to see what we're dealing with
-            # A drawing prioritises a target view context first, followed by a body context as a fallback
-            body_contexts = []
-            target_view_contexts = []
+            # Get all representation contexts to see what we're dealing with.
+            # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
+            # A drawing prioritises a target view context first, followed by a model view context as a fallback.
+            # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
+
+            plan_body_target_contexts = []
+            plan_body_model_contexts = []
+            model_body_target_contexts = []
+            model_body_model_contexts = []
+
+            plan_annotation_target_contexts = []
+            plan_annotation_model_contexts = []
+            model_annotation_target_contexts = []
+            model_annotation_model_contexts = []
+
             target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
+
             for rep_context in ifc.by_type("IfcGeometricRepresentationContext"):
                 if rep_context.is_a("IfcGeometricRepresentationSubContext"):
-                    if rep_context.TargetView == target_view:
-                        target_view_contexts.append(rep_context.id())
-                        continue
-                if rep_context.ContextIdentifier in ["Body", "Facetation"]:
-                    body_contexts.append(rep_context.id())
-                    continue
-                if rep_context.is_a() == "IfcGeometricRepresentationContext" and rep_context.ContextType == "Model":
-                    body_contexts.append(rep_context.id())
+                    if rep_context.ContextType == "Plan":
+                        if rep_context.ContextIdentifier in ["Body", "Facetation"]:
+                            if rep_context.TargetView == target_view:
+                                plan_body_target_contexts.append(rep_context.id())
+                            elif rep_context.TargetView == "MODEL_VIEW":
+                                plan_body_model_contexts.append(rep_context.id())
+                        elif rep_context.ContextIdentifier == "Annotation":
+                            if rep_context.TargetView == target_view:
+                                plan_annotation_target_contexts.append(rep_context.id())
+                            elif rep_context.TargetView == "MODEL_VIEW":
+                                plan_annotation_model_contexts.append(rep_context.id())
+                    elif rep_context.ContextType == "Model":
+                        if rep_context.ContextIdentifier in ["Body", "Facetation"]:
+                            if rep_context.TargetView == target_view:
+                                model_body_target_contexts.append(rep_context.id())
+                            elif rep_context.TargetView == "MODEL_VIEW":
+                                model_body_model_contexts.append(rep_context.id())
+                        elif rep_context.ContextIdentifier == "Annotation":
+                            if rep_context.TargetView == target_view:
+                                model_annotation_target_contexts.append(rep_context.id())
+                            elif rep_context.TargetView == "MODEL_VIEW":
+                                model_annotation_model_contexts.append(rep_context.id())
+                elif rep_context.ContextType == "Model":
+                    # You should never purely assign to a "Model" context, but
+                    # if you do, this is what we assume your intention is.
+                    model_body_model_contexts.append(rep_context.id())
                     continue
 
-            elements = tool.Drawing.get_drawing_elements(self.camera_element)
+            body_contexts = (
+                [
+                    plan_body_target_contexts,
+                    plan_body_model_contexts,
+                    model_body_target_contexts,
+                    model_body_model_contexts,
+                ]
+                if target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]
+                else [
+                    model_body_target_contexts,
+                    model_body_model_contexts,
+                ]
+            )
+
+            annotation_contexts = (
+                [
+                    plan_annotation_target_contexts,
+                    plan_annotation_model_contexts,
+                    model_annotation_target_contexts,
+                    model_annotation_model_contexts,
+                ]
+                if target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]
+                else [
+                    model_annotation_target_contexts,
+                    model_annotation_model_contexts,
+                ]
+            )
+
+            drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
             self.setup_serialiser(ifc)
             cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
 
-            with profile("Processing target view context"):
-                if target_view_contexts and elements:
-                    geom_settings = ifcopenshell.geom.settings(
-                        DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
-                    )
-                    geom_settings.set_context_ids(target_view_contexts)
-                    it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
-                    it.set_cache(cache)
-                    processed = set()
-                    for elem in self.yield_from_iterator(it):
-                        processed.add(ifc.by_id(elem.id))
-                        self.serialiser.write(elem)
-                    elements -= processed
+            elements = drawing_elements.copy()
+            for body_context in body_contexts:
+                with profile("Processing body context"):
+                    if body_context and elements:
+                        geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
+                        geom_settings.set_context_ids(body_context)
+                        it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
+                        it.set_cache(cache)
+                        processed = set()
+                        for elem in self.yield_from_iterator(it):
+                            processed.add(ifc.by_id(elem.id))
+                            self.serialiser.write(elem)
+                        elements -= processed
 
-            with profile("Processing body context"):
-                if body_contexts and elements:
-                    geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
-                    geom_settings.set_context_ids(body_contexts)
-                    it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
-                    it.set_cache(cache)
-                    for elem in self.yield_from_iterator(it):
-                        self.serialiser.write(elem)
+            elements = drawing_elements.copy()
+            for annotation_context in annotation_contexts:
+                with profile("Processing annotation context"):
+                    if annotation_context and elements:
+                        geom_settings = ifcopenshell.geom.settings(
+                            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                        )
+                        geom_settings.set_context_ids(annotation_context)
+                        it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
+                        it.set_cache(cache)
+                        processed = set()
+                        for elem in self.yield_from_iterator(it):
+                            processed.add(ifc.by_id(elem.id))
+                            self.serialiser.write(elem)
+                        elements -= processed
 
             with profile("Camera element"):
                 # @todo tfk: is this needed?
+                # If the camera isn't serialised, then nothing gets serialised. Odd behaviour.
                 geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
                 it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
                 for elem in self.yield_from_iterator(it):
@@ -423,7 +485,7 @@ class CreateDrawing(bpy.types.Operator):
         # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
         group = root.find("{http://www.w3.org/2000/svg}g")
         # group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
-        if group:
+        if len(group):
             group[:] = reversed(group)
 
     def canonicalise_class_name(self, name):
@@ -1337,6 +1399,7 @@ class ContractSheet(bpy.types.Operator):
             sheet.is_expanded = False
         core.load_sheets(tool.Drawing)
         return {"FINISHED"}
+
 
 class SelectAssignedProduct(bpy.types.Operator, Operator):
     bl_idname = "bim.select_assigned_product"
