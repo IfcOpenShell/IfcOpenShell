@@ -113,6 +113,8 @@ class Usecase:
                     style = self.settings["styles"].pop(0)
                 name = style.Name
                 if self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]:
-                    style = self.file.createIfcPresentationStyleAssignment([style])
-                self.results.append(self.file.createIfcStyledItem(item, [style], name))
+                    style_assignment = self.file.createIfcPresentationStyleAssignment([style])
+                    self.results.append(self.file.createIfcStyledItem(item, [style_assignment], name))
+                else:
+                    self.results.append(self.file.createIfcStyledItem(item, [style], name))
         return self.results
