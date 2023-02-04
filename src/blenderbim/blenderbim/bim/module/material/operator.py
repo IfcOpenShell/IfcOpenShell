@@ -148,14 +148,27 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
         material = tool.Ifc.get().by_id(int(active_obj.BIMObjectMaterialProperties.material))
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
-            if element:
-                ifcopenshell.api.run(
-                    "material.assign_material",
-                    tool.Ifc.get(),
-                    product=element,
-                    type=active_object_material_type,
-                    material=material,
-                )
+            if not element:
+                continue
+            ifcopenshell.api.run(
+                "material.assign_material",
+                tool.Ifc.get(),
+                product=element,
+                type=active_object_material_type,
+                material=material,
+            )
+            assigned_material = ifcopenshell.util.element.get_material(element)
+            if assigned_material.is_a("IfcMaterialLayerSet"):
+                if not assigned_material.MaterialLayers:
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                    layer = ifcopenshell.api.run(
+                        "material.add_layer",
+                        tool.Ifc.get(),
+                        layer_set=assigned_material,
+                        material=tool.Ifc.get().by_type("IfcMaterial")[0],
+                    )
+                    thickness = 0.1  # Arbitrary metric thickness for now
+                    layer.LayerThickness = thickness / unit_scale
 
 
 class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
