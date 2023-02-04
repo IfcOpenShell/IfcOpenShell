@@ -22,35 +22,25 @@ import json
 import time
 import ifcopenshell.api
 import blenderbim.bim.helper
-from blenderbim.bim.module.cost.prop import purge
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
-from ifcopenshell.api.cost.data import Data
-from ifcopenshell.api.unit.data import Data as UnitData
-from blenderbim.bim.module.resource.data import ResourceData
 
 
-class AddCostSchedule(bpy.types.Operator):
+class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_cost_schedule"
     bl_label = "Add Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
         ifcopenshell.api.run("cost.add_cost_schedule", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
-class EditCostSchedule(bpy.types.Operator):
+class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_cost_schedule"
     bl_label = "Edit Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMCostProperties
@@ -61,20 +51,15 @@ class EditCostSchedule(bpy.types.Operator):
             self.file,
             **{"cost_schedule": self.file.by_id(props.active_cost_schedule_id), "attributes": attributes},
         )
-        Data.load(IfcStore.get_file())
-        purge()
         bpy.ops.bim.disable_editing_cost_schedule()
         return {"FINISHED"}
 
 
-class RemoveCostSchedule(bpy.types.Operator):
+class RemoveCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_schedule"
     bl_label = "Remove Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
     cost_schedule: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         ifcopenshell.api.run(
@@ -82,17 +67,16 @@ class RemoveCostSchedule(bpy.types.Operator):
             IfcStore.get_file(),
             cost_schedule=IfcStore.get_file().by_id(self.cost_schedule),
         )
-        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
-class EnableEditingCostSchedule(bpy.types.Operator):
+class EnableEditingCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_cost_schedule"
     bl_label = "Enable Editing Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
     cost_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.props.active_cost_schedule_id = self.cost_schedule
         self.props.cost_schedule_attributes.clear()
@@ -101,24 +85,25 @@ class EnableEditingCostSchedule(bpy.types.Operator):
         return {"FINISHED"}
 
     def enable_editing_cost_schedule(self):
-        data = Data.cost_schedules[self.cost_schedule]
-        blenderbim.bim.helper.import_attributes(
-            "IfcCostSchedule", self.props.cost_schedule_attributes, data, self.import_attributes
+        blenderbim.bim.helper.import_attributes2(
+            tool.Ifc.get().by_id(self.cost_schedule),
+            self.props.cost_schedule_attributes,
+            callback=self.import_attributes,
         )
 
     def import_attributes(self, name, prop, data):
         if name in ["SubmittedOn", "UpdateDate"]:
-            prop.string_value = "" if prop.is_null else data[name].isoformat()
+            prop.string_value = "" if prop.is_null else ifcopenshell.util.date.ifc2datetime(data[name]).isoformat()
             return True
 
 
-class EnableEditingCostItems(bpy.types.Operator):
+class EnableEditingCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_cost_items"
     bl_label = "Enable Editing Cost Items"
     bl_options = {"REGISTER", "UNDO"}
     cost_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         if context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
             self.play_chaching_sound()  # lol
         self.props = context.scene.BIMCostProperties
@@ -127,8 +112,9 @@ class EnableEditingCostItems(bpy.types.Operator):
         self.props.cost_items.clear()
 
         self.contracted_cost_items = json.loads(self.props.contracted_cost_items)
-        for related_object_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
-            self.create_new_cost_item_li(related_object_id, 0)
+        for rel in tool.Ifc.get().by_id(self.cost_schedule).Controls or []:
+            for cost_item in rel.RelatedObjects:
+                self.create_new_cost_item_li(cost_item, 0)
         self.props.is_editing = "COST_ITEMS"
         self.props.is_cost_update_enabled = True
         return {"FINISHED"}
@@ -149,74 +135,66 @@ class EnableEditingCostItems(bpy.types.Operator):
         except:
             pass  # ah well
 
-    def create_new_cost_item_li(self, related_object_id, level_index):
-        cost_item = Data.cost_items[related_object_id]
+    def create_new_cost_item_li(self, cost_item, level_index):
         new = self.props.cost_items.add()
-        new.ifc_definition_id = related_object_id
-        new.name = cost_item["Name"] or "Unnamed"
-        new.identification = cost_item["Identification"] or "XXX"
-        new.is_expanded = related_object_id not in self.contracted_cost_items
+        new.ifc_definition_id = cost_item.id()
+        new.name = cost_item.Name or "Unnamed"
+        new.identification = cost_item.Identification or "XXX"
+        new.is_expanded = cost_item.id() not in self.contracted_cost_items
         new.level_index = level_index
-        if cost_item["IsNestedBy"]:
+        if cost_item.IsNestedBy:
             new.has_children = True
             if new.is_expanded:
-                for related_object_id in cost_item["IsNestedBy"]:
-                    self.create_new_cost_item_li(related_object_id, level_index + 1)
+                for rel in cost_item.IsNestedBy:
+                    for sub_cost_item in rel.RelatedObjects:
+                        self.create_new_cost_item_li(sub_cost_item, level_index + 1)
 
 
-class DisableEditingCostSchedule(bpy.types.Operator):
+class DisableEditingCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_cost_schedule"
     bl_label = "Disable Editing Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         context.scene.BIMCostProperties.active_cost_schedule_id = 0
         return {"FINISHED"}
 
 
-class AddSummaryCostItem(bpy.types.Operator):
+class AddSummaryCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_summary_cost_item"
     bl_label = "Add Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
         props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("cost.add_cost_item", self.file, **{"cost_schedule": self.file.by_id(self.cost_schedule)})
-        Data.load(self.file)
         bpy.ops.bim.enable_editing_cost_items(cost_schedule=self.cost_schedule)
         return {"FINISHED"}
 
 
-class AddCostItem(bpy.types.Operator):
+class AddCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_cost_item"
     bl_label = "Add Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
         props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("cost.add_cost_item", self.file, **{"cost_item": self.file.by_id(self.cost_item)})
-        Data.load(self.file)
         bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
         return {"FINISHED"}
 
 
-class ExpandCostItem(bpy.types.Operator):
+class ExpandCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.expand_cost_item"
     bl_label = "Expand Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         contracted_cost_items = json.loads(props.contracted_cost_items)
@@ -226,13 +204,13 @@ class ExpandCostItem(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ContractCostItem(bpy.types.Operator):
+class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.contract_cost_item"
     bl_label = "Contract Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         contracted_cost_items = json.loads(props.contracted_cost_items)
@@ -242,14 +220,11 @@ class ContractCostItem(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RemoveCostItem(bpy.types.Operator):
+class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_item"
     bl_label = "Remove Cost item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMCostProperties
@@ -263,45 +238,42 @@ class RemoveCostItem(bpy.types.Operator):
         if props.active_cost_item_index in contracted_cost_items:
             contracted_cost_items.remove(props.active_cost_item_index)
         props.contracted_cost_items = json.dumps(contracted_cost_items)
-        Data.load(self.file)
         bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
+        if props.active_cost_item_id == self.cost_item:
+            props.active_cost_item_id = 0
         return {"FINISHED"}
 
 
-class EnableEditingCostItem(bpy.types.Operator):
+class EnableEditingCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_cost_item"
     bl_label = "Enable Editing Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         props.cost_item_attributes.clear()
 
-        data = Data.cost_items[self.cost_item]
-        blenderbim.bim.helper.import_attributes("IfcCostItem", props.cost_item_attributes, data)
+        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.cost_item), props.cost_item_attributes)
         props.active_cost_item_id = self.cost_item
         props.cost_item_editing_type = "ATTRIBUTES"
         return {"FINISHED"}
 
 
-class DisableEditingCostItem(bpy.types.Operator):
+class DisableEditingCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_cost_item"
     bl_label = "Disable Editing Cost Item"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         context.scene.BIMCostProperties.active_cost_item_id = 0
         return {"FINISHED"}
 
 
-class EditCostItem(bpy.types.Operator):
+class EditCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_cost_item"
     bl_label = "Edit Cost Item"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMCostProperties
@@ -312,21 +284,17 @@ class EditCostItem(bpy.types.Operator):
             self.file,
             **{"cost_item": self.file.by_id(props.active_cost_item_id), "attributes": attributes},
         )
-        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_item()
         bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
         return {"FINISHED"}
 
 
-class AssignCostItemType(bpy.types.Operator):
+class AssignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_item_type"
     bl_label = "Assign Cost Item Type Product"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     prop_name: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -339,20 +307,16 @@ class AssignCostItemType(bpy.types.Operator):
                 ifcopenshell.api.run(
                     "control.assign_control", self.file, relating_control=cost_item, related_object=product
                 )
-        Data.load(self.file)
         bpy.ops.bim.load_cost_item_types()
         return {"FINISHED"}
 
 
-class UnassignCostItemType(bpy.types.Operator):
+class UnassignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_cost_item_type"
     bl_label = "Unassign Cost Item Type"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -370,12 +334,11 @@ class UnassignCostItemType(bpy.types.Operator):
             ifcopenshell.api.run(
                 "control.unassign_control", self.file, relating_control=cost_item, related_object=product
             )
-        Data.load(self.file)
         bpy.ops.bim.load_cost_item_types()
         return {"FINISHED"}
 
 
-class AssignCostItemQuantity(bpy.types.Operator):
+class AssignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_item_quantity"
     bl_label = "Assign Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
@@ -383,20 +346,16 @@ class AssignCostItemQuantity(bpy.types.Operator):
     related_object_type: bpy.props.StringProperty()
     prop_name: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
         if self.related_object_type == "PRODUCT":
             products = [
-                self.file.by_id(o.BIMObjectProperties.ifc_definition_id)
+                tool.Ifc.get().by_id(o.BIMObjectProperties.ifc_definition_id)
                 for o in context.selected_objects
                 if o.BIMObjectProperties.ifc_definition_id
             ]
         elif self.related_object_type == "PROCESS":
             products = [
-                self.file.by_id(
+                tool.Ifc.get().by_id(
                     context.scene.BIMTaskTreeProperties.tasks[
                         context.scene.BIMWorkScheduleProperties.active_task_index
                     ].ifc_definition_id
@@ -404,7 +363,7 @@ class AssignCostItemQuantity(bpy.types.Operator):
             ]
         elif self.related_object_type == "RESOURCE":
             products = [
-                self.file.by_id(
+                tool.Ifc.get().by_id(
                     context.scene.BIMResourceTreeProperties.resources[
                         context.scene.BIMResourceProperties.active_resource_index
                     ].ifc_definition_id
@@ -412,25 +371,21 @@ class AssignCostItemQuantity(bpy.types.Operator):
             ]
         ifcopenshell.api.run(
             "cost.assign_cost_item_quantity",
-            self.file,
-            cost_item=self.file.by_id(self.cost_item),
+            tool.Ifc.get(),
+            cost_item=tool.Ifc.get().by_id(self.cost_item),
             products=products,
             prop_name=self.prop_name,
         )
-        Data.load(self.file)
         bpy.ops.bim.load_cost_item_quantities()
         return {"FINISHED"}
 
 
-class UnassignCostItemQuantity(bpy.types.Operator):
+class UnassignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_cost_item_quantity"
     bl_label = "Unassign Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -448,32 +403,30 @@ class UnassignCostItemQuantity(bpy.types.Operator):
             cost_item=self.file.by_id(self.cost_item),
             products=products,
         )
-        Data.load(self.file)
         bpy.ops.bim.load_cost_item_quantities()
         return {"FINISHED"}
 
 
-class EnableEditingCostItemQuantities(bpy.types.Operator):
+class EnableEditingCostItemQuantities(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_cost_item_quantities"
     bl_label = "Enable Editing Cost Item Quantities"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         props.active_cost_item_id = self.cost_item
         props.cost_item_editing_type = "QUANTITIES"
-        purge()
         return {"FINISHED"}
 
 
-class EnableEditingCostItemValues(bpy.types.Operator):
+class EnableEditingCostItemValues(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_cost_item_values"
     bl_label = "Enable Editing Cost Item Values"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         props.active_cost_item_id = self.cost_item
         props.cost_item_editing_type = "VALUES"
@@ -481,21 +434,17 @@ class EnableEditingCostItemValues(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddCostItemQuantity(bpy.types.Operator):
+class AddCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_cost_item_quantity"
     bl_label = "Add Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     ifc_class: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
         self.file = IfcStore.get_file()
         self.props = context.scene.BIMCostProperties
         self.add_manual_quantity()
-        Data.load(self.file)
         return {"FINISHED"}
 
     def add_manual_quantity(self):
@@ -507,15 +456,12 @@ class AddCostItemQuantity(bpy.types.Operator):
         )
 
 
-class RemoveCostItemQuantity(bpy.types.Operator):
+class RemoveCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_item_quantity"
     bl_label = "Remove Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     physical_quantity: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -525,44 +471,41 @@ class RemoveCostItemQuantity(bpy.types.Operator):
             cost_item=self.file.by_id(self.cost_item),
             physical_quantity=self.file.by_id(self.physical_quantity),
         )
-        Data.load(self.file)
         return {"FINISHED"}
 
 
-class EnableEditingCostItemQuantity(bpy.types.Operator):
+class EnableEditingCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_cost_item_quantity"
     bl_label = "Enable Editing Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     physical_quantity: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.props.quantity_attributes.clear()
         self.props.active_cost_item_quantity_id = self.physical_quantity
-        data = Data.physical_quantities[self.physical_quantity]
-        blenderbim.bim.helper.import_attributes(data["type"], self.props.quantity_attributes, data)
+        blenderbim.bim.helper.import_attributes2(
+            tool.Ifc.get().by_id(self.physical_quantity), self.props.quantity_attributes
+        )
         return {"FINISHED"}
 
 
-class DisableEditingCostItemQuantity(bpy.types.Operator):
+class DisableEditingCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_cost_item_quantity"
     bl_label = "Disable Editing Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         props.active_cost_item_quantity_id = 0
         return {"FINISHED"}
 
 
-class EditCostItemQuantity(bpy.types.Operator):
+class EditCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_cost_item_quantity"
     bl_label = "Edit Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     physical_quantity: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMCostProperties
@@ -573,21 +516,17 @@ class EditCostItemQuantity(bpy.types.Operator):
             self.file,
             **{"physical_quantity": self.file.by_id(self.physical_quantity), "attributes": attributes},
         )
-        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_item_quantity()
         return {"FINISHED"}
 
 
-class AddCostValue(bpy.types.Operator):
+class AddCostValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_cost_value"
     bl_label = "Add Cost Value"
     bl_options = {"REGISTER", "UNDO"}
     parent: bpy.props.IntProperty()
     cost_type: bpy.props.StringProperty()
     cost_category: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -603,22 +542,15 @@ class AddCostValue(bpy.types.Operator):
             attributes = {"Category": category}
         value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=parent)
         ifcopenshell.api.run("cost.edit_cost_value", self.file, cost_value=value, attributes=attributes)
-        if parent.is_a("IfcConstructionResource"):
-            ResourceData.load()
-        else:
-            Data.load(self.file)
         return {"FINISHED"}
 
 
-class RemoveCostItemValue(bpy.types.Operator):
+class RemoveCostItemValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_value"
     bl_label = "Add Cost Item Value"
     bl_options = {"REGISTER", "UNDO"}
     parent: bpy.props.IntProperty()
     cost_value: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -629,48 +561,43 @@ class RemoveCostItemValue(bpy.types.Operator):
             parent=parent,
             cost_value=self.file.by_id(self.cost_value),
         )
-        if parent.is_a("IfcConstructionResource"):
-            ResourceData.load()
-        else:
-            Data.load(self.file)
         return {"FINISHED"}
 
 
-class EnableEditingCostItemValue(bpy.types.Operator):
+class EnableEditingCostItemValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_cost_item_value"
     bl_label = "Enable Editing Cost Item Value"
     bl_options = {"REGISTER", "UNDO"}
     cost_value: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.props.cost_value_attributes.clear()
         self.props.active_cost_value_id = self.cost_value
         self.props.cost_value_editing_type = "ATTRIBUTES"
-        data = Data.cost_values[self.cost_value]
-
-        blenderbim.bim.helper.import_attributes(
-            data["type"],
-            self.props.cost_value_attributes,
-            data,
-            lambda name, prop, data: self.import_attributes(name, prop, data, context),
-        )
+        schedule = tool.Ifc.get().by_id(context.scene.BIMCostProperties.active_cost_schedule_id)
+        is_rates = schedule.PredefinedType == "SCHEDULEOFRATES"
+        cost_value = tool.Ifc.get().by_id(self.cost_value)
+        callback = lambda name, prop, data: self.import_attributes(name, prop, data, cost_value, is_rates)
+        blenderbim.bim.helper.import_attributes2(cost_value, self.props.cost_value_attributes, callback=callback)
         return {"FINISHED"}
 
-    def import_attributes(self, name, prop, data, context):
+    def import_attributes(self, name, prop, data, cost_value, is_rates):
         if name == "AppliedValue":
             # TODO: for now, only support simple IfcValues (which are effectively IfcMonetaryMeasure)
             prop = self.props.cost_value_attributes.add()
             prop.data_type = "float"
             prop.name = "AppliedValue"
             prop.is_optional = True
-            prop.float_value = 0.0 if prop.is_null else data[name]
+            prop.float_value = (
+                0.0
+                if prop.is_null
+                else ifcopenshell.util.cost.calculate_applied_value(
+                    tool.Ifc.get().by_id(self.props.active_cost_item_id), cost_value
+                )
+            )
             return True
-        if (
-            name == "UnitBasis"
-            and Data.cost_schedules[context.scene.BIMCostProperties.active_cost_schedule_id]["PredefinedType"]
-            == "SCHEDULEOFRATES"
-        ):
+        if name == "UnitBasis" and is_rates:
             prop = self.props.cost_value_attributes.add()
             prop.name = "UnitBasisValue"
             prop.data_type = "float"
@@ -686,7 +613,7 @@ class EnableEditingCostItemValue(bpy.types.Operator):
             prop.data_type = "enum"
             prop.is_null = prop.is_optional = False
             units = {}
-            for unit_id, unit in UnitData.units.items():
+            for unit in tool.Ifc.get().by_type("IfcNamedUnit"):
                 if unit.get("UnitType", None) in [
                     "AREAUNIT",
                     "LENGTHUNIT",
@@ -695,54 +622,53 @@ class EnableEditingCostItemValue(bpy.types.Operator):
                     "MASSUNIT",
                     "USERDEFINED",
                 ]:
-                    if unit["type"] == "IfcContextDependentUnit":
-                        units[unit_id] = f"{unit['UnitType']} / {unit['Name']}"
+                    if unit.is_a("IfcContextDependentUnit"):
+                        units[unit.id()] = f"{unit.UnitType} / {unit.Name}"
                     else:
-                        name = unit["Name"]
+                        name = unit.Name
                         if unit.get("Prefix", None):
-                            name = f"(unit['Prefix']) {name}"
-                        units[unit_id] = f"{unit['UnitType']} / {name}"
+                            name = f"{unit.Prefix} {name}"
+                        units[unit.id()] = f"{unit.UnitType} / {name}"
             prop.enum_items = json.dumps(units)
             if data["UnitBasis"] and data["UnitBasis"]["UnitComponent"]:
                 prop.enum_value = str(data["UnitBasis"]["UnitComponent"])
             return True
 
 
-class DisableEditingCostItemValue(bpy.types.Operator):
+class DisableEditingCostItemValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_cost_item_value"
     bl_label = "Disable Editing Cost Item Value"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         props.active_cost_value_id = 0
         props.cost_value_editing_type = ""
         return {"FINISHED"}
 
 
-class EnableEditingCostItemValueFormula(bpy.types.Operator):
+class EnableEditingCostItemValueFormula(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_cost_item_value_formula"
     bl_label = "Enable Editing Cost Item Value Formula"
     bl_options = {"REGISTER", "UNDO"}
     cost_value: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.props.cost_value_attributes.clear()
         self.props.active_cost_value_id = self.cost_value
         self.props.cost_value_editing_type = "FORMULA"
-        self.props.cost_value_formula = Data.cost_values[self.cost_value]["Formula"]
+        self.props.cost_value_formula = ifcopenshell.util.cost.serialise_cost_value(
+            tool.Ifc.get().by_id(self.cost_value)
+        )
         return {"FINISHED"}
 
 
-class EditCostItemValueFormula(bpy.types.Operator):
+class EditCostItemValueFormula(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_cost_value_formula"
     bl_label = "Edit Cost Value Formula"
     bl_options = {"REGISTER", "UNDO"}
     cost_value: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMCostProperties
@@ -752,19 +678,15 @@ class EditCostItemValueFormula(bpy.types.Operator):
             self.file,
             **{"cost_value": self.file.by_id(self.cost_value), "formula": props.cost_value_formula},
         )
-        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
 
 
-class EditCostItemValue(bpy.types.Operator):
+class EditCostItemValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_cost_value"
     bl_label = "Edit Cost Value"
     bl_options = {"REGISTER", "UNDO"}
     cost_value: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMCostProperties
@@ -777,7 +699,6 @@ class EditCostItemValue(bpy.types.Operator):
             self.file,
             **{"cost_value": self.file.by_id(self.cost_value), "attributes": attributes},
         )
-        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
 
@@ -797,15 +718,12 @@ class EditCostItemValue(bpy.types.Operator):
             return True
 
 
-class CopyCostItemValues(bpy.types.Operator):
+class CopyCostItemValues(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_cost_item_values"
     bl_label = "Copy Cost Item Values"
     bl_options = {"REGISTER", "UNDO"}
     source: bpy.props.IntProperty()
     destination: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -814,37 +732,37 @@ class CopyCostItemValues(bpy.types.Operator):
             self.file,
             **{"source": self.file.by_id(self.source), "destination": self.file.by_id(self.destination)},
         )
-        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
-class SelectCostItemProducts(bpy.types.Operator):
+class SelectCostItemProducts(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_cost_item_products"
     bl_label = "Select Cost Item Products"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        related_products = Data.cost_items[self.cost_item]["Controls"].keys()
+    def _execute(self, context):
+        related_objects = []
+        [related_objects.extend(r.RelatedObjects) for r in tool.Ifc.get().by_id(self.cost_item).Controls or []]
+        related_objects = set([r.id() for r in related_objects])
         for obj in context.visible_objects:
             obj.select_set(False)
-            if obj.BIMObjectProperties.ifc_definition_id in related_products:
+            if obj.BIMObjectProperties.ifc_definition_id in related_objects:
                 obj.select_set(True)
         return {"FINISHED"}
 
 
-class SelectCostScheduleProducts(bpy.types.Operator):
+class SelectCostScheduleProducts(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_cost_schedule_products"
     bl_label = "Select Cost Schedule Products"
     bl_options = {"REGISTER", "UNDO"}
     cost_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         self.related_products = []
-        for cost_item_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
-            self.get_related_products(Data.cost_items[cost_item_id])
+        for cost_item in tool.Ifc.get().by_id(self.cost_schedule).Controls or []:
+            self.get_related_products(cost_item)
         self.related_products = set(self.related_products)
         for obj in context.visible_objects:
             obj.select_set(False)
@@ -853,21 +771,19 @@ class SelectCostScheduleProducts(bpy.types.Operator):
         return {"FINISHED"}
 
     def get_related_products(self, cost_item):
-        self.related_products.extend(cost_item["Controls"].keys())
-        for child_id in cost_item["IsNestedBy"]:
-            self.get_related_products(Data.cost_items[child_id])
+        [self.related_products.extend(r.RelatedObjects) for r in cost_item.Controls or []]
+        for rel in cost_item.IsNestedBy or []:
+            for sub_cost_item in rel.RelatedObjects:
+                self.get_related_products(sub_cost_item)
 
 
-class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
+class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     bl_idname = "import_cost_schedule_csv.bim"
     bl_label = "Import Cost Schedule CSV"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
     is_schedule_of_rates: bpy.props.BoolProperty(name="Is Schedule Of Rates", default=False)
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         from ifc5d.csv2ifc import Csv2Ifc
@@ -879,79 +795,78 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
         csv2ifc.file = self.file
         csv2ifc.is_schedule_of_rates = self.is_schedule_of_rates
         csv2ifc.execute()
-        Data.load(IfcStore.get_file())
-        UnitData.load(IfcStore.get_file())
-        purge()
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
-class AddCostColumn(bpy.types.Operator):
+class AddCostColumn(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_cost_column"
     bl_label = "Add Cost Column"
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         new = self.props.columns.add()
         new.name = self.name
-        Data.set_categories([c.name for c in self.props.columns])
-        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
-class RemoveCostColumn(bpy.types.Operator):
+class RemoveCostColumn(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_column"
     bl_label = "Remove Cost Column"
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.props.columns.remove(self.props.columns.find(self.name))
-        Data.set_categories([c.name for c in self.props.columns])
-        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
-class LoadCostItemQuantities(bpy.types.Operator):
+class LoadCostItemQuantities(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_cost_item_quantities"
     bl_label = "Load Cost Item Quantities"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
-        Data.load(self.file)
         self.props.cost_item_products.clear()
         self.props.cost_item_processes.clear()
         self.props.cost_item_resources.clear()
         if self.props.active_cost_item_index < len(self.props.cost_items):
             ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
-            for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items() or {}:
-                related_object = self.file.by_id(control_id)
-                if related_object.is_a("IfcProduct"):
-                    new = self.props.cost_item_products.add()
-                elif related_object.is_a("IfcProcess"):
-                    new = self.props.cost_item_processes.add()
-                elif related_object.is_a("IfcResource"):
-                    new = self.props.cost_item_resources.add()
-                new.ifc_definition_id = control_id
-                new.name = related_object.Name or "Unnamed"
-                total_quantity = 0
-                for quantity_id in quantity_ids:
-                    total_quantity += self.file.by_id(quantity_id)[3]
-                new.total_quantity = total_quantity
+            cost_item = tool.Ifc.get().by_id(ifc_definition_id)
+            # for control_id, quantity_ids in cost_item.Controls.items() or {}:
+            for rel in cost_item.Controls or []:
+                # control_id, quantity_ids
+                for related_object in rel.RelatedObjects:
+                    if related_object.is_a("IfcProduct"):
+                        new = self.props.cost_item_products.add()
+                    elif related_object.is_a("IfcProcess"):
+                        new = self.props.cost_item_processes.add()
+                    elif related_object.is_a("IfcResource"):
+                        new = self.props.cost_item_resources.add()
+                    new.ifc_definition_id = related_object.id()
+                    new.name = related_object.Name or "Unnamed"
+                    total_quantity = 0
+                    qtos = ifcopenshell.util.element.get_psets(related_object, qtos_only=True)
+                    for qset_name, quantities in qtos.items():
+                        qto = tool.Ifc.get().by_id(quantities["id"])
+                        for quantity in qto.Quantities:
+                            if quantity in cost_item.CostQuantities:
+                                total_quantity += quantity[3]
+                    new.total_quantity = total_quantity
         return {"FINISHED"}
 
 
-class LoadCostItemTypes(bpy.types.Operator):
+class LoadCostItemTypes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_cost_item_types"
     bl_label = "Load Cost Item Types"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         self.props.cost_item_type_products.clear()
@@ -959,29 +874,27 @@ class LoadCostItemTypes(bpy.types.Operator):
         # self.props.cost_item_processes.clear()
         # self.props.cost_item_resources.clear()
         ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
-        for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
-            related_object = self.file.by_id(control_id)
-            if related_object.is_a("IfcTypeProduct"):
-                new = self.props.cost_item_type_products.add()
-            # TODO implement process and resource types
-            # elif related_object.is_a("IfcProcess"):
-            #    new = self.props.cost_item_processes.add()
-            # elif related_object.is_a("IfcResource"):
-            #    new = self.props.cost_item_resources.add()
-            new.ifc_definition_id = control_id
-            new.name = related_object.Name or "Unnamed"
+        cost_item = tool.Ifc.get().by_id(ifc_definition_id)
+        for rel in cost_item.Controls or []:
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcTypeProduct"):
+                    new = self.props.cost_item_type_products.add()
+                # TODO implement process and resource types
+                # elif related_object.is_a("IfcProcess"):
+                #    new = self.props.cost_item_processes.add()
+                # elif related_object.is_a("IfcResource"):
+                #    new = self.props.cost_item_resources.add()
+                new.ifc_definition_id = related_object.id()
+                new.name = related_object.Name or "Unnamed"
         return {"FINISHED"}
 
 
-class AssignCostValue(bpy.types.Operator):
+class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_value"
     bl_label = "Assign Cost Value"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     cost_rate: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -991,48 +904,48 @@ class AssignCostValue(bpy.types.Operator):
             cost_item=self.file.by_id(self.cost_item),
             cost_rate=self.file.by_id(self.cost_rate),
         )
-        Data.load(self.file)
         return {"FINISHED"}
 
 
-class LoadScheduleOfRates(bpy.types.Operator):
+class LoadScheduleOfRates(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_schedule_of_rates"
     bl_label = "Load Schedule of Rates"
     bl_options = {"REGISTER", "UNDO"}
     cost_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.props.is_cost_update_enabled = False
         self.props.cost_item_rates.clear()
         self.contracted_cost_item_rates = json.loads(self.props.contracted_cost_item_rates)
-        for related_object_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
-            self.create_new_cost_item_li(related_object_id, 0)
+        for rel in tool.Ifc.get().by_id(self.cost_schedule).Controls or []:
+            for cost_item in rel.RelatedObjects:
+                self.create_new_cost_item_li(cost_item, 0)
         self.props.is_cost_update_enabled = True
         return {"FINISHED"}
 
-    def create_new_cost_item_li(self, related_object_id, level_index):
-        cost_item = Data.cost_items[related_object_id]
+    def create_new_cost_item_li(self, cost_item, level_index):
         new = self.props.cost_item_rates.add()
-        new.ifc_definition_id = related_object_id
-        new.name = cost_item["Name"] or "Unnamed"
-        new.identification = cost_item["Identification"] or "XXX"
-        new.is_expanded = related_object_id not in self.contracted_cost_item_rates
+        new.ifc_definition_id = cost_item.id()
+        new.name = cost_item.Name or "Unnamed"
+        new.identification = cost_item.Identification or "XXX"
+        new.is_expanded = cost_item.id() not in self.contracted_cost_item_rates
         new.level_index = level_index
-        if cost_item["IsNestedBy"]:
+        if cost_item.IsNestedBy:
             new.has_children = True
             if new.is_expanded:
-                for related_object_id in cost_item["IsNestedBy"]:
-                    self.create_new_cost_item_li(related_object_id, level_index + 1)
+                for rel in cost_item.IsNestedBy:
+                    for sub_cost_item in rel.RelatedObjects:
+                        self.create_new_cost_item_li(sub_cost_item, level_index + 1)
 
 
-class ExpandCostItemRate(bpy.types.Operator):
+class ExpandCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.expand_cost_item_rate"
     bl_label = "Expand Cost Item Rate"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
@@ -1042,13 +955,13 @@ class ExpandCostItemRate(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ContractCostItemRate(bpy.types.Operator):
+class ContractCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.contract_cost_item_rate"
     bl_label = "Contract Cost Item Rate"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
@@ -1058,19 +971,15 @@ class ContractCostItemRate(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CalculateCostItemResourceValue(bpy.types.Operator):
+class CalculateCostItemResourceValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_cost_item_resource_value"
     bl_label = "Calculate Cost Item Resource Value"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.calculate_cost_item_resource_value", self.file, cost_item=self.file.by_id(self.cost_item)
         )
-        Data.load(self.file)
         return {"FINISHED"}

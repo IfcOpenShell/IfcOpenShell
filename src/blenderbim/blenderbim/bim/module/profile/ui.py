@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.module.profile.data import ProfileData
+from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
 
 
 class BIM_PT_profiles(Panel):
@@ -39,6 +41,19 @@ class BIM_PT_profiles(Panel):
         if not ProfileData.is_loaded:
             ProfileData.load()
         self.props = context.scene.BIMProfileProperties
+
+        if self.props.is_editing and self.props.profiles and self.props.active_profile_index < len(self.props.profiles):
+            preview_collection = ProfileData.preview_collection
+            box = self.layout.box()
+            profile_id = self.props.profiles[self.props.active_profile_index].ifc_definition_id
+            profile_id_str = str(profile_id)
+            if profile_id_str in preview_collection:
+                preview_image = preview_collection[profile_id_str]
+            else:
+                preview_image = preview_collection.new(profile_id_str)
+                generate_thumbnail_for_active_profile()
+
+            box.template_icon(icon_value=preview_image.icon_id, scale=5)
 
         row = self.layout.row(align=True)
         row.label(text=f"{ProfileData.data['total_profiles']} Named Profiles Found", icon="SNAP_GRID")

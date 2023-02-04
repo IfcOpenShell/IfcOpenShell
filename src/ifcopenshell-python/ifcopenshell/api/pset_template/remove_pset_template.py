@@ -43,8 +43,6 @@ class Usecase:
         """
         self.file = file
         self.settings = {"pset_template": pset_template}
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         ifcopenshell.util.element.remove_deep(self.file, self.settings["pset_template"])

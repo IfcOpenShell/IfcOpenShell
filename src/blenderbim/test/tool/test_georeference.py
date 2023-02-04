@@ -54,7 +54,7 @@ class TestImportProjectedCRS(NewFile):
         projected_crs.VerticalDatum = "VerticalDatum"
         projected_crs.MapProjection = "MapProjection"
         projected_crs.MapZone = "MapZone"
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", name="METRE")
+        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT")
         projected_crs.MapUnit = unit
         subject.import_projected_crs()
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -206,7 +206,7 @@ class TestGetCursorLocation(NewFile):
         tool.Ifc.set(ifc)
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI", name="METRE")
+        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.get_cursor_location() == [1000.0, 2000.0, 3000.0]
@@ -218,7 +218,7 @@ class TestSetCursorLocation(NewFile):
         tool.Ifc.set(ifc)
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI", name="METRE")
+        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
         subject.set_cursor_location([1000.0, 2000.0, 3000.0])
         assert list(bpy.context.scene.cursor.location) == [1.0, 2.0, 3.0]

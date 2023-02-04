@@ -25,7 +25,6 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.attribute as core
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.attribute.data import Data
 
 
 class Operator:
@@ -51,8 +50,6 @@ class EnableEditingAttributes(bpy.types.Operator):
         oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
         props.attributes.clear()
-        if oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes)
         props.is_editing_attributes = True
         return {"FINISHED"}
@@ -88,33 +85,10 @@ class EditAttributes(bpy.types.Operator, Operator):
             obj = bpy.data.objects.get(self.obj)
         elif self.obj_type == "Material":
             obj = bpy.data.materials.get(self.obj)
-        oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
-        attributes = {}
-        for attribute in Data.products[oprops.ifc_definition_id]:
-            blender_attribute = props.attributes.get(attribute["name"])
-            if not blender_attribute:
-                continue
-            if attribute["is_optional"] and blender_attribute.is_null:
-                attributes[attribute["name"]] = None
-            elif attribute["type"] == "string":
-                attributes[attribute["name"]] = blender_attribute.string_value
-            elif attribute["type"] == "list":
-                values = blender_attribute.string_value[1:-1].split(", ")
-                if attribute["list_type"] == "float":
-                    values = [float(v) for v in values]
-                elif attribute["list_type"] == "integer":
-                    values = [int(v) for v in values]
-                attributes[attribute["name"]] = values
-            elif attribute["type"] == "integer":
-                attributes[attribute["name"]] = blender_attribute.int_value
-            elif attribute["type"] == "float":
-                attributes[attribute["name"]] = blender_attribute.float_value
-            elif attribute["type"] == "enum":
-                attributes[attribute["name"]] = blender_attribute.enum_value
-        product = self.file.by_id(oprops.ifc_definition_id)
-        ifcopenshell.api.run("attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes})
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        product = tool.Ifc.get_entity(obj)
+        attributes = blenderbim.bim.helper.export_attributes(props.attributes)
+        ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
         return {"FINISHED"}
 

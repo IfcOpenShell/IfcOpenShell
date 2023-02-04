@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.sequence
+
 
 class Usecase:
     def __init__(self, file, recurrence_pattern=None, attributes=None):
@@ -56,3 +59,6 @@ class Usecase:
     def execute(self):
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["recurrence_pattern"], name, value)
+
+        ifcopenshell.util.sequence.is_working_day.cache_clear()
+        ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()

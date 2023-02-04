@@ -31,9 +31,6 @@ import blenderbim.core.root
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector
-from ifcopenshell.api.geometry.data import Data
-from ifcopenshell.api.context.data import Data as ContextData
-from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.root.prop import get_contexts
@@ -119,7 +116,7 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
     def _execute(self, context):
         target = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
         is_subcontext = target.is_a("IfcGeometricRepresentationSubContext")
-        for obj in context.selected_objects:
+        for obj in set(context.selected_objects + [context.active_object]):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -132,6 +129,7 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
             if not representation:
                 continue
             core.switch_representation(
+                tool.Ifc,
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
@@ -167,9 +165,6 @@ class UpdateRepresentation(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        if not ContextData.is_loaded:
-            ContextData.load(IfcStore.get_file())
-
         if context.active_object and context.active_object.mode != "OBJECT":
             # Ensure mode is object to prevent invalid mesh data causing CTD
             bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
@@ -203,11 +198,12 @@ class UpdateRepresentation(bpy.types.Operator):
             settings = tool.Boundary.get_assign_connection_geometry_settings(obj)
             ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
             return
-        elif material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
-            # These objects are parametrically based on an axis and should not be modified as a mesh
-            return
 
         core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+        if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
+            # These objects are parametrically based on an axis and should not be modified as a mesh
+            return
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
@@ -265,7 +261,6 @@ class UpdateRepresentation(bpy.types.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
-        Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         if obj.data.BIMMeshProperties.ifc_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
 
@@ -288,6 +283,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         self.file.by_id(parameter.step_id)[parameter.index] = parameter.value
         show_representation_parameters = bool(props.ifc_parameters)
         core.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=tool.Ifc.get().by_id(props.ifc_definition_id),

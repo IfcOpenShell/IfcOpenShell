@@ -29,7 +29,6 @@ import blenderbim.core.style
 import blenderbim.core.type
 import blenderbim.core.root as core
 import blenderbim.tool as tool
-from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import get_enum_items
 

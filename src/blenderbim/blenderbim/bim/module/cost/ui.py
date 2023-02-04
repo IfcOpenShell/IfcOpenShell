@@ -20,8 +20,7 @@ import blenderbim.bim.helper
 import blenderbim.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.cost.data import Data
-from ifcopenshell.api.unit.data import Data as UnitData
+from blenderbim.bim.module.cost.data import CostSchedulesData
 
 
 class BIM_PT_cost_schedules(Panel):
@@ -39,54 +38,46 @@ class BIM_PT_cost_schedules(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
+        if not CostSchedulesData.is_loaded:
+            CostSchedulesData.load()
+
         self.props = context.scene.BIMCostProperties
-
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-
-        if not UnitData.is_loaded:
-            UnitData.load(IfcStore.get_file())
 
         row = self.layout.row()
         row.operator("bim.add_cost_schedule", icon="ADD")
 
-        if self.props.active_cost_schedule_id:
-            self.draw_cost_schedule_ui(
-                self.props.active_cost_schedule_id, Data.cost_schedules[self.props.active_cost_schedule_id]
-            )
-        else:
-            for cost_schedule_id, cost_schedule in Data.cost_schedules.items():
-                self.draw_cost_schedule_ui(cost_schedule_id, cost_schedule)
+        for schedule in CostSchedulesData.data["schedules"]:
+            self.draw_cost_schedule_ui(schedule)
 
-    def draw_cost_schedule_ui(self, cost_schedule_id, cost_schedule):
+    def draw_cost_schedule_ui(self, cost_schedule):
         row = self.layout.row(align=True)
-        row.label(text=cost_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
+        row.label(text=cost_schedule["name"], icon="LINENUMBERS_ON")
 
-        if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule_id:
+        if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule["id"]:
             op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
-            op.cost_schedule = cost_schedule_id
+            op.cost_schedule = cost_schedule["id"]
             row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
             if self.props.is_editing == "COST_SCHEDULE":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":
-                row.operator("bim.add_summary_cost_item", text="", icon="ADD").cost_schedule = cost_schedule_id
+                row.operator("bim.add_summary_cost_item", text="", icon="ADD").cost_schedule = cost_schedule["id"]
             row.operator("bim.disable_editing_cost_schedule", text="", icon="CANCEL")
         elif self.props.active_cost_schedule_id:
-            row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule_id
+            row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
         else:
-            row.operator("bim.enable_editing_cost_items", text="", icon="OUTLINER").cost_schedule = cost_schedule_id
+            row.operator("bim.enable_editing_cost_items", text="", icon="OUTLINER").cost_schedule = cost_schedule["id"]
             row.operator(
                 "bim.enable_editing_cost_schedule", text="", icon="GREASEPENCIL"
-            ).cost_schedule = cost_schedule_id
-            row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule_id
+            ).cost_schedule = cost_schedule["id"]
+            row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
 
-        if self.props.active_cost_schedule_id == cost_schedule_id:
+        if self.props.active_cost_schedule_id == cost_schedule["id"]:
             if self.props.is_editing == "COST_SCHEDULE":
                 self.draw_editable_cost_schedule_ui()
             elif self.props.is_editing == "COST_ITEMS":
                 if self.props.should_show_column_ui:
                     self.draw_column_ui()
-                self.draw_editable_cost_item_ui(cost_schedule_id)
+                self.draw_editable_cost_item_ui()
 
     def draw_column_ui(self):
         row = self.layout.row(align=True)
@@ -97,7 +88,7 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_schedule_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
-    def draw_editable_cost_item_ui(self, cost_schedule_id):
+    def draw_editable_cost_item_ui(self):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         ifc_definition_id = None
@@ -105,7 +96,7 @@ class BIM_PT_cost_schedules(Panel):
             ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         if ifc_definition_id:
 
-            if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
+            if not CostSchedulesData.data["is_editing_rates"]:
                 op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
                 op.cost_item = ifc_definition_id
 
@@ -150,33 +141,27 @@ class BIM_PT_cost_schedules(Panel):
         op.cost_item = self.props.active_cost_item_id
         op.ifc_class = self.props.quantity_types
 
-        for quantity_id in Data.cost_items[self.props.active_cost_item_id]["CostQuantities"]:
-            quantity = Data.physical_quantities[quantity_id]
-            value = quantity[[k for k in quantity.keys() if "Value" in k][0]]
+        for quantity in CostSchedulesData.data["cost_quantities"]:
             row = self.layout.row(align=True)
-            row.label(text=quantity["Name"])
-            row.label(text="{0:.2f}".format(value))
-            if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity_id:
+            row.label(text=quantity["name"])
+            row.label(text=quantity["value"])
+            if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity["id"]:
                 op = row.operator("bim.edit_cost_item_quantity", text="", icon="CHECKMARK")
-                op.physical_quantity = quantity_id
+                op.physical_quantity = quantity["id"]
                 row.operator("bim.disable_editing_cost_item_quantity", text="", icon="CANCEL")
             elif self.props.active_cost_item_quantity_id:
                 op = row.operator("bim.remove_cost_item_quantity", text="", icon="X")
                 op.cost_item = self.props.active_cost_item_id
-                op.physical_quantity = quantity_id
+                op.physical_quantity = quantity["id"]
             else:
                 op = row.operator("bim.enable_editing_cost_item_quantity", text="", icon="GREASEPENCIL")
-                op.physical_quantity = quantity_id
+                op.physical_quantity = quantity["id"]
                 op = row.operator("bim.remove_cost_item_quantity", text="", icon="X")
                 op.cost_item = self.props.active_cost_item_id
-                op.physical_quantity = quantity_id
+                op.physical_quantity = quantity["id"]
 
-            if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity_id:
-                box = self.layout.box()
-                self.draw_editable_cost_item_quantity_ui(box)
-
-    def draw_editable_cost_item_quantity_ui(self, layout):
-        blenderbim.bim.helper.draw_attributes(self.props.quantity_attributes, self.layout)
+            if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity["id"]:
+                blenderbim.bim.helper.draw_attributes(self.props.quantity_attributes, self.layout.box())
 
     def draw_editable_cost_item_values_ui(self):
         row = self.layout.row(align=True)
@@ -189,25 +174,20 @@ class BIM_PT_cost_schedules(Panel):
         if self.props.cost_types == "CATEGORY":
             op.cost_category = self.props.cost_category
 
-        for cost_value_id in Data.cost_items[self.props.active_cost_item_id]["CostValues"]:
+        for cost_value in CostSchedulesData.data["cost_values"]:
             row = self.layout.row(align=True)
-            self.draw_readonly_cost_value_ui(row, cost_value_id)
+            self.draw_readonly_cost_value_ui(row, cost_value)
 
         if self.props.cost_value_editing_type == "ATTRIBUTES":
-            box = self.layout.box()
-            self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_value_id])
+            blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
-    def draw_readonly_cost_value_ui(self, layout, cost_value_id):
-        cost_value = Data.cost_values[cost_value_id]
-
-        if self.props.active_cost_value_id == cost_value_id and self.props.cost_value_editing_type == "FORMULA":
+    def draw_readonly_cost_value_ui(self, layout, cost_value):
+        if self.props.active_cost_value_id == cost_value["id"] and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
         else:
-            cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
-            cost_value_label += " = " + cost_value["Formula"]
-            layout.label(text=cost_value_label, icon="DISC")
+            layout.label(text=cost_value["label"], icon="DISC")
 
-        self.draw_cost_value_operator_ui(layout, cost_value_id, self.props.active_cost_item_id)
+        self.draw_cost_value_operator_ui(layout, cost_value["id"], self.props.active_cost_item_id)
 
     def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
         if self.props.active_cost_value_id and self.props.active_cost_value_id == cost_value_id:
@@ -231,9 +211,6 @@ class BIM_PT_cost_schedules(Panel):
             op.parent = parent_id
             op.cost_value = cost_value_id
 
-    def draw_editable_cost_value_ui(self, layout, cost_value):
-        blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, layout)
-
 
 class BIM_PT_cost_item_types(Panel):
     bl_label = "IFC Cost Item Types"
@@ -250,7 +227,9 @@ class BIM_PT_cost_item_types(Panel):
         total_cost_items = len(props.cost_items)
         if not props.active_cost_schedule_id:
             return False
-        if Data.cost_schedules[props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
+        if not CostSchedulesData.is_loaded:
+            return False
+        if not CostSchedulesData.data["is_editing_rates"]:
             return False
         if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
             return True
@@ -336,18 +315,15 @@ class BIM_PT_cost_item_quantities(Panel):
         total_cost_items = len(props.cost_items)
         if not props.active_cost_schedule_id:
             return False
-        if Data.cost_schedules[props.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
+        if not CostSchedulesData.is_loaded:
+            return False
+        if CostSchedulesData.data["is_editing_rates"]:
             return False
         if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
             return True
         return False
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-
-        if not UnitData.is_loaded:
-            UnitData.load(IfcStore.get_file())
         self.props = context.scene.BIMCostProperties
 
         cost_item = self.props.cost_items[self.props.active_cost_item_index]
@@ -485,7 +461,9 @@ class BIM_PT_cost_item_rates(Panel):
         total_cost_items = len(props.cost_items)
         if not props.active_cost_schedule_id:
             return False
-        if Data.cost_schedules[props.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
+        if not CostSchedulesData.is_loaded:
+            return False
+        if CostSchedulesData.data["is_editing_rates"]:
             return False
         if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
             return True
@@ -514,7 +492,7 @@ class BIM_UL_cost_items_trait:
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             self.props = context.scene.BIMCostProperties
-            cost_item = Data.cost_items[item.ifc_definition_id]
+            cost_item = CostSchedulesData.data["cost_items"][item.ifc_definition_id]
             row = layout.row(align=True)
 
             self.draw_hierarchy(row, item)
@@ -550,7 +528,7 @@ class BIM_UL_cost_items_trait:
         layout.label(text="{0:.2f}".format(cost_item["TotalCost"]))
 
     def draw_quantity_column(self, layout, cost_item):
-        if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
+        if CostSchedulesData.data["is_editing_rates"]:
             self.draw_uom_column(layout, cost_item)
         else:
             self.draw_total_quantity_column(layout, cost_item)

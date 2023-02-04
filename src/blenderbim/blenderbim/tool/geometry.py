@@ -174,7 +174,8 @@ class Geometry(blenderbim.core.tool.Geometry):
         settings = ifcopenshell.geom.settings()
         settings.set(settings.WELD_VERTICES, True)
 
-        if representation.ContextOfItems.ContextIdentifier == "Body":
+        context = representation.ContextOfItems
+        if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
             if element.is_a("IfcTypeProduct"):
                 shape = ifcopenshell.geom.create_shape(settings, representation)
             else:

@@ -23,6 +23,7 @@ import blf
 import bgl
 import math
 import bmesh
+import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 from functools import reduce
@@ -122,7 +123,6 @@ class BaseDecorator:
     in vec3 pos;
     in uint topo;
     in vec3 next_vert;
-    out vec4 gl_Position;
     out uint type;
     out vec4 v_next_vert;
 
@@ -984,7 +984,6 @@ class HiddenDecorator(BaseDecorator):
     FRAG_GLSL = """
     uniform float viewportDrawingScale;
     uniform vec4 color;
-    in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
 
@@ -1043,7 +1042,6 @@ class MiscDecorator(BaseDecorator):
 
     FRAG_GLSL = """
     uniform vec4 color;
-    in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
 
@@ -1078,7 +1076,7 @@ class LevelDecorator(BaseDecorator):
     def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
         self.draw_lines(context, obj, verts, idxs, topo)
-        self.draw_labels(context, obj, splines)
+        self.draw_labels(context, obj, self.get_splines(obj))
 
 
 class PlanLevelDecorator(LevelDecorator):
@@ -1153,6 +1151,7 @@ class PlanLevelDecorator(LevelDecorator):
     """
 
     def draw_labels(self, context, obj, splines):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         region = context.region
         region3d = context.region_data
         for verts in splines:
@@ -1163,7 +1162,10 @@ class PlanLevelDecorator(LevelDecorator):
             dir = p1 - p0
             if dir.length < 1:
                 continue
-            text = "RL " + self.format_value(context, verts[-1].z)
+            z = verts[-1].z / unit_scale
+            z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
+            z *= unit_scale
+            text = "RL " + self.format_value(context, z)
             self.draw_label(context, text, p0, dir, gap=8, center=False)
 
 
@@ -1236,6 +1238,7 @@ class SectionLevelDecorator(LevelDecorator):
     """
 
     def draw_labels(self, context, obj, splines):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         region = context.region
         region3d = context.region_data
         for verts in splines:
@@ -1243,10 +1246,15 @@ class SectionLevelDecorator(LevelDecorator):
             v1 = verts[1]
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
+            if not p0 or not p1:
+                continue
             dir = p1 - p0
             if dir.length < 1:
                 continue
-            text = "RL " + self.format_value(context, verts[-1].z)
+            z = verts[-1].z / unit_scale
+            z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
+            z *= unit_scale
+            text = "RL " + self.format_value(context, z)
             self.draw_label(context, text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
 
 
@@ -1399,7 +1407,6 @@ class GridDecorator(BaseDecorator):
 
     FRAG_GLSL = """
     uniform vec4 color;
-    in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
 

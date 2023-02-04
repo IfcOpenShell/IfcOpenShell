@@ -41,7 +41,7 @@ class LibraryGenerator:
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
         plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
         self.representations = {
-            "body": ifcopenshell.api.run(
+            "model_body": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
                 context_type="Model",
@@ -49,11 +49,11 @@ class LibraryGenerator:
                 target_view="MODEL_VIEW",
                 parent=model,
             ),
-            "annotation": ifcopenshell.api.run(
+            "plan_body": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
                 context_type="Plan",
-                context_identifier="Annotation",
+                context_identifier="Body",
                 target_view="PLAN_VIEW",
                 parent=plan,
             ),
@@ -127,9 +127,9 @@ class LibraryGenerator:
         )
         self.create_profile_type("IfcBeamType", "B2", profile)
 
-        self.create_type("IfcWindowType", "WT01", {"body": "Window", "annotation": "Window-Annotation"})
-        self.create_type("IfcDoorType", "DT01", {"body": "Door", "annotation": "Door-Annotation"})
-        self.create_type("IfcFurnitureType", "BUN01", {"body": "Bunny", "annotation": "Bunny-Annotation"})
+        self.create_type("IfcWindowType", "WT01", {"model_body": "Window", "plan_body": "Window-Plan"})
+        self.create_type("IfcDoorType", "DT01", {"model_body": "Door", "plan_body": "Door-Plan"})
+        self.create_type("IfcFurnitureType", "BUN01", {"model_body": "Bunny", "plan_body": "Bunny-Plan"})
 
         self.file.write("IFC4 Demo Library.ifc")
 

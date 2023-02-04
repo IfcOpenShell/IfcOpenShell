@@ -79,6 +79,7 @@ def add_representation(
 
 
 def switch_representation(
+    ifc,
     geometry,
     obj=None,
     representation=None,
@@ -108,6 +109,7 @@ def switch_representation(
         geometry.delete_data(existing_data)
 
     geometry.clear_modifiers(obj)
+    geometry.clear_cache(ifc.get_entity(obj))
 
 
 def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_first=False):

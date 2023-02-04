@@ -262,3 +262,9 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
 
 def select_assigned_product(drawing):
     drawing.select_assigned_product()
+
+def activate_drawing_view(ifc, drawing_tool, drawing):
+    camera = ifc.get_object(drawing)
+    if not camera:
+        return
+    drawing_tool.activate_view(camera)

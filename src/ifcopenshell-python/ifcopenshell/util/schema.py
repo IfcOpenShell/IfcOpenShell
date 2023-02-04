@@ -49,22 +49,54 @@ def get_subtypes(entity):
 
 
 def reassign_class(ifc_file, element, new_class):
+    """
+    Attempts to change the class (entity name) of `element` to `new_class` by
+    removing element and recreating a similar instance of type `new_class`
+    with the same id.
+    
+    In certain cases it may affect the structure of inversely related instances:
+    - Multiple occurrences of reassigned instance within the same aggregate
+      (such as start and end-point of polyline)
+    - Occurrences of reassigned instance within an ordered aggregate
+      (such as IfcRelNests)
+    
+    It's unlikely that this affects real-world usage of this function.
+    """
+    
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
     try:
-        new_element = ifcopenshell.create_entity(new_class)
-        new_element.GlobalId = element.GlobalId
+        declaration = schema.declaration_by_name(new_class)
+    except:
+        print(f"Class of {element} could not be changed to {new_class} as the class does not exist")
+
+    info = element.get_info()
+
+    new_attributes = {}
+    for attribute in declaration.all_attributes():
+        name = attribute.name()
+        old_attribute = info.get(name, None)
+        if old_attribute:
+            new_attributes[name] = old_attribute
+
+    inverse_pairs = ifc_file.get_inverse(element, allow_duplicate=True, with_attribute_indices=True)
+    ifc_file.remove(element)
+
+    try:
+        new_element = ifc_file.create_entity(new_class, id=info["id"], **new_attributes)
     except:
         print(f"Class of {element} could not be changed to {new_class}")
-        return element
-    new_attributes = [new_element.attribute_name(i) for i, attribute in enumerate(new_element)]
-    for i, attribute in enumerate(element):
-        try:
-            new_element[new_attributes.index(element.attribute_name(i))] = attribute
-        except:
-            continue
-    for inverse in ifc_file.get_inverse(element):
-        ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
-    ifc_file.remove(element)
-    ifc_file.add(new_element, element.id())
+        old_class = info.pop("type")
+        return ifc_file.create_entity(old_class, **info)
+
+    for inverse_pair in inverse_pairs:
+        inverse, index = inverse_pair
+        if inverse[index] is None:
+            inverse[index] = new_element
+        elif isinstance(inverse[index], tuple):
+            item = list(inverse[index])
+            item.append(new_element)
+            inverse[index] = item
+
     return new_element
 
 

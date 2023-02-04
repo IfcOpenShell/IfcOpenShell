@@ -37,8 +37,6 @@ from bpy.types import SpaceView3D
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees, sin, cos, radians
 from mathutils import Vector, Matrix
-from ifcopenshell.api.pset.data import Data as PsetData
-from ifcopenshell.api.material.data import Data as MaterialData
 from blenderbim.bim.module.geometry.helper import Helper
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
@@ -118,7 +116,6 @@ def calculate_quantities(usecase_path, ifc_file, settings):
         )
 
     ifcopenshell.api.run("pset.edit_qto", ifc_file, should_run_listeners=False, qto=qto, properties=properties)
-    PsetData.load(ifc_file, obj.BIMObjectProperties.ifc_definition_id)
 
 
 class DumbSlabGenerator:
@@ -201,6 +198,7 @@ class DumbSlabGenerator:
         )
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -227,7 +225,6 @@ class DumbSlabGenerator:
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer3"})
-        MaterialData.load(self.file)
         obj.select_set(True)
         return obj
 
@@ -298,6 +295,7 @@ class DumbSlabPlaner:
                 for inverse in tool.Ifc.get().get_inverse(representation):
                     ifcopenshell.util.element.replace_attribute(inverse, representation, new_rep)
                 blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
                     tool.Geometry,
                     obj=obj,
                     representation=new_rep,
@@ -324,6 +322,7 @@ class DumbSlabPlaner:
             )
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -530,6 +529,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.view3d.slvs_delete_entity(index=nm["slvs_index"])
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -582,6 +582,7 @@ class DisableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=body,
@@ -653,7 +654,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         if not profile:
 
             def msg(self, context):
-                self.layout.label(text="INVALID PROFILE: " + indices[1])
+                self.layout.label(text="INVALID PROFILE")
 
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             DecorationsHandler.install(context)
@@ -666,6 +667,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,

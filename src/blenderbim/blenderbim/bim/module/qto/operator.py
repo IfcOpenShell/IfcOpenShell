@@ -23,7 +23,6 @@ import blenderbim.tool as tool
 import blenderbim.core.qto as core
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.qto import helper
-from ifcopenshell.api.pset.data import Data as PsetData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
@@ -169,7 +168,6 @@ class QuantifyObjects(bpy.types.Operator):
                 name=props.qto_name,
             )
             ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={props.prop_name: result})
-            PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 class AssignBaseQto(bpy.types.Operator, tool.Ifc.Operator):

@@ -335,17 +335,18 @@ def process_domain_rule(context):
 assert ({context.expression}) is not False
 """
 
+def wrap_parens(s):
+    s = str(s)
+    if " " in s:
+        s = '(%s)' % s
+    return s
+
 def process_expression(context):
-    def wrap(s):
-        s = str(s)
-        if " " in s:
-            s = '(%s)' % s
-        return s
 
     def concat(a, b, **kwargs):
         return " ".join(map(str, sum(zip(
             [None] + a.branches(**kwargs),
-            map(wrap, b.branches(**kwargs))
+            map(wrap_parens, b.branches(**kwargs))
         ), ())[1:]))
 
     if context.rel_op_extended:
@@ -443,11 +444,10 @@ def simple_concat(context):
     # correction: still necessary, apparently.
     # branches = list(map(str, context.branches()))
 
-    concat = ""
     if len(branches) == 2 and branches[0] == 'not':
-        concat = " "
-
-    v = concat.join(branches)
+        return f"{branches[0]} {wrap_parens(branches[1])}"
+    else:
+        v = "".join(branches)
 
     return v
 
@@ -648,7 +648,9 @@ class express_set(set):
     __radd__ = __add__
     def __repr__(self):
         return repr(set(self))
-
+    def __getitem__(self, k):
+        # @todo this is obviously not stable, but should be good enough?
+        return list(self)[k]
 
 def typeof(inst):
     if not inst:

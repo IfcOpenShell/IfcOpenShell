@@ -1,0 +1,11 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2023-02-03T21:03:39',(),(),'IfcOpenShell v0.7.0-07ee62eb9','IfcOpenShell v0.7.0-07ee62eb9','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCWINDOWLININGPROPERTIES('28587KCHn5nOtS14mudQ45',$,$,$,$,$,$,$,$,$,$,$,$,$,$,$);
+#2=IFCWINDOWTYPE('1KvP7IY7D8aBiPWa0yrcu2',$,'WindowType',$,$,(#1),$,$,$,$,$,$,$);
+ENDSEC;
+END-ISO-10303-21;

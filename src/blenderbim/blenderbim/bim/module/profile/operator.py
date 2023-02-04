@@ -22,6 +22,7 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 import blenderbim.bim.module.model.profile as model_profile
 from blenderbim.bim.module.model.slab import DecorationsHandler
+from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
 
 
 class LoadProfiles(bpy.types.Operator):
@@ -103,6 +104,7 @@ class EditProfile(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
         bpy.ops.bim.load_profiles()
+        generate_thumbnail_for_active_profile()
 
 
 class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
@@ -169,6 +171,7 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
 
         profile = tool.Model.export_profile(obj)
         if not profile:
+
             def msg(self, context):
                 self.layout.label(text="INVALID PROFILE: " + indices[1])
 

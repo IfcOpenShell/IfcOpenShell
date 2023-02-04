@@ -32,8 +32,6 @@ import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix
-from ifcopenshell.api.pset.data import Data as PsetData
-from ifcopenshell.api.material.data import Data as MaterialData
 from blenderbim.bim.module.geometry.helper import Helper
 
 
@@ -180,6 +178,7 @@ class DumbProfileGenerator:
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
         )
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -190,7 +189,6 @@ class DumbProfileGenerator:
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
-        MaterialData.load(self.file)
 
         if link_to_scene:
             obj.select_set(True)
@@ -265,6 +263,8 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
+        for obj in selected_objs:
+            tool.Geometry.clear_scale(obj)
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
@@ -514,6 +514,7 @@ class DumbProfileJoiner:
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=new_body,

@@ -26,9 +26,6 @@ import blenderbim.core.geometry
 import blenderbim.core.type as core
 import blenderbim.core.root
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.type.data import Data
-from ifcopenshell.api.geometry.data import Data as GeometryData
-from ifcopenshell.api.material.data import Data as MaterialData
 
 
 class Operator:
@@ -55,10 +52,6 @@ class AssignType(bpy.types.Operator, Operator):
         for obj in related_objects:
             core.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=type)
             oprops = obj.BIMObjectProperties
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
-            GeometryData.load(IfcStore.get_file(), oprops.ifc_definition_id)
-            MaterialData.load(IfcStore.get_file(), oprops.ifc_definition_id)
-        MaterialData.load(IfcStore.get_file())
 
 
 class UnassignType(bpy.types.Operator):
@@ -84,7 +77,6 @@ class UnassignType(bpy.types.Operator):
                     "related_object": self.file.by_id(oprops.ifc_definition_id),
                 },
             )
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -177,7 +169,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         ifc_class = props.type_class
         predefined_type = props.type_predefined_type
         template = props.type_template
-        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        ifc_file = tool.Ifc.get()
+        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         if not body:
             return {"FINISHED"}
         if template == "MESH":
@@ -209,7 +202,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_representation_class=None,
             )
         elif template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             obj = bpy.data.objects.new("TYPEX", None)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -222,27 +215,27 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 context=body,
                 ifc_representation_class=None,
             )
-            materials = tool.Ifc.get().by_type("IfcMaterial")
+            materials = ifc_file.by_type("IfcMaterial")
             if materials:
                 material = materials[0]  # Arbitrarily pick a material
             else:
                 material = self.add_default_material()
             rel = ifcopenshell.api.run(
-                "material.assign_material", tool.Ifc.get(), product=element, type="IfcMaterialLayerSet"
+                "material.assign_material", ifc_file, product=element, type="IfcMaterialLayerSet"
             )
             layer_set = rel.RelatingMaterial
-            layer = ifcopenshell.api.run("material.add_layer", tool.Ifc.get(), layer_set=layer_set, material=material)
+            layer = ifcopenshell.api.run("material.add_layer", ifc_file, layer_set=layer_set, material=material)
             thickness = 0.1  # Arbitrary metric thickness for now
             layer.LayerThickness = thickness / unit_scale
 
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Parametric")
+            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="EPset_Parametric")
             if template == "LAYERSET_AXIS2":
                 axis = "AXIS2"
             elif template == "LAYERSET_AXIS3":
                 axis = "AXIS3"
-            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"LayerSetDirection": axis})
+            ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={"LayerSetDirection": axis})
         elif template == "PROFILESET":
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             obj = bpy.data.objects.new("TYPEX", None)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -255,22 +248,28 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 context=body,
                 ifc_representation_class=None,
             )
-            materials = tool.Ifc.get().by_type("IfcMaterial")
+            materials = ifc_file.by_type("IfcMaterial")
             if materials:
                 material = materials[0]  # Arbitrarily pick a material
             else:
                 material = self.add_default_material()
-            size = 0.5 / unit_scale
-            profile = tool.Ifc.get().create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=size, YDim=size)
+            named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
+            if named_profiles:
+                profile = named_profiles[0]
+            else:
+                size = 0.5 / unit_scale
+                profile = ifc_file.create_entity(
+                    "IfcRectangleProfileDef", ProfileName="New Profile", ProfileType="AREA", XDim=size, YDim=size
+                )
             rel = ifcopenshell.api.run(
-                "material.assign_material", tool.Ifc.get(), product=element, type="IfcMaterialProfileSet"
+                "material.assign_material", ifc_file, product=element, type="IfcMaterialProfileSet"
             )
             profile_set = rel.RelatingMaterial
             material_profile = ifcopenshell.api.run(
-                "material.add_profile", tool.Ifc.get(), profile_set=profile_set, material=material
+                "material.add_profile", ifc_file, profile_set=profile_set, material=material
             )
             ifcopenshell.api.run(
-                "material.assign_profile", tool.Ifc.get(), material_profile=material_profile, profile=profile
+                "material.assign_profile", ifc_file, material_profile=material_profile, profile=profile
             )
         elif template == "EMPTY":
             obj = bpy.data.objects.new("TYPEX", None)
@@ -285,6 +284,36 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 context=body,
                 ifc_representation_class=None,
             )
+        elif template == "WINDOW":
+            mesh = bpy.data.meshes.new("IfcWindow")
+            obj = bpy.data.objects.new("TYPEX", mesh)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindowType", should_add_representation=False
+            )
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.objects.active = None
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.bim.add_window()
+
+        elif template == "STAIR":
+            mesh = bpy.data.meshes.new("IfcStairFlight")
+            obj = bpy.data.objects.new("TYPEX", mesh)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class="IfcStairFlightType",
+                should_add_representation=True,
+                context=body,
+            )
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.objects.active = None
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.bim.add_stair()
+
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         return {"FINISHED"}
 

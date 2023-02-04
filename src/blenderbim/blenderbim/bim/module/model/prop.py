@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
+import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
@@ -239,6 +241,8 @@ class BIMModelProperties(PropertyGroup):
             ("LAYERSET_AXIS3", "Horizontal Layers", ""),
             ("PROFILESET", "Extruded Profile", ""),
             ("EMPTY", "Non-Geometric Type", ""),
+            ("WINDOW", "Window", ""),
+            ("STAIR", "Stair", ""),
         ),
         name="Type Template",
         default="MESH",
@@ -261,6 +265,7 @@ class BIMStairProperties(PropertyGroup):
         ("WOOD/STEEL", "Wood / Steel", ""),
     )
 
+    stair_added_previously: bpy.props.BoolProperty(default=False)
     is_editing: bpy.props.IntProperty(default=-1)
     width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01)
     height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01)
@@ -273,28 +278,142 @@ class BIMStairProperties(PropertyGroup):
     stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
 
     def get_props_kwargs(self):
+        stair_kwargs = {
+            "stair_type": self.stair_type,
+            "width": self.width,
+            "height": self.height,
+            "number_of_treads": self.number_of_treads,
+            "tread_depth": self.tread_depth,
+            "tread_run": self.tread_run,
+        }
+
         if self.stair_type == "CONCRETE":
-            return {
-                "stair_type": self.stair_type,
-                "width": self.width,
-                "height": self.height,
-                "number_of_treads": self.number_of_treads,
-                "tread_depth": self.tread_depth,
-                "tread_run": self.tread_run,
-                "base_slab_depth": self.base_slab_depth,
-                "top_slab_depth": self.top_slab_depth,
-                "has_top_nib": self.has_top_nib,
-            }
+            stair_kwargs.update(
+                {
+                    "base_slab_depth": self.base_slab_depth,
+                    "top_slab_depth": self.top_slab_depth,
+                    "has_top_nib": self.has_top_nib,
+                }
+            )
+            return stair_kwargs
+
         elif self.stair_type == "WOOD/STEEL":
-            return {
-                "stair_type": self.stair_type,
-                "width": self.width,
-                "height": self.height,
-                "number_of_treads": self.number_of_treads,
-                "tread_depth": self.tread_depth,
-                "tread_run": self.tread_run,
-            }
+            return stair_kwargs
 
 
 class BIMSverchokProperties(PropertyGroup):
     node_group: bpy.props.PointerProperty(name="Node Group", type=NodeTree)
+
+
+def window_type_prop_update(self, context):
+    number_of_panels, panels_data = self.window_types_panels[self.window_type]
+
+    si_coversion = 1.0 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    panels_data = [[v * si_coversion for v in data] for data in panels_data]
+    self.first_mullion_offset, self.second_mullion_offset = panels_data[0]
+    self.first_transom_offset, self.second_transom_offset = panels_data[1]
+
+
+# default prop values are in mm and converted later
+class BIMWindowProperties(PropertyGroup):
+    window_types = (
+        ("SINGLE_PANEL", "SINGLE_PANEL", ""),
+        ("DOUBLE_PANEL_HORIZONTAL", "DOUBLE_PANEL_HORIZONTAL", ""),
+        ("DOUBLE_PANEL_VERTICAL", "DOUBLE_PANEL_VERTICAL", ""),
+        ("TRIPLE_PANEL_BOTTOM", "TRIPLE_PANEL_BOTTOM", ""),
+        ("TRIPLE_PANEL_TOP", "TRIPLE_PANEL_TOP", ""),
+        ("TRIPLE_PANEL_LEFT", "TRIPLE_PANEL_LEFT", ""),
+        ("TRIPLE_PANEL_RIGHT", "TRIPLE_PANEL_RIGHT", ""),
+        ("TRIPLE_PANEL_HORIZONTAL", "TRIPLE_PANEL_HORIZONTAL", ""),
+        ("TRIPLE_PANEL_VERTICAL", "TRIPLE_PANEL_VERTICAL", ""),
+    )
+
+    # number of panels and default mullion/transom values
+    window_types_panels = {
+        "SINGLE_PANEL":            (1, ((0,   0  ), (0,    0  ))),
+        "DOUBLE_PANEL_HORIZONTAL": (2, ((0,   0  ), (0.45, 0  ))),
+        "DOUBLE_PANEL_VERTICAL":   (2, ((0.3, 0  ), (0,    0  ))),
+        "TRIPLE_PANEL_BOTTOM":     (3, ((0.3, 0  ), (0.45, 0  ))),
+        "TRIPLE_PANEL_TOP":        (3, ((0.3, 0  ), (0.45, 0  ))),
+        "TRIPLE_PANEL_LEFT":       (3, ((0.3, 0  ), (0.45, 0  ))),
+        "TRIPLE_PANEL_RIGHT":      (3, ((0.3, 0  ), (0.45, 0  ))),
+        "TRIPLE_PANEL_HORIZONTAL": (3, ((0,   0  ), (0.3,  0.6))),
+        "TRIPLE_PANEL_VERTICAL":   (3, ((0.2, 0.4), (0,    0  ))),
+    }
+
+    window_added_previously: bpy.props.BoolProperty(default=False)
+    is_editing: bpy.props.IntProperty(default=-1)
+    window_type: bpy.props.EnumProperty(
+        name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update
+    )
+    overall_height: bpy.props.FloatProperty(name="Overall Height", default=0.9)
+    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6)
+
+    # lining properties
+    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050)
+    lining_thickness: bpy.props.FloatProperty(name="Lining Thickness", default=0.050)
+    lining_offset: bpy.props.FloatProperty(name="Lining Offset", default=0.050)
+    lining_to_panel_offset_x: bpy.props.FloatProperty(name="Lining to Panel Offset X", default=0.025)
+    lining_to_panel_offset_y: bpy.props.FloatProperty(name="Lining to Panel Offset Y", default=0.025)
+    mullion_thickness: bpy.props.FloatProperty(name="Mullion Thickness", default=0.050)
+    first_mullion_offset: bpy.props.FloatProperty(name="First Mullion Offset", default=0.3)
+    second_mullion_offset: bpy.props.FloatProperty(name="Second Mullion Offset", default=0.45)
+    transom_thickness: bpy.props.FloatProperty(name="Transom Thickness", default=0.050)
+    first_transom_offset: bpy.props.FloatProperty(name="First Transom Offset", default=0.3)
+    second_transom_offset: bpy.props.FloatProperty(name="Second Transom Offset", default=0.6)
+
+    # panel_properties
+    frame_depth: bpy.props.FloatVectorProperty(name="Frame Depth", size=3, default=[0.035] * 3)
+    frame_thickness: bpy.props.FloatVectorProperty(name="Frame Thickness", size=3, default=[0.035] * 3)
+
+    def get_general_kwargs(self):
+        return {
+            "window_type": self.window_type,
+            "overall_height": self.overall_height,
+            "overall_width": self.overall_width,
+        }
+
+    def get_lining_kwargs(self):
+        kwargs = {
+            "lining_depth": self.lining_depth,
+            "lining_thickness": self.lining_thickness,
+            "lining_offset": self.lining_offset,
+            "lining_to_panel_offset_x": self.lining_to_panel_offset_x,
+            "lining_to_panel_offset_y": self.lining_to_panel_offset_y,
+        }
+
+        if self.window_type in (
+            "DOUBLE_PANEL_VERTICAL",
+            "TRIPLE_PANEL_BOTTOM",
+            "TRIPLE_PANEL_TOP",
+            "TRIPLE_PANEL_LEFT",
+            "TRIPLE_PANEL_RIGHT",
+            "TRIPLE_PANEL_VERTICAL",
+        ):
+            kwargs["mullion_thickness"] = self.mullion_thickness
+            kwargs["first_mullion_offset"] = self.first_mullion_offset
+
+        if self.window_type in (
+            "DOUBLE_PANEL_HORIZONTAL",
+            "TRIPLE_PANEL_BOTTOM",
+            "TRIPLE_PANEL_TOP",
+            "TRIPLE_PANEL_LEFT",
+            "TRIPLE_PANEL_RIGHT",
+            "TRIPLE_PANEL_HORIZONTAL",
+        ):
+            kwargs["transom_thickness"] = self.transom_thickness
+            kwargs["first_transom_offset"] = self.first_transom_offset
+
+        if self.window_type in ("TRIPLE_PANEL_VERTICAL",):
+            kwargs["second_mullion_offset"] = self.second_mullion_offset
+
+        if self.window_type in ("TRIPLE_PANEL_HORIZONTAL",):
+            kwargs["second_transom_offset"] = self.second_transom_offset
+
+        return kwargs
+
+    def get_panel_kwargs(self):
+        return {
+            "frame_depth": self.frame_depth,
+            "frame_thickness": self.frame_thickness,
+        }

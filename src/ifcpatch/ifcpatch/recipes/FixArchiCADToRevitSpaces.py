@@ -7,9 +7,9 @@ class Patcher:
         broken for at least 3 years and counting. This is a problem typically
         for ArchiCAD architects who want to send rooms to MEP folks using
         Revit.
-        
+
         See bug: https://github.com/Autodesk/revit-ifc/issues/15
-        
+
         The solution is to open an IFC in Revit instead of linking it, which
         will convert IFC spaces into Revit rooms. However, there are very
         specific scenarios where Revit will convert these rooms, which have
@@ -21,7 +21,7 @@ class Patcher:
         robust results. Finally, changing the Precision value to an obscene
         number very strangely seems to cause a lot more rooms to be converted
         successfully.
-        
+
         This patch is designed to only work on ArchiCAD IFC exports where the
         only contents of the IFC is IFC space and `nothing else`. It also
         requires you to run it using Blender, as the geometric modification
@@ -39,6 +39,9 @@ class Patcher:
 
     def patch(self):
         import bpy
+        import blenderbim.tool as tool
+        import ifcopenshell
+        import ifcopenshell.util.element
         from blenderbim.bim.ifc import IfcStore
         from mathutils import Vector, Matrix
 
@@ -60,13 +63,15 @@ class Patcher:
             wall.matrix_world.translation = new_origin
 
         for obj in bpy.context.visible_objects:
-            if "IfcBuildingStorey" in obj.name and len(bpy.data.collections.get(obj.name).children) > 0:
-                target_z = obj.location.z
-
-        for obj in bpy.context.visible_objects:
             bpy.context.view_layer.update()
             if "IfcSpace" not in obj.name:
                 continue
+
+            element = tool.Ifc.get_entity(obj)
+            storey = ifcopenshell.util.element.get_aggregate(element)
+            storey_obj = tool.Ifc.get_object(storey)
+            target_z = storey_obj.location.z
+
             local_target_z = (obj.matrix_world.inverted() @ Vector((0, 0, target_z))).z
             local_target_zup = (obj.matrix_world.inverted() @ Vector((0, 0, target_z + 3))).z
             for v in obj.data.vertices:
@@ -79,7 +84,7 @@ class Patcher:
         bpy.ops.bim.update_representation(
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
         )
-        for context in IfcStore.get_file().by_type("IfcGeometricRepresentationContext"):
+        for context in IfcStore.get_file().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.Precision:
                 context.Precision = 10
 
