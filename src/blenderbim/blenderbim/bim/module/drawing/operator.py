@@ -381,7 +381,9 @@ class CreateDrawing(bpy.types.Operator):
             for body_context in body_contexts:
                 with profile("Processing body context"):
                     if body_context and elements:
-                        geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
+                        geom_settings = ifcopenshell.geom.settings(
+                            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                        )
                         geom_settings.set_context_ids(body_context)
                         it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
                         it.set_cache(cache)

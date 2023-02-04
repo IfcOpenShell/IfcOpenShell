@@ -61,12 +61,11 @@ class Usecase:
             ifcopenshell.api.run("unit.assign_unit", model)
         """
         self.file = file
-        self.settings = {
-            "units": units,
-            "length": {"is_metric": True, "raw": "MILLIMETERS"},
-            "area": {"is_metric": True, "raw": "METERS"},
-            "volume": {"is_metric": True, "raw": "METERS"},
-        }
+        self.settings = {"units": units}
+        # This is a convenience function, likely to be deprecated in the future.
+        self.settings["length"] = length or {"is_metric": True, "raw": "MILLIMETERS"}
+        self.settings["area"] = area or {"is_metric": True, "raw": "METERS"}
+        self.settings["volume"] = volume or {"is_metric": True, "raw": "METERS"}
 
     def execute(self):
         # We're going to refactor this to split unit creation and assignment
