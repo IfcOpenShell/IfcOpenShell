@@ -253,8 +253,14 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 material = materials[0]  # Arbitrarily pick a material
             else:
                 material = self.add_default_material()
-            size = 0.5 / unit_scale
-            profile = ifc_file.create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=size, YDim=size)
+            named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
+            if named_profiles:
+                profile = named_profiles[0]
+            else:
+                size = 0.5 / unit_scale
+                profile = ifc_file.create_entity(
+                    "IfcRectangleProfileDef", ProfileName="New Profile", ProfileType="AREA", XDim=size, YDim=size
+                )
             rel = ifcopenshell.api.run(
                 "material.assign_material", ifc_file, product=element, type="IfcMaterialProfileSet"
             )
@@ -282,12 +288,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             mesh = bpy.data.meshes.new("IfcWindow")
             obj = bpy.data.objects.new("TYPEX", mesh)
             element = blenderbim.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                ifc_class="IfcWindowType",
-                should_add_representation=False
+                tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindowType", should_add_representation=False
             )
             bpy.ops.object.select_all(action="DESELECT")
             bpy.context.view_layer.objects.active = None
