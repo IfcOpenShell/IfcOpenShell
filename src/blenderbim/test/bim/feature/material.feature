@@ -141,6 +141,7 @@ Scenario: Assign material - material layer set
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     Then the object "IfcWallType/Empty" does not have the material "Default"
+    And the object "IfcWallType/Empty" has a "0.1" thick layered material containing the material "Default"
 
 Scenario: Unassign material - material layer set
     Given an empty IFC project
@@ -154,6 +155,27 @@ Scenario: Unassign material - material layer set
     And I press "bim.assign_material"
     When I press "bim.unassign_material"
     Then nothing happens
+
+Scenario: Unassign material - material layer set usages will not be removed
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.assign_material"
+    And the object "IfcWall/Cube" is selected
+    When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
+    Then the object "IfcWall/Cube" has a "0.1" thick layered material containing the material "Default"
+    When I press "bim.unassign_material"
+    Then the object "IfcWall/Cube" has a "0.1" thick layered material containing the material "Default"
 
 Scenario: Enable editing assigned material - material layer set
     Given an empty IFC project

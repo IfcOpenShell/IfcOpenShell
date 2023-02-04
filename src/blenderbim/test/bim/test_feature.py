@@ -48,6 +48,10 @@ def replace_variables(value):
     return value
 
 
+def is_x(number, x):
+    return abs(number - x) < 1e-6
+
+
 @given("an untestable scenario")
 def an_untestable_scenario():
     pass
@@ -498,6 +502,27 @@ def the_object_name_has_the_material_material(name, material):
     assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
 
 
+@then(
+    parsers.parse('the object "{name}" has a "{thickness}" thick layered material containing the material "{material}"')
+)
+def the_object_name_has_the_thickness_thick_layered_material_containing_the_material_material(
+    name, thickness, material
+):
+    material_name = material
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material and "LayerSet" in material.is_a()
+    if material.is_a("IfcMaterialLayerSetUsage"):
+        material = material.ForLayerSet
+    total_thickness = 0
+    material_names = []
+    for layer in material.MaterialLayers or []:
+        total_thickness += layer.LayerThickness
+        material_names.append(layer.Material.Name)
+    assert is_x(total_thickness, float(thickness))
+    assert material_name in material_names
+
+
 @then(parsers.parse('the object "{name}" does not have the material "{material}"'))
 def the_object_name_does_not_have_the_material_material(name, material):
     assert material not in [ms.material.name for ms in the_object_name_exists(name).material_slots]
@@ -548,7 +573,10 @@ def the_object_name_has_no_scale(name):
 
 @then(parsers.parse('the object "{name}" dimensions are "{dimensions}"'))
 def the_object_name_dimensions_are_dimensions(name, dimensions):
-    assert list(the_object_name_exists(name).dimensions) == [float(co) for co in dimensions.split(",")]
+    actual_dimensions = list(the_object_name_exists(name).dimensions)
+    expected_dimensions = [float(co) for co in dimensions.split(",")]
+    for i, number in enumerate(actual_dimensions):
+        assert is_x(number, expected_dimensions[i])
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))

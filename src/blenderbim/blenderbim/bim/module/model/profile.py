@@ -418,7 +418,9 @@ class DumbProfileJoiner:
         self.body = copy.deepcopy(body)
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
         usage = None
-        if not material or (not material.is_a("IfcMaterialProfileSet") and not material.is_a("IfcMaterialProfileSetUsage")):
+        if not material:
+            return
+        if "ProfileSet" not in material.is_a():
             return
         if material.is_a("IfcMaterialProfileSetUsage"):
             usage = material

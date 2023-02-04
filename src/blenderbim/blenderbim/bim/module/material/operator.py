@@ -169,7 +169,9 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if element:
-                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element)
+                material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+                if "Usage" not in material.is_a():
+                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element)
 
 
 class AddConstituent(bpy.types.Operator, tool.Ifc.Operator):
