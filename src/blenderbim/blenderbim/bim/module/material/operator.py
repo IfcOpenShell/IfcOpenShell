@@ -142,7 +142,7 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     material_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
         active_obj = context.active_object
         active_object_material_type = self.material_type or active_obj.BIMObjectMaterialProperties.material_type
         material = tool.Ifc.get().by_id(int(active_obj.BIMObjectMaterialProperties.material))
@@ -205,7 +205,7 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if element:
@@ -472,7 +472,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(active_obj)
         material = ifcopenshell.util.element.get_material(element)
 
-        objects = context.selected_objects
+        objects = tool.Blender.get_selected_objects()
 
         if props.active_material_set_item_id != 0:  # We were editing a material layer set item
             bpy.ops.bim.edit_material_set_item(material_set_item=props.active_material_set_item_id)
@@ -668,7 +668,7 @@ class CopyMaterial(bpy.types.Operator, tool.Ifc.Operator):
         material = ifcopenshell.util.element.get_material(
             self.file.by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
         )
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             if obj == context.active_object:
                 continue
             if not obj.BIMObjectProperties.ifc_definition_id:

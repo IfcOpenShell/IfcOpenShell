@@ -117,5 +117,5 @@ class CopyAttributeToSelection(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)

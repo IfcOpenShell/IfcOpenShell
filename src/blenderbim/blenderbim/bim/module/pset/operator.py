@@ -289,7 +289,7 @@ class RemovePset(bpy.types.Operator, Operator):
     def _execute(self, context):
         if self.obj_type == "Object":
             if context.selected_objects:
-                objects = [o.name for o in context.selected_objects]
+                objects = [o.name for o in tool.Blender.get_selected_objects()]
             else:
                 objects = [context.active_object.name]
         else:
@@ -318,7 +318,7 @@ class AddPset(bpy.types.Operator, Operator):
         pset_name = get_pset_props(context, self.obj, self.obj_type).pset_name
         if self.obj_type == "Object":
             if context.selected_objects:
-                objects = [o.name for o in context.selected_objects]
+                objects = [o.name for o in tool.Blender.get_selected_objects()]
             else:
                 objects = [context.active_object.name]
         else:
@@ -446,7 +446,7 @@ class CopyPropertyToSelection(bpy.types.Operator, Operator):
         is_pset = tool.Ifc.get().by_id(context.active_object.PsetProperties.active_pset_id).is_a("IfcPropertySet")
         pset_name = context.active_object.PsetProperties.active_pset_name
         prop_value = context.active_object.PsetProperties.properties.get(self.name).metadata.get_value()
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             core.copy_property_to_selection(
                 tool.Ifc,
                 tool.Pset,
@@ -548,10 +548,9 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        selected_objects = context.selected_objects
         props = context.scene.AddEditProperties
 
-        for obj in selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
             if not ifc_definition_id:
                 continue
@@ -607,10 +606,9 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        selected_objects = context.selected_objects
         props = context.scene.DeletePsets
 
-        for obj in selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
             if not ifc_definition_id:
                 continue
