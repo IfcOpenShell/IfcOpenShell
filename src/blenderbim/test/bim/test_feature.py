@@ -503,12 +503,13 @@ def the_object_name_has_the_material_material(name, material):
 
 
 @then(
-    parsers.parse('the object "{name}" has a "{thickness}" thick layered material containing the material "{material}"')
+    parsers.parse(
+        'the object "{name}" has a "{thickness}" thick layered material containing the material "{material_name}"'
+    )
 )
-def the_object_name_has_the_thickness_thick_layered_material_containing_the_material_material(
-    name, thickness, material
+def the_object_name_has_a_thickness_thick_layered_material_containing_the_material_material(
+    name, thickness, material_name
 ):
-    material_name = material
     element = tool.Ifc.get_entity(the_object_name_exists(name))
     material = ifcopenshell.util.element.get_material(element)
     assert material and "LayerSet" in material.is_a()
@@ -521,6 +522,28 @@ def the_object_name_has_the_thickness_thick_layered_material_containing_the_mate
         material_names.append(layer.Material.Name)
     assert is_x(total_thickness, float(thickness))
     assert material_name in material_names
+
+
+@then(
+    parsers.parse(
+        'the object "{name}" has a profiled material containing the material "{material_name}" and profile "{profile_name}"'
+    )
+)
+def the_object_name_has_a_profiled_material_containing_the_material_material_and_profile_profile(
+    name, material_name, profile_name
+):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material and "ProfileSet" in material.is_a()
+    if material.is_a("IfcMaterialProfileSetUsage"):
+        material = material.ForProfileSet
+    material_names = []
+    profile_names = []
+    for profile in material.MaterialProfiles or []:
+        material_names.append(profile.Material.Name)
+        profile_names.append(profile.Profile.ProfileName)
+    assert material_name in material_names, f"No material {material_name} found in profiled materials: {material_names}"
+    assert profile_name in profile_names, f"No profile {profile_name} found in material profiles: {profile_names}"
 
 
 @then(parsers.parse('the object "{name}" does not have the material "{material}"'))
