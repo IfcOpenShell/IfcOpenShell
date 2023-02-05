@@ -25,6 +25,8 @@ import functools
 import importlib
 import numbers
 import itertools
+import operator
+import functools
 
 from . import ifcopenshell_wrapper
 
@@ -133,13 +135,18 @@ class entity_instance(object):
                     self.wrapped_data.get_argument(idx), self.wrapped_data.file
                 )
         elif attr_cat == INVERSE:
-            return entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
-        
+            return entity_instance.wrap_value(
+                self.wrapped_data.get_inverse(name), self.wrapped_data.file
+            )
+
         # derived attribute perhaps?
-        schema_name = self.wrapped_data.is_a(True).split('.')[0]
+        schema_name = self.wrapped_data.is_a(True).split(".")[0]
         rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
+
         def yield_supertypes():
-            decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
+            decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(
+                self.is_a()
+            )
             while decl:
                 yield decl.name()
                 decl = decl.supertype()
@@ -248,7 +255,7 @@ class entity_instance(object):
 
     def __repr__(self):
         return repr(self.wrapped_data)
-        
+
     def to_string(self, valid_spf=True):
         """Returns a string representation of the current entity instance.
         Equal to str(self) when valid_spf=False. When valid_spf is True
@@ -257,7 +264,7 @@ class entity_instance(object):
         case and string attribute values with unicode values encoded per
         the specific control directives.
         """
-        
+
         return self.wrapped_data.to_string(valid_spf)
 
     def is_a(self, *args):
@@ -296,7 +303,9 @@ class entity_instance(object):
         elif None in (self.wrapped_data.file, other.wrapped_data.file):
             # when not added to a file, we can only compare attribute values
             # and we need this for where rule evaluation
-            return self.get_info(recursive=True, include_identifier=False) == other.get_info(recursive=True, include_identifier=False)
+            return self.get_info(
+                recursive=True, include_identifier=False
+            ) == other.get_info(recursive=True, include_identifier=False)
         else:
             # Proper entity instances have a stable identity by means of the numeric
             # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
@@ -309,6 +318,83 @@ class entity_instance(object):
                     other[0],
                     other.wrapped_data.file_pointer(),
                 )
+
+    def is_entity(self):
+        """Tests whether the instance is an entity type as opposed to a simple data type.
+
+        Returns:
+            bool: True if the instance is an entity
+        """
+        schema_name = self.wrapped_data.is_a(True).split(".")[0]
+        decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(
+            self.is_a()
+        )
+        return isinstance(decl, ifcopenshell_wrapper.entity)
+
+    def compare(self, other, op, reverse=False):
+        """Compares with another instance.
+
+        For simple types the declaration name is not taken into account:
+
+        >>> f = ifcopenshell.file()
+        >>> f.createIfcInteger(0) < f.createIfcPositiveInteger(1)
+        True
+
+        For entity types the declaration name is taken into account:
+
+        >>> f.createIfcWall('a') < f.createIfcWall('b')
+        True
+
+        >>> f.createIfcWallStandardCase('a') < f.createIfcWall('b')
+        False
+
+        Comparing simple types with different underlying types throws an exception:
+
+        >>> f.createIfcInteger(0) < f.createIfcLabel('x')
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "entity_instance.py", line 371, in compare
+            return op(a, b)
+        TypeError: '<' not supported between instances of 'int' and 'str'
+
+        Args:
+            other (_type_): Right hand side (or lhs when reverse = True)
+            op (_type_): The comparison operator (likely from the operator module)
+            reverse (bool, optional): When true swaps lhs and rhs. Defaults to False.
+
+        Returns:
+            bool: The comparison predicate applied to self and other
+        """
+
+        if isinstance(other, entity_instance):
+            a, b = map(tuple, (self, other))
+            if any(map(entity_instance.is_entity, (self, other))):
+                a = (self.is_a(),) + a
+                b = (other.is_a(),) + b
+        elif self.is_entity():
+            a = tuple(self)
+            b = other
+            if isinstance(b, list):
+                b = tuple(b)
+            if not isinstance(b, tuple):
+                b = (b,)
+        else:
+            a = self[0]
+            b = other
+
+        if reverse:
+            a, b = b, a
+
+        return op(a, b)
+
+    __le__ = functools.partialmethod(compare, op=operator.le)
+    __lt__ = functools.partialmethod(compare, op=operator.lt)
+    __ge__ = functools.partialmethod(compare, op=operator.ge)
+    __gt__ = functools.partialmethod(compare, op=operator.gt)
+    __rle__ = functools.partialmethod(compare, op=operator.le, reverse=True)
+    __rlt__ = functools.partialmethod(compare, op=operator.lt, reverse=True)
+    __rge__ = functools.partialmethod(compare, op=operator.ge, reverse=True)
+    __rgt__ = functools.partialmethod(compare, op=operator.gt, reverse=True)
 
     def __hash__(self):
         # Proper entity instances have a stable identity by means of the numeric
