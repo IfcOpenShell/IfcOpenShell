@@ -317,6 +317,7 @@ class Material:
     def get_name(cls, obj): pass
     def import_material_definitions(cls, material_type): pass
     def is_editing_materials(cls): pass
+    def is_material_used_in_sets(cls, material): pass
     def select_elements(cls, elements): pass
 
 

@@ -153,9 +153,22 @@ class TestImportMaterialDefinitions(NewFile):
 class TestIsEditingMaterials(NewFile):
     def test_run(self):
         bpy.context.scene.BIMMaterialProperties.is_editing = False
-        subject.is_editing_materials() is False
+        assert subject.is_editing_materials() is False
         bpy.context.scene.BIMMaterialProperties.is_editing = True
-        subject.is_editing_materials() is True
+        assert subject.is_editing_materials() is True
+
+
+class TestIsMaterialUsedInSets(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.createIfcMaterialLayerSet()
+        material_set_item = ifc.createIfcMaterialLayer()
+        material = ifc.createIfcMaterial()
+        assert subject.is_material_used_in_sets(material) is False
+        material_set.MaterialLayers = [material_set_item]
+        material_set_item.Material = material
+        assert subject.is_material_used_in_sets(material) is True
 
 
 class TestSelectElements(NewFile):

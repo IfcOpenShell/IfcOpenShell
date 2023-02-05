@@ -44,6 +44,8 @@ def add_material_set(ifc, material, set_type=None):
 
 
 def remove_material(ifc, material_tool, style, material=None):
+    if material_tool.is_material_used_in_sets(material):
+        return
     obj = ifc.get_object(material)
     ifc.unlink(element=material)
     ifc.run("material.remove_material", material=material)

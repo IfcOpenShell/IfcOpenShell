@@ -242,10 +242,11 @@ class RemoveConstituent(bpy.types.Operator, tool.Ifc.Operator):
     constituent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
+        for inverse in tool.Ifc.get().get_inverse(layer):
+            if inverse.is_a("IfcMaterialConstituentSet") and len(inverse.MaterialConstituents) == 1:
+                return
         ifcopenshell.api.run(
-            "material.remove_constituent", self.file, **{"constituent": self.file.by_id(self.constituent)}
+            "material.remove_constituent", tool.Ifc.get(), constituent=tool.Ifc.get().by_id(self.constituent)
         )
 
 
@@ -276,9 +277,10 @@ class RemoveProfile(bpy.types.Operator, tool.Ifc.Operator):
     profile: bpy.props.IntProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("material.remove_profile", self.file, **{"profile": self.file.by_id(self.profile)})
+        for inverse in tool.Ifc.get().get_inverse(layer):
+            if inverse.is_a("IfcMaterialProfileSet") and len(inverse.MaterialProfiles) == 1:
+                return
+        ifcopenshell.api.run("material.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
 
 
 class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
@@ -333,9 +335,10 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
     layer: bpy.props.IntProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("material.remove_layer", self.file, **{"layer": self.file.by_id(self.layer)})
+        for inverse in tool.Ifc.get().get_inverse(layer):
+            if inverse.is_a("IfcMaterialLayerSet") and len(inverse.MaterialLayers) == 1:
+                return
+        ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=tool.Ifc.get().by_id(self.layer))
 
 
 class AddListItem(bpy.types.Operator, tool.Ifc.Operator):
