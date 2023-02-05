@@ -242,6 +242,7 @@ Scenario: Assign material - material profile set
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     Then the object "IfcWallType/Empty" does not have the material "Default"
+    And the object "IfcWallType/Empty" has a profiled material containing the material "Default" and profile "New Profile"
 
 Scenario: Unassign material - material profile set
     Given an empty IFC project

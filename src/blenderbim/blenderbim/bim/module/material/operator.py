@@ -169,6 +169,33 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     )
                     thickness = 0.1  # Arbitrary metric thickness for now
                     layer.LayerThickness = thickness / unit_scale
+            elif assigned_material.is_a("IfcMaterialProfileSet"):
+                if not assigned_material.MaterialProfiles:
+                    named_profiles = [p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName]
+                    if named_profiles:
+                        profile = named_profiles[0]
+                    else:
+                        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                        size = 0.5 / unit_scale
+                        profile = tool.Ifc.get().create_entity(
+                            "IfcRectangleProfileDef",
+                            ProfileName="New Profile",
+                            ProfileType="AREA",
+                            XDim=size,
+                            YDim=size,
+                        )
+                        material_profile = ifcopenshell.api.run(
+                            "material.add_profile",
+                            tool.Ifc.get(),
+                            profile_set=assigned_material,
+                            material=tool.Ifc.get().by_type("IfcMaterial")[0],
+                        )
+                        ifcopenshell.api.run(
+                            "material.assign_profile",
+                            tool.Ifc.get(),
+                            material_profile=material_profile,
+                            profile=profile,
+                        )
 
 
 class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
