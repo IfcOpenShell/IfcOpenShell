@@ -38,6 +38,10 @@ class Blender:
         return f"{name} {i}"
 
     @classmethod
+    def get_selected_objects(cls):
+         return set(bpy.context.selected_objects + [bpy.context.active_object])
+
+    @classmethod
     def create_ifc_object(cls, ifc_class: str, name: str = None, data=None) -> bpy.types.Object:
         name = name or "My " + ifc_class
         name = cls.get_name(ifc_class, name)
