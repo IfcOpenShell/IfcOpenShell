@@ -354,7 +354,7 @@ class ArrayData:
                     parent = tool.Ifc.get().by_guid(parameters["Parent"])
                     parameters["has_parent"] = True
                     parameters["parent_name"] = parent.Name or "Unnamed"
-                    parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                    parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 except:
                     parameters["has_parent"] = False
                 return parameters
@@ -376,7 +376,7 @@ class StairData:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Stair", None)
             if parameters:
-                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
 
 
@@ -396,7 +396,7 @@ class SverchokData:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Sverchok", None)
             if parameters:
-                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
 
     @classmethod
@@ -425,7 +425,7 @@ class WindowData:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Window", None)
             if parameters:
-                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
 
 
@@ -445,5 +445,5 @@ class DoorData:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Door", None)
             if parameters:
-                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters

@@ -282,10 +282,10 @@ class BIM_PT_array(bpy.types.Panel):
             row.label(text=ArrayData.data["parameters"]["parent_name"], icon="CON_CHILDOF")
             op = row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
             op.parent = ArrayData.data["parameters"]["Parent"]
-            if ArrayData.data["parameters"]["data"]:
+            if ArrayData.data["parameters"]["data_dict"]:
                 row.operator("bim.add_array", icon="ADD", text="")
 
-            for i, array in enumerate(ArrayData.data["parameters"]["data"]):
+            for i, array in enumerate(ArrayData.data["parameters"]["data_dict"]):
                 box = self.layout.box()
                 if props.is_editing == i:
                     row = box.row(align=True)
@@ -335,7 +335,7 @@ class BIM_PT_stair(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
-            stair_data = StairData.data["parameters"]["data"]
+            stair_data = StairData.data["parameters"]["data_dict"]
             if props.is_editing != -1:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish editing")
@@ -433,7 +433,7 @@ class BIM_PT_window(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Window parameters", icon="OUTLINER_OB_LATTICE")
 
-            window_data = WindowData.data["parameters"]["data"]
+            window_data = WindowData.data["parameters"]["data_dict"]
             number_of_panels, panels_data = props.window_types_panels[props.window_type]
 
             if props.is_editing != -1:
@@ -549,7 +549,7 @@ class BIM_PT_door(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Door parameters", icon="OUTLINER_OB_LATTICE")
 
-            door_data = DoorData.data["parameters"]["data"]
+            door_data = DoorData.data["parameters"]["data_dict"]
 
             if props.is_editing != -1:
                 row = self.layout.row(align=True)
