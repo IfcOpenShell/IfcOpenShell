@@ -46,8 +46,10 @@ V = lambda *x: Vector([float(i) for i in x])
 
 def update_window_modifier_representation(context):
     obj = context.active_object
+    ifc_element = tool.Ifc.get_entity(obj)
     props = obj.BIMWindowProperties
     ifc_file = tool.Ifc.get()
+
     representation_data = {
         "partition_type": props.window_type,
         "overall_height": props.overall_height,
@@ -82,12 +84,14 @@ def update_window_modifier_representation(context):
         "geometry.add_window_representation", ifc_file, **representation_data
     )
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
-
+    
     # MODEL_VIEW representation
     ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = ifc_context
     model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, model_representation)
+    ifc_element.PartitioningType = props.window_type
+
 
 
 def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0,0,0)):
@@ -350,6 +354,8 @@ class BIM_OT_add_window(Operator):
             ifc_class="IfcWindow",
             should_add_representation=False
         )
+        element.PredefinedType = "WINDOW"
+
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj

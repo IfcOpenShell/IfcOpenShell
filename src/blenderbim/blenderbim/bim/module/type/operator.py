@@ -283,7 +283,13 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             mesh = bpy.data.meshes.new("IfcWindow")
             obj = bpy.data.objects.new("TYPEX", mesh)
             element = blenderbim.core.root.assign_class(
-                tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindowType", should_add_representation=False
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                predefined_type=predefined_type,
+                ifc_class="IfcWindowType",
+                should_add_representation=False
             )
             bpy.ops.object.select_all(action="DESELECT")
             bpy.context.view_layer.objects.active = None
@@ -298,6 +304,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Collector,
                 tool.Root,
                 obj=obj,
+                predefined_type=predefined_type,
                 ifc_class="IfcDoorType",
                 should_add_representation=False
             )
@@ -315,6 +322,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Collector,
                 tool.Root,
                 obj=obj,
+                predefined_type=predefined_type,
                 ifc_class="IfcStairFlightType",
                 should_add_representation=True,
                 context=body,
