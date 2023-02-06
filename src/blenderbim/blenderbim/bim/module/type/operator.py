@@ -167,7 +167,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         if not body:
             return {"FINISHED"}
-        
+
         if template == "MESH":
             location = context.scene.cursor.location
             if context.active_object and context.selected_objects and context.active_object.data:
@@ -289,7 +289,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 obj=obj,
                 predefined_type=predefined_type,
                 ifc_class="IfcWindowType",
-                should_add_representation=False
+                should_add_representation=False,
             )
             bpy.ops.object.select_all(action="DESELECT")
             bpy.context.view_layer.objects.active = None
@@ -306,7 +306,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 obj=obj,
                 predefined_type=predefined_type,
                 ifc_class="IfcDoorType",
-                should_add_representation=False
+                should_add_representation=False,
             )
             bpy.ops.object.select_all(action="DESELECT")
             bpy.context.view_layer.objects.active = None

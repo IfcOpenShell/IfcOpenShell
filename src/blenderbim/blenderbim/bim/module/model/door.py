@@ -50,7 +50,7 @@ def update_door_modifier_representation(context):
     props = obj.BIMDoorProperties
     ifc_element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
-    
+
     representation_data = {
         "operation_type": props.door_type,
         "overall_height": props.overall_height,
@@ -82,17 +82,13 @@ def update_door_modifier_representation(context):
     # ELEVATION_VIEW representation
     ifc_context = get_ifc_context_or_create(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
     representation_data["context"] = ifc_context
-    elevation_representation = ifcopenshell.api.run(
-        "geometry.add_door_representation", ifc_file, **representation_data
-    )
+    elevation_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
 
     # PLAN_VIEW representation
     ifc_context = get_ifc_context_or_create(ifc_file, "Plan", "Annotation", "PLAN_VIEW")
     representation_data["context"] = ifc_context
-    elevation_representation = ifcopenshell.api.run(
-        "geometry.add_door_representation", ifc_file, **representation_data
-    )
+    elevation_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
 
     # MODEL_VIEW representation
@@ -164,6 +160,7 @@ def create_bm_door_lining(bm, size: Vector, thickness: Vector, position:Vector=V
 
     return new_verts + translate_verts
 
+
 def update_door_modifier_bmesh(context):
     obj = context.object
     props = obj.BIMDoorProperties
@@ -171,7 +168,7 @@ def update_door_modifier_bmesh(context):
 
     overall_width = props.overall_width * si_conversion
     overall_height = props.overall_height * si_conversion
-    
+
     # lining params
     lining_depth = props.lining_depth * si_conversion
     lining_thickness_default = props.lining_thickness * si_conversion
@@ -186,9 +183,9 @@ def update_door_modifier_bmesh(context):
 
     window_lining_height = overall_height - transfom_offset - transom_thickness
     top_lining_thickness = transom_thickness or lining_thickness_default
-    panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0) 
-    panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0) 
-    door_opening_width = (overall_width - lining_to_panel_offset_x * 2)
+    panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0)
+    panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0)
+    door_opening_width = overall_width - lining_to_panel_offset_x * 2
 
     threshold_thickness = props.threshold_thickness * si_conversion
     threshold_depth = props.threshold_depth * si_conversion
@@ -214,7 +211,7 @@ def update_door_modifier_bmesh(context):
         lining_height = overall_height
 
     bm = bmesh.new()
-    
+
     # add lining
     lining_size = V(overall_width, lining_depth, lining_height)
     lining_thickness = [lining_thickness_default, top_lining_thickness]
@@ -246,16 +243,8 @@ def update_door_modifier_bmesh(context):
         casing_verts.extend([outer_casing_verts, inner_casing_verts])
 
     # add door panel
-    panel_size = V(
-        panel_width,
-        panel_depth,
-        panel_height
-    )
-    panel_position = V(
-        lining_to_panel_offset_x,
-        lining_to_panel_offset_y,
-        threshold_thickness
-    )
+    panel_size = V(panel_width, panel_depth, panel_height)
+    panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y, threshold_thickness)
     panel_verts = create_bm_box(bm, panel_size, panel_position)
 
     # add on top window
@@ -264,21 +253,13 @@ def update_door_modifier_bmesh(context):
         frame_verts = []
         glass_verts = []
     else:
-        window_lining_thickness = [lining_thickness_default] * 3        
+        window_lining_thickness = [lining_thickness_default] * 3
         window_lining_thickness.append(transom_thickness)
-        window_lining_size = V(
-            overall_width, 
-            lining_depth,
-            window_lining_height
-        )
-        window_position = V(0, 0, overall_height-window_lining_height)
-        frame_size = V(
-            door_opening_width,
-            frame_depth,
-            frame_height
-        )
+        window_lining_size = V(overall_width, lining_depth, window_lining_height)
+        window_position = V(0, 0, overall_height - window_lining_height)
+        frame_size = V(door_opening_width, frame_depth, frame_height)
         window_lining_verts, frame_verts, glass_verts = create_bm_window(
-            bm, 
+            bm,
             window_lining_size,
             window_lining_thickness,
             lining_to_panel_offset_x,
@@ -286,10 +267,10 @@ def update_door_modifier_bmesh(context):
             frame_size,
             frame_thickness,
             glass_thickness,
-            window_position
+            window_position,
         )
 
-    lining_offset_verts = lining_verts+panel_verts+window_lining_verts+frame_verts+glass_verts
+    lining_offset_verts = lining_verts + panel_verts + window_lining_verts + frame_verts + glass_verts
     bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
@@ -352,12 +333,13 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMDoorProperties
 
         if element.is_a() not in ("IfcDoor", "IfcDoorType"):
-            self.report({"ERROR"}, "Object has to be IfcDoor/IfcDoorType type to add a stair.")
+            self.report({"ERROR"}, "Object has to be IfcDoor/IfcDoorType type to add a door.")
             return {"CANCELLED"}
 
         # need to make sure all default props will have correct units
         if not props.door_added_previously:
-            convert_property_group_from_si(props, skip_props=("is_editing", "door_type", "door_added_previously", 'convert_property_group_from_si'))
+            skip_props = ("is_editing", "door_type", "door_added_previously", "panel_width_ratio")
+            convert_property_group_from_si(props, skip_props=skip_props)
 
         door_data = props.get_general_kwargs()
         lining_props = props.get_lining_kwargs()
@@ -453,7 +435,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         # need to make sure all props that weren't used before
         # will have correct units
-        skip_props = ("is_editing", "door_type", "door_added_previously", 'convert_property_group_from_si')
+        skip_props = ("is_editing", "door_type", "door_added_previously", "panel_width_ratio")
         skip_props += tuple(data.keys())
         convert_property_group_from_si(props, skip_props=skip_props)
 
