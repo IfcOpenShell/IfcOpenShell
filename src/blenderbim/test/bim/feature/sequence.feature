@@ -523,7 +523,7 @@ Scenario: Animate the consumption of a wall
     And "scene.objects.get('IfcWall/Cube').hide_viewport" is "False"
     And "scene.objects.get('IfcWall/Cube').hide_render" is "False"
     When I am on frame "2"
-    Then "scene.objects.get('IfcWall/Cube').color" is "[0.0, 1.0, 1.0, 1]"
+    Then "scene.objects.get('IfcWall/Cube').color" is "[0.2, 0.2, 0.2, 1]"
     And "scene.objects.get('IfcWall/Cube').hide_viewport" is "False"
     And "scene.objects.get('IfcWall/Cube').hide_render" is "False"
     When I am on frame "7"

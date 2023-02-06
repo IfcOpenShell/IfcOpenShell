@@ -58,12 +58,11 @@ def remove_work_schedule(ifc, work_schedule=None):
     ifc.run("sequence.remove_work_schedule", work_schedule=work_schedule)
 
 
-def assign_work_schedule(ifc, sequence, work_plan=None, work_schedule=None):
+def assign_work_schedule(ifc, work_plan=None, work_schedule=None):
     if work_schedule:
         return ifc.run("aggregate.assign_object", relating_object=work_plan, product=work_schedule)
 
-
-def unassign_work_schedule(ifc, work_plan=None, work_schedule=None):
+def unassign_work_schedule(ifc, work_schedule=None):
     ifc.run("aggregate.unassign_object", product=work_schedule)
 
 

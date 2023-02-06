@@ -1230,7 +1230,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
             cls.animate_operation(obj, start_frame, product_frame, color)
         elif product_frame["type"] in ["LOGISTIC", "MOVE"]:
-            cls.animate_movement_to(obj, product_frame, color)
+            cls.animate_movement_to(obj, start_frame, product_frame, color)
         else:
             cls.animate_operation(obj, start_frame, product_frame, color)
 
