@@ -48,7 +48,7 @@ def update_door_modifier_representation(context):
     props = obj.BIMDoorProperties
     ifc_file = tool.Ifc.get()
     representation_data = {
-        "partition_type": props.door_type,
+        "operation_type": props.door_type,
         "overall_height": props.overall_height,
         "overall_width": props.overall_width,
         "lining_properties": {
@@ -75,19 +75,30 @@ def update_door_modifier_representation(context):
         },
     }
 
-    # ELEVATION_VIEW representation
-    ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
-    if not ifc_context:
-        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
-        ifc_context = ifcopenshell.api.run(
-            "context.add_context",
-            ifc_file,
-            context_type="Model",
-            context_identifier="Profile",
-            target_view="ELEVATION_VIEW",
-            parent=model_context,
-        )
+    def get_context_or_create(context_type, context_identifier, target_view):
+        ifc_context = ifcopenshell.util.representation.get_context(ifc_file, context_type, context_identifier, target_view)
+        if not ifc_context:
+            parent_context = ifcopenshell.util.representation.get_context(ifc_file, context_type)
+            ifc_context = ifcopenshell.api.run(
+                "context.add_context",
+                ifc_file,
+                context_type=context_type,
+                context_identifier=context_identifier,
+                target_view=target_view,
+                parent=model_context,
+            )
+        return ifc_context
 
+    # ELEVATION_VIEW representation
+    ifc_context = get_context_or_create("Model", "Profile", "ELEVATION_VIEW")
+    representation_data["context"] = ifc_context
+    elevation_representation = ifcopenshell.api.run(
+        "geometry.add_door_representation", ifc_file, **representation_data
+    )
+    replace_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
+
+    # PLAN_VIEW representation
+    ifc_context = get_context_or_create("Plan", "Annotation", "PLAN_VIEW")
     representation_data["context"] = ifc_context
     elevation_representation = ifcopenshell.api.run(
         "geometry.add_door_representation", ifc_file, **representation_data

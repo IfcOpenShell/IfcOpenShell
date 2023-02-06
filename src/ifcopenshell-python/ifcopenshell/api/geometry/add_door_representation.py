@@ -126,22 +126,22 @@ class Usecase:
                 },
             }
         )
-
         for key, value in settings.items():
             self.settings[key] = value
 
-    def execute(self):
+    def execute(self):        
         builder = ShapeBuilder(self.file)
         overall_height = self.settings["overall_height"]
         overall_width = self.settings["overall_width"]
+        door_type = self.settings["operation_type"]
+        
+        if door_type not in ('SINGLE_SWING_LEFT', 'SINGLE_SWING_RIGHT'):
+            raise NotImplementedError(f'Door type "{door_type}" is not currently supported.')
 
-        # TODO: elevation view representation
         if self.settings["context"].TargetView == "ELEVATION_VIEW":
             rect = builder.rectangle(V(overall_width, 0, overall_height))
             representation_evelevation = builder.get_representation(self.settings["context"], rect)
             return representation_evelevation
-        
-        # TODO: implement 2d representation
 
         panel_props = self.settings["panel_properties"]
         lining_props = self.settings["lining_properties"]
@@ -191,14 +191,57 @@ class Usecase:
         lining_size = V(overall_width, lining_depth, lining_height)
         lining_thickness = [lining_thickness_default, top_lining_thickness]
 
+        def l_shape_check(lining_thickness):
+            return lining_to_panel_offset_y_full < lining_depth \
+                and any(lining_to_panel_offset_x < th for th in lining_thickness)
+
+        # create 2d representation
+        if self.settings["context"].TargetView == "PLAN_VIEW":
+
+            items_2d = []
+
+            # create lining
+            if l_shape_check([lining_thickness_default]):
+                lining_points = [
+                    V(0, 0),
+                    V(0, lining_depth),
+                    V(lining_to_panel_offset_x, lining_depth),
+                    V(lining_to_panel_offset_x, lining_to_panel_offset_y_full),
+                    V(lining_thickness_default, lining_to_panel_offset_y_full),
+                    V(lining_thickness_default, 0),
+                ]
+                lining = builder.polyline(lining_points, closed=True)
+            else:
+                lining = builder.rectangle(V(lining_thickness_default, lining_depth))
+
+            items_2d.append(lining)
+            items_2d.append(builder.mirror(lining, mirror_axes=V(1,0), mirror_point=V(overall_width/2, 0), create_copy=True))
+
+            # create semi-semi-circle
+            semicircle = builder.create_ellipse_curve(panel_width-panel_depth, 
+                                                      panel_width, 
+                                                      trim_points_mask=(0,1), 
+                                                      position=V(panel_depth, 0))
+            items_2d.append(semicircle)
+
+            # create door
+            door = builder.rectangle(V(panel_depth, panel_width))
+            items_2d.append(door)
+
+            builder.translate([semicircle, door], V(lining_to_panel_offset_x, lining_depth))
+            
+            if door_type == 'SINGLE_SWING_RIGHT':
+                builder.mirror([semicircle, door], mirror_axes=V(1,0), mirror_point=V(overall_width/2, 0))
+
+            representation_2d = builder.get_representation(self.settings["context"], items_2d)
+            return representation_2d
+
         lining_items = []
         main_lining_size = lining_size
+
         # need to check offsets to decide whether lining should be rectangle
         # or L shaped
-        l_shape_check = lining_to_panel_offset_y_full < lining_size.y \
-                            and any(lining_to_panel_offset_x < th for th in lining_thickness)
-
-        if l_shape_check:
+        if l_shape_check(lining_thickness):
             main_lining_size = lining_size.copy()
             main_lining_size.y = lining_to_panel_offset_y_full
 
@@ -289,7 +332,6 @@ class Usecase:
         builder.translate(lining_offset_items, V(0, lining_offset, 0))
 
         ouput_items = lining_offset_items + threshold_items + casing_items
-        print(len(ouput_items), 'items ready')
         representation = builder.get_representation(self.settings["context"], ouput_items)
         return representation
 

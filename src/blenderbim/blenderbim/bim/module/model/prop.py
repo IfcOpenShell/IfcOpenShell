@@ -433,14 +433,14 @@ class BIMWindowProperties(PropertyGroup):
 
 class BIMDoorProperties(PropertyGroup):
     door_types = (
-        ("DOUBLE_SWING_LEFT", "DOUBLE_SWING_LEFT", ""),
-        ("DOUBLE_SWING_RIGHT", "DOUBLE_SWING_RIGHT", ""),
+        ("SINGLE_SWING_LEFT", "SINGLE_SWING_LEFT", ""),
+        ("SINGLE_SWING_RIGHT", "SINGLE_SWING_RIGHT", ""),
     )
 
     door_added_previously: bpy.props.BoolProperty(default=False)
     is_editing: bpy.props.IntProperty(default=-1)
     door_type: bpy.props.EnumProperty(
-        name="Door Operation Type", items=door_types, default="DOUBLE_SWING_LEFT"
+        name="Door Operation Type", items=door_types, default="SINGLE_SWING_LEFT"
     )
     overall_height: bpy.props.FloatProperty(name="Overall Height", default=1.2)
     overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6)
