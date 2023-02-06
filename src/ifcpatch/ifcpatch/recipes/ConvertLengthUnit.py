@@ -53,8 +53,11 @@ class Patcher:
         self.file_patched = ifcopenshell.api.run("project.create_file", version=self.file.schema)
         if self.file.schema == "IFC2X3":
             user = self.file_patched.add(self.file.by_type("IfcProject")[0].OwnerHistory.OwningUser)
+            application = self.file_patched.add(self.file.by_type("IfcProject")[0].OwnerHistory.OwningApplication)
             old_get_user = ifcopenshell.api.owner.settings.get_user
+            old_get_application = ifcopenshell.api.owner.settings.get_application
             ifcopenshell.api.owner.settings.get_user = lambda ifc: user
+            ifcopenshell.api.owner.settings.get_application = lambda ifc: application
         project = ifcopenshell.api.run("root.create_entity", self.file_patched, ifc_class="IfcProject")
         unit_assignment = ifcopenshell.api.run("unit.assign_unit", self.file_patched, **{"length": unit})
 
@@ -82,3 +85,4 @@ class Patcher:
 
         if self.file.schema == "IFC2X3":
             ifcopenshell.api.owner.settings.get_user = old_get_user
+            ifcopenshell.api.owner.settings.get_application = old_get_application
