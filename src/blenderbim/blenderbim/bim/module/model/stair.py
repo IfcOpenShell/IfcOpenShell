@@ -248,6 +248,8 @@ class BIM_OT_add_clever_stair(Operator):
             should_add_representation=True,
             context=body_context,
         )
+        element.PredefinedType = "STRAIGHT"
+
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
@@ -296,7 +298,6 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         update_stair_modifier(context)
 
         # update IfcStairFlight properties
-        element.PredefinedType = "STRAIGHT"
         if element.is_a("IfcStairFlight"):
             element.NumberOfRisers = props.number_of_treads + 1
             element.NumberOfTreads = props.number_of_treads

@@ -48,7 +48,9 @@ V = lambda *x: Vector([float(i) for i in x])
 def update_door_modifier_representation(context):
     obj = context.active_object
     props = obj.BIMDoorProperties
+    ifc_element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
+    
     representation_data = {
         "operation_type": props.door_type,
         "overall_height": props.overall_height,
@@ -98,6 +100,8 @@ def update_door_modifier_representation(context):
     representation_data["context"] = ifc_context
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, model_representation)
+
+    ifc_element.OperationType = props.door_type
 
 
 def create_bm_door_lining(bm, size: Vector, thickness: Vector, position:Vector=V(0,0,0).freeze()):
