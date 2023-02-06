@@ -80,28 +80,63 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
-        opening_obj = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
+        existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
+
+        if existing_opening_occurrence:
+            existing_opening_occurrence_obj = tool.Ifc.get_object(existing_opening_occurrence)
+            if existing_opening_occurrence_obj:
+                opening_obj = bpy.data.objects.new("Opening", existing_opening_occurrence_obj.data)
+                opening_obj.data = existing_opening_occurrence_obj.data
+            else:
+                opening_obj = self.create_object_using_element_representation(existing_opening_occurrence)
+            opening_obj.matrix_world = filling_obj.matrix_world
+        else:
+            opening_obj = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
 
         # Still prototyping, for now duplicating code from bpy.ops.bim.add_opening
         if tool.Ifc.is_moved(voided_obj):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj)
 
-        has_visible_openings = False
-        for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
-            if tool.Ifc.get_object(opening):
-                has_visible_openings = True
-                break
+        # Ensure we check this prior to adding the class
+        has_visible_openings = self.has_visible_openings(element)
 
-        body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
+        body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body")
         opening = blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
             obj=opening_obj,
             ifc_class="IfcOpeningElement",
-            should_add_representation=True,
+            should_add_representation=not bool(existing_opening_occurrence),
             context=body_context,
         )
+
+        if existing_opening_occurrence:
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
+            )
+            representation = ifcopenshell.util.representation.get_representation(
+                existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
+            )
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            mapped_representation = ifcopenshell.api.run(
+                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            )
+        else:
+            representation = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+            mapped_representation = ifcopenshell.api.run(
+                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            )
+            ifcopenshell.api.run(
+                "geometry.unassign_representation", tool.Ifc.get(), product=opening, representation=representation
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            )
+
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
 
         representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
@@ -118,49 +153,58 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_filling(opening=opening_obj.name, obj=filling_obj.name)
 
         if not has_visible_openings:
+            # It's a little strange how we create an object just to delete it.
+            # In the future this could be streamlined.
             tool.Ifc.unlink(obj=opening_obj)
             bpy.data.objects.remove(opening_obj)
         return {"FINISHED"}
 
     def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
-        filling_type = ifcopenshell.util.element.get_type(filling)
-        if filling_type:
-            for filling_occurrence in ifcopenshell.util.element.get_types(filling_type):
-                if filling_occurrence == filling or not filling_occurence.FillsVoids:
-                    continue
-                return self.generate_opening_from_existing_filling_occurrence(filling_occurrence, filling_obj)
-
         profile = ifcopenshell.util.representation.get_representation(filling, "Model", "Profile", "ELEVATION_VIEW")
         if profile:
             return self.generate_opening_from_filling_profile(filling_obj, voided_obj, profile)
         return self.generate_opening_from_filling_box(filling_obj, voided_obj)
 
-    def generate_opening_from_existing_filling_occurrence(self, filling_occurrence, filling_obj):
-        for rel in getattr(filling_occurrence, "FillsVoids", []) or []:
-            settings = ifcopenshell.geom.settings()
+    def has_visible_openings(self, element):
+        for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+            if tool.Ifc.get_object(opening):
+                print("OPENINGS ARE VISIBLE")
+                return True
+            print("OPENINGS ARE NOTOOOTT VISIBLE")
+        return False
 
-            shape = ifcopenshell.geom.create_shape(settings, rel.RelatingOpeningElement)
-            verts = shape.geometry.verts
-            faces = shape.geometry.faces
-            grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
-            grouped_faces = [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
+    def get_existing_opening_occurrence_if_any(self, filling):
+        filling_type = ifcopenshell.util.element.get_type(filling)
+        if filling_type:
+            filling_occurrences = ifcopenshell.util.element.get_types(filling_type)
+            for filling_occurrence in filling_occurrences:
+                if filling_occurrence != filling and filling_occurrence.FillsVoids:
+                    return filling_occurrence.FillsVoids[0].RelatingOpeningElement
 
-            bm = bmesh.new()
-            bm.verts.index_update()
-            bm.faces.index_update()
-            new_verts = [bm.verts.new(v) for v in grouped_verts]
-            new_faces = [bm.faces.new((new_verts[f[0]], new_verts[f[1]], new_verts[f[2]])) for f in grouped_faces]
+    def create_object_using_element_representation(self, opening):
+        settings = ifcopenshell.geom.settings()
 
-            bm.verts.index_update()
-            bm.faces.index_update()
+        shape = ifcopenshell.geom.create_shape(settings, opening)
+        verts = shape.geometry.verts
+        faces = shape.geometry.faces
+        grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+        grouped_faces = [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
 
-            mesh = bpy.data.meshes.new(name="Opening")
-            bm.to_mesh(mesh)
-            bm.free()
+        bm = bmesh.new()
+        bm.verts.index_update()
+        bm.faces.index_update()
+        new_verts = [bm.verts.new(v) for v in grouped_verts]
+        new_faces = [bm.faces.new((new_verts[f[0]], new_verts[f[1]], new_verts[f[2]])) for f in grouped_faces]
 
-            obj = bpy.data.objects.new("Opening", mesh)
-            obj.matrix_world = filling_obj.matrix_world
-            return obj
+        bm.verts.index_update()
+        bm.faces.index_update()
+
+        mesh = bpy.data.meshes.new(name="Opening")
+        bm.to_mesh(mesh)
+        bm.free()
+
+        obj = bpy.data.objects.new("Opening", mesh)
+        return obj
 
     def generate_opening_from_filling_profile(self, filling_obj, voided_obj, profile):
         settings = ifcopenshell.geom.settings()
@@ -184,10 +228,10 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
         bmesh.ops.triangle_fill(bm, edges=bm.edges)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi, verts=bm.verts, edges=bm.edges)
 
-        bmesh.ops.translate(bm, vec=[0., -0.1, 0.], verts=bm.verts)
+        bmesh.ops.translate(bm, vec=[0.0, -0.1, 0.0], verts=bm.verts)
         extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
         extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0., voided_obj.dimensions[1] + 0.1 + 0.1, 0.], verts=extruded_verts)
+        bmesh.ops.translate(bm, vec=[0.0, voided_obj.dimensions[1] + 0.1 + 0.1, 0.0], verts=extruded_verts)
 
         mesh = bpy.data.meshes.new(name="Opening")
         bm.to_mesh(mesh)
@@ -270,7 +314,9 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
             for building_element in building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
                 if tool.Ifc.is_moved(building_obj):
-                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj)
+                    blenderbim.core.geometry.edit_object_placement(
+                        tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj
+                    )
             for opening in openings:
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 ifcopenshell.api.run(
@@ -436,17 +482,13 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
 
-        if not obj2.data or len(obj2.data.polygons) <= 4: # It takes 4 faces to create a closed solid
+        if not obj2.data or len(obj2.data.polygons) <= 4:  # It takes 4 faces to create a closed solid
             mesh_data = {"type": "IfcHalfSpaceSolid", "matrix": obj1.matrix_world.inverted() @ obj2.matrix_world}
         elif obj2.data:
             mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
 
         ifcopenshell.api.run(
-            "geometry.add_boolean",
-            tool.Ifc.get(),
-            representation=representation,
-            operator="DIFFERENCE",
-            **mesh_data
+            "geometry.add_boolean", tool.Ifc.get(), representation=representation, operator="DIFFERENCE", **mesh_data
         )
 
         tool.Model.clear_scene_openings()
@@ -648,6 +690,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
+        building_objs = set()
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -658,13 +701,20 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                        building_objs.add(obj)
+                        building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     elif tool.Ifc.is_moved(opening_obj):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
+                        building_objs.add(obj)
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
+        for obj in building_objs:
+            print('updating building obj', obj)
+            element = tool.Ifc.get_entity(obj)
+            print('element is', element)
             body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             blenderbim.core.geometry.switch_representation(
                 tool.Ifc,
@@ -676,6 +726,22 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 should_sync_changes_first=False,
             )
         return {"FINISHED"}
+
+    def get_all_building_objects_of_similar_openings(self, opening):
+        if not opening.HasFillings:
+            return []
+        results = set()
+        for rel in opening.HasFillings:
+            filling_type = ifcopenshell.util.element.get_type(rel.RelatedBuildingElement)
+            if not filling_type:
+                continue
+            for occurrence in ifcopenshell.util.element.get_types(filling_type):
+                for rel2 in occurrence.FillsVoids:
+                    for rel3 in rel2.RelatingOpeningElement.VoidsElements:
+                        obj = tool.Ifc.get_object(rel3.RelatingBuildingElement)
+                        if obj:
+                            results.add(obj)
+        return results
 
 
 class DecorationsHandler:
