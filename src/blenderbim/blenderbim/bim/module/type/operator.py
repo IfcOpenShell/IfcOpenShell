@@ -126,19 +126,13 @@ class SelectSimilarType(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         related_object = bpy.data.objects.get(self.related_object) if self.related_object else context.active_object
-        oprops = related_object.BIMObjectProperties
-        product = self.file.by_id(oprops.ifc_definition_id)
-        declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
-        if ifcopenshell.util.schema.is_a(declaration, "IfcElementType"):
-            related_objects = ifcopenshell.api.run(
-                "type.get_related_objects", self.file, **{"relating_type": self.file.by_id(oprops.ifc_definition_id)}
-            )
-        else:
-            related_objects = ifcopenshell.api.run(
-                "type.get_related_objects", self.file, **{"related_object": self.file.by_id(oprops.ifc_definition_id)}
-            )
+        relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(related_object))
+        if not relating_type:
+            return {"FINISHED"}
+        related_objects = ifcopenshell.util.element.get_types(relating_type)
         for obj in context.visible_objects:
-            if obj.BIMObjectProperties.ifc_definition_id in related_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element in related_objects:
                 obj.select_set(True)
         return {"FINISHED"}
 

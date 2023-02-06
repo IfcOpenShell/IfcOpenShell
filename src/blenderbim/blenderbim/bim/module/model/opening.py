@@ -123,10 +123,44 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
+        filling_type = ifcopenshell.util.element.get_type(filling)
+        if filling_type:
+            for filling_occurrence in ifcopenshell.util.element.get_types(filling_type):
+                if filling_occurrence == filling or not filling_occurence.FillsVoids:
+                    continue
+                return self.generate_opening_from_existing_filling_occurrence(filling_occurrence, filling_obj)
+
         profile = ifcopenshell.util.representation.get_representation(filling, "Model", "Profile", "ELEVATION_VIEW")
         if profile:
             return self.generate_opening_from_filling_profile(filling_obj, voided_obj, profile)
         return self.generate_opening_from_filling_box(filling_obj, voided_obj)
+
+    def generate_opening_from_existing_filling_occurrence(self, filling_occurrence, filling_obj):
+        for rel in getattr(filling_occurrence, "FillsVoids", []) or []:
+            settings = ifcopenshell.geom.settings()
+
+            shape = ifcopenshell.geom.create_shape(settings, rel.RelatingOpeningElement)
+            verts = shape.geometry.verts
+            faces = shape.geometry.faces
+            grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+            grouped_faces = [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
+
+            bm = bmesh.new()
+            bm.verts.index_update()
+            bm.faces.index_update()
+            new_verts = [bm.verts.new(v) for v in grouped_verts]
+            new_faces = [bm.faces.new((new_verts[f[0]], new_verts[f[1]], new_verts[f[2]])) for f in grouped_faces]
+
+            bm.verts.index_update()
+            bm.faces.index_update()
+
+            mesh = bpy.data.meshes.new(name="Opening")
+            bm.to_mesh(mesh)
+            bm.free()
+
+            obj = bpy.data.objects.new("Opening", mesh)
+            obj.matrix_world = filling_obj.matrix_world
+            return obj
 
     def generate_opening_from_filling_profile(self, filling_obj, voided_obj, profile):
         settings = ifcopenshell.geom.settings()
