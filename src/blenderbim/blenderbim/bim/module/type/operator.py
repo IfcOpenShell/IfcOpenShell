@@ -167,6 +167,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         if not body:
             return {"FINISHED"}
+        
         if template == "MESH":
             location = context.scene.cursor.location
             if context.active_object and context.selected_objects and context.active_object.data:
@@ -289,6 +290,22 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
             bpy.ops.bim.add_window()
+        elif template == "DOOR":
+            mesh = bpy.data.meshes.new("IfcDoor")
+            obj = bpy.data.objects.new("TYPEX", mesh)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class="IfcDoorType",
+                should_add_representation=False
+            )
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.objects.active = None
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.bim.add_door()
 
         elif template == "STAIR":
             mesh = bpy.data.meshes.new("IfcStairFlight")

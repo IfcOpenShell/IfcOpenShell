@@ -242,6 +242,7 @@ class BIMModelProperties(PropertyGroup):
             ("PROFILESET", "Extruded Profile", ""),
             ("EMPTY", "Non-Geometric Type", ""),
             ("WINDOW", "Window", ""),
+            ("DOOR", "Door", ""),
             ("STAIR", "Stair", ""),
         ),
         name="Type Template",
