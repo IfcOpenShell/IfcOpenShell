@@ -31,6 +31,7 @@ from datetime import datetime
 from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
+import ifcopenshell.util.sequence
 
 
 class AddWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
@@ -1002,8 +1003,8 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
         for rel in task.IsNestedBy or []:
             for related_object in rel.RelatedObjects:
                 self.preprocess_task(related_object)
-        start = helper.derive_date(task, "ScheduleStart", is_earliest=True)
-        finish = helper.derive_date(task, "ScheduleFinish", is_latest=True)
+        start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+        finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
         if not start or not finish:
             return
         products = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
