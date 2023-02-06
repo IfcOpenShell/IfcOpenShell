@@ -84,7 +84,7 @@ def update_window_modifier_representation(context):
         "geometry.add_window_representation", ifc_file, **representation_data
     )
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
-    
+
     # MODEL_VIEW representation
     ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = ifc_context
@@ -93,9 +93,8 @@ def update_window_modifier_representation(context):
     ifc_element.PartitioningType = props.window_type
 
 
-
-def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0,0,0)):
-    """`thickness` of the profile is defined as list in the following order: 
+def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0,0,0).freeze()):
+    """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`
 
     `thickness` can be also defined just as 1 float value.
@@ -159,16 +158,17 @@ def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector
     return new_verts + translate_verts
 
 
-def create_bm_box(bm, size:Vector=V(1,1,1).freeze(), position:Vector=V(0,0,0).freeze()):
+def create_bm_box(bm, size: Vector = V(1,1,1).freeze(), position: Vector = V(0,0,0).freeze()):
     """create a box of `size`, position box first vertex at `position`"""
-    box_verts = bmesh.ops.create_cube(bm, size=1)['verts']
+    box_verts = bmesh.ops.create_cube(bm, size=1)["verts"]
     bmesh.ops.translate(bm, vec=-box_verts[0].co, verts=box_verts)
     bmesh.ops.scale(bm, vec=size, verts=box_verts)
     bmesh.ops.translate(bm, vec=position, verts=box_verts)
     return box_verts
 
 
-def create_bm_window(bm,
+def create_bm_window(
+    bm,
     lining_size: Vector,
     lining_thickness,
     lining_to_panel_offset_x,
@@ -176,16 +176,13 @@ def create_bm_window(bm,
     frame_size,
     frame_thickness,
     glass_thickness,
-    position: Vector):
+    position: Vector,
+):
     # window lining
     window_lining_verts = create_bm_window_frame(bm, lining_size, lining_thickness)
 
     # window frame
-    frame_position = V(
-        lining_to_panel_offset_x,
-        lining_to_panel_offset_y_full,
-        lining_to_panel_offset_x
-    )
+    frame_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full, lining_to_panel_offset_x)
     frame_verts = create_bm_window_frame(bm, frame_size, frame_thickness, frame_position)
 
     # window glass
@@ -295,10 +292,10 @@ def update_window_modifier_bmesh(context):
             frame_size = window_lining_size.copy()
             frame_size.y = frame_depth
             frame_size = frame_size - V(lining_to_panel_offset_x * 2, 0, lining_to_panel_offset_x * 2)
-           
+
             window_position = V(accumulated_width, 0, accumulated_height[column_i])
             lining_verts, panel_verts, glass_verts = create_bm_window(
-                bm, 
+                bm,
                 window_lining_size,
                 window_lining_thickness,
                 lining_to_panel_offset_x,
@@ -306,7 +303,7 @@ def update_window_modifier_bmesh(context):
                 frame_size,
                 frame_thickness,
                 glass_thickness,
-                window_position
+                window_position,
             )
 
             built_panels.append(panel_i)
@@ -376,7 +373,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMWindowProperties
 
         if element.is_a() not in ("IfcWindow", "IfcWindowType"):
-            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType type to add a stair.")
+            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType type to add a window.")
             return {"CANCELLED"}
 
         # need to make sure all default props will have correct units

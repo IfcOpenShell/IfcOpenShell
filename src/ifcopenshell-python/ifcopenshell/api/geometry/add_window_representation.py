@@ -41,12 +41,9 @@ DEFAULT_PANEL_SCHEMAS = {
     "TRIPLE_PANEL_VERTICAL":   [[0, 1, 2]],
 }
 
-def create_ifc_window_frame_simple(
-    builder,
-    size: Vector, 
-    thickness: Vector, 
-    position: Vector = V(0,0,0)):
-    """`thickness` of the profile is defined as list in the following order: 
+
+def create_ifc_window_frame_simple(builder, size: Vector, thickness: Vector, position: Vector = V(0,0,0).freeze()):
+    """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`
 
     `thickness` can be also defined just as 1 float value.
@@ -59,20 +56,13 @@ def create_ifc_window_frame_simple(
 
     panel_rect = builder.rectangle(size=size*V(1,0,1))
 
-    inner_rect_size = size - V(th_left+th_right, 0, th_bottom+th_up)
-    inner_rect = builder.rectangle(
-        size=inner_rect_size*V(1, 0, 1),
-        position=V(th_left, 0, th_bottom)
-    )
+    inner_rect_size = size - V(th_left + th_right, 0, th_bottom + th_up)
+    inner_rect = builder.rectangle(size=inner_rect_size * V(1, 0, 1), position=V(th_left, 0, th_bottom))
 
     panel_profile = builder.profile(panel_rect, inner_curves=inner_rect)
-    panel_extruded = builder.extrude(
-        panel_profile, 
-        size.y, 
-        extrusion_vector=V(0, 1, 0), 
-        position=position
-    )
+    panel_extruded = builder.extrude(panel_profile, size.y, extrusion_vector=V(0, 1, 0), position=position)
     return panel_extruded
+
 
 def create_ifc_window(
     builder,
@@ -83,8 +73,8 @@ def create_ifc_window(
     frame_size,
     frame_thickness,
     glass_thickness,
-    position: Vector):
-
+    position: Vector,
+):
     lining_items = []
     main_lining_size = lining_size
 
@@ -102,28 +92,21 @@ def create_ifc_window(
         second_lining_position = V(0, lining_to_panel_offset_y_full, 0)
         second_lining_thickness = [min(th, lining_to_panel_offset_x) for th in lining_thickness]
 
-        second_lining = create_ifc_window_frame_simple(builder, 
-                                                       second_lining_size, 
-                                                       second_lining_thickness, 
-                                                       second_lining_position)
+        second_lining = create_ifc_window_frame_simple(
+            builder, second_lining_size, second_lining_thickness, second_lining_position
+        )
         lining_items.append(second_lining)
 
     main_lining = create_ifc_window_frame_simple(builder, main_lining_size, lining_thickness)
     lining_items.append(main_lining)
 
-    frame_position = V(
-        lining_to_panel_offset_x, 
-        lining_to_panel_offset_y_full, 
-        lining_to_panel_offset_x
-    )
+    frame_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full, lining_to_panel_offset_x)
 
     frame_extruded = create_ifc_window_frame_simple(builder, frame_size, frame_thickness, frame_position)
 
     glass_position = frame_position + V(0, frame_size.y / 2 - glass_thickness / 2, 0)
     glass_rect = builder.deep_copy(frame_extruded.SweptArea.InnerCurves[0])
-    glass = builder.extrude(
-        glass_rect, glass_thickness, extrusion_vector=V(0, 1, 0), position=glass_position
-    )
+    glass = builder.extrude(glass_rect, glass_thickness, extrusion_vector=V(0, 1, 0), position=glass_position)
 
     output_items = [lining_items, [frame_extruded], [glass]]
     builder.translate(chain(*output_items), position)
@@ -211,7 +194,6 @@ class Usecase:
         built_panels = []
         window_items = []
 
-
         lining_props = self.settings["lining_properties"]
         lining_thickness = lining_props["LiningThickness"]
         lining_depth = lining_props["LiningDepth"]
@@ -295,7 +277,7 @@ class Usecase:
 
                 # create window panel
                 current_window_items = create_ifc_window(
-                    builder, 
+                    builder,
                     window_lining_size,
                     window_lining_thickness,
                     lining_to_panel_offset_x,
@@ -303,7 +285,7 @@ class Usecase:
                     frame_size,
                     frame_thickness,
                     glass_thickness,
-                    window_panel_position
+                    window_panel_position,
                 )
                 built_panels.append(panel_i)
                 window_items.extend(chain(*current_window_items))

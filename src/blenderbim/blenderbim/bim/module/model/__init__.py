@@ -33,7 +33,7 @@ from . import (
     workspace,
     profile,
     sverchok_modifier,
-    door
+    door,
 )
 
 classes = (
