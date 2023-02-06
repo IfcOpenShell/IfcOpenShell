@@ -59,3 +59,9 @@ def get_representation(element, context, subcontext=None, target_view=None):
         for r in element.RepresentationMaps:
             if is_representation_of_context(r.MappedRepresentation, context, subcontext, target_view):
                 return r.MappedRepresentation
+
+
+def resolve_representation(representation):
+    if representation.Items and representation.Items[0].is_a("IfcMappedItem"):
+        return resolve_representation(representation.Items[0].MappingSource.MappedRepresentation)
+    return representation
