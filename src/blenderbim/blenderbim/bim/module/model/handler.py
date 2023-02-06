@@ -93,3 +93,9 @@ def load_post(*args):
         "BlenderBIM.DumbProfile.RegenerateFromType",
         profile.DumbProfileRegenerator().regenerate_from_type,
     )
+
+    ifcopenshell.api.add_post_listener(
+        "type.assign_type",
+        "BlenderBIM.Opening.RegenerateFromType",
+        opening.FilledOpeningGenerator().regenerate_from_type,
+    )
