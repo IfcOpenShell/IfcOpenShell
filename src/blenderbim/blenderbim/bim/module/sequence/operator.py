@@ -105,7 +105,6 @@ class AssignWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.assign_work_schedule(
             tool.Ifc,
-            tool.Sequence,
             work_plan=tool.Ifc.get().by_id(self.work_plan),
             work_schedule=tool.Ifc.get().by_id(self.work_schedule),
         )
@@ -121,7 +120,6 @@ class UnassignWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.unassign_work_schedule(
             tool.Ifc,
-            work_plan=tool.Ifc.get().by_id(self.work_plan),
             work_schedule=tool.Ifc.get().by_id(self.work_schedule),
         )
 
