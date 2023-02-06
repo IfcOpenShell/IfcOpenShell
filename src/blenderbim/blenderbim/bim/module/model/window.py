@@ -453,10 +453,6 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Ifc.get().by_id(pset["id"])
         window_data = json.dumps(window_data, default=list)
-        # TODO: debug two types of data in
-        # from blenderbim.bim.module.model.data import WindowData
-        # WindowData.data['parameters'].keys()
-        # same thing could go for both stairs and arrays
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": window_data})
         return {"FINISHED"}
 
