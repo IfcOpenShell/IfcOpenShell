@@ -148,3 +148,26 @@ Scenario: Select type objects
     When the object "IfcWallType/Empty" is selected
     And I press "bim.select_type_objects"
     Then the object "IfcWall/Cube" is selected
+
+Scenario: Select similar type
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube.001')"
+    When the object "IfcWall/Cube" is selected
+    And I press "bim.select_similar_type"
+    Then the object "IfcWall/Cube" is selected
+    And the object "IfcWall/Cube.001" is selected
