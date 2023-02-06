@@ -31,6 +31,7 @@ import blenderbim.tool as tool
 import blenderbim.core.geometry as core
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.model.helper import get_ifc_context_or_create, replace_ifc_representation_for_object
 
 from mathutils import Vector
 from pprint import pprint
@@ -75,54 +76,18 @@ def update_window_modifier_representation(context):
         representation_data["panel_properties"].append(panel_data)
 
     # ELEVATION_VIEW representation
-    ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
-    if not ifc_context:
-        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
-        ifc_context = ifcopenshell.api.run(
-            "context.add_context",
-            ifc_file,
-            context_type="Model",
-            context_identifier="Profile",
-            target_view="ELEVATION_VIEW",
-            parent=model_context,
-        )
-
+    ifc_context = get_ifc_context_or_create(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
     representation_data["context"] = ifc_context
     elevation_representation = ifcopenshell.api.run(
         "geometry.add_window_representation", ifc_file, **representation_data
     )
-    replace_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
+    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
 
     # MODEL_VIEW representation
     ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = ifc_context
     model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
-    replace_representation_for_object(ifc_file, ifc_context, obj, model_representation)
-
-
-def replace_representation_for_object(ifc_file, ifc_context, obj, new_representation):
-    ifc_element = tool.Ifc.get_entity(obj)
-    old_representation = ifcopenshell.util.representation.get_representation(
-        ifc_element, ifc_context.ContextType, ifc_context.ContextIdentifier, ifc_context.TargetView
-    )
-
-    if old_representation:
-        for inverse in ifc_file.get_inverse(old_representation):
-            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-        core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
-    else:
-        ifcopenshell.api.run(
-            "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
-        )
-    core.switch_representation(
-        tool.Ifc,
-        tool.Geometry,
-        obj=obj,
-        representation=new_representation,
-        should_reload=True,
-        is_global=False,
-        should_sync_changes_first=True,
-    )
+    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, model_representation)
 
 
 def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0,0,0)):
