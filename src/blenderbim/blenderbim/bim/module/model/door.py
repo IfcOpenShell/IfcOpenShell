@@ -85,17 +85,29 @@ def update_door_modifier_representation(context):
     elevation_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
 
-    # PLAN_VIEW representation
-    ifc_context = get_ifc_context_or_create(ifc_file, "Plan", "Body", "PLAN_VIEW")
-    representation_data["context"] = ifc_context
-    elevation_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
-
     # MODEL_VIEW representation
     ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = ifc_context
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, model_representation)
+    
+    # PLAN_VIEW representation
+    ifc_context = get_ifc_context_or_create(ifc_file, "Plan", "Body", "PLAN_VIEW")
+    representation_data["context"] = ifc_context
+    plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
+    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, plan_representation)
+
+    # adding switch representation at the end instead of changing order of representations
+    # to prevent #2744
+    core.switch_representation(
+        tool.Ifc,
+        tool.Geometry,
+        obj=obj,
+        representation=model_representation,
+        should_reload=True,
+        is_global=False,
+        should_sync_changes_first=True,
+    )
 
     ifc_element.OperationType = props.door_type
 
