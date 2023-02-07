@@ -86,7 +86,7 @@ def update_door_modifier_representation(context):
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
 
     # PLAN_VIEW representation
-    ifc_context = get_ifc_context_or_create(ifc_file, "Plan", "Annotation", "PLAN_VIEW")
+    ifc_context = get_ifc_context_or_create(ifc_file, "Plan", "Body", "PLAN_VIEW")
     representation_data["context"] = ifc_context
     elevation_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
