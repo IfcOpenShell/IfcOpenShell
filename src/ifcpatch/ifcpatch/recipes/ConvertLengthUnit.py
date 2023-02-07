@@ -72,9 +72,11 @@ class Patcher:
         for element in self.file:
             self.file_patched.add(element)
 
-        new_length = [u for u in unit_assignment.Units if u.UnitType == "LENGTHUNIT"][0]
+        new_length = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == "LENGTHUNIT"][0]
         old_length = [
-            u for u in self.file_patched.by_type("IfcProject")[1].UnitsInContext.Units if u.UnitType == "LENGTHUNIT"
+            u
+            for u in self.file_patched.by_type("IfcProject")[1].UnitsInContext.Units
+            if getattr(u, "UnitType", None) == "LENGTHUNIT"
         ][0]
 
         for inverse in self.file_patched.get_inverse(old_length):
