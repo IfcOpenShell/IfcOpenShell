@@ -162,7 +162,7 @@ class BimToolUI:
 
     @classmethod
     def draw_edit_object_interface(cls, context):
-        if AuthoringData.data["active_class"] in ("IfcWall", "IfcWallStandardCase"):
+        if AuthoringData.data["active_material_usage"] == "LAYER2":
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="extrusion_depth", text="Height")
             op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
@@ -215,7 +215,7 @@ class BimToolUI:
             row.label(text="", icon="EVENT_G")
             row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
-        elif AuthoringData.data["active_class"] in ("IfcSlab", "IfcSlabStandardCase", "IfcRamp", "IfcRoof"):
+        elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if context.active_object.mode == "OBJECT":
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
@@ -226,14 +226,7 @@ class BimToolUI:
             row.prop(data=cls.props, property="x_angle", text="X Angle")
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
-        elif AuthoringData.data["active_class"] in (
-            "IfcColumn",
-            "IfcColumnStandardCase",
-            "IfcBeam",
-            "IfcBeamStandardCase",
-            "IfcMember",
-            "IfcMemberStandardCase",
-        ):
+        elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
             op = row.operator("bim.change_cardinal_point", icon="FILE_REFRESH", text="")
@@ -343,9 +336,6 @@ class BimToolUI:
         cls.draw_type_selection_interface()
 
         if AuthoringData.data["ifc_classes"]:
-            # row = cls.layout.row()
-            # row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
-
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
@@ -418,9 +408,17 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         self.has_ifc_class = True
 
         self.active_class = None
+        self.active_material_usage = None
         element = tool.Ifc.get_entity(context.active_object)
         if element:
             self.active_class = element.is_a()
+
+            material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+            if material:
+                if material.is_a("IfcMaterialLayerSetUsage"):
+                    self.active_material_usage = f"LAYER{material.LayerSetDirection[-1]}"
+                elif material.is_a("IfcMaterialProfileSetUsage"):
+                    self.active_material_usage = "PROFILE"
 
         try:
             self.has_ifc_class = bool(self.props.ifc_class)
@@ -451,7 +449,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_constr_type_instance()
 
     def hotkey_S_C(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.align_wall(align_type="CENTERLINE")
         else:
             bpy.ops.bim.align_product(align_type="CENTERLINE")
@@ -459,50 +457,36 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_E(self):
         if not bpy.context.selected_objects:
             return
-        elif self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        elif self.active_material_usage == "LAYER2":
             bpy.ops.bim.join_wall(join_type="T")
-        elif self.active_class in ("IfcSlab", "IfcSlabStandardCase", "IfcRamp", "IfcRoof"):
+        elif self.active_material_usage == "LAYER3":
             if not bpy.context.active_object:
                 pass
             elif bpy.context.active_object.mode == "OBJECT":
                 bpy.ops.bim.enable_editing_extrusion_profile()
-        elif self.active_class in (
-            "IfcColumn",
-            "IfcColumnStandardCase",
-            "IfcBeam",
-            "IfcBeamStandardCase",
-            "IfcMember",
-            "IfcMemberStandardCase",
-        ):
+        elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="T")
 
     def hotkey_S_F(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.flip_wall()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.flip_fill()
 
     def hotkey_S_G(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.recalculate_wall()
-        elif self.active_class in (
-            "IfcColumn",
-            "IfcColumnStandardCase",
-            "IfcBeam",
-            "IfcBeamStandardCase",
-            "IfcMember",
-            "IfcMemberStandardCase",
-        ):
+        elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.recalculate_profile()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.recalculate_fill()
 
     def hotkey_S_M(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.merge_wall()
 
     def hotkey_S_R(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.rotate_90(axis="Z")
         elif self.active_class in ("IfcColumn", "IfcColumnStandardCase"):
             bpy.ops.bim.rotate_90(axis="Z")
@@ -510,46 +494,32 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.rotate_90(axis="Y")
 
     def hotkey_S_K(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.split_wall()
 
     def hotkey_S_T(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.join_wall(join_type="L")
-        elif self.active_class in (
-            "IfcColumn",
-            "IfcColumnStandardCase",
-            "IfcBeam",
-            "IfcBeamStandardCase",
-            "IfcMember",
-            "IfcMemberStandardCase",
-        ):
+        elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="L")
 
     def hotkey_S_V(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.align_wall(align_type="INTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="POSITIVE")
 
     def hotkey_S_X(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             if bpy.ops.bim.align_wall.poll():
                 bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
 
     def hotkey_S_Y(self):
-        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
+        if self.active_material_usage == "LAYER2":
             bpy.ops.bim.join_wall(join_type="V")
-        elif self.active_class in (
-            "IfcColumn",
-            "IfcColumnStandardCase",
-            "IfcBeam",
-            "IfcBeamStandardCase",
-            "IfcMember",
-            "IfcMemberStandardCase",
-        ):
+        elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")
 
     def hotkey_S_O(self):

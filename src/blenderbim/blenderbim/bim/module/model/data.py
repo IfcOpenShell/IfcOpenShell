@@ -61,6 +61,7 @@ class AuthoringData:
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["active_class"] = cls.active_class()
+        cls.data["active_material_usage"] = cls.active_material_usage()
 
     @classmethod
     def type_class(cls):
@@ -170,6 +171,17 @@ class AuthoringData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if element:
             return element.is_a()
+
+    @classmethod
+    def active_material_usage(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+            if material:
+                if material.is_a("IfcMaterialLayerSetUsage"):
+                    return f"LAYER{material.LayerSetDirection[-1]}"
+                elif material.is_a("IfcMaterialProfileSetUsage"):
+                    return "PROFILE"
 
     @classmethod
     def ifc_classes(cls):
