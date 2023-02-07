@@ -187,14 +187,18 @@ class AddConstrTypeInstance(bpy.types.Operator):
             else:
                 layer_set_direction = "AXIS2"
 
+        obj = None
         if layer_set_direction == "AXIS3":
-            if slab.DumbSlabGenerator(relating_type).generate(link_to_scene=link_to_scene):
-                return True
+            obj = slab.DumbSlabGenerator(relating_type).generate(link_to_scene=link_to_scene)
         elif layer_set_direction == "AXIS2":
-            if wall.DumbWallGenerator(relating_type).generate(link_to_scene=link_to_scene):
-                return True
+            obj = wall.DumbWallGenerator(relating_type).generate(link_to_scene=link_to_scene)
         else:
             pass  # Dumb block generator? Eh? :)
+
+        if obj:
+            material = ifcopenshell.util.element.get_material(tool.Ifc.get_entity(obj))
+            material.LayerSetDirection = layer_set_direction
+            return True
 
 
 class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
@@ -336,12 +340,12 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
         # Large projects have hundreds of types which can lead to unnecessary lag.
         queue = sorted(tool.Ifc.get().by_type(self.ifc_class), key=lambda e: e.Name or "Unnamed")
         if self.limit:
-            queue = queue[self.offset:self.offset + self.limit]
+            queue = queue[self.offset : self.offset + self.limit]
         else:
             offset = 9 * (props.type_page - 1)
             if offset < 0:
                 offset = 0
-            queue = queue[offset:offset + 9]
+            queue = queue[offset : offset + 9]
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -389,7 +393,19 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
 
                     height = 100
 
+                    is_horizontal = False
                     if element.is_a("IfcSlabType"):
+                        is_horizontal = True
+
+                    parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
+                    if parametric:
+                        layer_set_direction = parametric.get("LayerSetDirection", None)
+                        if layer_set_direction == "AXIS2":
+                            is_horizontal = False
+                        elif layer_set_direction == "AXIS3":
+                            is_horizontal = True
+
+                    if is_horizontal:
                         width, height = height, width
 
                     x_offset = (size / 2) - (width / 2)
@@ -529,7 +545,6 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
         obj.data.materials.append(IfcStore.get_element(material[0].id()))
 
 
-
 def ensure_material_unassigned(usecase_path, ifc_file, settings):
     elements = [settings["product"]]
     if elements[0].is_a("IfcElementType"):
@@ -551,5 +566,5 @@ def ensure_material_unassigned(usecase_path, ifc_file, settings):
         total_removed = 0
         for i in to_remove:
             obj.active_material_index = i - total_removed
-            bpy.ops.object.material_slot_remove({'object': obj})
+            bpy.ops.object.material_slot_remove({"object": obj})
             total_removed += 1

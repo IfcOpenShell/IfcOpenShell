@@ -184,7 +184,10 @@ class ObjectMaterialData:
             for item in items or []:
                 data = {"id": item.id(), "name": getattr(item, "Name", None) or "Unnamed", "icon": icon}
                 if item.is_a("IfcMaterialProfile") and not item.Name:
-                    data["name"] = item.Profile.ProfileName or "Unnamed"
+                    if item.Profile:
+                        data["name"] = item.Profile.ProfileName or "Unnamed"
+                    else:
+                        data["name"] = "No Profile"
                 if item.is_a("IfcMaterialLayer"):
                     data["name"] += f" ({item.LayerThickness})"
                 if not item.is_a("IfcMaterialList"):
