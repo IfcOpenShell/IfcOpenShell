@@ -24,7 +24,7 @@ from mathutils import Vector
 import collections
 
 
-def create_ifc_door_lining_items(
+def create_ifc_door_lining(
     builder: ShapeBuilder, size: Vector, thickness: Vector, position: Vector = V(0,0,0).freeze()
 ):
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
@@ -36,15 +36,22 @@ def create_ifc_door_lining_items(
 
     th_side, th_up = thickness
 
-    left_lining = builder.rectangle(V(th_side, 0, size.z))
-    right_lining = builder.translate(left_lining, V(size.x-th_side, 0, 0), create_copy=True)
-    top_lining = builder.rectangle(V(size.x, 0, th_up), V(0, 0, size.z-th_up))
-    items = [left_lining, right_lining, top_lining]
+    points = [
+        V(0.0, 0.0, 0.0),
+        V(0.0, 0.0, size.z),
+        V(size.x, 0.0, size.z),
+        V(size.x, 0.0, 0.0),
+        V(size.x - th_side, 0.0, 0.0),
+        V(size.x - th_side, 0.0, size.z-th_up),
+        V(th_side, 0.0, size.z-th_up),
+        V(th_side, 0.0, 0.0),
+    ]
 
-    items = [builder.extrude(l, size.y, extrusion_vector=V(0,1,0)) for l in items]
-    builder.translate(items, position)
+    door_lining = builder.polyline(points, closed=True)
+    door_lining = builder.extrude(door_lining, size.y, extrusion_vector=V(0,1,0))
+    builder.translate(door_lining, position)
 
-    return items
+    return door_lining
 
 
 def create_ifc_box(builder: ShapeBuilder, size: Vector, position: Vector = V(0,0,0).freeze()):
@@ -243,13 +250,13 @@ class Usecase:
             second_lining_position = V(0, lining_to_panel_offset_y_full, 0)
             second_lining_thickness = [min(th, lining_to_panel_offset_x) for th in lining_thickness]
 
-            second_lining = create_ifc_door_lining_items(
+            second_lining = create_ifc_door_lining(
                 builder, second_lining_size, second_lining_thickness, second_lining_position
             )
-            lining_items.extend(second_lining)
+            lining_items.append(second_lining)
 
-        main_lining = create_ifc_door_lining_items(builder, main_lining_size, lining_thickness)
-        lining_items.extend(main_lining)
+        main_lining = create_ifc_door_lining(builder, main_lining_size, lining_thickness)
+        lining_items.append(main_lining)
 
         # add threshold
         if not threshold_thickness:
@@ -265,18 +272,18 @@ class Usecase:
             casing_wall_overlap = max(casing_thickness - lining_thickness_default, 0)
             casing_size = V(overall_width + casing_wall_overlap*2, casing_depth, overall_height + casing_wall_overlap)
             casing_position = V(-casing_wall_overlap, -casing_depth, 0)
-            outer_casing_items = create_ifc_door_lining_items(builder, casing_size, casing_thickness, casing_position)
-            casing_items.extend(outer_casing_items)
+            outer_casing = create_ifc_door_lining(builder, casing_size, casing_thickness, casing_position)
+            casing_items.append(outer_casing)
 
             inner_casing_thickness = [
                 casing_thickness - panel_lining_overlap_x,
                 casing_thickness - panel_top_lining_overlap_x,
             ]
             inner_casing_position = V(-casing_wall_overlap, lining_depth, 0)
-            inner_casing_items = create_ifc_door_lining_items(
+            inner_casing = create_ifc_door_lining(
                 builder, casing_size, inner_casing_thickness, inner_casing_position
             )
-            casing_items.extend(inner_casing_items)
+            casing_items.append(inner_casing)
 
         # add door panel
         panel_size = V(panel_width, panel_depth, panel_height)
@@ -309,8 +316,9 @@ class Usecase:
         lining_offset_items = lining_items + panel_items + window_lining_items + frame_items + glass_items
         builder.translate(lining_offset_items, V(0, lining_offset, 0))
 
-        ouput_items = lining_offset_items + threshold_items + casing_items
-        representation = builder.get_representation(self.settings["context"], ouput_items)
+        output_items = lining_offset_items + threshold_items + casing_items
+
+        representation = builder.get_representation(self.settings["context"], output_items)
         return representation
 
     def convert_si_to_unit(self, value):
