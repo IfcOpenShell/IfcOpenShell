@@ -1,6 +1,18 @@
 @drawing
 Feature: Drawing
 
+Scenario: Duplicate drawing
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the variable "wall1" is "IfcStore.get_file().by_type('IfcWall')[-1].id()"
+    And I press "bim.add_drawing"
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    When I press "bim.duplicate_drawing(drawing={drawing})"
+    Then nothing happens
+
 Scenario: Create drawing
     Given an empty IFC project
     And I add a cube
@@ -12,7 +24,7 @@ Scenario: Create drawing
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     And I set "scene.DocProperties.active_drawing_index" to "0"
     And I press "bim.activate_view(drawing={drawing})"
-    And I press "bim.create_drawing"
+    When I press "bim.create_drawing"
     Then nothing happens
 
 Scenario: Create drawing after deleting a duplicated object
@@ -33,5 +45,5 @@ Scenario: Create drawing after deleting a duplicated object
     And I press "bim.create_drawing"
     And the object "IfcWall/Cube" is selected
     And I press "object.delete(use_global=False)"
-    And I press "bim.create_drawing"
+    When I press "bim.create_drawing"
     Then nothing happens

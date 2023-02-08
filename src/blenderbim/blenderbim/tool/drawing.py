@@ -37,6 +37,12 @@ import blenderbim.bim.module.drawing.helper as helper
 
 class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
+    def copy_drawing_representation(cls, source, dest):
+        dest.Representation = ifcopenshell.util.element.copy_deep(
+            tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"]
+        )
+
+    @classmethod
     def create_annotation_object(cls, drawing, object_type):
         data_type = {
             "ANGLE": "curve",
@@ -409,6 +415,10 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def set_drawing_collection_name(cls, group, collection):
         collection.name = f"IfcGroup/{group.Name}"
+
+    @classmethod
+    def set_name(cls, element, name):
+        element.Name = name
 
     @classmethod
     def show_decorations(cls):

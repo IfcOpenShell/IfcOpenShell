@@ -198,3 +198,11 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert element2.ConnectedFrom
         assert not new.ConnectedTo
         assert not new.ConnectedFrom
+
+    def test_maintaining_group_relationships(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        group = ifcopenshell.api.run("group.add_group", self.file)
+        ifcopenshell.api.run("group.assign_group", self.file, group=group, products=[element])
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
+        assert len(self.file.by_type("IfcRelAssignsToGroup")) == 1
+        assert new.HasAssignments[0].RelatingGroup == group

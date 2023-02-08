@@ -37,6 +37,7 @@ class Usecase:
         * Voids are duplicated too
         * The copy will have the same material as the original. Parametric
           material set usages will be copied.
+        * The copy will be part of the same groups as the original.
 
         Be warned that:
 
