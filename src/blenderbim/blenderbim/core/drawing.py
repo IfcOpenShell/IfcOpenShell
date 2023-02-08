@@ -181,12 +181,18 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None):
 
 
 def remove_drawing(ifc, drawing_tool, drawing=None):
-    collection = drawing_tool.get_drawing_collection(drawing)
     group = drawing_tool.get_drawing_group(drawing)
     if group:
         drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
         ifc.run("group.remove_group", group=group)
-    drawing_tool.delete_collection(collection)
+    collection = drawing_tool.get_drawing_collection(drawing)
+    if collection:
+        drawing_tool.delete_collection(collection)
+    for reference in drawing_tool.get_drawing_references(drawing):
+        reference_obj = ifc.get_object(reference)
+        if reference_obj:
+            drawing_tool.delete_object(reference_obj)
+        ifc.run("root.remove_product", product=reference)
     ifc.run("root.remove_product", product=drawing)
     drawing_tool.import_drawings()
 
