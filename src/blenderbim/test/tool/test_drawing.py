@@ -32,13 +32,13 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Drawing)
 
 
-class TestCopyDrawingRepresentation(NewFile):
+class TestCopyRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         source = ifc.createIfcAnnotation(Representation=ifc.createIfcProductDefinitionShape())
         dest = ifc.createIfcAnnotation()
-        subject.copy_drawing_representation(source, dest)
+        subject.copy_representation(source, dest)
         assert dest.Representation.is_a("IfcProductDefinitionShape")
 
 

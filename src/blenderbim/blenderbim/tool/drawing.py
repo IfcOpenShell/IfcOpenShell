@@ -39,10 +39,11 @@ from blenderbim.bim.module.drawing.prop import get_diagram_scales
 
 class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
-    def copy_drawing_representation(cls, source, dest):
-        dest.Representation = ifcopenshell.util.element.copy_deep(
-            tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"]
-        )
+    def copy_representation(cls, source, dest):
+        if source.Representation:
+            dest.Representation = ifcopenshell.util.element.copy_deep(
+                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"]
+            )
 
     @classmethod
     def create_annotation_object(cls, drawing, object_type):

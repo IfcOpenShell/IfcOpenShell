@@ -167,15 +167,24 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     drawing.import_drawings()
 
 
-def duplicate_drawing(ifc, drawing_tool, drawing=None):
+def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotations=False):
     drawing_name = drawing_tool.ensure_unique_drawing_name(drawing_tool.get_name(drawing))
     new_drawing = ifc.run("root.copy_class", product=drawing)
-    drawing_tool.copy_drawing_representation(drawing, new_drawing)
+    drawing_tool.copy_representation(drawing, new_drawing)
     drawing_tool.set_name(new_drawing, drawing_name)
-    ifc.run("group.unassign_group", group=drawing_tool.get_drawing_group(new_drawing), product=new_drawing)
-    group = ifc.run("group.add_group")
-    ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
-    ifc.run("group.assign_group", group=group, products=[new_drawing])
+    group = drawing_tool.get_drawing_group(new_drawing)
+    ifc.run("group.unassign_group", group=group, product=new_drawing)
+    new_group = ifc.run("group.add_group")
+    ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
+    ifc.run("group.assign_group", group=new_group, products=[new_drawing])
+    if should_duplicate_annotations:
+        for annotation in drawing_tool.get_group_elements(group):
+            if annotation == drawing:
+                continue
+            new_annotation = ifc.run("root.copy_class", product=annotation)
+            drawing_tool.copy_representation(annotation, new_annotation)
+            ifc.run("group.unassign_group", group=group, product=new_annotation)
+            ifc.run("group.assign_group", group=new_group, products=[new_annotation])
     drawing_tool.import_drawings()
     return new_drawing
 
