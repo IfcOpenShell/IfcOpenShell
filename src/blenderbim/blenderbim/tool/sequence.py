@@ -35,6 +35,7 @@ from datetime import datetime
 import mathutils
 import pystache
 import webbrowser
+from datetime import timedelta
 
 
 class Sequence(blenderbim.core.tool.Sequence):
@@ -429,12 +430,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_task_inputs(cls, task):
-        inputs = []
-        for rel in task.OperatesOn:
-            for object in rel.RelatedObjects:
-                if object.is_a("IfcProduct"):
-                    inputs.append(object)
-        return inputs
+        return ifcopenshell.util.sequence.get_task_inputs(task)
 
     @classmethod
     def load_task_inputs(cls, inputs):
@@ -742,17 +738,17 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.sort_column = column
 
     @classmethod
-    def find_related_input_tasks(cls, object):
+    def find_related_input_tasks(cls, product):
         related_tasks = []
-        for assignment in object.HasAssignments:
+        for assignment in product.HasAssignments:
             if assignment.is_a("IfcRelAssignsToProcess") and assignment.RelatingProcess.is_a("IfcTask"):
                 related_tasks.append(assignment.RelatingProcess)
         return related_tasks
 
     @classmethod
-    def find_related_output_tasks(cls, object):
+    def find_related_output_tasks(cls, product):
         related_tasks = []
-        for reference in object.ReferencedBy:
+        for reference in product.ReferencedBy:
             if reference.is_a("IfcRelAssignsToProduct") and reference.RelatedObjects[0].is_a("IfcTask"):
                 related_tasks.append(reference.RelatedObjects[0])
         return related_tasks
@@ -1105,6 +1101,110 @@ class Sequence(blenderbim.core.tool.Sequence):
         bpy.context.scene.BIMAnimationProperties.is_editing = False
 
     @classmethod
+    def get_start_date(cls):
+        start = parser.parse(bpy.context.scene.BIMWorkScheduleProperties.visualisation_start, dayfirst=True, fuzzy=True)
+        return start if start else None
+
+    @classmethod
+    def get_finish_date(cls):
+        finish = parser.parse(
+            bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish, dayfirst=True, fuzzy=True
+        )
+        return finish if finish else None
+
+    @classmethod
+    def process_construction_state(cls, work_schedule, date):
+        cls.to_build = set()
+        cls.in_construction = set()
+        cls.completed = set()
+        cls.to_demolish = set()
+        cls.in_demolition = set()
+        cls.demolished = set()
+        for rel in work_schedule.Controls or []:
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcTask"):
+                    cls.process_task_status(related_object, date)
+        return {
+            "TO_BUILD": cls.to_build,
+            "IN_CONSTRUCTION": cls.in_construction,
+            "COMPLETED": cls.completed,
+            "TO_DEMOLISH": cls.to_demolish,
+            "IN_DEMOLITION": cls.in_demolition,
+            "DEMOLISHED": cls.demolished,
+        }
+
+    @classmethod
+    def process_task_status(cls, task, date):
+        for rel in task.IsNestedBy or []:
+            [cls.process_task_status(related_object, date) for related_object in rel.RelatedObjects]
+        start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+        finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
+        if not start or not finish:
+            return
+        outputs = ifcopenshell.util.sequence.get_task_outputs(task) or []
+        inputs = cls.get_task_inputs(task) or []
+        if date < start:
+            [cls.to_build.add(tool.Ifc.get_object(output)) for output in outputs]
+            [cls.to_demolish.add(tool.Ifc.get_object(input)) for input in inputs]
+        elif date < finish:
+            [cls.in_construction.add(tool.Ifc.get_object(output)) for output in outputs]
+            [cls.in_demolition.add(tool.Ifc.get_object(input)) for input in inputs]
+        else:
+            [cls.completed.add(tool.Ifc.get_object(output)) for output in outputs]
+            [cls.demolished.add(tool.Ifc.get_object(input)) for input in inputs]
+
+    @classmethod
+    def show_snapshot(cls, product_states):
+        print(product_states)
+        bpy.context.scene.frame_start = 1
+        bpy.context.scene.frame_end = 2
+        for obj in bpy.data.objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.hide_viewport = False
+            obj.hide_render = False
+
+        for obj in cls.to_build:
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=1)
+            obj.keyframe_insert(data_path="hide_render", frame=1)
+
+        for obj in cls.in_construction:
+            obj.color = (1.0, 0.7, 0.0, 1)
+            obj.keyframe_insert(data_path="color", frame=1)
+
+        for obj in cls.completed:
+            obj.color = (0.0, 1.0, 0.0, 1)
+            obj.keyframe_insert(data_path="color", frame=1)
+
+        for obj in cls.to_demolish:
+            if obj in cls.to_build:
+                continue
+            elif obj.animation_data:
+                obj.animation_data_clear()
+            obj.hide_viewport = False
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="hide_viewport", frame=1)
+            obj.keyframe_insert(data_path="hide_render", frame=1)
+        for obj in cls.in_demolition:
+            obj.color = (1.0, 0.0, 0.0, 1)
+            obj.keyframe_insert(data_path="color", frame=1)
+        for obj in cls.demolished:
+            if obj.animation_data:
+                obj.animation_data_clear()
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=1)
+            obj.keyframe_insert(data_path="hide_render", frame=1)
+
+    @classmethod
+    def set_object_shading(cls):
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area.spaces[0].shading.color_type = "OBJECT"
+
+    @classmethod
     def get_animation_settings(cls):
         def calculate_total_frames(fps):
             if props.speed_types == "FRAME_SPEED":
@@ -1143,8 +1243,9 @@ class Sequence(blenderbim.core.tool.Sequence):
         props = bpy.context.scene.BIMWorkScheduleProperties
         if not (props.visualisation_start and props.visualisation_finish):
             return
-        start = parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
-        finish = parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
+
+        start = cls.get_start_date()
+        finish = cls.get_finish_date()
         duration = finish - start
         start_frame = 1
         total_frames = calculate_total_frames(bpy.context.scene.render.fps)
@@ -1192,34 +1293,45 @@ class Sequence(blenderbim.core.tool.Sequence):
         return product_frames
 
     @classmethod
-    def animate_objects(cls, settings, frames):
+    def clear_object_animation(cls, obj):
+        if obj.animation_data:
+            obj.animation_data_clear()
+            print("Cleared animation for", obj.name)
+
+    @classmethod
+    def clear_objects_animation(cls, include_blender_objects=True):
+        for obj in bpy.data.objects:
+            if not include_blender_objects and not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            cls.clear_object_animation(obj)
+            if not obj.visible_get():
+                obj.hide_viewport = False
+                obj.hide_render = False
+
+    @classmethod
+    def animate_objects(cls, settings, frames, clear_previous=True, animation_type=""):
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            if obj.animation_data:
-                obj.animation_data_clear()
+            if clear_previous:
+                cls.clear_object_animation(obj)
             cls.earliest_frame = None
             product_frames = frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
             for product_frame in product_frames:
                 if product_frame["relationship"] == "input":
-                    cls.animate_input(obj, settings["start_frame"], product_frame)
+                    cls.animate_input(obj, settings["start_frame"], product_frame, animation_type)
                 elif product_frame["relationship"] == "output":
                     cls.animate_output(obj, settings["start_frame"], product_frame)
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         bpy.context.scene.frame_start = settings["start_frame"]
-        bpy.context.scene.frame_end = int(settings["start_frame"] + settings["total_frames"])
+        bpy.context.scene.frame_end = int(settings["start_frame"] + settings["total_frames"] + 1)
 
     @classmethod
-    def animate_input(cls, obj, start_frame, product_frame):
+    def animate_input(cls, obj, start_frame, product_frame, animation_type):
         props = bpy.context.scene.BIMAnimationProperties
         color = props.task_colors_components_inputs[product_frame["type"]].color
-        if product_frame["type"] in ["LOGISTIC", "MOVE"]:
-            cls.animate_movement_from(obj, start_frame, product_frame, color)
-        elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
-            cls.animate_destruction(obj, start_frame, product_frame, color)
-        else:
-            cls.animate_consumption(obj, start_frame, product_frame, color)
+        cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
 
     @classmethod
     def animate_output(cls, obj, start_frame, product_frame):
@@ -1235,7 +1347,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             cls.animate_operation(obj, start_frame, product_frame, color)
 
     @classmethod
-    def animate_destruction(cls, obj, start_frame, product_frame, color):
+    def animate_destruction(cls, obj, start_frame, product_frame, color, animation_type):
         if cls.earliest_frame is None or product_frame["STARTED"] < cls.earliest_frame:
             obj.color = (1.0, 1.0, 1.0, 1)
             obj.hide_viewport = False
@@ -1244,9 +1356,15 @@ class Sequence(blenderbim.core.tool.Sequence):
             obj.keyframe_insert(data_path="hide_viewport", frame=start_frame)
             obj.keyframe_insert(data_path="hide_render", frame=start_frame)
             cls.earliest_frame = product_frame["STARTED"]
-        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        if animation_type == "snapshot":
+            start = product_frame["STARTED"]
+        else:
+            start = product_frame["STARTED"] - 1
+        obj.keyframe_insert(data_path="color", frame=start)
+        obj.keyframe_insert(data_path="hide_viewport", frame=start)
+        obj.keyframe_insert(data_path="hide_render", frame=start)
         obj.color = (color.r, color.g, color.b, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=start + 1)
         obj.hide_viewport = True
         obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
@@ -1255,44 +1373,12 @@ class Sequence(blenderbim.core.tool.Sequence):
         obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     @classmethod
-    def animate_movement_from(cls, obj, start_frame, product_frame, color):
-        if cls.earliest_frame is None or product_frame["STARTED"] < cls.earliest_frame:
-            obj.color = (1.0, 1.0, 1.0, 1)
-            obj.keyframe_insert(data_path="color", frame=start_frame)
-            cls.earliest_frame = product_frame["STARTED"]
-        obj.hide_viewport = False
-        obj.hide_render = False
-        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
-        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"] - 1)
-        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"] - 1)
-        obj.color = (color.r, color.g, color.b, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
-        obj.hide_viewport = True
-        obj.hide_render = True
-        obj.color = (0.0, 0.0, 0.0, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
-        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
-        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
+    def animate_movement_from(cls, obj, start_frame, product_frame, color, animation_type):
+        cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
 
     @classmethod
-    def animate_consumption(cls, obj, start_frame, product_frame, color):
-        if cls.earliest_frame is None or product_frame["STARTED"] < cls.earliest_frame:
-            obj.color = (1.0, 1.0, 1.0, 1)
-            obj.keyframe_insert(data_path="color", frame=start_frame)
-            cls.earliest_frame = product_frame["STARTED"]
-        obj.hide_viewport = False
-        obj.hide_render = False
-        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
-        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"] - 1)
-        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"] - 1)
-        obj.color = (color.r, color.g, color.b, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
-        obj.hide_viewport = True
-        obj.hide_render = True
-        obj.color = (0.0, 0.0, 0.0, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
-        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
-        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
+    def animate_consumption(cls, obj, start_frame, product_frame, color, animation_type):
+        cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
 
     @classmethod
     def animate_creation(cls, obj, start_frame, product_frame, color):
@@ -1325,20 +1411,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def animate_movement_to(cls, obj, start_frame, product_frame, color):
-        if cls.earliest_frame is None or product_frame["STARTED"] < cls.earliest_frame:
-            obj.hide_viewport = True
-            obj.hide_render = True
-            obj.keyframe_insert(data_path="hide_viewport", frame=start_frame)
-            obj.keyframe_insert(data_path="hide_render", frame=start_frame)
-            cls.earliest_frame = product_frame["STARTED"]
-        obj.hide_viewport = False
-        obj.hide_render = False
-        obj.color = (color.r, color.g, color.b, 1)
-        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
-        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"])
-        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+        cls.animate_creation(obj, start_frame, product_frame, color)
 
     @classmethod
     def add_text_animation_handler(cls, settings):
@@ -1421,7 +1494,9 @@ class Sequence(blenderbim.core.tool.Sequence):
         else:
             data["pClass"] = "gtaskblue"
 
-        data["pDepend"] = ",".join([f"{rel.RelatingProcess.id()}{type_map[rel.SequenceType]}" for rel in task.IsSuccessorFrom or []])
+        data["pDepend"] = ",".join(
+            [f"{rel.RelatingProcess.id()}{type_map[rel.SequenceType]}" for rel in task.IsSuccessorFrom or []]
+        )
         json.append(data)
         for nested_task in ifcopenshell.util.sequence.get_nested_tasks(task):
             cls.create_new_task_json(nested_task, json, type_map)
@@ -1432,3 +1507,4 @@ class Sequence(blenderbim.core.tool.Sequence):
             with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
                 f.write(pystache.render(t.read(), {"json_data": json.dumps(task_json)}))
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
+

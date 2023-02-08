@@ -62,6 +62,7 @@ def assign_work_schedule(ifc, work_plan=None, work_schedule=None):
     if work_schedule:
         return ifc.run("aggregate.assign_object", relating_object=work_plan, product=work_schedule)
 
+
 def unassign_work_schedule(ifc, work_schedule=None):
     ifc.run("aggregate.unassign_object", product=work_schedule)
 
@@ -499,9 +500,18 @@ def visualise_work_schedule_date_range(sequence, work_schedule=None):
     if settings:
         product_frames = sequence.get_animation_product_frames(work_schedule, settings)
         sequence.load_task_animation_colors()
-        sequence.animate_objects(settings, product_frames)
+        sequence.animate_objects(settings, product_frames, "date_range")
         sequence.add_text_animation_handler(settings)
         add_task_bars(sequence)
+        sequence.set_object_shading()
+
+
+def visualise_work_schedule_date(sequence, work_schedule=None):
+    sequence.clear_objects_animation(include_blender_objects=False)
+    start_date = sequence.get_start_date()
+    product_states = sequence.process_construction_state(work_schedule, start_date)
+    sequence.show_snapshot(product_states)
+    sequence.set_object_shading()
 
 
 def generate_gantt_chart(sequence, work_schedule):
