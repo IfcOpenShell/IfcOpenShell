@@ -186,6 +186,7 @@ class Drawing:
     def get_document_uri(cls, document): pass
     def get_drawing_collection(cls, drawing): pass
     def get_drawing_group(cls, drawing): pass
+    def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass

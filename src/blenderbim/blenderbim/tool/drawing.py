@@ -216,6 +216,14 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return rel.RelatingGroup
 
     @classmethod
+    def get_drawing_references(cls, drawing):
+        results = set()
+        for inverse in tool.Ifc.get().get_inverse(drawing):
+            if inverse.is_a("IfcRelAssignsToProduct") and inverse.RelatingProduct == drawing:
+                results.update(inverse.RelatedObjects)
+        return results
+
+    @classmethod
     def get_drawing_target_view(cls, drawing):
         return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("TargetView", "MODEL_VIEW")
 
