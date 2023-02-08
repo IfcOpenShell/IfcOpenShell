@@ -243,6 +243,24 @@ class TestAddDrawing:
         subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")
 
 
+class TestDuplicateDrawing:
+    def test_run(self, ifc, drawing):
+        drawing.get_name("drawing").should_be_called().will_return("name")
+        drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
+        ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
+        drawing.copy_drawing_representation("drawing", "new_drawing").should_be_called()
+        drawing.set_name("new_drawing", "unique_name").should_be_called()
+        drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")
+        ifc.run("group.unassign_group", group="group", product="new_drawing").should_be_called()
+        ifc.run("group.add_group").should_be_called().will_return("new_group")
+        ifc.run(
+            "group.edit_group", group="new_group", attributes={"Name": "unique_name", "ObjectType": "DRAWING"}
+        ).should_be_called()
+        ifc.run("group.assign_group", group="new_group", products=["new_drawing"]).should_be_called()
+        drawing.import_drawings().should_be_called()
+        subject.duplicate_drawing(ifc, drawing, drawing="drawing")
+
+
 class TestRemoveDrawing:
     def test_run(self, ifc, drawing):
         drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")

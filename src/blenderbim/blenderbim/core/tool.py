@@ -154,6 +154,8 @@ class Document:
 
 @interface
 class Drawing:
+    def activate_view(cls, camera): pass
+    def copy_drawing_representation(cls, source, dest): pass
     def create_annotation_object(cls, drawing, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_schedule(cls, schedule): pass
@@ -195,17 +197,17 @@ class Drawing:
     def import_schedules(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
+    def is_camera_orthographic(cls): pass
+    def is_drawing_active(cls): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, group, collection): pass
+    def set_name(cls, element, name): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def update_text_value(cls, obj): pass
-    def is_drawing_active(cls): pass
-    def is_camera_orthographic(cls): pass
-    def activate_view(cls, camera): pass
 
 
 @interface

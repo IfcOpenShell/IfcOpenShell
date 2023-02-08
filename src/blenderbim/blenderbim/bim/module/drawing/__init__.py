@@ -42,6 +42,7 @@ classes = (
     operator.DisableEditingSchedules,
     operator.DisableEditingSheets,
     operator.DisableEditingText,
+    operator.DuplicateDrawing,
     operator.EditAssignedProduct,
     operator.EditText,
     operator.EditVectorStyle,

@@ -502,8 +502,7 @@ def get_decomposition(element):
 
 
 def get_grouped_by(element):
-    """
-    Retrieves all subelements of an element based on the group.
+    """Retrieves all subelements of an element based on the group.
 
     :param element: The IFC element
     :return: All subelements of the group
@@ -513,7 +512,7 @@ def get_grouped_by(element):
     .. code:: python
 
         element = file.by_type("IfcGroup")[0]
-        subelements = ifcopenshell.util.element.get_group(element)
+        subelements = ifcopenshell.util.element.get_grouped_by(element)
     """
     queue = [element]
     results = []

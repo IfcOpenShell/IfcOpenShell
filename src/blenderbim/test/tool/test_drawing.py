@@ -32,6 +32,16 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Drawing)
 
 
+class TestCopyDrawingRepresentation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        source = ifc.createIfcAnnotation(Representation=ifc.createIfcProductDefinitionShape())
+        dest = ifc.createIfcAnnotation()
+        subject.copy_drawing_representation(source, dest)
+        assert dest.Representation.is_a("IfcProductDefinitionShape")
+
+
 class TestCreateAnnotationObject(NewFile):
     def test_nothing(self):
         pass
@@ -560,6 +570,14 @@ class TestSetDrawingCollectionName(NewFile):
         collection = bpy.data.collections.new("Foobar")
         subject.set_drawing_collection_name(group, collection)
         assert collection.name == "IfcGroup/Foobaz"
+
+
+class TestSetName(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        drawing = ifc.createIfcAnnotation()
+        subject.set_name(drawing, "Name")
+        assert drawing.Name == "Name"
 
 
 class TestShowDecorations(NewFile):

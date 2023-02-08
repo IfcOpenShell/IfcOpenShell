@@ -172,7 +172,9 @@ class BIM_PT_drawings(Panel):
                 row = self.layout.row(align=True)
                 col = row.column()
                 col.alignment = "LEFT"
-                col.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
+                row2 = col.row(align=True)
+                row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
+                row2.operator("bim.duplicate_drawing", icon="COPYDOWN", text="").drawing = active_drawing.ifc_definition_id
                 col = row.column()
                 col.alignment = "RIGHT"
                 op = row.operator("bim.open_view", icon="URL", text="")
