@@ -37,6 +37,8 @@ class Patcher:
         self.src = src
         self.file = file
         self.logger = logger
+        self.output_dir = output_dir
+
 
     def patch(self):
         import ifcopenshell
