@@ -50,3 +50,4 @@ from blenderbim.tool.surveyor import Surveyor
 from blenderbim.tool.system import System
 from blenderbim.tool.type import Type
 from blenderbim.tool.unit import Unit
+from blenderbim.tool.cost import Cost

@@ -25,16 +25,18 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
+import blenderbim.tool as tool
+import blenderbim.core.cost as core
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_cost_schedule"
     bl_label = "Add Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a new cost schedule"
 
     def _execute(self, context):
-        ifcopenshell.api.run("cost.add_cost_schedule", IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_cost_schedule(tool.Ifc)
 
 
 class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -43,16 +45,11 @@ class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMCostProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.cost_schedule_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "cost.edit_cost_schedule",
-            self.file,
-            **{"cost_schedule": self.file.by_id(props.active_cost_schedule_id), "attributes": attributes},
+        core.edit_cost_schedule(
+            tool.Ifc,
+            tool.Cost,
+            cost_schedule=tool.Ifc.get().by_id(context.scene.BIMCostProperties.active_cost_schedule_id),
         )
-        bpy.ops.bim.disable_editing_cost_schedule()
-        return {"FINISHED"}
 
 
 class RemoveCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -62,39 +59,18 @@ class RemoveCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     cost_schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifcopenshell.api.run(
-            "cost.remove_cost_schedule",
-            IfcStore.get_file(),
-            cost_schedule=IfcStore.get_file().by_id(self.cost_schedule),
-        )
-        return {"FINISHED"}
+        core.remove_cost_schedule(tool.Ifc, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
 class EnableEditingCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_cost_schedule"
+    bl_idname = "bim.enable_editing_cost_schedule_attributes"
     bl_label = "Enable Editing Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Enable editing cost schedule"
     cost_schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.props = context.scene.BIMCostProperties
-        self.props.active_cost_schedule_id = self.cost_schedule
-        self.props.cost_schedule_attributes.clear()
-        self.enable_editing_cost_schedule()
-        self.props.is_editing = "COST_SCHEDULE"
-        return {"FINISHED"}
-
-    def enable_editing_cost_schedule(self):
-        blenderbim.bim.helper.import_attributes2(
-            tool.Ifc.get().by_id(self.cost_schedule),
-            self.props.cost_schedule_attributes,
-            callback=self.import_attributes,
-        )
-
-    def import_attributes(self, name, prop, data):
-        if name in ["SubmittedOn", "UpdateDate"]:
-            prop.string_value = "" if prop.is_null else ifcopenshell.util.date.ifc2datetime(data[name]).isoformat()
-            return True
+        core.enable_editing_cost_schedule_attributes(tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
 class EnableEditingCostItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -104,50 +80,7 @@ class EnableEditingCostItems(bpy.types.Operator, tool.Ifc.Operator):
     cost_schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        if context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
-            self.play_chaching_sound()  # lol
-        self.props = context.scene.BIMCostProperties
-        self.props.is_cost_update_enabled = False
-        self.props.active_cost_schedule_id = self.cost_schedule
-        self.props.cost_items.clear()
-
-        self.contracted_cost_items = json.loads(self.props.contracted_cost_items)
-        for rel in tool.Ifc.get().by_id(self.cost_schedule).Controls or []:
-            for cost_item in rel.RelatedObjects:
-                self.create_new_cost_item_li(cost_item, 0)
-        self.props.is_editing = "COST_ITEMS"
-        self.props.is_cost_update_enabled = True
-        return {"FINISHED"}
-
-    def play_chaching_sound(self):
-        # TODO: make pitch higher as costs rise
-        try:
-            import aud
-
-            device = aud.Device()
-            # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-            sound = aud.Sound(os.path.join(context.scene.BIMProperties.data_dir, "chaching.mp3"))
-            handle = device.play(sound)
-            sound_buffered = aud.Sound.buffer(sound)
-            handle_buffered = device.play(sound_buffered)
-            handle.stop()
-            handle_buffered.stop()
-        except:
-            pass  # ah well
-
-    def create_new_cost_item_li(self, cost_item, level_index):
-        new = self.props.cost_items.add()
-        new.ifc_definition_id = cost_item.id()
-        new.name = cost_item.Name or "Unnamed"
-        new.identification = cost_item.Identification or "XXX"
-        new.is_expanded = cost_item.id() not in self.contracted_cost_items
-        new.level_index = level_index
-        if cost_item.IsNestedBy:
-            new.has_children = True
-            if new.is_expanded:
-                for rel in cost_item.IsNestedBy:
-                    for sub_cost_item in rel.RelatedObjects:
-                        self.create_new_cost_item_li(sub_cost_item, level_index + 1)
+        core.enable_editing_cost_items(tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
 class DisableEditingCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -156,68 +89,62 @@ class DisableEditingCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        context.scene.BIMCostProperties.active_cost_schedule_id = 0
-        return {"FINISHED"}
+        core.disable_editing_cost_schedule(tool.Cost)
 
 
 class AddSummaryCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_summary_cost_item"
     bl_label = "Add Cost Item"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a summary cost item"
     cost_schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMCostProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("cost.add_cost_item", self.file, **{"cost_schedule": self.file.by_id(self.cost_schedule)})
-        bpy.ops.bim.enable_editing_cost_items(cost_schedule=self.cost_schedule)
-        return {"FINISHED"}
+        core.add_summary_cost_item(tool.Ifc, tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
 class AddCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_cost_item"
     bl_label = "Add Cost Item"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a new cost item"
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMCostProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("cost.add_cost_item", self.file, **{"cost_item": self.file.by_id(self.cost_item)})
-        bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
-        return {"FINISHED"}
+        core.add_cost_item(tool.Ifc, tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
 
 
 class ExpandCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.expand_cost_item"
     bl_label = "Expand Cost Item"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Expand this cost item"
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMCostProperties
-        self.file = IfcStore.get_file()
-        contracted_cost_items = json.loads(props.contracted_cost_items)
-        contracted_cost_items.remove(self.cost_item)
-        props.contracted_cost_items = json.dumps(contracted_cost_items)
-        bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
-        return {"FINISHED"}
+        core.expand_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+
+
+class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.expand_cost_items"
+    bl_label = "Expand Cost Items"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Expand all cost items"
+    cost_items: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.expand_cost_items(tool.Cost)
 
 
 class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.contract_cost_item"
     bl_label = "Contract Cost Item"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Contract a cost item"
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMCostProperties
-        self.file = IfcStore.get_file()
-        contracted_cost_items = json.loads(props.contracted_cost_items)
-        contracted_cost_items.append(self.cost_item)
-        props.contracted_cost_items = json.dumps(contracted_cost_items)
-        bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
-        return {"FINISHED"}
+        core.contract_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
 
 
 class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -227,37 +154,17 @@ class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMCostProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "cost.remove_cost_item",
-            self.file,
-            cost_item=self.file.by_id(self.cost_item),
-        )
-        contracted_cost_items = json.loads(props.contracted_cost_items)
-        if props.active_cost_item_index in contracted_cost_items:
-            contracted_cost_items.remove(props.active_cost_item_index)
-        props.contracted_cost_items = json.dumps(contracted_cost_items)
-        bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
-        if props.active_cost_item_id == self.cost_item:
-            props.active_cost_item_id = 0
-        return {"FINISHED"}
+        core.remove_cost_item(tool.Ifc, tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
 
 
 class EnableEditingCostItem(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_cost_item"
+    bl_idname = "bim.enable_editing_cost_item_attributes"
     bl_label = "Enable Editing Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMCostProperties
-        props.cost_item_attributes.clear()
-
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.cost_item), props.cost_item_attributes)
-        props.active_cost_item_id = self.cost_item
-        props.cost_item_editing_type = "ATTRIBUTES"
-        return {"FINISHED"}
+        core.enable_editing_cost_item_attributes(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
 
 
 class DisableEditingCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -266,8 +173,7 @@ class DisableEditingCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        context.scene.BIMCostProperties.active_cost_item_id = 0
-        return {"FINISHED"}
+        core.disable_editing_cost_item(tool.Cost)
 
 
 class EditCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -276,16 +182,7 @@ class EditCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMCostProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.cost_item_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "cost.edit_cost_item",
-            self.file,
-            **{"cost_item": self.file.by_id(props.active_cost_item_id), "attributes": attributes},
-        )
-        bpy.ops.bim.disable_editing_cost_item()
-        bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
+        core.edit_cost_item(tool.Ifc, tool.Cost)
         return {"FINISHED"}
 
 

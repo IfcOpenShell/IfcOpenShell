@@ -125,6 +125,25 @@ class Context:
     def import_attributes(cls): pass
     def set_context(cls, context): pass
 
+@interface
+class Cost:
+    def clean_up_cost_item_tree(cls, cost_item): pass
+    def contract_cost_item(cls, cost_item): pass
+    def contract_cost_items(cls): pass
+    def create_new_cost_item_li(cls, props, cost_item, level_index): pass
+    def disable_editing_cost_item(cls): pass
+    def disable_editing_cost_schedule(cls): pass
+    def enable_editing_cost_item_attributes(cls, cost_item): pass
+    def enable_editing_cost_items(cls, cost_schedule): pass
+    def enable_editing_cost_schedule_attributes(cls, cost_schedule): pass
+    def expand_cost_item(cls, cost_item): pass
+    def expand_cost_items(cls): pass
+    def get_active_cost_item(cls): pass
+    def get_cost_item_attributes(cls, cost_item): pass
+    def get_cost_schedule_attributes(cls): pass
+    def load_cost_items(cls): pass
+    def load_cost_item_attributes(cls): pass
+    def play_chaching_sound(cls): pass
 
 @interface
 class Debug:

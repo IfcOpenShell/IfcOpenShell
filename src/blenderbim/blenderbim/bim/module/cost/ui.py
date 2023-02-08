@@ -57,7 +57,8 @@ class BIM_PT_cost_schedules(Panel):
             op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
             op.cost_schedule = cost_schedule["id"]
             row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
-            if self.props.is_editing == "COST_SCHEDULE":
+            row.operator("bim.export_cost_schedule", text="", icon="EXPORT").cost_schedule = cost_schedule["id"]
+            if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":
                 row.operator("bim.add_summary_cost_item", text="", icon="ADD").cost_schedule = cost_schedule["id"]
@@ -67,12 +68,12 @@ class BIM_PT_cost_schedules(Panel):
         else:
             row.operator("bim.enable_editing_cost_items", text="", icon="OUTLINER").cost_schedule = cost_schedule["id"]
             row.operator(
-                "bim.enable_editing_cost_schedule", text="", icon="GREASEPENCIL"
+                "bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL"
             ).cost_schedule = cost_schedule["id"]
             row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
 
         if self.props.active_cost_schedule_id == cost_schedule["id"]:
-            if self.props.is_editing == "COST_SCHEDULE":
+            if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 self.draw_editable_cost_schedule_ui()
             elif self.props.is_editing == "COST_ITEMS":
                 if self.props.should_show_column_ui:
@@ -110,7 +111,7 @@ class BIM_PT_cost_schedules(Panel):
                     row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
             else:
-                op = row.operator("bim.enable_editing_cost_item", text="", icon="GREASEPENCIL")
+                op = row.operator("bim.enable_editing_cost_item_attributes", text="", icon="GREASEPENCIL")
                 op.cost_item = ifc_definition_id
 
             row.operator("bim.remove_cost_item", text="", icon="X").cost_item = ifc_definition_id
@@ -237,9 +238,7 @@ class BIM_PT_cost_item_types(Panel):
 
     def draw(self, context):
         self.props = context.scene.BIMCostProperties
-
         cost_item = self.props.cost_items[self.props.active_cost_item_index]
-
         grid = self.layout.grid_flow(columns=3, even_columns=True)
 
         # Column1
