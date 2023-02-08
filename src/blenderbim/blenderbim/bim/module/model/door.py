@@ -105,7 +105,7 @@ def update_door_modifier_representation(context):
         obj=obj,
         representation=model_representation,
         should_reload=True,
-        is_global=False,
+        is_global=True,
         should_sync_changes_first=True,
     )
 

@@ -45,7 +45,23 @@ def replace_ifc_representation_for_object(ifc_file, ifc_context, obj, new_repres
         ifc_element, ifc_context.ContextType, ifc_context.ContextIdentifier, ifc_context.TargetView
     )
 
+    def switch_to_new_representation():
+        core.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=True,
+        )
+
     if old_representation:
+        # switch should happen before `remove_representation` to make sure that
+        # no elements is using old representation
+        # otherwise `remove_representation` will replace them with empty objects
+        # and will lead to errors
+        switch_to_new_representation()
         for inverse in ifc_file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
@@ -53,12 +69,6 @@ def replace_ifc_representation_for_object(ifc_file, ifc_context, obj, new_repres
         ifcopenshell.api.run(
             "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
         )
-    core.switch_representation(
-        tool.Ifc,
-        tool.Geometry,
-        obj=obj,
-        representation=new_representation,
-        should_reload=True,
-        is_global=False,
-        should_sync_changes_first=True,
-    )
+        switch_to_new_representation()
+ 
+
