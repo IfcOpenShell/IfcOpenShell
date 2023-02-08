@@ -154,15 +154,12 @@ class RemoveRepresentation(bpy.types.Operator, Operator):
         )
 
 
-class UpdateRepresentation(bpy.types.Operator):
+class UpdateRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if context.active_object and context.active_object.mode != "OBJECT":

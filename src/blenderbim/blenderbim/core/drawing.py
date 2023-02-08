@@ -197,7 +197,9 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
     group = drawing_tool.get_drawing_group(drawing)
     if drawing_tool.get_name(group) != name:
         ifc.run("attribute.edit_attributes", product=group, attributes={"Name": name})
-    drawing_tool.set_drawing_collection_name(group, drawing_tool.get_drawing_collection(drawing))
+    collection = drawing_tool.get_drawing_collection(drawing)
+    if collection:
+        drawing_tool.set_drawing_collection_name(group, collection)
 
 
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
@@ -242,14 +244,13 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
         should_delete_existing_annotation = False
         should_create_annotation = False
 
-        if annotation and (
-            not reference_obj
-            or ifc.is_moved(reference_obj)
-            or ifc.is_edited(reference_obj)
-            or ifc.is_deleted(reference_element)
-            or ifc.is_deleted(annotation)
-        ):
-            should_delete_existing_annotation = True
+        if annotation:
+            if ifc.is_deleted(annotation):
+                should_delete_existing_annotation = True
+            elif reference_obj and (ifc.is_moved(reference_obj) or ifc.is_edited(reference_obj)):
+                should_delete_existing_annotation = True
+            elif not reference_obj and ifc.is_deleted(reference_element):
+                should_delete_existing_annotation = True
 
         if reference_obj and (should_delete_existing_annotation or not annotation):
             should_create_annotation = True
@@ -279,5 +280,6 @@ def select_assigned_product(drawing):
 def activate_drawing_view(ifc, drawing_tool, drawing):
     camera = ifc.get_object(drawing)
     if not camera:
-        return
+        camera = drawing_tool.import_drawing(drawing)
+        drawing_tool.import_annotations_in_group(drawing_tool.get_drawing_group(drawing))
     drawing_tool.activate_view(camera)
