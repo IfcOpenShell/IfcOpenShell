@@ -250,7 +250,7 @@ class EditPset(bpy.types.Operator, Operator):
                         e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected
                     ]
 
-        if tool.Ifc.get().by_id(pset_id).is_a("IfcPropertySet"):
+        if tool.Ifc.get().by_id(pset_id).is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 self.file,
