@@ -969,54 +969,8 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
         return bool(bpy.context.scene.BIMWorkScheduleProperties.visualisation_start)
 
     def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        self.date = parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
-        self.preprocess_tasks()
-        for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            obj.color = (1.0, 1.0, 1.0, 1)
-            obj.hide_set(False)
-            if obj.BIMObjectProperties.ifc_definition_id in self.not_yet_started:
-                obj.hide_set(True)
-            elif obj.BIMObjectProperties.ifc_definition_id in self.started:
-                obj.color = (0.0, 1.0, 0.0, 1)
-            elif obj.BIMObjectProperties.ifc_definition_id in self.completed:
-                pass
-            else:
-                obj.color = (1.0, 0.0, 0.0, 1)
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        core.visualise_work_schedule_date(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
         return {"FINISHED"}
-
-    def preprocess_tasks(self):
-        self.not_yet_started = set()
-        self.started = set()
-        self.completed = set()
-        for rel in self.file.by_id(self.work_schedule).Controls or []:
-            for related_object in rel.RelatedObjects:
-                if related_object.is_a("IfcTask"):
-                    self.preprocess_task(related_object)
-
-    def preprocess_task(self, task):
-        for rel in task.IsNestedBy or []:
-            for related_object in rel.RelatedObjects:
-                self.preprocess_task(related_object)
-        start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
-        finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
-        if not start or not finish:
-            return
-        products = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
-        if not products:
-            return
-        if self.date < start:
-            self.not_yet_started.update(products)
-        elif self.date < finish:
-            self.started.update(products)
-        else:
-            self.completed.update(products)
-
 
 class GuessDateRange(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.guess_date_range"
