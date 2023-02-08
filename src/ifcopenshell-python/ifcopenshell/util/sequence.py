@@ -298,10 +298,10 @@ def guess_date_range(work_schedule):
     root_tasks = get_root_tasks(work_schedule)
     tasks_with_assignements = []
     for task in root_tasks:
-        if has_task_outputs(task):
+        if has_task_outputs(task) or has_task_inputs(task):
             tasks_with_assignements.append(task)
         for sub_task in get_all_nested_tasks(task):
-            if has_task_outputs(sub_task):
+            if has_task_outputs(sub_task) or has_task_inputs(sub_task):
                 tasks_with_assignements.append(sub_task)
 
     for task in tasks_with_assignements:
@@ -334,5 +334,18 @@ def get_task_outputs(task, is_deep=False):
         ]
 
 
+def get_task_inputs(task):
+    inputs = []
+    for rel in task.OperatesOn:
+        for object in rel.RelatedObjects:
+            if object.is_a("IfcProduct"):
+                inputs.append(object)
+    return inputs
+
+
 def has_task_outputs(task):
     return len(get_task_outputs(task)) > 0
+
+
+def has_task_inputs(task):
+    return len(get_task_inputs(task)) > 0
