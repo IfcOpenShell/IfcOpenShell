@@ -108,10 +108,23 @@ class DuplicateDrawing(bpy.types.Operator, Operator):
     bl_label = "Duplicate Drawing"
     bl_options = {"REGISTER", "UNDO"}
     drawing: bpy.props.IntProperty()
+    should_duplicate_annotations: bpy.props.BoolProperty(name="Should Duplicate Annotations", default=False)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.prop(self, "should_duplicate_annotations")
 
     def _execute(self, context):
         self.props = context.scene.DocProperties
-        core.duplicate_drawing(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
+        core.duplicate_drawing(
+            tool.Ifc,
+            tool.Drawing,
+            drawing=tool.Ifc.get().by_id(self.drawing),
+            should_duplicate_annotations=self.should_duplicate_annotations,
+        )
         try:
             drawing = tool.Ifc.get().by_id(self.props.active_drawing_id)
             core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)

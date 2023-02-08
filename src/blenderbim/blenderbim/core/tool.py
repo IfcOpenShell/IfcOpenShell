@@ -155,7 +155,7 @@ class Document:
 @interface
 class Drawing:
     def activate_view(cls, camera): pass
-    def copy_drawing_representation(cls, source, dest): pass
+    def copy_representation(cls, source, dest): pass
     def create_annotation_object(cls, drawing, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_schedule(cls, schedule): pass
