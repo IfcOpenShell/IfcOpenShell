@@ -18,27 +18,22 @@
 
 
 import bpy
+import json
+import bmesh
+import collections
+import ifcopenshell
+import blenderbim.tool as tool
+import blenderbim.core.geometry as core
+from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, BoolProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-import bmesh
 from bmesh.types import BMVert
-
-import ifcopenshell
-from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
-import blenderbim
-import blenderbim.tool as tool
-import blenderbim.core.geometry as core
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.helper import get_ifc_context_or_create, replace_ifc_representation_for_object
-
+from blenderbim.bim.module.model.helper import replace_ifc_representation_for_object
 from mathutils import Vector
-from pprint import pprint
-
 from os.path import basename, dirname
-import json
-import collections
 
 
 V = lambda *x: Vector([float(i) for i in x])
@@ -46,7 +41,7 @@ V = lambda *x: Vector([float(i) for i in x])
 
 def update_window_modifier_representation(context):
     obj = context.active_object
-    ifc_element = tool.Ifc.get_entity(obj)
+    element = tool.Ifc.get_entity(obj)
     props = obj.BIMWindowProperties
     ifc_file = tool.Ifc.get()
 
@@ -77,23 +72,22 @@ def update_window_modifier_representation(context):
         }
         representation_data["panel_properties"].append(panel_data)
 
-    # ELEVATION_VIEW representation
-    ifc_context = get_ifc_context_or_create(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
-    representation_data["context"] = ifc_context
-    elevation_representation = ifcopenshell.api.run(
-        "geometry.add_window_representation", ifc_file, **representation_data
-    )
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
+    profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
+    if profile:
+        representation_data["context"] = profile
+        elevation_representation = ifcopenshell.api.run(
+            "geometry.add_window_representation", ifc_file, **representation_data
+        )
+        replace_ifc_representation_for_object(ifc_file, profile, obj, elevation_representation)
 
-    # MODEL_VIEW representation
-    ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-    representation_data["context"] = ifc_context
+    body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+    representation_data["context"] = body
     model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, model_representation)
-    ifc_element.PartitioningType = props.window_type
+    replace_ifc_representation_for_object(ifc_file, body, obj, model_representation)
+    element.PartitioningType = props.window_type
 
 
-def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0,0,0).freeze()):
+def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()):
     """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`
 
@@ -119,16 +113,16 @@ def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector
     ]
 
     edges = [
-        (0,  (0, 1)),
-        (1,  (2, 3)),
-        (2,  (4, 5)),
-        (3,  (6, 7)),
-        (4,  (7, 5)),
-        (5,  (1, 3)),
-        (6,  (4, 6)),
-        (7,  (0, 2)),
-        (8,  (2, 5)),
-        (9,  (3, 7)),
+        (0, (0, 1)),
+        (1, (2, 3)),
+        (2, (4, 5)),
+        (3, (6, 7)),
+        (4, (7, 5)),
+        (5, (1, 3)),
+        (6, (4, 6)),
+        (7, (0, 2)),
+        (8, (2, 5)),
+        (9, (3, 7)),
         (10, (4, 0)),
         (11, (1, 6)),
     ]
@@ -158,7 +152,7 @@ def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector
     return new_verts + translate_verts
 
 
-def create_bm_box(bm, size: Vector = V(1,1,1).freeze(), position: Vector = V(0,0,0).freeze()):
+def create_bm_box(bm, size: Vector = V(1, 1, 1).freeze(), position: Vector = V(0, 0, 0).freeze()):
     """create a box of `size`, position box first vertex at `position`"""
     box_verts = bmesh.ops.create_cube(bm, size=1)["verts"]
     bmesh.ops.translate(bm, vec=-box_verts[0].co, verts=box_verts)
@@ -186,13 +180,9 @@ def create_bm_window(
     frame_verts = create_bm_window_frame(bm, frame_size, frame_thickness, frame_position)
 
     # window glass
-    glass_size = frame_size - V(frame_thickness*2, 0, frame_thickness*2)
+    glass_size = frame_size - V(frame_thickness * 2, 0, frame_thickness * 2)
     glass_size.y = glass_thickness
-    glass_position = frame_position + V(
-        frame_thickness,
-        frame_size.y / 2 - glass_thickness / 2,
-        frame_thickness
-    )
+    glass_position = frame_position + V(frame_thickness, frame_size.y / 2 - glass_thickness / 2, frame_thickness)
 
     glass_verts = create_bm_box(bm, glass_size, glass_position)
 
@@ -344,12 +334,7 @@ class BIM_OT_add_window(Operator):
         obj.location = spawn_location
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class="IfcWindow",
-            should_add_representation=False
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
         element.PredefinedType = "WINDOW"
 
