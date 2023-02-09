@@ -415,13 +415,21 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         psets = ifcopenshell.util.element.get_psets(element)
         data = json.loads(psets["BBIM_Window"]["Data"])
         props = obj.BIMWindowProperties
-        # restore previous settings since editing was canceled
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
-        update_window_modifier_representation(context)
+
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        core.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
         props.is_editing = -1
-
         return {"FINISHED"}
 
 
