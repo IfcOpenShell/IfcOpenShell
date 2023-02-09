@@ -126,19 +126,13 @@ class SelectSimilarType(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         related_object = bpy.data.objects.get(self.related_object) if self.related_object else context.active_object
-        oprops = related_object.BIMObjectProperties
-        product = self.file.by_id(oprops.ifc_definition_id)
-        declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
-        if ifcopenshell.util.schema.is_a(declaration, "IfcElementType"):
-            related_objects = ifcopenshell.api.run(
-                "type.get_related_objects", self.file, **{"relating_type": self.file.by_id(oprops.ifc_definition_id)}
-            )
-        else:
-            related_objects = ifcopenshell.api.run(
-                "type.get_related_objects", self.file, **{"related_object": self.file.by_id(oprops.ifc_definition_id)}
-            )
+        relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(related_object))
+        if not relating_type:
+            return {"FINISHED"}
+        related_objects = ifcopenshell.util.element.get_types(relating_type)
         for obj in context.visible_objects:
-            if obj.BIMObjectProperties.ifc_definition_id in related_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element in related_objects:
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -173,6 +167,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         if not body:
             return {"FINISHED"}
+
         if template == "MESH":
             location = context.scene.cursor.location
             if context.active_object and context.selected_objects and context.active_object.data:
@@ -288,13 +283,36 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             mesh = bpy.data.meshes.new("IfcWindow")
             obj = bpy.data.objects.new("TYPEX", mesh)
             element = blenderbim.core.root.assign_class(
-                tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindowType", should_add_representation=False
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                predefined_type=predefined_type,
+                ifc_class="IfcWindowType",
+                should_add_representation=False,
             )
             bpy.ops.object.select_all(action="DESELECT")
             bpy.context.view_layer.objects.active = None
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
             bpy.ops.bim.add_window()
+        elif template == "DOOR":
+            mesh = bpy.data.meshes.new("IfcDoor")
+            obj = bpy.data.objects.new("TYPEX", mesh)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                predefined_type=predefined_type,
+                ifc_class="IfcDoorType",
+                should_add_representation=False,
+            )
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.objects.active = None
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.bim.add_door()
 
         elif template == "STAIR":
             mesh = bpy.data.meshes.new("IfcStairFlight")
@@ -304,6 +322,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Collector,
                 tool.Root,
                 obj=obj,
+                predefined_type=predefined_type,
                 ifc_class="IfcStairFlightType",
                 should_add_representation=True,
                 context=body,

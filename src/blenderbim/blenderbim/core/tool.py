@@ -125,6 +125,25 @@ class Context:
     def import_attributes(cls): pass
     def set_context(cls, context): pass
 
+@interface
+class Cost:
+    def clean_up_cost_item_tree(cls, cost_item): pass
+    def contract_cost_item(cls, cost_item): pass
+    def contract_cost_items(cls): pass
+    def create_new_cost_item_li(cls, props, cost_item, level_index): pass
+    def disable_editing_cost_item(cls): pass
+    def disable_editing_cost_schedule(cls): pass
+    def enable_editing_cost_item_attributes(cls, cost_item): pass
+    def enable_editing_cost_items(cls, cost_schedule): pass
+    def enable_editing_cost_schedule_attributes(cls, cost_schedule): pass
+    def expand_cost_item(cls, cost_item): pass
+    def expand_cost_items(cls): pass
+    def get_active_cost_item(cls): pass
+    def get_cost_item_attributes(cls, cost_item): pass
+    def get_cost_schedule_attributes(cls): pass
+    def load_cost_items(cls): pass
+    def load_cost_item_attributes(cls): pass
+    def play_chaching_sound(cls): pass
 
 @interface
 class Debug:
@@ -154,6 +173,8 @@ class Document:
 
 @interface
 class Drawing:
+    def activate_view(cls, camera): pass
+    def copy_representation(cls, source, dest): pass
     def create_annotation_object(cls, drawing, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_schedule(cls, schedule): pass
@@ -184,6 +205,7 @@ class Drawing:
     def get_document_uri(cls, document): pass
     def get_drawing_collection(cls, drawing): pass
     def get_drawing_group(cls, drawing): pass
+    def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
@@ -195,17 +217,17 @@ class Drawing:
     def import_schedules(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
+    def is_camera_orthographic(cls): pass
+    def is_drawing_active(cls): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, group, collection): pass
+    def set_name(cls, element, name): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def update_text_value(cls, obj): pass
-    def is_drawing_active(cls): pass
-    def is_camera_orthographic(cls): pass
-    def activate_view(cls, camera): pass
 
 
 @interface
@@ -307,6 +329,11 @@ class Library:
 
 
 @interface
+class Loader:
+    pass
+
+
+@interface
 class Material:
     def add_default_material_object(cls): pass
     def delete_object(cls, obj): pass
@@ -317,6 +344,7 @@ class Material:
     def get_name(cls, obj): pass
     def import_material_definitions(cls, material_type): pass
     def is_editing_materials(cls): pass
+    def is_material_used_in_sets(cls, material): pass
     def select_elements(cls, elements): pass
 
 
@@ -476,9 +504,11 @@ class Sequence:
     def add_task_column(cls, column_type, name, data_type): pass
     def contract_all_tasks(cls): pass
     def contract_task(cls, task): pass
-    def create_task_tree(cls, work_schedule): pass
+    def create_bars(cls, tasks): pass
     def create_bars(cls, tasks):pass
+    def create_task_tree(cls, work_schedule): pass
     def disable_editing_rel_sequence(cls): pass
+    def disable_editing_task_animation_colors(cls): pass
     def disable_editing_task_time(cls): pass
     def disable_editing_task(cls): pass
     def disable_editing_work_calendar(cls): pass
@@ -489,6 +519,7 @@ class Sequence:
     def disable_work_schedule(cls): pass
     def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
     def enable_editing_sequence_lag_time(cls, rel_sequence): pass
+    def enable_editing_task_animation_colors(cls): pass
     def enable_editing_task_calendar(cls, task): pass
     def enable_editing_task_sequence(cls, task): pass
     def enable_editing_task_time(cls, task): pass
@@ -502,12 +533,16 @@ class Sequence:
     def enable_editing_work_time(cls, work_time): pass
     def expand_all_tasks(cls): pass
     def expand_task(cls, task): pass
+    def find_related_input_tasks(cls, product): pass
     def find_related_output_tasks(cls, column): pass
+    def find_related_output_tasks(cls, product): pass
     def get_active_task(cls): pass
     def get_active_work_schedule(cls): pass
+    def get_animation_bar_tasks(cls): pass
     def get_checked_tasks(cls): pass
     def get_direct_nested_tasks(cls, task):pass
     def get_direct_task_outputs(cls, task): pass
+    def get_finish_date(cls): pass
     def get_highlighted_task(cls): pass
     def get_lag_time_attributes(cls): pass
     def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
@@ -515,6 +550,7 @@ class Sequence:
     def get_rel_sequence_attributes(cls): pass
     def get_selected_products(cls): pass
     def get_selected_resource(cls): pass
+    def get_start_date(cls): pass
     def get_task_attribute_value(cls, attribute_name): pass
     def get_task_attributes(cls): pass
     def get_task_inputs(cls, task): pass
@@ -533,6 +569,7 @@ class Sequence:
     def load_lag_time_attributes(cls, lag_time): pass
     def load_rel_sequence_attributes(cls, rel_sequence): pass
     def load_resources(cls): pass
+    def load_task_animation_colors(cls): pass
     def load_task_attributes(cls, task): pass
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass
@@ -543,11 +580,16 @@ class Sequence:
     def load_work_plan_attributes(cls, work_plan): pass
     def load_work_schedule_attributes(cls, work_schedule): pass
     def load_work_time_attributes(cls, work_time): pass
+    def override_end_date(cls): pass
+    def process_construction_state(cls, work_schedule, date): pass
+    def process_task_status(cls, task, date): pass
     def remove_task_column(cls, name): pass
     def reset_time_period(cls): pass
     def select_products(cls, products): pass
+    def set_object_shading(cls): pass
     def set_task_sort_column(cls, column): pass
     def setup_default_task_columns(cls): pass
+    def show_snapshot(cls, product_states): pass
     def update_visualisation_date(cls, start_date, finish_date): pass
 
 

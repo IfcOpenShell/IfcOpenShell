@@ -28,9 +28,6 @@ class Usecase:
     def execute(self):
         mapping_source = self.get_mapping_source()
 
-        if not mapping_source:
-            return
-
         zero = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
         x_axis = self.file.createIfcDirection((1.0, 0.0, 0.0))
         y_axis = self.file.createIfcDirection((0.0, 1.0, 0.0))
@@ -52,3 +49,10 @@ class Usecase:
         for inverse in self.file.get_inverse(self.settings["representation"]):
             if inverse.is_a("IfcRepresentationMap"):
                 return inverse
+        zero = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+        x_axis = self.file.createIfcDirection((1.0, 0.0, 0.0))
+        z_axis = self.file.createIfcDirection((0.0, 0.0, 1.0))
+        mapping_origin = self.file.createIfcAxis2Placement3D(zero, z_axis, x_axis)
+        return self.file.createIfcRepresentationMap(
+            MappingOrigin=mapping_origin, MappedRepresentation=self.settings["representation"]
+        )

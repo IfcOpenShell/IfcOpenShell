@@ -34,6 +34,7 @@ def refresh():
     StairData.is_loaded = False
     SverchokData.is_loaded = False
     WindowData.is_loaded = False
+    DoorData.is_loaded = False
 
 
 class AuthoringData:
@@ -60,6 +61,7 @@ class AuthoringData:
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["active_class"] = cls.active_class()
+        cls.data["active_material_usage"] = cls.active_material_usage()
 
     @classmethod
     def type_class(cls):
@@ -169,6 +171,17 @@ class AuthoringData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if element:
             return element.is_a()
+
+    @classmethod
+    def active_material_usage(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+            if material:
+                if material.is_a("IfcMaterialLayerSetUsage"):
+                    return f"LAYER{material.LayerSetDirection[-1]}"
+                elif material.is_a("IfcMaterialProfileSetUsage"):
+                    return "PROFILE"
 
     @classmethod
     def ifc_classes(cls):
@@ -353,7 +366,7 @@ class ArrayData:
                     parent = tool.Ifc.get().by_guid(parameters["Parent"])
                     parameters["has_parent"] = True
                     parameters["parent_name"] = parent.Name or "Unnamed"
-                    parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                    parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 except:
                     parameters["has_parent"] = False
                 return parameters
@@ -375,7 +388,7 @@ class StairData:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Stair", None)
             if parameters:
-                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
 
 
@@ -395,7 +408,7 @@ class SverchokData:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Sverchok", None)
             if parameters:
-                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
 
     @classmethod
@@ -424,5 +437,25 @@ class WindowData:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Window", None)
             if parameters:
-                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
+                return parameters
+
+
+class DoorData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Door", None)
+            if parameters:
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters

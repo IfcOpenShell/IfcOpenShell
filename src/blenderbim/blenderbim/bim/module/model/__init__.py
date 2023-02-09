@@ -33,6 +33,7 @@ from . import (
     workspace,
     profile,
     sverchok_modifier,
+    door,
 )
 
 classes = (
@@ -92,11 +93,13 @@ classes = (
     prop.BIMStairProperties,
     prop.BIMSverchokProperties,
     prop.BIMWindowProperties,
+    prop.BIMDoorProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_sverchok,
     ui.BIM_PT_window,
+    ui.BIM_PT_door,
     ui.DisplayConstrTypesUI,
     ui.LaunchTypeManager,
     ui.HelpConstrTypes,
@@ -125,6 +128,12 @@ classes = (
     window.FinishEditingWindow,
     window.EnableEditingWindow,
     window.RemoveWindow,
+    door.BIM_OT_add_door,
+    door.AddDoor,
+    door.CancelEditingDoor,
+    door.FinishEditingDoor,
+    door.EnableEditingDoor,
+    door.RemoveDoor,
 )
 
 addon_keymaps = []
@@ -138,9 +147,11 @@ def register():
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
     bpy.types.Object.BIMWindowProperties = bpy.props.PointerProperty(type=prop.BIMWindowProperties)
+    bpy.types.Object.BIMDoorProperties = bpy.props.PointerProperty(type=prop.BIMDoorProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(window.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.append(door.add_object_button)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
     wm = bpy.context.window_manager
@@ -159,10 +170,12 @@ def unregister():
     del bpy.types.Object.BIMStairProperties
     del bpy.types.Object.BIMSverchokProperties
     del bpy.types.Object.BIMWindowProperties
+    del bpy.types.Object.BIMDoorProperties
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(window.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.remove(door.add_object_button)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon

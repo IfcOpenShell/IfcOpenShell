@@ -18,22 +18,27 @@
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, src, file, logger, output_dir=None):
         """Split an IFC model into multiple models based on building storey
 
         The new IFC model names will be named after the storey name in the
         format of {i}-{name}.ifc, where {i} is an ascending number starting from
         0 and {name} is the name of the storey.
 
+        :param output_dir: Specifies an output directory where the new IFC models will be saved.
+        :type output_dir: str
+           
         Example:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "SplitByBuildingStorey", "arguments": []})
+            ifcpatch.execute({"input": model, "recipe": "SplitByBuildingStorey", "arguments": ["C:/.../output_files"]})
         """
         self.src = src
         self.file = file
         self.logger = logger
+        self.output_dir = output_dir
+
 
     def patch(self):
         import ifcopenshell
@@ -41,7 +46,7 @@ class Patcher:
 
         storeys = self.file.by_type("IfcBuildingStorey")
         for i, storey in enumerate(storeys):
-            dest = "{}-{}.ifc".format(i, storey.Name)
+            dest = "{}-{}.ifc".format(i, storey.Name) if self.output_dir == None else "{}/{}-{}.ifc".format(self.output_dir,i, storey.Name)
             copyfile(self.src, dest)
             old_ifc = ifcopenshell.open(dest)
             new_ifc = ifcopenshell.file(schema=self.file.schema)

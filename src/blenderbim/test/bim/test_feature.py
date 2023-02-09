@@ -48,6 +48,10 @@ def replace_variables(value):
     return value
 
 
+def is_x(number, x):
+    return abs(number - x) < 1e-6
+
+
 @given("an untestable scenario")
 def an_untestable_scenario():
     pass
@@ -498,6 +502,50 @@ def the_object_name_has_the_material_material(name, material):
     assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
 
 
+@then(
+    parsers.parse(
+        'the object "{name}" has a "{thickness}" thick layered material containing the material "{material_name}"'
+    )
+)
+def the_object_name_has_a_thickness_thick_layered_material_containing_the_material_material(
+    name, thickness, material_name
+):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material and "LayerSet" in material.is_a()
+    if material.is_a("IfcMaterialLayerSetUsage"):
+        material = material.ForLayerSet
+    total_thickness = 0
+    material_names = []
+    for layer in material.MaterialLayers or []:
+        total_thickness += layer.LayerThickness
+        material_names.append(layer.Material.Name)
+    assert is_x(total_thickness, float(thickness))
+    assert material_name in material_names
+
+
+@then(
+    parsers.parse(
+        'the object "{name}" has a profiled material containing the material "{material_name}" and profile "{profile_name}"'
+    )
+)
+def the_object_name_has_a_profiled_material_containing_the_material_material_and_profile_profile(
+    name, material_name, profile_name
+):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material and "ProfileSet" in material.is_a()
+    if material.is_a("IfcMaterialProfileSetUsage"):
+        material = material.ForProfileSet
+    material_names = []
+    profile_names = []
+    for profile in material.MaterialProfiles or []:
+        material_names.append(profile.Material.Name)
+        profile_names.append(profile.Profile.ProfileName)
+    assert material_name in material_names, f"No material {material_name} found in profiled materials: {material_names}"
+    assert profile_name in profile_names, f"No profile {profile_name} found in material profiles: {profile_names}"
+
+
 @then(parsers.parse('the object "{name}" does not have the material "{material}"'))
 def the_object_name_does_not_have_the_material_material(name, material):
     assert material not in [ms.material.name for ms in the_object_name_exists(name).material_slots]
@@ -548,7 +596,10 @@ def the_object_name_has_no_scale(name):
 
 @then(parsers.parse('the object "{name}" dimensions are "{dimensions}"'))
 def the_object_name_dimensions_are_dimensions(name, dimensions):
-    assert list(the_object_name_exists(name).dimensions) == [float(co) for co in dimensions.split(",")]
+    actual_dimensions = list(the_object_name_exists(name).dimensions)
+    expected_dimensions = [float(co) for co in dimensions.split(",")]
+    for i, number in enumerate(actual_dimensions):
+        assert is_x(number, expected_dimensions[i])
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))

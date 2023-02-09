@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from mathutils import Vector, Matrix
+import collections
 import ifcopenshell
 import ifcopenshell.api
 from math import cos, sin, pi
-import collections
+from mathutils import Vector, Matrix
 
 V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
@@ -33,30 +33,28 @@ sign = lambda x: x and (1, -1)[x < 0]
 
 class ShapeBuilder:
     def __init__(self, ifc_file):
-        self.ifc = ifc_file
+        self.file = ifc_file
 
     def polyline(self, points, closed=False, position_offset=None):
         # > points - list of points formatted like ( (x0, y0), (x1, y1) )
         # < IfcIndexedPolyCurve
-        segments = [(i, i+1) for i in range(1, len(points))]
+        segments = [(i, i + 1) for i in range(1, len(points))]
         if closed:
-            segments.append( (len(points),1) )
+            segments.append((len(points), 1))
         if position_offset:
             points = [Vector(p) + position_offset for p in points]
 
         dimensions = len(points[0])
         if dimensions == 2:
-            ifc_points = self.ifc.createIfcCartesianPointList2D(points)
+            ifc_points = self.file.createIfcCartesianPointList2D(points)
         elif dimensions == 3:
-            ifc_points = self.ifc.createIfcCartesianPointList3D(points)
+            ifc_points = self.file.createIfcCartesianPointList3D(points)
 
-        ifc_segments = [ self.ifc.createIfcLineIndex( segment ) for segment in segments]
-        ifc_curve = self.ifc.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
+        ifc_segments = [self.file.createIfcLineIndex(segment) for segment in segments]
+        ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
-    def get_rectangle_coords(self, 
-        size:Vector = Vector( (1., 1.) ).freeze(),
-        position:Vector = None):
+    def get_rectangle_coords(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None):
 
         dimensions = len(size)
 
@@ -75,9 +73,7 @@ class ShapeBuilder:
         ]
         return points
 
-    def rectangle(self, 
-        size:Vector = Vector( (1., 1.) ).freeze(),
-        position:Vector = None):
+    def rectangle(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None):
         """
         function supports both 2d and 3d rectangle sizes
 
@@ -88,12 +84,12 @@ class ShapeBuilder:
         # < IfcIndexedPolyCurve
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
 
-    def circle(self, center:Vector = Vector( (0., 0.) ).freeze(), radius = 1.):
+    def circle(self, center: Vector = Vector((0.0, 0.0)).freeze(), radius=1.0):
         # < returns IfcCircle
-        ifc_center = self.ifc.createIfcAxis2Placement2D(self.ifc.createIfcCartesianPoint(center))
-        ifc_curve = self.ifc.createIfcCircle(ifc_center, radius)
+        ifc_center = self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint(center))
+        ifc_curve = self.file.createIfcCircle(ifc_center, radius)
 
-        #  self.ifc_file.createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2]))
+        #  self.file_file.createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2]))
         return ifc_curve
 
     # TODO: explain points order for the curve_between_two_points
@@ -114,9 +110,9 @@ class ShapeBuilder:
         diff = V(0.01, 0.01) * diff_sign
         middle_point = points[0] + diff
         points = [points[0], middle_point, points[1]]
-        seg = self.ifc.createIfcArcIndex((1, 2, 3))
-        ifc_points = self.ifc.createIfcCartesianPointList2D(points)
-        curve = self.ifc.createIfcIndexedPolyCurve(Points=ifc_points, Segments=[seg])
+        seg = self.file.createIfcArcIndex((1, 2, 3))
+        ifc_points = self.file.createIfcCartesianPointList2D(points)
+        curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=[seg])
         return curve
 
     def get_trim_points_from_mask(self, x_axis_radius, y_axis_radius, trim_points_mask, position_offset=None):
@@ -157,24 +153,25 @@ class ShapeBuilder:
         Notion: trimmed ellipse also contains polyline between trim points, meaning IfcTrimmedCurve could be used
         for further extrusion.
         """
-        direction = self.ifc.createIfcDirection(ref_x_direction)
-        ifc_position = self.ifc.createIfcAxis2Placement2D(
-            self.ifc.createIfcCartesianPoint(position), RefDirection=direction
+        direction = self.file.createIfcDirection(ref_x_direction)
+        ifc_position = self.file.createIfcAxis2Placement2D(
+            self.file.createIfcCartesianPoint(position), RefDirection=direction
         )
-        ifc_ellipse = self.ifc.createIfcEllipse(Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius)
+        ifc_ellipse = self.file.createIfcEllipse(
+            Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius
+        )
 
         if not trim_points:
             if not trim_points_mask:
                 return ifc_ellipse
             trim_points = self.get_trim_points_from_mask(
-                x_axis_radius, y_axis_radius, 
-                trim_points_mask, position_offset=position
+                x_axis_radius, y_axis_radius, trim_points_mask, position_offset=position
             )
 
-        trim1 = [self.ifc.createIfcCartesianPoint(trim_points[0])]
-        trim2 = [self.ifc.createIfcCartesianPoint(trim_points[1])]
+        trim1 = [self.file.createIfcCartesianPoint(trim_points[0])]
+        trim2 = [self.file.createIfcCartesianPoint(trim_points[1])]
 
-        trim_ellipse = self.ifc.createIfcTrimmedCurve(
+        trim_ellipse = self.file.createIfcTrimmedCurve(
             BasisCurve=ifc_ellipse, Trim1=trim1, Trim2=trim2, SenseAgreement=True, MasterRepresentation="CARTESIAN"
         )
         return trim_ellipse
@@ -191,12 +188,11 @@ class ShapeBuilder:
             if not isinstance(inner_curves, collections.abc.Iterable):
                 inner_curves = [inner_curves]
 
-            profile = self.ifc.createIfcArbitraryProfileDefWithVoids(
-                ProfileName=name, ProfileType=profile_type, 
-                OuterCurve=outer_curve, InnerCurves=inner_curves
+            profile = self.file.createIfcArbitraryProfileDefWithVoids(
+                ProfileName=name, ProfileType=profile_type, OuterCurve=outer_curve, InnerCurves=inner_curves
             )
         else:
-            profile = self.ifc.createIfcArbitraryClosedProfileDef(
+            profile = self.file.createIfcArbitraryClosedProfileDef(
                 ProfileName=name, ProfileType=profile_type, OuterCurve=outer_curve
             )
         return profile
@@ -212,7 +208,7 @@ class ShapeBuilder:
         processed_objects = []
         for c in curve_or_item:
             if create_copy:
-                c = ifcopenshell.util.element.copy_deep(self.ifc, c)
+                c = ifcopenshell.util.element.copy_deep(self.file, c)
 
             if c.is_a("IfcIndexedPolyCurve"):
                 coords = [Vector(co) + translation for co in c.Points.CoordList]
@@ -274,7 +270,7 @@ class ShapeBuilder:
         processed_objects = []
         for c in curve_or_item:
             if create_copy:
-                c = ifcopenshell.util.element.copy_deep(self.ifc, c)
+                c = ifcopenshell.util.element.copy_deep(self.file, c)
 
             if c.is_a("IfcIndexedPolyCurve"):
                 coords = [
@@ -313,7 +309,7 @@ class ShapeBuilder:
     ):
         """mirror_axes - along which axes mirror will be applied"""
         base = point_2d  # prevent mutating the argument
-        mirror_axes = Vector( [-1 if i > 0 else 1 for i in mirror_axes] )
+        mirror_axes = Vector([-1 if i > 0 else 1 for i in mirror_axes])
         relative_point = base - mirror_point
         relative_point = relative_point * mirror_axes
         point_2d = relative_point + mirror_point
@@ -366,7 +362,11 @@ class ShapeBuilder:
         processed_objects = []
         for curve_or_item_el in curve_or_item:
             for mirror_axes in mirror_axes_data:
-                c = ifcopenshell.util.element.copy_deep(self.ifc, curve_or_item_el) if create_copy else curve_or_item_el
+                c = (
+                    ifcopenshell.util.element.copy_deep(self.file, curve_or_item_el)
+                    if create_copy
+                    else curve_or_item_el
+                )
 
                 if c.is_a("IfcIndexedPolyCurve"):
                     inverted_placement_matrix = placement_matrix.inverted() if placement_matrix else None
@@ -429,9 +429,9 @@ class ShapeBuilder:
                     trim_coords = [c.Trim1[0].Coordinates, c.Trim2[0].Coordinates]
                     trim_coords = [Vector(coords) for coords in trim_coords]
                     trim_coords = [
-                        self.mirror_2d_point(base_position, mirror_axes, mirror_point) 
-                        for base_position in trim_coords]
-                    
+                        self.mirror_2d_point(base_position, mirror_axes, mirror_point) for base_position in trim_coords
+                    ]
+
                     # if mirror only by 1 axis we need to preserve the counter-clockwise order
                     # for the trim points
                     if 0 in mirror_axes:
@@ -477,13 +477,13 @@ class ShapeBuilder:
         if position_y_axis:
             position_z_axis = position_x_axis.cross(position_y_axis)
 
-        ifc_position = self.ifc.createIfcAxis2Placement3D(
-            self.ifc.createIfcCartesianPoint(position),  # position
-            self.ifc.createIfcDirection(position_z_axis),  # Z-axis / Axis
-            self.ifc.createIfcDirection(position_x_axis),  # X-axis / RefDirection
+        ifc_position = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint(position),  # position
+            self.file.createIfcDirection(position_z_axis),  # Z-axis / Axis
+            self.file.createIfcDirection(position_x_axis),  # X-axis / RefDirection
         )
-        ifc_direction = self.ifc.createIfcDirection(extrusion_vector)
-        extruded_area = self.ifc.createIfcExtrudedAreaSolid(
+        ifc_direction = self.file.createIfcDirection(extrusion_vector)
+        extruded_area = self.file.createIfcExtrudedAreaSolid(
             SweptArea=profile_or_curve, Position=ifc_position, ExtrudedDirection=ifc_direction, Depth=magnitude
         )
         return extruded_area
@@ -493,7 +493,7 @@ class ShapeBuilder:
         # < IfcShapeRepresentation
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
-        representation = self.ifc.createIfcShapeRepresentation(
+        representation = self.file.createIfcShapeRepresentation(
             ContextOfItems=context,
             RepresentationIdentifier=context.ContextIdentifier,
             RepresentationType="SweptSolid" if items[0].is_a("IfcExtrudedAreaSolid") else "Curve2D",
@@ -502,4 +502,4 @@ class ShapeBuilder:
         return representation
 
     def deep_copy(self, element):
-        return ifcopenshell.util.element.copy_deep(self.ifc, element)
+        return ifcopenshell.util.element.copy_deep(self.file, element)

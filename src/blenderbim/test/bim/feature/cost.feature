@@ -10,14 +10,14 @@ Scenario: Enable editing cost schedule
     Given an empty IFC project
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
-    When I press "bim.enable_editing_cost_schedule(cost_schedule={cost_schedule})"
+    When I press "bim.enable_editing_cost_schedule_attributes(cost_schedule={cost_schedule})"
     Then nothing happens
 
 Scenario: Disable editing cost schedule
     Given an empty IFC project
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
-    And I press "bim.enable_editing_cost_schedule(cost_schedule={cost_schedule})"
+    And I press "bim.enable_editing_cost_schedule_attributes(cost_schedule={cost_schedule})"
     When I press "bim.disable_editing_cost_schedule"
     Then nothing happens
 
@@ -25,7 +25,7 @@ Scenario: Edit cost schedule
     Given an empty IFC project
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
-    And I press "bim.enable_editing_cost_schedule(cost_schedule={cost_schedule})"
+    And I press "bim.enable_editing_cost_schedule_attributes(cost_schedule={cost_schedule})"
     When I press "bim.edit_cost_schedule"
     Then nothing happens
 
@@ -76,7 +76,7 @@ Scenario: Enable editing cost item
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
     And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
-    When I press "bim.enable_editing_cost_item(cost_item={cost_item})"
+    When I press "bim.enable_editing_cost_item_attributes(cost_item={cost_item})"
     Then nothing happens
 
 Scenario: Disable editing cost item
@@ -86,7 +86,7 @@ Scenario: Disable editing cost item
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
     And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
-    And I press "bim.enable_editing_cost_item(cost_item={cost_item})"
+    And I press "bim.enable_editing_cost_item_attributes(cost_item={cost_item})"
     When I press "bim.disable_editing_cost_item"
     Then nothing happens
 
@@ -97,7 +97,7 @@ Scenario: Edit cost item
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
     And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
-    And I press "bim.enable_editing_cost_item(cost_item={cost_item})"
+    And I press "bim.enable_editing_cost_item_attributes(cost_item={cost_item})"
     When I press "bim.edit_cost_item"
     Then nothing happens
 

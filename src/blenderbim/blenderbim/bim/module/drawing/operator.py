@@ -103,6 +103,35 @@ class AddDrawing(bpy.types.Operator, Operator):
             pass
 
 
+class DuplicateDrawing(bpy.types.Operator, Operator):
+    bl_idname = "bim.duplicate_drawing"
+    bl_label = "Duplicate Drawing"
+    bl_options = {"REGISTER", "UNDO"}
+    drawing: bpy.props.IntProperty()
+    should_duplicate_annotations: bpy.props.BoolProperty(name="Should Duplicate Annotations", default=False)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.prop(self, "should_duplicate_annotations")
+
+    def _execute(self, context):
+        self.props = context.scene.DocProperties
+        core.duplicate_drawing(
+            tool.Ifc,
+            tool.Drawing,
+            drawing=tool.Ifc.get().by_id(self.drawing),
+            should_duplicate_annotations=self.should_duplicate_annotations,
+        )
+        try:
+            drawing = tool.Ifc.get().by_id(self.props.active_drawing_id)
+            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
+        except:
+            pass
+
+
 class CreateDrawing(bpy.types.Operator):
     """Creates/refreshes a .svg drawing
 
@@ -385,7 +414,9 @@ class CreateDrawing(bpy.types.Operator):
                             DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
                         )
                         geom_settings.set_context_ids(body_context)
-                        it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
+                        it = ifcopenshell.geom.iterator(
+                            geom_settings, ifc, multiprocessing.cpu_count(), include=elements
+                        )
                         it.set_cache(cache)
                         processed = set()
                         for elem in self.yield_from_iterator(it):
@@ -401,7 +432,9 @@ class CreateDrawing(bpy.types.Operator):
                             DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
                         )
                         geom_settings.set_context_ids(annotation_context)
-                        it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
+                        it = ifcopenshell.geom.iterator(
+                            geom_settings, ifc, multiprocessing.cpu_count(), include=elements
+                        )
                         it.set_cache(cache)
                         processed = set()
                         for elem in self.yield_from_iterator(it):
@@ -440,7 +473,8 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setWithoutStoreys(True)
         self.serialiser.setPolygonal(True)
         self.serialiser.setUseHlrPoly(True)
-        self.serialiser.setProfileThreshold(64)
+        # Objects with more than these edges are rendered as wireframe instead of HLR for optimisation
+        self.serialiser.setProfileThreshold(1000)
         self.serialiser.setUseNamespace(True)
         self.serialiser.setAlwaysProject(True)
         self.serialiser.setAutoElevation(False)

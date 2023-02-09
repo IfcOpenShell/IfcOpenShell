@@ -21,6 +21,7 @@ import re
 import bpy
 import math
 import bmesh
+import logging
 import mathutils
 import webbrowser
 import subprocess
@@ -33,9 +34,17 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
+from blenderbim.bim.module.drawing.prop import get_diagram_scales
 
 
 class Drawing(blenderbim.core.tool.Drawing):
+    @classmethod
+    def copy_representation(cls, source, dest):
+        if source.Representation:
+            dest.Representation = ifcopenshell.util.element.copy_deep(
+                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"]
+            )
+
     @classmethod
     def create_annotation_object(cls, drawing, object_type):
         data_type = {
@@ -198,13 +207,22 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_drawing_collection(cls, drawing):
         obj = tool.Ifc.get_object(drawing)
-        return obj.users_collection[0]
+        if obj:
+            return obj.users_collection[0]
 
     @classmethod
     def get_drawing_group(cls, drawing):
         for rel in drawing.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToGroup"):
                 return rel.RelatingGroup
+
+    @classmethod
+    def get_drawing_references(cls, drawing):
+        results = set()
+        for inverse in tool.Ifc.get().get_inverse(drawing):
+            if inverse.is_a("IfcRelAssignsToProduct") and inverse.RelatingProduct == drawing:
+                results.update(inverse.RelatedObjects)
+        return results
 
     @classmethod
     def get_drawing_target_view(cls, drawing):
@@ -289,6 +307,83 @@ class Drawing(blenderbim.core.tool.Drawing):
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 return rel.RelatingProduct
+
+    @classmethod
+    def import_annotations_in_group(cls, group):
+        elements = set(
+            [e for e in cls.get_group_elements(group) if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING"]
+        )
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+        ifc_importer.calculate_unit_scale()
+        ifc_importer.create_generic_elements(elements)
+        for obj in ifc_importer.added_data.values():
+            tool.Collector.assign(obj)
+
+    @classmethod
+    def import_drawing(cls, drawing):
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.STRICT_TOLERANCE, True)
+        shape = ifcopenshell.geom.create_shape(settings, drawing)
+        geometry = shape.geometry
+
+        v = geometry.verts
+        x = [v[i] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
+        z = [v[i + 2] for i in range(0, len(v), 3)]
+        width = max(x) - min(x)
+        height = max(y) - min(y)
+        depth = max(z) - min(z)
+
+        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name(geometry))
+        camera.type = "ORTHO"
+        camera.ortho_scale = width if width > height else height
+        camera.clip_end = depth
+
+        if width > height:
+            camera.BIMCameraProperties.raster_x = 1000
+            camera.BIMCameraProperties.raster_y = round(1000 * (height / width))
+        else:
+            camera.BIMCameraProperties.raster_x = round(1000 * (width / height))
+            camera.BIMCameraProperties.raster_y = 1000
+
+        psets = ifcopenshell.util.element.get_psets(drawing)
+        pset = psets.get("EPset_Drawing")
+        if pset:
+            if "TargetView" in pset:
+                camera.BIMCameraProperties.target_view = pset["TargetView"]
+            if "Scale" in pset:
+                valid_scales = [
+                    i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]
+                ]
+                if valid_scales:
+                    camera.BIMCameraProperties.diagram_scale = valid_scales[0]
+                else:
+                    camera.BIMCameraProperties.diagram_scale = "CUSTOM"
+                    camera.BIMCameraProperties.custom_diagram_scale = pset["Scale"]
+            if "HasUnderlay" in pset:
+                camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
+            if "HasLinework" in pset:
+                camera.BIMCameraProperties.has_linework = pset["HasLinework"]
+            if "HasAnnotation" in pset:
+                camera.BIMCameraProperties.has_annotation = pset["HasAnnotation"]
+
+        tool.Loader.link_mesh(shape, camera)
+
+        obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+        tool.Ifc.link(drawing, obj)
+
+        m = shape.transformation.matrix.data
+        mat = mathutils.Matrix(
+            ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+        )
+        obj.matrix_world = mat
+        tool.Geometry.record_object_position(obj)
+        tool.Collector.assign(obj)
+
+        return obj
 
     @classmethod
     def import_drawings(cls):
@@ -409,6 +504,10 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def set_drawing_collection_name(cls, group, collection):
         collection.name = f"IfcGroup/{group.Name}"
+
+    @classmethod
+    def set_name(cls, element, name):
+        element.Name = name
 
     @classmethod
     def show_decorations(cls):
@@ -913,9 +1012,12 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def is_drawing_active(cls):
         camera = bpy.context.scene.camera
-        return (camera and camera.type == "CAMERA" and
-                camera.BIMObjectProperties.ifc_definition_id and
-                any(a.type == 'VIEW_3D' for a in bpy.context.screen.areas))
+        return (
+            camera
+            and camera.type == "CAMERA"
+            and camera.BIMObjectProperties.ifc_definition_id
+            and any(a.type == "VIEW_3D" for a in bpy.context.screen.areas)
+        )
 
     @classmethod
     def is_camera_orthographic(cls):

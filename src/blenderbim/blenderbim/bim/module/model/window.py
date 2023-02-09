@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>, @Andrej730
+# Copyright (C) 2023 @Andrej730
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -18,26 +18,22 @@
 
 
 import bpy
+import json
+import bmesh
+import collections
+import ifcopenshell
+import blenderbim.tool as tool
+import blenderbim.core.geometry as core
+from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, BoolProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-import bmesh
 from bmesh.types import BMVert
-
-import ifcopenshell
-from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
-import blenderbim
-import blenderbim.tool as tool
-import blenderbim.core.geometry as core
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
-
+from blenderbim.bim.module.model.helper import replace_ifc_representation_for_object
 from mathutils import Vector
-from pprint import pprint
-
 from os.path import basename, dirname
-import json
-import collections
 
 
 V = lambda *x: Vector([float(i) for i in x])
@@ -45,8 +41,10 @@ V = lambda *x: Vector([float(i) for i in x])
 
 def update_window_modifier_representation(context):
     obj = context.active_object
+    element = tool.Ifc.get_entity(obj)
     props = obj.BIMWindowProperties
     ifc_file = tool.Ifc.get()
+
     representation_data = {
         "partition_type": props.window_type,
         "overall_height": props.overall_height,
@@ -74,61 +72,26 @@ def update_window_modifier_representation(context):
         }
         representation_data["panel_properties"].append(panel_data)
 
-    # ELEVATION_VIEW representation
-    ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
-    if not ifc_context:
-        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
-        ifc_context = ifcopenshell.api.run(
-            "context.add_context",
-            ifc_file,
-            context_type="Model",
-            context_identifier="Profile",
-            target_view="ELEVATION_VIEW",
-            parent=model_context,
+    profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
+    if profile:
+        representation_data["context"] = profile
+        elevation_representation = ifcopenshell.api.run(
+            "geometry.add_window_representation", ifc_file, **representation_data
         )
+        replace_ifc_representation_for_object(ifc_file, profile, obj, elevation_representation)
 
-    representation_data["context"] = ifc_context
-    elevation_representation = ifcopenshell.api.run(
-        "geometry.add_window_representation", ifc_file, **representation_data
-    )
-    replace_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
-
-    # MODEL_VIEW representation
-    ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-    representation_data["context"] = ifc_context
+    body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+    representation_data["context"] = body
     model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
-    replace_representation_for_object(ifc_file, ifc_context, obj, model_representation)
+    replace_ifc_representation_for_object(ifc_file, body, obj, model_representation)
+    element.PartitioningType = props.window_type
 
 
-def replace_representation_for_object(ifc_file, ifc_context, obj, new_representation):
-    ifc_element = tool.Ifc.get_entity(obj)
-    old_representation = ifcopenshell.util.representation.get_representation(
-        ifc_element, ifc_context.ContextType, ifc_context.ContextIdentifier, ifc_context.TargetView
-    )
+def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()):
+    """`thickness` of the profile is defined as list in the following order:
+    `(LEFT, TOP, RIGHT, BOTTOM)`
 
-    if old_representation:
-        for inverse in ifc_file.get_inverse(old_representation):
-            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-        core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
-    else:
-        ifcopenshell.api.run(
-            "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
-        )
-    core.switch_representation(
-        tool.Ifc,
-        tool.Geometry,
-        obj=obj,
-        representation=new_representation,
-        should_reload=True,
-        is_global=False,
-        should_sync_changes_first=True,
-    )
-
-
-def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, position: Vector):
-    """thickness of the profile is defined as list in the following order: (LEFT, TOP, RIGHT, BOTTOM)
-
-    thickness can be also defined just as 1 float value.
+    `thickness` can be also defined just as 1 float value.
     """
 
     if not isinstance(thickness, collections.abc.Iterable):
@@ -150,16 +113,16 @@ def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, positio
     ]
 
     edges = [
-        (0,  (0, 1)),
-        (1,  (2, 3)),
-        (2,  (4, 5)),
-        (3,  (6, 7)),
-        (4,  (7, 5)),
-        (5,  (1, 3)),
-        (6,  (4, 6)),
-        (7,  (0, 2)),
-        (8,  (2, 5)),
-        (9,  (3, 7)),
+        (0, (0, 1)),
+        (1, (2, 3)),
+        (2, (4, 5)),
+        (3, (6, 7)),
+        (4, (7, 5)),
+        (5, (1, 3)),
+        (6, (4, 6)),
+        (7, (0, 2)),
+        (8, (2, 5)),
+        (9, (3, 7)),
         (10, (4, 0)),
         (11, (1, 6)),
     ]
@@ -189,6 +152,46 @@ def create_bm_window_closed_profile(bm, size: Vector, thickness: Vector, positio
     return new_verts + translate_verts
 
 
+def create_bm_box(bm, size: Vector = V(1, 1, 1).freeze(), position: Vector = V(0, 0, 0).freeze()):
+    """create a box of `size`, position box first vertex at `position`"""
+    box_verts = bmesh.ops.create_cube(bm, size=1)["verts"]
+    bmesh.ops.translate(bm, vec=-box_verts[0].co, verts=box_verts)
+    bmesh.ops.scale(bm, vec=size, verts=box_verts)
+    bmesh.ops.translate(bm, vec=position, verts=box_verts)
+    return box_verts
+
+
+def create_bm_window(
+    bm,
+    lining_size: Vector,
+    lining_thickness,
+    lining_to_panel_offset_x,
+    lining_to_panel_offset_y_full,
+    frame_size,
+    frame_thickness,
+    glass_thickness,
+    position: Vector,
+):
+    # window lining
+    window_lining_verts = create_bm_window_frame(bm, lining_size, lining_thickness)
+
+    # window frame
+    frame_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full, lining_to_panel_offset_x)
+    frame_verts = create_bm_window_frame(bm, frame_size, frame_thickness, frame_position)
+
+    # window glass
+    glass_size = frame_size - V(frame_thickness * 2, 0, frame_thickness * 2)
+    glass_size.y = glass_thickness
+    glass_position = frame_position + V(frame_thickness, frame_size.y / 2 - glass_thickness / 2, frame_thickness)
+
+    glass_verts = create_bm_box(bm, glass_size, glass_position)
+
+    translated_verts = window_lining_verts + frame_verts + glass_verts
+    bmesh.ops.translate(bm, vec=position, verts=translated_verts)
+
+    return (window_lining_verts, frame_verts, glass_verts)
+
+
 def update_window_modifier_bmesh(context):
     obj = context.object
     props = obj.BIMWindowProperties
@@ -201,7 +204,9 @@ def update_window_modifier_bmesh(context):
     lining_depth = props.lining_depth * si_conversion
     overall_height = props.overall_height * si_conversion
     lining_to_panel_offset_x = props.lining_to_panel_offset_x * si_conversion
+    lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion
     lining_thickness = props.lining_thickness * si_conversion
+    lining_offset = props.lining_offset
 
     mullion_thickness = props.mullion_thickness * si_conversion / 2
     first_mullion_offset = props.first_mullion_offset * si_conversion
@@ -251,8 +256,8 @@ def update_window_modifier_bmesh(context):
             frame_depth = props.frame_depth[panel_i] * si_conversion
             frame_thickness = props.frame_thickness[panel_i] * si_conversion
 
-            # create lining
-            lining_size = V(
+            # add window
+            window_lining_size = V(
                 panel_width,
                 lining_depth,
                 panel_height,
@@ -260,59 +265,43 @@ def update_window_modifier_bmesh(context):
 
             # calculate lining thickness
             # taking into account mullions and transoms
-            thickness = [lining_thickness] * 4
+            window_lining_thickness = [lining_thickness] * 4
             # mullion thickness
             if unique_cols > 1:
                 if column_i != 0:
-                    thickness[0] = mullion_thickness  # left column
+                    window_lining_thickness[0] = mullion_thickness  # left column
                 if column_i != unique_cols - 1:
-                    thickness[2] = mullion_thickness  # right column
+                    window_lining_thickness[2] = mullion_thickness  # right column
             # transom thickness
             if unique_rows_in_col[column_i] > 1:
                 if row_i != 0:
-                    thickness[3] = transom_thickness  # bottom row
+                    window_lining_thickness[3] = transom_thickness  # bottom row
                 if row_i != unique_rows_in_col[column_i] - 1:
-                    thickness[1] = transom_thickness  # top row
+                    window_lining_thickness[1] = transom_thickness  # top row
 
-            lining_verts = create_bm_window_closed_profile(bm, lining_size, thickness, V(0, 0, 0))
+            frame_size = window_lining_size.copy()
+            frame_size.y = frame_depth
+            frame_size = frame_size - V(lining_to_panel_offset_x * 2, 0, lining_to_panel_offset_x * 2)
 
-            # add panel
-            panel_size = lining_size.copy()
-            panel_size.y = frame_depth
-            panel_size = panel_size - V(lining_to_panel_offset_x * 2, 0, lining_to_panel_offset_x * 2)
-
-            panel_position = V(
-                props.lining_to_panel_offset_x * si_conversion,
-                ((props.lining_depth - props.frame_depth[panel_i]) + props.lining_to_panel_offset_y) * si_conversion,
-                props.lining_to_panel_offset_x * si_conversion,
-            )
-            thickness = props.frame_thickness[panel_i] * si_conversion
-            panel_verts = create_bm_window_closed_profile(bm, panel_size, thickness, panel_position)
-
-            # add glass
-            glass_verts = bmesh.ops.create_cube(bm, size=1)["verts"]
-            bmesh.ops.translate(bm, vec=-glass_verts[0].co, verts=glass_verts)
-            glass_size = panel_size
-            glass_size.y = glass_thickness
-            glass_size = glass_size - V(frame_thickness * 2, 0, frame_thickness)
-            glass_position = panel_position + V(
+            window_position = V(accumulated_width, 0, accumulated_height[column_i])
+            lining_verts, panel_verts, glass_verts = create_bm_window(
+                bm,
+                window_lining_size,
+                window_lining_thickness,
+                lining_to_panel_offset_x,
+                (lining_depth - frame_depth) + lining_to_panel_offset_y,
+                frame_size,
                 frame_thickness,
-                frame_depth / 2 - glass_thickness / 2,
-                frame_thickness,
+                glass_thickness,
+                window_position,
             )
-            bmesh.ops.scale(bm, vec=glass_size, verts=glass_verts)
-            bmesh.ops.translate(bm, vec=glass_position, verts=glass_verts)
-
-            # translate panel
-            accumulated_offset = V(accumulated_width, 0, accumulated_height[column_i])
-            bmesh.ops.translate(bm, vec=accumulated_offset, verts=lining_verts + panel_verts + glass_verts)
 
             built_panels.append(panel_i)
 
             accumulated_height[column_i] += panel_height
             accumulated_width += panel_width
 
-    bmesh.ops.translate(bm, vec=V(0, props.lining_offset * si_conversion, 0), verts=bm.verts)
+    bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=bm.verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
     if bpy.context.object.mode == "EDIT":
@@ -345,13 +334,10 @@ class BIM_OT_add_window(Operator):
         obj.location = spawn_location
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class="IfcWindow",
-            should_add_representation=False
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
+        element.PredefinedType = "WINDOW"
+
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
@@ -372,7 +358,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMWindowProperties
 
         if element.is_a() not in ("IfcWindow", "IfcWindowType"):
-            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType type to add a stair.")
+            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType type to add a window.")
             return {"CANCELLED"}
 
         # need to make sure all default props will have correct units
@@ -414,13 +400,21 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         psets = ifcopenshell.util.element.get_psets(element)
         data = json.loads(psets["BBIM_Window"]["Data"])
         props = obj.BIMWindowProperties
-        # restore previous settings since editing was canceled
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
-        update_window_modifier_representation(context)
+
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        core.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
         props.is_editing = -1
-
         return {"FINISHED"}
 
 
@@ -449,10 +443,6 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Ifc.get().by_id(pset["id"])
         window_data = json.dumps(window_data, default=list)
-        # TODO: debug two types of data in
-        # from blenderbim.bim.module.model.data import WindowData
-        # WindowData.data['parameters'].keys()
-        # same thing could go for both stairs and arrays
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": window_data})
         return {"FINISHED"}
 
