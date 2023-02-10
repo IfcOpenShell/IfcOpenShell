@@ -49,7 +49,7 @@ def replace_ifc_representation_for_object(ifc_file, ifc_context, obj, new_repres
         old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
         for inverse in ifc_file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-        core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
+        ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
     else:
         ifcopenshell.api.run(
             "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation

@@ -24,7 +24,7 @@ import collections
 import ifcopenshell
 import blenderbim
 import blenderbim.tool as tool
-import blenderbim.core.geometry as core
+import blenderbim.core.geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, BoolProperty
@@ -86,6 +86,70 @@ def update_window_modifier_representation(context):
     model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, body, obj, model_representation)
     element.PartitioningType = props.window_type
+
+    element_type = None
+    if element.is_a("IfcElementType"):
+        element_type = element
+        fillings = ifcopenshell.util.element.get_types(element_type)
+    else:
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            fillings = ifcopenshell.util.element.get_types(element_type)
+        else:
+            fillings = [element]
+
+    voided_objs = set()
+    has_replaced_opening_representation = False
+    for filling in fillings:
+        if not filling.FillsVoids:
+            continue
+
+        opening = filling.FillsVoids[0].RelatingOpeningElement
+        voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
+        voided_objs.add(voided_obj)
+
+        if has_replaced_opening_representation:
+            continue
+
+        old_representation = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+        old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
+        ifcopenshell.api.run(
+            "geometry.unassign_representation", tool.Ifc.get(), product=opening, representation=old_representation
+        )
+
+        thickness = voided_obj.dimensions[1] + 0.1 + 0.1
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+        extrusion = shape_builder.extrude(
+            shape_builder.rectangle(size=Vector([props.overall_width, 0.0, props.overall_height])),
+            magnitude=thickness / unit_scale,
+            position=Vector([0.0, -0.1 / unit_scale, 0.0]),
+            extrusion_vector=Vector([0.0, 1.0, 0.0]),
+        )
+
+        new_representation = shape_builder.get_representation(context, [extrusion])
+
+        for inverse in ifc_file.get_inverse(old_representation):
+            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+        ifcopenshell.api.run("geometry.remove_representation", tool.Ifc.get(), representation=old_representation)
+
+        has_replaced_opening_representation = True
+
+    for obj in voided_objs:
+        element = tool.Ifc.get_entity(obj)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
 
 def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()):
@@ -405,7 +469,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
             setattr(props, prop_name, data[prop_name])
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        core.switch_representation(
+        blenderbim.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
