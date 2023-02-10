@@ -75,7 +75,7 @@ class Schema:
         return str(v) in self.entities
 
     def __len__(self):
-        return len(self.types) + len(self.entities)
+        return len(self.keys)
 
     def __iter__(self):
         return iter(self.keys)
