@@ -22,8 +22,8 @@ import json
 import bmesh
 import collections
 import ifcopenshell
-import blenderbim
 import blenderbim.tool as tool
+import blenderbim.core.root
 import blenderbim.core.geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 from bpy.types import Operator
