@@ -63,7 +63,7 @@ class Usecase:
 
     def execute(self):
         element = ifcopenshell.util.schema.reassign_class(
-            self.file, self.settings["product"], self.settings["ifc_class"]
+            self.file, self.settings["product"], self.settings["ifc_class"], self.settings["predefined_type"],
         )
         if self.settings["predefined_type"] and hasattr(element, "PredefinedType"):
             try:
