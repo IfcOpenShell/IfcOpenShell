@@ -180,6 +180,11 @@ class Usecase:
         frame_height = window_lining_height - lining_to_panel_offset_x * 2
         glass_thickness = self.convert_si_to_unit(0.01)
 
+        # handle dimensions (hardcoded)
+        handle_size = self.convert_si_to_unit(V(120, 40, 20) * 0.001)
+        handle_offset = self.convert_si_to_unit(V(60, 0, 1000) * 0.001) # to the handle center
+        handle_center_offset = V(handle_size.y/2, 0, handle_size.z)/2
+
         if transfom_offset:
             panel_height = transfom_offset + transom_thickness - lining_to_panel_offset_x - threshold_thickness
             lining_height = transfom_offset + transom_thickness
@@ -290,6 +295,32 @@ class Usecase:
         panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full, threshold_thickness)
         panel_items = [create_ifc_box(builder, panel_size, panel_position)]
 
+        # add door handle
+        door_handles_items = []
+        handle_points = [
+            V(0, 0),
+            V(0, -handle_size.y),
+            V(handle_size.x, -handle_size.y),
+            V(handle_size.x, -handle_size.y/2),
+            V(handle_size.y/2, -handle_size.y/2),
+            V(handle_size.y/2, 0),
+        ]
+        handle_polyline = builder.polyline(handle_points, closed=True)
+
+        handle_position = panel_position + handle_offset - handle_center_offset
+
+        door_handle = builder.extrude(handle_polyline, handle_size.z, position=handle_position)
+        door_handles_items.append(door_handle)
+
+        if door_type == 'SINGLE_SWING_LEFT':
+            builder.mirror(door_handle, mirror_axes=V(1,0),
+                               mirror_point=panel_position.xy + V(panel_size.x/2, 0))
+
+        door_handle_mirrored = builder.mirror(door_handle, mirror_axes=V(0, 1), 
+                                                mirror_point=handle_position.xy + V(0, panel_size.y/2), 
+                                                create_copy=True)
+        door_handles_items.append(door_handle_mirrored)
+        
         # add on top window
         if not transom_thickness:
             window_lining_items = []
@@ -313,7 +344,7 @@ class Usecase:
                 window_position,
             )
 
-        lining_offset_items = lining_items + panel_items + window_lining_items + frame_items + glass_items
+        lining_offset_items = lining_items + panel_items + window_lining_items + frame_items + glass_items + door_handles_items
         builder.translate(lining_offset_items, V(0, lining_offset, 0))
 
         output_items = lining_offset_items + threshold_items + casing_items
@@ -322,4 +353,7 @@ class Usecase:
         return representation
 
     def convert_si_to_unit(self, value):
-        return value / self.settings["unit_scale"]
+        si_conversion = 1 / self.settings["unit_scale"]
+        if isinstance(value, Vector):
+            return V(*[i*si_conversion for i in value])
+        return value * si_conversion
