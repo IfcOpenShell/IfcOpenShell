@@ -26,6 +26,7 @@ import blenderbim.tool as tool
 import blenderbim.core.root
 import blenderbim.core.geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
+from ifcopenshell.util.shape_builder import V
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, BoolProperty
 from bmesh.types import BMVert
@@ -33,9 +34,6 @@ from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.helper import replace_ifc_representation_for_object
 from mathutils import Vector
-
-
-V = lambda *x: Vector([float(i) for i in x])
 
 
 def update_window_modifier_representation(context):
