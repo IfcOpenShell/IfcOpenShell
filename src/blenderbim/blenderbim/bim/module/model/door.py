@@ -29,7 +29,7 @@ import blenderbim.core.geometry as core
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.window import create_bm_window, create_bm_box
-from blenderbim.bim.module.model.helper import get_ifc_context_or_create, replace_ifc_representation_for_object
+from blenderbim.bim.module.model.helper import replace_ifc_representation_for_object
 
 from mathutils import Vector, Matrix
 from pprint import pprint
@@ -76,34 +76,38 @@ def update_door_modifier_representation(context):
     }
 
     # ELEVATION_VIEW representation
-    ifc_context = get_ifc_context_or_create(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
-    representation_data["context"] = ifc_context
-    elevation_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
+    profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
+    if profile:
+        representation_data["context"] = profile
+        elevation_representation = ifcopenshell.api.run(
+            "geometry.add_door_representation", ifc_file, **representation_data
+        )
+        replace_ifc_representation_for_object(ifc_file, profile, obj, elevation_representation)
 
     # MODEL_VIEW representation
-    ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-    representation_data["context"] = ifc_context
+    body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+    representation_data["context"] = body
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, model_representation)
+    replace_ifc_representation_for_object(ifc_file, body, obj, model_representation)
 
     # PLAN_VIEW representation
-    ifc_context = get_ifc_context_or_create(ifc_file, "Plan", "Body", "PLAN_VIEW")
-    representation_data["context"] = ifc_context
-    plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, plan_representation)
+    plan = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
+    if plan:
+        representation_data["context"] = plan
+        plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
+        replace_ifc_representation_for_object(ifc_file, plan, obj, plan_representation)
 
-    # adding switch representation at the end instead of changing order of representations
-    # to prevent #2744
-    core.switch_representation(
-        tool.Ifc,
-        tool.Geometry,
-        obj=obj,
-        representation=model_representation,
-        should_reload=True,
-        is_global=True,
-        should_sync_changes_first=True,
-    )
+        # adding switch representation at the end instead of changing order of representations
+        # to prevent #2744
+        core.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=model_representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=True,
+        )
 
     ifc_element.OperationType = props.door_type
 
@@ -489,10 +493,19 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         # restore previous settings since editing was canceled
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
-        update_door_modifier_representation(context)
+
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
         props.is_editing = -1
-
         return {"FINISHED"}
 
 
