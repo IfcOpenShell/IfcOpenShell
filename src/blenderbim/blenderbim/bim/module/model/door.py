@@ -23,6 +23,7 @@ import bmesh
 from bmesh.types import BMVert, BMFace
 
 import ifcopenshell
+from ifcopenshell.util.shape_builder import V
 import blenderbim
 import blenderbim.tool as tool
 import blenderbim.core.geometry as core
@@ -36,9 +37,6 @@ from pprint import pprint
 
 import json
 import collections
-
-
-V = lambda *x: Vector([float(i) for i in x])
 
 
 def update_door_modifier_representation(context):
@@ -254,6 +252,7 @@ def update_door_modifier_bmesh(context):
     overall_width = props.overall_width * si_conversion
     overall_height = props.overall_height * si_conversion
     door_type = props.door_type
+    double_swing_door = "DOUBLE_SWING" in door_type
 
     # lining params
     lining_depth = props.lining_depth * si_conversion
@@ -266,17 +265,22 @@ def update_door_modifier_bmesh(context):
     transfom_offset = props.transom_offset * si_conversion
     if transom_thickness == 0:
         transfom_offset = 0
-
     window_lining_height = overall_height - transfom_offset - transom_thickness
-    top_lining_thickness = transom_thickness or lining_thickness_default
+
+    side_lining_thickness = lining_thickness_default
     panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0)
+
+    top_lining_thickness = transom_thickness or lining_thickness_default
     panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0)
     door_opening_width = overall_width - lining_to_panel_offset_x * 2
+    if double_swing_door:
+        side_lining_thickness = side_lining_thickness - panel_lining_overlap_x
+        top_lining_thickness = top_lining_thickness - panel_top_lining_overlap_x
 
     threshold_thickness = props.threshold_thickness * si_conversion
     threshold_depth = props.threshold_depth * si_conversion
     threshold_offset = props.threshold_offset * si_conversion
-    threshold_width = overall_width - lining_thickness_default * 2
+    threshold_width = overall_width - side_lining_thickness * 2
 
     casing_thickness = props.casing_thickness * si_conversion
     casing_depth = props.casing_depth * si_conversion
@@ -305,7 +309,7 @@ def update_door_modifier_bmesh(context):
 
     # add lining
     lining_size = V(overall_width, lining_depth, lining_height)
-    lining_thickness = [lining_thickness_default, top_lining_thickness]
+    lining_thickness = [side_lining_thickness, top_lining_thickness]
     lining_verts = create_bm_door_lining(bm, lining_size, lining_thickness)
 
     # add threshold
@@ -313,25 +317,28 @@ def update_door_modifier_bmesh(context):
         threshold_verts = []
     else:
         threshold_size = V(threshold_width, threshold_depth, threshold_thickness)
-        threshold_position = V(lining_thickness_default, threshold_offset, 0)
+        threshold_position = V(side_lining_thickness, threshold_offset, 0)
         threshold_verts = create_bm_box(bm, threshold_size, threshold_position)
 
     # add casings
     casing_verts = []
     if not lining_offset and casing_thickness:
         casing_wall_overlap = max(casing_thickness - lining_thickness_default, 0)
-        casing_size = V(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
-        casing_position = V(-casing_wall_overlap, -casing_depth, 0)
-        outer_casing_verts = create_bm_door_lining(bm, casing_size, casing_thickness, casing_position)
 
         inner_casing_thickness = [
             casing_thickness - panel_lining_overlap_x,
             casing_thickness - panel_top_lining_overlap_x,
         ]
+        outer_casing_thickness = inner_casing_thickness.copy() if double_swing_door else casing_thickness
+
+        casing_size = V(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
+        casing_position = V(-casing_wall_overlap, -casing_depth, 0)
+        outer_casing_verts = create_bm_door_lining(bm, casing_size, outer_casing_thickness, casing_position)
+        casing_verts.extend(outer_casing_verts)
+
         inner_casing_position = V(-casing_wall_overlap, lining_depth, 0)
         inner_casing_verts = create_bm_door_lining(bm, casing_size, inner_casing_thickness, inner_casing_position)
-
-        casing_verts.extend([outer_casing_verts, inner_casing_verts])
+        casing_verts.extend(inner_casing_verts)
 
     # add door panel
     panel_size = V(panel_width, panel_depth, panel_height)
@@ -352,11 +359,12 @@ def update_door_modifier_bmesh(context):
     door_handle_verts = create_bm_extruded_profile(bm, handle_points, magnitude=handle_size.z, position=handle_position)
     door_handles_verts.extend(door_handle_verts)
 
-    if door_type == "SINGLE_SWING_LEFT":
+    if door_type.endswith("LEFT"):
         bm_mirror(
             bm, door_handle_verts, mirror_axes=V(1, 0, 0), mirror_point=panel_position + V(panel_size.x / 2, 0, 0)
         )
 
+    # TODO: test it
     door_handle_mirrored_verts = bm_mirror(
         bm,
         door_handle_verts,
@@ -372,7 +380,12 @@ def update_door_modifier_bmesh(context):
         frame_verts = []
         glass_verts = []
     else:
-        window_lining_thickness = [lining_thickness_default] * 3
+        window_lining_thickness = [
+            side_lining_thickness,
+            lining_thickness_default,
+            side_lining_thickness,
+            transom_thickness,
+        ]
         window_lining_thickness.append(transom_thickness)
         window_lining_size = V(overall_width, lining_depth, window_lining_height)
         window_position = V(0, 0, overall_height - window_lining_height)

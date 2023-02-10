@@ -24,6 +24,9 @@ from mathutils import Vector
 import collections
 
 
+SUPPORTED_DOOR_TYPES = ("SINGLE_SWING_LEFT", "SINGLE_SWING_RIGHT", "DOUBLE_SWING_RIGHT", "DOUBLE_SWING_LEFT")
+
+
 def create_ifc_door_lining(
     builder: ShapeBuilder, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()
 ):
@@ -134,8 +137,9 @@ class Usecase:
         overall_height = self.settings["overall_height"]
         overall_width = self.settings["overall_width"]
         door_type = self.settings["operation_type"]
+        double_swing_door = "DOUBLE_SWING" in door_type
 
-        if door_type not in ("SINGLE_SWING_LEFT", "SINGLE_SWING_RIGHT"):
+        if door_type not in SUPPORTED_DOOR_TYPES:
             raise NotImplementedError(f'Door type "{door_type}" is not currently supported.')
 
         if self.settings["context"].TargetView == "ELEVATION_VIEW":
@@ -157,17 +161,22 @@ class Usecase:
         transfom_offset = lining_props["TransomOffset"]
         if transom_thickness == 0:
             transfom_offset = 0
-
         window_lining_height = overall_height - transfom_offset - transom_thickness
-        top_lining_thickness = transom_thickness or lining_thickness_default
+
+        side_lining_thickness = lining_thickness_default
         panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0)
+
+        top_lining_thickness = transom_thickness or lining_thickness_default
         panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0)
         door_opening_width = overall_width - lining_to_panel_offset_x * 2
+        if double_swing_door:
+            side_lining_thickness = side_lining_thickness - panel_lining_overlap_x
+            top_lining_thickness = top_lining_thickness - panel_top_lining_overlap_x
 
         threshold_thickness = lining_props["ThresholdThickness"]
         threshold_depth = lining_props["ThresholdDepth"]
         threshold_offset = lining_props["ThresholdOffset"]
-        threshold_width = overall_width - lining_thickness_default * 2
+        threshold_width = overall_width - side_lining_thickness * 2
 
         casing_thickness = lining_props["CasingThickness"]
         casing_depth = lining_props["CasingDepth"]
@@ -194,7 +203,7 @@ class Usecase:
 
         # add lining
         lining_size = V(overall_width, lining_depth, lining_height)
-        lining_thickness = [lining_thickness_default, top_lining_thickness]
+        lining_thickness = [side_lining_thickness, top_lining_thickness]
 
         def l_shape_check(lining_thickness):
             return lining_to_panel_offset_y_full < lining_depth and any(
@@ -204,9 +213,10 @@ class Usecase:
         # create 2d representation
         if self.settings["context"].TargetView == "PLAN_VIEW":
             items_2d = []
+            door_items = []
 
             # create lining
-            if l_shape_check([lining_thickness_default]):
+            if l_shape_check([side_lining_thickness]):
                 lining_points = [
                     V(0, 0),
                     V(0, lining_depth),
@@ -217,27 +227,35 @@ class Usecase:
                 ]
                 lining = builder.polyline(lining_points, closed=True)
             else:
-                lining = builder.rectangle(V(lining_thickness_default, lining_depth))
+                lining = builder.rectangle(V(side_lining_thickness, lining_depth))
 
             items_2d.append(lining)
             items_2d.append(
                 builder.mirror(lining, mirror_axes=V(1, 0), mirror_point=V(overall_width / 2, 0), create_copy=True)
             )
 
+            # TODO: make second swing lines dashed
             # create semi-semi-circle
+            if double_swing_door:
+                trim_points_mask = (3, 1)
+                second_swing_line = builder.polyline((V(0, 0), V(0, -panel_width), V(panel_depth, -panel_width)))
+                door_items.append(second_swing_line)
+            else:
+                trim_points_mask = (0, 1)
             semicircle = builder.create_ellipse_curve(
-                panel_width - panel_depth, panel_width, trim_points_mask=(0, 1), position=V(panel_depth, 0)
+                panel_width - panel_depth, panel_width, trim_points_mask=trim_points_mask, position=V(panel_depth, 0)
             )
-            items_2d.append(semicircle)
+            door_items.append(semicircle)
 
             # create door
             door = builder.rectangle(V(panel_depth, panel_width))
-            items_2d.append(door)
+            door_items.append(door)
 
-            builder.translate([semicircle, door], V(lining_to_panel_offset_x, lining_depth))
+            builder.translate(door_items, V(lining_to_panel_offset_x, lining_depth))
 
             if door_type == "SINGLE_SWING_RIGHT":
-                builder.mirror([semicircle, door], mirror_axes=V(1, 0), mirror_point=V(overall_width / 2, 0))
+                builder.mirror(door_items, mirror_axes=V(1, 0), mirror_point=V(overall_width / 2, 0))
+            items_2d += door_items
 
             representation_2d = builder.get_representation(self.settings["context"], items_2d)
             return representation_2d
@@ -269,22 +287,24 @@ class Usecase:
             threshold_items = []
         else:
             threshold_size = V(threshold_width, threshold_depth, threshold_thickness)
-            threshold_position = V(lining_thickness_default, threshold_offset, 0)
+            threshold_position = V(side_lining_thickness, threshold_offset, 0)
             threshold_items = [create_ifc_box(builder, threshold_size, threshold_position)]
 
         # add casings
         casing_items = []
         if not lining_offset and casing_thickness:
             casing_wall_overlap = max(casing_thickness - lining_thickness_default, 0)
-            casing_size = V(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
-            casing_position = V(-casing_wall_overlap, -casing_depth, 0)
-            outer_casing = create_ifc_door_lining(builder, casing_size, casing_thickness, casing_position)
-            casing_items.append(outer_casing)
-
             inner_casing_thickness = [
                 casing_thickness - panel_lining_overlap_x,
                 casing_thickness - panel_top_lining_overlap_x,
             ]
+            outer_casing_thickness = inner_casing_thickness.copy() if double_swing_door else casing_thickness
+
+            casing_size = V(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
+            casing_position = V(-casing_wall_overlap, -casing_depth, 0)
+            outer_casing = create_ifc_door_lining(builder, casing_size, outer_casing_thickness, casing_position)
+            casing_items.append(outer_casing)
+
             inner_casing_position = V(-casing_wall_overlap, lining_depth, 0)
             inner_casing = create_ifc_door_lining(builder, casing_size, inner_casing_thickness, inner_casing_position)
             casing_items.append(inner_casing)
@@ -311,7 +331,7 @@ class Usecase:
         door_handle = builder.extrude(handle_polyline, handle_size.z, position=handle_position)
         door_handles_items.append(door_handle)
 
-        if door_type == "SINGLE_SWING_LEFT":
+        if door_type.endswith("LEFT"):
             builder.mirror(door_handle, mirror_axes=V(1, 0), mirror_point=panel_position.xy + V(panel_size.x / 2, 0))
 
         door_handle_mirrored = builder.mirror(
@@ -325,7 +345,12 @@ class Usecase:
             frame_items = []
             glass_items = []
         else:
-            window_lining_thickness = [lining_thickness_default] * 3
+            window_lining_thickness = [
+                side_lining_thickness,
+                lining_thickness_default,
+                side_lining_thickness,
+                transom_thickness,
+            ]
             window_lining_thickness.append(transom_thickness)
             window_lining_size = V(overall_width, lining_depth, window_lining_height)
             window_position = V(0, 0, overall_height - window_lining_height)
