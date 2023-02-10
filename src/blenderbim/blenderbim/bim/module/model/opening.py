@@ -21,12 +21,14 @@ import gpu
 import bgl
 import bmesh
 import logging
-import blenderbim.bim.handler
+import numpy as np
 import ifcopenshell
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.bim.import_ifc as import_ifc
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from math import pi
 from mathutils import Vector, Matrix
@@ -112,30 +114,21 @@ class FilledOpeningGenerator:
                 "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
             )
         else:
-            has_visible_openings = self.has_visible_openings(element)
-            opening_obj = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
-            opening = blenderbim.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=opening_obj,
-                ifc_class="IfcOpeningElement",
-                should_add_representation=True,
-                context=ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body"),
+            representation = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
+            opening = ifcopenshell.api.run(
+                "root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement", predefined_type="OPENING"
             )
-            representation = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+
+            matrix = np.array(filling_obj.matrix_world)
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=matrix, is_si=True
+            )
             mapped_representation = ifcopenshell.api.run(
                 "geometry.map_representation", tool.Ifc.get(), representation=representation
             )
             ifcopenshell.api.run(
-                "geometry.unassign_representation", tool.Ifc.get(), product=opening, representation=representation
-            )
-            ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
             )
-            if not has_visible_openings:
-                tool.Ifc.unlink(obj=opening_obj)
-                bpy.data.objects.remove(opening_obj)
 
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
         ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
@@ -165,6 +158,7 @@ class FilledOpeningGenerator:
         ifcopenshell.api.run(
             "geometry.unassign_representation", tool.Ifc.get(), product=opening, representation=opening_rep
         )
+        ifcopenshell.api.run("geometry.remove_representation", tool.Ifc.get(), representation=opening_rep)
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
@@ -186,32 +180,13 @@ class FilledOpeningGenerator:
                 bpy.data.objects.remove(opening_obj)
 
             filling_obj = tool.Ifc.get_object(filling)
-            opening_obj = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
-            tool.Ifc.link(opening, opening_obj)
-
-            representation = ifcopenshell.api.run(
-                "geometry.add_representation",
-                tool.Ifc.get(),
-                context=ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body"),
-                blender_object=opening_obj,
-                geometry=opening_obj.data,
-                coordinate_offset=tool.Geometry.get_cartesian_point_coordinate_offset(opening_obj),
-                total_items=tool.Geometry.get_total_representation_items(opening_obj),
-                should_force_faceted_brep=tool.Geometry.should_force_faceted_brep(),
-                should_force_triangulation=tool.Geometry.should_force_triangulation(),
-                should_generate_uvs=tool.Geometry.should_generate_uvs(opening_obj),
-                ifc_representation_class=None,
-                profile_set_usage=None,
-            )
-
+            representation = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
             mapped_representation = ifcopenshell.api.run(
                 "geometry.map_representation", tool.Ifc.get(), representation=representation
             )
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
             )
-            tool.Ifc.unlink(obj=opening_obj)
-            bpy.data.objects.remove(opening_obj)
 
         representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
         blenderbim.core.geometry.switch_representation(
@@ -225,10 +200,37 @@ class FilledOpeningGenerator:
         )
 
     def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
-        profile = ifcopenshell.util.representation.get_representation(filling, "Model", "Profile", "ELEVATION_VIEW")
+        thickness = voided_obj.dimensions[1] + 0.1 + 0.1
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+
+        profile = None
+        filling_type = ifcopenshell.util.element.get_type(filling)
+        if filling_type:
+            profile = ifcopenshell.util.representation.get_representation(
+                filling_type, "Model", "Profile", "ELEVATION_VIEW"
+            )
+            filling_obj = tool.Ifc.get_object(filling_type)
+        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
         if profile:
-            return self.generate_opening_from_filling_profile(filling_obj, voided_obj, profile)
-        return self.generate_opening_from_filling_box(filling_obj, voided_obj)
+            extrusion = shape_builder.extrude(
+                ifcopenshell.util.representation.resolve_representation(profile).Items[0],
+                magnitude=thickness / unit_scale,
+                position=Vector([0.0, -0.1 / unit_scale, 0.0]),
+                extrusion_vector=Vector([0.0, 1.0, 0.0]),
+            )
+            return shape_builder.get_representation(context, [extrusion])
+
+        x, y, z = filling_obj.dimensions
+        extrusion = shape_builder.extrude(
+            shape_builder.rectangle(size=Vector([x, 0.0, z])),
+            magnitude=thickness / unit_scale,
+            position=Vector([0.0, -0.1 / unit_scale, 0.0]),
+            extrusion_vector=Vector([0.0, 1.0, 0.0]),
+        )
+
+        return shape_builder.get_representation(context, [extrusion])
 
     def has_visible_openings(self, element):
         for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
@@ -243,92 +245,6 @@ class FilledOpeningGenerator:
             for filling_occurrence in filling_occurrences:
                 if filling_occurrence != filling and filling_occurrence.FillsVoids:
                     return filling_occurrence.FillsVoids[0].RelatingOpeningElement
-
-    def generate_opening_from_filling_profile(self, filling_obj, voided_obj, profile):
-        settings = ifcopenshell.geom.settings()
-        settings.set(settings.INCLUDE_CURVES, True)
-        shape = ifcopenshell.geom.create_shape(settings, profile)
-        verts = shape.verts
-        edges = shape.edges
-        grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
-        grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
-
-        bm = bmesh.new()
-        bm.verts.index_update()
-        bm.edges.index_update()
-        new_verts = [bm.verts.new(v) for v in grouped_verts]
-        new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in grouped_edges]
-
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
-        bmesh.ops.triangle_fill(bm, edges=bm.edges)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi, verts=bm.verts, edges=bm.edges)
-
-        bmesh.ops.translate(bm, vec=[0.0, -0.1, 0.0], verts=bm.verts)
-        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0.0, voided_obj.dimensions[1] + 0.1 + 0.1, 0.0], verts=extruded_verts)
-
-        mesh = bpy.data.meshes.new(name="Opening")
-        bm.to_mesh(mesh)
-        bm.free()
-
-        obj = bpy.data.objects.new("Opening", mesh)
-        obj.matrix_world = filling_obj.matrix_world
-        return obj
-
-    def generate_opening_from_filling_box(self, filling_obj, voided_obj):
-        x, y, z = filling_obj.dimensions
-        dimension = min(voided_obj.dimensions)
-        if dimension == voided_obj.dimensions[0]:
-            verts = [
-                Vector((-0.1, 0, 0)),
-                Vector((-0.1, 0, z)),
-                Vector((-0.1, y, 0)),
-                Vector((-0.1, y, z)),
-                Vector((dimension + 0.1, 0, 0)),
-                Vector((dimension + 0.1, 0, z)),
-                Vector((dimension + 0.1, y, 0)),
-                Vector((dimension + 0.1, y, z)),
-            ]
-        elif dimension == voided_obj.dimensions[1]:
-            verts = [
-                Vector((0, -0.1, 0)),
-                Vector((0, -0.1, z)),
-                Vector((0, dimension + 0.1, 0)),
-                Vector((0, dimension + 0.1, z)),
-                Vector((x, -0.1, 0)),
-                Vector((x, -0.1, z)),
-                Vector((x, dimension + 0.1, 0)),
-                Vector((x, dimension + 0.1, z)),
-            ]
-        elif dimension == voided_obj.dimensions[2]:
-            verts = [
-                Vector((0, 0, -0.1)),
-                Vector((0, 0, dimension + 0.1)),
-                Vector((0, y, -0.1)),
-                Vector((0, y, dimension + 0.1)),
-                Vector((x, 0, -0.1)),
-                Vector((x, 0, dimension + 0.1)),
-                Vector((x, y, -0.1)),
-                Vector((x, y, dimension + 0.1)),
-            ]
-        edges = []
-        faces = [
-            [0, 1, 3, 2],
-            [2, 3, 7, 6],
-            [6, 7, 5, 4],
-            [4, 5, 1, 0],
-            [2, 6, 4, 0],
-            [7, 3, 1, 5],
-        ]
-        mesh = bpy.data.meshes.new(name="Opening")
-        mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Opening", mesh)
-        obj.matrix_world = filling_obj.matrix_world
-        return obj
 
 
 class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
