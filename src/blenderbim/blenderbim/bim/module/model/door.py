@@ -86,7 +86,7 @@ def update_door_modifier_representation(context):
     representation_data["context"] = ifc_context
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, ifc_context, obj, model_representation)
-    
+
     # PLAN_VIEW representation
     ifc_context = get_ifc_context_or_create(ifc_file, "Plan", "Body", "PLAN_VIEW")
     representation_data["context"] = ifc_context
@@ -109,81 +109,79 @@ def update_door_modifier_representation(context):
 
 
 def bm_sort_out_geom(geom_data):
-    geom_dict = {
-        'verts': [],
-        'edges': [],
-        'faces': []
-    }
+    geom_dict = {"verts": [], "edges": [], "faces": []}
 
     for el in geom_data:
         if isinstance(el, BMVert):
-            geom_dict['verts'].append(el)
+            geom_dict["verts"].append(el)
         elif isinstance(el, BMFace):
-            geom_dict['faces'].append(el)
+            geom_dict["faces"].append(el)
         else:
-            geom_dict['edges'].append(el)
+            geom_dict["edges"].append(el)
     return geom_dict
 
 
-def bm_mirror(bm, verts,
-    mirror_axes: Vector = V(1,0,0).freeze(),
-    mirror_point: Vector = V(0,0,0).freeze(),
-    create_copy=False):
-
+def bm_mirror(
+    bm, verts, mirror_axes: Vector = V(1, 0, 0).freeze(), mirror_point: Vector = V(0, 0, 0).freeze(), create_copy=False
+):
     matrix = Matrix.Translation(mirror_point)
     for i, v in enumerate(mirror_axes):
         if not v:
             continue
-        mirror_axis = V(0,0,0)
+        mirror_axis = V(0, 0, 0)
         mirror_axis[i] = 1.0
         matrix = matrix @ Matrix.Scale(-1, 4, mirror_axis)
     matrix = matrix @ Matrix.Translation(-mirror_point)
 
-    # `bmesh.ops.mirror` has no option to mirror existing geometry without creating new 
+    # `bmesh.ops.mirror` has no option to mirror existing geometry without creating new
     # and matrix kind of work diffrently than transform so I chose `bmesh.ops.transform`
     if create_copy:
         faces = set()
-        for v in verts: faces.update(v.link_faces)
+        for v in verts:
+            faces.update(v.link_faces)
         duplicated = bmesh.ops.duplicate(bm, geom=list(faces))
-        verts = bm_sort_out_geom(duplicated['geom'])['verts']
+        verts = bm_sort_out_geom(duplicated["geom"])["verts"]
 
     bmesh.ops.transform(bm, verts=verts, matrix=matrix, space=Matrix.Identity(4))
     return verts
 
 
 def create_bm_extruded_profile(
-        bm, points, edges=None, faces=None, 
-        position: Vector = V(0,0,0).freeze(), 
-        magnitude=1.0,
-        extrusion_vector: Vector = V(0,0,1).freeze()
-    ):
+    bm,
+    points,
+    edges=None,
+    faces=None,
+    position: Vector = V(0, 0, 0).freeze(),
+    magnitude=1.0,
+    extrusion_vector: Vector = V(0, 0, 1).freeze(),
+):
     bm.verts.index_update()
     bm.edges.index_update()
     bm.faces.ensure_lookup_table()
 
     if not edges:
         last_point = len(points) - 1
-        edges = [(i, i+1) for i in range(last_point)]
+        edges = [(i, i + 1) for i in range(last_point)]
         edges.append((last_point, 0))
 
     new_verts = [bm.verts.new(v) for v in points]
     new_edges = [bm.edges.new([new_verts[vi] for vi in edge]) for edge in edges]
 
     if not faces:
-        new_faces = bmesh.ops.contextual_create(bm, geom=new_edges)['faces']     
+        new_faces = bmesh.ops.contextual_create(bm, geom=new_edges)["faces"]
     else:
         new_faces = [bm.faces.new([new_verts[vi] for vi in face]) for face in faces]
 
     extruded = bmesh.ops.extrude_face_region(bm, geom=new_faces)
     extrusion_vector = extrusion_vector * magnitude
-    extruded_verts = bm_sort_out_geom(extruded['geom'])['verts']
+    extruded_verts = bm_sort_out_geom(extruded["geom"])["verts"]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
 
     bmesh.ops.translate(bm, vec=position, verts=new_verts + extruded_verts)
     return new_verts + extruded_verts
 
 
-def create_bm_door_lining(bm, size: Vector, thickness: Vector, position:Vector=V(0,0,0).freeze()):
+def create_bm_door_lining(bm, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()):
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
     `thickness` can be also defined just as 1 float value.
@@ -197,14 +195,14 @@ def create_bm_door_lining(bm, size: Vector, thickness: Vector, position:Vector=V
     width, depth, height = size
 
     verts = [
-        (0, [width - th_side, 0.0, height-th_up]),
+        (0, [width - th_side, 0.0, height - th_up]),
         (1, [0.0, 0.0, height]),
-        (2, [th_side, 0.0, height-th_up]),
+        (2, [th_side, 0.0, height - th_up]),
         (3, [0.0, 0.0, 0.0]),
         (4, [width - th_side, 0.0, 0.0]),
         (5, [width, 0.0, height]),
         (6, [th_side, 0.0, 0.0]),
-        (7, [width, 0.0, 0.0])
+        (7, [width, 0.0, 0.0]),
     ]
 
     edges = [
@@ -289,9 +287,8 @@ def update_door_modifier_bmesh(context):
 
     # handle dimensions (hardcoded)
     handle_size = V(120, 40, 20) * 0.001 * si_conversion
-    handle_offset = V(60, 0, 1000) * 0.001 * si_conversion # to the handle center
-    handle_center_offset = V(handle_size.y/2, 0, handle_size.z)/2
-
+    handle_offset = V(60, 0, 1000) * 0.001 * si_conversion  # to the handle center
+    handle_center_offset = V(handle_size.y / 2, 0, handle_size.z) / 2
 
     if transfom_offset:
         panel_height = transfom_offset + transom_thickness - lining_to_panel_offset_x - threshold_thickness
@@ -319,13 +316,13 @@ def update_door_modifier_bmesh(context):
     casing_verts = []
     if not lining_offset and casing_thickness:
         casing_wall_overlap = max(casing_thickness - lining_thickness_default, 0)
-        casing_size = V(overall_width + casing_wall_overlap*2, casing_depth, overall_height+casing_wall_overlap)
+        casing_size = V(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
         casing_position = V(-casing_wall_overlap, -casing_depth, 0)
         outer_casing_verts = create_bm_door_lining(bm, casing_size, casing_thickness, casing_position)
 
         inner_casing_thickness = [
-            casing_thickness-panel_lining_overlap_x, 
-            casing_thickness-panel_top_lining_overlap_x
+            casing_thickness - panel_lining_overlap_x,
+            casing_thickness - panel_top_lining_overlap_x,
         ]
         inner_casing_position = V(-casing_wall_overlap, lining_depth, 0)
         inner_casing_verts = create_bm_door_lining(bm, casing_size, inner_casing_thickness, inner_casing_position)
@@ -343,27 +340,27 @@ def update_door_modifier_bmesh(context):
         V(0, 0, 0),
         V(0, -handle_size.y, 0),
         V(handle_size.x, -handle_size.y, 0),
-        V(handle_size.x, -handle_size.y/2, 0),
-        V(handle_size.y/2, -handle_size.y/2, 0),
-        V(handle_size.y/2, 0, 0),
+        V(handle_size.x, -handle_size.y / 2, 0),
+        V(handle_size.y / 2, -handle_size.y / 2, 0),
+        V(handle_size.y / 2, 0, 0),
     ]
     handle_position = panel_position + handle_offset - handle_center_offset
-    door_handle_verts = create_bm_extruded_profile(bm, handle_points,
-                                             magnitude=handle_size.z, 
-                                             position=handle_position)
+    door_handle_verts = create_bm_extruded_profile(bm, handle_points, magnitude=handle_size.z, position=handle_position)
     door_handles_verts.extend(door_handle_verts)
 
-    if door_type == 'SINGLE_SWING_LEFT':
-        bm_mirror(bm, door_handle_verts, 
-                mirror_axes=V(1,0,0),
-                mirror_point=panel_position + V(panel_size.x/2, 0, 0))
+    if door_type == "SINGLE_SWING_LEFT":
+        bm_mirror(
+            bm, door_handle_verts, mirror_axes=V(1, 0, 0), mirror_point=panel_position + V(panel_size.x / 2, 0, 0)
+        )
 
-    door_handle_mirrored_verts = bm_mirror(bm, door_handle_verts, 
-                                           mirror_axes=V(0, 1, 0), 
-                                            mirror_point=handle_position + V(0, panel_size.y/2, 0), 
-                                            create_copy=True)
+    door_handle_mirrored_verts = bm_mirror(
+        bm,
+        door_handle_verts,
+        mirror_axes=V(0, 1, 0),
+        mirror_point=handle_position + V(0, panel_size.y / 2, 0),
+        create_copy=True,
+    )
     door_handles_verts.extend(door_handle_mirrored_verts)
-
 
     # add on top window
     if not transom_thickness:
@@ -422,12 +419,7 @@ class BIM_OT_add_door(Operator):
         obj.location = spawn_location
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class="IfcDoor",
-            should_add_representation=False
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
         element.PredefinedType = "DOOR"
 
