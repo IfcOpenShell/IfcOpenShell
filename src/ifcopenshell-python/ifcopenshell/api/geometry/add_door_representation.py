@@ -25,7 +25,7 @@ import collections
 
 
 def create_ifc_door_lining(
-    builder: ShapeBuilder, size: Vector, thickness: Vector, position: Vector = V(0,0,0).freeze()
+    builder: ShapeBuilder, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()
 ):
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
@@ -42,21 +42,21 @@ def create_ifc_door_lining(
         V(size.x, 0.0, size.z),
         V(size.x, 0.0, 0.0),
         V(size.x - th_side, 0.0, 0.0),
-        V(size.x - th_side, 0.0, size.z-th_up),
-        V(th_side, 0.0, size.z-th_up),
+        V(size.x - th_side, 0.0, size.z - th_up),
+        V(th_side, 0.0, size.z - th_up),
         V(th_side, 0.0, 0.0),
     ]
 
     door_lining = builder.polyline(points, closed=True)
-    door_lining = builder.extrude(door_lining, size.y, extrusion_vector=V(0,1,0))
+    door_lining = builder.extrude(door_lining, size.y, extrusion_vector=V(0, 1, 0))
     builder.translate(door_lining, position)
 
     return door_lining
 
 
-def create_ifc_box(builder: ShapeBuilder, size: Vector, position: Vector = V(0,0,0).freeze()):
+def create_ifc_box(builder: ShapeBuilder, size: Vector, position: Vector = V(0, 0, 0).freeze()):
     rect = builder.rectangle(size.xy)
-    box = builder.extrude(rect, size.z, position=position, extrusion_vector=V(0,0,1))
+    box = builder.extrude(rect, size.z, position=position, extrusion_vector=V(0, 0, 1))
     return box
 
 
@@ -182,8 +182,8 @@ class Usecase:
 
         # handle dimensions (hardcoded)
         handle_size = self.convert_si_to_unit(V(120, 40, 20) * 0.001)
-        handle_offset = self.convert_si_to_unit(V(60, 0, 1000) * 0.001) # to the handle center
-        handle_center_offset = V(handle_size.y/2, 0, handle_size.z)/2
+        handle_offset = self.convert_si_to_unit(V(60, 0, 1000) * 0.001)  # to the handle center
+        handle_center_offset = V(handle_size.y / 2, 0, handle_size.z) / 2
 
         if transfom_offset:
             panel_height = transfom_offset + transom_thickness - lining_to_panel_offset_x - threshold_thickness
@@ -197,8 +197,9 @@ class Usecase:
         lining_thickness = [lining_thickness_default, top_lining_thickness]
 
         def l_shape_check(lining_thickness):
-            return lining_to_panel_offset_y_full < lining_depth \
-                and any(lining_to_panel_offset_x < th for th in lining_thickness)
+            return lining_to_panel_offset_y_full < lining_depth and any(
+                lining_to_panel_offset_x < th for th in lining_thickness
+            )
 
         # create 2d representation
         if self.settings["context"].TargetView == "PLAN_VIEW":
@@ -236,7 +237,7 @@ class Usecase:
             builder.translate([semicircle, door], V(lining_to_panel_offset_x, lining_depth))
 
             if door_type == "SINGLE_SWING_RIGHT":
-                builder.mirror([semicircle, door], mirror_axes=V(1,0), mirror_point=V(overall_width/2, 0))
+                builder.mirror([semicircle, door], mirror_axes=V(1, 0), mirror_point=V(overall_width / 2, 0))
 
             representation_2d = builder.get_representation(self.settings["context"], items_2d)
             return representation_2d
@@ -275,7 +276,7 @@ class Usecase:
         casing_items = []
         if not lining_offset and casing_thickness:
             casing_wall_overlap = max(casing_thickness - lining_thickness_default, 0)
-            casing_size = V(overall_width + casing_wall_overlap*2, casing_depth, overall_height + casing_wall_overlap)
+            casing_size = V(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
             casing_position = V(-casing_wall_overlap, -casing_depth, 0)
             outer_casing = create_ifc_door_lining(builder, casing_size, casing_thickness, casing_position)
             casing_items.append(outer_casing)
@@ -285,9 +286,7 @@ class Usecase:
                 casing_thickness - panel_top_lining_overlap_x,
             ]
             inner_casing_position = V(-casing_wall_overlap, lining_depth, 0)
-            inner_casing = create_ifc_door_lining(
-                builder, casing_size, inner_casing_thickness, inner_casing_position
-            )
+            inner_casing = create_ifc_door_lining(builder, casing_size, inner_casing_thickness, inner_casing_position)
             casing_items.append(inner_casing)
 
         # add door panel
@@ -301,9 +300,9 @@ class Usecase:
             V(0, 0),
             V(0, -handle_size.y),
             V(handle_size.x, -handle_size.y),
-            V(handle_size.x, -handle_size.y/2),
-            V(handle_size.y/2, -handle_size.y/2),
-            V(handle_size.y/2, 0),
+            V(handle_size.x, -handle_size.y / 2),
+            V(handle_size.y / 2, -handle_size.y / 2),
+            V(handle_size.y / 2, 0),
         ]
         handle_polyline = builder.polyline(handle_points, closed=True)
 
@@ -312,15 +311,14 @@ class Usecase:
         door_handle = builder.extrude(handle_polyline, handle_size.z, position=handle_position)
         door_handles_items.append(door_handle)
 
-        if door_type == 'SINGLE_SWING_LEFT':
-            builder.mirror(door_handle, mirror_axes=V(1,0),
-                               mirror_point=panel_position.xy + V(panel_size.x/2, 0))
+        if door_type == "SINGLE_SWING_LEFT":
+            builder.mirror(door_handle, mirror_axes=V(1, 0), mirror_point=panel_position.xy + V(panel_size.x / 2, 0))
 
-        door_handle_mirrored = builder.mirror(door_handle, mirror_axes=V(0, 1), 
-                                                mirror_point=handle_position.xy + V(0, panel_size.y/2), 
-                                                create_copy=True)
+        door_handle_mirrored = builder.mirror(
+            door_handle, mirror_axes=V(0, 1), mirror_point=handle_position.xy + V(0, panel_size.y / 2), create_copy=True
+        )
         door_handles_items.append(door_handle_mirrored)
-        
+
         # add on top window
         if not transom_thickness:
             window_lining_items = []
@@ -344,7 +342,9 @@ class Usecase:
                 window_position,
             )
 
-        lining_offset_items = lining_items + panel_items + window_lining_items + frame_items + glass_items + door_handles_items
+        lining_offset_items = (
+            lining_items + panel_items + window_lining_items + frame_items + glass_items + door_handles_items
+        )
         builder.translate(lining_offset_items, V(0, lining_offset, 0))
 
         output_items = lining_offset_items + threshold_items + casing_items
@@ -355,5 +355,5 @@ class Usecase:
     def convert_si_to_unit(self, value):
         si_conversion = 1 / self.settings["unit_scale"]
         if isinstance(value, Vector):
-            return V(*[i*si_conversion for i in value])
+            return V(*[i * si_conversion for i in value])
         return value * si_conversion
