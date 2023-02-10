@@ -49,7 +49,7 @@ class Usecase:
             rate_tables = ifcopenshell.api.run("cost.add_cost_schedule", model,
                 predefined_type="SCHEDULEOFRATES")
             rate = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-            value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
+            value = ifcopenshell.api.run("cost.add_cost_value", model, parent=rate)
             ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
                 attributes={"AppliedValue": 5.0})
 
@@ -64,9 +64,15 @@ class Usecase:
         self.settings = {"cost_item": cost_item, "cost_rate": cost_rate}
 
     def execute(self):
-        for cost_value in self.settings["cost_item"].CostValues:
-            ifcopenshell.api.run(
-                "cost.remove_cost_item_value", self.file, parent=self.settings["cost_item"], cost_value=cost_value
-            )
+        if self.settings["cost_item"].CostValues:
+            [
+                ifcopenshell.api.run(
+                    "cost.remove_cost_item_value",
+                    self.file,
+                    parent=self.settings["cost_item"],
+                    cost_value=cost_value,
+                )
+                for cost_value in self.settings["cost_item"].CostValues
+            ]
         # This is an assumption, and not part of the official IFC documentation
         self.settings["cost_item"].CostValues = self.settings["cost_rate"].CostValues
