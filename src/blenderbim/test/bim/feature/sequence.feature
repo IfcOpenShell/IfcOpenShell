@@ -694,9 +694,9 @@ Scenario: Contract All Tasks
     And I press "bim.add_summary_task(work_schedule={work_schedule})"
     And the variable "summary_task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
     When I press "bim.add_task(task={summary_task})"
-    And the variable "nested_task_one" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    And the variable "nested_task_one" is "IfcStore.get_file().by_type('IfcTask')[-1].id()"
     When I press "bim.add_task(task={summary_task})"
-    And the variable "nested_task_two" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    And the variable "nested_task_two" is "IfcStore.get_file().by_type('IfcTask')[-1].id()"
     When I press "bim.contract_all_tasks()"
     Then nothing happens
 
@@ -706,11 +706,73 @@ Scenario: Expand All Tasks
     And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
     And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
     And I press "bim.add_summary_task(work_schedule={work_schedule})"
-    And the variable "summary_task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    And the variable "summary_task" is "IfcStore.get_file().by_type('IfcTask')[-1].id()"
     When I press "bim.add_task(task={summary_task})"
-    And the variable "nested_task_one" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    And the variable "nested_task_one" is "IfcStore.get_file().by_type('IfcTask')[-1].id()"
     When I press "bim.add_task(task={summary_task})"
-    And the variable "nested_task_two" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    And the variable "nested_task_two" is "IfcStore.get_file().by_type('IfcTask')[-1].id()"
     And I press "bim.contract_all_tasks()"
     When I press "bim.expand_all_tasks()"
+    Then nothing happens
+
+Scenario: Assign Product Output
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.assign_product(task={task})"
+    Then nothing happens
+
+Scenario: Assign Product Input
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.assign_process(task={task}, related_object_type='PRODUCT')"
+    Then nothing happens
+
+Scenario: Select Assigned Outputs
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And I press "object.select_all(action='DESELECT')"
+    And I press "bim.assign_product(task={task})"
+    When I press "bim.select_task_related_products(task={task})"
+    Then nothing happens
+
+Scenario: Select Assigned Inputs
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And I press "object.select_all(action='DESELECT')"
+    And I press "bim.assign_process(task={task}, related_object_type='PRODUCT')"
+    When I press "bim.select_task_related_products(task={task})"
     Then nothing happens
