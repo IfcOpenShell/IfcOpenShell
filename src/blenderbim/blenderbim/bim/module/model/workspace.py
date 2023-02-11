@@ -90,6 +90,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Y")]}),
         ("bim.hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
+        ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -447,6 +448,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_S_A(self):
         bpy.ops.bim.add_constr_type_instance()
+
+    def hotkey_S_Q(self):
+        bpy.ops.bim.calculate_all_quantities()
 
     def hotkey_S_C(self):
         if self.active_material_usage == "LAYER2":
