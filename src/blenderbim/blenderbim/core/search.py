@@ -1,4 +1,4 @@
-def show_all_ifc_elements(spatial):
+def show_scene_elements(spatial):
     spatial.show_scene_objects()
 
 def search(search, spatial, query, action):
