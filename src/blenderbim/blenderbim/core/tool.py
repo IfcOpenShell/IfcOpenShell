@@ -498,6 +498,9 @@ class Root:
 class Selector:
     def set_active(cls, obj): pass
 
+@interface
+class Search:
+    def from_selector_query(cls, query): pass
 
 @interface
 class Sequence:
@@ -548,7 +551,7 @@ class Sequence:
     def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
     def get_recurrence_pattern_times(cls): pass
     def get_rel_sequence_attributes(cls): pass
-    def get_selected_products(cls): pass
+    
     def get_selected_resource(cls): pass
     def get_start_date(cls): pass
     def get_task_attribute_value(cls, attribute_name): pass
@@ -580,37 +583,42 @@ class Sequence:
     def load_work_plan_attributes(cls, work_plan): pass
     def load_work_schedule_attributes(cls, work_schedule): pass
     def load_work_time_attributes(cls, work_time): pass
-    def override_end_date(cls): pass
     def process_construction_state(cls, work_schedule, date): pass
     def process_task_status(cls, task, date): pass
     def remove_task_column(cls, name): pass
     def reset_time_period(cls): pass
-    def select_products(cls, products): pass
     def set_object_shading(cls): pass
     def set_task_sort_column(cls, column): pass
     def setup_default_task_columns(cls): pass
     def show_snapshot(cls, product_states): pass
     def update_visualisation_date(cls, start_date, finish_date): pass
 
-
 @interface
 class Spatial:
     def can_contain(cls, structure_obj, element_obj): pass
     def can_reference(cls, structure, element): pass
+    def copy_xy(cls, src_obj, destination_obj): pass
+    def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
     def enable_editing(cls, obj): pass
+    def filter_products(cls, products, action): pass
     def get_container(cls, element): pass
     def get_decomposed_elements(cls, container): pass
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
+    def get_selected_product_types(cls): pass
+    def get_selected_products_and_types(cls): pass
+    def get_selected_products(cls): pass
+    def get_selected_products(cls): pass
     def import_containers(cls, parent=None): pass
     def run_root_copy_class(cls, obj=None): pass
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
     def select_object(cls, obj): pass
+    def select_products(cls, products, unhide): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
-
+    def show_scene_objects(cls): pass
 
 @interface
 class Structural:
