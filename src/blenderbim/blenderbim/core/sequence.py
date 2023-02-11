@@ -415,11 +415,11 @@ def disable_editing_rel_sequence(sequence):
     sequence.disable_editing_rel_sequence()
 
 
-def select_task_outputs(spatial, sequence, task=None):
+def select_task_outputs(sequence, spatial, task=None):
     spatial.select_products(products=sequence.get_task_outputs(task))
 
 
-def select_task_inputs(spatial, sequence, task=None):
+def select_task_inputs(sequence, spatial, task=None):
     spatial.select_products(products=sequence.get_task_inputs(task))
 
 
