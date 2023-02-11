@@ -184,6 +184,7 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = ifc_definition_id
+                row.operator("bim.duplicate_task", text="", icon="DUPLICATE").task = ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = ifc_definition_id
 
     def draw_column_ui(self):

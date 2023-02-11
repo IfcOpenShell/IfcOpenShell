@@ -1268,12 +1268,11 @@ class DisableEditingTaskAnimationColors(bpy.types.Operator):
         core.disable_editing_task_animation_colors(tool.Sequence)
         return {"FINISHED"}
 
-class CopyTask(bpy.types.Operator):
-    bl_idname = "bim.copy_task"
+class CopyTask(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_task"
     bl_label = "Copy Task"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
-    def execute(self, context):
-        core.copy_task(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.duplicate_task(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
