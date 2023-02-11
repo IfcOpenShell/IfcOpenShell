@@ -281,7 +281,9 @@ class CostItemQuantitiesData:
         total_resources = len(bpy.context.scene.BIMResourceTreeProperties.resources)
         if not total_resources or active_resource_index >= total_resources:
             return []
-        ifc_definition_id = bpy.context.scene.BIMResourceTreeProperties.resources[active_resource_index].ifc_definition_id
+        ifc_definition_id = bpy.context.scene.BIMResourceTreeProperties.resources[
+            active_resource_index
+        ].ifc_definition_id
         element = tool.Ifc.get().by_id(ifc_definition_id)
         names = set()
         qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True)

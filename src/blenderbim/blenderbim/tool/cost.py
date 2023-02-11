@@ -2,6 +2,7 @@ import os
 import bpy
 import blenderbim.tool as tool
 import ifcopenshell.util.date
+import ifcopenshell.util.cost
 import blenderbim.bim.helper
 import json
 
@@ -15,22 +16,34 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def disable_editing_cost_schedule(cls):
         bpy.context.scene.BIMCostProperties.active_cost_schedule_id = 0
-    
+        cls.disable_editing_cost_item()
+
     @classmethod
     def enable_editing_cost_schedule_attributes(cls, cost_schedule):
+        bpy.context.scene.BIMCostProperties.active_cost_schedule_id = cost_schedule.id()
+        bpy.context.scene.BIMCostProperties.is_editing = "COST_SCHEDULE_ATTRIBUTES"
+
+    @classmethod
+    def load_cost_schedule_attributes(cls, cost_schedule):
         def special_import(name, prop, data):
             if name in ["SubmittedOn", "UpdateDate"]:
                 prop.string_value = "" if prop.is_null else ifcopenshell.util.date.ifc2datetime(data[name]).isoformat()
                 return True
-        
-        bpy.context.scene.BIMCostProperties.active_cost_schedule_id = cost_schedule.id()
-        bpy.context.scene.BIMCostProperties.is_editing = "COST_SCHEDULE_ATTRIBUTES"
-    
-    @classmethod
-    def load_cost_schedule_attributes(cls, cost_schedule):
+
         props = bpy.context.scene.BIMCostProperties
         props.cost_schedule_attributes.clear()
-        blenderbim.bim.helper.import_attributes(cost_schedule, props.cost_schedule_attributes)
+        blenderbim.bim.helper.import_attributes2(cost_schedule, props.cost_schedule_attributes, callback=special_import)
+
+    @classmethod
+    def enable_editing_cost_items(cls, cost_schedule):
+        props = bpy.context.scene.BIMCostProperties
+        props.active_cost_schedule_id = cost_schedule.id()
+        props.is_editing = "COST_ITEMS"
+
+    @classmethod
+    def play_sound(cls):
+        if bpy.context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
+            cls.play_chaching_sound()  # lol
 
     @classmethod
     def play_chaching_sound(cls):
@@ -48,57 +61,35 @@ class Cost(blenderbim.core.tool.Cost):
             handle_buffered.stop()
         except:
             pass  # ah well
-        
+
     @classmethod
-    def enable_editing_cost_items(cls, cost_schedule):
+    def load_cost_schedule_tree(cls):
         props = bpy.context.scene.BIMCostProperties
         props.is_cost_update_enabled = False
-        props.active_cost_schedule_id = cost_schedule.id()
-        props.is_editing = "COST_ITEMS"
-        props.is_cost_update_enabled = True
-
-    @classmethod
-    def play_chaching_sound(cls):
-        if bpy.context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
-            cls.play_chaching_sound()  # lol
-
-    @classmethod
-    def load_cost_items(cls):
-        props = bpy.context.scene.BIMCostProperties
         cost_schedule = tool.Ifc.get().by_id(props.active_cost_schedule_id)
         props.cost_items.clear()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        for rel in cost_schedule.Controls or []:
-            for cost_item in rel.RelatedObjects:
-                cls.create_new_cost_item_li(props, cost_item, 0)
-
-    @classmethod
-    def create_new_cost_item_li(cls, props, cost_item, level_index):
-        new = props.cost_items.add()
-        new.ifc_definition_id = cost_item.id()
-        new.name = cost_item.Name or "Unnamed"
-        new.identification = cost_item.Identification or "XXX"
-        new.is_expanded = cost_item.id() not in cls.contracted_cost_items
-        new.level_index = level_index
-        if cost_item.IsNestedBy:
-            new.has_children = True
-            if new.is_expanded:
-                for rel in cost_item.IsNestedBy:
-                    for sub_cost_item in rel.RelatedObjects:
-                        cls.create_new_cost_item_li(props, sub_cost_item, level_index + 1)
+        [
+            cls.create_new_cost_item_li(props.cost_items, cost_item, 0, type="cost")
+            for rel in cost_schedule.Controls or []
+            for cost_item in rel.RelatedObjects or []
+        ]
+        props.is_cost_update_enabled = True
 
     @classmethod
     def expand_cost_item(cls, cost_item):
         props = bpy.context.scene.BIMCostProperties
-        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        if not hasattr(cls, "contracted_cost_items"):
+            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         cls.contracted_cost_items.remove(cost_item.id())
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
     def expand_cost_items(cls):
         props = bpy.context.scene.BIMCostProperties
-        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        if not hasattr(cls, "contracted_cost_items"):
+            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         for cost_item in props.cost_items:
             if cost_item.ifc_definition_id in cls.contracted_cost_items:
                 cls.contracted_cost_items.remove(cost_item.ifc_definition_id)
@@ -107,45 +98,48 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def contract_cost_item(cls, cost_item):
         props = bpy.context.scene.BIMCostProperties
-        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        if not hasattr(cls, "contracted_cost_items"):
+            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         cls.contracted_cost_items.append(cost_item.id())
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
     def contract_cost_items(cls):
         props = bpy.context.scene.BIMCostProperties
-        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        if not hasattr(cls, "contracted_cost_items"):
+            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         for cost_item in props.cost_items:
             if cost_item.ifc_definition_id not in cls.contracted_cost_items:
                 cls.contracted_cost_items.append(cost_item.ifc_definition_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
-    
+
     @classmethod
     def clean_up_cost_item_tree(cls, cost_item):
         props = bpy.context.scene.BIMCostProperties
-        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        if not hasattr(cls, "contracted_cost_items"):
+            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        if props.active_cost_item_id == cost_item.id():
+            props.active_cost_item_id = 0
         if props.active_cost_item_index in cls.contracted_cost_items:
             cls.contracted_cost_items.remove(props.active_cost_item_index)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
         bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
-        if props.active_cost_item_id == cost_item.id():
-            props.active_cost_item_id = 0            
 
     @classmethod
     def enable_editing_cost_item_attributes(cls, cost_item):
         bpy.context.scene.BIMCostProperties.active_cost_item_id = cost_item.id()
         bpy.context.scene.BIMCostProperties.cost_item_editing_type = "ATTRIBUTES"
-    
+
     @classmethod
     def load_cost_item_attributes(cls, cost_item):
         props = bpy.context.scene.BIMCostProperties
         props.cost_item_attributes.clear()
         blenderbim.bim.helper.import_attributes2(cost_item, props.cost_item_attributes)
-    
+
     @classmethod
     def disable_editing_cost_item(cls):
         bpy.context.scene.BIMCostProperties.active_cost_item_id = 0
-    
+
     @classmethod
     def get_cost_item_attributes(cls):
         props = bpy.context.scene.BIMCostProperties
@@ -153,6 +147,382 @@ class Cost(blenderbim.core.tool.Cost):
 
     @classmethod
     def get_active_cost_item(cls):
-        if bpy.context.scene.BIMCostProperties.active_cost_item_id == 0:
+        props = bpy.context.scene.BIMCostProperties
+        if props.active_cost_item_id == 0:
             return None
         return tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_item_id)
+
+    @classmethod
+    def get_highlighted_cost_item(cls):
+        props = bpy.context.scene.BIMCostProperties
+        if props.active_cost_item_index < len(props.cost_items):
+            return tool.Ifc.get().by_id(props.cost_items[props.active_cost_item_index].ifc_definition_id)
+        return None
+
+    @classmethod
+    def load_cost_item_types(cls, cost_item=None):
+        if not cost_item:
+            return
+        props = bpy.context.scene.BIMCostProperties
+        props.cost_item_type_products.clear()
+        # TODO implement process and resource types
+        # props.cost_item_processes.clear()
+        # props.cost_item_resources.clear()
+        for rel in cost_item.Controls or []:
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcTypeProduct"):
+                    new = props.cost_item_type_products.add()
+                # TODO implement process and resource types
+                # elif related_object.is_a("IfcProcess"):
+                #    new = props.cost_item_processes.add()
+                # elif related_object.is_a("IfcResource"):
+                #    new = props.cost_item_resources.add()
+                new.ifc_definition_id = related_object.id()
+                new.name = related_object.Name or "Unnamed"
+
+    @classmethod
+    def load_cost_item_quantities(cls, cost_item=None):
+        if not cost_item:
+            cost_item = cls.get_active_cost_item()
+        if not cost_item:
+            return
+        props = bpy.context.scene.BIMCostProperties
+        props.cost_item_products.clear()
+        props.cost_item_processes.clear()
+        props.cost_item_resources.clear()
+
+        # for control_id, quantity_ids in cost_item.Controls.items() or {}:
+        for rel in cost_item.Controls or []:
+            # control_id, quantity_ids
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcProduct"):
+                    new = props.cost_item_products.add()
+                elif related_object.is_a("IfcProcess"):
+                    new = props.cost_item_processes.add()
+                elif related_object.is_a("IfcResource"):
+                    new = props.cost_item_resources.add()
+                new.ifc_definition_id = related_object.id()
+                new.name = related_object.Name or "Unnamed"
+                total_quantity = 0
+                qtos = ifcopenshell.util.element.get_psets(related_object, qtos_only=True)
+                for qset_name, quantities in qtos.items():
+                    qto = tool.Ifc.get().by_id(quantities["id"])
+                    for quantity in qto.Quantities:
+                        if quantity in cost_item.CostQuantities:
+                            total_quantity += quantity[3]
+                new.total_quantity = total_quantity
+
+    @classmethod
+    def get_products(cls, related_object_type=None):
+        props = bpy.context.scene.BIMCostProperties
+        if related_object_type == "PRODUCT":
+            products = tool.Spatial.get_selected_products()
+        elif related_object_type == "PROCESS":
+            products = [tool.Sequence.get_highlighted_task()]
+        elif related_object_type == "RESOURCE":
+            products = [tool.Resource.get_highlighted_resource()]
+        return products or []
+
+    @classmethod
+    def enable_editing_cost_item_quantities(cls, cost_item=None):
+        props = bpy.context.scene.BIMCostProperties
+        props.active_cost_item_id = cost_item.id()
+        props.cost_item_editing_type = "QUANTITIES"
+
+    @classmethod
+    def enable_editing_cost_item_quantity(cls, physical_quantity=None):
+        bpy.context.scene.BIMCostProperties.active_cost_item_quantity_id = physical_quantity.id()
+
+    @classmethod
+    def load_cost_item_quantity_attributes(cls, physical_quantity=None):
+        props = bpy.context.scene.BIMCostProperties
+        props.quantity_attributes.clear()
+        blenderbim.bim.helper.import_attributes2(physical_quantity, props.quantity_attributes)
+
+    @classmethod
+    def enable_editing_cost_item_values(cls, cost_item=None):
+        props = bpy.context.scene.BIMCostProperties
+        props.active_cost_item_id = cost_item.id()
+        props.cost_item_editing_type = "VALUES"
+
+    @classmethod
+    def disable_editing_cost_item_quantity(cls):
+        bpy.context.scene.BIMCostProperties.active_cost_item_quantity_id = 0
+
+    @classmethod
+    def get_cost_item_quantity_attributes(cls):
+        props = bpy.context.scene.BIMCostProperties
+        return blenderbim.bim.helper.export_attributes(props.quantity_attributes)
+
+    @classmethod
+    def get_attributes_for_cost_value(cls, cost_type, cost_category):
+        if cost_type == "FIXED":
+            category = None
+            attributes = {"AppliedValue": 0.0}
+        elif cost_type == "SUM":
+            category = "*"
+            attributes = {"Category": category}
+        elif cost_type == "CATEGORY":
+            category = cost_category
+            attributes = {"Category": category}
+        return attributes
+
+    @classmethod
+    def load_cost_item_value_attributes(cls, cost_value=None):
+        def import_attributes(name, prop, data, cost_value, is_rates, props_collection):
+            if name == "AppliedValue":
+                # TODO: for now, only support simple IfcValues (which are effectively IfcMonetaryMeasure)
+                prop = props_collection.add()
+                prop.data_type = "float"
+                prop.name = "AppliedValue"
+                prop.is_optional = True
+                prop.float_value = (
+                    0.0
+                    if prop.is_null
+                    else ifcopenshell.util.cost.calculate_applied_value(
+                        tool.Ifc.get().by_id(props.active_cost_item_id), cost_value
+                    )
+                )
+                return True
+            if name == "UnitBasis" and is_rates:
+                prop = props_collection.add()
+                prop.name = "UnitBasisValue"
+                prop.data_type = "float"
+                prop.is_null = data["UnitBasis"] is None
+                prop.is_optional = True
+                if data["UnitBasis"] and data["UnitBasis"].ValueComponent:
+                    prop.float_value = data["UnitBasis"].ValueComponent.wrappedValue or 0
+                else:
+                    prop.float_value = 0
+
+                prop = props_collection.add()
+                prop.name = "UnitBasisUnit"
+                prop.data_type = "enum"
+                prop.is_null = prop.is_optional = False
+                units = {}
+
+                def format_unit(unit):
+                    if unit.is_a("IfcContextDependentUnit"):
+                        return f"{unit.UnitType} / {unit.Name}"
+                    else:
+                        name = unit.Name
+                        if unit.get_info().get("Prefix", None):
+                            name = f"{unit.Prefix} {name}"
+                        return f"{unit.UnitType} / {name}"
+
+                for unit in tool.Ifc.get().by_type("IfcNamedUnit"):
+                    if unit.get_info().get("UnitType", None) in [
+                        "AREAUNIT",
+                        "LENGTHUNIT",
+                        "TIMEUNIT",
+                        "VOLUMEUNIT",
+                        "MASSUNIT",
+                        "USERDEFINED",
+                    ]:
+                        units[unit.id()] = format_unit(unit)
+                prop.enum_items = json.dumps(units)
+                if data["UnitBasis"] and data["UnitBasis"].UnitComponent:
+                    # prop.enum_value = prop.enum_items[data["UnitBasis"].UnitComponent.id()]
+                    print(prop.enum_items)
+                    for key, value in json.loads(prop.enum_items).items():
+                        if value == format_unit(data["UnitBasis"].UnitComponent):
+                            prop.enum_value = key
+                            break
+                return True
+
+        props = bpy.context.scene.BIMCostProperties
+        props.cost_value_attributes.clear()
+        is_rates = cls.is_active_schedule_of_rates()
+        callback = lambda name, prop, data: import_attributes(
+            name, prop, data, cost_value, is_rates, props.cost_value_attributes
+        )
+        blenderbim.bim.helper.import_attributes2(cost_value, props.cost_value_attributes, callback=callback)
+
+    @classmethod
+    def is_active_schedule_of_rates(cls):
+        return (
+            tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id).PredefinedType
+            == "SCHEDULEOFRATES"
+        )
+
+    @classmethod
+    def enable_editing_cost_item_value(cls, cost_value=None):
+        props = bpy.context.scene.BIMCostProperties
+        props.active_cost_value_id = cost_value.id()
+        props.cost_value_editing_type = "ATTRIBUTES"
+
+    @classmethod
+    def disable_editing_cost_item_value(cls):
+        props = bpy.context.scene.BIMCostProperties
+        props.active_cost_value_id = 0
+        props.cost_value_editing_type = ""
+
+    @classmethod
+    def load_cost_item_value_formula_attributes(cls, cost_value=None):
+        props = bpy.context.scene.BIMCostProperties
+        props.cost_value_attributes.clear()  # why is this necessary?
+        bpy.context.scene.BIMCostProperties.cost_value_formula = ifcopenshell.util.cost.serialise_cost_value(cost_value)
+
+    @classmethod
+    def enable_editing_cost_item_value_formula(cls, cost_value=None):
+        props = bpy.context.scene.BIMCostProperties
+        props.active_cost_value_id = cost_value.id()
+        props.cost_value_editing_type = "FORMULA"
+
+    @classmethod
+    def get_cost_item_value_formula(cls):
+        return bpy.context.scene.BIMCostProperties.cost_value_formula
+
+    @classmethod
+    def get_cost_value_attributes(cls):
+        def export_attributes(attributes, prop):
+            if prop.name == "UnitBasisValue":
+                if prop.is_null:
+                    attributes["UnitBasis"] = None
+                    return True
+                attributes["UnitBasis"] = {
+                    "ValueComponent": prop.float_value or 1,
+                    "UnitComponent": cls.get_cost_value_unit_component(),
+                }
+                print(attributes)
+                return True
+            if prop.name == "UnitBasisUnit":
+                return True
+
+        props = bpy.context.scene.BIMCostProperties
+        callback = lambda attributes, prop: export_attributes(attributes, prop)
+        return blenderbim.bim.helper.export_attributes(props.cost_value_attributes, callback)
+
+    @classmethod
+    def get_cost_value_unit_component(cls):
+        return tool.Ifc.get().by_id(
+            int(bpy.context.scene.BIMCostProperties.cost_value_attributes.get("UnitBasisUnit").enum_value)
+        )
+
+    @classmethod
+    def get_direct_cost_item_products(cls, cost_item):
+        return [related_object for r in cost_item.Controls or [] for related_object in r.RelatedObjects]
+
+    @classmethod
+    def get_cost_item_products(cls, cost_item, include_nested=False):
+        if not include_nested:
+            return cls.get_direct_cost_item_products(cost_item)
+        else:
+            return [
+                product
+                for nested_cost_item in cls.get_all_nested_cost_items(cost_item)
+                for product in cls.get_direct_cost_item_products(nested_cost_item)
+            ]
+
+    @classmethod
+    def get_all_nested_cost_items(cls, cost_item):
+        for cost_item in cls.get_nested_cost_items(cost_item):
+            yield cost_item
+            yield from cls.get_all_nested_cost_items(cost_item)
+
+    @classmethod
+    def get_nested_cost_items(cls, cost_item):
+        return [obj for rel in cost_item.IsNestedBy for obj in rel.RelatedObjects]
+
+    @classmethod
+    def print_all_cost_items(cls, cost_schedule):
+        print(cls.get_schedule_cost_items(cost_schedule))
+
+    @classmethod
+    def get_schedule_cost_items(cls, cost_schedule):
+        for cost_item in cls.get_root_cost_items(cost_schedule):
+            yield cost_item
+            yield from cls.get_all_nested_cost_items(cost_item)
+
+    @classmethod
+    def get_root_cost_items(cls, cost_schedule):
+        return [
+            related_object
+            for rel in cost_schedule.Controls or []
+            for related_object in rel.RelatedObjects
+            if related_object.is_a("IfcCostItem")
+        ]
+
+    @classmethod
+    def get_cost_schedule_products(cls, cost_schedule):
+        products = []
+        for cost_item in cls.get_root_cost_items(cost_schedule):
+            products.extend(cls.get_cost_item_products(cost_item, include_nested=True))
+        return products
+
+    @classmethod
+    def import_cost_schedule_csv(cls, file_path=None, is_schedule_of_rates=False):
+        if not file_path:
+            return
+        from ifc5d.csv2ifc import Csv2Ifc
+        import time
+
+        start = time.time()
+        csv2ifc = Csv2Ifc()
+        csv2ifc.csv = file_path
+        csv2ifc.file = tool.Ifc.get()
+        csv2ifc.is_schedule_of_rates = is_schedule_of_rates
+        csv2ifc.execute()
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+
+    @classmethod
+    def add_cost_column(cls, name):
+        props = bpy.context.scene.BIMCostProperties
+        new = props.columns.add()
+        new.name = name
+
+    @classmethod
+    def remove_cost_column(cls, name):
+        props = bpy.context.scene.BIMCostProperties
+        props.columns.remove(props.columns.find(name))
+
+    @classmethod
+    def expand_cost_item_rate(cls, cost_item):
+        props = bpy.context.scene.BIMCostProperties
+        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        contracted_cost_item_rates.remove(cost_item)
+        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
+        cls.load_schedule_of_rates(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+
+    @classmethod
+    def contract_cost_item_rate(cls, cost_item):
+        props = bpy.context.scene.BIMCostProperties
+        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        contracted_cost_item_rates.append(cost_item)
+        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
+        cls.load_schedule_of_rates(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+
+    @classmethod
+    def create_new_cost_item_li(cls, props_collection, cost_item, level_index, type="cost_rate"):
+        new = props_collection.add()
+        new.ifc_definition_id = cost_item.id()
+        new.name = cost_item.Name or "Unnamed"
+        new.identification = cost_item.Identification or "XXX"
+        new.is_expanded = (
+            cost_item.id() not in cls.contracted_cost_item_rates
+            if type == "cost_rate"
+            else cost_item.id() not in cls.contracted_cost_items
+        )
+        new.level_index = level_index
+        if cost_item.IsNestedBy:
+            new.has_children = True
+            if new.is_expanded:
+                [
+                    cls.create_new_cost_item_li(props_collection, sub_cost_item, level_index + 1, type)
+                    for rel in cost_item.IsNestedBy
+                    for sub_cost_item in rel.RelatedObjects
+                ]
+
+    @classmethod
+    def load_schedule_of_rates_tree(cls, schedule_of_rates):
+        props = bpy.context.scene.BIMCostProperties
+        props.is_cost_update_enabled = False
+        props.cost_item_rates.clear()
+        props.columns.clear()
+        cls.contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        for rel in schedule_of_rates.Controls or []:
+            [
+                cls.create_new_cost_item_li(props.cost_item_rates, cost_item, 0, type="cost_rate")
+                for cost_item in rel.RelatedObjects
+            ]
+        props.is_cost_update_enabled = True
