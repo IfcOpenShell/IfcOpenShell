@@ -20,6 +20,7 @@ import os
 import json
 import time
 import ifcopenshell
+import ifcopenshell.util.attribute
 
 # This is highly experimental and incomplete, however, it may work for simple datasets.
 # In this simple implementation, we only support 2X3<->4 right now
@@ -76,7 +77,11 @@ def reassign_class(ifc_file, element, new_class):
         name = attribute.name()
         old_attribute = info.get(name, None)
         if old_attribute:
-            new_attributes[name] = old_attribute
+            if ifcopenshell.util.attribute.get_primitive_type(attribute) == "enum":
+                if old_attribute in ifcopenshell.util.attribute.get_enum_items(attribute):
+                    new_attributes[name] = old_attribute
+            else:
+                new_attributes[name] = old_attribute
 
     inverse_pairs = ifc_file.get_inverse(element, allow_duplicate=True, with_attribute_indices=True)
     ifc_file.remove(element)

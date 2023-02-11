@@ -26,6 +26,7 @@ def is_x(value, x):
 
 
 def get_volume(geometry):
+    # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
     def signed_triangle_volume(p1, p2, p3):
         v321 = p3[0] * p2[1] * p1[2]
         v231 = p2[0] * p3[1] * p1[2]
