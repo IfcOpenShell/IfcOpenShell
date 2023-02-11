@@ -24,7 +24,14 @@ from mathutils import Vector
 import collections
 
 
-SUPPORTED_DOOR_TYPES = ("SINGLE_SWING_LEFT", "SINGLE_SWING_RIGHT", "DOUBLE_SWING_RIGHT", "DOUBLE_SWING_LEFT")
+SUPPORTED_DOOR_TYPES = (
+    "SINGLE_SWING_LEFT",
+    "SINGLE_SWING_RIGHT",
+    "DOUBLE_SWING_RIGHT",
+    "DOUBLE_SWING_LEFT",
+    "DOUBLE_DOOR_SINGLE_SWING",
+    "DOUBLE_DOOR_DOUBLE_SWING",
+)
 
 
 def create_ifc_door_lining(
@@ -138,6 +145,7 @@ class Usecase:
         overall_width = self.settings["overall_width"]
         door_type = self.settings["operation_type"]
         double_swing_door = "DOUBLE_SWING" in door_type
+        double_door = "DOUBLE_DOOR" in door_type
 
         if door_type not in SUPPORTED_DOOR_TYPES:
             raise NotImplementedError(f'Door type "{door_type}" is not currently supported.')
@@ -235,27 +243,53 @@ class Usecase:
             )
 
             # TODO: make second swing lines dashed
-            # create semi-semi-circle
-            if double_swing_door:
-                trim_points_mask = (3, 1)
-                second_swing_line = builder.polyline((V(0, 0), V(0, -panel_width), V(panel_depth, -panel_width)))
-                door_items.append(second_swing_line)
+            def create_ifc_door_panel_2d(panel_size, panel_position, door_swing_type):
+                door_items = []
+                panel_size = panel_size.yx
+                # create semi-semi-circle
+                if double_swing_door:
+                    trim_points_mask = (3, 1)
+                    second_swing_line = builder.polyline(
+                        points=(V(0, 0), V(0, -panel_size.y), V(panel_size.x, -panel_size.y))
+                    )
+                    door_items.append(second_swing_line)
+                else:
+                    trim_points_mask = (0, 1)
+                semicircle = builder.create_ellipse_curve(
+                    panel_size.y - panel_size.x,
+                    panel_size.y,
+                    trim_points_mask=trim_points_mask,
+                    position=V(panel_size.x, 0),
+                )
+                door_items.append(semicircle)
+
+                # create door
+                door = builder.rectangle(panel_size)
+                door_items.append(door)
+
+                builder.translate(door_items, panel_position)
+
+                if door_swing_type == "RIGHT":
+                    mirror_point = panel_position + V(panel_size.y / 2, 0)
+                    builder.mirror(door_items, mirror_axes=V(1, 0), mirror_point=mirror_point)
+                return door_items
+
+            door_items = []
+            panel_size = V(panel_width, panel_depth)
+            panel_position = V(lining_to_panel_offset_x, lining_depth)
+
+            if double_door:
+                panel_size.x = panel_size.x / 2
+                door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, "LEFT"))
+
+                mirror_point = panel_position + V(door_opening_width / 2, 0)
+                door_items.extend(
+                    builder.mirror(door_items, mirror_axes=V(1, 0), mirror_point=mirror_point, create_copy=True)
+                )
             else:
-                trim_points_mask = (0, 1)
-            semicircle = builder.create_ellipse_curve(
-                panel_width - panel_depth, panel_width, trim_points_mask=trim_points_mask, position=V(panel_depth, 0)
-            )
-            door_items.append(semicircle)
-
-            # create door
-            door = builder.rectangle(V(panel_depth, panel_width))
-            door_items.append(door)
-
-            builder.translate(door_items, V(lining_to_panel_offset_x, lining_depth))
-
-            if door_type == "SINGLE_SWING_RIGHT":
-                builder.mirror(door_items, mirror_axes=V(1, 0), mirror_point=V(overall_width / 2, 0))
-            items_2d += door_items
+                door_swing_type = "LEFT" if door_type.endswith("LEFT") else "RIGHT"
+                door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, door_swing_type))
+            items_2d.extend(door_items)
 
             representation_2d = builder.get_representation(self.settings["context"], items_2d)
             return representation_2d
@@ -309,35 +343,57 @@ class Usecase:
             inner_casing = create_ifc_door_lining(builder, casing_size, inner_casing_thickness, inner_casing_position)
             casing_items.append(inner_casing)
 
-        # add door panel
+        def create_ifc_door_panel(panel_size, panel_position, door_swing_type):
+            door_items = []
+            # add door panel
+            door_items.append(create_ifc_box(builder, panel_size, panel_position))
+            # add door handle
+            handle_points = [
+                V(0, 0),
+                V(0, -handle_size.y),
+                V(handle_size.x, -handle_size.y),
+                V(handle_size.x, -handle_size.y / 2),
+                V(handle_size.y / 2, -handle_size.y / 2),
+                V(handle_size.y / 2, 0),
+            ]
+            handle_polyline = builder.polyline(handle_points, closed=True)
+
+            handle_position = panel_position + handle_offset - handle_center_offset
+
+            door_handle = builder.extrude(handle_polyline, handle_size.z, position=handle_position)
+            door_items.append(door_handle)
+
+            if door_swing_type == "LEFT":
+                builder.mirror(
+                    door_handle, mirror_axes=V(1, 0), mirror_point=panel_position.xy + V(panel_size.x / 2, 0)
+                )
+
+            door_handle_mirrored = builder.mirror(
+                door_handle,
+                mirror_axes=V(0, 1),
+                mirror_point=handle_position.xy + V(0, panel_size.y / 2),
+                create_copy=True,
+            )
+            door_items.append(door_handle_mirrored)
+            return door_items
+
+        door_items = []
         panel_size = V(panel_width, panel_depth, panel_height)
         panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full, threshold_thickness)
-        panel_items = [create_ifc_box(builder, panel_size, panel_position)]
 
-        # add door handle
-        door_handles_items = []
-        handle_points = [
-            V(0, 0),
-            V(0, -handle_size.y),
-            V(handle_size.x, -handle_size.y),
-            V(handle_size.x, -handle_size.y / 2),
-            V(handle_size.y / 2, -handle_size.y / 2),
-            V(handle_size.y / 2, 0),
-        ]
-        handle_polyline = builder.polyline(handle_points, closed=True)
+        if double_door:
+            # TODO: keep a little space between doors for readibility?
+            double_door_offset = self.convert_si_to_unit(0.001)
+            panel_size.x = panel_size.x / 2 - double_door_offset
+            door_items.extend(create_ifc_door_panel(panel_size, panel_position, "LEFT"))
 
-        handle_position = panel_position + handle_offset - handle_center_offset
-
-        door_handle = builder.extrude(handle_polyline, handle_size.z, position=handle_position)
-        door_handles_items.append(door_handle)
-
-        if door_type.endswith("LEFT"):
-            builder.mirror(door_handle, mirror_axes=V(1, 0), mirror_point=panel_position.xy + V(panel_size.x / 2, 0))
-
-        door_handle_mirrored = builder.mirror(
-            door_handle, mirror_axes=V(0, 1), mirror_point=handle_position.xy + V(0, panel_size.y / 2), create_copy=True
-        )
-        door_handles_items.append(door_handle_mirrored)
+            mirror_point = panel_position + V(door_opening_width / 2, 0, 0)
+            door_items.extend(
+                builder.mirror(door_items, mirror_axes=V(1, 0), mirror_point=mirror_point.xy, create_copy=True)
+            )
+        else:
+            door_swing_type = "LEFT" if door_type.endswith("LEFT") else "RIGHT"
+            door_items.extend(create_ifc_door_panel(panel_size, panel_position, door_swing_type))
 
         # add on top window
         if not transom_thickness:
@@ -367,9 +423,7 @@ class Usecase:
                 window_position,
             )
 
-        lining_offset_items = (
-            lining_items + panel_items + window_lining_items + frame_items + glass_items + door_handles_items
-        )
+        lining_offset_items = lining_items + door_items + window_lining_items + frame_items + glass_items
         builder.translate(lining_offset_items, V(0, lining_offset, 0))
 
         output_items = lining_offset_items + threshold_items + casing_items
