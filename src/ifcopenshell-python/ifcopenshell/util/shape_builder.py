@@ -344,7 +344,7 @@ class ShapeBuilder:
     ):
         """mirror_axes - along which axes mirror will be applied
 
-        For example, mirroring A(1,0) by axis (1,0) will result in A'(-1,0)
+        For example, mirroring `A(1,0)` by axis `(1,0)` will result in `A'(-1,0)`
         """
         # > curve_or_item - could be a list of curves or items
         # > mirror_axes - could be a list of mirrors to apply to curve_or_item

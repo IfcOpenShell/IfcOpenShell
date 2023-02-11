@@ -253,6 +253,7 @@ def update_door_modifier_bmesh(context):
     overall_height = props.overall_height * si_conversion
     door_type = props.door_type
     double_swing_door = "DOUBLE_SWING" in door_type
+    double_door = "DOUBLE_DOOR" in door_type
 
     # lining params
     lining_depth = props.lining_depth * si_conversion
@@ -340,39 +341,55 @@ def update_door_modifier_bmesh(context):
         inner_casing_verts = create_bm_door_lining(bm, casing_size, inner_casing_thickness, inner_casing_position)
         casing_verts.extend(inner_casing_verts)
 
-    # add door panel
+    def create_bm_door_panel(panel_size, panel_position, door_swing_type):
+        door_verts = []
+        # add door panel
+        door_verts.extend(create_bm_box(bm, panel_size, panel_position))
+        # add door handle
+        handle_points = [
+            V(0, 0, 0),
+            V(0, -handle_size.y, 0),
+            V(handle_size.x, -handle_size.y, 0),
+            V(handle_size.x, -handle_size.y / 2, 0),
+            V(handle_size.y / 2, -handle_size.y / 2, 0),
+            V(handle_size.y / 2, 0, 0),
+        ]
+        handle_position = panel_position + handle_offset - handle_center_offset
+        door_handle_verts = create_bm_extruded_profile(
+            bm, handle_points, magnitude=handle_size.z, position=handle_position
+        )
+        door_verts.extend(door_handle_verts)
+
+        if door_swing_type == "LEFT":
+            bm_mirror(
+                bm, door_handle_verts, mirror_axes=V(1, 0, 0), mirror_point=panel_position + V(panel_size.x / 2, 0, 0)
+            )
+
+        door_handle_mirrored_verts = bm_mirror(
+            bm,
+            door_handle_verts,
+            mirror_axes=V(0, 1, 0),
+            mirror_point=handle_position + V(0, panel_size.y / 2, 0),
+            create_copy=True,
+        )
+        door_verts.extend(door_handle_mirrored_verts)
+        return door_verts
+
+    door_verts = []
     panel_size = V(panel_width, panel_depth, panel_height)
     panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y, threshold_thickness)
-    panel_verts = create_bm_box(bm, panel_size, panel_position)
 
-    # add door handle
-    door_handles_verts = []
-    handle_points = [
-        V(0, 0, 0),
-        V(0, -handle_size.y, 0),
-        V(handle_size.x, -handle_size.y, 0),
-        V(handle_size.x, -handle_size.y / 2, 0),
-        V(handle_size.y / 2, -handle_size.y / 2, 0),
-        V(handle_size.y / 2, 0, 0),
-    ]
-    handle_position = panel_position + handle_offset - handle_center_offset
-    door_handle_verts = create_bm_extruded_profile(bm, handle_points, magnitude=handle_size.z, position=handle_position)
-    door_handles_verts.extend(door_handle_verts)
+    if double_door:
+        # TODO: keep a little space between doors for readibility?
+        double_door_offset = 0.001 * si_conversion
+        panel_size.x = panel_size.x / 2 - double_door_offset
+        door_verts.extend(create_bm_door_panel(panel_size, panel_position, "LEFT"))
 
-    if door_type.endswith("LEFT"):
-        bm_mirror(
-            bm, door_handle_verts, mirror_axes=V(1, 0, 0), mirror_point=panel_position + V(panel_size.x / 2, 0, 0)
-        )
-
-    # TODO: test it
-    door_handle_mirrored_verts = bm_mirror(
-        bm,
-        door_handle_verts,
-        mirror_axes=V(0, 1, 0),
-        mirror_point=handle_position + V(0, panel_size.y / 2, 0),
-        create_copy=True,
-    )
-    door_handles_verts.extend(door_handle_mirrored_verts)
+        mirror_point = panel_position + V(door_opening_width / 2, 0, 0)
+        door_verts.extend(bm_mirror(bm, door_verts, V(1, 0, 0), mirror_point, create_copy=True))
+    else:
+        door_swing_type = "LEFT" if door_type.endswith("LEFT") else "RIGHT"
+        door_verts.extend(create_bm_door_panel(panel_size, panel_position, door_swing_type))
 
     # add on top window
     if not transom_thickness:
@@ -402,7 +419,7 @@ def update_door_modifier_bmesh(context):
             window_position,
         )
 
-    lining_offset_verts = lining_verts + panel_verts + window_lining_verts + frame_verts + glass_verts
+    lining_offset_verts = lining_verts + door_verts + window_lining_verts + frame_verts + glass_verts
     bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
