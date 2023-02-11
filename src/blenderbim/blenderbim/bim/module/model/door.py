@@ -29,7 +29,7 @@ import blenderbim.tool as tool
 import blenderbim.core.geometry as core
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.window import create_bm_window, create_bm_box
+from blenderbim.bim.module.model.window import create_bm_window, create_bm_box, update_simple_openings
 from blenderbim.bim.module.model.helper import replace_ifc_representation_for_object
 
 from mathutils import Vector, Matrix
@@ -42,7 +42,7 @@ import collections
 def update_door_modifier_representation(context):
     obj = context.active_object
     props = obj.BIMDoorProperties
-    ifc_element = tool.Ifc.get_entity(obj)
+    element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
 
     representation_data = {
@@ -107,7 +107,9 @@ def update_door_modifier_representation(context):
             should_sync_changes_first=True,
         )
 
-    ifc_element.OperationType = props.door_type
+    element.OperationType = props.door_type
+
+    update_simple_openings(element, props.overall_width, props.overall_height)
 
 
 def bm_sort_out_geom(geom_data):
