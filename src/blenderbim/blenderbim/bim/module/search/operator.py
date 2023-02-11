@@ -452,7 +452,7 @@ class ActivateIfcBuildingStoreyFilter(Operator):
         row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
 
-class ShowAllIfcElements(Operator):
+class ShowAllElements(Operator):
     """Show all Physical objects in the 3D View.
     Warning: Pressing this button will not work if collections are excluded in the outliner Panel.
     """
