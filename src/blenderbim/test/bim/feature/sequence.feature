@@ -776,3 +776,36 @@ Scenario: Select Assigned Inputs
     And I press "bim.assign_process(task={task}, related_object_type='PRODUCT')"
     When I press "bim.select_task_related_products(task={task})"
     Then nothing happens
+
+Scenario: Duplicate Task
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    When I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    When I press "bim.add_task(task={task})"
+    And the variable "nested_task_one" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    When I press "bim.add_task(task={task})"
+    And the variable "nested_task_two" is "IfcStore.get_file().by_type('IfcTask')[2].id()"
+    And I press "bim.enable_editing_task(task={nested_task_one})"
+    And I press "bim.assign_successor(task={nested_task_two})"
+    When I press "bim.duplicate_task(task={task})"
+    Then nothing happens
+
+Scenario: Duplicate Task and edit sequence Relationship
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    When I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    When I press "bim.add_task(task={task})"
+    And the variable "nested_task_one" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    When I press "bim.add_task(task={task})"
+    And the variable "nested_task_two" is "IfcStore.get_file().by_type('IfcTask')[2].id()"
+    And I press "bim.enable_editing_task(task={nested_task_one})"
+    And I press "bim.assign_successor(task={nested_task_two})"
+    And I press "bim.duplicate_task(task={task})"
+    When I press "bim.enable_editing_task_sequence(task={nested_task_one})"
+    Then nothing happens
