@@ -150,7 +150,7 @@ class IfcSelectorUI:
             row.operator("bim.add_to_ifc_group", text="Add to IFC Group")
 
             row = layout.row(align=True)
-            row.operator("bim.show_all_ifc_elements", text="Show All Elements", icon="HIDE_OFF")
+            row.operator("bim.show_scene_elements", text="Show All Elements", icon="HIDE_OFF")
 
     def draw_query_group_ui(self, ifc_selector, layout):
         for index, group in enumerate(ifc_selector.groups):
