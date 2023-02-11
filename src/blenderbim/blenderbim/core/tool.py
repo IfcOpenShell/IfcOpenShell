@@ -127,23 +127,57 @@ class Context:
 
 @interface
 class Cost:
+    def add_cost_column(cls, name): pass
     def clean_up_cost_item_tree(cls, cost_item): pass
+    def contract_cost_item_rate(cls, cost_item): pass
     def contract_cost_item(cls, cost_item): pass
     def contract_cost_items(cls): pass
-    def create_new_cost_item_li(cls, props, cost_item, level_index): pass
+    def create_new_cost_item_li(props_collection, cost_item, level_index, type): pass
+    def disable_editing_cost_item_quantity(cls): pass
+    def disable_editing_cost_item_value(cls): pass
     def disable_editing_cost_item(cls): pass
     def disable_editing_cost_schedule(cls): pass
     def enable_editing_cost_item_attributes(cls, cost_item): pass
+    def enable_editing_cost_item_quantities(cls, cost_item): pass
+    def enable_editing_cost_item_quantity(cls, physical_quantity): pass
+    def enable_editing_cost_item_value_formula(cls, cost_value): pass
+    def enable_editing_cost_item_value(cls, cost_value): pass
+    def enable_editing_cost_item_values(cls, cost_item): pass
     def enable_editing_cost_items(cls, cost_schedule): pass
     def enable_editing_cost_schedule_attributes(cls, cost_schedule): pass
+    def expand_cost_item_rate(cls, cost_item): pass
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
     def get_active_cost_item(cls): pass
+    def get_all_nested_cost_items(cls, cost_item): pass
     def get_cost_item_attributes(cls, cost_item): pass
+    def get_cost_item_products(cls): pass
+    def get_cost_item_quantity_attributes(cls): pass
+    def get_cost_item_value_formula(cls): pass
     def get_cost_schedule_attributes(cls): pass
-    def load_cost_items(cls): pass
+    def get_cost_schedule_products(cls, cost_schedule): pass
+    def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
+    def get_cost_value_attributes(cls): pass
+    def get_cost_value_unit_component(cls): pass
+    def get_direct_cost_item_products(cls): pass
+    def get_highlighted_cost_item(cls): pass
+    def get_nested_cost_items(cls, cost_item): pass
+    def get_products(cls, related_object_type): pass
+    def get_root_cost_items(cls, cost_schedule): pass
+    def get_schedule_cost_items(cls, cost_schedule): pass
+    def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
+    def is_active_schedule_of_rates(cls): pass
     def load_cost_item_attributes(cls): pass
+    def load_cost_item_quantities(cls, cost_item): pass
+    def load_cost_item_quantity_attributes(cls, physical_quantity): pass
+    def load_cost_item_types(cls, cost_item): pass
+    def load_cost_item_value_attributes(cls, cost_value): pass
+    def load_cost_item_value_formula_attributes(cls, cost_value): pass
+    def load_cost_schedule_tree(cls): pass
+    def load_schedule_of_rates_tree(cls, schedule_of_rates): pass
     def play_chaching_sound(cls): pass
+    def print_all_cost_items(cls, cost_schedule): pass
+    def remove_cost_column(cls, name): pass
 
 @interface
 class Debug:

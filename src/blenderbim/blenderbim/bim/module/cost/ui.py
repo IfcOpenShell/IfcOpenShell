@@ -470,13 +470,14 @@ class BIM_PT_cost_item_rates(Panel):
 
     def draw(self, context):
         self.props = context.scene.BIMCostProperties
-        cost_item = self.props.cost_items[self.props.active_cost_item_index]
         row = self.layout.row(align=True)
         row.prop(self.props, "schedule_of_rates", text="")
         if self.props.active_cost_item_rate_index < len(self.props.cost_item_rates):
+            cost_item = self.props.cost_items[self.props.active_cost_item_index]
+            cost_item_rate = self.props.cost_item_rates[self.props.active_cost_item_rate_index]
             op = row.operator("bim.assign_cost_value", text="", icon="COPYDOWN")
-            op.cost_item = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
-            op.cost_rate = self.props.cost_item_rates[self.props.active_cost_item_rate_index].ifc_definition_id
+            op.cost_item = cost_item.ifc_definition_id
+            op.cost_rate = cost_item_rate.ifc_definition_id
         self.layout.template_list(
             "BIM_UL_cost_item_rates",
             "",

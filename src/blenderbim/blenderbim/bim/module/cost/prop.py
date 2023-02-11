@@ -43,7 +43,7 @@ def get_schedule_of_rates(self, context):
 
 
 def update_schedule_of_rates(self, context):
-    bpy.ops.bim.load_schedule_of_rates(cost_schedule=int(self.schedule_of_rates))
+    tool.Cost.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(self.schedule_of_rates)))
 
 
 def get_quantity_types(self, context):
@@ -73,9 +73,9 @@ def get_resource_quantity_names(self, context):
 def update_active_cost_item_index(self, context):
     schedule = tool.Ifc.get().by_id(self.active_cost_schedule_id)
     if schedule.PredefinedType == "SCHEDULEOFRATES":
-        bpy.ops.bim.load_cost_item_types()
+        tool.Cost.load_cost_item_types()
     else:
-        bpy.ops.bim.load_cost_item_quantities()
+        tool.Cost.load_cost_item_quantities(cost_item=tool.Cost.get_highlighted_cost_item())
     CostClassificationsData.load()
 
 
