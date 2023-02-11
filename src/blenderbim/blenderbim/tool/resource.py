@@ -287,14 +287,6 @@ class Resource(blenderbim.core.tool.Resource):
         props.contracted_resources = json.dumps(contracted_resources)
 
     @classmethod
-    def get_selected_products(cls):
-        return [
-            tool.Ifc.get_entity(obj)
-            for obj in bpy.context.selected_objects
-            if obj.BIMObjectProperties.ifc_definition_id
-        ] or []
-
-    @classmethod
     def import_resources(cls, file_path):
         from ifc4d.csv2ifc import Csv2Ifc
 
@@ -304,3 +296,11 @@ class Resource(blenderbim.core.tool.Resource):
         p62ifc.file = tool.Ifc.get()
         p62ifc.execute()
         print("Importing Resources CSV finished in {:.2f} seconds".format(time.time() - start))
+
+    @classmethod
+    def get_highlighted_resource(cls):
+        return tool.Ifc.get().by_id(
+            bpy.context.scene.BIMResourceTreeProperties.resources[
+                bpy.context.scene.BIMResourceProperties.active_resource_index
+                ].ifc_definition_id
+            )

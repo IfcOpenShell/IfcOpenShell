@@ -330,14 +330,6 @@ class Sequence(blenderbim.core.tool.Sequence):
         blenderbim.bim.helper.import_attributes2(task, props.task_attributes)
 
     @classmethod
-    def get_selected_products(cls):
-        return [
-            tool.Ifc.get_entity(obj)
-            for obj in bpy.context.selected_objects
-            if obj.BIMObjectProperties.ifc_definition_id
-        ] or []
-
-    @classmethod
     def enable_editing_task(cls, task):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.active_task_id = task.id()

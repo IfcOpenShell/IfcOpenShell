@@ -368,11 +368,12 @@ class AssignProduct(bpy.types.Operator, tool.Ifc.Operator):
             core.assign_products(
                 tool.Ifc,
                 tool.Sequence,
+                tool.Spatial,
                 task=tool.Ifc.get().by_id(self.task),
                 products=[tool.Ifc.get().by_id(self.relating_product)],
             )
         else:
-            core.assign_products(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+            core.assign_products(tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
 
 
 class UnassignProduct(bpy.types.Operator, tool.Ifc.Operator):
@@ -387,11 +388,12 @@ class UnassignProduct(bpy.types.Operator, tool.Ifc.Operator):
             core.unassign_products(
                 tool.Ifc,
                 tool.Sequence,
+                tool.Spatial,
                 task=tool.Ifc.get().by_id(self.task),
                 products=[tool.Ifc.get().by_id(self.relating_product)],
             )
         else:
-            core.unassign_products(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+            core.unassign_products(tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
 
 
 class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
@@ -410,11 +412,12 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
                 core.assign_input_products(
                     tool.Ifc,
                     tool.Sequence,
+                    tool.Spatial,
                     task=tool.Ifc.get().by_id(self.task),
                     products=[tool.Ifc.get().by_id(self.related_object)],
                 )
             else:
-                core.assign_input_products(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+                core.assign_input_products(tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
         elif self.related_object_type == "CONTROL":
             pass  # TODO
 
@@ -445,11 +448,17 @@ class UnassignProcess(bpy.types.Operator):
                 core.unassign_input_products(
                     tool.Ifc,
                     tool.Sequence,
+                    tool.Spatial,
                     task=tool.Ifc.get().by_id(self.task),
                     products=[tool.Ifc.get().by_id(self.related_object)],
                 )
             else:
-                core.unassign_input_products(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+                core.unassign_input_products(
+                    tool.Ifc,
+                    tool.Sequence,
+                    tool.Spatial,
+                    task=tool.Ifc.get().by_id(self.task)
+                    )
         elif self.related_object_type == "CONTROL":
             pass  # TODO
         return {"FINISHED"}
@@ -945,7 +954,7 @@ class SelectTaskRelatedProducts(bpy.types.Operator, tool.Ifc.Operator):
     task: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.select_task_outputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        core.select_task_outputs(tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
 
 
 class SelectTaskRelatedInputs(bpy.types.Operator, tool.Ifc.Operator):
@@ -955,7 +964,7 @@ class SelectTaskRelatedInputs(bpy.types.Operator, tool.Ifc.Operator):
     task: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.select_task_inputs(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        core.select_task_inputs(tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
 
 
 class VisualiseWorkScheduleDate(bpy.types.Operator):
@@ -1204,7 +1213,7 @@ class HighlightProductRelatedTask(bpy.types.Operator, tool.Ifc.Operator):
     product_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.highlight_product_related_task(tool.Sequence, product_type=self.product_type)
+        core.highlight_product_related_task(tool.Sequence, tool.Spatial, product_type=self.product_type)
 
 
 class ExpandAllTasks(bpy.types.Operator, tool.Ifc.Operator):
