@@ -140,13 +140,17 @@ class IfcSelectorUI:
             isolate.option = "isolate"
             hide = row.operator("bim.filter_model_elements", text="", icon="HIDE_ON")
             hide.option = "hide"
-            row.operator("bim.unhide_all_elements", text="", icon="HIDE_OFF")
+            unhide = row.operator("bim.filter_model_elements", text="", icon="HIDE_OFF")
+            unhide.option = "unhide"
 
             row = layout.row(align=True)
             row.alignment = "CENTER"
             row.operator("bim.save_selector_query", text="Save Query")
             op = row.operator("bim.open_query_library", text="Load Query")
             row.operator("bim.add_to_ifc_group", text="Add to IFC Group")
+
+            row = layout.row(align=True)
+            row.operator("bim.show_all_ifc_elements", text="Show All Elements", icon="HIDE_OFF")
 
     def draw_query_group_ui(self, ifc_selector, layout):
         for index, group in enumerate(ifc_selector.groups):
