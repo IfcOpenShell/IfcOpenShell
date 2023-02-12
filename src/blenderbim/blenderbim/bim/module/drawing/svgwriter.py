@@ -202,8 +202,6 @@ class SvgWriter:
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
             text_style = {
-                "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                "font-family": "OpenGost Type B TT",
                 "text-anchor": "start",
                 "alignment-baseline": "baseline",
                 "dominant-baseline": "baseline",
@@ -236,8 +234,6 @@ class SvgWriter:
                     "UP",
                     insert=tuple(text_position),
                     **{
-                        "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                        "font-family": "OpenGost Type B TT",
                         "text-anchor": "middle",
                         "alignment-baseline": "middle",
                         "dominant-baseline": "middle",
@@ -270,8 +266,6 @@ class SvgWriter:
                     axis_tag,
                     insert=tuple(start * self.svg_scale),
                     **{
-                        "font-size": annotation.Annotator.get_svg_text_size(5.0),
-                        "font-family": "OpenGost Type B TT",
                         "text-anchor": "middle",
                         "alignment-baseline": "middle",
                         "dominant-baseline": "middle",
@@ -283,8 +277,6 @@ class SvgWriter:
                     axis_tag,
                     insert=tuple(end * self.svg_scale),
                     **{
-                        "font-size": annotation.Annotator.get_svg_text_size(5.0),
-                        "font-family": "OpenGost Type B TT",
                         "text-anchor": "middle",
                         "alignment-baseline": "middle",
                         "dominant-baseline": "middle",
@@ -325,6 +317,9 @@ class SvgWriter:
             str(ifcopenshell.util.element.get_predefined_type(element))
         )
         classes = [global_id, element.is_a(), predefined_type]
+        custom_classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+        if custom_classes:
+            classes.extend(custom_classes.split())
         for key in self.metadata:
             value = ifcopenshell.util.selector.Selector.get_element_value(element, key)
             if value:
@@ -413,8 +408,6 @@ class SvgWriter:
             reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
             text_position = list(symbol_position * self.svg_scale)
             text_style = {
-                "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                "font-family": "OpenGost Type B TT",
                 "text-anchor": "middle",
                 "alignment-baseline": "middle",
                 "dominant-baseline": "middle",
@@ -446,8 +439,6 @@ class SvgWriter:
         reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
         text_position = list(symbol_position * self.svg_scale)
         text_style = {
-            "font-size": annotation.Annotator.get_svg_text_size(2.5),
-            "font-family": "OpenGost Type B TT",
             "text-anchor": "middle",
             "alignment-baseline": "middle",
             "dominant-baseline": "middle",
@@ -544,8 +535,6 @@ class SvgWriter:
                     insert=tuple((text_position * self.svg_scale) + Vector((0, 3.5 * line_number))),
                     class_=" ".join(self.get_attribute_classes(text_obj)),
                     **{
-                        "font-size": annotation.Annotator.get_svg_text_size(text_obj.BIMTextProperties.font_size),
-                        "font-family": "OpenGost Type B TT",
                         "text-anchor": text_anchor,
                         "alignment-baseline": alignment_baseline,
                         "dominant-baseline": alignment_baseline,
@@ -618,8 +607,6 @@ class SvgWriter:
                     "RL +{}".format(rl),
                     insert=tuple(text_position),
                     **{
-                        "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                        "font-family": "OpenGost Type B TT",
                         "text-anchor": text_anchor,
                         "alignment-baseline": "baseline",
                         "dominant-baseline": "baseline",
@@ -740,8 +727,6 @@ class SvgWriter:
         text_position += text_offset
 
         text_style = {
-            "font-size": annotation.Annotator.get_svg_text_size(2.5),
-            "font-family": "OpenGost Type B TT",
             "text-anchor": "middle",
             "alignment-baseline": "middle",
             "dominant-baseline": "middle",
@@ -808,8 +793,6 @@ class SvgWriter:
             text_position += text_offset
 
             text_style = {
-                "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                "font-family": "OpenGost Type B TT",
                 "text-anchor": "middle",
                 "alignment-baseline": "middle",
                 "dominant-baseline": "middle",
@@ -898,8 +881,6 @@ class SvgWriter:
                 insert=tuple(text_position),
                 **{
                     "transform": "rotate({} {} {})".format(rotation, text_position.x, text_position.y),
-                    "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                    "font-family": "OpenGost Type B TT",
                     "text-anchor": "middle",
                 },
             )

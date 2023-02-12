@@ -355,11 +355,6 @@ class BIM_PT_text(Panel):
                 row.label(text=attribute["name"])
                 row.label(text=attribute["value"])
 
-        row = self.layout.row()
-        row.prop(props, "font_size")
-        row = self.layout.row()
-        row.prop(props, "symbol")
-
 
 class BIM_PT_annotation_utilities(Panel):
     bl_idname = "BIM_PT_annotation_utilities"
