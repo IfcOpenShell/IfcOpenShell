@@ -65,6 +65,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
             obj = annotation.Annotator.add_plane_to_annotation(obj)
+        elif object_type == "TEXT_LEADER":
+            co1, _, co2, _ = annotation.Annotator.get_placeholder_coords()
+            obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
         return obj
