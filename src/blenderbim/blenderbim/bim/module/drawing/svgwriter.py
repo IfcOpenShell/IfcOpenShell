@@ -31,6 +31,7 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
+from math import pi
 from mathutils import Vector
 from mathutils import geometry
 from blenderbim.bim.ifc import IfcStore
@@ -290,16 +291,22 @@ class SvgWriter:
         # from Blender. In the future, it should probably come from IFC.
         if not isinstance(obj.data, bpy.types.Mesh):
             return
+
         classes = self.get_attribute_classes(obj)
         if len(obj.data.polygons) == 0:
             self.draw_edge_annotation(obj, classes)
             return
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+        bm.faces.ensure_lookup_table()
+
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         matrix_world = obj.matrix_world
-        for polygon in obj.data.polygons:
-            points = [obj.data.vertices[v] for v in polygon.vertices]
-            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+        for face in bm.faces:
+            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in face.verts]
             projected_points.append(projected_points[0])
             d = " ".join(
                 [
