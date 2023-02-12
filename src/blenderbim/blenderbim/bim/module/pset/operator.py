@@ -150,7 +150,7 @@ class EnablePsetEditing(bpy.types.Operator):
 
     def load_enumerated_value(self, prop_template, data):
         enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
-        selected_enum_items = data.get(prop_template.Name, [])
+        selected_enum_items = data.get(prop_template.Name, []) or []
 
         prop = self.props.properties.add()
         prop.name = prop_template.Name
