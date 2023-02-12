@@ -39,16 +39,16 @@ text { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT';
 .PredefinedType-BOUNDARY { fill: none; stroke: red; stroke-width: 1; stroke-dasharray: 12, 4, 3, 4, 3, 4; }
 .PredefinedType-BATTING { marker-start: url(#batting); stroke: none; }
 .PredefinedType-SEALANT { fill: url(#crosshatch1); stroke-width: 0.25; }
-.PredefinedType-FILLAREA { fill: white; stroke: none; }
+.PredefinedType-FILLAREA { fill: white; stroke: black; }
 .PredefinedType-BREAKLINE { fill: none; stroke: black; stroke-width: 0.25; marker-mid: url(#breakline-marker); }
 .PredefinedType-TEXT { fill: black; stroke: none; }
 path.PredefinedType-TEXTLEADER { marker-end: url(#leader-marker); }
 text.PredefinedType-TEXTLEADER { fill: black; stroke: none; }
-text.title { /* 7mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT'; font-size: 11.55px; }
-text.header { /* 5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT'; font-size: 8.25px; }
-text.large { /* 3.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT'; font-size: 5.78px; }
-text.regular { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT'; font-size: 4.13px; }
-text.small { /* 1.8mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT'; font-size: 2.97px; }
+text.title { /* 7mm */ font-size: 11.55px; }
+text.header { /* 5mm */ font-size: 8.25px; }
+text.large { /* 3.5mm */ font-size: 5.78px; }
+text.regular { /* 2.5mm */ font-size: 4.13px; }
+text.small { /* 1.8mm */ font-size: 2.97px; }
 .material-blank { fill: white; }
 .material-diagonal1 { fill: url(#diagonal1); }
 .material-diagonal2 { fill: url(#diagonal2); }
