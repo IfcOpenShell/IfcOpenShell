@@ -17,8 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
+import mathutils
 import logging
 import ifcopenshell.api
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.bim.import_ifc as import_ifc
@@ -39,8 +43,8 @@ class Loader:
         self.ifc_file = None
         self.logger = None
         self.ifc_importer = None
-        self.settings = None
-        self.load_settings()
+        self.settings = self.load_settings()
+        self.fallback_settings = self.load_fallback_settings()
         self.load_importer()
 
     def create_mesh(self, boundary):
@@ -51,15 +55,47 @@ class Loader:
         # Workaround for invalid geometry provided by Revit. See https://github.com/Autodesk/revit-ifc/issues/270
         if surface.is_a("IfcCurveBoundedPlane") and not getattr(surface, "InnerBoundaries", None):
             surface.InnerBoundaries = ()
-        shape = ifcopenshell.geom.create_shape(self.settings, surface)
-        mesh = self.ifc_importer.create_mesh(None, shape)
-        self.ifc_importer.link_mesh(shape, mesh)
+        try:
+            shape = ifcopenshell.geom.create_shape(self.settings, surface)
+            mesh = self.ifc_importer.create_mesh(None, shape)
+            self.ifc_importer.link_mesh(shape, mesh)
+        except RuntimeError:
+            # Fallback solution for invalid geometry provided by Revit. (InnerBoundaries cuting OuterBoundary)
+            print(f"Failed to create mesh from IfcRelSpaceBoundary with ID {boundary.id()}. Geometry might be invalid")
+            shape = ifcopenshell.geom.create_shape(self.fallback_settings, surface.OuterBoundary)
+            mesh = bpy.data.meshes.new(str(surface.id()))
+            bm = bmesh.new()
+            verts = [bm.verts.new(shape.verts[i : i + 3]) for i in range(0, len(shape.verts), 3)]
+            bm.faces.new(verts)
+            for inner_boundary in surface.InnerBoundaries:
+                shape = ifcopenshell.geom.create_shape(self.fallback_settings, inner_boundary)
+                verts = [bm.verts.new(shape.verts[i : i + 3]) for i in range(0, len(shape.verts), 3)]
+                for i in range(len(verts) - 1):
+                    bm.edges.new(verts[i : i + 2])
+                bm.edges.new((verts[-1], verts[0]))
+            bm.to_mesh(mesh)
+            bm.free()
+            mesh.BIMMeshProperties.ifc_definition_id = surface.id()
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            matrix = mathutils.Matrix(
+                ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist()
+            )
+            matrix[0][3] *= unit_scale
+            matrix[1][3] *= unit_scale
+            matrix[2][3] *= unit_scale
+            mesh.transform(matrix)
         return mesh
 
     def load_settings(self):
-        self.settings = ifcopenshell.geom.settings()
-        self.settings.set(self.settings.EXCLUDE_SOLIDS_AND_SURFACES, False)
-        self.settings.set(self.settings.USE_BREP_DATA, False)
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.EXCLUDE_SOLIDS_AND_SURFACES, False)
+        settings.set(settings.USE_BREP_DATA, False)
+        return settings
+
+    def load_fallback_settings(self):
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.INCLUDE_CURVES, True)
+        return settings
 
     def load_importer(self):
         self.ifc_file = tool.Ifc.get()
