@@ -32,9 +32,10 @@ def copy_class(ifc, collector, geometry, root, obj=None):
         root.copy_representation(element, new)
         new_representation = root.get_element_representation(new, root.get_representation_context(representation))
         data = geometry.duplicate_object_data(obj)
-        geometry.change_object_data(obj, data, is_global=True)
-        geometry.rename_object(data, geometry.get_representation_name(new_representation))
-        geometry.link(new_representation, data)
+        if data:
+            geometry.change_object_data(obj, data, is_global=True)
+            geometry.rename_object(data, geometry.get_representation_name(new_representation))
+            geometry.link(new_representation, data)
         root.assign_body_styles(new, obj)
     collector.assign(obj)
     if root.is_opening_element(new):

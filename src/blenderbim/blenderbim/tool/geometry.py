@@ -72,7 +72,8 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def duplicate_object_data(cls, obj):
-        return obj.data.copy()
+        if obj.data:
+            return obj.data.copy()
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj):
