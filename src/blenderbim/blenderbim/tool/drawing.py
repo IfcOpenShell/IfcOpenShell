@@ -962,11 +962,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_annotation_z_index(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Annotation", {}).get("ZIndex", 0)
+        return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "ZIndex") or 0
 
     @classmethod
     def get_annotation_symbol(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Annotation", {}).get("Symbol", None)
+        return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "Symbol")
 
     @classmethod
     def has_linework(cls, drawing):
