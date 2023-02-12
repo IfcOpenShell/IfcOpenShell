@@ -96,7 +96,11 @@ else
 	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
 endif
 	rm -rf dist/working
+	# distutils cannot access anything outside the cwd, so hackishly swap out the README.md
+	cp README.md dist/README.bak
+	cp ../../README.md README.md
 	python -m build
+	cp dist/README.bak README.md
 	cd dist && mv ifcopenshell-0.7.0-py3-none-any.whl ifcopenshell-0.7.0-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 	rm -rf dist/ifcopenshell
 	rm -rf dist/ifcopenshell.egg-info
