@@ -103,14 +103,14 @@ class BIM_PT_object_groups(Panel):
             row.label(text=f"{ObjectGroupsData.data['total_groups']} Groups in IFC Project", icon="OUTLINER")
             row.operator("bim.toggle_assigning_group", text="", icon="ADD")
 
-        for group in ObjectGroupsData.data['groups']:
+        for group in ObjectGroupsData.data["groups"]:
             row = self.layout.row(align=True)
             row.label(text=group["name"])
             op = row.operator("bim.unassign_group", text="", icon="X")
             op.group = group["id"]
 
-        if not groups_object:
-            self.layout.label(text="No Group associated with Active Object")
+        if not ObjectGroupsData.data["groups"]:
+            self.layout.label(text="No Associated Groups")
 
 
 class BIM_UL_groups(UIList):
