@@ -110,16 +110,24 @@ def format(val):
 
 def assert_valid_inverse(attr, val, schema):
     b1, b2 = attr.bound1(), attr.bound2()
-    invalid = len(val) < b1 or (b2 != -1 and len(val) > b2)
+    
+    if (b1, b2) == (-1, -1):
+        invalid = len(val) != 1
+    else:
+        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2)
+    
     if invalid:
 
         ent_ref = attr.entity_reference().name()
         attr_ref = attr.attribute_reference().name()
         aggr = attr.type_of_aggregation_string().upper()
-        b1 = attr.bound1()
-        b2 = attr.bound2()
 
-        attr_formatted = f"{attr.name()} : {aggr} [{b1}:{b2}] OF {ent_ref} FOR {attr_ref}"
+        if aggr:
+            aggr_str = f'{aggr} [{b1}:{b2}] OF '
+        else:
+            aggr_str = ''
+
+        attr_formatted = f"{attr.name()} : {aggr_str}{ent_ref} FOR {attr_ref}"
 
         raise ValidationError(f"With inverse:\n    {attr_formatted}\nValue:\n    {format(val)}\nNot valid\n")
     return True
