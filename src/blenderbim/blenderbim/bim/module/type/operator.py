@@ -378,3 +378,12 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         new.Name += " Copy"
         bpy.ops.bim.load_type_thumbnails(ifc_class=new.is_a())
         return {"FINISHED"}
+
+
+class PurgeUnusedTypes(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_unused_types"
+    bl_label = "Purge Unused Types"
+    bl_options = {"REGISTER"}
+
+    def _execute(self, context):
+        core.purge_unused_types(tool.Ifc, tool.Type)
