@@ -224,7 +224,7 @@ class FilledOpeningGenerator:
 
         x, y, z = filling_obj.dimensions
         extrusion = shape_builder.extrude(
-            shape_builder.rectangle(size=Vector([x, 0.0, z])),
+            shape_builder.rectangle(size=Vector([x / unit_scale, 0.0, z / unit_scale])),
             magnitude=thickness / unit_scale,
             position=Vector([0.0, -0.1 / unit_scale, 0.0]),
             extrusion_vector=Vector([0.0, 1.0, 0.0]),
