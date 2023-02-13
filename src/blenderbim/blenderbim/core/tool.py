@@ -642,14 +642,12 @@ class Spatial:
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
     def get_selected_product_types(cls): pass
-    def get_selected_products_and_types(cls): pass
-    def get_selected_products(cls): pass
     def get_selected_products(cls): pass
     def import_containers(cls, parent=None): pass
     def run_root_copy_class(cls, obj=None): pass
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
     def select_object(cls, obj): pass
-    def select_products(cls, products, unhide): pass
+    def select_products(cls, products, unhide=False): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def show_scene_objects(cls): pass
@@ -728,10 +726,13 @@ class Type:
     def get_body_context(cls): pass
     def get_body_representation(cls, element): pass
     def get_ifc_representation_class(cls, element): pass
+    def get_model_types(cls): pass
     def get_object_data(cls, obj): pass
     def get_profile_set_usage(cls, element): pass
     def get_representation_context(cls, representation): pass
+    def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
+    def remove_object(cls, obj): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, is_global=None): pass
 

@@ -50,8 +50,9 @@ class LaunchTypeManager(bpy.types.Operator):
     def draw(self, context):
         props = context.scene.BIMModelProperties
 
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         prop_with_search(row, props, "type_class", text="")
+        row.operator("bim.purge_unused_types", icon="TRASH", text="")
 
         columns = self.layout.column_flow(columns=3)
         row = columns.row()
