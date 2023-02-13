@@ -35,7 +35,7 @@ SUPPORTED_DOOR_TYPES = (
 
 
 def create_ifc_door_lining(
-    builder: ShapeBuilder, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()
+    builder: ShapeBuilder, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()
 ):
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
@@ -100,7 +100,7 @@ class Usecase:
                     "LiningOffset": self.convert_si_to_unit(0.0),
                     # offset from the wall
                     "LiningToPanelOffsetX": self.convert_si_to_unit(0.025),
-                    # offset from the elevation view rectangle (unlike windows)
+                    # offset from the X-axis (unlike windows)
                     "LiningToPanelOffsetY": self.convert_si_to_unit(0.025),
                     # transom - vertical distance between door and window panels
                     "TransomThickness": self.convert_si_to_unit(0.000),
@@ -291,6 +291,7 @@ class Usecase:
                 door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, door_swing_type))
             items_2d.extend(door_items)
 
+            builder.translate(items_2d, V(0, lining_offset))
             representation_2d = builder.get_representation(self.settings["context"], items_2d)
             return representation_2d
 

@@ -141,6 +141,7 @@ def update_window_modifier_representation(context):
         }
         representation_data["panel_properties"].append(panel_data)
 
+    # ELEVATION_VIEW representation
     profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
     if profile:
         representation_data["context"] = profile
@@ -149,16 +150,39 @@ def update_window_modifier_representation(context):
         )
         replace_ifc_representation_for_object(ifc_file, profile, obj, elevation_representation)
 
+    # MODEL_VIEW representation
     body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
     model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
     replace_ifc_representation_for_object(ifc_file, body, obj, model_representation)
+
+    # PLAN_VIEW representation
+    plan = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
+    if plan:
+        representation_data["context"] = plan
+        plan_representation = ifcopenshell.api.run(
+            "geometry.add_window_representation", ifc_file, **representation_data
+        )
+        replace_ifc_representation_for_object(ifc_file, plan, obj, plan_representation)
+
+        # adding switch representation at the end instead of changing order of representations
+        # to prevent #2744
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=model_representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=True,
+        )
+
     element.PartitioningType = props.window_type
 
     update_simple_openings(element, props.overall_width, props.overall_height)
 
 
-def create_bm_window_frame(bm, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()):
+def create_bm_window_frame(bm, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
     """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`
 
@@ -235,14 +259,16 @@ def create_bm_box(bm, size: Vector = V(1, 1, 1).freeze(), position: Vector = V(0
 def create_bm_window(
     bm,
     lining_size: Vector,
-    lining_thickness,
+    lining_thickness: list,
     lining_to_panel_offset_x,
     lining_to_panel_offset_y_full,
-    frame_size,
+    frame_size: Vector,
     frame_thickness,
     glass_thickness,
     position: Vector,
 ):
+    """`lining_thickness` expected to be defined as a list,
+    similarly to `create_bm_window_frame` `thickness` argument"""
     # window lining
     window_lining_verts = create_bm_window_frame(bm, lining_size, lining_thickness)
 
