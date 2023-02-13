@@ -185,7 +185,7 @@ def create_bm_extruded_profile(
     return new_verts + extruded_verts
 
 
-def create_bm_door_lining(bm, size: Vector, thickness: Vector, position: Vector = V(0, 0, 0).freeze()):
+def create_bm_door_lining(bm, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
     `thickness` can be also defined just as 1 float value.
