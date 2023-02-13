@@ -19,7 +19,7 @@
  */
 
 * { stroke-linecap: round; stroke-linejoin: round; }
-text { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT'; font-size: 4.13px; dominant-baseline: baseline; text-anchor: start; }
+text { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT'; font-size: 4.13px; }
 .cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; fill-rule: evenodd; }
 .projection { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
