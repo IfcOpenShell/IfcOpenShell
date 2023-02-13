@@ -278,10 +278,10 @@ endif
 	rm -rf dist/working
 
 	# Provides audio playback for costing
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/e4/4f/b40aaedfd24543e1d2aad69f6ed73f8cd3a13982c01ef4ed22145d06cff9/aud-0.8.6.tar.gz
-	cd dist/working && tar -xzvf aud*
-	cp -r dist/working/aud-0.8.6/aud dist/blenderbim/libs/site/packages/
+	mkdir -p dist/working
+	git clone https://github.com/Andrej730/aud.git --branch master-reduced-size --depth 1 dist/working/aud
+	cd dist/working/aud && git checkout 529af208fbcb707c387bfb681d2605c0b6112de7
+	cp -r dist/working/aud/aud dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
