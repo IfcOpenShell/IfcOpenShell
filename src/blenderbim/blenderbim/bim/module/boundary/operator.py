@@ -58,7 +58,7 @@ class Loader:
         try:
             shape = ifcopenshell.geom.create_shape(self.settings, surface)
             mesh = self.ifc_importer.create_mesh(None, shape)
-            self.ifc_importer.link_mesh(shape, mesh)
+            tool.Loader.link_mesh(shape, mesh)
         except RuntimeError:
             # Fallback solution for invalid geometry provided by Revit. (InnerBoundaries cuting OuterBoundary)
             print(f"Failed to create mesh from IfcRelSpaceBoundary with ID {boundary.id()}. Geometry might be invalid")
