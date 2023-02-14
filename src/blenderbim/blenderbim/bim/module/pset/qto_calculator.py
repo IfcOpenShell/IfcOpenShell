@@ -413,6 +413,7 @@ class QtoCalculator:
             if not self.has_openings(o):
                 return self.get_net_surface_area(o)
 
+            element = tool.Ifc.get_entity(o)
             mesh = self.get_gross_element_mesh(element)
             area = self.get_mesh_area(mesh)
             bpy.data.meshes.remove(mesh)
