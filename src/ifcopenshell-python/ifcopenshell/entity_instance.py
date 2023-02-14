@@ -29,6 +29,7 @@ import operator
 import functools
 
 from . import ifcopenshell_wrapper
+from . import settings
 
 try:
     import logging
@@ -135,9 +136,21 @@ class entity_instance(object):
                     self.wrapped_data.get_argument(idx), self.wrapped_data.file
                 )
         elif attr_cat == INVERSE:
-            return entity_instance.wrap_value(
+            vs = entity_instance.wrap_value(
                 self.wrapped_data.get_inverse(name), self.wrapped_data.file
             )
+            if settings.unpack_non_aggregate_inverses:
+                schema_name = self.wrapped_data.is_a(True).split(".")[0]
+                ent = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(
+                    self.is_a()
+                )
+                inv = [i for i in ent.all_inverse_attributes() if i.name() == name][0]
+                if (inv.bound1(), inv.bound2()) == (-1, -1):
+                    if vs:
+                        vs = vs[0]
+                    else:
+                        vs = None
+            return vs
 
         # derived attribute perhaps?
         schema_name = self.wrapped_data.is_a(True).split(".")[0]
