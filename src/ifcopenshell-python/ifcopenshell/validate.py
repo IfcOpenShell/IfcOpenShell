@@ -40,25 +40,27 @@ attribute = ifcopenshell.ifcopenshell_wrapper.attribute
 
 
 class ValidationError(Exception):
-    pass
+    def __init__(self, message, attribute=None):
+        super(ValidationError, self).__init__(message)
+        self.attribute = attribute
 
 
-log_entry_type = namedtuple("log_entry_type", ("level", "message", "instance"))
+log_entry_type = namedtuple("log_entry_type", ("level", "message", "instance", "attribute"))
 
 
 class json_logger:
     def __init__(self):
         self.statements = []
-        self.instance = None
+        self.state = {}
 
-    def set_instance(self, instance):
-        self.instance = instance
+    def set_state(self, key, value):
+        self.state[key] = value
 
-    def log(self, level, message, *args, **kwargs):
-        self.statements.append(log_entry_type(level, message % args, kwargs.get("instance"))._asdict())
+    def log(self, level, message, *args):
+        self.statements.append({"level": level, "message": message % args, **self.state})
 
     def __getattr__(self, level):
-        return functools.partial(self.log, level, instance=self.instance)
+        return functools.partial(self.log, level)
 
 
 simple_type_python_mapping = {
@@ -129,7 +131,7 @@ def assert_valid_inverse(attr, val, schema):
 
         attr_formatted = f"{attr.name()} : {aggr_str}{ent_ref} FOR {attr_ref}"
 
-        raise ValidationError(f"With inverse:\n    {attr_formatted}\nValue:\n    {format(val)}\nNot valid\n")
+        raise ValidationError(f"With inverse:\n    {attr_formatted}\nValue:\n    {format(val)}\nNot valid\n", attr.name())
     return True
 
 
@@ -205,7 +207,7 @@ def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
     if no_throw:
         return not invalid
     elif invalid:
-        raise ValidationError(f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n")
+        raise ValidationError(f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n", (attr or attr_type).name())
     else:
         return True
 
@@ -231,12 +233,13 @@ def log_internal_cpp_errors(filename, logger):
 
         for offsets, msg in zip(chr_offsets, msgs):
             if offsets:
-                line = lines[bisect.bisect_left(cs, int(offsets[0]))].decode("ascii", errors="ignore")
+                line = lines[bisect.bisect_left(cs, int(offsets[0]))].decode("ascii", errors="ignore").rstrip()
                 m = chr_offset_re.sub("", msg["message"])
 
-                if hasattr(logger, "set_instance"):
-                    logger.set_instance(line)
-                    logger.error(m)
+                if hasattr(logger, "set_state"):
+                    logger.set_state('instance', line)
+                    logger.set_state('attribute', None)
+                    logger.error("%s:\n\n%s" % (m, line))
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
 
@@ -288,6 +291,8 @@ def validate(f, logger, express_rules=False):
 
     filename = None
 
+    logger.set_state('type', 'schema')
+
     if not isinstance(f, ifcopenshell.file):
 
         # get_log() clears log existing output
@@ -302,14 +307,15 @@ def validate(f, logger, express_rules=False):
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
     for inst in f:
-        if hasattr(logger, "set_instance"):
-            logger.set_instance(inst)
+        if hasattr(logger, "set_state"):
+            logger.set_state('instance', inst)
 
         entity, attrs = get_entity_attributes(schema, inst.is_a())
 
         if entity.is_abstract():
             e = "Entity %s is abstract" % entity.name()
-            if hasattr(logger, "set_instance"):
+            if hasattr(logger, "set_state"):
+                logger.set_state('attribute', None)
                 logger.error(e)
             else:
                 logger.error("For instance:\n    %s\n%s", inst, e)
@@ -321,8 +327,9 @@ def validate(f, logger, express_rules=False):
                 values[i] = inst[i]
                 pass
             except:
-                if hasattr(logger, "set_instance"):
-                    logger.error("Invalid attribute value for %s.%s", entity, attrs[i])
+                if hasattr(logger, "set_state"):
+                    logger.set_state('attribute', f"{entity.name()}.{attrs[i].name()}")
+                    logger.error("Invalid attribute value")
                 else:
                     logger.error(
                         "For instance:\n    %s\n    %s\nInvalid attribute value for %s.%s",
@@ -337,8 +344,9 @@ def validate(f, logger, express_rules=False):
             for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
 
                 if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
-                    if hasattr(logger, "set_instance"):
-                        logger.error("Attribute %s.%s is derived in subtype", entity, attr)
+                    if hasattr(logger, "set_state"):
+                        logger.set_state('attribute', f"{entity.name()}.{attr.name()}")
+                        logger.error("Attribute is derived in subtype")
                     else:
                         logger.error(
                             "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nDerived in subtype\n",
@@ -348,8 +356,9 @@ def validate(f, logger, express_rules=False):
                         )
 
                 if val is None and not attr.optional() and not is_derived:
-                    if hasattr(logger, "set_instance"):
-                        logger.error("Attribute %s.%s not optional", entity, attr)
+                    if hasattr(logger, "set_state"):
+                        logger.set_state('attribute', f"{entity.name()}.{attr.name()}")
+                        logger.error("Attribute not optional")
                     else:
                         logger.error(
                             "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nNot optional\n",
@@ -363,7 +372,8 @@ def validate(f, logger, express_rules=False):
                     try:
                         assert_valid(attr_type, val, schema, attr=attr)
                     except ValidationError as e:
-                        if hasattr(logger, "set_instance"):
+                        if hasattr(logger, "set_state"):
+                            logger.set_state('attribute', e.attribute)
                             logger.error(str(e))
                         else:
                             logger.error(
@@ -378,7 +388,8 @@ def validate(f, logger, express_rules=False):
             try:
                 assert_valid_inverse(attr, val, schema)
             except ValidationError as e:
-                if hasattr(logger, "set_instance"):
+                if hasattr(logger, "set_state"):
+                    logger.set_state('attribute', f"{entity.name()}.{attr.name()}")
                     logger.error(str(e))
                 else:
                     logger.error("For instance:\n    %s\n%s", inst, e)
@@ -395,6 +406,9 @@ def validate(f, logger, express_rules=False):
     ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", attribute_value_derived_org)
 
     if express_rules:
+        if hasattr(logger, 'set_state'):
+            logger.set_state('instance', None)
+            logger.set_state('attribute', None)
         ifcopenshell.express.rule_executor.run(f, logger)
 
 
@@ -416,7 +430,14 @@ if __name__ == "__main__":
         validate(fn, logger, "--rules" in flags)
 
         if "--json" in flags:
+            sys.stdout.reconfigure(encoding='utf-8')
             conv = str
             if "--spf" in flags:
                 conv = lambda x: x.to_string() if isinstance(x, ifcopenshell.entity_instance) else str(x)
+            if "--fields" in flags:
+                def conv(x):
+                    if isinstance(x, ifcopenshell.entity_instance):
+                        return x.get_info(scalar_only=True)
+                    else:
+                        return str(x)
             print("\n".join(json.dumps(x, default=conv) for x in logger.statements))
