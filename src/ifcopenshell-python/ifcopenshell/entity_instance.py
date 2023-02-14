@@ -430,7 +430,7 @@ class entity_instance(object):
         )
 
     def get_info(
-        self, include_identifier=True, recursive=False, return_type=dict, ignore=()
+        self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False
     ):
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
 
@@ -442,6 +442,8 @@ class entity_instance(object):
         :type return_type: dict|list|other
         :param ignore: A list of attribute names to ignore
         :type ignore: set|list
+        :param scalar_only: Filters out all values that are IFC instances
+        :type scalar_only: bool
         :returns: A dictionary of properties and their corresponding values
         :rtype: dict
 
@@ -473,15 +475,13 @@ class entity_instance(object):
                     if self.wrapped_data.get_attribute_names()[i] in ignore:
                         continue
                     attr_value = self[i]
-                    if recursive:
+
+                    if recursive or scalar_only:
 
                         def is_instance(e):
                             return isinstance(e, entity_instance)
 
                         def get_info_(inst):
-                            # for ty in ignore:
-                            #     if inst.is_a(ty):
-                            #         return None
                             return entity_instance.get_info(
                                 inst,
                                 include_identifier=include_identifier,
@@ -490,10 +490,18 @@ class entity_instance(object):
                                 ignore=ignore,
                             )
 
+                        to_include = {'v': True}
+
+                        def do_ignore(inst):
+                            to_include['v'] = False
+                            return None
+
                         attr_value = entity_instance.walk(
-                            is_instance, get_info_, attr_value
+                            is_instance, get_info_ if recursive else do_ignore, attr_value
                         )
-                    yield self.attribute_name(i), attr_value
+
+                    if to_include['v']:
+                        yield self.attribute_name(i), attr_value
                 except BaseException:
                     logging.exception(
                         "unhandled exception occurred setting attribute name for {}".format(
