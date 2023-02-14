@@ -60,6 +60,9 @@ def fix_type(v):
 def run(f, logger):
     from _pytest import assertion
 
+    orig = ifcopenshell.settings.unpack_non_aggregate_inverses
+    ifcopenshell.settings.unpack_non_aggregate_inverses = True
+
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema}.py")
     source = open(fn, "r").read()
     a = ast.parse(source)
@@ -77,7 +80,13 @@ def run(f, logger):
         except Exception as e:
             ln = e.__traceback__.tb_next.tb_lineno
             logger.error(
-                str(error(R.__name__, reverse_compile(source.split("\n")[ln - 1]), reverse_compile(e.args[0])))
+                str(
+                    error(
+                        R.__name__,
+                        reverse_compile(source.split("\n")[ln - 1]),
+                        reverse_compile(e.args[0]),
+                    )
+                )
             )
 
     types = {}
@@ -85,7 +94,9 @@ def run(f, logger):
     for d in S.declarations():
         if isinstance(d, ifcopenshell.ifcopenshell_wrapper.type_declaration):
             types[d.name()] = d
-            if isinstance(d.declared_type(), ifcopenshell.ifcopenshell_wrapper.named_type):
+            if isinstance(
+                d.declared_type(), ifcopenshell.ifcopenshell_wrapper.named_type
+            ):
                 subtypes[d.declared_type().declared_type().name()].append(d.name())
 
     D = collections.defaultdict(list)
@@ -135,7 +146,11 @@ def run(f, logger):
         # case in point IfcCompoundPlaneAngleMeasure. Therefore only unpack named
         # type references from this point onwards.
         while isinstance(
-            type, (ifcopenshell.ifcopenshell_wrapper.named_type, ifcopenshell.ifcopenshell_wrapper.type_declaration)
+            type,
+            (
+                ifcopenshell.ifcopenshell_wrapper.named_type,
+                ifcopenshell.ifcopenshell_wrapper.type_declaration,
+            ),
         ):
             type = type.declared_type()
 
@@ -145,7 +160,10 @@ def run(f, logger):
             for v in value:
                 check(v, ty, instance=inst)
         elif isinstance(value, ifcopenshell.entity_instance):
-            if isinstance(S.declaration_by_name(value.is_a()), ifcopenshell.ifcopenshell_wrapper.entity):
+            if isinstance(
+                S.declaration_by_name(value.is_a()),
+                ifcopenshell.ifcopenshell_wrapper.entity,
+            ):
                 # top level entity instances will be checked on their own
                 pass
             else:
@@ -156,7 +174,9 @@ def run(f, logger):
         values = list(inst)
         entity = S.declaration_by_name(inst.is_a())
         attrs = entity.all_attributes()
-        for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
+        for i, (attr, val, is_derived) in enumerate(
+            zip(attrs, values, entity.derived())
+        ):
             if is_derived:
                 # @todo
                 pass
@@ -171,9 +191,16 @@ def run(f, logger):
                 ln = e.__traceback__.tb_next.tb_lineno
                 logger.error(
                     str(
-                        error(R.__name__, reverse_compile(source.split("\n")[ln - 1]), reverse_compile(e.args[0]), inst)
+                        error(
+                            R.__name__,
+                            reverse_compile(source.split("\n")[ln - 1]),
+                            reverse_compile(e.args[0]),
+                            inst,
+                        )
                     )
                 )
+
+    ifcopenshell.settings.unpack_non_aggregate_inverses = orig
 
 
 if __name__ == "__main__":
