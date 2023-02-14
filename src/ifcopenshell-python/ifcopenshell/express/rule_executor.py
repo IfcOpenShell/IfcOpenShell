@@ -1,4 +1,5 @@
 import os
+import re
 import ast
 import collections
 import ifcopenshell
@@ -7,7 +8,24 @@ from codegen import indent
 
 
 def reverse_compile(s):
-    return s.strip().replace("len(", "SIZEOF(").replace("assert ", "").replace(" is not False", "")
+    return re.sub(
+        "\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
+        "",
+        re.sub(
+            ", )?+.(, INDETERMINATE)\\"[::-1],
+            "]\\1[",
+            re.sub(
+                r", '(\w+)', INDETERMINATE\)",
+                ".\\1",
+                s.strip()
+                .replace("len(", "SIZEOF(")
+                .replace("assert ", "")
+                .replace(" is not False", "")
+                .replace("getattr(", "")
+                .replace("express_getitem(", ""),
+            )[::-1],
+        )[::-1],
+    )
 
 
 @dataclass
