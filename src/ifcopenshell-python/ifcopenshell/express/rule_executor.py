@@ -39,7 +39,12 @@ class error(Exception):
         inst = ""
         if self.instance:
             inst = f"On instance:\n{indent(4, str(self.instance))}\n"
-        return f"{inst}Rule {self.rule_name}:\n{indent(4, self.rule_definition)}\nViolated by:\n{indent(4, self.violation)}"
+        if self.rule_name:
+            return f"{inst}Rule {self.rule_name}:\n{indent(4, self.rule_definition)}\nViolated by:\n{indent(4, self.violation)}"
+        else:
+            if inst:
+                inst = f"\n\n{inst}"
+            return f"{self.rule_definition}\n\nViolated by:\n{indent(4, self.violation)}{inst}"
 
 
 def fix_type(v):
@@ -60,6 +65,19 @@ def fix_type(v):
 def run(f, logger):
     from _pytest import assertion
 
+    if hasattr(logger, "set_instance"):
+        # when using the json logger, we notify it of the relevant instance
+        pre_annotate_instance = lambda instance: logger.set_state('instance', instance)
+        post_annotate_instance = lambda instance: instance
+        pre_annotate_attribute = lambda attribute: logger.set_state('attribute', attribute)
+        post_annotate_attribute = lambda attribute: None
+    else:
+        # when using the normal text logger the instance is appended to the method
+        pre_annotate_instance = lambda instance: None
+        post_annotate_instance = lambda instance: instance
+        pre_annotate_attribute = lambda attribute: None
+        post_annotate_attribute = lambda attribute: attribute
+
     orig = ifcopenshell.settings.unpack_non_aggregate_inverses
     ifcopenshell.settings.unpack_non_aggregate_inverses = True
 
@@ -74,20 +92,25 @@ def run(f, logger):
 
     rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
 
+    logger.set_state('type', 'global_rule')
+
     for R in [r for r in rules if r.SCOPE == "file"]:
         try:
             R()(f)
         except Exception as e:
             ln = e.__traceback__.tb_next.tb_lineno
+            pre_annotate_attribute(R.__name__)
             logger.error(
                 str(
                     error(
-                        R.__name__,
+                        post_annotate_attribute(R.__name__),
                         reverse_compile(source.split("\n")[ln - 1]),
                         reverse_compile(e.args[0]),
                     )
                 )
             )
+
+    logger.set_state('type', 'simpletype_rule')
 
     types = {}
     subtypes = collections.defaultdict(list)
@@ -131,13 +154,15 @@ def run(f, logger):
                     R()(fix_type(value))
                 except Exception as e:
                     ln = e.__traceback__.tb_next.tb_lineno
+                    pre_annotate_instance(instance)
+                    pre_annotate_attribute(f"{R.TYPE_NAME}.{R.RULE_NAME}")
                     logger.error(
                         str(
                             error(
-                                R.__name__,
+                                post_annotate_attribute(f"{R.TYPE_NAME}.{R.RULE_NAME}"),
                                 reverse_compile(source.split("\n")[ln - 1]),
                                 reverse_compile(e.args[0]),
-                                instance,
+                                post_annotate_instance(instance),
                             )
                         )
                     )
@@ -183,19 +208,23 @@ def run(f, logger):
             else:
                 check(val, attr.type_of_attribute(), instance=inst)
 
+    logger.set_state('type', 'entity_rule')
+
     for R in [r for r in rules if r.SCOPE == "entity"]:
         for inst in f.by_type(R.TYPE_NAME):
             try:
                 R()(inst)
             except Exception as e:
                 ln = e.__traceback__.tb_next.tb_lineno
+                pre_annotate_instance(inst)
+                pre_annotate_attribute(f"{R.TYPE_NAME}.{R.RULE_NAME}")
                 logger.error(
                     str(
                         error(
-                            R.__name__,
+                            post_annotate_attribute(f"{R.TYPE_NAME}.{R.RULE_NAME}"),
                             reverse_compile(source.split("\n")[ln - 1]),
                             reverse_compile(e.args[0]),
-                            inst,
+                            post_annotate_instance(inst),
                         )
                     )
                 )
