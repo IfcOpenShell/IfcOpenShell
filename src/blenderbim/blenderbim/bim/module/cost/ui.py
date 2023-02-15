@@ -42,9 +42,16 @@ class BIM_PT_cost_schedules(Panel):
             CostSchedulesData.load()
 
         self.props = context.scene.BIMCostProperties
+        row = self.layout.row()
+        if CostSchedulesData.data["total_cost_schedules"]:
+            row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
+            row.operator("bim.export_cost_schedules", text="Export as spreadsheet", icon="EXPORT")
+        else:
+            row.label(text="No Cost Schedules Found found.", icon="COMMUNITY")
 
         row = self.layout.row()
-        row.operator("bim.add_cost_schedule", icon="ADD")
+        row.prop(self.props, "cost_schedule_predefined_types")
+        row.operator("bim.add_cost_schedule", icon="ADD", text="Add new")
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)
@@ -57,7 +64,6 @@ class BIM_PT_cost_schedules(Panel):
             op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
             op.cost_schedule = cost_schedule["id"]
             row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
-            row.operator("bim.export_cost_schedule", text="", icon="EXPORT").cost_schedule = cost_schedule["id"]
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":

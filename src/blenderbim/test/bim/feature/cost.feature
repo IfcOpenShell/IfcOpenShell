@@ -379,3 +379,29 @@ Scenario: Select cost item products
     And I press "bim.assign_cost_item_quantity(cost_item={cost_item}, related_object_type='PRODUCT', prop_name='')"
     When I press "bim.select_cost_item_products(cost_item={cost_item})"
     Then nothing happens
+
+Scenario: Select Cost Schedule Products
+    Given an empty IFC project
+    And I press "bim.add_cost_schedule"
+    And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+    And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.assign_cost_item_quantity(cost_item={cost_item}, related_object_type='PRODUCT', prop_name='')"
+    When I press "bim.select_cost_schedule_products(cost_schedule={cost_schedule})"
+    Then nothing happens
+Scenario: Load Cost Item Types
+    Given an empty IFC project
+    And I press "bim.add_cost_schedule"
+    And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+    And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
+    When I press "bim.add_cost_item(cost_item={cost_item})"
+    And I press "bim.load_cost_item_types"
+    Then nothing happens

@@ -30,6 +30,7 @@ classes = (
     operator.EnableEditingCostSchedule,
     operator.EnableEditingCostItems,
     operator.EnableEditingCostItem,
+    operator.ExportCostSchedules,
     operator.ExpandCostItems,
     operator.EnableEditingCostItemQuantities,
     operator.EnableEditingCostItemQuantity,

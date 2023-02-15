@@ -21,6 +21,8 @@ import ifcopenshell
 import ifcopenshell.util.cost
 import ifcopenshell.util.element
 import blenderbim.tool as tool
+import blenderbim.bim.schema
+from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 
 
 def refresh():
@@ -36,6 +38,8 @@ class CostSchedulesData:
     @classmethod
     def load(cls):
         cls.data = {
+            "predefined_types": cls.get_cost_schedule_types(),
+            "total_cost_schedules": cls.total_cost_schedules(),
             "schedules": cls.schedules(),
             "is_editing_rates": cls.is_editing_rates(),
             "cost_items": cls.cost_items(),
@@ -44,6 +48,10 @@ class CostSchedulesData:
             "quantity_types": cls.quantity_types(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def total_cost_schedules(cls):
+        return len(tool.Ifc.get().by_type("IfcCostSchedule"))
 
     @classmethod
     def schedules(cls):
@@ -212,6 +220,21 @@ class CostSchedulesData:
             for t in tool.Ifc.schema().declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()
         ]
 
+    @classmethod
+    def get_cost_schedule_types(cls):
+        results = []
+        declaration = tool.Ifc().schema().declaration_by_name("IfcCostSchedule")
+        version = tool.Ifc.get_schema()
+        for attribute in declaration.attributes():
+            if attribute.name() == "PredefinedType":
+                results.extend(
+                    [
+                        (e, e, get_predefined_type_doc(version, "IfcCostSchedule", e))
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                    ]
+                )
+                break
+        return results
 
 class CostItemRatesData:
     data = {}

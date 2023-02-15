@@ -176,8 +176,8 @@ class Cost:
     def load_cost_schedule_tree(cls): pass
     def load_schedule_of_rates_tree(cls, schedule_of_rates): pass
     def play_chaching_sound(cls): pass
-    def print_all_cost_items(cls, cost_schedule): pass
     def remove_cost_column(cls, name): pass
+    def export_cost_schedules(cls, format): pass
 
 @interface
 class Debug:
