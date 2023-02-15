@@ -22,6 +22,7 @@ import json
 import bmesh
 import logging
 import numpy as np
+import ifcopenshell
 from mathutils import Matrix
 from math import radians
 from blenderbim.bim.ifc import IfcStore
@@ -32,6 +33,7 @@ class ExportClashSets(bpy.types.Operator):
     bl_label = "Export Clash Sets"
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
@@ -64,6 +66,7 @@ class ImportClashSets(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
@@ -194,7 +197,7 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator):
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
-    filter_glob: bpy.props.StringProperty( default='*.bcf;*.json', options={'HIDDEN'} )
+    filter_glob: bpy.props.StringProperty(default="*.bcf;*.json", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
@@ -287,10 +290,25 @@ class SelectIfcClashResults(bpy.types.Operator):
                 return {"CANCELLED"}
             for clash in clash_set["clashes"].values():
                 global_ids.extend([clash["a_global_id"], clash["b_global_id"]])
+
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+
+            ifc_file = ""
+            for scene in obj.users_scene:
+                if scene.BIMProperties.ifc_file:
+                    ifc_file = scene.BIMProperties.ifc_file
+                    break
+
+            if ifc_file:
+                if ifc_file not in IfcStore.session_files:
+                    IfcStore.session_files[ifc_file] = ifcopenshell.open(ifc_file)
+                element_file = IfcStore.session_files[ifc_file]
+            else:
+                element_file = self.file
+
+            element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             if element.GlobalId in global_ids:
                 obj.select_set(True)
         return {"FINISHED"}
@@ -308,7 +326,7 @@ class SmartClashGroup(bpy.types.Operator):
 
     def execute(self, context):
         from ifcclash import ifcclash
-        
+
         settings = ifcclash.ClashSettings()
         self.filepath = bpy.path.ensure_ext(context.scene.BIMClashProperties.clash_results_path, ".json")
         settings.output = self.filepath
