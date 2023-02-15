@@ -18,10 +18,17 @@
 
 import ifcopenshell
 import ifcopenshell.util.schema
+import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None, ifc_class="IfcBuildingElementProxy", predefined_type=None):
+    def __init__(
+        self,
+        file,
+        product=None,
+        ifc_class="IfcBuildingElementProxy",
+        predefined_type=None,
+    ):
         """Changes the class of a product
 
         If you ever created a wall then realised it's meant to be something
@@ -71,4 +78,13 @@ class Usecase:
             except:
                 element.PredefinedType = "USERDEFINED"
                 element.ObjectType = self.settings["predefined_type"]
+        if element.is_a("IfcTypeProduct"):
+            for typed_element in ifcopenshell.util.element.get_types(element) or []:
+                ifcopenshell.api.run(
+                    "root.reassign_class",
+                    self.file,
+                    product=typed_element,
+                    ifc_class=self.settings["ifc_class"].strip("Type"),
+                    predefined_type= self.settings["predefined_type"]
+                )
         return element
