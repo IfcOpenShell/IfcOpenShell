@@ -279,9 +279,7 @@ class Cost(blenderbim.core.tool.Cost):
                 prop.float_value = (
                     0.0
                     if prop.is_null
-                    else ifcopenshell.util.cost.calculate_applied_value(
-                        tool.Ifc.get().by_id(props.active_cost_item_id), cost_value
-                    )
+                    else cls.calculate_applied_value(tool.Ifc.get().by_id(props.active_cost_item_id), cost_value)
                 )
                 return True
             if name == "UnitBasis" and is_rates:
@@ -299,33 +297,11 @@ class Cost(blenderbim.core.tool.Cost):
                 prop.name = "UnitBasisUnit"
                 prop.data_type = "enum"
                 prop.is_null = prop.is_optional = False
-                units = {}
-
-                def format_unit(unit):
-                    if unit.is_a("IfcContextDependentUnit"):
-                        return f"{unit.UnitType} / {unit.Name}"
-                    else:
-                        name = unit.Name
-                        if unit.get_info().get("Prefix", None):
-                            name = f"{unit.Prefix} {name}"
-                        return f"{unit.UnitType} / {name}"
-
-                for unit in tool.Ifc.get().by_type("IfcNamedUnit"):
-                    if unit.get_info().get("UnitType", None) in [
-                        "AREAUNIT",
-                        "LENGTHUNIT",
-                        "TIMEUNIT",
-                        "VOLUMEUNIT",
-                        "MASSUNIT",
-                        "USERDEFINED",
-                    ]:
-                        units[unit.id()] = format_unit(unit)
+                units = cls.get_units()
                 prop.enum_items = json.dumps(units)
                 if data["UnitBasis"] and data["UnitBasis"].UnitComponent:
-                    # prop.enum_value = prop.enum_items[data["UnitBasis"].UnitComponent.id()]
-                    print(prop.enum_items)
                     for key, value in json.loads(prop.enum_items).items():
-                        if value == format_unit(data["UnitBasis"].UnitComponent):
+                        if value == cls.format_unit(data["UnitBasis"].UnitComponent):
                             prop.enum_value = key
                             break
                 return True
@@ -384,7 +360,6 @@ class Cost(blenderbim.core.tool.Cost):
                     "ValueComponent": prop.float_value or 1,
                     "UnitComponent": cls.get_cost_value_unit_component(),
                 }
-                print(attributes)
                 return True
             if prop.name == "UnitBasisUnit":
                 return True
@@ -424,9 +399,6 @@ class Cost(blenderbim.core.tool.Cost):
     def get_nested_cost_items(cls, cost_item):
         return [obj for rel in cost_item.IsNestedBy for obj in rel.RelatedObjects]
 
-    @classmethod
-    def print_all_cost_items(cls, cost_schedule):
-        print(cls.get_schedule_cost_items(cost_schedule))
 
     @classmethod
     def get_schedule_cost_items(cls, cost_schedule):
@@ -526,3 +498,25 @@ class Cost(blenderbim.core.tool.Cost):
                 for cost_item in rel.RelatedObjects
             ]
         props.is_cost_update_enabled = True
+
+    @classmethod
+    def export_cost_schedules(cls, format=None):
+        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
+        if format == "CSV":
+            from ifc5d.ifc5Dspreadsheet import Ifc5DCsvWriter
+
+            if not os.path.exists(path):
+                os.makedirs(path)
+            writer = Ifc5DCsvWriter(file=tool.Ifc.get(), output=path)
+            writer.write()
+        elif format == "ODS":
+            from ifc5d.ifc5Dspreadsheet import Ifc5DOdsWriter
+
+            writer = Ifc5DOdsWriter(file=tool.Ifc.get(), output=path)
+            writer.write()
+        elif format == "XLSX":
+            from ifc5d.ifc5Dspreadsheet import Ifc5DXlsxWriter
+
+            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path + ".xlsx")
+            writer.write()
+

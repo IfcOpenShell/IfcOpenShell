@@ -109,6 +109,12 @@ def update_cost_item_name(self, context):
         attribute.string_value = self.name
 
 
+def get_schedule_predefined_types(self, context):
+    if not CostSchedulesData.is_loaded:
+        CostSchedulesData.load()
+    return CostSchedulesData.data["predefined_types"]
+
+
 class CostItem(PropertyGroup):
     name: StringProperty(name="Name", update=update_cost_item_name)
     identification: StringProperty(name="Identification", update=update_cost_item_identification)
@@ -130,6 +136,9 @@ class CostItemType(PropertyGroup):
 
 
 class BIMCostProperties(PropertyGroup):
+    cost_schedule_predefined_types: EnumProperty(
+        items=get_schedule_predefined_types, name="Predefined Type", default=None
+    )
     is_cost_update_enabled: BoolProperty(name="Is Cost Update Enabled", default=True)
     cost_schedule_attributes: CollectionProperty(name="Cost Schedule Attributes", type=Attribute)
     is_editing: StringProperty(name="Is Editing")

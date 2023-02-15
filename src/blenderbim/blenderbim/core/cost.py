@@ -1,5 +1,5 @@
-def add_cost_schedule(ifc):
-    ifc.run("cost.add_cost_schedule")
+def add_cost_schedule(ifc, predefined_type):
+    ifc.run("cost.add_cost_schedule", predefined_type=predefined_type)
 
 
 def edit_cost_schedule(ifc, cost, cost_schedule):
@@ -210,3 +210,6 @@ def contract_cost_item_rate(cost, cost_item):
 
 def calculate_cost_item_resource_value(ifc, cost_item):
     ifc.run("cost.calculate_cost_item_resource_value", cost_item=cost_item)
+
+def export_cost_schedules(cost, format):
+    cost.export_cost_schedules(format)

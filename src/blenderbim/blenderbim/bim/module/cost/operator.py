@@ -36,7 +36,7 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add a new cost schedule"
 
     def _execute(self, context):
-        core.add_cost_schedule(tool.Ifc)
+        core.add_cost_schedule(tool.Ifc, predefined_type = context.scene.BIMCostProperties.cost_schedule_predefined_types)
 
 
 class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -328,7 +328,7 @@ class DisableEditingCostItemQuantity(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Disable editing cost item quantity"
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_cost_item_quantity(tool.Cost)
         return {"FINISHED"}
 
@@ -586,3 +586,22 @@ class CalculateCostItemResourceValue(bpy.types.Operator, tool.Ifc.Operator):
         core.calculate_cost_item_resource_value(tool.Ifc, cost_item=tool.Ifc.get().by_id(self.cost_item))
         return {"FINISHED"}
 
+
+class ExportCostSchedules(bpy.types.Operator):
+    bl_idname = "bim.export_cost_schedules"
+    bl_label = "Export Cost Schedule"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
+    format: bpy.props.EnumProperty("Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
+
+    def execute(self, context):
+        core.export_cost_schedules(tool.Cost, format=self.format)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.label(text="Choose a format")
+        self.layout.prop(self, "format")
