@@ -520,3 +520,27 @@ class Cost(blenderbim.core.tool.Cost):
             writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path + ".xlsx")
             writer.write()
 
+    @classmethod
+    def get_units(cls):
+        units = {}
+        for unit in tool.Ifc.get().by_type("IfcNamedUnit"):
+            if unit.get_info().get("UnitType", None) in [
+                "AREAUNIT",
+                "LENGTHUNIT",
+                "TIMEUNIT",
+                "VOLUMEUNIT",
+                "MASSUNIT",
+                "USERDEFINED",
+            ]:
+                units[unit.id()] = cls.format_unit(unit)
+        return units
+
+    @staticmethod
+    def format_unit(unit):
+        if unit.is_a("IfcContextDependentUnit"):
+            return f"{unit.UnitType} / {unit.Name}"
+        else:
+            name = unit.Name
+            if unit.get_info().get("Prefix", None):
+                name = f"{unit.Prefix} {name}"
+            return f"{unit.UnitType} / {name}"

@@ -148,15 +148,16 @@ class Cost:
     def expand_cost_item_rate(cls, cost_item): pass
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
+    def export_cost_schedules(cls, format): pass
     def get_active_cost_item(cls): pass
     def get_all_nested_cost_items(cls, cost_item): pass
+    def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
     def get_cost_item_attributes(cls, cost_item): pass
     def get_cost_item_products(cls): pass
     def get_cost_item_quantity_attributes(cls): pass
     def get_cost_item_value_formula(cls): pass
     def get_cost_schedule_attributes(cls): pass
     def get_cost_schedule_products(cls, cost_schedule): pass
-    def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
     def get_cost_value_attributes(cls): pass
     def get_cost_value_unit_component(cls): pass
     def get_direct_cost_item_products(cls): pass
@@ -165,6 +166,7 @@ class Cost:
     def get_products(cls, related_object_type): pass
     def get_root_cost_items(cls, cost_schedule): pass
     def get_schedule_cost_items(cls, cost_schedule): pass
+    def get_units(cls):pass
     def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
     def is_active_schedule_of_rates(cls): pass
     def load_cost_item_attributes(cls): pass
@@ -177,7 +179,6 @@ class Cost:
     def load_schedule_of_rates_tree(cls, schedule_of_rates): pass
     def play_chaching_sound(cls): pass
     def remove_cost_column(cls, name): pass
-    def export_cost_schedules(cls, format): pass
 
 @interface
 class Debug:
