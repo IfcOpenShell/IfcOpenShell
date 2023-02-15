@@ -162,6 +162,13 @@ def copy_task_attribute(ifc, sequence, attribute_name=None):
         sequence.load_task_properties(task)
 
 
+def duplicate_task(ifc, sequence, task=None):
+    ifc.run("sequence.duplicate_task", task=task)
+    work_schedule = sequence.get_active_work_schedule()
+    sequence.create_task_tree(work_schedule)
+    sequence.load_task_properties()
+
+
 def disable_editing_task(sequence):
     sequence.disable_editing_task()
 
