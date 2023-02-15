@@ -57,8 +57,6 @@ class Usecase:
         """
         self.file = file
         self.settings = {"material_set": material_set, "old_index": old_index, "new_index": new_index}
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if self.settings["material_set"].is_a("IfcMaterialConstituentSet"):
