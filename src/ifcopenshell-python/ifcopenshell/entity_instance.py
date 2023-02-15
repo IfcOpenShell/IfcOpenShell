@@ -476,6 +476,8 @@ class entity_instance(object):
                         continue
                     attr_value = self[i]
 
+                    to_include = {'v': True}
+
                     if recursive or scalar_only:
 
                         def is_instance(e):
@@ -489,8 +491,6 @@ class entity_instance(object):
                                 return_type=return_type,
                                 ignore=ignore,
                             )
-
-                        to_include = {'v': True}
 
                         def do_ignore(inst):
                             to_include['v'] = False
