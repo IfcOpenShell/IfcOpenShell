@@ -315,6 +315,10 @@ class Cost(blenderbim.core.tool.Cost):
         blenderbim.bim.helper.import_attributes2(cost_value, props.cost_value_attributes, callback=callback)
 
     @classmethod
+    def calculate_applied_value(cls, cost_item, cost_value):
+        return ifcopenshell.util.cost.calculate_applied_value(cost_item, cost_value)
+
+    @classmethod
     def is_active_schedule_of_rates(cls):
         return (
             tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id).PredefinedType
@@ -336,7 +340,7 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def load_cost_item_value_formula_attributes(cls, cost_value=None):
         props = bpy.context.scene.BIMCostProperties
-        props.cost_value_attributes.clear()  # why is this necessary?
+        props.cost_value_attributes.clear()
         bpy.context.scene.BIMCostProperties.cost_value_formula = ifcopenshell.util.cost.serialise_cost_value(cost_value)
 
     @classmethod
@@ -517,7 +521,7 @@ class Cost(blenderbim.core.tool.Cost):
         elif format == "XLSX":
             from ifc5d.ifc5Dspreadsheet import Ifc5DXlsxWriter
 
-            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path + ".xlsx")
+            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path)
             writer.write()
 
     @classmethod
