@@ -20,7 +20,7 @@ import bpy
 import blenderbim.tool as tool
 from bpy.types import Panel, Operator, Menu
 from blenderbim.bim.module.model.data import AuthoringData, ArrayData, StairData, SverchokData, WindowData, DoorData
-from blenderbim.bim.module.model.prop import store_cursor_position
+from blenderbim.bim.module.model.prop import store_cursor_position, get_ifc_class
 from blenderbim.bim.module.model.stair import update_stair_modifier
 from blenderbim.bim.module.model.window import update_window_modifier_bmesh
 from blenderbim.bim.module.model.door import update_door_modifier_bmesh
@@ -40,11 +40,9 @@ class LaunchTypeManager(bpy.types.Operator):
     def invoke(self, context, event):
         props = context.scene.BIMModelProperties
         props.type_page = 1
-        if props.ifc_class:
+        if get_ifc_class(None, context):
             props.type_class = props.ifc_class
             bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class, offset=0, limit=9)
-        if not AuthoringData.is_loaded:
-            AuthoringData.load()
         return context.window_manager.invoke_popup(self, width=550)
 
     def draw(self, context):
