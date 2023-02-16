@@ -90,7 +90,7 @@ class AuthoringData:
 
     @classmethod
     def type_thumbnail(cls):
-        if not cls.props.relating_type_id:
+        if not cls.data["relating_types_ids"]:
             return 0
         element = tool.Ifc.get().by_id(int(cls.props.relating_type_id))
         return cls.type_thumbnails.get(element.id(), None) or 0
@@ -221,7 +221,8 @@ class AuthoringData:
 
     @classmethod
     def relating_types_browser(cls):
-        return cls.relating_types(ifc_class=cls.props.ifc_class_browser)
+        if cls.data["ifc_classes"]:
+            return cls.relating_types(ifc_class=cls.props.ifc_class_browser)
 
     @classmethod
     def new_constr_class_info(cls, ifc_class):
