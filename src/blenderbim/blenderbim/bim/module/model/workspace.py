@@ -98,6 +98,13 @@ class BimTool(WorkSpaceTool):
         BimToolUI.draw(context, layout)
 
 
+def add_layout_hotkey_operator(layout, text, hotkey, description):
+    op = layout.operator("bim.hotkey", text=text)
+    op.hotkey = hotkey
+    op.description = description
+    return op
+
+
 class BimToolUI:
     @classmethod
     def draw(cls, context, layout):
@@ -194,19 +201,15 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_M")
-            row.operator("bim.hotkey", text="Merge").hotkey = "S_M"
+            add_layout_hotkey_operator(row, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__)
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
-            op = row.operator("bim.hotkey", text="Flip")
-            op.hotkey = "S_F"
-            op.bim_operator = "flip_wall"
+            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__)
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_K")
-            op = row.operator("bim.hotkey", text="Split")
-            op.hotkey = "S_K"
-            op.bim_operator = "split_wall"
+            add_layout_hotkey_operator(row, "Split", "S_K", bpy.ops.bim.split_wall.__doc__)
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_R")
@@ -214,8 +217,9 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
-            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__)
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
+
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if context.active_object.mode == "OBJECT":
                 row = cls.layout.row(align=True)
@@ -260,7 +264,7 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
-            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
         elif AuthoringData.data["active_class"] in (
             "IfcWindow",
@@ -278,8 +282,7 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
-            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
-
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__)
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
@@ -326,7 +329,7 @@ class BimToolUI:
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="", icon="EVENT_O")
-        row.operator("bim.hotkey", text="Void").hotkey = "A_O"
+        add_layout_hotkey_operator(row, "Void", "A_O", "Show / edit openings")
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="", icon="EVENT_D")
@@ -391,7 +394,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
-    bim_operator: bpy.props.StringProperty()
+    description: bpy.props.StringProperty()
     x: bpy.props.FloatProperty(name="X", default=0.5)
     y: bpy.props.FloatProperty(name="Y", default=0.5)
     z: bpy.props.FloatProperty(name="Z", default=0.5)
@@ -402,7 +405,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def description(cls, context, operator):
-        return "" if not operator.bim_operator else getattr(bpy.ops.bim, operator.bim_operator).__doc__
+        return operator.description or ""
 
     def _execute(self, context):
         self.props = context.scene.BIMModelProperties
