@@ -38,6 +38,7 @@ from blenderbim.tool.model import Model
 from blenderbim.tool.owner import Owner
 from blenderbim.tool.patch import Patch
 from blenderbim.tool.project import Project
+from blenderbim.tool.profile import Profile
 from blenderbim.tool.pset import Pset
 from blenderbim.tool.qto import Qto
 from blenderbim.tool.resource import Resource
