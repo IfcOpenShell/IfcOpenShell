@@ -25,6 +25,8 @@ Planned (would you like to contribute? Please reach out!):
 
 ## Usage IFC to CSV, ODS, XSLS
 
+#TODO
+
 ### CLI app for converting IFC files to CSV, ODS or XLSX format.
 
 Usage:
@@ -39,12 +41,14 @@ Options:
     -f, --format format_type (str): The output format to export in (csv/ods/xlsx). Default is csv.
 
 Examples:
-    python ifc5Dspreadsheet.py "C:\Users\Username\Desktop\test_cost.ifc" rev_01_schedule -l error.log -f ods
-    python ifc5Dspreadsheet.py "C:\Users\Dev-Machine\Desktop\test_cost.ifc" "C:\Users\Dev-Machine\Desktop" -l error.log -f csv
+    python ifc5Dspreadsheet.py "C:\Users\Dev-Machine\Desktop\test_cost.ifc" rev_01_schedule -l error.log -f ODS
+    python ifc5Dspreadsheet.py "C:\Users\Username\Desktop\test_cost.ifc" "C:\Users\Username\Desktop" -l error.log -f CSV
+
 ### Scripting:
 
 Example for ODS exports:
-"""
+
+```
 import ifcopenshell
 from ifc5d.ifc5Dspreadsheet import Ifc5DOdsWriter
 
@@ -54,4 +58,4 @@ path = "directory/cost_schedule"
 writer = Ifc5DOdsWriter(file=file, output=path)
 writer.write()
 
-"""
+```

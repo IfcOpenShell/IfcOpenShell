@@ -25,6 +25,7 @@ import logging
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.cost
+import ifcopenshell.util.date
 
 
 class IfcDataGetter:
@@ -33,6 +34,12 @@ class IfcDataGetter:
         if not file:
             return None
         return file.by_type("IfcCostSchedule")
+
+    @staticmethod
+    def canonicalise_time(time):
+        if not time:
+            return "-"
+        return time.strftime("%d/%m/%y")
 
     @staticmethod
     def get_root_costs(cost_schedule):
@@ -78,7 +85,6 @@ class IfcDataGetter:
         categories = set()
         for cost_item in IfcDataGetter.get_root_costs(schedule):
             IfcDataGetter.process_cost_item_categories(cost_item, categories)
-        print("COST CATEGORIES", categories)
         return categories
 
     @staticmethod
@@ -88,7 +94,7 @@ class IfcDataGetter:
 
         quantity_data = IfcDataGetter.get_cost_item_quantity(file, cost_item)
         cost_values_data = IfcDataGetter.get_cost_item_values(cost_item)
-        children = [obj for rel in cost_item.IsNestedBy or [] for obj in rel.RelatedObjects or []]
+
         data = {
             "Index": index,
             "Hierarchy": hierarchy,
@@ -97,15 +103,13 @@ class IfcDataGetter:
             "Description": cost_item.Name,
             "Unit": cost_values_data[0]["unit"] if cost_values_data else "",
             "Quantity": quantity_data["quantity"]["total_quantity"],
-            # "Total": str(quantity_data["total_quantity"] * cost_values_data[0]["applied_value"] if cost_values_data else 0),
-            # "Children": listToString(children),
             "ChildrenData": [],
         }
         for cost_value in cost_values_data or []:
             cost_category = "{}{}".format(cost_value["category"], " Cost")
             data[cost_category] = cost_value["applied_value"]
         if data.get("* Cost", None):
-            data["Total"] = data["* Cost"]
+            data["Total Price"] = data["* Cost"]
             data["* Cost"] = ""
         rate_subtotal = 0
         for key, value in data.items():
@@ -182,9 +186,7 @@ class IfcDataGetter:
         for quantity in cost_item.CostQuantities or []:
             if not quantity in accounted_for:
                 total_cost_quantity += add_quantity(quantity, take_off_name)
-                print(cost_item.Name, quantity[0], quantity[3], "was not accounted for parametrically")
 
-        print("Total Cost Quantity Including Non Parametric", total_cost_quantity)
         return {
             "id": cost_item.id(),
             "name": cost_item.Name,
@@ -215,6 +217,7 @@ class Ifc5Dwriter:
 
     def parse(self):
         self.column_indexes = []
+        self.used_names = []
         for i in range(26):
             self.column_indexes.append("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i % 26])
         for cost_schedule in self.cost_schedules:
@@ -230,11 +233,19 @@ class Ifc5Dwriter:
                 "Unit",
             ]
             cost_rate_categories = IfcDataGetter.get_cost_rates_categories(cost_schedule)
-            self.sheet_data[sheet_id]["headers"].extend(list(cost_rate_categories))
-            self.sheet_data[sheet_id]["headers"].extend(["General Cost", "Rate Subtotal", "Total", "Children"])
+            self.sheet_data[sheet_id]["headers"].extend(list(cost_rate_categories)).extend(
+                ["Rate Subtotal", "Total Price", "Children"]
+            )
             self.sheet_data[sheet_id]["cost_items"] = IfcDataGetter.get_cost_items_data(self.file, cost_schedule)
-
-        print(self.sheet_data)
+            self.sheet_data[sheet_id]["UpdateDate"] = IfcDataGetter.canonicalise_time(
+                ifcopenshell.util.date.ifc2datetime(cost_schedule.UpdateDate)
+            )
+            self.sheet_data[sheet_id]["PredefinedType"] = cost_schedule.PredefinedType
+            schedule_name = cost_schedule.Name or "Unnamed"
+            if schedule_name in self.used_names:
+                schedule_name = "{}_{}".format(schedule_name, self.used_names.count(schedule_name))
+            self.sheet_data[sheet_id]["Name"] = schedule_name
+            self.used_names.append(schedule_name)
 
     def multiply_cells(self, cell1, cell2):
         return "={}*{}".format(cell1, cell2)
@@ -265,15 +276,13 @@ class Ifc5DCsvWriter(Ifc5Dwriter):
 
         super().write()
         for sheet, data in self.sheet_data.items():
-            print("-------------------------------------")
-            print(sheet, data)
-            print("-------------------------------------")
-            with open(os.path.join(self.output, "{}.csv".format(sheet)), "w", newline="", encoding="utf-8") as file:
+            with open(
+                os.path.join(self.output, "{}.csv".format(data["Name"])), "w", newline="", encoding="utf-8"
+            ) as file:
                 writer = csv.writer(file)
                 writer.writerow(data["headers"])
                 row = []
                 for cost_item_data in data["cost_items"]:
-                    print(cost_item_data)
                     writer.writerow([cost_item_data.get(column, "") for column in data["headers"]])
 
 
@@ -332,7 +341,7 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
             self.row_count += 1
 
             for i, column in enumerate(self.sheet_data[cost_schedule.id()]["headers"]):
-                if column == "Total" and cost_data["Quantity"] != 0 and cost_data["Rate Subtotal"]:
+                if column == "Total Price" and cost_data["Quantity"] != 0 and cost_data["Rate Subtotal"]:
                     cell_quantity = self.get_cell_position(cost_schedule.id(), "Quantity")
                     cell_subtotal_rate = self.get_cell_position(cost_schedule.id(), "Rate Subtotal")
                     value = self.multiply_cells(cell_quantity, cell_subtotal_rate)
@@ -356,52 +365,58 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
                 row.addElement(cell)
             table.addElement(row)
 
-        table = Table(name=cost_schedule.Name)
+        table = Table(name=self.sheet_data[cost_schedule.id()].get("Name", ""))
+
+        new = row()
+        add_cell(type="text", value="Predefined Type:", row=new, style="fed8b1")
+        add_cell(
+            type="text", value=self.sheet_data[cost_schedule.id()].get("PredefinedType", ""), row=new, style="fed8b1"
+        )
+        table.addElement(new)
 
         new = row()
         add_cell(type="text", value="Cost Schedule:", row=new, style="fed8b1")
-        add_cell(type="text", value=cost_schedule.Name or "Unnamed Cost Schedule", row=new, style="fed8b1")
+        add_cell(type="text", value=self.sheet_data[cost_schedule.id()]["Name"], row=new, style="fed8b1")
+        table.addElement(new)
+
+        new = row()
+        add_cell(type="text", value="Update Date:", row=new, style="fed8b1")
+        add_cell(type="text", value=self.sheet_data[cost_schedule.id()].get("UpdateDate", ""), row=new, style="fed8b1")
+        table.addElement(new)
+
+        new = row()
         table.addElement(new)
 
         header_row = TableRow()
-        print("currently data is ", self.sheet_data)
         for header in self.sheet_data[cost_schedule.id()]["headers"]:
             add_cell(type="text", value=header, row=header_row, style="fed8b1")
         table.addElement(header_row)
 
-        new = row()
-        new2 = row()
-        table.addElement(new)
-        table.addElement(new2)
-
-        self.row_count = 4
+        self.row_count = 5
         for cost_item_data in self.sheet_data[cost_schedule.id()]["cost_items"]:
             add_cost_item_rows(table, cost_item_data)
 
         self.doc.spreadsheet.addElement(table)
 
+
 class Ifc5DXlsxWriter(Ifc5Dwriter):
     def write(self):
         import xlsxwriter
+
         super().write()
 
-        self.workbook = xlsxwriter.Workbook(self.output)
+        self.workbook = xlsxwriter.Workbook(self.output + ".xlsx")
         self.used_names = []
         for cost_schedule in self.cost_schedules:
             self.write_table(cost_schedule)
         self.workbook.close()
-    
-    def write_table(self, cost_schedule):
-        schedule_name = cost_schedule.Name or "Unnamed Cost Schedule"
-        if schedule_name in self.used_names:
-            schedule_name = "{}_{}".format(schedule_name, self.used_names.count(schedule_name))
-        worksheet = self.workbook.add_worksheet(schedule_name)
-        self.used_names.append(schedule_name)
 
+    def write_table(self, cost_schedule):
+        worksheet = self.workbook.add_worksheet(self.sheet_data[cost_schedule.id()]["Name"])
         headers = self.sheet_data[cost_schedule.id()]["headers"]
         for i, header in enumerate(headers):
             worksheet.write(0, i, header)
-            
+
         row = 1
         for cost_item_data in self.sheet_data[cost_schedule.id()]["cost_items"]:
             col = 0
@@ -417,7 +432,7 @@ if __name__ == "__main__":
     parser.add_argument("output", help="The output directory for CSV or filename for other formats")
     parser.add_argument("-l", "--log", type=str, help="Specify where errors should be logged", default="process.log")
     parser.add_argument(
-        "-f", "--format", type=str, help="Choose which format to export in (csv/ods/xlsx)", default="csv"
+        "-f", "--format", type=str, help="Choose which format to export in (CSV/ODS/XLSX)", default="CSV"
     )
     args = vars(parser.parse_args())
 

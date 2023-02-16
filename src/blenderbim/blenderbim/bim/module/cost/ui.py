@@ -175,7 +175,7 @@ class BIM_PT_cost_schedules(Panel):
         row.prop(self.props, "cost_types", text="")
         if self.props.cost_types == "CATEGORY":
             row.prop(self.props, "cost_category", text="")
-        op = row.operator("bim.add_cost_value", text="", icon="ADD")
+        op = row.operator("bim.add_cost_value", text="Add Value", icon="ADD")
         op.parent = self.props.active_cost_item_id
         op.cost_type = self.props.cost_types
         if self.props.cost_types == "CATEGORY":
@@ -511,6 +511,8 @@ class BIM_UL_cost_items_trait:
 
             self.draw_quantity_column(split2, cost_item)
             self.draw_value_column(split2, cost_item)
+            if self.props.active_cost_item_id == item.ifc_definition_id:
+                row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
 
             for column in self.props.columns:
                 split2.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))
