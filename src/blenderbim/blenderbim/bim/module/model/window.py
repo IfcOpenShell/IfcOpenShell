@@ -32,7 +32,6 @@ from bpy.props import FloatProperty, IntProperty, BoolProperty
 from bmesh.types import BMVert
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.helper import replace_ifc_representation_for_object
 from mathutils import Vector
 
 
@@ -148,13 +147,13 @@ def update_window_modifier_representation(context):
         elevation_representation = ifcopenshell.api.run(
             "geometry.add_window_representation", ifc_file, **representation_data
         )
-        replace_ifc_representation_for_object(ifc_file, profile, obj, elevation_representation)
+        tool.Model.replace_object_ifc_representation(profile, obj, elevation_representation)
 
     # MODEL_VIEW representation
     body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
     model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, body, obj, model_representation)
+    tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
     # PLAN_VIEW representation
     plan = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
@@ -163,7 +162,7 @@ def update_window_modifier_representation(context):
         plan_representation = ifcopenshell.api.run(
             "geometry.add_window_representation", ifc_file, **representation_data
         )
-        replace_ifc_representation_for_object(ifc_file, plan, obj, plan_representation)
+        tool.Model.replace_object_ifc_representation(plan, obj, plan_representation)
 
         # adding switch representation at the end instead of changing order of representations
         # to prevent #2744

@@ -398,7 +398,23 @@ class Misc:
 
 @interface
 class Model:
-    pass
+    def convert_si_to_unit(cls, value): pass
+    def convert_unit_to_si(cls, value): pass
+    def export_curve(cls, position, edge_indices, points=None): pass
+    def export_points(cls, position, indices): pass
+    def export_profile(cls, obj, position=None): pass
+    def generate_occurrence_name(cls, element_type, ifc_class): pass
+    def get_extrusion(cls, representation): pass
+    def import_profile(cls, profile, obj=None, position=None): pass
+    def import_curve(cls, obj, position, curve): pass
+    def import_rectangle(cls, obj, position, profile): pass
+    def load_openings(cls, element, openings): pass
+    def clear_scene_openings(cls): pass
+    def get_material_layer_parameters(cls, element): pass
+    def get_manual_booleans(cls, element): pass
+    def get_wall_axis(cls, obj, layers=None): pass
+    def regenerate_array(cls, parent, data): pass
+    def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
 
 @interface
@@ -459,6 +475,11 @@ class Project:
     def set_context(cls, context): pass
     def set_default_context(cls): pass
     def set_default_modeling_dimensions(cls): pass
+
+
+@interface
+class Profile:
+    def draw_image_for_ifc_profile(cls, draw, profile, size): pass
 
 
 @interface

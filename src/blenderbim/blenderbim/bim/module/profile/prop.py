@@ -24,7 +24,6 @@ import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.module.profile.data import ProfileData
-from blenderbim.bim.helper import draw_image_for_ifc_profile
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -79,7 +78,7 @@ def generate_thumbnail_for_active_profile():
     size = 128
     img = Image.new("RGBA", (size, size))
     draw = ImageDraw.Draw(img)
-    draw_image_for_ifc_profile(draw, profile, size)
+    tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
     pixels = [item for sublist in img.getdata() for item in sublist]
 
     # save generated image to preview collection
