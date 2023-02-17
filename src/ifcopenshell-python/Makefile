@@ -122,4 +122,4 @@ endif
 	cd dist && mv ifcopenshell-0.7.0.$(VERSION)-py3-none-any.whl ifcopenshell-0.7.0.$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 	rm -rf dist/ifcopenshell
 	rm -rf dist/ifcopenshell.egg-info
-	rm -rf dist/ifcopenshell-0.7.0.tar.gz
+	rm -rf dist/ifcopenshell-0.7.0.$(VERSION).tar.gz
