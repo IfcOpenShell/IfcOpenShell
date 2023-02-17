@@ -32,7 +32,6 @@ from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.prop import store_cursor_position
-from blenderbim.bim.helper import draw_image_for_ifc_profile
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop
@@ -374,7 +373,7 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
                 material = ifcopenshell.util.element.get_material(element)
                 if material and material.is_a("IfcMaterialProfileSet"):
                     profile = material.MaterialProfiles[0].Profile
-                    draw_image_for_ifc_profile(draw, profile, size)
+                    tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
 
                 elif material and material.is_a("IfcMaterialLayerSet"):
                     thicknesses = [l.LayerThickness for l in material.MaterialLayers]

@@ -160,6 +160,8 @@ class OpenUpstream(bpy.types.Operator):
             webbrowser.open("https://wiki.osarch.org/index.php?title=Category:BlenderBIM_Add-on")
         elif self.page == "community":
             webbrowser.open("https://community.osarch.org/")
+        elif self.page == "fund":
+            webbrowser.open("https://opencollective.com/opensourcebim")
         return {"FINISHED"}
 
 

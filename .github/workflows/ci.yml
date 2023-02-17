@@ -86,6 +86,20 @@ jobs:
           sudo make -j $(nproc)
           sudo make install
 
+      - name: Run IfcConvert on Sample files
+        run: |
+          (find test/input src/blenderbim/test/files -name '*.ifc' | while read i; do \
+            echo $i | tee -a log; \
+            timeout 1m "$(which IfcConvert)" -yv "$i" "$i.obj" --validate >> log 2>&1; \
+            echo $i $? >> statuses; \
+          done) || true
+          echo Failed 
+          grep -v 0$ statuses
+          grep -v 0$ statuses | wc -l
+          echo Succeeded
+          grep 0$ statuses
+          grep 0$ statuses | wc -l
+
       - name: Install Python dependencies
         run: |
           sudo /usr/bin/python -m pip install -U pip
@@ -95,6 +109,7 @@ jobs:
           sudo /usr/bin/python -m pip install isodate
           sudo /usr/bin/python -m pip install lark
           sudo /usr/bin/python -m pip install networkx
+          sudo /usr/bin/python -m pip install https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
           sudo /usr/bin/python -m pip install tabulate
 
       - name: Test

@@ -24,6 +24,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import blenderbim.core.geometry as geometry
 from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
@@ -408,3 +409,30 @@ class Model(blenderbim.core.tool.Model):
                 # TODO: Not sufficient, refactor OverrideDeleteTrait
 
             bpy.context.view_layer.update()
+
+    @classmethod
+    def replace_object_ifc_representation(cls, ifc_context, obj, new_representation):
+        ifc_file = tool.Ifc.get()
+        ifc_element = tool.Ifc.get_entity(obj)
+        old_representation = ifcopenshell.util.representation.get_representation(
+            ifc_element, ifc_context.ContextType, ifc_context.ContextIdentifier, ifc_context.TargetView
+        )
+
+        if old_representation:
+            old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
+            for inverse in ifc_file.get_inverse(old_representation):
+                ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
+        else:
+            ifcopenshell.api.run(
+                "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
+            )
+        geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )

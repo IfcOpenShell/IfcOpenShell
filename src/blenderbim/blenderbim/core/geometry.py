@@ -87,6 +87,7 @@ def switch_representation(
     is_global=True,
     should_sync_changes_first=False,
 ):
+    """Function can switch to representation that wasn't yet assigned to that object. See #2766."""
     if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
         representation_id = geometry.get_representation_id(representation)
         geometry.run_geometry_update_representation(obj=obj)
@@ -117,6 +118,11 @@ def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_fi
 
 
 def remove_representation(ifc, geometry, obj=None, representation=None):
+    """Function will produce orphan mesh data, see #2767.
+
+    Also should consider changing obj representation before using the function,
+    otherwise it will replace object with empty."""
+
     element = ifc.get_entity(obj)
     type = geometry.get_element_type(element)
     if type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):

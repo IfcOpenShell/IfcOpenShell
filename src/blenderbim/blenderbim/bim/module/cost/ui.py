@@ -42,9 +42,16 @@ class BIM_PT_cost_schedules(Panel):
             CostSchedulesData.load()
 
         self.props = context.scene.BIMCostProperties
+        row = self.layout.row()
+        if CostSchedulesData.data["total_cost_schedules"]:
+            row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
+            row.operator("bim.export_cost_schedules", text="Export as spreadsheet", icon="EXPORT")
+        else:
+            row.label(text="No Cost Schedules Found found.", icon="COMMUNITY")
 
         row = self.layout.row()
-        row.operator("bim.add_cost_schedule", icon="ADD")
+        row.prop(self.props, "cost_schedule_predefined_types")
+        row.operator("bim.add_cost_schedule", icon="ADD", text="Add new")
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)
@@ -57,7 +64,6 @@ class BIM_PT_cost_schedules(Panel):
             op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
             op.cost_schedule = cost_schedule["id"]
             row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
-            row.operator("bim.export_cost_schedule", text="", icon="EXPORT").cost_schedule = cost_schedule["id"]
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":
@@ -169,7 +175,7 @@ class BIM_PT_cost_schedules(Panel):
         row.prop(self.props, "cost_types", text="")
         if self.props.cost_types == "CATEGORY":
             row.prop(self.props, "cost_category", text="")
-        op = row.operator("bim.add_cost_value", text="", icon="ADD")
+        op = row.operator("bim.add_cost_value", text="Add Value", icon="ADD")
         op.parent = self.props.active_cost_item_id
         op.cost_type = self.props.cost_types
         if self.props.cost_types == "CATEGORY":
@@ -470,13 +476,14 @@ class BIM_PT_cost_item_rates(Panel):
 
     def draw(self, context):
         self.props = context.scene.BIMCostProperties
-        cost_item = self.props.cost_items[self.props.active_cost_item_index]
         row = self.layout.row(align=True)
         row.prop(self.props, "schedule_of_rates", text="")
         if self.props.active_cost_item_rate_index < len(self.props.cost_item_rates):
+            cost_item = self.props.cost_items[self.props.active_cost_item_index]
+            cost_item_rate = self.props.cost_item_rates[self.props.active_cost_item_rate_index]
             op = row.operator("bim.assign_cost_value", text="", icon="COPYDOWN")
-            op.cost_item = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
-            op.cost_rate = self.props.cost_item_rates[self.props.active_cost_item_rate_index].ifc_definition_id
+            op.cost_item = cost_item.ifc_definition_id
+            op.cost_rate = cost_item_rate.ifc_definition_id
         self.layout.template_list(
             "BIM_UL_cost_item_rates",
             "",
@@ -504,6 +511,8 @@ class BIM_UL_cost_items_trait:
 
             self.draw_quantity_column(split2, cost_item)
             self.draw_value_column(split2, cost_item)
+            if self.props.active_cost_item_id == item.ifc_definition_id:
+                row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
 
             for column in self.props.columns:
                 split2.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))

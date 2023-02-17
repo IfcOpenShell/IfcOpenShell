@@ -145,7 +145,7 @@ class AssignResource(bpy.types.Operator, tool.Ifc.Operator):
     related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.assign_resource(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        core.assign_resource(tool.Ifc, tool.Spatial, resource=tool.Ifc.get().by_id(self.resource))
 
 
 class UnassignResource(bpy.types.Operator, tool.Ifc.Operator):
@@ -156,7 +156,7 @@ class UnassignResource(bpy.types.Operator, tool.Ifc.Operator):
     related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.unassign_resource(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        core.unassign_resource(tool.Ifc, tool.Spatial, resource=tool.Ifc.get().by_id(self.resource))
 
 
 class EnableEditingResourceTime(bpy.types.Operator, tool.Ifc.Operator):

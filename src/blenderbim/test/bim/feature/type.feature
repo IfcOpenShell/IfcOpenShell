@@ -1,6 +1,25 @@
 @type
 Feature: Type
 
+Scenario: Add type - adding via manual class assignment
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    When I press "bim.assign_class"
+    Then nothing happens
+
+Scenario: Add type - add from empty template
+    Given an empty IFC project
+    And I press "bim.launch_type_manager"
+    And I set "scene.BIMModelProperties.type_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.type_predefined_type" to "SOLIDWALL"
+    And I set "scene.BIMModelProperties.type_template" to "EMPTY"
+    When I press "bim.add_type"
+    Then the object "IfcWallType/TYPEX" is an "IfcWallType"
+    And the object "IfcWallType/TYPEX" has no data
+
 Scenario: Enable editing type
     Given an empty IFC project
     And I add a cube
@@ -171,3 +190,15 @@ Scenario: Select similar type
     And I press "bim.select_similar_type"
     Then the object "IfcWall/Cube" is selected
     And the object "IfcWall/Cube.001" is selected
+
+Scenario: Purge unused types
+    Given an empty IFC project
+    And I press "bim.launch_type_manager"
+    And I set "scene.BIMModelProperties.type_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.type_predefined_type" to "SOLIDWALL"
+    And I set "scene.BIMModelProperties.type_template" to "EMPTY"
+    When I press "bim.add_type"
+    Then the object "IfcWallType/TYPEX" is an "IfcWallType"
+    And the object "IfcWallType/TYPEX" has no data
+    When I press "bim.purge_unused_types"
+    Then the object "IfcWallType/TYPEX" does not exist

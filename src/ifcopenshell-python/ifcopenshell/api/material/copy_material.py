@@ -63,8 +63,6 @@ class Usecase:
         """
         self.file = file
         self.settings = {"material": material, "element": element}
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["element"])

@@ -521,7 +521,7 @@ class CreateDrawing(bpy.types.Operator):
         # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
         group = root.find("{http://www.w3.org/2000/svg}g")
         # group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
-        if len(group):
+        if group is not None:
             group[:] = reversed(group)
 
     def canonicalise_class_name(self, name):

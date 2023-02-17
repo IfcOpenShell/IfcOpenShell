@@ -221,6 +221,7 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     dateutil
     isodate
     networkx
+    https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
     deepdiff
     jsonpickle
     ordered_set

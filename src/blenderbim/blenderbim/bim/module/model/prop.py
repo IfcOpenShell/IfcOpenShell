@@ -440,6 +440,10 @@ class BIMDoorProperties(PropertyGroup):
     door_types = (
         ("SINGLE_SWING_LEFT", "SINGLE_SWING_LEFT", ""),
         ("SINGLE_SWING_RIGHT", "SINGLE_SWING_RIGHT", ""),
+        ("DOUBLE_SWING_LEFT", "DOUBLE_SWING_LEFT", ""),
+        ("DOUBLE_SWING_RIGHT", "DOUBLE_SWING_RIGHT", ""),
+        ("DOUBLE_DOOR_SINGLE_SWING", "DOUBLE_DOOR_SINGLE_SWING", ""),
+        ("DOUBLE_DOOR_DOUBLE_SWING", "DOUBLE_DOOR_DOUBLE_SWING", ""),
     )
 
     door_added_previously: bpy.props.BoolProperty(default=False)

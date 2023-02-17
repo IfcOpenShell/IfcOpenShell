@@ -277,6 +277,13 @@ endif
 	cp -r dist/working/decorator-5.0.9/src/decorator.py dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Provides audio playback for costing
+	mkdir -p dist/working
+	git clone https://github.com/Andrej730/aud.git --branch master-reduced-size --depth 1 dist/working/aud
+	cd dist/working/aud && git checkout 529af208fbcb707c387bfb681d2605c0b6112de7
+	cp -r dist/working/aud/aud dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
 	mkdir dist/working
 	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js

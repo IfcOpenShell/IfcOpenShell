@@ -65,6 +65,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
             obj = annotation.Annotator.add_plane_to_annotation(obj)
+        elif object_type == "TEXT_LEADER":
+            co1, _, co2, _ = annotation.Annotator.get_placeholder_coords()
+            obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
         return obj
@@ -959,11 +962,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_annotation_z_index(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Annotation", {}).get("ZIndex", 0)
+        return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "ZIndex") or 0
 
     @classmethod
     def get_annotation_symbol(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Annotation", {}).get("Symbol", None)
+        return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "Symbol")
 
     @classmethod
     def has_linework(cls, drawing):

@@ -127,23 +127,58 @@ class Context:
 
 @interface
 class Cost:
+    def add_cost_column(cls, name): pass
     def clean_up_cost_item_tree(cls, cost_item): pass
+    def contract_cost_item_rate(cls, cost_item): pass
     def contract_cost_item(cls, cost_item): pass
     def contract_cost_items(cls): pass
-    def create_new_cost_item_li(cls, props, cost_item, level_index): pass
+    def create_new_cost_item_li(props_collection, cost_item, level_index, type): pass
+    def disable_editing_cost_item_quantity(cls): pass
+    def disable_editing_cost_item_value(cls): pass
     def disable_editing_cost_item(cls): pass
     def disable_editing_cost_schedule(cls): pass
     def enable_editing_cost_item_attributes(cls, cost_item): pass
+    def enable_editing_cost_item_quantities(cls, cost_item): pass
+    def enable_editing_cost_item_quantity(cls, physical_quantity): pass
+    def enable_editing_cost_item_value_formula(cls, cost_value): pass
+    def enable_editing_cost_item_value(cls, cost_value): pass
+    def enable_editing_cost_item_values(cls, cost_item): pass
     def enable_editing_cost_items(cls, cost_schedule): pass
     def enable_editing_cost_schedule_attributes(cls, cost_schedule): pass
+    def expand_cost_item_rate(cls, cost_item): pass
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
+    def export_cost_schedules(cls, format): pass
     def get_active_cost_item(cls): pass
+    def get_all_nested_cost_items(cls, cost_item): pass
+    def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
     def get_cost_item_attributes(cls, cost_item): pass
+    def get_cost_item_products(cls): pass
+    def get_cost_item_quantity_attributes(cls): pass
+    def get_cost_item_value_formula(cls): pass
     def get_cost_schedule_attributes(cls): pass
-    def load_cost_items(cls): pass
+    def get_cost_schedule_products(cls, cost_schedule): pass
+    def get_cost_value_attributes(cls): pass
+    def get_cost_value_unit_component(cls): pass
+    def get_direct_cost_item_products(cls): pass
+    def get_highlighted_cost_item(cls): pass
+    def get_nested_cost_items(cls, cost_item): pass
+    def get_products(cls, related_object_type): pass
+    def get_root_cost_items(cls, cost_schedule): pass
+    def get_schedule_cost_items(cls, cost_schedule): pass
+    def get_units(cls):pass
+    def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
+    def is_active_schedule_of_rates(cls): pass
     def load_cost_item_attributes(cls): pass
+    def load_cost_item_quantities(cls, cost_item): pass
+    def load_cost_item_quantity_attributes(cls, physical_quantity): pass
+    def load_cost_item_types(cls, cost_item): pass
+    def load_cost_item_value_attributes(cls, cost_value): pass
+    def load_cost_item_value_formula_attributes(cls, cost_value): pass
+    def load_cost_schedule_tree(cls): pass
+    def load_schedule_of_rates_tree(cls, schedule_of_rates): pass
     def play_chaching_sound(cls): pass
+    def remove_cost_column(cls, name): pass
 
 @interface
 class Debug:
@@ -363,7 +398,23 @@ class Misc:
 
 @interface
 class Model:
-    pass
+    def convert_si_to_unit(cls, value): pass
+    def convert_unit_to_si(cls, value): pass
+    def export_curve(cls, position, edge_indices, points=None): pass
+    def export_points(cls, position, indices): pass
+    def export_profile(cls, obj, position=None): pass
+    def generate_occurrence_name(cls, element_type, ifc_class): pass
+    def get_extrusion(cls, representation): pass
+    def import_profile(cls, profile, obj=None, position=None): pass
+    def import_curve(cls, obj, position, curve): pass
+    def import_rectangle(cls, obj, position, profile): pass
+    def load_openings(cls, element, openings): pass
+    def clear_scene_openings(cls): pass
+    def get_material_layer_parameters(cls, element): pass
+    def get_manual_booleans(cls, element): pass
+    def get_wall_axis(cls, obj, layers=None): pass
+    def regenerate_array(cls, parent, data): pass
+    def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
 
 @interface
@@ -424,6 +475,11 @@ class Project:
     def set_context(cls, context): pass
     def set_default_context(cls): pass
     def set_default_modeling_dimensions(cls): pass
+
+
+@interface
+class Profile:
+    def draw_image_for_ifc_profile(cls, draw, profile, size): pass
 
 
 @interface
@@ -498,6 +554,9 @@ class Root:
 class Selector:
     def set_active(cls, obj): pass
 
+@interface
+class Search:
+    def from_selector_query(cls, query): pass
 
 @interface
 class Sequence:
@@ -548,7 +607,7 @@ class Sequence:
     def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
     def get_recurrence_pattern_times(cls): pass
     def get_rel_sequence_attributes(cls): pass
-    def get_selected_products(cls): pass
+    
     def get_selected_resource(cls): pass
     def get_start_date(cls): pass
     def get_task_attribute_value(cls, attribute_name): pass
@@ -580,37 +639,40 @@ class Sequence:
     def load_work_plan_attributes(cls, work_plan): pass
     def load_work_schedule_attributes(cls, work_schedule): pass
     def load_work_time_attributes(cls, work_time): pass
-    def override_end_date(cls): pass
     def process_construction_state(cls, work_schedule, date): pass
     def process_task_status(cls, task, date): pass
     def remove_task_column(cls, name): pass
     def reset_time_period(cls): pass
-    def select_products(cls, products): pass
     def set_object_shading(cls): pass
     def set_task_sort_column(cls, column): pass
     def setup_default_task_columns(cls): pass
     def show_snapshot(cls, product_states): pass
     def update_visualisation_date(cls, start_date, finish_date): pass
 
-
 @interface
 class Spatial:
     def can_contain(cls, structure_obj, element_obj): pass
     def can_reference(cls, structure, element): pass
+    def copy_xy(cls, src_obj, destination_obj): pass
+    def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
     def enable_editing(cls, obj): pass
+    def filter_products(cls, products, action): pass
     def get_container(cls, element): pass
     def get_decomposed_elements(cls, container): pass
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
+    def get_selected_product_types(cls): pass
+    def get_selected_products(cls): pass
     def import_containers(cls, parent=None): pass
     def run_root_copy_class(cls, obj=None): pass
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
     def select_object(cls, obj): pass
+    def select_products(cls, products, unhide=False): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
-
+    def show_scene_objects(cls): pass
 
 @interface
 class Structural:
@@ -686,10 +748,13 @@ class Type:
     def get_body_context(cls): pass
     def get_body_representation(cls, element): pass
     def get_ifc_representation_class(cls, element): pass
+    def get_model_types(cls): pass
     def get_object_data(cls, obj): pass
     def get_profile_set_usage(cls, element): pass
     def get_representation_context(cls, representation): pass
+    def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
+    def remove_object(cls, obj): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, is_global=None): pass
 

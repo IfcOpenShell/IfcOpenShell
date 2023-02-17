@@ -45,6 +45,7 @@ classes = (
     operator.CalculateTaskDuration,
     operator.ContractTask,
     operator.CopyTaskAttribute,
+    operator.CopyTask,
     operator.DisableEditingSequence,
     operator.DisableEditingTask,
     operator.DisableEditingTaskTime,

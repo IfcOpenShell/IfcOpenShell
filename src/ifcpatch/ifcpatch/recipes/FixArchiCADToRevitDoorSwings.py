@@ -1,6 +1,8 @@
 import os
 import math
 import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.unit
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 

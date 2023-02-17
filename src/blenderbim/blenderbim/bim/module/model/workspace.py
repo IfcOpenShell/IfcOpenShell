@@ -42,13 +42,24 @@ class BimTool(WorkSpaceTool):
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
         # ("bim.sync_modeling", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
-        # replicate default blender selection behaviour with click and box selection
+
+        # Replicate default blender selection behaviour with click and box selection
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
         # https://github.com/blender/blender/blob/master/release/scripts/presets/keyconfig/keymap_data/blender_default.py
         # the code is the data from evaluating km_3d_view_tool_select() and km_3d_view_tool_select_box()
-        # TODO: call blender_default.py functions instead of copying?
-        # from evaluating km_3d_view_tool_select()
-        # https://github.com/blender/blender/blob/4815d0706fb57d6e4f897dbb4e9aba9d2323cdce/release/scripts/presets/keyconfig/keymap_data/blender_default.py#L6710
+        # 
+        # You can run the snippet below in Blender console
+        # to regenerate those keybindings in case of errors in the future
+        # ```
+        # import os
+        # version = ".".join(bpy.app.version_string.split(".")[:2])
+        # fl = os.path.join(os.getcwd(), version, "scripts/presets/keyconfig/keymap_data/blender_default.py")
+        # def_keymap = bpy.utils.execfile(fl)
+        # params = def_keymap.Params
+        # box_keymap = def_keymap.km_3d_view_tool_select_box(def_keymap.Params(), fallback=None)[2]["items"]
+        # click_keymap = def_keymap.km_3d_view_tool_select(def_keymap.Params(select_mouse="LEFTMOUSE"), fallback=None)[2]["items"]
+        # ```
+        # box selection keymap
         ("view3d.select_box", {"type": "LEFTMOUSE", "value": "CLICK_DRAG"}, None),
         (
             "view3d.select_box",
@@ -65,16 +76,10 @@ class BimTool(WorkSpaceTool):
             {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True, "ctrl": True},
             {"properties": [("mode", "AND")]},
         ),
-        # from evaluating km_3d_view_tool_select()
-        # https://github.com/blender/blender/blob/4815d0706fb57d6e4f897dbb4e9aba9d2323cdce/release/scripts/presets/keyconfig/keymap_data/blender_default.py#L6734
-        ("view3d.select", {"type": "LEFTMOUSE", "value": "CLICK"}, {"properties": [("deselect_all", True)]}),
-        ("view3d.select", {"type": "LEFTMOUSE", "value": "CLICK", "shift": True}, {"properties": [("toggle", True)]}),
-        ("view3d.select", {"type": "LEFTMOUSE", "value": "CLICK", "alt": True}, {"properties": [("enumerate", True)]}),
-        (
-            "view3d.select",
-            {"type": "LEFTMOUSE", "value": "CLICK", "shift": True, "alt": True},
-            {"properties": [("toggle", True), ("enumerate", True)]},
-        ),
+        # left-click selection keymap
+        ("view3d.select", {"type": "LEFTMOUSE", "value": "PRESS"}, {"properties": [("deselect_all", True)]}),
+        ("view3d.select", {"type": "LEFTMOUSE", "value": "PRESS", "shift": True}, {"properties": [("toggle", True)]}),
+
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
@@ -90,11 +95,19 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Y")]}),
         ("bim.hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
+        ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
         # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
         BimToolUI.draw(context, layout)
+
+
+def add_layout_hotkey_operator(layout, text, hotkey, description):
+    op = layout.operator("bim.hotkey", text=text)
+    op.hotkey = hotkey
+    op.description = description
+    return op
 
 
 class BimToolUI:
@@ -193,19 +206,15 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_M")
-            row.operator("bim.hotkey", text="Merge").hotkey = "S_M"
+            add_layout_hotkey_operator(row, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__)
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
-            op = row.operator("bim.hotkey", text="Flip")
-            op.hotkey = "S_F"
-            op.bim_operator = "flip_wall"
+            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__)
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_K")
-            op = row.operator("bim.hotkey", text="Split")
-            op.hotkey = "S_K"
-            op.bim_operator = "split_wall"
+            add_layout_hotkey_operator(row, "Split", "S_K", bpy.ops.bim.split_wall.__doc__)
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_R")
@@ -213,8 +222,9 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
-            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__)
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
+
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if context.active_object.mode == "OBJECT":
                 row = cls.layout.row(align=True)
@@ -259,7 +269,7 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
-            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
         elif AuthoringData.data["active_class"] in (
             "IfcWindow",
@@ -277,8 +287,7 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
-            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
-
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__)
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
@@ -325,7 +334,7 @@ class BimToolUI:
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="", icon="EVENT_O")
-        row.operator("bim.hotkey", text="Void").hotkey = "A_O"
+        add_layout_hotkey_operator(row, "Void", "A_O", "Show / edit openings")
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="", icon="EVENT_D")
@@ -390,7 +399,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
-    bim_operator: bpy.props.StringProperty()
+    description: bpy.props.StringProperty()
     x: bpy.props.FloatProperty(name="X", default=0.5)
     y: bpy.props.FloatProperty(name="Y", default=0.5)
     z: bpy.props.FloatProperty(name="Z", default=0.5)
@@ -401,7 +410,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def description(cls, context, operator):
-        return "" if not operator.bim_operator else getattr(bpy.ops.bim, operator.bim_operator).__doc__
+        return operator.description or ""
 
     def _execute(self, context):
         self.props = context.scene.BIMModelProperties
@@ -447,6 +456,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_S_A(self):
         bpy.ops.bim.add_constr_type_instance()
+
+    def hotkey_S_Q(self):
+        bpy.ops.bim.calculate_all_quantities()
 
     def hotkey_S_C(self):
         if self.active_material_usage == "LAYER2":

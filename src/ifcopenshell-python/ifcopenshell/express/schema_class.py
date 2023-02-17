@@ -372,9 +372,10 @@ class SchemaClass(codegen.Base):
                 else:
                     return x.simple_type(type)
             else:
-                raise ValueError("No mapping for '%s'" % type)
+                raise ValueError("No declared type for <%r>" % type)
 
         def find_inverse_name_and_index(entity_name, attribute_name):
+            entity_name_orig = entity_name
             attributes_per_subtype = []
             while True:
                 entity = mapping.schema.entities[entity_name]
@@ -392,7 +393,7 @@ class SchemaClass(codegen.Base):
                     pass
 
             else:
-                raise Exception("No declared type for <%r>" % type)
+                raise Exception("No attribute named %s.%s" % (entity_name_orig, attribute_name))
 
         collections_by_type = (
             ("entity", mapping.schema.entities),

@@ -19,20 +19,95 @@
 import ifcopenshell
 
 
-def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
-    """Retrieve property sets, their related properties' names & values and ids.
+def get_pset(element, name, prop=None, should_inherit=True):
+    """Retrieve a single property set or single property
+
+    This is more efficient than ifcopenshell.util.element.get_psets if you know
+    exactly which property set and property you are after.
 
     :param element: The IFC Element entity
-    :param psets_only: Default as False. Set to true if only property sets are needed.
-    :param qtos_only: Default as False. Set to true if only quantities are needed.
+    :type element: ifcopenshell.entity_instance.entity_instance
+    :param name: The name of the pset
+    :type name: str
+    :param prop: The name of the property
+    :type name: str,optional
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
-    :return: dictionnary: key, value pair of psets' names and their properties' names & values
+    :type should_inherit: bool,optional
+    :return: A dictionary of property names and values, or a single value if a
+        property is specified.
+    :rtype: dict
 
     Example:
 
     .. code:: python
 
-        element = ifcopenshell.by_type("IfcBuildingElement")[0]
+        element = ifcopenshell.by_type("IfcWall")[0]
+        psets_and_qtos = ifcopenshell.util.element.get_pset(element, "Pset_WallCommon")
+    """
+    pset = None
+    if element.is_a("IfcTypeObject"):
+        for definition in element.HasPropertySets or []:
+            if definition.Name == name:
+                pset = definition
+                break
+    elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
+        for definition in element.HasProperties or []:
+            if definition.Name == name:
+                pset = definition
+                break
+    elif hasattr(element, "IsDefinedBy"):
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type and should_inherit:
+            result = get_pset(element_type, name, prop, should_inherit=False)
+            if result:
+                return result
+        for relationship in element.IsDefinedBy:
+            if relationship.is_a("IfcRelDefinesByProperties"):
+                definition = relationship.RelatingPropertyDefinition
+                if definition.Name == name:
+                    pset = definition
+                    break
+
+    if not pset:
+        return
+
+    if not prop:
+        return get_property_definition(pset)
+
+    if definition.is_a("IfcElementQuantity"):
+        return get_quantity(definition.Quantities, prop)
+    elif definition.is_a("IfcPropertySet"):
+        return get_property(definition.HasProperties, prop)
+    elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
+        return get_property(definition.Properties, prop)
+    else:
+        # Entity introduced in IFC4
+        # definition.is_a('IfcPreDefinedPropertySet'):
+        for i in range(4, len(definition)):
+            if definition[i] is not None:
+                if definition.attribute_name(i) == prop:
+                    return definition[i]
+
+
+def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
+    """Retrieve property sets, their related properties' names & values and ids.
+
+    :param element: The IFC Element entity
+    :type element: ifcopenshell.entity_instance.entity_instance
+    :param psets_only: Default as False. Set to true if only property sets are needed.
+    :type psets_only: bool,optional
+    :param qtos_only: Default as False. Set to true if only quantities are needed.
+    :type qtos_only: bool,optional
+    :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
+    :type should_inherit: bool,optional
+    :return: Key, value pair of psets' names and their properties' names & values
+    :rtype: dict
+
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.by_type("IfcWall")[0]
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
         psets_and_qtos = ifcopenshell.util.element.get_psets(element)
@@ -84,7 +159,21 @@ def get_property_definition(definition):
         return props
 
 
-def get_quantities(quantities):
+def get_quantity(quantities, name):
+    for quantity in quantities or []:
+        if quantity.Name != name:
+            continue
+        if quantity.is_a("IfcPhysicalSimpleQuantity"):
+            return quantity[3]
+            results[quantity.Name] = quantity[3]
+        elif quantity.is_a("IfcPhysicalComplexQuantity"):
+            data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
+            data["properties"] = get_quantities(quantity.HasQuantities)
+            del data["HasQuantities"]
+            return data
+
+
+def get_quantities(quantities, name=None):
     results = {}
     for quantity in quantities or []:
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
@@ -95,6 +184,29 @@ def get_quantities(quantities):
             del data["HasQuantities"]
             results[quantity.Name] = data
     return results
+
+
+def get_property(properties, name):
+    for prop in properties or []:
+        if prop.Name != name:
+            continue
+        if prop.is_a("IfcPropertySingleValue"):
+            return prop.NominalValue.wrappedValue if prop.NominalValue else None
+        elif prop.is_a("IfcPropertyEnumeratedValue"):
+            return [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
+        elif prop.is_a("IfcPropertyListValue"):
+            return [v.wrappedValue for v in prop.ListValues] or None
+        elif prop.is_a("IfcPropertyBoundedValue"):
+            data = prop.get_info()
+            del data["Unit"]
+            return data
+        elif prop.is_a("IfcPropertyTableValue"):
+            return prop.get_info()
+        elif prop.is_a("IfcComplexProperty"):
+            data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
+            data["properties"] = get_properties(prop.HasProperties)
+            del data["HasProperties"]
+            return data
 
 
 def get_properties(properties):

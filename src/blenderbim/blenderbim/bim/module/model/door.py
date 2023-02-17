@@ -19,36 +19,29 @@
 
 import bpy
 from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty, BoolProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
 import bmesh
-from bmesh.types import BMVert
+from bmesh.types import BMVert, BMFace
 
 import ifcopenshell
+from ifcopenshell.util.shape_builder import V
 import blenderbim
 import blenderbim.tool as tool
 import blenderbim.core.geometry as core
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.window import create_bm_window, create_bm_box
-from blenderbim.bim.module.model.helper import get_ifc_context_or_create, replace_ifc_representation_for_object
+from blenderbim.bim.module.model.window import create_bm_window, create_bm_box, update_simple_openings
 
-
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from pprint import pprint
 
-from os.path import basename, dirname
 import json
 import collections
-
-
-V = lambda *x: Vector([float(i) for i in x])
 
 
 def update_door_modifier_representation(context):
     obj = context.active_object
     props = obj.BIMDoorProperties
-    ifc_element = tool.Ifc.get_entity(obj)
+    element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
 
     representation_data = {
@@ -80,39 +73,118 @@ def update_door_modifier_representation(context):
     }
 
     # ELEVATION_VIEW representation
-    ifc_context = get_ifc_context_or_create(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
-    representation_data["context"] = ifc_context
-    elevation_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, elevation_representation)
+    profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
+    if profile:
+        representation_data["context"] = profile
+        elevation_representation = ifcopenshell.api.run(
+            "geometry.add_door_representation", ifc_file, **representation_data
+        )
+        tool.Model.replace_object_ifc_representation(profile, obj, elevation_representation)
 
     # MODEL_VIEW representation
-    ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-    representation_data["context"] = ifc_context
+    body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+    representation_data["context"] = body
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, model_representation)
-    
+    tool.Model.replace_object_ifc_representation(body, obj, model_representation)
+
     # PLAN_VIEW representation
-    ifc_context = get_ifc_context_or_create(ifc_file, "Plan", "Body", "PLAN_VIEW")
-    representation_data["context"] = ifc_context
-    plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-    replace_ifc_representation_for_object(ifc_file, ifc_context, obj, plan_representation)
+    plan = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
+    if plan:
+        representation_data["context"] = plan
+        plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
+        tool.Model.replace_object_ifc_representation(plan, obj, plan_representation)
 
-    # adding switch representation at the end instead of changing order of representations
-    # to prevent #2744
-    core.switch_representation(
-        tool.Ifc,
-        tool.Geometry,
-        obj=obj,
-        representation=model_representation,
-        should_reload=True,
-        is_global=True,
-        should_sync_changes_first=True,
-    )
+        # adding switch representation at the end instead of changing order of representations
+        # to prevent #2744
+        core.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=model_representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=True,
+        )
 
-    ifc_element.OperationType = props.door_type
+    element.OperationType = props.door_type
+
+    update_simple_openings(element, props.overall_width, props.overall_height)
 
 
-def create_bm_door_lining(bm, size: Vector, thickness: Vector, position:Vector=V(0,0,0).freeze()):
+def bm_sort_out_geom(geom_data):
+    geom_dict = {"verts": [], "edges": [], "faces": []}
+
+    for el in geom_data:
+        if isinstance(el, BMVert):
+            geom_dict["verts"].append(el)
+        elif isinstance(el, BMFace):
+            geom_dict["faces"].append(el)
+        else:
+            geom_dict["edges"].append(el)
+    return geom_dict
+
+
+def bm_mirror(
+    bm, verts, mirror_axes: Vector = V(1, 0, 0).freeze(), mirror_point: Vector = V(0, 0, 0).freeze(), create_copy=False
+):
+    matrix = Matrix.Translation(mirror_point)
+    for i, v in enumerate(mirror_axes):
+        if not v:
+            continue
+        mirror_axis = V(0, 0, 0)
+        mirror_axis[i] = 1.0
+        matrix = matrix @ Matrix.Scale(-1, 4, mirror_axis)
+    matrix = matrix @ Matrix.Translation(-mirror_point)
+
+    # `bmesh.ops.mirror` has no option to mirror existing geometry without creating new
+    # and matrix kind of work diffrently than transform so I chose `bmesh.ops.transform`
+    if create_copy:
+        faces = set()
+        for v in verts:
+            faces.update(v.link_faces)
+        duplicated = bmesh.ops.duplicate(bm, geom=list(faces))
+        verts = bm_sort_out_geom(duplicated["geom"])["verts"]
+
+    bmesh.ops.transform(bm, verts=verts, matrix=matrix, space=Matrix.Identity(4))
+    return verts
+
+
+def create_bm_extruded_profile(
+    bm,
+    points,
+    edges=None,
+    faces=None,
+    position: Vector = V(0, 0, 0).freeze(),
+    magnitude=1.0,
+    extrusion_vector: Vector = V(0, 0, 1).freeze(),
+):
+    bm.verts.index_update()
+    bm.edges.index_update()
+    bm.faces.ensure_lookup_table()
+
+    if not edges:
+        last_point = len(points) - 1
+        edges = [(i, i + 1) for i in range(last_point)]
+        edges.append((last_point, 0))
+
+    new_verts = [bm.verts.new(v) for v in points]
+    new_edges = [bm.edges.new([new_verts[vi] for vi in edge]) for edge in edges]
+
+    if not faces:
+        new_faces = bmesh.ops.contextual_create(bm, geom=new_edges)["faces"]
+    else:
+        new_faces = [bm.faces.new([new_verts[vi] for vi in face]) for face in faces]
+
+    extruded = bmesh.ops.extrude_face_region(bm, geom=new_faces)
+    extrusion_vector = extrusion_vector * magnitude
+    extruded_verts = bm_sort_out_geom(extruded["geom"])["verts"]
+    bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
+
+    bmesh.ops.translate(bm, vec=position, verts=new_verts + extruded_verts)
+    return new_verts + extruded_verts
+
+
+def create_bm_door_lining(bm, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
     `thickness` can be also defined just as 1 float value.
@@ -126,14 +198,14 @@ def create_bm_door_lining(bm, size: Vector, thickness: Vector, position:Vector=V
     width, depth, height = size
 
     verts = [
-        (0, [width - th_side, 0.0, height-th_up]),
+        (0, [width - th_side, 0.0, height - th_up]),
         (1, [0.0, 0.0, height]),
-        (2, [th_side, 0.0, height-th_up]),
+        (2, [th_side, 0.0, height - th_up]),
         (3, [0.0, 0.0, 0.0]),
         (4, [width - th_side, 0.0, 0.0]),
         (5, [width, 0.0, height]),
         (6, [th_side, 0.0, 0.0]),
-        (7, [width, 0.0, 0.0])
+        (7, [width, 0.0, 0.0]),
     ]
 
     edges = [
@@ -180,6 +252,9 @@ def update_door_modifier_bmesh(context):
 
     overall_width = props.overall_width * si_conversion
     overall_height = props.overall_height * si_conversion
+    door_type = props.door_type
+    double_swing_door = "DOUBLE_SWING" in door_type
+    double_door = "DOUBLE_DOOR" in door_type
 
     # lining params
     lining_depth = props.lining_depth * si_conversion
@@ -192,17 +267,22 @@ def update_door_modifier_bmesh(context):
     transfom_offset = props.transom_offset * si_conversion
     if transom_thickness == 0:
         transfom_offset = 0
-
     window_lining_height = overall_height - transfom_offset - transom_thickness
-    top_lining_thickness = transom_thickness or lining_thickness_default
+
+    side_lining_thickness = lining_thickness_default
     panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0)
+
+    top_lining_thickness = transom_thickness or lining_thickness_default
     panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0)
     door_opening_width = overall_width - lining_to_panel_offset_x * 2
+    if double_swing_door:
+        side_lining_thickness = side_lining_thickness - panel_lining_overlap_x
+        top_lining_thickness = top_lining_thickness - panel_top_lining_overlap_x
 
     threshold_thickness = props.threshold_thickness * si_conversion
     threshold_depth = props.threshold_depth * si_conversion
     threshold_offset = props.threshold_offset * si_conversion
-    threshold_width = overall_width - lining_thickness_default * 2
+    threshold_width = overall_width - side_lining_thickness * 2
 
     casing_thickness = props.casing_thickness * si_conversion
     casing_depth = props.casing_depth * si_conversion
@@ -215,6 +295,11 @@ def update_door_modifier_bmesh(context):
     frame_height = window_lining_height - lining_to_panel_offset_x * 2
     glass_thickness = 0.01 * si_conversion
 
+    # handle dimensions (hardcoded)
+    handle_size = V(120, 40, 20) * 0.001 * si_conversion
+    handle_offset = V(60, 0, 1000) * 0.001 * si_conversion  # to the handle center
+    handle_center_offset = V(handle_size.y / 2, 0, handle_size.z) / 2
+
     if transfom_offset:
         panel_height = transfom_offset + transom_thickness - lining_to_panel_offset_x - threshold_thickness
         lining_height = transfom_offset + transom_thickness
@@ -226,7 +311,7 @@ def update_door_modifier_bmesh(context):
 
     # add lining
     lining_size = V(overall_width, lining_depth, lining_height)
-    lining_thickness = [lining_thickness_default, top_lining_thickness]
+    lining_thickness = [side_lining_thickness, top_lining_thickness]
     lining_verts = create_bm_door_lining(bm, lining_size, lining_thickness)
 
     # add threshold
@@ -234,30 +319,78 @@ def update_door_modifier_bmesh(context):
         threshold_verts = []
     else:
         threshold_size = V(threshold_width, threshold_depth, threshold_thickness)
-        threshold_position = V(lining_thickness_default, threshold_offset, 0)
+        threshold_position = V(side_lining_thickness, threshold_offset, 0)
         threshold_verts = create_bm_box(bm, threshold_size, threshold_position)
 
     # add casings
     casing_verts = []
     if not lining_offset and casing_thickness:
         casing_wall_overlap = max(casing_thickness - lining_thickness_default, 0)
-        casing_size = V(overall_width + casing_wall_overlap*2, casing_depth, overall_height+casing_wall_overlap)
-        casing_position = V(-casing_wall_overlap, -casing_depth, 0)
-        outer_casing_verts = create_bm_door_lining(bm, casing_size, casing_thickness, casing_position)
 
         inner_casing_thickness = [
-            casing_thickness-panel_lining_overlap_x, 
-            casing_thickness-panel_top_lining_overlap_x
+            casing_thickness - panel_lining_overlap_x,
+            casing_thickness - panel_top_lining_overlap_x,
         ]
+        outer_casing_thickness = inner_casing_thickness.copy() if double_swing_door else casing_thickness
+
+        casing_size = V(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
+        casing_position = V(-casing_wall_overlap, -casing_depth, 0)
+        outer_casing_verts = create_bm_door_lining(bm, casing_size, outer_casing_thickness, casing_position)
+        casing_verts.extend(outer_casing_verts)
+
         inner_casing_position = V(-casing_wall_overlap, lining_depth, 0)
         inner_casing_verts = create_bm_door_lining(bm, casing_size, inner_casing_thickness, inner_casing_position)
+        casing_verts.extend(inner_casing_verts)
 
-        casing_verts.extend([outer_casing_verts, inner_casing_verts])
+    def create_bm_door_panel(panel_size, panel_position, door_swing_type):
+        door_verts = []
+        # add door panel
+        door_verts.extend(create_bm_box(bm, panel_size, panel_position))
+        # add door handle
+        handle_points = [
+            V(0, 0, 0),
+            V(0, -handle_size.y, 0),
+            V(handle_size.x, -handle_size.y, 0),
+            V(handle_size.x, -handle_size.y / 2, 0),
+            V(handle_size.y / 2, -handle_size.y / 2, 0),
+            V(handle_size.y / 2, 0, 0),
+        ]
+        handle_position = panel_position + handle_offset - handle_center_offset
+        door_handle_verts = create_bm_extruded_profile(
+            bm, handle_points, magnitude=handle_size.z, position=handle_position
+        )
+        door_verts.extend(door_handle_verts)
 
-    # add door panel
+        if door_swing_type == "LEFT":
+            bm_mirror(
+                bm, door_handle_verts, mirror_axes=V(1, 0, 0), mirror_point=panel_position + V(panel_size.x / 2, 0, 0)
+            )
+
+        door_handle_mirrored_verts = bm_mirror(
+            bm,
+            door_handle_verts,
+            mirror_axes=V(0, 1, 0),
+            mirror_point=handle_position + V(0, panel_size.y / 2, 0),
+            create_copy=True,
+        )
+        door_verts.extend(door_handle_mirrored_verts)
+        return door_verts
+
+    door_verts = []
     panel_size = V(panel_width, panel_depth, panel_height)
     panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y, threshold_thickness)
-    panel_verts = create_bm_box(bm, panel_size, panel_position)
+
+    if double_door:
+        # TODO: keep a little space between doors for readibility?
+        double_door_offset = 0.001 * si_conversion
+        panel_size.x = panel_size.x / 2 - double_door_offset
+        door_verts.extend(create_bm_door_panel(panel_size, panel_position, "LEFT"))
+
+        mirror_point = panel_position + V(door_opening_width / 2, 0, 0)
+        door_verts.extend(bm_mirror(bm, door_verts, V(1, 0, 0), mirror_point, create_copy=True))
+    else:
+        door_swing_type = "LEFT" if door_type.endswith("LEFT") else "RIGHT"
+        door_verts.extend(create_bm_door_panel(panel_size, panel_position, door_swing_type))
 
     # add on top window
     if not transom_thickness:
@@ -265,7 +398,12 @@ def update_door_modifier_bmesh(context):
         frame_verts = []
         glass_verts = []
     else:
-        window_lining_thickness = [lining_thickness_default] * 3
+        window_lining_thickness = [
+            side_lining_thickness,
+            lining_thickness_default,
+            side_lining_thickness,
+            transom_thickness,
+        ]
         window_lining_thickness.append(transom_thickness)
         window_lining_size = V(overall_width, lining_depth, window_lining_height)
         window_position = V(0, 0, overall_height - window_lining_height)
@@ -282,7 +420,7 @@ def update_door_modifier_bmesh(context):
             window_position,
         )
 
-    lining_offset_verts = lining_verts + panel_verts + window_lining_verts + frame_verts + glass_verts
+    lining_offset_verts = lining_verts + door_verts + window_lining_verts + frame_verts + glass_verts
     bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
@@ -316,12 +454,7 @@ class BIM_OT_add_door(Operator):
         obj.location = spawn_location
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class="IfcDoor",
-            should_add_representation=False
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
         element.PredefinedType = "DOOR"
 
@@ -391,10 +524,19 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         # restore previous settings since editing was canceled
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
-        update_door_modifier_representation(context)
+
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
         props.is_editing = -1
-
         return {"FINISHED"}
 
 

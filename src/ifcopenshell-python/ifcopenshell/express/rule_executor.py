@@ -1,4 +1,5 @@
 import os
+import re
 import ast
 import collections
 import ifcopenshell
@@ -7,7 +8,24 @@ from codegen import indent
 
 
 def reverse_compile(s):
-    return s.strip().replace("len(", "SIZEOF(").replace("assert ", "").replace(" is not False", "")
+    return re.sub(
+        "\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
+        "",
+        re.sub(
+            ", )?+.(, INDETERMINATE)\\"[::-1],
+            "]\\1[",
+            re.sub(
+                r", '(\w+)', INDETERMINATE\)",
+                ".\\1",
+                s.strip()
+                .replace("len(", "SIZEOF(")
+                .replace("assert ", "")
+                .replace(" is not False", "")
+                .replace("getattr(", "")
+                .replace("express_getitem(", ""),
+            )[::-1],
+        )[::-1],
+    )
 
 
 @dataclass
@@ -21,7 +39,12 @@ class error(Exception):
         inst = ""
         if self.instance:
             inst = f"On instance:\n{indent(4, str(self.instance))}\n"
-        return f"{inst}Rule {self.rule_name}:\n{indent(4, self.rule_definition)}\nViolated by:\n{indent(4, self.violation)}"
+        if self.rule_name:
+            return f"{inst}Rule {self.rule_name}:\n{indent(4, self.rule_definition)}\nViolated by:\n{indent(4, self.violation)}"
+        else:
+            if inst:
+                inst = f"\n\n{inst}"
+            return f"{self.rule_definition}\n\nViolated by:\n{indent(4, self.violation)}{inst}"
 
 
 def fix_type(v):
@@ -42,6 +65,22 @@ def fix_type(v):
 def run(f, logger):
     from _pytest import assertion
 
+    if hasattr(logger, "set_instance"):
+        # when using the json logger, we notify it of the relevant instance
+        pre_annotate_instance = lambda instance: logger.set_state('instance', instance)
+        post_annotate_instance = lambda instance: instance
+        pre_annotate_attribute = lambda attribute: logger.set_state('attribute', attribute)
+        post_annotate_attribute = lambda attribute: None
+    else:
+        # when using the normal text logger the instance is appended to the method
+        pre_annotate_instance = lambda instance: None
+        post_annotate_instance = lambda instance: instance
+        pre_annotate_attribute = lambda attribute: None
+        post_annotate_attribute = lambda attribute: attribute
+
+    orig = ifcopenshell.settings.unpack_non_aggregate_inverses
+    ifcopenshell.settings.unpack_non_aggregate_inverses = True
+
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema}.py")
     source = open(fn, "r").read()
     a = ast.parse(source)
@@ -53,21 +92,34 @@ def run(f, logger):
 
     rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
 
+    logger.set_state('type', 'global_rule')
+
     for R in [r for r in rules if r.SCOPE == "file"]:
         try:
             R()(f)
         except Exception as e:
             ln = e.__traceback__.tb_next.tb_lineno
+            pre_annotate_attribute(R.__name__)
             logger.error(
-                str(error(R.__name__, reverse_compile(source.split("\n")[ln - 1]), reverse_compile(e.args[0])))
+                str(
+                    error(
+                        post_annotate_attribute(R.__name__),
+                        reverse_compile(source.split("\n")[ln - 1]),
+                        reverse_compile(e.args[0]),
+                    )
+                )
             )
+
+    logger.set_state('type', 'simpletype_rule')
 
     types = {}
     subtypes = collections.defaultdict(list)
     for d in S.declarations():
         if isinstance(d, ifcopenshell.ifcopenshell_wrapper.type_declaration):
             types[d.name()] = d
-            if isinstance(d.declared_type(), ifcopenshell.ifcopenshell_wrapper.named_type):
+            if isinstance(
+                d.declared_type(), ifcopenshell.ifcopenshell_wrapper.named_type
+            ):
                 subtypes[d.declared_type().declared_type().name()].append(d.name())
 
     D = collections.defaultdict(list)
@@ -102,13 +154,15 @@ def run(f, logger):
                     R()(fix_type(value))
                 except Exception as e:
                     ln = e.__traceback__.tb_next.tb_lineno
+                    pre_annotate_instance(instance)
+                    pre_annotate_attribute(f"{R.TYPE_NAME}.{R.RULE_NAME}")
                     logger.error(
                         str(
                             error(
-                                R.__name__,
+                                post_annotate_attribute(f"{R.TYPE_NAME}.{R.RULE_NAME}"),
                                 reverse_compile(source.split("\n")[ln - 1]),
                                 reverse_compile(e.args[0]),
-                                instance,
+                                post_annotate_instance(instance),
                             )
                         )
                     )
@@ -117,7 +171,11 @@ def run(f, logger):
         # case in point IfcCompoundPlaneAngleMeasure. Therefore only unpack named
         # type references from this point onwards.
         while isinstance(
-            type, (ifcopenshell.ifcopenshell_wrapper.named_type, ifcopenshell.ifcopenshell_wrapper.type_declaration)
+            type,
+            (
+                ifcopenshell.ifcopenshell_wrapper.named_type,
+                ifcopenshell.ifcopenshell_wrapper.type_declaration,
+            ),
         ):
             type = type.declared_type()
 
@@ -127,7 +185,10 @@ def run(f, logger):
             for v in value:
                 check(v, ty, instance=inst)
         elif isinstance(value, ifcopenshell.entity_instance):
-            if isinstance(S.declaration_by_name(value.is_a()), ifcopenshell.ifcopenshell_wrapper.entity):
+            if isinstance(
+                S.declaration_by_name(value.is_a()),
+                ifcopenshell.ifcopenshell_wrapper.entity,
+            ):
                 # top level entity instances will be checked on their own
                 pass
             else:
@@ -138,12 +199,16 @@ def run(f, logger):
         values = list(inst)
         entity = S.declaration_by_name(inst.is_a())
         attrs = entity.all_attributes()
-        for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
+        for i, (attr, val, is_derived) in enumerate(
+            zip(attrs, values, entity.derived())
+        ):
             if is_derived:
                 # @todo
                 pass
             else:
                 check(val, attr.type_of_attribute(), instance=inst)
+
+    logger.set_state('type', 'entity_rule')
 
     for R in [r for r in rules if r.SCOPE == "entity"]:
         for inst in f.by_type(R.TYPE_NAME):
@@ -151,11 +216,20 @@ def run(f, logger):
                 R()(inst)
             except Exception as e:
                 ln = e.__traceback__.tb_next.tb_lineno
+                pre_annotate_instance(inst)
+                pre_annotate_attribute(f"{R.TYPE_NAME}.{R.RULE_NAME}")
                 logger.error(
                     str(
-                        error(R.__name__, reverse_compile(source.split("\n")[ln - 1]), reverse_compile(e.args[0]), inst)
+                        error(
+                            post_annotate_attribute(f"{R.TYPE_NAME}.{R.RULE_NAME}"),
+                            reverse_compile(source.split("\n")[ln - 1]),
+                            reverse_compile(e.args[0]),
+                            post_annotate_instance(inst),
+                        )
                     )
                 )
+
+    ifcopenshell.settings.unpack_non_aggregate_inverses = orig
 
 
 if __name__ == "__main__":

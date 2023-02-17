@@ -193,6 +193,7 @@ class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
 class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_wall"
     bl_label = "Merge Wall"
+    bl_description = "Merge selected walls into one object"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod

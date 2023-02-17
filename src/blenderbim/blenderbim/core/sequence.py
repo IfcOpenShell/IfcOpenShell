@@ -162,6 +162,13 @@ def copy_task_attribute(ifc, sequence, attribute_name=None):
         sequence.load_task_properties(task)
 
 
+def duplicate_task(ifc, sequence, task=None):
+    ifc.run("sequence.duplicate_task", task=task)
+    work_schedule = sequence.get_active_work_schedule()
+    sequence.create_task_tree(work_schedule)
+    sequence.load_task_properties()
+
+
 def disable_editing_task(sequence):
     sequence.disable_editing_task()
 
@@ -207,37 +214,29 @@ def unassign_successor(ifc, sequence, task=None):
     sequence.load_task_properties()
 
 
-def assign_products(ifc, sequence, task=None, products=None):
-    if not products:
-        products = sequence.get_selected_products()
-    for product in products:
+def assign_products(ifc, sequence, spatial, task=None, products=None):
+    for product in products or spatial.get_selected_products() or []:
         ifc.run("sequence.assign_product", relating_product=product, related_object=task)
     outputs = sequence.get_task_outputs(task)
     sequence.load_task_outputs(outputs)
 
 
-def unassign_products(ifc, sequence, task=None, products=None):
-    if not products:
-        products = sequence.get_selected_products()
-    for product in products:
+def unassign_products(ifc, sequence, spatial, task=None, products=None):
+    for product in products or spatial.get_selected_products() or []:
         ifc.run("sequence.unassign_product", relating_product=product, related_object=task)
     outputs = sequence.get_task_outputs(task)
     sequence.load_task_outputs(outputs)
 
 
-def assign_input_products(ifc, sequence, task=None, products=None):
-    if not products:
-        products = sequence.get_selected_products()
-    for product in products:
+def assign_input_products(ifc, sequence, spatial, task=None, products=None):
+    for product in products or spatial.get_selected_products() or []:
         ifc.run("sequence.assign_process", relating_process=task, related_object=product)
     inputs = sequence.get_task_inputs(task)
     sequence.load_task_inputs(inputs)
 
 
-def unassign_input_products(ifc, sequence, task=None, products=None):
-    if not products:
-        products = sequence.get_selected_products()
-    for product in products:
+def unassign_input_products(ifc, sequence, spatial, task=None, products=None):
+    for product in products or spatial.get_selected_products() or []:
         ifc.run("sequence.unassign_process", relating_process=task, related_object=product)
     inputs = sequence.get_task_inputs(task)
     sequence.load_task_inputs(inputs)
@@ -423,14 +422,12 @@ def disable_editing_rel_sequence(sequence):
     sequence.disable_editing_rel_sequence()
 
 
-def select_task_outputs(ifc, sequence, task=None):
-    outputs = sequence.get_task_outputs(task)
-    sequence.select_products(outputs)
+def select_task_outputs(sequence, spatial, task=None):
+    spatial.select_products(products=sequence.get_task_outputs(task))
 
 
-def select_task_inputs(ifc, sequence, task=None):
-    inputs = sequence.get_task_inputs(task)
-    sequence.select_products(inputs)
+def select_task_inputs(sequence, spatial, task=None):
+    spatial.select_products(products=sequence.get_task_inputs(task))
 
 
 def recalculate_schedule(ifc, work_schedule=None):
@@ -457,8 +454,8 @@ def calculate_task_duration(ifc, sequence, task=None):
         sequence.load_task_properties()
 
 
-def highlight_product_related_task(sequence, product_type=None):
-    products = sequence.get_selected_products()
+def highlight_product_related_task(sequence, spatial, product_type=None):
+    products = spatial.get_selected_products()
     if products:
         if product_type == "Output":
             tasks = sequence.find_related_output_tasks(products[0])
