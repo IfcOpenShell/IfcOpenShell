@@ -102,6 +102,11 @@ class BIM_PT_Boundary(Panel):
                 row.label(text=f"{entity.is_a()}/{entity.Name}")
                 op = row.operator("bim.select_global_id", text="", icon="OBJECT_DATA")
                 op.global_id = entity.GlobalId
+                if ifc_attribute in ("RelatingSpace", "RelatedBuildingElement"):
+                    op = row.operator("bim.select_related_element_boundaries", text="", icon="RESTRICT_SELECT_OFF")
+                    op.related_element = entity.id()
+                    op = row.operator("bim.select_related_element_type_boundaries", text="", icon="ASSET_MANAGER")
+                    op.related_element = entity.id()
             else:
                 row.label(text="")
 
