@@ -23,6 +23,7 @@ classes = (
     operator.LoadProjectSpaceBoundaries,
     operator.LoadSpaceBoundaries,
     operator.LoadBoundary,
+    operator.SelectSpaceBoundaries,
     operator.SelectProjectBoundaries,
     operator.ColourByRelatedBuildingElement,
     operator.EnableEditingBoundary,
