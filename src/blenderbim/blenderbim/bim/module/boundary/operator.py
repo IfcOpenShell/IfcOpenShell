@@ -158,6 +158,22 @@ class LoadSpaceBoundaries(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SelectSpaceBoundaries(bpy.types.Operator):
+    bl_idname = "bim.select_space_boundaries"
+    bl_label = "Select all space boundaries"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        for obj in context.visible_objects:
+            obj.select_set(False)
+        element = tool.Ifc.get_entity(context.active_object)
+        for rel in element.BoundedBy or []:
+            obj = tool.Ifc.get_object(rel)
+            if obj:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
 class SelectProjectBoundaries(bpy.types.Operator):
     bl_idname = "bim.select_project_space_boundaries"
     bl_label = "Select all project space boundaries"
@@ -208,11 +224,10 @@ class ColourByRelatedBuildingElement(bpy.types.Operator):
         return result
 
     def _execute(self, context):
-        self.file = tool.Ifc.get()
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            element = tool.Ifc.get_entity(obj)
             if not element.is_a("IfcRelSpaceBoundary"):
                 continue
             obj.color = get_colour(element)

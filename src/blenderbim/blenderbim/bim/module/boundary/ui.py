@@ -143,6 +143,7 @@ class BIM_PT_SpaceBoundaries(Panel):
         self.ifc_file = tool.Ifc.get()
         row = self.layout.row()
         row.operator("bim.load_space_boundaries")
+        row.operator("bim.select_space_boundaries", text="", icon="RESTRICT_SELECT_OFF")
         for boundary in SpaceBoundariesData.data["boundaries"]:
             row = self.layout.row()
             row.label(text=boundary["description"], icon="GHOST_ENABLED")
