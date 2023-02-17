@@ -158,6 +158,54 @@ class LoadSpaceBoundaries(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def get_element_boundaries(element):
+    if not element:
+        return ()
+    if element.is_a("IfcSpace"):
+        return (b for b in element.BoundedBy or ())
+    return (b for b in element.ProvidesBoundaries)
+
+
+class SelectRelatedElementBoundaries(bpy.types.Operator):
+    bl_idname = "bim.select_related_element_boundaries"
+    bl_label = "Select related element space boundaries"
+    bl_options = {"REGISTER", "UNDO"}
+    related_element: bpy.props.IntProperty()
+
+    def execute(self, context):
+        for obj in context.visible_objects:
+            obj.select_set(False)
+        element = tool.Ifc.get().by_id(self.related_element)
+        for rel in get_element_boundaries(element):
+            obj = tool.Ifc.get_object(rel)
+            if obj:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
+class SelectRelatedElementTypeBoundaries(bpy.types.Operator):
+    bl_idname = "bim.select_related_element_type_boundaries"
+    bl_label = "Select related element type space boundaries"
+    bl_options = {"REGISTER", "UNDO"}
+    related_element: bpy.props.IntProperty()
+
+    def execute(self, context):
+        for obj in context.visible_objects:
+            obj.select_set(False)
+        element = tool.Ifc.get().by_id(self.related_element)
+        if not element:
+            return {"FINISHED"}
+        element_type = tool.Root.get_element_type(element)
+        if not element_type:
+            return {"FINISHED"}
+        for child in tool.Type.get_type_occurrences(element_type):
+            for rel in get_element_boundaries(child):
+                obj = tool.Ifc.get_object(rel)
+                if obj:
+                    obj.select_set(True)
+        return {"FINISHED"}
+
+
 class SelectSpaceBoundaries(bpy.types.Operator):
     bl_idname = "bim.select_space_boundaries"
     bl_label = "Select all space boundaries"
