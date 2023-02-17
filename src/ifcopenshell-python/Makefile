@@ -2,6 +2,22 @@ VERSION:=`date '+%y%m%d'`
 PYVERSION:=py310
 PLATFORM:=linux
 
+SED:=sed -i
+ifeq ($(OS),Windows_NT)
+HOSTOS:=win
+else
+UNAME_S:=$(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+HOSTOS:=linux
+endif
+ifeq ($(UNAME_S),Darwin)
+HOSTOS:=macos
+PYTHON:=python3
+PATCH:=patch -d
+SED:=sed -i '' -e
+endif
+endif
+
 ifeq ($(PYVERSION), py36)
 PYNUMBER:=36
 endif
@@ -99,9 +115,11 @@ endif
 	# distutils cannot access anything outside the cwd, so hackishly swap out the README.md
 	cp README.md ../README.bak
 	cp ../../README.md README.md
+	$(SED) "s/999999/$(VERSION)/" pyproject.toml
 	python -m build
+	$(SED) "s/$(VERSION)/999999/" pyproject.toml
 	mv ../README.bak README.md
-	cd dist && mv ifcopenshell-0.7.0-py3-none-any.whl ifcopenshell-0.7.0-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	cd dist && mv ifcopenshell-0.7.0.$(VERSION)-py3-none-any.whl ifcopenshell-0.7.0.$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 	rm -rf dist/ifcopenshell
 	rm -rf dist/ifcopenshell.egg-info
 	rm -rf dist/ifcopenshell-0.7.0.tar.gz
