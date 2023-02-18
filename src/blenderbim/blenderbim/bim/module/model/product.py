@@ -35,6 +35,7 @@ from blenderbim.bim.module.model.prop import store_cursor_position
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop
+import json
 
 
 def select_and_activate_single_object(context, obj):
@@ -143,6 +144,15 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if self.link_to_scene:
             # Update required as core.type.assign_type may change obj.data
             context.view_layer.update()
+
+        # set occurences properties for the types defined with modifiers
+        if instance_class in ["IfcWindow", "IfcDoor"]:
+            pset_name = f'BBIM_{instance_class[3:]}'
+            bbim_pset = ifcopenshell.util.element.get_psets(element).get(pset_name, None)
+            if bbim_pset:
+                bbim_prop_data = json.loads(bbim_pset['Data'])
+                element.OverallWidth = bbim_prop_data['overall_width']
+                element.OverallHeight = bbim_prop_data['overall_height']
 
         if (
             building_obj

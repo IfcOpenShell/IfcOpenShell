@@ -223,6 +223,15 @@ class FilledOpeningGenerator:
             return shape_builder.get_representation(context, [extrusion])
 
         x, y, z = filling_obj.dimensions
+
+        # Windows and doors can have a casing that overlaps the wall
+        # but shouldn't affect the size of the opening. 
+        # So we shouldn't use object dimensions in that case. More: #2784 
+        # Just keeping it for windows and doors for now to be safe
+        if filling.is_a() in ["IfcWindow", "IfcDoor"]:
+            x = filling.OverallWidth or x
+            z = filling.OverallHeight or z
+
         extrusion = shape_builder.extrude(
             shape_builder.rectangle(size=Vector([x / unit_scale, 0.0, z / unit_scale])),
             magnitude=thickness / unit_scale,
