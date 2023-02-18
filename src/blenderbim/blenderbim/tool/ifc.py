@@ -100,6 +100,23 @@ class Ifc(blenderbim.core.tool.Ifc):
     def unlink(cls, element=None, obj=None):
         IfcStore.unlink_element(element, obj)
 
+    @classmethod
+    def get_all_element_occurences(cls, element):
+        if element.is_a("IfcElementType"):
+            element_type = element
+            occurences = ifcopenshell.util.element.get_types(element_type)
+        else:
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type:
+                occurences = ifcopenshell.util.element.get_types(element_type)
+            else:
+                occurences = [element]
+        return occurences
+
+    @classmethod
+    def unlink(cls, element=None, obj=None):
+        IfcStore.unlink_element(element, obj)
+
     class Operator:
         def execute(self, context):
             IfcStore.execute_ifc_operator(self, context)

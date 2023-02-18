@@ -39,15 +39,7 @@ from mathutils import Vector
 def update_simple_openings(element, opening_width, opening_height):
     element_type = None
     ifc_file = tool.Ifc.get()
-    if element.is_a("IfcElementType"):
-        element_type = element
-        fillings = ifcopenshell.util.element.get_types(element_type)
-    else:
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type:
-            fillings = ifcopenshell.util.element.get_types(element_type)
-        else:
-            fillings = [element]
+    fillings = tool.Ifc.get_all_element_occurences(element)
 
     voided_objs = set()
     has_replaced_opening_representation = False
@@ -176,7 +168,14 @@ def update_window_modifier_representation(context):
             should_sync_changes_first=True,
         )
 
+    # type attributes
     element.PartitioningType = props.window_type
+
+    # occurences attributes
+    occurences = tool.Ifc.get_all_element_occurences(element)
+    for occurence in occurences:
+        occurence.OverallWidth = props.overall_width
+        occurence.OverallHeight = props.overall_height
 
     update_simple_openings(element, props.overall_width, props.overall_height)
 

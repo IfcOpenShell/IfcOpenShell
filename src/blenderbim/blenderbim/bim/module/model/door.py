@@ -105,8 +105,15 @@ def update_door_modifier_representation(context):
             is_global=True,
             should_sync_changes_first=True,
         )
-
+        
+    # type attributes
     element.OperationType = props.door_type
+
+    # occurences attributes
+    occurences = tool.Ifc.get_all_element_occurences(element)
+    for occurence in occurences:
+        occurence.OverallWidth = props.overall_width
+        occurence.OverallHeight = props.overall_height
 
     update_simple_openings(element, props.overall_width, props.overall_height)
 
