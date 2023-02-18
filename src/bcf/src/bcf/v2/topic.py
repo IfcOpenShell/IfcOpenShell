@@ -241,8 +241,8 @@ class TopicHandler:
         self.add_visinfo_handler(vi_handler)
 
     def add_visinfo_handler(self, new_viewpoint: VisualizationInfoHandler) -> None:
-        self.viewpoints[new_viewpoint.guid] = new_viewpoint
-        self.markup.viewpoints.append(mdl.ViewPoint(viewpoint=new_viewpoint.guid, guid=new_viewpoint.guid))
+        self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
+        self.markup.viewpoints.append(mdl.ViewPoint(viewpoint=new_viewpoint.guid + ".bcfv", guid=new_viewpoint.guid))
 
     def __eq__(self, other: object) -> bool | NoReturn:
         return (
