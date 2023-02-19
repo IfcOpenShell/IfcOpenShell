@@ -1,8 +1,8 @@
 """BCF XML V2 Topic handler."""
+import datetime
+import tempfile
 import uuid
 import zipfile
-import tempfile
-import datetime
 from pathlib import Path
 from typing import Any, NoReturn, Optional
 
