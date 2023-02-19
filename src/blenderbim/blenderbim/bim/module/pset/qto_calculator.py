@@ -472,6 +472,63 @@ class QtoCalculator:
         decompositions = ifcopenshell.util.element.get_decomposition(element)
         return decompositions
 
+    def get_gross_weight(self, obj):
+        obj_mass_density = self.get_obj_mass_density(obj)
+        if not obj_mass_density:
+            return
+        gross_volume = self.get_gross_volume(obj)
+        gross_weight = obj_mass_density * gross_volume
+        return gross_weight
+
+    def get_obj_mass_density(self, obj):
+        entity = tool.Ifc.get_entity(obj)
+        material = ifcopenshell.util.element.get_material(entity)
+        if (
+            material.is_a("IfcMaterialLayerSet")
+            or material.is_a("IfcMaterialProfileSet")
+            or material.is_a("IfcMaterialConstituentSet")
+        ):
+                return
+
+        if material.is_a('IfcMaterial'):
+            obj_mass_density = self.get_single_material_mass_density(material)
+            return obj_mass_density
+
+        if material.is_a('IfcMaterialLayerSetUsage'):
+            material_layers = material.ForLayerSet.MaterialLayers
+            densities = []
+            thicknesses = []
+            obj_mass_density = 0
+            for material_layer in material_layers:
+                density = self.get_single_material_mass_density(material_layer.Material)
+                if density is None:
+                    return
+                densities.append(density)
+                thickness = material_layer.LayerThickness
+                thicknesses.append(thickness)
+                obj_mass_density = obj_mass_density + (density * thickness)
+            total_thickness = sum(thicknesses)
+            obj_mass_density = obj_mass_density/total_thickness
+            return obj_mass_density
+
+        if material.is_a('IfcMaterialProfileSetUsage'):
+            material_profiles = material.ForProfileSet.MaterialProfiles
+            if len(material_profiles) == 1:
+                obj_mass_density = self.get_single_material_mass_density(material_profiles[0].Material)
+                return obj_mass_density
+            else:
+                return
+
+
+    def get_single_material_mass_density(self, material):
+        for material_property in material.HasProperties:
+            if "Pset_MaterialCommon" in material_property.Name:
+                for prop in material_property.Properties:
+                    if "MassDensity" in prop:
+                        return prop.NominalValue.wrappedValue
+            else:
+                return
+
 
 
     # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
