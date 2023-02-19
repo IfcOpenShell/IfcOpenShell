@@ -190,7 +190,9 @@ class TopicHandler:
         self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
         if self.topic.viewpoints is None:
             self.topic.viewpoints = mdl.TopicViewpoints()
-        self.topic.viewpoints.view_point.append(mdl.ViewPoint(viewpoint=new_viewpoint.guid + ".bcfv", guid=new_viewpoint.guid))
+        self.topic.viewpoints.view_point.append(
+            mdl.ViewPoint(viewpoint=new_viewpoint.guid + ".bcfv", guid=new_viewpoint.guid)
+        )
 
     def __eq__(self, other: object) -> bool | NoReturn:
         return (

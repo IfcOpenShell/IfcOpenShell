@@ -15,6 +15,7 @@ keywords = ["IFC", "BCF", "BIM", "eingineering"]
 dependencies = [
     "xsdata",
     "numpy",
+    "ifcopenshell",
 ]
 version = "0.0.1"
 classifiers = [
@@ -58,20 +59,34 @@ exclude_lines = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py310
-isolated_build = true
+env_list = lint, type, py3{10,11}
 skip_missing_interpreters = true
-requires = tox-conda
 
 [testenv]
-conda_deps =
+deps =
     pytest
     pytest-cov
     coverage
-conda_channels =
-    conda-forge
-conda_env = environment.yml
 commands = pytest --cov --cov-report=term tests
+
+[testenv:lint]
+description = run linters
+skip_install = true
+deps =
+    black
+    isort
+    pylint
+commands = 
+    black {posargs:.}
+    isort {posargs:.}
+    pylint {posargs:.} --output-format=colorized
+
+[testenv:type]
+description = run type checks
+deps =
+    mypy>=0.991
+commands =
+    - mypy {posargs:src}
 """
 
 [tool.mypy]
