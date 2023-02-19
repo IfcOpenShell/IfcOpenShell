@@ -562,7 +562,9 @@ STRICT_TOLERANCE
 +------+------------------------+---------+
 
 Strictly use the tolerance from the IFC model. Typically this value is increased
-10-fold to have more reliable boolean subtraction results.
+10-fold to have more reliable boolean subtraction results. It is recommended to
+always have this set to True and should only be set to False for backwards
+compatibility.
 
 USE_BREP_DATA
 -------------
