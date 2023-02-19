@@ -291,7 +291,7 @@ mapper = {
         'GrossSurfaceArea' : "get_gross_surface_area",
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
-        'GrossWeight' : None,
+        'GrossWeight' : "get_gross_weight",
         'NetWeight' : None,
     },
     'Qto_PumpBaseQuantities' : {
@@ -386,7 +386,7 @@ mapper = {
         'NetSideArea' : "get_net_side_area",
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
-        'GrossWeight' : None,
+        'GrossWeight' : "get_gross_weight",
         'NetWeight' : None,
     },
     'Qto_StairFlightBaseQuantities' : {
@@ -476,7 +476,7 @@ mapper = {
         'NetSurfaceArea' : "get_net_surface_area",
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
-        'GrossWeight' : None,
+        'GrossWeight' : "get_gross_weight",
         'NetWeight' : None,
     },
     'Qto_SleeperBaseQuantities' : {
