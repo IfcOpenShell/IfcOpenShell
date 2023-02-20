@@ -227,6 +227,100 @@ class Html(Json):
                 return outfile.write(pystache.render(file.read(), self.results))
 
 
+class Ods(Json):
+    def __init__(self, ids):
+        super().__init__(ids)
+        self.colours = {
+            "h": "cccccc",  # Header
+            "p": "97cc64",  # Pass
+            "f": "fb5a3e",  # Fail
+            "t": "ffffff",  # Regular text
+        }
+        self.results = {}
+
+    def to_file(self, filepath):
+        from odf.opendocument import OpenDocumentSpreadsheet
+        from odf.style import Style, TableCellProperties
+        from odf.table import Table, TableRow, TableCell
+        from odf.text import P
+
+        self.doc = OpenDocumentSpreadsheet()
+
+        self.cell_formats = {}
+        for key, value in self.colours.items():
+            style = Style(name=key, family="table-cell")
+            style.addElement(TableCellProperties(backgroundcolor="#" + value))
+            self.doc.automaticstyles.addElement(style)
+            self.cell_formats[key] = style
+
+        table = Table(name=self.results["title"])
+        tr = TableRow()
+        for header in ["Specification", "Status", "Total Compliant", "Total Applicable", "Percentage Compliant"]:
+            tc = TableCell(valuetype="string", stylename="h")
+            tc.addElement(P(text=header))
+            tr.addElement(tc)
+        table.addElement(tr)
+
+        rows = []
+        for specification in self.results["specifications"]:
+            rows.append(
+                [
+                    specification["name"],
+                    "Pass" if specification["status"] else "Fail",
+                    str(specification["total_successes"]),
+                    str(specification["total"]),
+                    str(specification["percentage"]),
+                ]
+            )
+
+        for row in rows:
+            tr = TableRow()
+            c = 0
+            stylename = "p" if row[1] == "Pass" else "f"
+            for col in row:
+                tc = TableCell(valuetype="string", stylename=stylename)
+                if col is None:
+                    col = "NULL"
+                tc.addElement(P(text=col))
+                tr.addElement(tc)
+                c += 1
+            table.addElement(tr)
+        self.doc.spreadsheet.addElement(table)
+
+        for specification in self.results["specifications"]:
+            if specification["status"]:
+                continue
+            table = Table(name=specification["name"])
+            tr = TableRow()
+            for header in ["Requirement", "Problem", "Element"]:
+                tc = TableCell(valuetype="string", stylename="h")
+                tc.addElement(P(text=header))
+                tr.addElement(tc)
+            table.addElement(tr)
+            for requirement in specification["requirements"]:
+                if requirement["status"]:
+                    continue
+                for failure in requirement["failed_entities"]:
+                    row = [
+                        requirement["description"],
+                        failure.get("reason", "No reason provided"),
+                        str(failure.get("element", "No element found")),
+                    ]
+                    tr = TableRow()
+                    c = 0
+                    for col in row:
+                        tc = TableCell(valuetype="string", stylename="t")
+                        if col is None:
+                            col = "NULL"
+                        tc.addElement(P(text=col))
+                        tr.addElement(tc)
+                        c += 1
+                    table.addElement(tr)
+            self.doc.spreadsheet.addElement(table)
+
+        self.doc.save(filepath, True)
+
+
 class Bcf(Reporter):
     def __init__(self, ids, with_viewpoint=True, filepath=None, group=False):
         super().__init__(ids)
