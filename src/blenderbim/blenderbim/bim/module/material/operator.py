@@ -583,7 +583,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         blenderbim.bim.helper.import_attributes2(material_set_item, self.props.material_set_item_attributes)
 
         if material_set_item.is_a("IfcMaterialProfile"):
-            if material_set_item.Profile:
+            if material_set_item.Profile and material_set_item.Profile.ProfileName:
                 self.mprops.profiles = str(material_set_item.Profile.id())
 
         return {"FINISHED"}
