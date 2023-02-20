@@ -67,9 +67,9 @@ def run(f, logger):
 
     if hasattr(logger, "set_instance"):
         # when using the json logger, we notify it of the relevant instance
-        pre_annotate_instance = lambda instance: logger.set_state('instance', instance)
+        pre_annotate_instance = lambda instance: logger.set_state('instance', instance) if hasattr(logger, 'set_state') else None
         post_annotate_instance = lambda instance: instance
-        pre_annotate_attribute = lambda attribute: logger.set_state('attribute', attribute)
+        pre_annotate_attribute = lambda attribute: logger.set_state('attribute', attribute) if hasattr(logger, 'set_state') else None
         post_annotate_attribute = lambda attribute: None
     else:
         # when using the normal text logger the instance is appended to the method
@@ -92,7 +92,8 @@ def run(f, logger):
 
     rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
 
-    logger.set_state('type', 'global_rule')
+    if hasattr(logger, 'set_state'):
+        logger.set_state('type', 'global_rule')
 
     for R in [r for r in rules if r.SCOPE == "file"]:
         try:
@@ -110,7 +111,8 @@ def run(f, logger):
                 )
             )
 
-    logger.set_state('type', 'simpletype_rule')
+    if hasattr(logger, 'set_state'):
+        logger.set_state('type', 'simpletype_rule')
 
     types = {}
     subtypes = collections.defaultdict(list)
@@ -208,7 +210,8 @@ def run(f, logger):
             else:
                 check(val, attr.type_of_attribute(), instance=inst)
 
-    logger.set_state('type', 'entity_rule')
+    if hasattr(logger, 'set_state'):
+        logger.set_state('type', 'entity_rule')
 
     for R in [r for r in rules if r.SCOPE == "entity"]:
         for inst in f.by_type(R.TYPE_NAME):
