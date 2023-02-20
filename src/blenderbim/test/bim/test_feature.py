@@ -670,3 +670,31 @@ def construction_type(relating_type_name):
 @when("I move the cursor to the bottom left corner")
 def move_cursor_bottom_left():
     bpy.context.window.cursor_warp(10, 10)
+
+
+@given(parsers.parse("I save sample test files"))
+@when(parsers.parse("I save sample test files"))
+@then(parsers.parse("I save sample test files"))
+def saving_sample_test_files(and_open_in_blender=None):
+    filepath = f"{variables['cwd']}/test/files/sample_test_file"
+    blend_filepath = f'{filepath}.blend'
+    bpy.ops.export_ifc.bim(filepath=f"{filepath}.ifc", should_save_as=True)
+    bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
+
+
+# TODO: merge to single fixture with `saving_sample_test_files`; add "and wait"
+@given(parsers.parse("I save sample test files and open in blender"))
+@when(parsers.parse("I save sample test files and open in blender"))
+@then(parsers.parse("I save sample test files and open in blender"))
+def saving_sample_test_files_and_open_in_blender():
+    saving_sample_test_files()
+    filepath = f"{variables['cwd']}/test/files/sample_test_file.blend"
+    import subprocess
+    subprocess.Popen([bpy.app.binary_path, f'{filepath}'])
+
+
+@given(parsers.parse("I run pdb"))
+@when(parsers.parse("I run pdb"))
+@then(parsers.parse("I run pdb"))
+def run_pdb():
+    import pdb; pdb.set_trace()
