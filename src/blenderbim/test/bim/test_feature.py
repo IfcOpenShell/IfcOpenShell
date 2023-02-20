@@ -51,6 +51,10 @@ def replace_variables(value):
 def is_x(number, x):
     return abs(number - x) < 1e-6
 
+def vectors_are_equal(v1, v2):
+    assert len(v1) == len(v2), f"Compared vectors are not equal length: {v1}, {v2}"
+    return all(is_x(v1[i], v2[i]) for i in range(len(v1)))
+
 
 @given("an untestable scenario")
 def an_untestable_scenario():
@@ -490,7 +494,11 @@ def prop_is_value(prop, value):
                 exec(f"assert list(bpy.context.{prop}) == {value}")
                 is_value = True
             except:
-                pass
+                try:
+                    exec(f"assert vectors_are_equal(bpy.context.{prop}, {value})")
+                    is_value = True
+                except:
+                    pass
     if not is_value:
         print(f"bpy.context.{prop}")
         actual_value = eval(f"bpy.context.{prop}")
