@@ -291,7 +291,8 @@ def validate(f, logger, express_rules=False):
 
     filename = None
 
-    logger.set_state('type', 'schema')
+    if hasattr(logger, 'set_state'):
+        logger.set_state('type', 'schema')
 
     if not isinstance(f, ifcopenshell.file):
 
