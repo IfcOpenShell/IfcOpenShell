@@ -20,24 +20,24 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestRemoveSystem(test.bootstrap.IFC4):
-    def test_removing_a_system(self):
-        system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
-        ifcopenshell.api.run("system.remove_system", self.file, system=system)
-        assert len(self.file.by_type("IfcSystem")) == 0
+class TestRemoveGroup(test.bootstrap.IFC4):
+    def test_removing_a_group(self):
+        group = ifcopenshell.api.run("group.add_group", self.file)
+        ifcopenshell.api.run("group.remove_group", self.file, group=group)
+        assert len(self.file.by_type("IfcGroup")) == 0
 
     def test_removing_orphaned_group_relationships(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
-        system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
-        ifcopenshell.api.run("system.assign_system", self.file, product=element, system=system)
-        ifcopenshell.api.run("system.remove_system", self.file, system=system)
+        group = ifcopenshell.api.run("group.add_group", self.file)
+        ifcopenshell.api.run("group.assign_group", self.file, products=[element], group=group)
+        ifcopenshell.api.run("group.remove_group", self.file, group=group)
         assert not self.file.by_type("IfcRelAssignsToGroup")
 
     def test_removing_orphaned_property_relationships(self):
-        system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=system, name="Foo_Bar")
+        group = ifcopenshell.api.run("group.add_group", self.file)
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=group, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
-        ifcopenshell.api.run("system.remove_system", self.file, system=system)
+        ifcopenshell.api.run("group.remove_group", self.file, group=group)
         assert not self.file.by_type("IfcRelDefinesByProperties")
         assert not self.file.by_type("IfcPropertySet")
         assert not self.file.by_type("IfcPropertySingleValue")

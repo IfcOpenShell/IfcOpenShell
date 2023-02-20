@@ -27,12 +27,20 @@ class Usecase:
         product, but also all of its relationships. It is always recommended to
         use this function to prevent orphaned data in your IFC model.
 
+        This is intended to be used for removing:
+
+        - IfcAnnotation
+        - IfcElement
+        - IfcElementType
+        - IfcSpatialElement
+        - IfcSpatialElementType
+
         For example, geometric representations are removed. Placement
         coordinates are also removed. Properties are removed. Material, type,
         containment, aggregation, and nesting relationships are removed (but
         naturally, the materials, types, containers, etc themselves remain).
 
-        :param product: The IfcProduct to remove.
+        :param product: The element to remove.
         :type product: ifcopenshell.entity_instance.entity_instance
         :return: None
         :rtype: None
@@ -119,4 +127,7 @@ class Usecase:
                     self.file.remove(inverse)
             elif inverse.is_a("IfcRelConnectsPathElements"):
                 self.file.remove(inverse)
+            elif inverse.is_a("IfcRelAssignsToGroup"):
+                if len(inverse.RelatedObjects) == 1:
+                    self.file.remove(inverse)
         self.file.remove(self.settings["product"])
