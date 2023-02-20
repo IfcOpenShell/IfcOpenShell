@@ -49,6 +49,8 @@ start = time.time()
 
 if args.reporter == "Console":
     engine = reporter.Console(specs, use_colour=not args.no_color)
+elif args.reporter == "Txt":
+    engine = reporter.Txt(specs)
 elif args.reporter == "Json":
     engine = reporter.Json(specs)
 elif args.reporter == "Html":

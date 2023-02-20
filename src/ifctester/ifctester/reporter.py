@@ -24,6 +24,7 @@ import datetime
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
+
 class Reporter:
     def __init__(self, ids):
         self.ids = ids
@@ -57,7 +58,7 @@ class Console(Reporter):
 
     def report(self):
         self.set_style("bold", "blue")
-        print(self.ids.info.get("title", "Untitled IDS"))
+        self.print(self.ids.info.get("title", "Untitled IDS"))
         for specification in self.ids.specifications:
             self.report_specification(specification)
         self.set_style("reset")
@@ -65,48 +66,48 @@ class Console(Reporter):
     def report_specification(self, specification):
         if specification.status is True:
             self.set_style("bold", "green")
-            print("[PASS] ", end="")
+            self.print("[PASS] ", end="")
         elif specification.status is False:
             self.set_style("bold", "red")
-            print("[FAIL] ", end="")
+            self.print("[FAIL] ", end="")
         elif specification.status is None:
             self.set_style("bold", "yellow")
-            print("[UNTESTED] ", end="")
+            self.print("[UNTESTED] ", end="")
 
         self.set_style("bold")
         total = len(specification.applicable_entities)
         total_successes = total - len(specification.failed_entities)
-        print(f"({total_successes}/{total}) ", end="")
+        self.print(f"({total_successes}/{total}) ", end="")
 
         if specification.minOccurs != 0:
-            print(f"*", end="")
+            self.print(f"*", end="")
 
-        print(specification.name)
+        self.print(specification.name)
 
         self.set_style("cyan")
-        print(" " * 4 + "Applies to:")
+        self.print(" " * 4 + "Applies to:")
         self.set_style("reset")
 
         for applicability in specification.applicability:
-            print(" " * 8 + applicability.to_string("applicability"))
+            self.print(" " * 8 + applicability.to_string("applicability"))
 
         if not total and specification.status is False:
             return
 
         self.set_style("cyan")
-        print(" " * 4 + "Requirements:")
+        self.print(" " * 4 + "Requirements:")
         self.set_style("reset")
 
         for requirement in specification.requirements:
             self.set_style("reset")
             self.set_style("red") if requirement.failed_entities else self.set_style("green")
-            print(" " * 8 + requirement.to_string("requirement"))
+            self.print(" " * 8 + requirement.to_string("requirement"))
             self.set_style("reset")
             for i, element in enumerate(requirement.failed_entities[0:10]):
-                print(" " * 12, end="")
+                self.print(" " * 12, end="")
                 self.report_reason(requirement.failed_reasons[i], element)
             if len(requirement.failed_entities) > 10:
-                print(" " * 12 + f"... {len(requirement.failed_entities)} in total ...")
+                self.print(" " * 12 + f"... {len(requirement.failed_entities)} in total ...")
         self.set_style("reset")
 
     def report_reason(self, reason, element):
@@ -116,15 +117,37 @@ class Console(Reporter):
                 self.set_style("purple")
             else:
                 self.set_style("reset")
-            print(substring, end="")
+            self.print(substring, end="")
             is_bold = not is_bold
         self.set_style("grey")
-        print(" - " + str(element))
+        self.print(" - " + str(element))
         self.set_style("reset")
 
     def set_style(self, *colours):
         if self.use_colour:
             sys.stdout.write("".join([self.colours[c] for c in colours]))
+
+    def print(self, txt, end=None):
+        if end is not None:
+            print(txt, end=end)
+        else:
+            print(txt)
+
+
+class Txt(Console):
+    def __init__(self, ids):
+        super().__init__(ids, use_colour=False)
+        self.text = ""
+
+    def print(self, txt, end=None):
+        self.text += txt + "\n" if end is None else txt
+
+    def to_string(self):
+        print(self.text)
+
+    def to_file(self, filepath):
+        with open(filepath, "w") as outfile:
+            return outfile.write(self.text)
 
 
 class Json(Reporter):
