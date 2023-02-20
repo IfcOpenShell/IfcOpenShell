@@ -242,7 +242,7 @@ class RemoveConstituent(bpy.types.Operator, tool.Ifc.Operator):
     constituent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(layer):
+        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.constituent)):
             if inverse.is_a("IfcMaterialConstituentSet") and len(inverse.MaterialConstituents) == 1:
                 return
         ifcopenshell.api.run(
@@ -277,7 +277,7 @@ class RemoveProfile(bpy.types.Operator, tool.Ifc.Operator):
     profile: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(layer):
+        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.profile)):
             if inverse.is_a("IfcMaterialProfileSet") and len(inverse.MaterialProfiles) == 1:
                 return
         ifcopenshell.api.run("material.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
@@ -335,7 +335,7 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
     layer: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(layer):
+        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.layer)):
             if inverse.is_a("IfcMaterialLayerSet") and len(inverse.MaterialLayers) == 1:
                 return
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=tool.Ifc.get().by_id(self.layer))
