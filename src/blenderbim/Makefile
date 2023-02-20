@@ -235,7 +235,16 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccityjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Provides express rule validation for ifcopenshell.validate
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/e5/6c/f3a15217ac72912c28c5d7a7a8e87ff6d6475c9530595ae9f0f8dedd8dd8/pytest-7.2.1.tar.gz
+	cd dist/working && tar -xzvf pytest*
+	cp -r dist/working/pytest-7.2.1/src/pytest dist/blenderbim/libs/site/packages/
+	cp -r dist/working/pytest-7.2.1/src/_pytest dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	# Provides Mustache templating in construction documentation
+	# TODO: remove this dependency, it seems overkill and we seem to get by with str replaces
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/3f/e7/8750ba6c6101d6aa5ceeb20c013adf2c6f3554a12c71d75654b468404bfa/pystache-0.6.0.tar.gz
 	cd dist/working && tar -xzvf pystache*
@@ -542,6 +551,7 @@ endif
 	rm -rf dist/working
 
 	# Required by IFCCOBie for XLSX support
+	# TODO: see if we can replace this with openpyxl which does both read/write
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/0c/bc/82d6783f83f65f56d8b77d052773c4a2f952fa86385f0cd54e1e006658d7/XlsxWriter-1.2.9.tar.gz
 	cd dist/working && tar -xzvf XlsxWriter*
