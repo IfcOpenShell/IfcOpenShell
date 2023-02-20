@@ -57,6 +57,8 @@ elif args.reporter == "Html":
     engine = reporter.Html(specs)
 elif args.reporter == "Ods":
     engine = reporter.Ods(specs)
+elif args.reporter == "Bcf":
+    engine = reporter.Bcf(specs)
 
 engine.report()
 
