@@ -37,7 +37,6 @@ from mathutils import Vector
 
 # TODO: move to some utils helpers/tool module
 def update_simple_openings(element, opening_width, opening_height):
-    element_type = None
     ifc_file = tool.Ifc.get()
     fillings = tool.Ifc.get_all_element_occurences(element)
 
