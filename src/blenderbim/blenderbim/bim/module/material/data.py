@@ -76,7 +76,6 @@ class MaterialsData:
         return [
             (str(p.id()), p.ProfileName or "Unnamed", "")
             for p in tool.Ifc.get().by_type("IfcProfileDef")
-            if p.ProfileName
         ]
 
 
