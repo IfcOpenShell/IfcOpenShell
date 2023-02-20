@@ -395,3 +395,16 @@ Scenario: Contract material category
     And I press "bim.expand_material_category(category='')"
     When I press "bim.contract_material_category(category='')"
     Then nothing happens
+
+Scenario: Enable Editing Material set Item
+    Given an empty IFC project
+    And I load the demo construction library
+    When I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    And the variable "column" is "{ifc}.by_type('IfcColumn')[0].id()"
+    And the object "IfcColumn/Column" is selected
+    And the variable "column_type" is "{ifc}.by_id({column}).IsTypedBy[0].RelatingType.id()"
+    And the variable "relating_material" is "{ifc}.by_id({column_type}).HasAssociations[0].RelatingMaterial.id()"
+    And the variable "material_profile" is "{ifc}.by_id({column_type}).HasAssociations[0].RelatingMaterial.MaterialProfiles[0].id()"
+    And I press "bim.enable_editing_assigned_material"
+    And I press "bim.enable_editing_material_set_item(material_set_item={material_profile})"
