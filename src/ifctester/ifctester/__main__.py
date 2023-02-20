@@ -55,6 +55,8 @@ elif args.reporter == "Json":
     engine = reporter.Json(specs)
 elif args.reporter == "Html":
     engine = reporter.Html(specs)
+elif args.reporter == "Ods":
+    engine = reporter.Ods(specs)
 
 engine.report()
 
