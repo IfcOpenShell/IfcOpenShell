@@ -176,12 +176,7 @@ class AuthoringData:
     def active_material_usage(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if element:
-            material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-            if material:
-                if material.is_a("IfcMaterialLayerSetUsage"):
-                    return f"LAYER{material.LayerSetDirection[-1]}"
-                elif material.is_a("IfcMaterialProfileSetUsage"):
-                    return "PROFILE"
+            return tool.Model.get_usage_type(element)
 
     @classmethod
     def ifc_classes(cls):

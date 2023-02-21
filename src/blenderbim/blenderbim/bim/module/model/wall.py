@@ -112,7 +112,7 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             if targets:
                 target = tool.Ifc.get_object(targets[0])
                 for element in elements:
-                    if element.is_a("IfcWall"):
+                    if tool.Model.get_usage_type(element) == "LAYER2":
                         joiner.join_Z(tool.Ifc.get_object(element), target)
             else:
                 for obj in selected_objs:
@@ -232,7 +232,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        wall_objs = []
+        layer2_objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -246,7 +246,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
             x, y, z = extrusion.ExtrudedDirection.DirectionRatios
             x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
             extrusion.Depth = self.depth * (1 / cos(x_angle))
-            if element.is_a("IfcWall"):
+            if tool.Model.get_usage_type(element) == "LAYER2":
                 for rel in element.ConnectedFrom:
                     if rel.is_a() == "IfcRelConnectsElements":
                         ifcopenshell.api.run(
@@ -255,9 +255,9 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
                             relating_element=rel.RelatingElement,
                             related_element=element,
                         )
-                wall_objs.append(obj)
-        if wall_objs:
-            DumbWallRecalculator().recalculate(wall_objs)
+                layer2_objs.append(obj)
+        if layer2_objs:
+            DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}
 
 
@@ -272,7 +272,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        wall_objs = []
+        layer2_objs = []
         other_objs = []
         x_angle = radians(self.x_angle)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -291,8 +291,8 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
             extrusion.Depth = perpendicular_depth * (1 / cos(x_angle))
             extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
-            if element.is_a("IfcWall"):
-                wall_objs.append(obj)
+            if tool.Model.get_usage_type(element) == "LAYER2":
+                layer2_objs.append(obj)
             else:
                 blenderbim.core.geometry.switch_representation(
                     tool.Ifc,
@@ -309,8 +309,8 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 new_matrix = euler.to_matrix().to_4x4()
                 new_matrix.col[3] = obj.matrix_world.col[3]
                 obj.matrix_world = new_matrix
-        if wall_objs:
-            DumbWallRecalculator().recalculate(wall_objs)
+        if layer2_objs:
+            DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}
 
 
@@ -464,7 +464,7 @@ class DumbWallRecalculator:
                 queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
         joiner = DumbWallJoiner()
         for element, wall in queue:
-            if element.is_a("IfcWall") and wall:
+            if tool.Model.get_usage_type(element) == "LAYER2" and wall:
                 joiner.recreate_wall(element, wall)
 
 
