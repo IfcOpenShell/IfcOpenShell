@@ -300,7 +300,7 @@ def update_window_modifier_bmesh(context):
     lining_to_panel_offset_x = props.lining_to_panel_offset_x * si_conversion
     lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion
     lining_thickness = props.lining_thickness * si_conversion
-    lining_offset = props.lining_offset
+    lining_offset = props.lining_offset * si_conversion
 
     mullion_thickness = props.mullion_thickness * si_conversion / 2
     first_mullion_offset = props.first_mullion_offset * si_conversion
