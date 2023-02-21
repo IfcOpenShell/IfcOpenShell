@@ -197,7 +197,7 @@ class DocExtractor:
             raise Exception(
                 f'Docs for IFC 2.3.0.1 expected to be in folder "{IFC2x3_DOCS_LOCATION.resolve()}\\"\n'
                 "For doc extraction please either setup docs as described above \n"
-                "or change IFC2x3_DOCS_LOCATION in doc.py accordingly. \n"
+                "or change IFC2x3_DOCS_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingSMART/IFC/tree/Ifc2.3.0.1"
             )
@@ -506,7 +506,7 @@ class DocExtractor:
             raise Exception(
                 f'Docs for Ifc4.0.2.1 expected to be in folder "{IFC4_DOCS_LOCATION.resolve()}\\"\n'
                 "For doc extraction please either setup docs as described above \n"
-                "or change IFC4_DOCS_LOCATION in doc.py accordingly."
+                "or change IFC4_DOCS_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingSMART/IFC/tree/Ifc4.0.2.1"
             )
@@ -845,7 +845,7 @@ class DocExtractor:
             raise Exception(
                 f'Specs development repository for Ifc4.3.0.1 expected to be in folder "{IFC4x3_DEV_LOCATION.resolve()}\\"\n'
                 "For doc extraction please either setup docs as described above \n"
-                "or change IFC4x3_DEV_LOCATION in doc.py accordingly."
+                "or change IFC4x3_DEV_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingSMART/IFC4.3.x-development"
             )
@@ -853,7 +853,7 @@ class DocExtractor:
             raise Exception(
                 f'Formal release for Ifc4.3.0.1 expected to be in folder "{IFC4x3_HTML_LOCATION.resolve()}\\"\n'
                 "For doc extraction please either setup docs as described above \n"
-                "or change IFC4x3_HTML_LOCATION in doc.py accordingly."
+                "or change IFC4x3_HTML_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingsmart/ifc4.3-html"
             )
@@ -932,7 +932,7 @@ class DocExtractor:
                             description = self.clean_description(parsed_predefined_types_data[v])
                         predefined_types[v] = description
                     continue
-                
+
                 # attributes
                 if attr_name not in parsed_attributes_data:
                     print(
