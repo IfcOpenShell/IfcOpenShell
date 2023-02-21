@@ -58,6 +58,7 @@ class Usecase:
         if self.settings["product"].is_a("IfcTypeObject"):
             material = ifcopenshell.util.element.get_material(self.settings["product"])
             if material.is_a() in ["IfcMaterialLayerSet", "IfcMaterialProfileSet"]:
+                # Remove set usages
                 for inverse in self.file.get_inverse(material):
                     if self.file.schema == "IFC2X3":
                         if not inverse.is_a("IfcMaterialLayerSetUsage"):
@@ -76,7 +77,8 @@ class Usecase:
             if rel.is_a("IfcRelAssociatesMaterial"):
                 if rel.RelatingMaterial.is_a() in ["IfcMaterialLayerSetUsage", "IfcMaterialProfileSetUsage"]:
                     # Warning: this may leave the model in a non-compliant state.
-                    self.file.remove(rel.RelatingMaterial)
+                    if self.file.get_total_inverses(rel.RelatingMaterial) == 1 and len(rel.RelatedObjects) == 1:
+                        self.file.remove(rel.RelatingMaterial)
                 if len(rel.RelatedObjects) == 1:
                     self.file.remove(rel)
                     continue
