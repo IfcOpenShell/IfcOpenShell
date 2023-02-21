@@ -42,12 +42,11 @@ class BimTool(WorkSpaceTool):
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
         # ("bim.sync_modeling", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
-
         # Replicate default blender selection behaviour with click and box selection
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
         # https://github.com/blender/blender/blob/master/release/scripts/presets/keyconfig/keymap_data/blender_default.py
         # the code is the data from evaluating km_3d_view_tool_select() and km_3d_view_tool_select_box()
-        # 
+        #
         # You can run the snippet below in Blender console
         # to regenerate those keybindings in case of errors in the future
         # ```
@@ -79,7 +78,6 @@ class BimTool(WorkSpaceTool):
         # left-click selection keymap
         ("view3d.select", {"type": "LEFTMOUSE", "value": "PRESS"}, {"properties": [("deselect_all", True)]}),
         ("view3d.select", {"type": "LEFTMOUSE", "value": "PRESS", "shift": True}, {"properties": [("toggle", True)]}),
-
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
@@ -421,20 +419,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(context.active_object)
         if element:
             self.active_class = element.is_a()
-
-            material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-            if material:
-                if material.is_a("IfcMaterialLayerSetUsage"):
-                    self.active_material_usage = f"LAYER{material.LayerSetDirection[-1]}"
-                elif material.is_a("IfcMaterialProfileSetUsage"):
-                    self.active_material_usage = "PROFILE"
+            self.active_material_usage = tool.Model.get_usage_type(element)
 
         try:
             self.has_ifc_class = bool(self.props.ifc_class)
         except:
             pass
         getattr(self, f"hotkey_{self.hotkey}")()
-        return {"FINISHED"}
 
     def invoke(self, context, event):
         # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
@@ -458,9 +449,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_constr_type_instance()
 
     def hotkey_S_Q(self):
+        if not bpy.context.selected_objects:
+            return
         bpy.ops.bim.calculate_all_quantities()
 
     def hotkey_S_C(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.align_wall(align_type="CENTERLINE")
         else:
@@ -480,12 +475,16 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.extend_profile(join_type="T")
 
     def hotkey_S_F(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.flip_wall()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.flip_fill()
 
     def hotkey_S_G(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.recalculate_wall()
         elif self.active_material_usage == "PROFILE":
@@ -494,10 +493,14 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.recalculate_fill()
 
     def hotkey_S_M(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.merge_wall()
 
     def hotkey_S_R(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.rotate_90(axis="Z")
         elif self.active_class in ("IfcColumn", "IfcColumnStandardCase"):
@@ -506,22 +509,30 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.rotate_90(axis="Y")
 
     def hotkey_S_K(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.split_wall()
 
     def hotkey_S_T(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.join_wall(join_type="L")
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="L")
 
     def hotkey_S_V(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.align_wall(align_type="INTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="POSITIVE")
 
     def hotkey_S_X(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             if bpy.ops.bim.align_wall.poll():
                 bpy.ops.bim.align_wall(align_type="EXTERIOR")
@@ -529,6 +540,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.align_product(align_type="NEGATIVE")
 
     def hotkey_S_Y(self):
+        if not bpy.context.selected_objects:
+            return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.join_wall(join_type="V")
         elif self.active_material_usage == "PROFILE":
@@ -545,9 +558,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.z = self.z
 
     def hotkey_A_D(self):
+        if not bpy.context.selected_objects:
+            return
         bpy.ops.bim.select_decomposition()
 
     def hotkey_A_O(self):
+        if not bpy.context.selected_objects:
+            return
         if AuthoringData.data["has_visible_openings"]:
             bpy.ops.bim.edit_openings()
         else:
