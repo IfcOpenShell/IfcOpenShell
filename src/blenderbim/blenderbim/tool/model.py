@@ -331,6 +331,15 @@ class Model(blenderbim.core.tool.Model):
         return booleans
 
     @classmethod
+    def get_usage_type(cls, element):
+        material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+        if material:
+            if material.is_a("IfcMaterialLayerSetUsage"):
+                return f"LAYER{material.LayerSetDirection[-1]}"
+            elif material.is_a("IfcMaterialProfileSetUsage"):
+                return "PROFILE"
+
+    @classmethod
     def get_wall_axis(cls, obj, layers=None):
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
