@@ -26,6 +26,7 @@ import ifcopenshell.api
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
+import blenderbim.bim.schema
 import blenderbim.tool as tool
 import blenderbim.core.project as core
 import blenderbim.core.context
@@ -54,6 +55,7 @@ class CreateProject(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMProjectProperties
         template = None if props.template_file == "0" else props.template_file
+        blenderbim.bim.schema.reload(props.export_schema)
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
 
     def rollback(self, data):
@@ -561,6 +563,7 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
+        blenderbim.bim.schema.reload(self.file.schema)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
