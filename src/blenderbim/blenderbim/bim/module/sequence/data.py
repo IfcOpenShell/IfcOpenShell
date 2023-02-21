@@ -74,7 +74,7 @@ class SequenceData:
     def load_work_plans(cls):
         cls.data["work_plans"] = {}
         for work_plan in tool.Ifc.get().by_type("IfcWorkPlan"):
-            data = {"Name": work_plan.Name}
+            data = {"Name": work_plan.Name or "Unnamed"}
             data["IsDecomposedBy"] = []
             for rel in work_plan.IsDecomposedBy:
                 data["IsDecomposedBy"].extend([o.id() for o in rel.RelatedObjects])
@@ -86,6 +86,8 @@ class SequenceData:
         cls.data["work_schedules"] = {}
         for work_schedule in tool.Ifc.get().by_type("IfcWorkSchedule"):
             data = work_schedule.get_info()
+            if not data["Name"]:
+                data["Name"] = "Unnamed"
             del data["OwnerHistory"]
             if data["Creators"]:
                 data["Creators"] = [p.id() for p in data["Creators"]]
@@ -109,6 +111,8 @@ class SequenceData:
         for work_calendar in tool.Ifc.get().by_type("IfcWorkCalendar"):
             data = work_calendar.get_info()
             del data["OwnerHistory"]
+            if not data["Name"]:
+                data["Name"] = "Unnamed"
             data["WorkingTimes"] = [t.id() for t in work_calendar.WorkingTimes or []]
             data["ExceptionTimes"] = [t.id() for t in work_calendar.ExceptionTimes or []]
             cls.data["work_calendars"][work_calendar.id()] = data
