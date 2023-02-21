@@ -25,7 +25,9 @@ class TestUnassignMaterial(test.bootstrap.IFC4):
     def test_unassign_single_material(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterial", material=material)
+        ifcopenshell.api.run(
+            "material.assign_material", self.file, product=element, type="IfcMaterial", material=material
+        )
         ifcopenshell.api.run("material.unassign_material", self.file, product=element)
         assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 0
         assert len(self.file.by_type("IfcWall")) == 1
@@ -35,8 +37,12 @@ class TestUnassignMaterial(test.bootstrap.IFC4):
         element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
-        ifcopenshell.api.run("material.assign_material", self.file, product=element1, type="IfcMaterial", material=material)
-        ifcopenshell.api.run("material.assign_material", self.file, product=element2, type="IfcMaterial", material=material)
+        ifcopenshell.api.run(
+            "material.assign_material", self.file, product=element1, type="IfcMaterial", material=material
+        )
+        ifcopenshell.api.run(
+            "material.assign_material", self.file, product=element2, type="IfcMaterial", material=material
+        )
         ifcopenshell.api.run("material.unassign_material", self.file, product=element2)
         assert element1.HasAssociations
         assert not element2.HasAssociations
@@ -67,6 +73,34 @@ class TestUnassignMaterial(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcWall")) == 1
         assert len(self.file.by_type("IfcMaterialLayerSet")) == 1
         assert len(self.file.by_type("IfcMaterialLayerSetUsage")) == 0
+
+    def test_unassign_material_layer_set_usage_from_element_with_multiple_invalid_usages(self):
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialLayerSet")
+        rel = ifcopenshell.api.run(
+            "material.assign_material", self.file, product=element, type="IfcMaterialLayerSetUsage"
+        )
+
+        # In some invalid IFCs from Revit, they reuse usages. Let's recreate this invalid scenario
+        rel.RelatedObjects = list(rel.RelatedObjects) + [element2]
+
+        ifcopenshell.api.run("material.unassign_material", self.file, product=element)
+
+        assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 2
+        for rel in self.file.by_type("IfcRelAssociatesMaterial"):
+            assert rel.RelatingMaterial
+        assert element_type.HasAssociations
+        assert len(self.file.by_type("IfcWallType")) == 1
+        assert len(self.file.by_type("IfcWall")) == 2
+        assert len(self.file.by_type("IfcMaterialLayerSet")) == 1
+        assert len(self.file.by_type("IfcMaterialLayerSetUsage")) == 1
+        assert ifcopenshell.util.element.get_material(element, should_inherit=False) is None
+        assert ifcopenshell.util.element.get_material(element2, should_inherit=False).is_a("IfcMaterialLayerSetUsage")
 
     def test_unassign_material_profile_set_from_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
@@ -104,7 +138,9 @@ class TestUnassignMaterial(test.bootstrap.IFC4):
     def test_unassign_element_material_list(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialList", material=material)
+        ifcopenshell.api.run(
+            "material.assign_material", self.file, product=element, type="IfcMaterialList", material=material
+        )
         ifcopenshell.api.run("material.unassign_material", self.file, product=element)
         assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 0
         assert len(self.file.by_type("IfcMaterialList")) == 1
