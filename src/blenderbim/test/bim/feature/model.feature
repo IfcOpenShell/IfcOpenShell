@@ -467,3 +467,30 @@ Scenario: Regenerate a beam - after doing nothing interesting
     Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,3"
     And the object "IfcBeam/Beam" bottom left corner is at "0,-0.05,-0.1"
     And the object "IfcBeam/Beam" top right corner is at "3,0.05,0.1"
+
+Scenario: Undo test - create a wall and couple windows and undo the last window
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWindowType"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And I prepare to undo
+    And the object "IfcWall/Wall" is selected
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWindowType"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And I undo
+    Then nothing happens
+
+Scenario: Undo test - create a wall with window opening, flip it and undo
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWindowType"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcWall/Wall" is selected
+    And I prepare to undo
+    And I press "bim.hotkey(hotkey='S_F')"
+    And I undo
+    Then nothing happens
