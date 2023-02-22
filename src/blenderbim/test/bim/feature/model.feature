@@ -267,3 +267,203 @@ Scenario: Regenerate a wall - after doing nothing interesting
     Then the object "IfcWall/Wall" is an "IfcWall"
     And the object "IfcWall/Wall" dimensions are "1,0.1,3"
     And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
+
+Scenario: Add a slab
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    When I press "bim.hotkey(hotkey='S_A')"
+    Then the object "IfcSlab/Slab" is an "IfcSlab"
+    And the object "IfcSlab/Slab" dimensions are "1,1,0.2"
+    And the object "IfcSlab/Slab" bottom left corner is at "0,0,-0.2"
+    And the object "IfcSlab/Slab" top right corner is at "1,1,0"
+
+Scenario: Enable editing a slab profile
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcSlab/Slab" is selected
+    When I press "bim.hotkey(hotkey='S_E')"
+    Then the object "IfcSlab/Slab" dimensions are "1,1,0"
+    And the object "IfcSlab/Slab" bottom left corner is at "0,0,-0.2"
+    And the object "IfcSlab/Slab" top right corner is at "1,1,-0.2"
+
+Scenario: Disable editing a slab profile
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcSlab/Slab" is selected
+    And I press "bim.hotkey(hotkey='S_E')"
+    When I press "bim.disable_editing_extrusion_profile"
+    Then the object "IfcSlab/Slab" dimensions are "1,1,0.2"
+    And the object "IfcSlab/Slab" bottom left corner is at "0,0,-0.2"
+    And the object "IfcSlab/Slab" top right corner is at "1,1,0"
+
+Scenario: Edit a slab profile
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcSlab/Slab" is selected
+    And I press "bim.hotkey(hotkey='S_E')"
+    When I press "bim.edit_extrusion_profile"
+    Then the object "IfcSlab/Slab" dimensions are "1,1,0.2"
+    And the object "IfcSlab/Slab" bottom left corner is at "0,0,-0.2"
+    And the object "IfcSlab/Slab" top right corner is at "1,1,0"
+
+Scenario: Add a beam
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    When I press "bim.hotkey(hotkey='S_A')"
+    Then the object "IfcBeam/Beam" is an "IfcBeam"
+    And the object "IfcBeam/Beam" dimensions are "0.1,0.2,3"
+    And the object "IfcBeam/Beam" bottom left corner is at "0,-0.05,-0.1"
+    And the object "IfcBeam/Beam" top right corner is at "3,0.05,0.1"
+
+Scenario: Extend a beam to the cursor
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcBeam/Beam" is selected
+    And the cursor is at "2,0,0"
+    When I press "bim.hotkey(hotkey='S_E')"
+    Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,2"
+    And the object "IfcBeam/Beam" bottom left corner is at "0,-0.05,-0.1"
+
+Scenario: Extend one beam to another
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the cursor is at "1,1,0"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcBeam/Beam.001" is selected
+    And I press "bim.hotkey(hotkey='S_R')"
+    And the object "IfcBeam/Beam.001" is selected
+    And additionally the object "IfcBeam/Beam" is selected
+    When I press "bim.hotkey(hotkey='S_E')"
+    Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,3"
+    And the object "IfcBeam/Beam" bottom left corner is at "0,-0.05,-0.1"
+    And the object "IfcBeam/Beam" top right corner is at "3,0.05,0.1"
+    And the object "IfcBeam/Beam.001" dimensions are "0.1,0.2,3.95"
+    And the object "IfcBeam/Beam.001" bottom left corner is at "1.05,0.05,-0.1"
+    And the object "IfcBeam/Beam.001" top right corner is at "0.95,4,0.1"
+
+Scenario: Join two beams with a butt joint - first beam has priority
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the cursor is at "1,1,0"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcBeam/Beam.001" is selected
+    And I press "bim.hotkey(hotkey='S_R')"
+    And the object "IfcBeam/Beam.001" is selected
+    And additionally the object "IfcBeam/Beam" is selected
+    When I press "bim.hotkey(hotkey='S_T')"
+    Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,1.95"
+    And the object "IfcBeam/Beam" bottom left corner is at "1.05,-0.05,-0.1"
+    And the object "IfcBeam/Beam" top right corner is at "3,0.05,0.1"
+    And the object "IfcBeam/Beam.001" dimensions are "0.1,0.2,4.05"
+    And the object "IfcBeam/Beam.001" bottom left corner is at "1.05,-0.05,-0.1"
+    And the object "IfcBeam/Beam.001" top right corner is at "0.95,4,0.1"
+
+Scenario: Join two beams with a butt joint - second beam has priority
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the cursor is at "1,1,0"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcBeam/Beam.001" is selected
+    And I press "bim.hotkey(hotkey='S_R')"
+    And the object "IfcBeam/Beam" is selected
+    And additionally the object "IfcBeam/Beam.001" is selected
+    When I press "bim.hotkey(hotkey='S_T')"
+    Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,2.05"
+    And the object "IfcBeam/Beam" bottom left corner is at "0.95,-0.05,-0.1"
+    And the object "IfcBeam/Beam" top right corner is at "3,0.05,0.1"
+    And the object "IfcBeam/Beam.001" dimensions are "0.1,0.2,3.95"
+    And the object "IfcBeam/Beam.001" bottom left corner is at "1.05,0.05,-0.1"
+    And the object "IfcBeam/Beam.001" top right corner is at "0.95,4,0.1"
+
+Scenario: Join two beams with a mitre joint
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the cursor is at "1,1,0"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcBeam/Beam.001" is selected
+    And I press "bim.hotkey(hotkey='S_R')"
+    And the object "IfcBeam/Beam" is selected
+    And additionally the object "IfcBeam/Beam.001" is selected
+    When I press "bim.hotkey(hotkey='S_Y')"
+    Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,2.05"
+    And the object "IfcBeam/Beam" bottom left corner is at "0.95,-0.05,-0.1"
+    And the object "IfcBeam/Beam" top right corner is at "3,0.05,0.1"
+    And the object "IfcBeam/Beam.001" dimensions are "0.1,0.2,4.05"
+    And the object "IfcBeam/Beam.001" bottom left corner is at "1.05,-0.05,-0.1"
+    And the object "IfcBeam/Beam.001" top right corner is at "0.95,4,0.1"
+
+Scenario: Change the length of a beam
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcBeam/Beam" is selected
+    And I set "scene.BIMModelProperties.extrusion_depth" to "2000.0"
+    When I press "bim.change_profile_depth(depth=2000.0)"
+    Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,2"
+
+Scenario: Rotate a beam by 90 degrees
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcBeam/Beam" is selected
+    When I press "bim.hotkey(hotkey='S_R')"
+    Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,3"
+    And the object "IfcBeam/Beam" bottom left corner is at "0.05,0,-0.1"
+    And the object "IfcBeam/Beam" top right corner is at "-0.05,3,0.1"
+
+Scenario: Regenerate a beam - after doing nothing interesting
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcBeamType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcBeamType') if e.Name == 'B1'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcBeam/Beam" is selected
+    When I press "bim.hotkey(hotkey='S_G')"
+    Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,3"
+    And the object "IfcBeam/Beam" bottom left corner is at "0,-0.05,-0.1"
+    And the object "IfcBeam/Beam" top right corner is at "3,0.05,0.1"
