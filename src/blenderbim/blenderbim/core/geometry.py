@@ -118,13 +118,12 @@ def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_fi
 
 
 def remove_representation(ifc, geometry, obj=None, representation=None):
-    """Function will produce orphan mesh data, see #2767.
-
-    Also should consider changing obj representation before using the function,
+    """Consider changing obj representation before using the function,
     otherwise it will replace object with empty."""
 
     element = ifc.get_entity(obj)
     type = geometry.get_element_type(element)
+    data = None
     if type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
@@ -144,6 +143,8 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
             geometry.replace_object_with_empty(obj)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
         ifc.run("geometry.remove_representation", representation=representation)
+    if data:
+        geometry.delete_data(data)
 
 
 def select_connection(geometry, connection=None):
