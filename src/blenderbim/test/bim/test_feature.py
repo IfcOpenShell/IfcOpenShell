@@ -693,6 +693,20 @@ def move_cursor_bottom_left():
     bpy.context.window.cursor_warp(10, 10)
 
 
+@given(parsers.parse("I prepare to undo"))
+@when(parsers.parse("I prepare to undo"))
+@then(parsers.parse("I prepare to undo"))
+def hit_undo():
+    bpy.ops.ed.undo_push(message="UNDO STEP")
+
+
+@given(parsers.parse("I undo"))
+@when(parsers.parse("I undo"))
+@then(parsers.parse("I undo"))
+def hit_undo():
+    bpy.ops.ed.undo_push(message="UNDO STEP")
+    bpy.ops.ed.undo()
+
 # These definitions are not to be used in tests but simply in debugging failing tests
 
 
