@@ -51,6 +51,7 @@ def replace_variables(value):
 def is_x(number, x):
     return abs(number - x) < 1e-6
 
+
 def vectors_are_equal(v1, v2):
     assert len(v1) == len(v2), f"Compared vectors are not equal length: {v1}, {v2}"
     return all(is_x(v1[i], v2[i]) for i in range(len(v1)))
@@ -78,6 +79,8 @@ def an_empty_ifc_project():
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    bpy.context.scene.unit_settings.system = "METRIC"
+    bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
     bpy.ops.bim.create_project()
 
 
@@ -198,7 +201,10 @@ def then_the_object_name_is_selected(name):
 @given(parsers.parse('the object "{name}" is moved to "{location}"'))
 @when(parsers.parse('the object "{name}" is moved to "{location}"'))
 def the_object_name_is_moved_to_location(name, location):
-    the_object_name_exists(name).location += Vector([float(co) for co in location.split(",")])
+    location = [float(co) for co in location.split(",")]
+    the_object_name_exists(name).matrix_world[0][3] = location[0]
+    the_object_name_exists(name).matrix_world[1][3] = location[1]
+    the_object_name_exists(name).matrix_world[2][3] = location[2]
 
 
 @given(parsers.parse('the object "{name}" is scaled to "{scale}"'))
@@ -610,12 +616,22 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
         assert is_x(number, expected_dimensions[i])
 
 
-@then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
+@then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
 def the_object_name_is_at_location(name, location):
-    obj_corner = Vector(the_object_name_exists(name).bound_box[0])
+    obj = the_object_name_exists(name)
+    obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has corner {obj_corner}"
+    ).length < 0.1, f"Object has top right corner {obj_corner}"
+
+
+@then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
+def the_object_name_is_at_location(name, location):
+    obj = the_object_name_exists(name)
+    obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
+    assert (
+        obj_corner - Vector([float(co) for co in location.split(",")])
+    ).length < 0.1, f"Object has bottom left corner {obj_corner}"
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
@@ -647,6 +663,11 @@ def i_add_a_construction_library():
     bpy.ops.bim.select_library_file(filepath=lib_path, append_all=True)
 
 
+@given(parsers.parse('the cursor is at "{location}"'))
+def the_cursor_is_at_location(location):
+    bpy.context.scene.cursor.location = [float(co) for co in location.split(",")]
+
+
 @given("I display the construction type browser")
 @when("I display the construction type browser")
 def i_display_the_construction_type_browser():
@@ -672,12 +693,15 @@ def move_cursor_bottom_left():
     bpy.context.window.cursor_warp(10, 10)
 
 
+# These definitions are not to be used in tests but simply in debugging failing tests
+
+
 @given(parsers.parse("I save sample test files"))
 @when(parsers.parse("I save sample test files"))
 @then(parsers.parse("I save sample test files"))
 def saving_sample_test_files(and_open_in_blender=None):
     filepath = f"{variables['cwd']}/test/files/sample_test_file"
-    blend_filepath = f'{filepath}.blend'
+    blend_filepath = f"{filepath}.blend"
     bpy.ops.export_ifc.bim(filepath=f"{filepath}.ifc", should_save_as=True)
     bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
 
@@ -690,11 +714,14 @@ def saving_sample_test_files_and_open_in_blender():
     saving_sample_test_files()
     filepath = f"{variables['cwd']}/test/files/sample_test_file.blend"
     import subprocess
-    subprocess.Popen([bpy.app.binary_path, f'{filepath}'])
+
+    subprocess.Popen([bpy.app.binary_path, f"{filepath}"])
 
 
 @given(parsers.parse("I run pdb"))
 @when(parsers.parse("I run pdb"))
 @then(parsers.parse("I run pdb"))
 def run_pdb():
-    import pdb; pdb.set_trace()
+    import pdb
+
+    pdb.set_trace()
