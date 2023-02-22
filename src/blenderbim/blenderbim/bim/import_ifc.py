@@ -985,9 +985,37 @@ class IfcImporter:
             self.convert_representation(representation)
 
         mesh = bpy.data.meshes.new("Native")
+
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        if props.has_blender_offset and self.is_point_far_away(self.mesh_data["co"][0:3], is_meters=False):
+            offset_point = np.linalg.inv(mat) @ np.array(
+                (
+                    float(props.blender_eastings),
+                    float(props.blender_northings),
+                    float(props.blender_orthogonal_height),
+                    0.0,
+                )
+            )
+            verts = [None] * len(self.mesh_data["co"])
+            for i in range(0, len(self.mesh_data["co"]), 3):
+                verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
+                        self.mesh_data["co"][i] * self.unit_scale,
+                        self.mesh_data["co"][i + 1] * self.unit_scale,
+                        self.mesh_data["co"][i + 2] * self.unit_scale,
+                        offset_point[0] * self.unit_scale,
+                        offset_point[1] * self.unit_scale,
+                        offset_point[2] * self.unit_scale,
+                        float(props.blender_x_axis_abscissa),
+                        float(props.blender_x_axis_ordinate),
+                    )
+            mesh["has_cartesian_point_offset"] = True
+        else:
+            verts = [c * self.unit_scale for c in self.mesh_data["co"]]
+            mesh["has_cartesian_point_offset"] = False
+
         mesh.vertices.add(self.mesh_data["total_verts"])
-        mesh.vertices.foreach_set("co", [c * self.unit_scale for c in self.mesh_data["co"]])
-        # mesh.vertices.foreach_set("co", self.mesh_data["co"])
+        mesh.vertices.foreach_set("co", verts)
         mesh.loops.add(len(self.mesh_data["vertex_index"]))
         mesh.loops.foreach_set("vertex_index", self.mesh_data["vertex_index"])
         mesh.polygons.add(self.mesh_data["total_polygons"])
