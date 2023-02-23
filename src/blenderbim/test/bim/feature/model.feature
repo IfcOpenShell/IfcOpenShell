@@ -494,3 +494,23 @@ Scenario: Undo test - create a wall with window opening, flip it and undo
     And I press "bim.hotkey(hotkey='S_F')"
     And I undo
     Then nothing happens
+
+Scenario: Create window type based on window modifier, add an occurence of it and edit it
+    Given an empty IFC project
+    And I set "scene.BIMModelProperties.type_class" to "IfcWindowType"
+    And I set "scene.BIMModelProperties.type_predefined_type" to "WINDOW"
+    And I set "scene.BIMModelProperties.type_template" to "WINDOW"
+    And I press "bim.add_type()"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And I press "bim.enable_editing_window()"
+    And I press "bim.finish_editing_window()"
+
+Scenario: Create door type based on door modifier, add an occurence of it and edit it
+    Given an empty IFC project
+    And I set "scene.BIMModelProperties.type_class" to "IfcDoorType"
+    And I set "scene.BIMModelProperties.type_predefined_type" to "DOOR"
+    And I set "scene.BIMModelProperties.type_template" to "DOOR"
+    And I press "bim.add_type()"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And I press "bim.enable_editing_door()"
+    And I press "bim.finish_editing_door()"
