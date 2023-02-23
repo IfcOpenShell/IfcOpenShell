@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import uuid
 import ntpath
 import pystache
 import urllib.parse
@@ -182,6 +183,9 @@ class SheetBuilder:
         tree = ET.parse(sheet_path)
         root = tree.getroot()
 
+        self.defs = ET.Element("defs")
+        root.append(self.defs)
+
         self.build_titleblock(root, sheet)
         self.build_drawings(root, sheet)
         self.build_schedules(root)
@@ -271,6 +275,20 @@ class SheetBuilder:
         group.attrib["transform"] = "translate({},{})".format(
             self.convert_to_mm(image.attrib.get("x")), self.convert_to_mm(image.attrib.get("y"))
         )
+
+        # Convert viewBox into a clip path
+        clip_id = str(uuid.uuid4())
+        group.attrib["clip-path"] = f"url(#{clip_id})"
+        clip_path = ET.Element("clipPath")
+        clip_path.attrib["id"] = clip_id
+        rect = ET.Element("rect")
+        rect.attrib["x"] = "0"
+        rect.attrib["y"] = "0"
+        rect.attrib["width"] = str(self.convert_to_mm(image.attrib.get("width")))
+        rect.attrib["height"] = str(self.convert_to_mm(image.attrib.get("height")))
+        clip_path.append(rect)
+        self.defs.append(clip_path)
+
         svg_path = self.get_href(image)
         with open(os.path.join(self.data_dir, "sheets", svg_path), "r") as template:
             embedded = ET.fromstring(pystache.render(template.read(), data))
