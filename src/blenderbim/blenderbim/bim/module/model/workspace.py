@@ -464,14 +464,44 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_E(self):
         if not bpy.context.selected_objects:
             return
+
+        selected_usages = {}
+        for obj in bpy.context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                obj.select_set(False)
+                continue
+            usage = tool.Model.get_usage_type(element)
+            if not usage:
+                obj.select_set(False)
+                continue
+            selected_usages.setdefault(usage, []).append(obj)
+
+        if len(bpy.context.selected_objects) == 1:
+            if self.active_material_usage == "LAYER3":
+                # Edit LAYER2 profile
+                if bpy.context.active_object and bpy.context.active_object.mode == "OBJECT":
+                    bpy.ops.bim.enable_editing_extrusion_profile()
+            elif self.active_material_usage == "LAYER2":
+                # Extend LAYER2 to cursor
+                bpy.ops.bim.join_wall(join_type="T")
+            elif self.active_material_usage == "PROFILE":
+                # Extend PROFILE to cursor
+                bpy.ops.bim.extend_profile(join_type="T")
+        elif self.active_material_usage == "LAYER2" and selected_usages.get("PROFILE", []):
+            # Extend PROFILEs to LAYER2
+            [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
+            [o.select_set(False) for o in selected_usages.get("LAYER2", []) if o != bpy.context.active_object]
+            bpy.ops.bim.extend_profile(join_type="T")
         elif self.active_material_usage == "LAYER2":
+            # Extend LAYER2s to LAYER2
+            [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
+            [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
             bpy.ops.bim.join_wall(join_type="T")
-        elif self.active_material_usage == "LAYER3":
-            if not bpy.context.active_object:
-                pass
-            elif bpy.context.active_object.mode == "OBJECT":
-                bpy.ops.bim.enable_editing_extrusion_profile()
         elif self.active_material_usage == "PROFILE":
+            # Extend PROFILEs to PROFILE
+            [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
+            [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
 
     def hotkey_S_F(self):
