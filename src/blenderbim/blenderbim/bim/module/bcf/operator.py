@@ -931,7 +931,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         # Operators with context overrides are used because they are
         # significantly faster than looping through all objects
 
-        exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions}
+        exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions or []}
 
         if viewpoint.visualization_info.components.visibility.default_visibility:
             old = context.area.type
@@ -979,11 +979,12 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         context.area.type = old
 
     def set_openings_visibility(self, is_visible, context):
-        for collection in self.get_opening_collections(context):
-            collection.hide_viewport = not is_visible
+        pass # We no longer have an openings collection
 
     def set_selection(self, viewpoint):
-        selected_global_ids = [s.ifc_guid for s in viewpoint.visualization_info.components.selection]
+        if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.selection:
+            return
+        selected_global_ids = [s.ifc_guid for s in viewpoint.visualization_info.components.selection.component or []]
         bpy.ops.object.select_all(action="DESELECT")
         for global_id in selected_global_ids:
             obj = IfcStore.get_element(global_id)
@@ -992,21 +993,13 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
     def set_colours(self, viewpoint):
         global_id_colours = {}
-        for coloring in viewpoint.visualization_info.components.coloring:
+        for coloring in viewpoint.visualization_info.components.coloring or []:
             for component in coloring.components:
                 global_id_colours.setdefault(component.ifc_guid, coloring.color)
         for global_id, color in global_id_colours.items():
             obj = IfcStore.get_element(global_id)
             if obj:
                 obj.color = self.hex_to_rgb(color)
-
-    def get_opening_collections(self, context):
-        collections = []
-        for collection in context.view_layer.layer_collection.children:
-            opening_collection = collection.children.get("IfcOpeningElements")
-            if opening_collection:
-                collections.append(opening_collection)
-        return collections
 
     def draw_lines(self, viewpoint, context):
         gp = bpy.data.grease_pencils.new("BCF")
