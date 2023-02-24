@@ -1167,10 +1167,13 @@ class DumbWallJoiner:
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
             )
 
-        if tool.Ifc.is_moved(obj):
+        wall_moved = tool.Ifc.is_moved(obj)
+        if wall_moved:
             # Openings should move with the host overall ...
             # ... except their position should stay the same along the local X axis of the wall
-            for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+            for opening in [
+                r.RelatedOpeningElement for r in element.HasOpenings if not r.RelatedOpeningElement.HasFillings
+            ]:
                 percent = tool.Cad.edge_percent(
                     self.body[0], (previous_origin, (previous_matrix @ Vector((1, 0, 0))).to_2d())
                 )
@@ -1183,7 +1186,20 @@ class DumbWallJoiner:
                 else:
                     coordinates[0] -= change_in_x
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
+
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+        # If opening has filling then stick to the filling's position
+        # We're applying new openings position only after wall position is applied
+        for opening in [r.RelatedOpeningElement for r in element.HasOpenings if r.RelatedOpeningElement.HasFillings]:
+            filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
+            filling_moved = tool.Ifc.is_moved(filling_obj)
+            if filling_moved:
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
+            if filling_moved or wall_moved:
+                ifcopenshell.api.run(
+                    "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
+                )
 
         blenderbim.core.geometry.switch_representation(
             tool.Ifc,
