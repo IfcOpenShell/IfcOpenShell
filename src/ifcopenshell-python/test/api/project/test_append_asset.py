@@ -62,6 +62,57 @@ class TestAppendAsset(test.bootstrap.IFC4):
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert self.file.by_type("IfcWallType")[0].HasAssociations[0].RelatingMaterial.Name == "Material"
 
+    def test_append_two_type_products_sharing_the_same_material_with_properties(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element1 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        element2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+
+        pset = ifcopenshell.api.run("pset.add_pset", library, product=material, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", library, pset=pset, properties={"Foo": "Bar"})
+
+        ifcopenshell.api.run("material.assign_material", library, product=element1, material=material)
+        ifcopenshell.api.run("material.assign_material", library, product=element2, material=material)
+        new1 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element1)
+        new2 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element2)
+
+        assert len(self.file.by_type("IfcMaterialProperties")) == 1
+        material = self.file.by_type("IfcMaterial")[0]
+        assert ifcopenshell.util.element.get_material(new1) == material
+        assert ifcopenshell.util.element.get_material(new2) == material
+        assert ifcopenshell.util.element.get_psets(material)["Foo_Bar"]["Foo"] == "Bar"
+
+    def test_append_two_type_products_sharing_the_same_material_indirectly_via_a_material_set(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element1 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        element2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        pset = ifcopenshell.api.run("pset.add_pset", library, product=material, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", library, pset=pset, properties={"Foo": "Bar"})
+
+        layer_set1 = ifcopenshell.api.run("material.add_material_set", library, set_type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set1, material=material)
+        ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set1, material=material)
+
+        layer_set2 = ifcopenshell.api.run("material.add_material_set", library, set_type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set2, material=material)
+        ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set2, material=material)
+
+        ifcopenshell.api.run("material.assign_material", library, product=element1, material=layer_set1)
+        ifcopenshell.api.run("material.assign_material", library, product=element2, material=layer_set2)
+
+        new1 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element1)
+        new2 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element2)
+
+        assert len(self.file.by_type("IfcMaterialProperties")) == 1
+        material = self.file.by_type("IfcMaterial")[0]
+        assert ifcopenshell.util.element.get_material(new1).MaterialLayers[0].Material == material
+        assert ifcopenshell.util.element.get_material(new1).MaterialLayers[1].Material == material
+        assert ifcopenshell.util.element.get_material(new2).MaterialLayers[0].Material == material
+        assert ifcopenshell.util.element.get_material(new2).MaterialLayers[1].Material == material
+        assert ifcopenshell.util.element.get_psets(material)["Foo_Bar"]["Foo"] == "Bar"
+
     def test_append_a_type_product_with_its_styles(self):
         library = ifcopenshell.api.run("project.create_file")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
