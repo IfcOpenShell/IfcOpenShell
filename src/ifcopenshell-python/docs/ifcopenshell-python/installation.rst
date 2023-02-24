@@ -8,10 +8,14 @@ There are different methods of installation, depending on your situation.
 3. **Conda** is recommended for developers using Anaconda.
 4. **Docker** is recommended for developers using Docker.
 5. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
-6. **Compiling from source** is recommended for developers actively working with the C++ core.
+6. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
+7. **Compiling from source** is recommended for developers actively working with the C++ core.
 
 Pre-built packages
 ------------------
+
+Pre-built packages are prepared sporadically depending on whether there are
+changes in the IfcOpenShell C++ core.
 
 1. Choose which version to download based on your operating system, Python
    version, and computer architecture.
@@ -85,6 +89,12 @@ Pre-built packages
 PyPI
 ----
 
+PyPI releases are automatically performed once a month.
+
+Releases on PyPI may potentially ship slightly outdated precompiled binaires of
+the C++ core. This is because the binaries typically go through a period of
+manual testing prior in case of high-risk changes.
+
 .. code-block::
 
     pip install ifcopenshell
@@ -130,6 +140,8 @@ need to install Python first, and you also can compare your IfcOpenShell
 scripting to what you see with a visual model viewer, or use a graphical
 interface to access the IfcOpenShell utilities.
 
+The BlenderBIM Add-on is available either as a stable build or a daily build.
+
 1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
    installation documentation
    <https://blenderbim.org/docs/users/installation.html>`_.
@@ -168,6 +180,17 @@ and run your script using the **Text > Run Script** menu or by clicking on the
    interface. `Read more
    <https://blenderbim.org/docs/users/exploring_an_ifc_model.html>`_.
 
+From source with precompiled binaries
+-------------------------------------
+
+1. Clone or download the `IfcOpenShell repository
+   <https://github.com/ifcopenshell/ifcopenshell>`_.
+
+2. Place ``src/ifcopenshell-python/ifcopenshell/`` in your Python path.
+
+3. Download the relevant pre-built package, and copy over the two files with
+   ``ifcopenshell_wrapper`` in their filename to
+   ``src/ifcopenshell-python/ifcopenshell/``.
 
 Compiling from source
 ---------------------
