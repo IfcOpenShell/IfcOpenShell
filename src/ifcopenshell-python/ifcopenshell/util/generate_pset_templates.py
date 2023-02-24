@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2023 @Andrej730
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 from pathlib import Path
@@ -44,7 +62,7 @@ class PsetTemplatesGenerator:
             fi_zip.extractall(pset_data_location)
 
         pset_data_glob = f"{pset_data_location}/*.xml"
-        self.parse_psets_data("IFC4X3", pset_data_glob, str(IFC4x3_OUTPUT_PATH))
+        self.parse_psets_data("IFC4X3", pset_data_glob, "IFC4X3 Property Set Templates", str(IFC4x3_OUTPUT_PATH))
         shutil.rmtree(pset_data_location)
 
     def parse_ifc2x3_data(self):
@@ -66,14 +84,14 @@ class PsetTemplatesGenerator:
         pset_data_glob = f"{pset_data_location}/**/pset*.xml"
         # we're using IFC4X3 since IfcPropertySetTemplate and IfcRelDeclares
         # are not available in IFC2X3
-        self.parse_psets_data("IFC4X3", pset_data_glob, str(IFC2x3_OUTPUT_PATH))
+        self.parse_psets_data("IFC4X3", pset_data_glob, "IFC2X3 Property Set Templates", str(IFC2x3_OUTPUT_PATH))
         shutil.rmtree(pset_data_location)
 
     def ifc_entity(self, entity_name, **kwargs):
         entity = self.ifc_file.create_entity(entity_name, **kwargs)
         return entity
 
-    def parse_psets_data(self, schema_name, pset_data_glob, ifc_output_path):
+    def parse_psets_data(self, schema_name, pset_data_glob, project_name, ifc_output_path):
         schema_name = schema_name.upper()
         self.ifc_file = ifcopenshell.api.run("project.create_file", version=schema_name)
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
@@ -83,7 +101,7 @@ class PsetTemplatesGenerator:
         )
         self.ifc_unit_enum = schema.declaration_by_name("IfcUnitEnum").as_enumeration_type().enumeration_items()
 
-        self.ifc_entity("IfcProject", Name=f"{schema_name} Property Set Templates")
+        self.ifc_entity("IfcProject", Name=project_name)
         psets_list = []
         rel = self.ifc_entity("IfcRelDeclares", RelatedDefinitions=psets_list) if schema_name != "IFC2X3" else None
 
