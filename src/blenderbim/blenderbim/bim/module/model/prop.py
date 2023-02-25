@@ -264,6 +264,7 @@ class BIMStairProperties(PropertyGroup):
     stair_types = (
         ("CONCRETE", "Concrete", ""),
         ("WOOD/STEEL", "Wood / Steel", ""),
+        ("GENERIC", "Generic", ""),
     )
 
     stair_added_previously: bpy.props.BoolProperty(default=False)
@@ -284,7 +285,6 @@ class BIMStairProperties(PropertyGroup):
             "width": self.width,
             "height": self.height,
             "number_of_treads": self.number_of_treads,
-            "tread_depth": self.tread_depth,
             "tread_run": self.tread_run,
         }
 
@@ -294,11 +294,20 @@ class BIMStairProperties(PropertyGroup):
                     "base_slab_depth": self.base_slab_depth,
                     "top_slab_depth": self.top_slab_depth,
                     "has_top_nib": self.has_top_nib,
+                    "tread_depth": self.tread_depth,
                 }
             )
             return stair_kwargs
 
         elif self.stair_type == "WOOD/STEEL":
+            stair_kwargs.update(
+                {
+                    "tread_depth": self.tread_depth,
+                }
+            )
+            return stair_kwargs
+
+        elif self.stair_type == "GENERIC":
             return stair_kwargs
 
 
