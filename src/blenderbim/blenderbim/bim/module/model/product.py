@@ -147,12 +147,12 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         # set occurences properties for the types defined with modifiers
         if instance_class in ["IfcWindow", "IfcDoor"]:
-            pset_name = f'BBIM_{instance_class[3:]}'
+            pset_name = f"BBIM_{instance_class[3:]}"
             bbim_pset = ifcopenshell.util.element.get_psets(element).get(pset_name, None)
             if bbim_pset:
-                bbim_prop_data = json.loads(bbim_pset['Data'])
-                element.OverallWidth = bbim_prop_data['overall_width']
-                element.OverallHeight = bbim_prop_data['overall_height']
+                bbim_prop_data = json.loads(bbim_pset["Data"])
+                element.OverallWidth = bbim_prop_data["overall_width"]
+                element.OverallHeight = bbim_prop_data["overall_height"]
 
         if (
             building_obj
@@ -481,7 +481,7 @@ def generate_box(usecase_path, ifc_file, settings):
             "geometry.assign_representation",
             ifc_file,
             should_run_listeners=False,
-            **{"product": product, "representation": new_box}
+            **{"product": product, "representation": new_box},
         )
 
 
@@ -577,3 +577,109 @@ def ensure_material_unassigned(usecase_path, ifc_file, settings):
             obj.active_material_index = i - total_removed
             bpy.ops.object.material_slot_remove({"object": obj})
             total_removed += 1
+
+
+class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.generate_space"
+    bl_label = "Generate Space"
+    bl_options = {"REGISTER"}
+    page: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        # Note: this experimental operator relies on Shapely v2 (not v1.8 which
+        # is currently bundled). It only works based on a 2D plan only
+        # considering the standard layered walls (i.e. prismatic) in the
+        # currently active storey (though we can easily extend it to include
+        # other "bounding" elements). For now we generate rooms that exclude
+        # walls (i.e. not to wall midpoint or exterior / interior edge).
+
+        import bmesh
+        import shapely
+        from math import pi
+
+        collection = context.view_layer.active_layer_collection.collection
+        collection_obj = bpy.data.objects.get(collection.name)
+        if not collection_obj:
+            return
+        spatial_element = tool.Ifc.get_entity(collection_obj)
+        if not spatial_element:
+            return
+
+        boundary_elements = []
+        for subelement in ifcopenshell.util.element.get_decomposition(spatial_element):
+            if subelement.is_a("IfcWall") and tool.Model.get_usage_type(subelement) == "LAYER2":
+                boundary_elements.append(subelement)
+
+        boundary_lines = []
+        for element in boundary_elements:
+            obj = tool.Ifc.get_object(element)
+            if not obj:
+                continue
+            axis = self.get_wall_axis(obj)
+            for ypos in ["miny", "maxy"]:
+                start, end = axis[ypos]
+                offset = (end - start).normalized() * 0.3  # Offset wall lines by 300mm
+                boundary_lines.append(shapely.LineString([start - offset, end + offset]))
+
+        unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+        closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+
+        x, y = context.scene.cursor.location.xy
+
+        space_polygon = None
+        for polygon in closed_polygons.geoms:
+            if shapely.contains_xy(polygon, x, y):
+                space_polygon = polygon
+
+        if not space_polygon:
+            return
+
+        bm = bmesh.new()
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        new_verts = [bm.verts.new(v) for v in shapely.force_3d(space_polygon).exterior.coords[0:-1]]
+        [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+        bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
+
+        for interior in space_polygon.interiors:
+            new_verts = [bm.verts.new(v) for v in shapely.force_3d(interior).coords[0:-1]]
+            [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+            bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
+
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.triangle_fill(bm, edges=bm.edges)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
+
+        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
+        bmesh.ops.translate(bm, vec=[0.0, 0.0, 3.0], verts=extruded_verts)
+
+        mesh = bpy.data.meshes.new(name="Space")
+        bm.to_mesh(mesh)
+        bm.free()
+
+        obj = bpy.data.objects.new("Space", mesh)
+        bpy.context.scene.collection.objects.link(obj)
+
+    def get_wall_axis(self, obj):
+        x_values = [v[0] for v in obj.bound_box]
+        y_values = [v[1] for v in obj.bound_box]
+        min_x = min(x_values)
+        max_x = max(x_values)
+        min_y = min(y_values)
+        max_y = max(y_values)
+        return {
+            "miny": [
+                (obj.matrix_world @ Vector((min_x, min_y, 0.0))).to_2d(),
+                (obj.matrix_world @ Vector((max_x, min_y, 0.0))).to_2d(),
+            ],
+            "maxy": [
+                (obj.matrix_world @ Vector((min_x, max_y, 0.0))).to_2d(),
+                (obj.matrix_world @ Vector((max_x, max_y, 0.0))).to_2d(),
+            ],
+        }
