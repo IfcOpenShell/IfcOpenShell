@@ -25,9 +25,9 @@ import bmesh
 from bmesh.types import BMVert
 
 import ifcopenshell
+from ifcopenshell.util.shape_builder import V, ShapeBuilder
 import blenderbim
 import blenderbim.tool as tool
-from blenderbim.bim.module.model.prop import BIMStairProperties
 from blenderbim.bim.helper import convert_property_group_from_si
 
 from mathutils import Vector
@@ -88,8 +88,9 @@ def generate_stair_2d_profile(
     height,
     width,
     tread_run,
-    tread_depth,
     stair_type,
+    # WOOD/STEEL CONCRETE STAIR ARGUMENTS
+    tread_depth=None,
     # CONCRETE STAIR ARGUMENTS
     has_top_nib=None,
     top_slab_depth=None,
@@ -104,12 +105,16 @@ def generate_stair_2d_profile(
     length = tread_run * number_of_risers
 
     if stair_type == "WOOD/STEEL":
+        builder = ShapeBuilder(None)
+        tread_shape = builder.get_rectangle_coords(
+            size=V(tread_run, 0, tread_depth),
+            position=V(0, 0, -(tread_depth-tread_rise))
+        )
+        tread_offset = V(tread_run, 0, tread_rise)
+
         for i in range(number_of_risers):
-            v1 = Vector(((i + 1) * tread_run, 0, (i + 1) * tread_rise))
-            v0 = v1 - Vector((tread_run, 0, 0))
-            v2 = v1 - Vector((0, 0, tread_depth))
-            v3 = v0 - Vector((0, 0, tread_depth))
-            vertices.extend([v0, v1, v2, v3])
+            cur_trade_shape = [v + tread_offset * i for v in tread_shape]
+            vertices.extend(cur_trade_shape)
 
             cur_vertex = i * 4
             edges.extend([
@@ -118,9 +123,37 @@ def generate_stair_2d_profile(
                 (cur_vertex+2, cur_vertex+3),
                 (cur_vertex+3, cur_vertex),
             ])
-            faces.append(list(range(4 * i, 4 * i + 1)))
+            faces.append(list(range(cur_vertex, cur_vertex + 1)))
 
         return (vertices, edges, faces)
+
+    elif stair_type == "GENERIC":
+        vertices.append(Vector([0, 0, 0]))
+
+        tread_verts = [
+            Vector([0, 0, tread_rise]),
+            Vector([tread_run, 0, tread_rise])
+        ]
+        tread_offset = Vector([tread_run, 0, tread_rise])
+
+        for i in range(number_of_risers):
+            current_tread_verts = [v + tread_offset * i for v in tread_verts]
+            last_vert_i = len(vertices) - 1
+            edges.extend([
+                (last_vert_i, last_vert_i + 1),
+                (last_vert_i + 1, last_vert_i + 2)
+            ])
+            vertices.extend(current_tread_verts)
+
+        last_vert_i = len(vertices)
+        vertices.append(vertices[-1] * V(1,0,0))
+        edges.extend([
+            (last_vert_i - 1, last_vert_i),
+            (last_vert_i, 0)
+        ])
+
+        return (vertices, edges, faces)
+
     elif stair_type == "CONCRETE":
         for i in range(number_of_risers):
             vertices.extend([
