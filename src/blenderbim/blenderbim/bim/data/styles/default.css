@@ -49,6 +49,8 @@ text.header { /* 5mm */ font-size: 8.25px; }
 text.large { /* 3.5mm */ font-size: 5.78px; }
 text.regular { /* 2.5mm */ font-size: 4.13px; }
 text.small { /* 1.8mm */ font-size: 2.97px; }
+text.GRID { /* 5mm */ font-size: 8.25px; }
+text.DIMENSION { /* 5mm */ font-size: 8.25px; fill: red; }
 .material-blank { fill: white; }
 .material-diagonal1 { fill: url(#diagonal1); }
 .material-diagonal2 { fill: url(#diagonal2); }

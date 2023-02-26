@@ -207,7 +207,7 @@ class SvgWriter:
                 "alignment-baseline": "baseline",
                 "dominant-baseline": "baseline",
             }
-            self.svg.add(self.svg.text(f"RL +{rl}", insert=tuple(text_position), **text_style))
+            self.svg.add(self.svg.text(f"RL +{rl}", insert=tuple(text_position), class_="SECTIONLEVEL", **text_style))
             if tag:
                 self.svg.add(self.svg.text(tag, insert=(text_position[0], text_position[1] - 5), **text_style))
 
@@ -234,6 +234,7 @@ class SvgWriter:
                 self.svg.text(
                     "UP",
                     insert=tuple(text_position),
+                    class_="STAIR",
                     **{
                         "text-anchor": "middle",
                         "alignment-baseline": "middle",
@@ -266,6 +267,7 @@ class SvgWriter:
                 self.svg.text(
                     axis_tag,
                     insert=tuple(start * self.svg_scale),
+                    class_="GRID",
                     **{
                         "text-anchor": "middle",
                         "alignment-baseline": "middle",
@@ -277,6 +279,7 @@ class SvgWriter:
                 self.svg.text(
                     axis_tag,
                     insert=tuple(end * self.svg_scale),
+                    class_="GRID",
                     **{
                         "text-anchor": "middle",
                         "alignment-baseline": "middle",
@@ -419,8 +422,8 @@ class SvgWriter:
                 "alignment-baseline": "middle",
                 "dominant-baseline": "middle",
             }
-            self.svg.add(self.svg.text(reference_id, insert=(text_position[0], text_position[1] - 2.5), **text_style))
-            self.svg.add(self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), **text_style))
+            self.svg.add(self.svg.text(reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="SECTION", **text_style))
+            self.svg.add(self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="SECTION", **text_style))
 
     def draw_elevation_annotation(self, obj):
         x_offset = self.raw_width / 2
@@ -450,8 +453,8 @@ class SvgWriter:
             "alignment-baseline": "middle",
             "dominant-baseline": "middle",
         }
-        self.svg.add(self.svg.text(reference_id, insert=(text_position[0], text_position[1] - 2.5), **text_style))
-        self.svg.add(self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), **text_style))
+        self.svg.add(self.svg.text(reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="ELEVATION", **text_style))
+        self.svg.add(self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="ELEVATION", **text_style))
 
     def get_reference_and_sheet_id_from_annotation(self, element):
         reference_id = "-"
@@ -613,6 +616,7 @@ class SvgWriter:
                 self.svg.text(
                     "RL +{}".format(rl),
                     insert=tuple(text_position),
+                    class_="PLANLEVEL",
                     **{
                         "text-anchor": text_anchor,
                         "alignment-baseline": "baseline",
@@ -742,7 +746,7 @@ class SvgWriter:
         angle_text = abs(round(math.degrees(angle), 3))
         if is_reflex:
             angle_text = 360 - angle_text
-        self.svg.add(self.svg.text(f"{angle_text}deg", insert=tuple(text_position), **text_style))
+        self.svg.add(self.svg.text(f"{angle_text}deg", insert=tuple(text_position), class_="ANGLE", **text_style))
 
         # Draw SVG arc, see for details: http://xahlee.info/js/svg_circle_arc.html
         arc_proj_end_pts = [self.project_point_onto_camera(v) for v in arc_end_pts]
@@ -809,7 +813,7 @@ class SvgWriter:
             radius = helper.format_distance(radius)
             tag = element.Description or f"R{radius}"
 
-            self.svg.add(self.svg.text(tag, insert=tuple(text_position), **text_style))
+            self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
 
     def draw_diameter_annotations(self, obj):
         classes = self.get_attribute_classes(obj)
@@ -886,6 +890,7 @@ class SvgWriter:
             self.svg.text(
                 text,
                 insert=tuple(text_position),
+                class_="DIMENSION",
                 **{
                     "transform": "rotate({} {} {})".format(rotation, text_position.x, text_position.y),
                     "text-anchor": "middle",
