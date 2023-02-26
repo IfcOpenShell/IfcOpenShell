@@ -48,6 +48,7 @@ classes = (
     product.AlignProduct,
     product.ChangeTypePage,
     product.DisplayConstrTypes,
+    product.GenerateHippedRoof,
     product.GenerateSpace,
     product.LoadTypeThumbnails,
     product.ReinvokeOperator,
