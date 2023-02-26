@@ -136,7 +136,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
         old_to_new = {}
         containers = [tool.Ifc.get().by_id(c.ifc_definition_id) for c in sprops.containers if c.is_selected]
         for obj in context.selected_objects:
-            result_objs = core.copy_to_container(tool.Ifc, tool.Spatial, obj=obj, containers=containers)
+            result_objs = core.copy_to_container(tool.Ifc, tool.Collector, tool.Spatial, obj=obj, containers=containers)
             if result_objs:
                 old_to_new[tool.Ifc.get_entity(obj)] = result_objs
         # Recreate decompositions
