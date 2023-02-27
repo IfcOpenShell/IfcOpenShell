@@ -552,7 +552,7 @@ class DumbWallGenerator:
         nearest_degree = (math.pi / 180) * 5
         self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
-        data["obj"] = self.create_wall()
+        data["obj"] = self.create_wall(link_to_scene=True)
         return data
 
     def has_end_near_stroke(self, stroke, stroke2):
