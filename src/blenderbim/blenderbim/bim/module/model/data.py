@@ -68,7 +68,14 @@ class AuthoringData:
         declaration = tool.Ifc.schema().declaration_by_name("IfcElementType")
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
-        names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+
+        declaration = tool.Ifc.schema().declaration_by_name("IfcSpatialElementType")
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        names.extend([d.name() for d in declarations])
+
+        if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
+            names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+
         version = tool.Ifc.get_schema()
         return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 

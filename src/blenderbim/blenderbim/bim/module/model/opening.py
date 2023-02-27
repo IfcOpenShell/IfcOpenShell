@@ -148,7 +148,7 @@ class FilledOpeningGenerator:
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         filling = settings["related_object"]
-        if not filling.FillsVoids:
+        if not getattr(filling, "FillsVoids", None):
             return
 
         opening = filling.FillsVoids[0].RelatingOpeningElement
