@@ -547,7 +547,6 @@ class Root:
     def link_object_data(cls, source_obj, destination_obj): pass
     def recreate_decompositions(cls, relationships, old_to_new): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
-    def set_element_specific_display_settings(cls, obj, element): pass
     def set_object_name(cls, obj, element): pass
 
 
