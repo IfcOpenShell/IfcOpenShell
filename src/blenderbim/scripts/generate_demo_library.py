@@ -84,20 +84,21 @@ class LibraryGenerator:
         self.create_layer_type("IfcSlabType", "FLR150", 0.2)
         self.create_layer_type("IfcSlabType", "FLR250", 0.3)
 
-        profile = self.file.create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=0.5, YDim=0.6)
+        profile = self.file.create_entity("IfcRectangleProfileDef", ProfileName="500x600", ProfileType="AREA", XDim=0.5, YDim=0.6)
         self.create_profile_type("IfcColumnType", "C1", profile)
 
         profile = self.file.create_entity(
-            "IfcCircleHollowProfileDef", ProfileType="AREA", Radius=0.25, WallThickness=0.005
+            "IfcCircleHollowProfileDef", ProfileName="500.0x5.0 CHS", ProfileType="AREA", Radius=0.25, WallThickness=0.005
         )
         self.create_profile_type("IfcColumnType", "C2", profile)
 
         profile = self.file.create_entity(
             "IfcRectangleHollowProfileDef",
+            ProfileName="150x75x2.0 RHS",
             ProfileType="AREA",
             XDim=0.075,
             YDim=0.15,
-            WallThickness=0.005,
+            WallThickness=0.002,
             InnerFilletRadius=0.005,
             OuterFilletRadius=0.005,
         )
