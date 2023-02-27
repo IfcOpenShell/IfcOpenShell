@@ -335,14 +335,23 @@ class IfcImporter:
         if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
-            if self.file.schema in ("IFC2X3", "IFC4"):
+            if self.file.schema == "IFC2X3":
                 self.element_types = set(
                     self.file.by_type("IfcElementType")
                     + self.file.by_type("IfcDoorStyle")
                     + self.file.by_type("IfcWindowStyle")
                 )
+            elif self.file.schema == "IFC4":
+                self.element_types = set(
+                    self.file.by_type("IfcElementType")
+                    + self.file.by_type("IfcDoorStyle")
+                    + self.file.by_type("IfcWindowStyle")
+                    + self.file.by_type("IfcSpatialElementType")
+                )
             else:
-                self.element_types = set(self.file.by_type("IfcElementType"))
+                self.element_types = set(
+                    self.file.by_type("IfcElementType") + self.file.by_type("IfcSpatialElementType")
+                )
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
@@ -1000,15 +1009,15 @@ class IfcImporter:
             verts = [None] * len(self.mesh_data["co"])
             for i in range(0, len(self.mesh_data["co"]), 3):
                 verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
-                        self.mesh_data["co"][i] * self.unit_scale,
-                        self.mesh_data["co"][i + 1] * self.unit_scale,
-                        self.mesh_data["co"][i + 2] * self.unit_scale,
-                        offset_point[0] * self.unit_scale,
-                        offset_point[1] * self.unit_scale,
-                        offset_point[2] * self.unit_scale,
-                        float(props.blender_x_axis_abscissa),
-                        float(props.blender_x_axis_ordinate),
-                    )
+                    self.mesh_data["co"][i] * self.unit_scale,
+                    self.mesh_data["co"][i + 1] * self.unit_scale,
+                    self.mesh_data["co"][i + 2] * self.unit_scale,
+                    offset_point[0] * self.unit_scale,
+                    offset_point[1] * self.unit_scale,
+                    offset_point[2] * self.unit_scale,
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                )
             mesh["has_cartesian_point_offset"] = True
         else:
             verts = [c * self.unit_scale for c in self.mesh_data["co"]]
