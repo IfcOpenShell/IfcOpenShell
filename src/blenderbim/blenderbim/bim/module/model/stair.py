@@ -251,7 +251,7 @@ def update_stair_modifier(context):
     obj.data.update()
 
 
-def update_ifc_stair_props(obj, psets):
+def update_ifc_stair_props(obj):
     element = tool.Ifc.get_entity(obj)
     props = obj.BIMStairProperties
     ifc_file = tool.Ifc.get()
@@ -266,10 +266,8 @@ def update_ifc_stair_props(obj, psets):
         element.TreadLength = props.tread_depth
 
     # update pset with ifc properties
-    pset_common = psets.get("Pset_StairFlightCommon", None)
-    if pset_common:
-        pset_common = ifc_file.by_id(pset_common["id"])
-    else:
+    pset_common = tool.Pset.get_element_pset(element, "Pset_StairFlightCommon")
+    if not pset_common:
         pset_common = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="Pset_StairFlightCommon")
 
     ifcopenshell.api.run(
@@ -349,12 +347,8 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
             )
 
         stair_data = props.get_props_kwargs()
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets.get("BBIM_Stair", None)
-
-        if pset:
-            pset = ifc_file.by_id(pset["id"])
-        else:
+        pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
+        if not pset:
             pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="BBIM_Stair")
 
         ifcopenshell.api.run(
@@ -364,7 +358,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
             properties={"Data": json.dumps(stair_data)},
         )
         update_stair_modifier(context)
-        update_ifc_stair_props(obj, psets)
+        update_ifc_stair_props(obj)
 
 
 class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
@@ -375,8 +369,7 @@ class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        psets = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(psets["BBIM_Stair"]["Data"])
+        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Stair")["Data"])
         props = obj.BIMStairProperties
         # restore previous settings since editing was canceled
         for prop_name in data:
@@ -398,21 +391,17 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMStairProperties
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets["BBIM_Stair"]
         data = props.get_props_kwargs()
-
         props.is_editing = -1
-
         update_stair_modifier(context)
 
-        pset = tool.Ifc.get().by_id(pset["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         data = json.dumps(data)
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         # update IfcStairFlight properties
         element.PredefinedType = "STRAIGHT"
-        update_ifc_stair_props(obj, psets)
+        update_ifc_stair_props(obj)
         return {"FINISHED"}
 
 
@@ -425,8 +414,7 @@ class EnableEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMStairProperties
         element = tool.Ifc.get_entity(obj)
-        pset = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(pset["BBIM_Stair"]["Data"])
+        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Stair")["Data"])
         # required since we could load pset from .ifc and BIMStairProperties won't be set
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
@@ -452,8 +440,7 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         obj.BIMStairProperties.is_editing = -1
 
-        pset = ifcopenshell.util.element.get_psets(element)
-        pset = tool.Ifc.get().by_id(pset["BBIM_Stair"]["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
         props.stair_added_previously = True
 
