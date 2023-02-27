@@ -499,12 +499,9 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         door_data["lining_properties"] = lining_props
         door_data["panel_properties"] = panel_props
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets.get("BBIM_Door", None)
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
 
-        if pset:
-            pset = tool.Ifc.get().by_id(pset["id"])
-        else:
+        if not pset:
             pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Door")
 
         ifcopenshell.api.run(
@@ -525,8 +522,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        psets = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(psets["BBIM_Door"]["Data"])
+        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Door")["Data"])
         props = obj.BIMDoorProperties
         # restore previous settings since editing was canceled
         for prop_name in data:
@@ -557,8 +553,6 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets["BBIM_Door"]
         door_data = props.get_general_kwargs()
         lining_props = props.get_lining_kwargs()
         panel_props = props.get_panel_kwargs()
@@ -570,7 +564,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         update_door_modifier_representation(context)
 
-        pset = tool.Ifc.get().by_id(pset["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = json.dumps(door_data, default=list)
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": door_data})
         return {"FINISHED"}
@@ -585,8 +579,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMDoorProperties
         element = tool.Ifc.get_entity(obj)
-        pset = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(pset["BBIM_Door"]["Data"])
+        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Door")["Data"])
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
 
@@ -615,8 +608,7 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         obj.BIMDoorProperties.is_editing = -1
 
-        pset = ifcopenshell.util.element.get_psets(element)
-        pset = tool.Ifc.get().by_id(pset["BBIM_Door"]["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
         props.door_added_previously = True
 
