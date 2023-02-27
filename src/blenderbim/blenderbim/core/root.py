@@ -67,8 +67,6 @@ def assign_class(
             obj=obj, context=context, ifc_representation_class=ifc_representation_class, profile_set_usage=None
         )
 
-    root.set_element_specific_display_settings(obj, element)
-
     collector.sync(obj)
     collector.assign(obj)
     return element
