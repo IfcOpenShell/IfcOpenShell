@@ -31,7 +31,7 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
-from math import pi
+from math import pi, ceil
 from mathutils import Vector
 from mathutils import geometry
 from blenderbim.bim.ifc import IfcStore
@@ -363,22 +363,95 @@ class SvgWriter:
             self.draw_edge_annotation(obj, classes)
 
     def draw_edge_annotation(self, obj, classes):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
-        matrix_world = obj.matrix_world
-        for edge in obj.data.edges:
-            v0_global = matrix_world @ obj.data.vertices[edge.vertices[0]].co.xyz
-            v1_global = matrix_world @ obj.data.vertices[edge.vertices[1]].co.xyz
+        predefined_type = classes[2]
+
+        if predefined_type.endswith("-BATTING"):
+            x_offset = self.raw_width / 2
+            y_offset = self.raw_height / 2
+            matrix_world = obj.matrix_world
+
+            v0_global = matrix_world @ obj.data.vertices[0].co.xyz
+            v1_global = matrix_world @ obj.data.vertices[1].co.xyz
             v0 = self.project_point_onto_camera(v0_global)
             v1 = self.project_point_onto_camera(v1_global)
-            start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-            end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-            vector = end - start
-            line = self.svg.add(
-                self.svg.line(
-                    start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes)
-                )
+            start_svg = Vector(((x_offset + v0.x), (y_offset - v0.y))) * self.svg_scale
+            end_svg = Vector(((x_offset + v1.x), (y_offset - v1.y))) * self.svg_scale
+
+            element = tool.Ifc.get_entity(obj)
+            pset_data = tool.Pset.get_element_pset_data(element, "Pset_BBIM_Batting") or {}
+
+            # SVG uses mm as default unit
+            conversion_to_mm = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()) / 0.001
+            thickness = pset_data["Thickness"] * conversion_to_mm if "Thickness" in pset_data else 15.0
+            reverse_x = pset_data.get("Reverse pattern direction", False)
+
+            if reverse_x:
+                start_svg, end_svg = end_svg, start_svg
+
+            pattern_dir = (end_svg - start_svg).normalized()
+            pattern_length = (end_svg - start_svg).length
+            segment_width = thickness / 2.5
+
+            segments = ceil(pattern_length / segment_width)
+            end_marker_width = pattern_length - segment_width * (segments - 1)
+
+            points = [start_svg + pattern_dir * segment_width * i for i in range(segments)]
+            marker_id = f"batting-{element.GlobalId}"
+            marker_end_id = f"batting-end-{element.GlobalId}"
+            path_data = f"""M 0 {0.2*thickness}
+                A {0.5*segment_width} {0.2*thickness} 0 0 1 {segment_width} {0.2*thickness}
+                L {0.5*segment_width} {0.8*thickness}
+                M 0 {0.2*thickness}
+                L {0.5*segment_width} {0.8*thickness}
+                A {0.5*segment_width} {0.2*thickness} 0 0 0 {segment_width} {1.0*thickness}
+                M {0.5*segment_width} {0.8*thickness}
+                A {0.5*segment_width} {0.2*thickness} 0 0 1 0 {1.0*thickness}
+                """
+            path_data = " ".join(path_data.split())
+
+            svg_path = self.svg.path(style="fill: none; stroke:black; stroke-width:0.18", d=path_data)
+            if reverse_x:
+                svg_path.update({"transform": f"scale(-1,-1) translate(-{segment_width}, -{thickness})"})
+
+            marker = self.svg.marker(
+                markerUnits="userSpaceOnUse",
+                insert=(0, thickness / 2),
+                size=(segment_width, thickness),
+                orient="auto",
+                id=marker_id,
             )
+            marker.add(svg_path)
+            self.svg.add(marker)
+
+            # separate marker for the end of the pattern to truncate it more gracefully
+            marker_end = marker.copy()
+            marker_end.update({"markerWidth": end_marker_width, "id": marker_end_id})
+            self.svg.add(marker_end)
+
+            polyline_style = (
+                f"marker-start: url(#{marker_id}); "
+                f"marker-mid: url(#{marker_id}); stroke: none; "
+                f"marker-end: url(#{marker_end_id}); stroke: none; "
+            )
+            self.svg.add(self.svg.polyline(points=points, class_=" ".join(classes), style=polyline_style))
+
+        else:
+            x_offset = self.raw_width / 2
+            y_offset = self.raw_height / 2
+            matrix_world = obj.matrix_world
+            for edge in obj.data.edges:
+                v0_global = matrix_world @ obj.data.vertices[edge.vertices[0]].co.xyz
+                v1_global = matrix_world @ obj.data.vertices[edge.vertices[1]].co.xyz
+                v0 = self.project_point_onto_camera(v0_global)
+                v1 = self.project_point_onto_camera(v1_global)
+                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+                vector = end - start
+                line = self.svg.add(
+                    self.svg.line(
+                        start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes)
+                    )
+                )
 
     def draw_leader_annotation(self, obj):
         self.draw_line_annotation(obj)

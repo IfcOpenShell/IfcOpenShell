@@ -137,8 +137,7 @@ class CreateDrawing(bpy.types.Operator):
 
     Only available if :
     - IFC file is created
-    - Camera is in Orthographic mode
-    """
+    - Camera is in Orthographic mode"""
 
     bl_idname = "bim.create_drawing"
     bl_label = "Create Drawing"

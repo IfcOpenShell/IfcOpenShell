@@ -29,3 +29,8 @@ class Pset(blenderbim.core.tool.Pset):
         pset = psets.get(pset_name, None)
         if pset:
             return tool.Ifc.get().by_id(pset["id"])
+
+    @classmethod
+    def get_element_pset_data(cls, element, pset_name):
+        psets = ifcopenshell.util.element.get_psets(element)
+        return psets.get(pset_name, None)
