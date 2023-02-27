@@ -79,6 +79,11 @@ class IfcClassData:
         names = [d.name() for d in declarations]
         if ifc_product == "IfcElementType" and tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+        if ifc_product == "IfcElement":
+            names.remove("IfcOpeningElement")
+            if tool.Ifc.get_schema() == "IFC4":
+                # Yeah, weird isn't it.
+                names.remove("IfcOpeningStandardCase")
         version = tool.Ifc.get_schema()
         return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 
