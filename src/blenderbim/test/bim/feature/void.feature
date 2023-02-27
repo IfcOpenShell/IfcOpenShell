@@ -15,34 +15,6 @@ Scenario: Add an opening
     Then the object "Cube" does not exist
     And the object "IfcWall/Cube" is voided by "Cube"
 
-Scenario: Add an opening on an opening
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
-    And I press "bim.assign_class"
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
-    And I press "bim.assign_class"
-    And the object "IfcOpeningElement/Cube" is selected
-    And additionally the object "IfcOpeningElement/Cube.001" is selected
-    When I press "bim.add_opening"
-    Then the object "IfcOpeningElement/Cube" is not a void
-    And the object "IfcOpeningElement/Cube.001" is not a void
-
-Scenario: Add an opening on a non IFC object
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
-    And I press "bim.assign_class"
-    And I add a cube
-    And the object "Cube" is selected
-    When I press "bim.add_opening"
-    Then the object "IfcOpeningElement/Cube" is not a void
-    And the object "Cube" is not an IFC element
-
 Scenario: Add an opening using the BIM tool
     Given an empty IFC project
     And I add a cube

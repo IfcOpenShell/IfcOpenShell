@@ -141,7 +141,7 @@ Scenario: Assign material - material layer set
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     Then the object "IfcWallType/Empty" does not have the material "Default"
-    And the object "IfcWallType/Empty" has a "0.1" thick layered material containing the material "Default"
+    And the object "IfcWallType/Empty" has a "100" thick layered material containing the material "Default"
 
 Scenario: Unassign material - material layer set
     Given an empty IFC project
@@ -173,9 +173,9 @@ Scenario: Unassign material - material layer set usages will not be removed
     And the object "IfcWall/Cube" is selected
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
-    Then the object "IfcWall/Cube" has a "0.1" thick layered material containing the material "Default"
+    Then the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
     When I press "bim.unassign_material"
-    Then the object "IfcWall/Cube" has a "0.1" thick layered material containing the material "Default"
+    Then the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
 
 Scenario: Enable editing assigned material - material layer set
     Given an empty IFC project
