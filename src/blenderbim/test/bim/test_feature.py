@@ -707,7 +707,15 @@ def hit_undo():
     bpy.ops.ed.undo_push(message="UNDO STEP")
     bpy.ops.ed.undo()
 
+
 # These definitions are not to be used in tests but simply in debugging failing tests
+
+
+@given(parsers.parse("I run test code"))
+@when(parsers.parse("I run test code"))
+@then(parsers.parse("I run test code"))
+def run_test_code():
+    pass
 
 
 @given(parsers.parse("I save sample test files"))
