@@ -89,6 +89,10 @@ class Ifc(blenderbim.core.tool.Ifc):
         IfcStore.link_element(element, obj)
 
     @classmethod
+    def edit(cls, obj):
+        IfcStore.edited_objs.add(obj)
+
+    @classmethod
     def delete(cls, element):
         IfcStore.delete_element(element)
 

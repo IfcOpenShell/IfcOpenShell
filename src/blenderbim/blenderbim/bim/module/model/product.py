@@ -31,7 +31,6 @@ import blenderbim.core.geometry
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.model.prop import store_cursor_position
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop
@@ -221,66 +220,6 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_type_thumbnails(ifc_class=props.type_class, offset=9 * (self.page - 1), limit=9)
         props.type_page = self.page
         return {"FINISHED"}
-
-
-class DisplayConstrTypes(bpy.types.Operator):
-    bl_idname = "bim.display_constr_types"
-    bl_label = "Browse Construction Types"
-    bl_options = {"REGISTER"}
-    bl_description = "Display all available Construction Types to add new instances"
-
-    def invoke(self, context, event):
-        if not AuthoringData.is_loaded:
-            AuthoringData.load()
-        props = context.scene.BIMModelProperties
-        ifc_class = props.ifc_class
-        constr_class_info = AuthoringData.constr_class_info(ifc_class)
-        if constr_class_info is None or not constr_class_info.fully_loaded:
-            AuthoringData.assetize_constr_class(ifc_class)
-        bpy.ops.bim.display_constr_types_ui("INVOKE_DEFAULT")
-        return {"FINISHED"}
-
-
-class ReinvokeOperator(bpy.types.Operator):
-    bl_idname = "bim.reinvoke_operator"
-    bl_label = "Reinvoke Popup Operator"
-    bl_options = {"REGISTER"}
-    bl_description = "Reinvoke a popup operator"
-    operator: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        browser_state = context.scene.BIMModelProperties.constr_browser_state
-        store_cursor_position(context, event, window=False)
-        cursor_x, cursor_y = browser_state.cursor_x, browser_state.cursor_y
-        window_x, window_y = browser_state.window_x, browser_state.window_y
-        window = context.window
-        operator = self.operator
-        self.move_cursor_away(context, window)
-
-        def move_cursor_to_window():
-            window.cursor_warp(window_x, window_y)
-
-        def run_operator(operator, *args, **kwargs):
-            reduce(lambda x, arg: getattr(x, arg), operator.split("."), bpy.ops)(*args, **kwargs)
-
-        def reinvoke():
-            run_operator(operator, "INVOKE_DEFAULT", reinvoked=True)
-            window.cursor_warp(cursor_x, cursor_y)
-
-        bpy.app.timers.register(move_cursor_to_window, first_interval=browser_state.update_delay)
-        bpy.app.timers.register(reinvoke, first_interval=3 * browser_state.update_delay)
-        return {"FINISHED"}
-
-    def move_cursor_away(self, context, window):  # closes current popup
-        browser_state = context.scene.BIMModelProperties.constr_browser_state
-        window.cursor_warp(browser_state.far_away_x, browser_state.far_away_y)
-
-    @staticmethod
-    def run_operator(operator, *args, **kwargs):
-        reduce(lambda x, arg: getattr(x, arg), operator.split("."), bpy.ops)(*args, **kwargs)
 
 
 class AlignProduct(bpy.types.Operator):
@@ -577,110 +516,6 @@ def ensure_material_unassigned(usecase_path, ifc_file, settings):
             obj.active_material_index = i - total_removed
             bpy.ops.object.material_slot_remove({"object": obj})
             total_removed += 1
-
-
-class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.generate_space"
-    bl_label = "Generate Space"
-    bl_options = {"REGISTER"}
-
-    def _execute(self, context):
-        # Note: this experimental operator relies on Shapely v2 (not v1.8 which
-        # is currently bundled). It only works based on a 2D plan only
-        # considering the standard layered walls (i.e. prismatic) in the
-        # currently active storey (though we can easily extend it to include
-        # other "bounding" elements). For now we generate rooms that exclude
-        # walls (i.e. not to wall midpoint or exterior / interior edge).
-
-        import bmesh
-        import shapely
-        from math import pi
-
-        collection = context.view_layer.active_layer_collection.collection
-        collection_obj = bpy.data.objects.get(collection.name)
-        if not collection_obj:
-            return
-        spatial_element = tool.Ifc.get_entity(collection_obj)
-        if not spatial_element:
-            return
-
-        boundary_elements = []
-        for subelement in ifcopenshell.util.element.get_decomposition(spatial_element):
-            if subelement.is_a("IfcWall") and tool.Model.get_usage_type(subelement) == "LAYER2":
-                boundary_elements.append(subelement)
-
-        boundary_lines = []
-        for element in boundary_elements:
-            obj = tool.Ifc.get_object(element)
-            if not obj:
-                continue
-            axis = self.get_wall_axis(obj)
-            for ypos in ["miny", "maxy"]:
-                start, end = axis[ypos]
-                offset = (end - start).normalized() * 0.3  # Offset wall lines by 300mm
-                boundary_lines.append(shapely.LineString([start - offset, end + offset]))
-
-        unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-        closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
-
-        x, y = context.scene.cursor.location.xy
-
-        space_polygon = None
-        for polygon in closed_polygons.geoms:
-            if shapely.contains_xy(polygon, x, y):
-                space_polygon = shapely.force_3d(polygon)
-
-        if not space_polygon:
-            return
-
-        bm = bmesh.new()
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        new_verts = [bm.verts.new(v) for v in space_polygon.exterior.coords[0:-1]]
-        [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-        bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
-
-        for interior in space_polygon.interiors:
-            new_verts = [bm.verts.new(v) for v in interior.coords[0:-1]]
-            [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-            bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
-
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
-        bmesh.ops.triangle_fill(bm, edges=bm.edges)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
-
-        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0.0, 0.0, 3.0], verts=extruded_verts)
-
-        mesh = bpy.data.meshes.new(name="Space")
-        bm.to_mesh(mesh)
-        bm.free()
-
-        obj = bpy.data.objects.new("Space", mesh)
-        bpy.context.scene.collection.objects.link(obj)
-
-    def get_wall_axis(self, obj):
-        x_values = [v[0] for v in obj.bound_box]
-        y_values = [v[1] for v in obj.bound_box]
-        min_x = min(x_values)
-        max_x = max(x_values)
-        min_y = min(y_values)
-        max_y = max(y_values)
-        return {
-            "miny": [
-                (obj.matrix_world @ Vector((min_x, min_y, 0.0))).to_2d(),
-                (obj.matrix_world @ Vector((max_x, min_y, 0.0))).to_2d(),
-            ],
-            "maxy": [
-                (obj.matrix_world @ Vector((min_x, max_y, 0.0))).to_2d(),
-                (obj.matrix_world @ Vector((max_x, max_y, 0.0))).to_2d(),
-            ],
-        }
 
 
 class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
