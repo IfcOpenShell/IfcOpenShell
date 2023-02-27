@@ -122,7 +122,7 @@ class DumbSlabGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
-    def generate(self, link_to_scene=True):
+    def generate(self):
         self.file = IfcStore.get_file()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
         thicknesses = []
@@ -149,13 +149,13 @@ class DumbSlabGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
-        return self.derive_from_cursor(link_to_scene=link_to_scene)
+        return self.derive_from_cursor()
 
-    def derive_from_cursor(self, link_to_scene):
+    def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
-        return self.create_slab(link_to_scene)
+        return self.create_slab()
 
-    def create_slab(self, link_to_scene):
+    def create_slab(self):
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
@@ -163,16 +163,15 @@ class DumbSlabGenerator:
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
-        if link_to_scene:
-            matrix_world = Matrix()
-            matrix_world.col[3] = self.location.to_4d()
-            if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-                matrix_world[2][3] = self.collection_obj.location[2] - self.depth
-            else:
-                matrix_world[2][3] -= self.depth
-            obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
-            bpy.context.view_layer.update()
-            self.collection.objects.link(obj)
+        matrix_world = Matrix()
+        matrix_world.col[3] = self.location.to_4d()
+        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+            matrix_world[2][3] = self.collection_obj.location[2] - self.depth
+        else:
+            matrix_world[2][3] -= self.depth
+        obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
+        bpy.context.view_layer.update()
+        self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,

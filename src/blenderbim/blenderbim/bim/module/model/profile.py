@@ -96,7 +96,7 @@ class DumbProfileGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self, link_to_scene=True):
+    def generate(self):
         self.file = IfcStore.get_file()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
         material = ifcopenshell.util.element.get_material(self.relating_type)
@@ -114,13 +114,13 @@ class DumbProfileGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)
-        return self.derive_from_cursor(link_to_scene=link_to_scene)
+        return self.derive_from_cursor()
 
-    def derive_from_cursor(self, link_to_scene):
+    def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
-        return self.create_profile(link_to_scene)
+        return self.create_profile()
 
-    def create_profile(self, link_to_scene):
+    def create_profile(self):
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
@@ -132,10 +132,9 @@ class DumbProfileGenerator:
         if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
         matrix_world.col[3] = self.location.to_4d()
-        if link_to_scene and self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             matrix_world[2][3] = self.collection_obj.location[2]
-        if link_to_scene:
-            self.collection.objects.link(obj)
+        self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -190,8 +189,7 @@ class DumbProfileGenerator:
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
 
-        if link_to_scene:
-            obj.select_set(True)
+        obj.select_set(True)
 
         return obj
 
