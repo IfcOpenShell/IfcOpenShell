@@ -122,11 +122,6 @@ class BimToolUI:
         if not AuthoringData.is_loaded:
             AuthoringData.load()
 
-        # if ifc_classes and relating_types_ids and not cls.props.icon_id and not is_tool_header:
-        #    # hack Dion won't like to show a preview also on the first time the sidebar is shown
-        #    bpy.app.timers.register(lambda: prop.update_ifc_class(cls.props, "lost_context"))
-        #    bpy.app.timers.register(lambda: prop.update_relating_type(cls.props, "lost_context"))
-
         if context.region.type == "TOOL_HEADER":
             cls.draw_header_interface()
         elif context.region.type in ("UI", "WINDOW"):
@@ -170,6 +165,11 @@ class BimToolUI:
         elif cls.props.ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcDoorType", "IfcDoorStyle"):
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl2", text="RL")
+        elif cls.props.ifc_class in ("IfcSpaceType"):
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_G")
+            add_layout_hotkey_operator(row, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__)
 
     @classmethod
     def draw_edit_object_interface(cls, context):
@@ -290,6 +290,11 @@ class BimToolUI:
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
             row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
+        elif AuthoringData.data["active_class"] in ("IfcSpace",):
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_G")
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
         elif AuthoringData.data["active_class"] in (
             "IfcCableCarrierSegmentType",
             "IfcCableSegmentType",
@@ -514,6 +519,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_S_G(self):
         if not bpy.context.selected_objects:
+            if self.props.ifc_class == "IfcSpaceType":
+                bpy.ops.bim.generate_space()
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.recalculate_wall()
@@ -521,6 +528,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.recalculate_profile()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.recalculate_fill()
+        elif self.active_class in ("IfcSpace"):
+            bpy.ops.bim.generate_space()
 
     def hotkey_S_M(self):
         if not bpy.context.selected_objects:

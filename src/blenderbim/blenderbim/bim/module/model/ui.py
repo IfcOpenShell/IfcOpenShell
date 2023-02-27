@@ -20,7 +20,7 @@ import bpy
 import blenderbim.tool as tool
 from bpy.types import Panel, Operator, Menu
 from blenderbim.bim.module.model.data import AuthoringData, ArrayData, StairData, SverchokData, WindowData, DoorData
-from blenderbim.bim.module.model.prop import store_cursor_position, get_ifc_class
+from blenderbim.bim.module.model.prop import get_ifc_class
 from blenderbim.bim.module.model.stair import update_stair_modifier
 from blenderbim.bim.module.model.window import update_window_modifier_bmesh
 from blenderbim.bim.module.model.door import update_door_modifier_bmesh
@@ -123,86 +123,6 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.align_wall", icon="ANCHOR_TOP", text="Ext.").align_type = "EXTERIOR"
         row.operator("bim.align_wall", icon="ANCHOR_CENTER", text="C/L").align_type = "CENTERLINE"
         row.operator("bim.align_wall", icon="ANCHOR_BOTTOM", text="Int.").align_type = "INTERIOR"
-
-
-class DisplayConstrTypesUI(Operator):
-    bl_idname = "bim.display_constr_types_ui"
-    bl_label = "Browse Construction Types"
-    bl_options = {"REGISTER"}
-    bl_description = "Display all available Construction Types to add new instances"
-    reinvoked: bpy.props.BoolProperty(default=False)
-
-    def execute(self, context):
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        store_cursor_position(context, event, window=not self.reinvoked)
-        return context.window_manager.invoke_popup(self, width=550)
-
-    def reinvoke(self, context):
-        browser_state = context.scene.BIMModelProperties.constr_browser_state
-
-        def set_updating_transaction():
-            browser_state.updating = True
-
-        def run_operator():
-            bpy.ops.bim.reinvoke_operator("INVOKE_DEFAULT", operator="bim.display_constr_types_ui")
-            browser_state.updating = False
-
-        if not browser_state.updating:
-            bpy.app.timers.register(set_updating_transaction)
-            bpy.app.timers.register(run_operator, first_interval=browser_state.update_delay)
-
-    def draw(self, context):
-        props = context.scene.BIMModelProperties
-
-        if AuthoringData.data["ifc_classes"]:
-            row = self.layout.row()
-            row.label(text="", icon="FILE_VOLUME")
-            prop_with_search(row, props, "ifc_class_browser", text="")
-        ifc_class = props.ifc_class_browser
-        num_cols = 3
-        self.layout.row().separator(factor=0.25)
-        flow = self.layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
-        relating_types = AuthoringData.relating_types_browser()
-        num_types = len(relating_types)
-
-        for idx, (relating_type_id, name, desc) in enumerate(relating_types):
-            outer_col = flow.column()
-            box = outer_col.box()
-            row = box.row()
-            row.label(text=name, icon="FILE_3D")
-            row.alignment = "CENTER"
-            row = box.row()
-
-            if ifc_class in props.constr_classes:
-                constr_class_info = props.constr_classes[ifc_class]
-                constr_types_info = constr_class_info.constr_types
-
-                if relating_type_id in constr_types_info:
-                    icon_id = constr_types_info[relating_type_id].icon_id
-                    row.template_icon(icon_value=icon_id, scale=6.0)
-                else:
-                    self.reinvoke(context)
-                    return
-
-            row = box.row()
-            op = row.operator("bim.add_constr_type_instance", icon="ADD")
-            op.from_invoke = True
-            op.ifc_class = ifc_class
-
-            if relating_type_id.isnumeric():
-                op.relating_type_id = int(relating_type_id)
-
-        last_row_cols = num_types % num_cols
-
-        if last_row_cols != 0:
-            for _ in range(num_cols - last_row_cols):
-                flow.column()
-
-        row = self.layout.row()
-        row.alignment = "RIGHT"
-        row.operator("bim.help_relating_types", text="", icon="QUESTION")
 
 
 class HelpConstrTypes(Operator):

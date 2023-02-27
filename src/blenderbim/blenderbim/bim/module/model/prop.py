@@ -55,14 +55,6 @@ def get_type_predefined_type(self, context):
     return AuthoringData.data["type_predefined_type"]
 
 
-def store_cursor_position(context, event, cursor=True, window=True):
-    browser_state = context.scene.BIMModelProperties.constr_browser_state
-    if cursor:
-        browser_state.cursor_x, browser_state.cursor_y = event.mouse_x, event.mouse_y
-    if window:
-        browser_state.window_x, browser_state.window_y = event.mouse_x, event.mouse_y
-
-
 def update_icon_id(self, context, browser=False):
     if context == "lost_context" or (context.region is not None and context.region.type != "TOOL_HEADER"):
         ifc_class = self.ifc_class_browser if browser else self.ifc_class
