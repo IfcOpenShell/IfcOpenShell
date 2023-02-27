@@ -380,9 +380,8 @@ class SvgWriter:
             element = tool.Ifc.get_entity(obj)
             pset_data = tool.Pset.get_element_pset_data(element, "Pset_BBIM_Batting") or {}
 
-            # SVG uses mm as default unit
-            conversion_to_mm = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()) / 0.001
-            thickness = pset_data["Thickness"] * conversion_to_mm if "Thickness" in pset_data else 15.0
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            thickness = pset_data["Thickness"] * unit_scale * self.svg_scale if "Thickness" in pset_data else 15.0
             reverse_x = pset_data.get("Reverse pattern direction", False)
 
             if reverse_x:
