@@ -473,7 +473,7 @@ class DumbWallGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self, link_to_scene=True):
+    def generate(self):
         self.file = IfcStore.get_file()
         self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
@@ -495,7 +495,7 @@ class DumbWallGenerator:
         if self.has_sketch():
             return  # For now
             return self.derive_from_sketch()
-        return self.derive_from_cursor(link_to_scene)
+        return self.derive_from_cursor()
 
     def has_sketch(self):
         return (
@@ -574,7 +574,7 @@ class DumbWallGenerator:
     def is_near(self, point1, point2):
         return (point1 - point2).length < 0.1
 
-    def derive_from_cursor(self, link_to_scene):
+    def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
         if self.collection:
             for sibling_obj in self.collection.objects:
@@ -600,21 +600,21 @@ class DumbWallGenerator:
                         normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
                         self.rotation = math.atan2(normal[1], normal[0])
                         break
-        return self.create_wall(link_to_scene)
+        return self.create_wall()
 
-    def create_wall(self, link_to_scene):
+    def create_wall(self):
         props = bpy.context.scene.BIMModelProperties
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-        if link_to_scene:
-            matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
-            matrix_world.col[3] = self.location.to_4d()
-            if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-                matrix_world[2][3] = self.collection_obj.location[2] + (props.rl1 * self.unit_scale)
-            obj.matrix_world = matrix_world
-            bpy.context.view_layer.update()
-            self.collection.objects.link(obj)
+
+        matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
+        matrix_world.col[3] = self.location.to_4d()
+        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+            matrix_world[2][3] = self.collection_obj.location[2] + (props.rl1 * self.unit_scale)
+        obj.matrix_world = matrix_world
+        bpy.context.view_layer.update()
+        self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
