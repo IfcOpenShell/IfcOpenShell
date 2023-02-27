@@ -655,6 +655,13 @@ endif
 	cd dist/working/ && cp -r pkg_resources ../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Required for hipped roof generation
+	mkdir dist/working
+	cd dist/working && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
+	cd dist/working && unzip master.zip
+	cp -r dist/working/bpypolyskel-master/bpypolyskel dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	cd dist/blenderbim && $(SED) "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
