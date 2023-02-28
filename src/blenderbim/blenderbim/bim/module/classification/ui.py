@@ -100,12 +100,16 @@ class ReferenceUI:
                 self.draw_reference_ui(reference)
 
     def draw_add_ui(self, context):
-        if not self.data.data["is_available_classification_added"]:
+        if not self.data.data["active_classification_library"]:
+            row = self.layout.row(align=True)
+            row.label(text="No Active Classification Library")
+            row.operator("bim.load_classification_library", text="", icon="IMPORT")
             return
         row = self.layout.row(align=True)
-        row.prop(self.sprops, "available_classifications", text="")
+        row.label(text=f"Active Classification Library: {self.data.data['active_classification_library']}")
+        #row.prop(self.sprops, "available_classifications", text="")
         if not self.sprops.available_library_references:
-            op = row.operator("bim.change_classification_level", text="", icon="IMPORT")
+            op = row.operator("bim.change_classification_level", text="", icon="GREASEPENCIL")
             op.parent_id = int(self.sprops.available_classifications)
             return
         if self.sprops.active_library_referenced_source:
