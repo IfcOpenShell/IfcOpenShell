@@ -174,7 +174,9 @@ class BIM_PT_drawings(Panel):
                 col.alignment = "LEFT"
                 row2 = col.row(align=True)
                 row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
-                row2.operator("bim.duplicate_drawing", icon="COPYDOWN", text="").drawing = active_drawing.ifc_definition_id
+                row2.operator(
+                    "bim.duplicate_drawing", icon="COPYDOWN", text=""
+                ).drawing = active_drawing.ifc_definition_id
                 col = row.column()
                 col.alignment = "RIGHT"
                 op = row.operator("bim.open_view", icon="URL", text="")
@@ -417,6 +419,9 @@ class BIM_PT_annotation_utilities(Panel):
         op.data_type = "mesh"
 
         row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Batting", icon="FORCE_FORCE")
+        op.object_type = "BATTING"
+        op.data_type = "mesh"
         op = row.operator("bim.add_annotation", text="Fill Area", icon="NODE_TEXTURE")
         op.object_type = "FILL_AREA"
 

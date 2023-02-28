@@ -313,7 +313,15 @@ class BaseDecorator:
         raise NotImplementedError()
 
     def draw_lines(
-        self, context, obj, vertices, indices, topology=None, is_scale_dependant=True, fill_next_vertices=False
+        self,
+        context,
+        obj,
+        vertices,
+        indices,
+        topology=None,
+        is_scale_dependant=True,
+        fill_next_vertices=False,
+        extra_float_kwargs={},
     ):
         # use is_scale_dependant = False if shader is not using uniform viewportDrawingScale
         # otherwise uniform will be discarded during the optimization process
@@ -363,6 +371,9 @@ class BaseDecorator:
             # It probably should be dynamically calculated using system.dpi or something.
             viewport_drawing_scale = 0.00025 * mm_to_px
             self.shader.uniform_float("viewportDrawingScale", viewport_drawing_scale)
+
+        for kwarg, value in extra_float_kwargs.items():
+            self.shader.uniform_float(kwarg, value)
 
         batch.draw(self.shader)
 
@@ -1332,6 +1343,89 @@ class BreakDecorator(BaseDecorator):
         self.draw_lines(context, obj, verts, idxs)
 
 
+class BattingDecorator(BaseDecorator):
+    """Decorator for batting objects
+
+    Uses first two vertices in verts list.
+    """
+
+    objecttype = "BATTING"
+
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
+        #define BREAK_LENGTH 32.0
+        #define BREAK_WIDTH 16.0
+        #define PATTERN_SEGMENT_LENGTH 2
+    """
+    )
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+    uniform float batting_thickness;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=256) out;
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1), pmw = (p0w + p1w) * .5;
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        
+        vec4 gap = dir * 16.0; // TODO: never used?
+        
+        float segment_width = batting_thickness / 2.5;
+        vec2 batting_dimensions = vec2(segment_width, batting_thickness);
+        // make sure to multiply by viewportDrawingScale
+        // so the drawing will stay consistent on zoom in / zoom out
+        mat2 m_edge_space = mat2( dir.xy, dir.yx*vec2(1,-1) ) * viewportDrawingScale;
+        
+        vec2 pattern_segment_data[PATTERN_SEGMENT_LENGTH];
+        // simplified insulation pattern
+        // pattern_segment_data[0] = vec2(0, 1);
+        // pattern_segment_data[1] = vec2(0.5, 0.8);
+        // pattern_segment_data[2] = vec2(0, 0.2);
+        // pattern_segment_data[3] = vec2(0.5, 0);
+        // pattern_segment_data[4] = vec2(1.0, 0.2);
+        // pattern_segment_data[5] = vec2(0.5, 0.8);                
+        // pattern_segment_data[6] = vec2(1.0, 1.0);
+        // zigzag pattern
+        pattern_segment_data[0] = vec2(0, 1);
+        pattern_segment_data[1] = vec2(0, 0);
+
+        int segs = int( ceil( length(edge) / (batting_dimensions.x * viewportDrawingScale) ) ); // amount of segments
+        vec4 p;
+        vec2 p_base, p_cur_ver;
+
+        for (int i = 0; i < segs; i++) {
+            p_base = m_edge_space * (vec2(i, -0.5) * batting_dimensions);
+            for(int j=0; j<PATTERN_SEGMENT_LENGTH; j++) {
+                p_cur_ver = p_base + m_edge_space * (pattern_segment_data[j] * batting_dimensions);
+                p = p0w + vec4(p_cur_ver, 0, 0);
+                gl_Position = WIN2CLIP(p);
+                EmitVertex();
+            }
+        }
+
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, context, obj):
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
+        self.draw_lines(context, obj, verts[:2], idxs, extra_float_kwargs={"batting_thickness": 32.0})
+
+
 class GridDecorator(BaseDecorator):
     objecttype = "GRID"
 
@@ -1788,6 +1882,7 @@ class DecorationsHandler:
         SectionDecorator,
         ElevationDecorator,
         TextDecorator,
+        BattingDecorator,
     ]
 
     installed = None
