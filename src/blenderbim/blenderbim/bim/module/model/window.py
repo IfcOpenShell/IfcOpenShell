@@ -487,7 +487,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Window")["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
         props = obj.BIMWindowProperties
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
@@ -543,7 +543,7 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMWindowProperties
         element = tool.Ifc.get_entity(obj)
-        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Window")["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
 
