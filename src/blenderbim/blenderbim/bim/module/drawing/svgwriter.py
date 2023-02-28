@@ -98,6 +98,8 @@ class SvgWriter:
         return self
 
     def calculate_scale(self):
+        # svg_scale is for conversion from m to paper units
+        # paper units = mm x drawing scale
         self.svg_scale = self.scale * 1000  # IFC is in meters, SVG is in mm
         self.raw_width = self.camera_width
         self.raw_height = self.camera_height
@@ -378,9 +380,10 @@ class SvgWriter:
             end_svg = Vector(((x_offset + v1.x), (y_offset - v1.y))) * self.svg_scale
 
             element = tool.Ifc.get_entity(obj)
-            pset_data = ifcopenshell.util.element.get_pset(element, "Pset_BBIM_Batting") or {}
+            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Batting") or {}
 
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            # default thickness set to 15 mm in paper space to keep the insulation visible
             thickness = pset_data["Thickness"] * unit_scale * self.svg_scale if "Thickness" in pset_data else 15.0
             reverse_x = pset_data.get("Reverse pattern direction", False)
 
