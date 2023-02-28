@@ -207,6 +207,7 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/api/* dist/blenderbim/libs/site/packages/ifcopenshell/api/
 	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/entity_instance.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/file.py dist/blenderbim/libs/site/packages/ifcopenshell/
+	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/validate.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	# Provides bcf functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/bcf/src/bcf dist/blenderbim/libs/site/packages/
 	# Provides IFCClash functionality
