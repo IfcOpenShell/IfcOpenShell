@@ -486,7 +486,6 @@ class Profile:
 @interface
 class Pset:
     def get_element_pset(cls, element, pset_name): pass
-    def get_element_pset_data(cls, element, pset_name): pass
 
 
 @interface

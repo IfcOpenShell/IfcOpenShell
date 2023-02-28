@@ -105,7 +105,7 @@ def update_door_modifier_representation(context):
             is_global=True,
             should_sync_changes_first=True,
         )
-        
+
     # type attributes
     element.OperationType = props.door_type
 
@@ -522,7 +522,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Door")["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         props = obj.BIMDoorProperties
         # restore previous settings since editing was canceled
         for prop_name in data:
@@ -579,7 +579,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMDoorProperties
         element = tool.Ifc.get_entity(obj)
-        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Door")["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
 

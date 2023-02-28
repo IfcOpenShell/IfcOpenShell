@@ -369,7 +369,7 @@ class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Stair")["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Stair", "Data"))
         props = obj.BIMStairProperties
         # restore previous settings since editing was canceled
         for prop_name in data:
@@ -414,7 +414,7 @@ class EnableEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMStairProperties
         element = tool.Ifc.get_entity(obj)
-        data = json.loads(tool.Pset.get_element_pset_data(element, "BBIM_Stair")["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Stair", "Data"))
         # required since we could load pset from .ifc and BIMStairProperties won't be set
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])

@@ -378,7 +378,7 @@ class SvgWriter:
             end_svg = Vector(((x_offset + v1.x), (y_offset - v1.y))) * self.svg_scale
 
             element = tool.Ifc.get_entity(obj)
-            pset_data = tool.Pset.get_element_pset_data(element, "Pset_BBIM_Batting") or {}
+            pset_data = ifcopenshell.util.element.get_pset(element, "Pset_BBIM_Batting") or {}
 
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             thickness = pset_data["Thickness"] * unit_scale * self.svg_scale if "Thickness" in pset_data else 15.0
