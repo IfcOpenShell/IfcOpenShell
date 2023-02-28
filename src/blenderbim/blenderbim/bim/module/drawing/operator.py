@@ -23,6 +23,7 @@ import json
 import time
 import bmesh
 import shutil
+import shapely
 import subprocess
 import webbrowser
 import multiprocessing
@@ -455,8 +456,8 @@ class CreateDrawing(bpy.types.Operator):
 
         with profile("Post processing"):
             root = etree.fromstring(results)
-            self.enrich_linework_with_metadata(root)
             self.move_projection_to_bottom(root)
+            self.merge_linework_and_add_metadata(root)
             with open(svg_path, "wb") as svg:
                 svg.write(etree.tostring(root))
 
@@ -497,24 +498,57 @@ class CreateDrawing(bpy.types.Operator):
                 if not it.next():
                     break
 
-    def enrich_linework_with_metadata(self, root):
+    def merge_linework_and_add_metadata(self, root):
+        joined_paths = {}
+
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             classes = ["cut"]
-            try:
-                element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
-            except:
-                # See #1861 - freshly created guids cannot be extracted unfortunately
-                continue
+            element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            material_name = ""
             if material:
                 if material.is_a("IfcMaterialLayerSet"):
-                    name = material.LayerSetName or "null"
+                    material_name = material.LayerSetName or "null"
                 else:
-                    name = getattr(material, "Name", "null") or "null"
-                name = self.canonicalise_class_name(name)
-                classes.append(f"material-{name}")
+                    material_name = getattr(material, "Name", "null") or "null"
+                material_name = self.canonicalise_class_name(material_name)
+                classes.append(f"material-{material_name}")
             el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
+
+            # Don't join everything. To start with, let's focus on walls and slabs.
+            if element.is_a("IfcWall") or element.is_a("IfcSlab") or element.is_a("IfcCovering"):
+                joined_paths.setdefault(element.is_a() + material_name, []).append(el)
+
+        for key, els in joined_paths.items():
+            polygons = []
+            classes = set()
+
+            for el in els:
+                classes.update(el.attrib["class"].split())
+                classes.add(el.attrib["{http://www.ifcopenshell.org/ns}guid"])
+                for path in el.findall("{http://www.w3.org/2000/svg}path"):
+                    coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
+                    polygons.append(shapely.Polygon(coords))
+                el.getparent().remove(el)
+
+            merged_polygons = shapely.ops.unary_union(polygons)
+
+            if type(merged_polygons) == shapely.MultiPolygon:
+                merged_polygons = merged_polygons.geoms
+            elif type(merged_polygons) == shapely.Polygon:
+                merged_polygons = [merged_polygons]
+
+            root_g = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
+            for polygon in merged_polygons:
+                g = etree.SubElement(root, "g")
+                path = etree.SubElement(g, "path")
+                d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
+                for interior in polygon.interiors:
+                    d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                path.attrib["d"] = d
+                g.set("class", " ".join(list(classes)))
+                root_g.append(g)
 
     def move_projection_to_bottom(self, root):
         # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
