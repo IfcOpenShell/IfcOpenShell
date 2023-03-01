@@ -527,10 +527,14 @@ class CreateDrawing(bpy.types.Operator):
             for el in els:
                 classes.update(el.attrib["class"].split())
                 classes.add(el.attrib["{http://www.ifcopenshell.org/ns}guid"])
+                is_closed_polygon = False
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
                     coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
-                    polygons.append(shapely.Polygon(coords))
-                el.getparent().remove(el)
+                    if coords[0] == coords[-1]:
+                        is_closed_polygon = True
+                        polygons.append(shapely.Polygon(coords))
+                if is_closed_polygon:
+                    el.getparent().remove(el)
 
             merged_polygons = shapely.ops.unary_union(polygons)
 
