@@ -722,7 +722,7 @@ def run_test_code():
 @when(parsers.parse("I save sample test files"))
 @then(parsers.parse("I save sample test files"))
 def saving_sample_test_files(and_open_in_blender=None):
-    filepath = f"{variables['cwd']}/test/files/sample_test_file"
+    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
     blend_filepath = f"{filepath}.blend"
     bpy.ops.export_ifc.bim(filepath=f"{filepath}.ifc", should_save_as=True)
     bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
@@ -734,7 +734,7 @@ def saving_sample_test_files(and_open_in_blender=None):
 @then(parsers.parse("I save sample test files and open in blender"))
 def saving_sample_test_files_and_open_in_blender():
     saving_sample_test_files()
-    filepath = f"{variables['cwd']}/test/files/sample_test_file.blend"
+    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file.blend"
     import subprocess
 
     subprocess.Popen([bpy.app.binary_path, f"{filepath}"])

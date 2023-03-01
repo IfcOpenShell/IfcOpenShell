@@ -87,7 +87,7 @@ Scenario: Switch representation - current edited representation is updated prior
     And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
     And the variable "representation" is "[r for r in {ifc}.by_type('IfcShapeRepresentation') if r.RepresentationType=='Annotation2D'][0].id()"
     And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "4,4,0"
 
 Scenario: Switch representation - current edited representation is discarded if switching to a box
@@ -101,7 +101,7 @@ Scenario: Switch representation - current edited representation is discarded if 
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
     And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "2,2,2"
 
 Scenario: Switch representation - existing Blender modifiers must be purged
@@ -316,9 +316,9 @@ Scenario: Override duplicate move - copying a coloured representation
     And the object "IfcWall/Cube" is selected
     And the material "Material" colour is set to "1,0,0,1"
     When I press "object.duplicate_move"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the material "Material" colour is "1,0,0,1"
     And the object "IfcWall/Cube" has the material "Material"
     And the object "IfcWall/Cube.001" has the material "Material"
