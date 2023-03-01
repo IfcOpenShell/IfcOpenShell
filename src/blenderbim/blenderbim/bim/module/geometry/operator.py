@@ -396,8 +396,8 @@ class OverrideDeleteTrait:
 
 
 class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
-    bl_idname = "object.delete"
-    bl_label = "Delete"
+    bl_idname = "bim.override_object_delete"
+    bl_label = "IFC Delete"
     bl_options = {"REGISTER", "UNDO"}
     use_global: bpy.props.BoolProperty(default=False)
     confirm: bpy.props.BoolProperty(default=True)
@@ -432,8 +432,8 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
 
 
 class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
-    bl_idname = "outliner.delete"
-    bl_label = "Delete"
+    bl_idname = "bim.override_outliner_delete"
+    bl_label = "IFC Delete"
     bl_options = {"REGISTER", "UNDO"}
     hierarchy: bpy.props.BoolProperty(default=False)
 
@@ -500,8 +500,8 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
 
 
 class OverrideDuplicateMove(bpy.types.Operator):
-    bl_idname = "object.duplicate_move"
-    bl_label = "Duplicate Objects"
+    bl_idname = "bim.override_object_duplicate_move"
+    bl_label = "IFC Duplicate Objects"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -558,8 +558,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
 
 class OverrideDuplicateMoveLinked(bpy.types.Operator):
-    bl_idname = "object.duplicate_move_linked"
-    bl_label = "Duplicate Linked"
+    bl_idname = "bim.override_object_duplicate_move_linked"
+    bl_label = "IFC Duplicate Linked"
 
     @classmethod
     def poll(cls, context):
@@ -613,7 +613,7 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
 
 class OverridePasteBuffer(bpy.types.Operator):
     bl_idname = "bim.override_paste_buffer"
-    bl_label = "Paste BIM Objects"
+    bl_label = "IFC Paste BIM Objects"
 
     def execute(self, context):
         bpy.ops.view3d.pastebuffer()
