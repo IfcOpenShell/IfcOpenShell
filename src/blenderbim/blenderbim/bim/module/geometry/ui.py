@@ -23,6 +23,12 @@ from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.geometry.data import RepresentationsData, ConnectionsData, DerivedPlacementsData
 
 
+def object_menu(self, context):
+    self.layout.operator("bim.override_object_duplicate_move", icon="PLUGIN")
+    self.layout.operator("bim.override_object_delete", icon="PLUGIN")
+    self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
+
+
 class BIM_PT_representations(Panel):
     bl_label = "IFC Representations"
     bl_idname = "BIM_PT_representations"
