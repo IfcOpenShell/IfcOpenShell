@@ -24,6 +24,7 @@ text { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT';
 .projection { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
+.IfcGeographicElement { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 1; }
 .PredefinedType-LINEWORK { stroke: black; stroke-width: 0.25; }
 .PredefinedType-BACKGROUND { stroke: black; stroke-width: 0.18; }
 .PredefinedType-GRID { marker-start: url(#grid-marker); marker-end: url(#grid-marker); }
