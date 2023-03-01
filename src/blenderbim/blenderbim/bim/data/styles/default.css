@@ -19,7 +19,7 @@
  */
 
 * { stroke-linecap: round; stroke-linejoin: round; }
-text { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT'; font-size: 4.13px; }
+text { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT', 'DejaVu Sans Condensed', 'Liberation Sans', 'Arial Narrow', 'Arial'; font-size: 4.13px; }
 .cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; fill-rule: evenodd; }
 .projection { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
@@ -50,7 +50,6 @@ text.large { /* 3.5mm */ font-size: 5.78px; }
 text.regular { /* 2.5mm */ font-size: 4.13px; }
 text.small { /* 1.8mm */ font-size: 2.97px; }
 text.GRID { /* 5mm */ font-size: 8.25px; }
-text.DIMENSION { /* 5mm */ font-size: 8.25px; fill: red; }
 .material-blank { fill: white; }
 .material-diagonal1 { fill: url(#diagonal1); }
 .material-diagonal2 { fill: url(#diagonal2); }
