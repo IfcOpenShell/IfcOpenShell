@@ -517,7 +517,7 @@ class CreateDrawing(bpy.types.Operator):
             el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
 
             # Drawing convention states that objects with the same material are merged when cut.
-            if material_name != "null":
+            if material_name != "null" and el.findall("{http://www.w3.org/2000/svg}path"):
                 joined_paths.setdefault(material_name, []).append(el)
 
         for key, els in joined_paths.items():
