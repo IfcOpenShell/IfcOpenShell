@@ -236,14 +236,6 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccityjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides express rule validation for ifcopenshell.validate
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/e5/6c/f3a15217ac72912c28c5d7a7a8e87ff6d6475c9530595ae9f0f8dedd8dd8/pytest-7.2.1.tar.gz
-	cd dist/working && tar -xzvf pytest*
-	cp -r dist/working/pytest-7.2.1/src/pytest dist/blenderbim/libs/site/packages/
-	cp -r dist/working/pytest-7.2.1/src/_pytest dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	# Provides Mustache templating in construction documentation
 	# TODO: remove this dependency, it seems overkill and we seem to get by with str replaces
 	mkdir dist/working
@@ -402,11 +394,13 @@ endif
 	cp -r dist/working/tqdm-4.50.0/tqdm dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by IFCCityJSON
 	mkdir dist/working
 	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
+	# Required by IFCCityJSON
 	cd dist/working && . env/bin/activate && pip install cjio --target=./site-packages
+	# Provides express rule validation for ifcopenshell.validate
+	cd dist/working && . env/bin/activate && pip install pytest --target=./site-packages
 	cd dist/working/site-packages/ && rm -r *dist-info*
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
