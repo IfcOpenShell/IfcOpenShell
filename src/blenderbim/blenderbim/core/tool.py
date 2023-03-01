@@ -71,7 +71,11 @@ class Aggregate:
 
 @interface
 class Blender: pass
-
+def create_ifc_object(cls, ifc_class, name, data): pass
+def get_name(cls, ifc_class, name): pass
+def get_obj_ifc_definition_id(cls, obj, obj_type): pass
+def get_selected_objects(cls): pass
+def set_active_object(cls, obj): pass
 
 @interface
 class Boundary: pass
@@ -486,6 +490,8 @@ class Profile:
 @interface
 class Pset:
     def get_element_pset(cls, element, pset_name): pass
+    def get_pset_name(cls, obj, obj_type): pass
+    def is_pset_applicable(cls,element, pset_name): pass
 
 
 @interface

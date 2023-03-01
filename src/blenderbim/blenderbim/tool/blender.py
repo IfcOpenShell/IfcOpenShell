@@ -18,8 +18,7 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.core.tool
-from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 
 
 class Blender:
@@ -39,7 +38,9 @@ class Blender:
 
     @classmethod
     def get_selected_objects(cls):
-         return set(bpy.context.selected_objects + [bpy.context.active_object])
+        if bpy.context.selected_objects:
+            return set(bpy.context.selected_objects + [bpy.context.active_object])
+        return set([bpy.context.active_object])
 
     @classmethod
     def create_ifc_object(cls, ifc_class: str, name: str = None, data=None) -> bpy.types.Object:
@@ -48,3 +49,46 @@ class Blender:
         obj = bpy.data.objects.new(name, data)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=ifc_class)
         return obj
+
+    @classmethod
+    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None):
+        if obj_type == "Object":
+            return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
+        elif obj_type == "Material":
+            return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
+        elif obj_type == "MaterialSet":
+            return ifcopenshell.util.element.get_material(
+                tool.Ifc.get_entity(bpy.data.objects.get(obj)), should_skip_usage=True
+            ).id()
+        elif obj_type == "MaterialSetItem":
+            return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
+        elif obj_type == "Task":
+            return bpy.context.scene.BIMTaskTreeProperties.tasks[
+                bpy.context.scene.BIMWorkScheduleProperties.active_task_index
+            ].ifc_definition_id
+        elif obj_type == "Cost":
+            return bpy.context.scene.BIMCostProperties.cost_items[
+                bpy.context.scene.BIMCostProperties.active_cost_item_index
+            ].ifc_definition_id
+        elif obj_type == "Resource":
+            return bpy.context.scene.BIMResourceTreeProperties.resources[
+                bpy.context.scene.BIMResourceProperties.active_resource_index
+            ].ifc_definition_id
+        elif obj_type == "Profile":
+            return bpy.context.scene.BIMProfileProperties.profiles[
+                bpy.context.scene.BIMProfileProperties.active_profile_index
+            ].ifc_definition_id
+        elif obj_type == "WorkSchedule":
+            return bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+
+    @classmethod
+    def is_ifc_object(cls, obj):
+        return bool(obj.BIMObjectProperties.ifc_definition_id)
+
+    @classmethod
+    def is_ifc_class_active(cls, ifc_class):
+        if bpy.context.active_object:
+            if cls.is_ifc_object(bpy.context.active_object):
+                return tool.Ifc.get_entity(bpy.context.active_object).is_a(ifc_class)
+            return False
+        return False
