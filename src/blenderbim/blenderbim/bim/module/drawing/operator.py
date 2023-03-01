@@ -516,9 +516,9 @@ class CreateDrawing(bpy.types.Operator):
                 classes.append(f"material-{material_name}")
             el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
 
-            # Don't join everything. To start with, let's focus on walls and slabs.
-            if element.is_a("IfcWall") or element.is_a("IfcSlab") or element.is_a("IfcCovering"):
-                joined_paths.setdefault(element.is_a() + material_name, []).append(el)
+            # Drawing convention states that objects with the same material are merged when cut.
+            if material_name != "null":
+                joined_paths.setdefault(material_name, []).append(el)
 
         for key, els in joined_paths.items():
             polygons = []
