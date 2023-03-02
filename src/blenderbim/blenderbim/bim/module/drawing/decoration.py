@@ -26,6 +26,7 @@ import bmesh
 import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
+from math import acos, pi
 from functools import reduce
 from itertools import chain
 from bpy.types import SpaceView3D
@@ -33,7 +34,7 @@ from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
-from math import acos, pi
+from blenderbim.bim.module.drawing.data import DecoratorData
 
 
 def ccw(A, B, C):
@@ -1423,7 +1424,13 @@ class BattingDecorator(BaseDecorator):
             verts, idxs = self.get_editmesh_geom(obj)
         else:
             verts, idxs = self.get_mesh_geom(obj)
-        self.draw_lines(context, obj, verts[:2], idxs, extra_float_kwargs={"batting_thickness": 32.0})
+        self.draw_lines(
+            context,
+            obj,
+            verts[:2],
+            idxs,
+            extra_float_kwargs={"batting_thickness": DecoratorData.get_batting_thickness(obj)},
+        )
 
 
 class GridDecorator(BaseDecorator):
