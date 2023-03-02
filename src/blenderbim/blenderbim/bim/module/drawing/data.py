@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 
@@ -27,6 +28,7 @@ def refresh():
     SheetsData.is_loaded = False
     SchedulesData.is_loaded = False
     DrawingsData.is_loaded = False
+    DecoratorData.data = {}
 
 
 class ProductAssignmentsData:
@@ -121,3 +123,19 @@ class SchedulesData:
     @classmethod
     def total_schedules(cls):
         return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"])
+
+
+class DecoratorData:
+    data = {}
+
+    @classmethod
+    def get_batting_thickness(cls, obj):
+        result = cls.data.get(obj.name, None)
+        if result is not None:
+            return result
+        element = tool.Ifc.get_entity(obj)
+        if element:
+            result = ifcopenshell.util.element.get_pset(element, "BBIM_Batting", "Thickness") or 5.0
+            cls.data[obj.name] = result
+            return result
+        return 5.0
