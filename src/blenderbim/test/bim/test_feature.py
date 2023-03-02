@@ -173,6 +173,13 @@ def i_press_operator(operator):
         exec(f"bpy.ops.{operator}()")
 
 
+@given(parsers.parse('I evaluate expression "{expression}"'))
+@when(parsers.parse('I evaluate expression "{expression}"'))
+def i_evaluate_expression(expression):
+    expression = replace_variables(expression)
+    exec(expression)
+
+
 @when("I duplicate the selected objects")
 def i_duplicate_the_selected_objects():
     bpy.ops.object.duplicate_move()
