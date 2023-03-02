@@ -1355,8 +1355,6 @@ class BattingDecorator(BaseDecorator):
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
         + """
-        #define BREAK_LENGTH 32.0
-        #define BREAK_WIDTH 16.0
         #define PATTERN_SEGMENT_LENGTH 2
     """
     )
@@ -1364,10 +1362,17 @@ class BattingDecorator(BaseDecorator):
     GEOM_GLSL = """
     uniform vec2 winsize;
     uniform float viewportDrawingScale;
-    uniform float batting_thickness;
+    uniform float batting_thickness_winspace;
 
     layout(lines) in;
     layout(line_strip, max_vertices=256) out;
+
+    void place_vert(vec4 ref_point, vec2 win_space_vert) {
+        vec4 win2clip = matWIN2CLIP();
+        vec4 p = ref_point + vec4(win_space_vert, 0, 0);
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+    }
 
     void main() {
         vec4 clip2win = matCLIP2WIN();
@@ -1380,13 +1385,33 @@ class BattingDecorator(BaseDecorator):
         
         vec4 gap = dir * 16.0; // TODO: never used?
         
-        float segment_width = batting_thickness / 2.5;
-        vec2 batting_dimensions = vec2(segment_width, batting_thickness);
-        // make sure to multiply by viewportDrawingScale
+        float segment_width = batting_thickness_winspace / 2.5;
+        vec2 batting_dimensions = vec2(segment_width, batting_thickness_winspace);
+        // need to multiply by viewportDrawingScale
         // so the drawing will stay consistent on zoom in / zoom out
-        mat2 m_edge_space = mat2( dir.xy, dir.yx*vec2(1,-1) ) * viewportDrawingScale;
+        // but since we use winspace batting dimensions we skip it
+        mat2 m_edge_space = mat2( dir.xy, dir.yx*vec2(1,-1) );
         
-        vec2 pattern_segment_data[PATTERN_SEGMENT_LENGTH];
+        // simplied rectangle + cross version to indicate batting
+        place_vert(p0w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
+        place_vert(p0w, m_edge_space * ( -vec2(0, 0.5) * batting_dimensions ) );
+        place_vert(p1w, m_edge_space * ( -vec2(0, 0.5) * batting_dimensions ) );
+        place_vert(p1w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
+        place_vert(p0w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
+        EndPrimitive();
+        place_vert(p0w, m_edge_space * ( -vec2(0, 0.5) * batting_dimensions ) );
+        place_vert(p1w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
+        EndPrimitive();
+        place_vert(p0w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
+        place_vert(p1w, m_edge_space * ( -vec2(0, 0.5) * batting_dimensions ) );
+        EndPrimitive();
+
+
+        // TODO: more fancy pattern? possibly use of frag shader?
+        // we're not using complicated patterns because of the
+        // hardware shader limit:
+        // Error: C6033: Hardware limitation reached, can only emit 256 vertices of this size
+        // vec2 pattern_segment_data[PATTERN_SEGMENT_LENGTH];
         // simplified insulation pattern
         // pattern_segment_data[0] = vec2(0, 1);
         // pattern_segment_data[1] = vec2(0.5, 0.8);
@@ -1396,26 +1421,21 @@ class BattingDecorator(BaseDecorator):
         // pattern_segment_data[5] = vec2(0.5, 0.8);                
         // pattern_segment_data[6] = vec2(1.0, 1.0);
         // zigzag pattern
-        pattern_segment_data[0] = vec2(0, 1);
-        pattern_segment_data[1] = vec2(0, 0);
-
-        int segs = int( ceil( length(edge) / (batting_dimensions.x * viewportDrawingScale) ) ); // amount of segments
-        vec4 p;
-        vec2 p_base, p_cur_ver;
-
-        for (int i = 0; i < segs; i++) {
-            p_base = m_edge_space * (vec2(i, -0.5) * batting_dimensions);
-            for(int j=0; j<PATTERN_SEGMENT_LENGTH; j++) {
-                p_cur_ver = p_base + m_edge_space * (pattern_segment_data[j] * batting_dimensions);
-                p = p0w + vec4(p_cur_ver, 0, 0);
-                gl_Position = WIN2CLIP(p);
-                EmitVertex();
-            }
-        }
-
-        gl_Position = p1;
-        EmitVertex();
-        EndPrimitive();
+        // pattern_segment_data[0] = vec2(0, 1);
+        // pattern_segment_data[1] = vec2(0, 0);
+        // int segs = int( ceil( length(edge) / (batting_dimensions.x * viewportDrawingScale) ) ); // amount of segments
+        // vec4 p;
+        // vec2 p_base, p_cur_ver;
+        // for (int i = 0; i < segs; i++) {
+        //     p_base = m_edge_space * (vec2(i, -0.5) * batting_dimensions);
+        //     for(int j=0; j<PATTERN_SEGMENT_LENGTH; j++) {
+        //         p_cur_ver = p_base + m_edge_space * (pattern_segment_data[j] * batting_dimensions);
+        //         place_vert(p0w, p_cur_ver);
+        //     }
+        // }
+        // gl_Position = p1;
+        // EmitVertex();
+        // EndPrimitive();
     }
     """
 
@@ -1424,12 +1444,26 @@ class BattingDecorator(BaseDecorator):
             verts, idxs = self.get_editmesh_geom(obj)
         else:
             verts, idxs = self.get_mesh_geom(obj)
+        
+        # TODO: find the less ugly way to figure thickness
+        thickness = DecoratorData.get_batting_thickness(obj)
+        region = context.region
+        region3d = context.region_data
+        original_edge_length = (verts[1]-verts[0]).length
+        clipspace_verts = [region3d.perspective_matrix @ v for v in verts[:2]]
+        winspace_verts = [v * Vector([region.width/2, region.height/2, 1]) for v in clipspace_verts]
+        win_space_edge_length = (winspace_verts[1]-winspace_verts[0]).xy.length
+        k = win_space_edge_length / original_edge_length
+        winspace_thickness = k * thickness
+
         self.draw_lines(
             context,
             obj,
             verts[:2],
             idxs,
-            extra_float_kwargs={"batting_thickness": DecoratorData.get_batting_thickness(obj)},
+            extra_float_kwargs={
+                "batting_thickness_winspace": winspace_thickness},
+            is_scale_dependant = False
         )
 
 

@@ -135,7 +135,9 @@ class DecoratorData:
             return result
         element = tool.Ifc.get_entity(obj)
         if element:
-            result = ifcopenshell.util.element.get_pset(element, "BBIM_Batting", "Thickness") or 5.0
-            cls.data[obj.name] = result
-            return result
-        return 5.0
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            thickness = ifcopenshell.util.element.get_pset(element, "BBIM_Batting", "Thickness") 
+            thickness = thickness * unit_scale if thickness else 1.5
+            cls.data[obj.name] = thickness
+            return thickness
+        return 1.5
