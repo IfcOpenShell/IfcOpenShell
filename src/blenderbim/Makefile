@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-PYTHON:=python
+PYTHON:=python3.10
+PIP:=pip3.10
 PATCH:=patch
 SED:=sed -i
 ifeq ($(OS),Windows_NT)
@@ -214,8 +215,8 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
 	# Provides BIMTester functionality
 	cd dist/working && $(PYTHON) -m venv env
-	cd dist/working && . env/bin/activate && pip install pybabel
-	cd dist/working && . env/bin/activate && pip install babel
+	cd dist/working && . env/bin/activate && $(PIP) install pybabel
+	cd dist/working && . env/bin/activate && $(PIP) install babel
 	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.7.0/src/ifcbimtester/bimtester/locale/
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
 	# Provides IFCTester functionality
@@ -398,9 +399,9 @@ endif
 	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
 	# Required by IFCCityJSON
-	cd dist/working && . env/bin/activate && pip install cjio --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install cjio --target=./site-packages
 	# Provides express rule validation for ifcopenshell.validate
-	cd dist/working && . env/bin/activate && pip install pytest --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install pytest --target=./site-packages
 	cd dist/working/site-packages/ && rm -r *dist-info*
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
