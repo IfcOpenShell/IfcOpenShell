@@ -372,10 +372,11 @@ class Model(blenderbim.core.tool.Model):
             total_existing_children = len(array["children"])
             children_elements = []
             children_objs = []
+            base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
             for i in range(0, array["count"]):
                 if i == 0:
                     continue
-                offset = Vector((i * array["x"] * unit_scale, i * array["y"] * unit_scale, i * array["z"] * unit_scale))
+                offset = base_offset * i
                 for obj in obj_stack:
                     if child_i >= total_existing_children:
                         child_obj = tool.Spatial.duplicate_object_and_data(obj)

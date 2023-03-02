@@ -36,8 +36,7 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
 
         array = {"children": [], "count": 1, "x": 0.0, "y": 0.0, "z": 0.0}
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets.get("BBIM_Array", None)
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
 
         if pset:
             data = json.loads(pset["Data"])
@@ -77,8 +76,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets["BBIM_Array"]
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item] = {
             "children": data[self.item]["children"],
@@ -112,8 +110,7 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        psets = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(psets["BBIM_Array"]["Data"])[self.item]
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
         props = obj.BIMArrayProperties
         props.count = data["count"]
         props.x = data["x"]
@@ -134,8 +131,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets["BBIM_Array"]
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item]["count"] = 1
 
