@@ -21,7 +21,7 @@ import ifcopenshell.api
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 import blenderbim.bim.module.model.profile as model_profile
-from blenderbim.bim.module.model.slab import DecorationsHandler
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
 
 
@@ -138,7 +138,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.context.scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode="EDIT")
-        DecorationsHandler.install(context)
+        ProfileDecorator.install(context)
         bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
 
 
@@ -149,8 +149,8 @@ class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        if obj and obj.data and obj.data.BIMMeshProperties.is_profile:
-            DecorationsHandler.uninstall()
+        if obj and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
+            ProfileDecorator.uninstall()
             bpy.ops.object.mode_set(mode="OBJECT")
             bpy.data.objects.remove(obj)
 
@@ -166,7 +166,7 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
 
         obj = context.active_object
 
-        DecorationsHandler.uninstall()
+        ProfileDecorator.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
 
         profile = tool.Model.export_profile(obj)
@@ -176,7 +176,7 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
                 self.layout.label(text="INVALID PROFILE: " + indices[1])
 
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-            DecorationsHandler.install(context)
+            ProfileDecorator.install(context)
             bpy.ops.object.mode_set(mode="EDIT")
             return
 

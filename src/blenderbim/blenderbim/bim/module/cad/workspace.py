@@ -48,7 +48,9 @@ class CadTool(WorkSpaceTool):
 
     def draw_settings(context, layout, tool):
         obj = context.active_object
-        if obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile:
+        if not obj or not obj.data:
+            return
+        if hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_Q")
@@ -100,6 +102,32 @@ class CadTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_X")
             row.operator("bim.reset_vertex", text="Reset Vertex")
+        elif hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "AXIS":
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_Q")
+            row.operator("bim.edit_extrusion_axis", text="Save Axis")
+            row.operator("bim.disable_editing_extrusion_axis", text="", icon="CANCEL")
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.cad_hotkey", text="Extend").hotkey = "S_E"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_T")
+            row.operator("bim.cad_hotkey", text="Mitre").hotkey = "S_T"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.cad_hotkey", text="Fillet").hotkey = "S_F"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_O")
+            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
         else:
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -187,7 +215,10 @@ class CadHotkey(bpy.types.Operator):
 
     def hotkey_S_Q(self):
         if tool.Ifc.get_entity(bpy.context.active_object):
-            bpy.ops.bim.edit_extrusion_profile()
+            if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
+                bpy.ops.bim.edit_extrusion_profile()
+            elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
+                bpy.ops.bim.edit_extrusion_axis()
         else:
             bpy.ops.bim.edit_arbitrary_profile()
 
@@ -210,4 +241,9 @@ class CadHotkey(bpy.types.Operator):
 
     def is_profile(self):
         obj = bpy.context.active_object
-        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile
+        return (
+            obj
+            and obj.data
+            and hasattr(obj.data, "BIMMeshProperties")
+            and obj.data.BIMMeshProperties.subshape_type == "PROFILE"
+        )
