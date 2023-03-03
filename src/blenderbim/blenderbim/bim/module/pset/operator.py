@@ -197,7 +197,7 @@ class EnablePsetEditing(bpy.types.Operator):
                     setattr(new, data_type, enum)
                     new.is_selected = enum in selected_enum_items
             else:
-                if prop.is_a("IfcSimplePropertyTemplate"):
+                if prop.is_a() in ("IfcSimplePropertyTemplate", "IfcPropertySingleValue"):
                     value = prop.NominalValue.wrappedValue
                 elif prop.is_a("IfcPhysicalSimpleQuantity"):
                     value = prop[3]
