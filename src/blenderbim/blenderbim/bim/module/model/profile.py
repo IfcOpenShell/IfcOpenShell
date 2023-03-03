@@ -18,7 +18,6 @@
 
 import bpy
 import copy
-import math
 import bmesh
 import mathutils.geometry
 import ifcopenshell
@@ -29,10 +28,10 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.type
 import blenderbim.core.geometry
-from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees, inf
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
 def element_listener(element, obj):
@@ -48,12 +47,12 @@ def mode_callback(obj, data):
             or not bpy.context.scene.BIMProjectProperties.is_authoring
         ):
             return
-        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        product = tool.Ifc.get().by_id(obj.BIMObjectProperties.ifc_definition_id)
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbProfile":
             return
         if obj.mode == "EDIT":
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
             bm = bmesh.from_edit_mesh(obj.data)
             bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
             bmesh.update_edit_mesh(obj.data)
@@ -97,8 +96,8 @@ class DumbProfileGenerator:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(self):
-        self.file = IfcStore.get_file()
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+        self.file = tool.Ifc.get()
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         material = ifcopenshell.util.element.get_material(self.relating_type)
         if material and material.is_a("IfcMaterialProfileSet"):
             self.profile_set = material
@@ -328,7 +327,7 @@ class DumbProfileJoiner:
         body = copy.deepcopy(axis1)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         si_length = unit_scale * length
-        end = profile1.matrix_world @ Vector((si_length, 0, 0))
+        end = profile1.matrix_world @ Vector((0, 0, si_length))
         axis[1] = end
         body[1] = end
         self.recreate_profile(element1, profile1, axis, body)
@@ -500,9 +499,7 @@ class DumbProfileJoiner:
             # Openings should move with the host overall ...
             # ... except their position should stay the same along the local Z axis of the wall
             for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
-                percent = tool.Cad.edge_percent(
-                    self.body[0], (previous_origin, (previous_matrix @ Vector((0, 0, 1))))
-                )
+                percent = tool.Cad.edge_percent(self.body[0], (previous_origin, (previous_matrix @ Vector((0, 0, 1)))))
                 is_z_offset_increased = True if percent < 0 else False
 
                 change_in_z = (self.body[0] - previous_origin).length / self.unit_scale
@@ -912,4 +909,122 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
             obj.matrix_world @= rotate_matrix
         bpy.context.view_layer.update()
         DumbProfileRecalculator().recalculate(objs)
+        return {"FINISHED"}
+
+
+class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_extrusion_axis"
+    bl_label = "Enable Editing Extrusion Axis"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        axis = ifcopenshell.util.representation.get_representation(element, "Model", "Axis", "GRAPH_VIEW")
+        if axis:
+            position = obj.matrix_world.copy()
+            tool.Model.import_axis(axis.Items[0], obj=obj)
+        else:
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            extrusion = tool.Model.get_extrusion(body)
+
+            if extrusion.Position:
+                position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+                position[0][3] *= self.unit_scale
+                position[1][3] *= self.unit_scale
+                position[2][3] *= self.unit_scale
+            else:
+                position = Matrix()
+
+            direction = Vector(extrusion.ExtrudedDirection.DirectionRatios).normalized()
+            tool.Model.import_axis([Vector((0, 0, 0)), direction * extrusion.Depth], obj=obj, position=position)
+
+        bpy.ops.object.mode_set(mode="EDIT")
+        ProfileDecorator.install(context)
+        if not bpy.app.background:
+            bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
+        return {"FINISHED"}
+
+
+class DisableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_extrusion_axis"
+    bl_label = "Disable Editing Extrusion Axis"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        ProfileDecorator.uninstall()
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+        return {"FINISHED"}
+
+
+class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_extrusion_axis"
+    bl_label = "Edit Extrusion Axis"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        ProfileDecorator.uninstall()
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        start = obj.matrix_world @ obj.data.vertices[0].co.copy()
+        end = obj.matrix_world @ obj.data.vertices[1].co.copy()
+        depth = (end - start).length
+        z_axis = (end - start).normalized()
+        y_axis = Vector((0, 0, 1))
+        x_axis = y_axis.cross(z_axis).normalized()
+        y_axis = z_axis.cross(x_axis).normalized()
+
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
+        matrix = Matrix(
+            (
+                [x_axis[0], y_axis[0], z_axis[0], start.x],
+                [x_axis[1], y_axis[1], z_axis[1], start.y],
+                [x_axis[2], y_axis[2], z_axis[2], start.z],
+                [0, 0, 0, 1],
+            )
+        )
+
+        obj.matrix_world = matrix
+        bpy.context.view_layer.update()
+
+        joiner = DumbProfileJoiner()
+        joiner.set_depth(obj, depth / self.unit_scale)
         return {"FINISHED"}
