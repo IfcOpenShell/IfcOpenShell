@@ -92,3 +92,34 @@ class Blender:
                 return tool.Ifc.get_entity(bpy.context.active_object).is_a(ifc_class)
             return False
         return False
+
+    @classmethod
+    def apply_bmesh(cls, mesh, bm):
+        import bmesh
+
+        if bpy.context.object and bpy.context.object.mode == "EDIT":
+            # better to be safe because otherwise mesh won't be updated
+            # and you won't get any errors
+            if not bm.is_wrapped or hash(bmesh.from_edit_mesh(mesh)) != hash(bm):
+                raise Exception(f'{bm} is not edit mesh for {mesh}. '
+                    'For applying bmesh in edit mode bmesh should be acquired with `bmesh.from_edit_mesh(me)`.')
+            bmesh.update_edit_mesh(mesh)
+        else:
+            bm.to_mesh(mesh)
+
+        bm.free()
+        mesh.update()
+
+    @classmethod
+    def get_bmesh_for_mesh(cls, mesh, clean=False):
+        import bmesh
+
+        if bpy.context.object.mode == "EDIT":
+            bm = bmesh.from_edit_mesh(mesh)
+            if clean:
+                bm.clear()
+        else:
+            bm = bmesh.new()
+            if not clean:
+                bm.from_mesh(mesh)
+        return bm

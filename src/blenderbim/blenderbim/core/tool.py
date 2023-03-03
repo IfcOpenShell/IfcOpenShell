@@ -76,6 +76,9 @@ def get_name(cls, ifc_class, name): pass
 def get_obj_ifc_definition_id(cls, obj, obj_type): pass
 def get_selected_objects(cls): pass
 def set_active_object(cls, obj): pass
+def apply_bmesh(cls, mesh, bm): pass
+def get_bmesh_for_mesh(cls, mesh, clean=False): pass
+
 
 @interface
 class Boundary: pass
