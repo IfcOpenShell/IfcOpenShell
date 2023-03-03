@@ -50,7 +50,7 @@ class PsetTemplatesGenerator:
         if not IFC4x3_HTML_LOCATION.is_dir():
             raise Exception(
                 f'ISO release for Ifc4.3.0.1 expected to be in folder "{IFC4x3_HTML_LOCATION.resolve()}\\"\n'
-                "For doc extraction please either setup docs as described above \n"
+                "For generating ifc pset library please either setup docs as described above \n"
                 "or change IFC4x3_HTML_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingSMART/IFC4.3-html/releases/tag/sep-13-release"
