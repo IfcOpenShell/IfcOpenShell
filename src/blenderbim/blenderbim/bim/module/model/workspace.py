@@ -499,6 +499,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", []) if o != bpy.context.active_object]
             bpy.ops.bim.extend_profile(join_type="T")
+        elif self.active_material_usage == "LAYER3" and selected_usages.get("LAYER2", []):
+            # Extend LAYER2s to LAYER3
+            [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
+            [o.select_set(False) for o in selected_usages.get("LAYER3", []) if o != bpy.context.active_object]
+            bpy.ops.bim.join_wall(join_type="T")
         elif self.active_material_usage == "LAYER2":
             # Extend LAYER2s to LAYER2
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
