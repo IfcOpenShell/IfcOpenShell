@@ -1534,6 +1534,8 @@ class IfcImporter:
         if rendering_style and texture_style:
             self.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
 
+        tool.Style.record_shading(blender_material)
+
     def create_surface_style_shading(self, blender_material, surface_style):
         alpha = 1.0
         # Transparency was added in IFC4
