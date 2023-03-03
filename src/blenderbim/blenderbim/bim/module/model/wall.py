@@ -346,28 +346,6 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
         child.matrix_parent_inverse = wall.matrix_world.inverted()
 
 
-class DumbWallFlipper:
-    def __init__(self, wall):
-        self.wall = wall
-
-    def flip(self):
-        if (
-            self.wall.matrix_world.translation - self.wall.matrix_world @ Vector(self.wall.bound_box[0])
-        ).length < 0.001:
-            recalculate_dumb_wall_origin(self.wall, self.wall.matrix_world @ Vector(self.wall.bound_box[7]))
-            self.rotate_wall_180()
-            bpy.context.view_layer.update()
-            for child in self.wall.children:
-                child.matrix_parent_inverse = self.wall.matrix_world.inverted()
-        else:
-            recalculate_dumb_wall_origin(self.wall)
-
-    def rotate_wall_180(self):
-        flip_matrix = Matrix.Rotation(pi, 4, "Z")
-        self.wall.data.transform(flip_matrix)
-        self.wall.rotation_euler.rotate(flip_matrix)
-
-
 class DumbWallAligner:
     # An alignment shifts the origin of all walls to the closest point on the
     # local X axis of the reference wall. In addition, the Z rotation is copied.
@@ -377,61 +355,58 @@ class DumbWallAligner:
         self.reference_wall = reference_wall
 
     def align_centerline(self):
-        recalculate_dumb_wall_origin(self.wall)
-        recalculate_dumb_wall_origin(self.reference_wall)
         self.align_rotation()
 
-        width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
-        reference_width = (Vector(self.reference_wall.bound_box[3]) - Vector(self.reference_wall.bound_box[0])).y
+        l_start = Vector(self.reference_wall.bound_box[0]).lerp(Vector(self.reference_wall.bound_box[3]), 0.5)
+        l_end = Vector(self.reference_wall.bound_box[4]).lerp(Vector(self.reference_wall.bound_box[7]), 0.5)
 
-        if self.is_rotation_flipped():
-            offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -(reference_width / 2) - (width / 2), 0))
-        else:
-            offset = self.wall.matrix_world.to_quaternion() @ Vector((0, (reference_width / 2) - (width / 2), 0))
+        start = self.reference_wall.matrix_world @ l_start
+        end = self.reference_wall.matrix_world @ l_end
 
-        self.align(
-            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0]),
-            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4]),
-            offset,
-        )
+        l_snap_point = Vector(self.wall.bound_box[0]).lerp(Vector(self.wall.bound_box[3]), 0.5)
+        snap_point = self.wall.matrix_world @ l_snap_point
+        offset = snap_point - self.wall.matrix_world.translation
+
+        point, _ = mathutils.geometry.intersect_point_line(snap_point, start, end)
+
+        new_origin = point - offset
+        self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
     def align_last_layer(self):
-        recalculate_dumb_wall_origin(self.wall)
-        recalculate_dumb_wall_origin(self.reference_wall)
         self.align_rotation()
 
         if self.is_rotation_flipped():
-            DumbWallFlipper(self.wall).flip()
+            DumbWallJoiner().flip(self.wall)
             bpy.context.view_layer.update()
+
         start = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[3])
         end = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[7])
 
-        wall_width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
+        snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[3])
+        offset = snap_point - self.wall.matrix_world.translation
 
-        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -wall_width, 0))
-        self.align(start, end, offset)
+        point, _ = mathutils.geometry.intersect_point_line(snap_point, start, end)
+
+        new_origin = point - offset
+        self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
     def align_first_layer(self):
-        recalculate_dumb_wall_origin(self.wall)
-        recalculate_dumb_wall_origin(self.reference_wall)
         self.align_rotation()
 
         if self.is_rotation_flipped():
-            DumbWallFlipper(self.wall).flip()
+            DumbWallJoiner().flip(self.wall)
             bpy.context.view_layer.update()
 
         start = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0])
         end = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4])
 
-        self.align(start, end)
+        snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[0])
+        offset = snap_point - self.wall.matrix_world.translation
 
-    def align(self, start, end, offset=None):
-        if offset is None:
-            offset = Vector((0, 0, 0))
-        point, distance = mathutils.geometry.intersect_point_line(self.wall.matrix_world.translation, start, end)
-        new_origin = point + offset
-        self.wall.matrix_world.translation[0] = new_origin[0]
-        self.wall.matrix_world.translation[1] = new_origin[1]
+        point, _ = mathutils.geometry.intersect_point_line(snap_point, start, end)
+
+        new_origin = point - offset
+        self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
     def align_rotation(self):
         reference = (self.reference_wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
