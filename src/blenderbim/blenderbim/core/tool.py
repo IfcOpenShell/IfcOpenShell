@@ -719,6 +719,7 @@ class Style:
     def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style, obj): pass
     def is_editing_styles(cls): pass
+    def record_shading(cls, obj): pass
     def select_elements(cls, elements): pass
 
 
