@@ -108,12 +108,18 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         if self.join_type == "T":
             elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]
-            targets = [e for e in elements if e and e.is_a() in ("IfcSlab", "IfcSlabStandardCase", "IfcRoof")]
-            if targets:
-                target = tool.Ifc.get_object(targets[0])
-                for element in elements:
-                    if tool.Model.get_usage_type(element) == "LAYER2":
-                        joiner.join_Z(tool.Ifc.get_object(element), target)
+            layer2_elements = []
+            layer3_elements = []
+            for element in elements:
+                usage = tool.Model.get_usage_type(element)
+                if usage == "LAYER2":
+                    layer2_elements.append(element)
+                elif usage == "LAYER3":
+                    layer3_elements.append(element)
+            if layer3_elements:
+                target = tool.Ifc.get_object(layer3_elements[0])
+                for element in layer2_elements:
+                    joiner.join_Z(tool.Ifc.get_object(element), target)
             else:
                 for obj in selected_objs:
                     if obj == context.active_object:
@@ -927,6 +933,15 @@ class DumbWallJoiner:
     def join_Z(self, wall1, slab2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(slab2)
+
+        for rel in element1.ConnectedFrom:
+            if rel.is_a() == "IfcRelConnectsElements" and rel.Description == "TOP":
+                ifcopenshell.api.run(
+                    "geometry.disconnect_element",
+                    tool.Ifc.get(),
+                    relating_element=rel.RelatingElement,
+                    related_element=element1,
+                )
 
         ifcopenshell.api.run(
             "geometry.connect_element",
