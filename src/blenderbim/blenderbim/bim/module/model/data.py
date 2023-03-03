@@ -35,6 +35,7 @@ def refresh():
     SverchokData.is_loaded = False
     WindowData.is_loaded = False
     DoorData.is_loaded = False
+    RailingData.is_loaded = False
 
 
 class AuthoringData:
@@ -459,6 +460,26 @@ class DoorData:
         if element:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Door", None)
+            if parameters:
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
+                return parameters
+            
+
+class RailingData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Railing", None)
             if parameters:
                 parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
