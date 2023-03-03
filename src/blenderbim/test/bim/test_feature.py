@@ -182,7 +182,7 @@ def i_evaluate_expression(expression):
 
 @when("I duplicate the selected objects")
 def i_duplicate_the_selected_objects():
-    bpy.ops.object.duplicate_move()
+    bpy.ops.bim.override_object_duplicate_move()
     blenderbim.bim.handler.active_object_callback()
 
 
@@ -278,7 +278,7 @@ def i_am_on_frame_number(number):
 
 @when("I delete the selected objects")
 def i_delete_the_selected_objects():
-    bpy.ops.object.delete()
+    bpy.ops.bim.override_object_delete()
 
 
 @given(parsers.parse('the variable "{key}" is "{value}"'))
