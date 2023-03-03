@@ -285,7 +285,7 @@ Scenario: Override duplicate move - without active IFC data
     And I add an empty
     And the object "Cube" is selected
     And additionally the object "Empty" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "Cube" exists
     And the object "Cube.001" exists
 
@@ -297,7 +297,7 @@ Scenario: Override duplicate move - with active IFC data
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcBuildingStorey/My Storey" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "IfcWall/Cube" exists
     And the object "IfcWall/Cube" is an "IfcWall"
     And the object "IfcWall/Cube.001" exists
@@ -315,7 +315,7 @@ Scenario: Override duplicate move - copying a coloured representation
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And the material "Material" colour is set to "1,0,0,1"
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
@@ -335,7 +335,7 @@ Scenario: Override duplicate move - copying a type instance with a representatio
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
     And I press "bim.add_constr_type_instance"
     And the object "IfcWall/Wall" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "IfcWall/Wall.001" exists
     And the object "IfcWall/Wall.001" has a "MappedRepresentation" representation of "Model/Body/MODEL_VIEW"
 
@@ -364,7 +364,7 @@ Scenario: Override duplicate move - copying a layered extrusion
     And the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     And the object "IfcWall/Cube" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "IfcWall/Cube.001" exists
     Then the object "IfcWall/Cube.001" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
 
@@ -390,7 +390,7 @@ Scenario: Override duplicate move - copying a profiled extrusion
     And the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     And the object "IfcWall/Cube" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "IfcWall/Cube.001" exists
     Then the object "IfcWall/Cube.001" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
 

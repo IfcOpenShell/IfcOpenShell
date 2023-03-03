@@ -399,7 +399,7 @@ Scenario: Export IFC - with basic contents and saving as a relative path
 Scenario: Export IFC - with deleted objects synchronised
     Given an empty IFC project
     When the object "IfcBuildingStorey/My Storey" is selected
-    And I press "object.delete"
+    And I delete the selected objects
     And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
