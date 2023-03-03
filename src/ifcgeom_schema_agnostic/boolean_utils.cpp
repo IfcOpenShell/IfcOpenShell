@@ -1074,6 +1074,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		if (builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
 			Logger::Notice("Builder reports self-intersection in output");
 			success = false;
+		} else if(builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
+			Logger::Notice("Builder reports bad positioning and result is empty");
+			success = false;
 		} else {
 			TopoDS_Shape r = *builder;
 
