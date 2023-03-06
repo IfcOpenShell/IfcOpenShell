@@ -236,6 +236,7 @@ class BIMModelProperties(PropertyGroup):
             ("WINDOW", "Window", ""),
             ("DOOR", "Door", ""),
             ("STAIR", "Stair", ""),
+            ("RAILING", "Railing", ""),
         ),
         name="Type Template",
         default="MESH",

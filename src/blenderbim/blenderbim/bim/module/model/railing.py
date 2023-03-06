@@ -145,7 +145,6 @@ def update_railing_modifier_bmesh(context):
     # height
     extruded_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)['geom']
     extruded_verts = bm_sort_out_geom(extruded_geom)['verts']
-    extruded_edges = bm_sort_out_geom(extruded_geom)['edges']
     extrusion_vector = Vector((0, 0, 1)) * height
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
 
@@ -158,7 +157,6 @@ def update_railing_modifier_bmesh(context):
             if other_vert in extruded_verts:
                 edges_to_dissolve.append(e)
                 verts_to_dissolve.append(other_vert)
-
     bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
     bmesh.ops.dissolve_verts(bm, verts=verts_to_dissolve)
 
@@ -204,21 +202,11 @@ class BIM_OT_add_railing(Operator):
         obj = bpy.data.objects.new("IfcRailing", mesh)
         obj.location = spawn_location
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        element = blenderbim.core.root.assign_class(
-            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcRailing", should_add_representation=False
+        blenderbim.core.root.assign_class(
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, 
+            ifc_class="IfcRailing", should_add_representation=True,
+            context=body_context
         )
-        element.PredefinedType = "USERDEFINED"
-
-        bm = bmesh.new()
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        new_verts = [bm.verts.new(v) for v in [V(-1, 0, 0), V(0, 0, 0), V(1, 0, 0)]]
-        new_edges = [bm.edges.new( (new_verts[e[0]], new_verts[e[1]]) ) for e in [(0,1), (1,2)]]
-        bm.verts.index_update()
-        bm.edges.index_update()
-        tool.Blender.apply_bmesh(mesh, bm)
-
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
@@ -237,6 +225,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMRailingProperties
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if element.is_a() not in ("IfcRailing", "IfcRailingType"):
             self.report({"ERROR"}, "Object has to be IfcRailing/IfcRailingType type to add a railing.")
@@ -248,7 +237,17 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
             convert_property_group_from_si(props, skip_props=skip_props)
 
         railing_data = props.get_general_kwargs()
-        railing_data['path_data'] = get_path_data(obj)
+        path_data = get_path_data(obj)
+        if not path_data:
+            path_data = {
+                "edges": [[0, 1], [1, 2]],
+                "verts": [
+                    Vector([-1.0, 0.0, 0.0]) / si_conversion, 
+                    Vector([0.0, 0.0, 0.0]) / si_conversion, 
+                    Vector([1.0, 0.0, 0.0]) / si_conversion
+                ]
+            }
+        railing_data['path_data'] = path_data
 
         update_bbim_railing_pset(element, railing_data)
         update_railing_modifier_ifc_data(context)

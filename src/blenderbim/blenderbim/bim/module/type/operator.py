@@ -296,6 +296,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
             bpy.ops.bim.add_window()
+
         elif template == "DOOR":
             mesh = bpy.data.meshes.new("IfcDoor")
             obj = bpy.data.objects.new("TYPEX", mesh)
@@ -332,6 +333,25 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
             bpy.ops.bim.add_stair()
+
+        elif template == "RAILING":
+            mesh = bpy.data.meshes.new("IfcRailing")
+            obj = bpy.data.objects.new("TYPEX", mesh)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                predefined_type=predefined_type,
+                ifc_class="IfcRailingType",
+                should_add_representation=True,
+                context=body,
+            )
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.objects.active = None
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.bim.add_railing()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         return {"FINISHED"}
