@@ -334,23 +334,25 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 		first_wire = false;
 	}
 
-	path.add("\"");
-
-	if (dash_array) {
-		path.add(" stroke-dasharray=\"");
-		bool first = true;
-		for (auto& d : *dash_array) {
-			if (!first) {
-				path.add(" ");
-			}
-			first = false;
-			radii.push_back(path.add(d));
-		}
+	if (!path.empty()) {
 		path.add("\"");
-	}
 
-	path.add("/>\n");
-	p.second.push_back(path);
+		if (dash_array) {
+			path.add(" stroke-dasharray=\"");
+			bool first = true;
+			for (auto& d : *dash_array) {
+				if (!first) {
+					path.add(" ");
+				}
+				first = false;
+				radii.push_back(path.add(d));
+			}
+			path.add("\"");
+		}
+
+		path.add("/>\n");
+		p.second.push_back(path);
+	}
 }
 
 SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, IfcUtil::IfcBaseEntity* storey, const std::string& id) {
