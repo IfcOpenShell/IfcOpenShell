@@ -308,7 +308,10 @@ class SheetBuilder:
             for image in images:
                 new_href = ntpath.basename(image.attrib.get("{http://www.w3.org/1999/xlink}href"))
                 image.attrib["{http://www.w3.org/1999/xlink}href"] = new_href
-        group.append(embedded)
+        for child in embedded:
+            if "namedview" in child.tag:
+                continue
+            group.append(child)
         return group
 
     def convert_to_mm(self, value):
