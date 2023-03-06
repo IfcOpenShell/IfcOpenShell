@@ -1184,7 +1184,28 @@ void SvgSerializer::write(const geometry_data& data) {
 
 		TopoDS_Face largest_closed_wire_face;
 		double largest_closed_wire_area = 0.;
-		path_object* po = nullptr;
+
+		gp_Pln pln;
+		if (variant.which() < 2) {
+			pln = gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ());
+		} else {
+			const auto& section = boost::get<vertical_section>(variant);
+			pln = section.plane;
+		}
+
+		auto svg_name = data.svg_name;
+		
+		path_object* po_ = nullptr;
+		auto po = [this, &po_, &pln, &storey, &drawing_name, &svg_name]() {
+			if (po_ == nullptr) {
+				if (storey) {
+					po_ = &start_path(pln, storey, svg_name);
+				} else {
+					po_ = &start_path(pln, drawing_name, svg_name);
+				}
+			}
+			return po_;
+		};
 
 		// Iterate over components of compound to have better chance of matching section edges to closed wires
 		for (; it.More(); it.Next(), ++dash_it) {
@@ -1213,15 +1234,6 @@ void SvgSerializer::write(const geometry_data& data) {
 				cut_z = zmin + 1.;
 			}
 
-			gp_Pln pln;
-			if (variant.which() < 2) {
-				pln = gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ());
-			}
-			else {
-				const auto& section = boost::get<vertical_section>(variant);
-				pln = section.plane;
-			}
-
 			gp_Vec bbmin(x1, y1, zmin);
 			gp_Vec bbmax(x2, y2, zmax);
 			auto bbdif = bbmax - bbmin;
@@ -1246,19 +1258,9 @@ void SvgSerializer::write(const geometry_data& data) {
 					: (projection_direction.Dot(z_global) > 0.99 && state == -1)            // For elevations only include annotations that are "facing" the view direction
 				))
 			{
-				auto svg_name = data.svg_name;
-
 				if (object_type.size()) {
 					// postfix the object_type for CSS matching
 					boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
-				}
-
-				if (po == nullptr) {
-					if (storey) {
-						po = &start_path(pln, storey, svg_name);
-					} else {
-						po = &start_path(pln, drawing_name, svg_name);
-					}
 				}
 
 				auto subshape_to_use = subshape;
@@ -1287,7 +1289,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						TopoDS_Wire W;
 						B.MakeWire(W);
 						B.Add(W, e);
-						write(*po, W);
+						write(*po(), W);
 
 						// @todo should we take the average parameter value instead?
 						gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
@@ -1344,7 +1346,7 @@ void SvgSerializer::write(const geometry_data& data) {
 							path.add("</tspan>");
 						}
 						path.add("</text>");
-						po->second.push_back(path);
+						po()->second.push_back(path);
 					}
 					
 				} else if (object_type == "Symbol") {
@@ -1352,7 +1354,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					TopExp_Explorer exp(subshape_to_use, TopAbs_WIRE, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
 						const auto& W = TopoDS::Wire(exp.Current());
-						write(*po, W, *dash_it);
+						write(*po(), W, *dash_it);
 					}
 					
 				}
@@ -1374,17 +1376,11 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			emitted = true;
 
-			auto svg_name = data.svg_name;
 			if (object_type.size()) {
 				// prefix class to indicate this is a cut element
-				boost::replace_all(svg_name, "class=\"", "class=\"cut ");
-			}
-
-			if (po == nullptr) {
-				if (storey) {
-					po = &start_path(pln, storey, svg_name);
-				} else {
-					po = &start_path(pln, drawing_name, svg_name);
+				// @todo this is getting out of control, use a proper xml/svg library.
+				if(svg_name.find("class=\"cut ") == std::string::npos) {
+					boost::replace_all(svg_name, "class=\"", "class=\"cut ");
 				}
 			}
 
@@ -1518,13 +1514,15 @@ void SvgSerializer::write(const geometry_data& data) {
 						path.add("</tspan>");
 					}
 					path.add("</text>");
-					po->second.push_back(path);
+					po()->second.push_back(path);
 				}
 
 				BB.Add(wires_compound, wire);
 			}
 
-			write(*po, wires_compound);
+			if (TopoDS_Iterator(wires_compound).More()) {
+				write(*po(), wires_compound);
+			}
 		}
 
 		if (!largest_closed_wire_face.IsNull()) {
@@ -1633,12 +1631,12 @@ void SvgSerializer::write(const geometry_data& data) {
 					path.add("</tspan>");
 				}
 				path.add("</text>");
-				po->second.push_back(path);
+				po()->second.push_back(path);
 			}
 		}
 
-		if (po && !annotation.IsNull()) {
-			write(*po, annotation);
+		if (!annotation.IsNull()) {
+			write(*po(), annotation);
 		}
 	}
 

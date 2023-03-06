@@ -60,6 +60,7 @@ namespace util {
 	public:
 		boost::shared_ptr<string_item> add(const std::string& s);
 		boost::shared_ptr<float_item> add(const double& d);
+		bool empty() const { return items.empty(); }
 		std::string str() const;
 	};
 }
