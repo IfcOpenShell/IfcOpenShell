@@ -504,6 +504,7 @@ Scenario: Create window type based on window modifier, add an occurence of it an
     And I press "bim.hotkey(hotkey='S_A')"
     And I press "bim.enable_editing_window()"
     And I press "bim.finish_editing_window()"
+    Then nothing happens
 
 Scenario: Create door type based on door modifier, add an occurence of it and edit it
     Given an empty IFC project
@@ -514,3 +515,13 @@ Scenario: Create door type based on door modifier, add an occurence of it and ed
     And I press "bim.hotkey(hotkey='S_A')"
     And I press "bim.enable_editing_door()"
     And I press "bim.finish_editing_door()"
+    Then nothing happens
+
+Scenario: Create a door, undo and create a new door
+    Given an empty IFC project
+    And I prepare to undo
+    And I press "mesh.add_door()"
+    And I undo
+    And I press "mesh.add_door()"
+    Then nothing happens
+    And the object "IfcDoor/IfcDoor" exists
