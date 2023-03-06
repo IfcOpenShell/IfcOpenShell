@@ -56,7 +56,6 @@ def mode_callback(obj, data):
             bm = bmesh.from_edit_mesh(obj.data)
             bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
             bmesh.update_edit_mesh(obj.data)
-            bm.free()
         else:
             material_usage = ifcopenshell.util.element.get_material(product)
             x, y = obj.dimensions[0:2]
