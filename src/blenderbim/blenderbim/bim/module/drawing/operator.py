@@ -532,7 +532,7 @@ class CreateDrawing(bpy.types.Operator):
                     for subpath in path.attrib["d"].split("M")[1:]:
                         subpath = "M" + subpath.strip()
                         coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
-                        if coords[0] == coords[-1]:
+                        if len(coords) > 2 and coords[0] == coords[-1]:
                             is_closed_polygon = True
                             polygons.append(shapely.Polygon(coords))
                 if is_closed_polygon:
