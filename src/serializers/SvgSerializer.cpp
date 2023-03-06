@@ -976,11 +976,11 @@ void SvgSerializer::write(const geometry_data& data) {
 						
 						const TopoDS_Face& face = TopoDS::Face(exp.Current());
 						BRepGProp_Face prop(face);
-						gp_Pnt p;
+						gp_Pnt _;
 						gp_Vec normal_direction;
 						double u0, u1, v0, v1;
 						BRepTools::UVBounds(face, u0, u1, v0, v1);
-						prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., p, normal_direction);
+						prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., _, normal_direction);
 						const double dx = std::fabs(normal_direction.X());
 						const double dy = std::fabs(normal_direction.Y());
 						const double dz = std::fabs(normal_direction.Z());
@@ -1269,11 +1269,9 @@ void SvgSerializer::write(const geometry_data& data) {
 					trsf.SetTransformation(gp::XOY(), pln.Position());
 					subshape_to_use.Move(trsf);
 
-					gp_Trsf trsf_mirror;
-					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-					BRepBuilderAPI_Transform make_transform_mirror(subshape_to_use, trsf_mirror, true);
-					make_transform_mirror.Build();
-					subshape_to_use = make_transform_mirror.Shape();
+					BRepBuilderAPI_Transform make_transform_mirror_(subshape_to_use, trsf_mirror, true);
+					make_transform_mirror_.Build();
+					subshape_to_use = make_transform_mirror_.Shape();
 				}
 
 				if (object_type == "Dimension") {
@@ -1397,11 +1395,9 @@ void SvgSerializer::write(const geometry_data& data) {
 				trsf.SetTransformation(gp::XOY(), pln.Position());
 				result.Move(trsf);
 
-				gp_Trsf trsf_mirror;
-				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-				BRepBuilderAPI_Transform make_transform_mirror(result, trsf_mirror, true);
-				make_transform_mirror.Build();
-				result = make_transform_mirror.Shape();
+				BRepBuilderAPI_Transform make_transform_mirror_(result, trsf_mirror, true);
+				make_transform_mirror_.Build();
+				result = make_transform_mirror_.Shape();
 			}
 
 			Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
@@ -1566,8 +1562,8 @@ void SvgSerializer::write(const geometry_data& data) {
 						
 						// Sample some points on the line and assure it's inside.
 						bool all_inside = true;
-						for (int i = 5; i < 95; ++i) {
-							gp_Pnt p3d((pa.XYZ() + (pb.XYZ() - pa.XYZ()) * i / 100.));
+						for (int n = 5; n < 95; ++n) {
+							gp_Pnt p3d((pa.XYZ() + (pb.XYZ() - pa.XYZ()) * n / 100.));
 							gp_Pnt2d p2d(p3d.X(), p3d.Y());
 
 							if (fcls.Perform(p2d) != TopAbs_IN) {
