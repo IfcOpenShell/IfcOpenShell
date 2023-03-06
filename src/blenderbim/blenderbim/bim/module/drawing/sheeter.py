@@ -23,6 +23,7 @@ import pystache
 import urllib.parse
 import xml.etree.ElementTree as ET
 import blenderbim.tool as tool
+import ifcopenshell.util.geolocation
 from shutil import copy
 from xml.dom import minidom
 
@@ -196,7 +197,14 @@ class SheetBuilder:
     def build_titleblock(self, root, sheet):
         titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
         image = titleblock.findall("{http://www.w3.org/2000/svg}image")[0]
-        titleblock.append(self.parse_embedded_svg(image, sheet.get_info()))
+        g = self.parse_embedded_svg(image, sheet.get_info())
+        grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
+        true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
+        for north in g.iterfind('.//{http://www.w3.org/2000/svg}g[@data-type="grid-north"]'):
+            north.attrib["transform"] = f"rotate({grid_north})"
+        for north in g.iterfind('.//{http://www.w3.org/2000/svg}g[@data-type="true-north"]'):
+            north.attrib["transform"] = f"rotate({true_north})"
+        titleblock.append(g)
         titleblock.remove(image)
 
     def build_drawings(self, root, sheet):
