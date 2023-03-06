@@ -58,7 +58,6 @@ def mode_callback(obj, data):
             bm = bmesh.from_edit_mesh(obj.data)
             bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
             bmesh.update_edit_mesh(obj.data)
-            bm.free()
         else:
             new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
             obj.data.transform(
