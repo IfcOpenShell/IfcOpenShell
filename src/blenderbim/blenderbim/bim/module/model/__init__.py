@@ -36,7 +36,7 @@ from . import (
     profile,
     sverchok_modifier,
     door,
-    railing
+    railing,
 )
 
 classes = (

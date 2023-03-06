@@ -39,16 +39,18 @@ import json
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailing.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailingType.htm
 
+
 def bm_split_edge_at_offset(edge, offset):
     v0, v1 = edge.verts
 
     offset = offset / 2
-    edge_len = (v0.co-v1.co).xy.length
+    edge_len = (v0.co - v1.co).xy.length
 
-    split_output_0 = bmesh.utils.edge_split(edge, v0, offset/edge_len)
-    split_output_1 = bmesh.utils.edge_split(edge, v1, offset/(edge_len-offset))
+    split_output_0 = bmesh.utils.edge_split(edge, v0, offset / edge_len)
+    split_output_1 = bmesh.utils.edge_split(edge, v1, offset / (edge_len - offset))
     new_geometry = bm_sort_out_geom(split_output_0 + split_output_1)
     return new_geometry
+
 
 def update_railing_modifier_ifc_data(context):
     obj = context.active_object
@@ -57,12 +59,12 @@ def update_railing_modifier_ifc_data(context):
     ifc_file = tool.Ifc.get()
 
     # type attributes
-    element.PredefinedType = 'USERDEFINED'
+    element.PredefinedType = "USERDEFINED"
     # occurences attributes
     occurences = tool.Ifc.get_all_element_occurences(element)
     for occurence in occurences:
         occurence.ObjectType = props.railing_type
-    
+
     # update pset
     pset_common = tool.Pset.get_element_pset(element, "Pset_RailingCommon")
     if not pset_common:
@@ -77,6 +79,7 @@ def update_railing_modifier_ifc_data(context):
         },
     )
 
+
 def update_bbim_railing_pset(element, railing_data):
     pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
     if not pset:
@@ -84,14 +87,15 @@ def update_bbim_railing_pset(element, railing_data):
     railing_data = json.dumps(railing_data, default=list)
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": railing_data})
 
+
 def update_railing_modifier_bmesh(context):
     obj = context.object
     props = obj.BIMRailingProperties
 
     if not RailingData.is_loaded:
         RailingData.load()
-    path_data = RailingData.data["parameters"]['data_dict']['path_data']
-    
+    path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
+
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     # need to make sure we support edit mode
     # since users will probably be in edit mode when they'll be changing railing path
@@ -100,14 +104,14 @@ def update_railing_modifier_bmesh(context):
     # generating railing path
     bm.verts.index_update()
     bm.edges.index_update()
-    new_verts = [bm.verts.new(Vector(v) * si_conversion) for v in path_data['verts']]
-    new_edges = [bm.edges.new( (new_verts[e[0]], new_verts[e[1]]) ) for e in path_data['edges']]
+    new_verts = [bm.verts.new(Vector(v) * si_conversion) for v in path_data["verts"]]
+    new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in path_data["edges"]]
     bm.verts.index_update()
     bm.edges.index_update()
 
     if props.is_editing_path:
         tool.Blender.apply_bmesh(obj.data, bm)
-        return 
+        return
 
     # generating the entire railing
     height = props.height * si_conversion
@@ -119,7 +123,7 @@ def update_railing_modifier_bmesh(context):
     main_edges = bm.edges[:]
     for main_edge in main_edges:
         bm_split_edge_at_offset(main_edge, spacing)
-    
+
     # thickness
     # keep track of translated verts so we won't translate the same
     # vert twice
@@ -127,24 +131,24 @@ def update_railing_modifier_bmesh(context):
     for main_edge in main_edges:
         v0, v1 = main_edge.verts
         edge_dissolving_verts.extend([v0, v1])
-        
-        edge_dir = ( (v1.co-v0.co) * V(1,1,0) ).normalized()
-        ortho_vector = edge_dir.cross( V(0,0,1) )
 
-        extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])['geom']
-        extruded_verts = bm_sort_out_geom(extruded_geom)['verts']
-        bmesh.ops.translate(bm, vec=ortho_vector * (-thickness/2), verts=extruded_verts)
+        edge_dir = ((v1.co - v0.co) * V(1, 1, 0)).normalized()
+        ortho_vector = edge_dir.cross(V(0, 0, 1))
 
-        extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])['geom']
-        extruded_verts = bm_sort_out_geom(extruded_geom)['verts']
-        bmesh.ops.translate(bm, vec=ortho_vector * (thickness/2), verts=extruded_verts)
+        extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
+        extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+        bmesh.ops.translate(bm, vec=ortho_vector * (-thickness / 2), verts=extruded_verts)
+
+        extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
+        extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+        bmesh.ops.translate(bm, vec=ortho_vector * (thickness / 2), verts=extruded_verts)
 
         # dissolve middle edge
         bmesh.ops.dissolve_edges(bm, edges=[main_edge])
 
     # height
-    extruded_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)['geom']
-    extruded_verts = bm_sort_out_geom(extruded_geom)['verts']
+    extruded_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
+    extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
     extrusion_vector = Vector((0, 0, 1)) * height
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
 
@@ -165,21 +169,23 @@ def update_railing_modifier_bmesh(context):
 
     tool.Blender.apply_bmesh(obj.data, bm)
 
+
 def get_path_data(obj):
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    if obj.mode == 'EDIT':
+    if obj.mode == "EDIT":
         # otherwise mesh may not contain all changes
         # added in edit mode
         obj.update_from_editmode()
 
     mesh = obj.data
     path_data = dict()
-    path_data['edges'] = [e.vertices[:] for e in mesh.edges]
-    path_data['verts'] = [v.co / si_conversion for v in mesh.vertices]
+    path_data["edges"] = [e.vertices[:] for e in mesh.edges]
+    path_data["verts"] = [v.co / si_conversion for v in mesh.vertices]
 
-    if not path_data['edges'] or not path_data['verts']:
+    if not path_data["edges"] or not path_data["verts"]:
         return None
     return path_data
+
 
 class BIM_OT_add_railing(Operator):
     bl_idname = "mesh.add_railing"
@@ -203,9 +209,13 @@ class BIM_OT_add_railing(Operator):
         obj.location = spawn_location
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.root.assign_class(
-            tool.Ifc, tool.Collector, tool.Root, obj=obj, 
-            ifc_class="IfcRailing", should_add_representation=True,
-            context=body_context
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcRailing",
+            should_add_representation=True,
+            context=body_context,
         )
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
@@ -242,12 +252,12 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
             path_data = {
                 "edges": [[0, 1], [1, 2]],
                 "verts": [
-                    Vector([-1.0, 0.0, 0.0]) / si_conversion, 
-                    Vector([0.0, 0.0, 0.0]) / si_conversion, 
-                    Vector([1.0, 0.0, 0.0]) / si_conversion
-                ]
+                    Vector([-1.0, 0.0, 0.0]) / si_conversion,
+                    Vector([0.0, 0.0, 0.0]) / si_conversion,
+                    Vector([1.0, 0.0, 0.0]) / si_conversion,
+                ],
             }
-        railing_data['path_data'] = path_data
+        railing_data["path_data"] = path_data
 
         update_bbim_railing_pset(element, railing_data)
         update_railing_modifier_ifc_data(context)
@@ -265,7 +275,7 @@ class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMRailingProperties
         element = tool.Ifc.get_entity(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Railing", "Data"))
-        data['path_data'] = json.dumps(data['path_data'])
+        data["path_data"] = json.dumps(data["path_data"])
 
         # required since we could load pset from .ifc and BIMRailingProperties won't be set
         for prop_name in data:
@@ -322,10 +332,10 @@ class FinishEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
 
         if not RailingData.is_loaded:
             RailingData.load()
-        path_data = RailingData.data["parameters"]['data_dict']['path_data']
+        path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
 
         railing_data = props.get_general_kwargs()
-        railing_data['path_data'] = path_data
+        railing_data["path_data"] = path_data
         props.is_editing = -1
 
         update_bbim_railing_pset(element, railing_data)
@@ -374,11 +384,11 @@ class FinishEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
 
         railing_data = props.get_general_kwargs()
         path_data = get_path_data(obj)
-        railing_data['path_data'] = path_data
+        railing_data["path_data"] = path_data
         props.is_editing_path = False
 
         update_bbim_railing_pset(element, railing_data)
-        refresh() # need RailingData to be updated before update_railing_modifier_bmesh
+        refresh()  # need RailingData to be updated before update_railing_modifier_bmesh
         update_railing_modifier_bmesh(context)
         return {"FINISHED"}
 

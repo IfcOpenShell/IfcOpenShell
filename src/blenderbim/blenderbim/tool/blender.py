@@ -101,8 +101,10 @@ class Blender:
             # better to be safe because otherwise mesh won't be updated
             # and you won't get any errors
             if not bm.is_wrapped or hash(bmesh.from_edit_mesh(mesh)) != hash(bm):
-                raise Exception(f'{bm} is not edit mesh for {mesh}. '
-                    'For applying bmesh in edit mode bmesh should be acquired with `bmesh.from_edit_mesh(me)`.')
+                raise Exception(
+                    f"{bm} is not edit mesh for {mesh}. "
+                    "For applying bmesh in edit mode bmesh should be acquired with `bmesh.from_edit_mesh(me)`."
+                )
             bmesh.update_edit_mesh(mesh)
         else:
             bm.to_mesh(mesh)
