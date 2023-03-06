@@ -463,7 +463,7 @@ class DoorData:
             if parameters:
                 parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters
-            
+
 
 class RailingData:
     data = {}

@@ -19,7 +19,15 @@
 import bpy
 import blenderbim.tool as tool
 from bpy.types import Panel, Operator, Menu
-from blenderbim.bim.module.model.data import AuthoringData, ArrayData, StairData, SverchokData, WindowData, DoorData, RailingData
+from blenderbim.bim.module.model.data import (
+    AuthoringData,
+    ArrayData,
+    StairData,
+    SverchokData,
+    WindowData,
+    DoorData,
+    RailingData,
+)
 from blenderbim.bim.module.model.prop import get_ifc_class
 from blenderbim.bim.module.model.stair import update_stair_modifier
 from blenderbim.bim.module.model.window import update_window_modifier_bmesh

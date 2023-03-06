@@ -543,17 +543,15 @@ class BIMDoorProperties(PropertyGroup):
             kwargs["frame_depth"] = self.frame_depth
 
         return kwargs
-    
+
 
 class BIMRailingProperties(PropertyGroup):
-    railing_types = (
-        ("FRAMELESS_PANEL", "FRAMELESS_PANEL", ""),
-    )
+    railing_types = (("FRAMELESS_PANEL", "FRAMELESS_PANEL", ""),)
 
     railing_added_previously: bpy.props.BoolProperty(default=False)
     is_editing: bpy.props.IntProperty(default=-1)
     is_editing_path: bpy.props.BoolProperty(default=False)
-    
+
     railing_type: bpy.props.EnumProperty(name="Railing Type", items=railing_types, default="FRAMELESS_PANEL")
     height: bpy.props.FloatProperty(name="Height", default=1.0)
     thickness: bpy.props.FloatProperty(name="Thickness", default=0.050)
