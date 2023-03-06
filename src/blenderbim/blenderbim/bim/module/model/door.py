@@ -459,7 +459,6 @@ class BIM_OT_add_door(Operator):
         mesh = bpy.data.meshes.new("IfcDoor")
         obj = bpy.data.objects.new("IfcDoor", mesh)
         obj.location = spawn_location
-        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )

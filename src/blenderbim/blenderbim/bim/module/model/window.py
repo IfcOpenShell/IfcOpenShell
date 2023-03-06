@@ -426,7 +426,6 @@ class BIM_OT_add_window(Operator):
         mesh = bpy.data.meshes.new("IfcWindow")
         obj = bpy.data.objects.new("IfcWindow", mesh)
         obj.location = spawn_location
-        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
