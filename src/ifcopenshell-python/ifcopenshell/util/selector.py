@@ -35,9 +35,10 @@ class Selector:
                     guid_selector: "#" /[0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$]{22}/
                     class_selector: "." WORD filter ?
                     filter: "[" filter_key (comparison filter_value)? "]"
-                    filter_key: WORD | pset_or_qto
+                    filter_key: WORD | ESCAPED_STRING | keys_quoted | keys_simple
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
-                    pset_or_qto: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
+                    keys_quoted: ESCAPED_STRING "." ESCAPED_STRING
+                    keys_simple: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
                     lfunction: and | or
                     inverse_relationship: types | decomposed_by | bounded_by | grouped_by
                     types: "*"
@@ -180,7 +181,13 @@ class Selector:
         results = []
         key = filter_rule.children[0].children[0]
         if not isinstance(key, str):
-            key = key.children[0] + "." + key.children[1]
+            k0 = key.children[0]
+            if k0.type == "ESCAPED_STRING":
+                k0 = k0[1:-1].replace("\\\"", '"')
+            k1 = key.children[1]
+            if k1.type == "ESCAPED_STRING":
+                k1 = k1[1:-1].replace("\\\"", '"')
+            key = [k0, k1]
         comparison = value = None
         if len(filter_rule.children) > 1:
             comparison = filter_rule.children[1].children[0].data
@@ -210,56 +217,29 @@ class Selector:
         return results
 
     @classmethod
-    def get_element_value(cls, element, key, value=None):
-        if "." in key and key.split(".")[0] == "type":
-            try:
-                element = ifcopenshell.util.element.get_type(element)
-                if not element:
-                    return None
-            except:
-                return
-            key = ".".join(key.split(".")[1:])
-        elif "." in key and key.split(".")[0] == "material":
-            try:
-                material_definition = ifcopenshell.util.element.get_material(
-                    element, should_skip_usage=True
-                )
-                if not material_definition:
-                    return None
-                key = ".".join(key.split(".")[1:])
-                if value:
-                    materials = [
-                        inst
-                        for inst in cls.file.traverse(material_definition)
-                        if inst.is_a("IfcMaterial")
-                    ]
-                    for material in materials or []:
-                        info = material.get_info()
-                        if key in info and info[key] == value:
-                            element = material
-                element = material_definition 
-                if not element:
-                    return None
-            except:
-                return
-        elif "." in key and key.split(".")[0] == "container":
-            try:
-                element = ifcopenshell.util.element.get_container(element)
-                if not element:
-                    return None
-            except:
-                return
-            key = ".".join(key.split(".")[1:])
-        info = element.get_info()
-        if key in info:
-            return info[key]
-        elif "." in key:
-            key_components = key.split(".")
-            pset_name = key_components[0]
-            prop = ".".join(key_components[1:])
-            psets = ifcopenshell.util.element.get_psets(element)
-            if pset_name in psets and prop in psets[pset_name]:
-                return psets[pset_name][prop]
+    def get_element_value(cls, element, keys, value=None):
+        if not isinstance(keys, (tuple,  list)):
+            keys = [keys]
+        value = element
+        for key in keys:
+            if key == "type":
+                value = ifcopenshell.util.element.get_type(element)
+            elif key == "material":
+                value = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            elif key == "container":
+                value = ifcopenshell.util.element.get_container(element)
+            elif isinstance(value, ifcopenshell.entity_instance):
+                result = value.get_info().get(key, None)
+                if result is not None:
+                    return result
+                result = ifcopenshell.util.element.get_pset(value, key)
+                if result is None:
+                    value = None
+                else:
+                    value = result
+            elif isinstance(value, dict): # Such as from the result of a prior get_pset
+                return value.get(key, None)
+        return value
 
     @classmethod
     def filter_element(cls, element, element_value, comparison, value):
