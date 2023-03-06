@@ -145,6 +145,18 @@ class TestSelector(test.bootstrap.IFC4):
             self.file, '.IfcElement[a !%$§&/()?|*-+,€~#@µ^°a.a !%$§&/()?|*-+,€~#@µ^°a="Bar"]'
         ) == [element]
 
+    def test_selecting_a_property_which_includes_a_dot(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="a.b")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"c.d": "Bar"})
+        assert subject.Selector.parse(self.file, '.IfcElement["a.b"."c.d"="Bar"]') == [element]
+
+    def test_selecting_a_property_which_includes_an_escaped_quote(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name='"a.b"')
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={'"c.d"': "Bar"})
+        assert subject.Selector.parse(self.file, r'.IfcElement["\"a.b\""."\"c.d\""="Bar"]') == [element]
+
     def test_comparing_if_value_is_in_a_list(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element.Name = "Foobar"
