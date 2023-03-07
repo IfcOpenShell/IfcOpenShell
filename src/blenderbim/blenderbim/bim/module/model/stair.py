@@ -283,12 +283,12 @@ def update_ifc_stair_props(obj):
     )
 
 
-class BIM_OT_add_clever_stair(Operator):
+class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_clever_stair"
     bl_label = "Clever Stair"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a stair.")

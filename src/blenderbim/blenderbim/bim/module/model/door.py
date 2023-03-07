@@ -439,12 +439,12 @@ def update_door_modifier_bmesh(context):
     obj.data.update()
 
 
-class BIM_OT_add_door(Operator):
+class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_door"
     bl_label = "Door"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a door.")

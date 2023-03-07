@@ -406,12 +406,12 @@ def update_window_modifier_bmesh(context):
     obj.data.update()
 
 
-class BIM_OT_add_window(Operator):
+class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_window"
     bl_label = "Window"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a window.")
