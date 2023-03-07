@@ -28,10 +28,10 @@ from ifcopenshell.util.doc import (
     get_attribute_doc,
 )
 from . import ifc
+import blenderbim.addon_updater_ops
 import blenderbim.tool as tool
 from blenderbim.bim.helper import IfcHeaderExtractor
 from blenderbim.bim.prop import Attribute
-
 
 class IFCFileSelector:
     def is_existing_ifc_file(self, filepath=None):
@@ -123,6 +123,40 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     )
     lock_grids_on_import: BoolProperty(name="Should Lock Grids By Default", default=True)
 
+    # addon updater preferences from `__init__`, be sure to copy all of them
+    auto_check_update : bpy.props.BoolProperty(
+        name = "Auto-check for Update",
+        description = "If enabled, auto-check for updates using an interval",
+        default = False,
+    )
+
+    updater_interval_months : bpy.props.IntProperty(
+        name='Months',
+        description = "Number of months between checking for updates",
+        default=0,
+        min=0
+    )
+    updater_interval_days : bpy.props.IntProperty(
+        name='Days',
+        description = "Number of days between checking for updates",
+        default=7,
+        min=0,
+    )
+    updater_interval_hours : bpy.props.IntProperty(
+        name='Hours',
+        description = "Number of hours between checking for updates",
+        default=0,
+        min=0,
+        max=23
+    )
+    updater_interval_minutes : bpy.props.IntProperty(
+        name='Minutes',
+        description = "Number of minutes between checking for updates",
+        default=0,
+        min=0,
+        max=59
+    )
+
     def draw(self, context):
         layout = self.layout
 
@@ -186,6 +220,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
         row = layout.row()
         row.operator("bim.configure_visibility")
+
+        blenderbim.addon_updater_ops.update_settings_ui(self, context)
 
 
 def ifc_units(self, context):

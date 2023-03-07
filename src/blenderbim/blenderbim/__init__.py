@@ -36,9 +36,11 @@ if sys.modules.get("bpy", None):
     # This is 3 levels deep as required by the static RPATH of ../../ from dependencies taken from Anaconda
     site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
 
+    import blenderbim.addon_updater_ops
     import blenderbim.bim
 
     def register():
+        blenderbim.addon_updater_ops.register(bl_info)
         blenderbim.bim.register()
 
     def unregister():

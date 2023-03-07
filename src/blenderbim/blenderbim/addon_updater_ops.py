@@ -72,7 +72,7 @@ except Exception as e:
 # not match and have errors. Must be all lowercase and no spaces! Should also
 # be unique among any other addons that could exist (using this updater code),
 # to avoid clashes in operator registration.
-updater.addon = "addon_updater_demo"
+updater.addon = "blenderbim"
 
 
 # -----------------------------------------------------------------------------
@@ -1284,6 +1284,12 @@ def skip_tag_function(self, tag):
     # In all other cases, allow showing the tag for updating/reverting.
     # To simply and always show all tags, this return False could be moved
     # to the start of the function definition so all tags are allowed.
+    if not tag['name'].startswith('blenderbim-'):
+        return True
+    else:
+        version_number = tag['name'].split('-', 1)[1]
+        tag['name'] = 'v0.0.%s' % version_number
+
     return False
 
 
@@ -1295,7 +1301,15 @@ def select_link_function(self, tag):
     """
 
     # -- Default, universal case (and is the only option for GitLab/Bitbucket)
-    link = tag["zipball_url"]
+    # link = tag["zipball_url"]
+
+    # TODO: remove requests dependency?
+    # TODO: get repo name procedurally
+    # TODO: figure platform
+    tag_name = tag['name']
+    import requests
+    json_data = requests.get('https://api.github.com/repos/Ifcopenshell/Ifcopenshell/releases').json()
+    download_url = [release for release in json_data if release['tag_name'] == tag_name][0]['assets'][0]['browser_download_url']
 
     # -- Example: select the first (or only) asset instead source code --
     # if "assets" in tag and "browser_download_url" in tag["assets"][0]:
@@ -1313,7 +1327,7 @@ def select_link_function(self, tag):
     # elif platform.system() == "Linux":
     # 	link = [asset for asset in tag["assets"] if 'linux' in asset][0]
 
-    return link
+    return download_url
 
 
 # -----------------------------------------------------------------------------
@@ -1353,20 +1367,22 @@ def register(bl_info):
     updater.private_token = None  # "tokenstring"
 
     # Choose your own username, must match website (not needed for GitLab).
-    updater.user = "cgcookie"
+    updater.user = "IfcOpenShell"
 
     # Choose your own repository, must match git name for GitHUb and Bitbucket,
     # for GitLab use project ID (numbers only).
-    updater.repo = "blender-addon-updater"
+    updater.repo = "IfcOpenShell"
 
     # updater.addon = # define at top of module, MUST be done first
 
     # Website for manual addon download, optional but recommended to set.
-    updater.website = "https://github.com/CGCookie/blender-addon-updater/"
+    updater.website = "https://github.com/IfcOpenShell/IfcOpenShell/"
 
     # Addon subfolder path.
     # "sample/path/to/addon"
     # default is "" or None, meaning root
+    # We leave this empty as we redefine `select_link_function`
+    # and will download the zip with addon, not the release source code
     updater.subfolder_path = ""
 
     # Used to check/compare versions.

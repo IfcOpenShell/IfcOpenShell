@@ -21,7 +21,7 @@ from blenderbim.bim.helper import prop_with_search
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.project.data import ProjectData
-
+import blenderbim.addon_updater_ops
 
 class BIM_PT_project(Panel):
     bl_label = "IFC Project"
@@ -166,6 +166,9 @@ class BIM_PT_project(Panel):
         row.operator("bim.unload_project", text="", icon="X")
 
     def draw_create_project_ui(self, context):
+        blenderbim.addon_updater_ops.check_for_update_background()
+        blenderbim.addon_updater_ops.update_notice_box_ui(self, context)
+        
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
         prop_with_search(self.layout, pprops, "export_schema")
