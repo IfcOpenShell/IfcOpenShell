@@ -27,12 +27,14 @@ from blenderbim.bim.module.model.data import (
     WindowData,
     DoorData,
     RailingData,
+    RoofData,
 )
 from blenderbim.bim.module.model.prop import get_ifc_class
 from blenderbim.bim.module.model.stair import update_stair_modifier
 from blenderbim.bim.module.model.window import update_window_modifier_bmesh
 from blenderbim.bim.module.model.door import update_door_modifier_bmesh
 from blenderbim.bim.module.model.railing import update_railing_modifier_bmesh
+from blenderbim.bim.module.model.roof import update_roof_modifier_bmesh
 
 from blenderbim.bim.helper import prop_with_search
 
@@ -595,6 +597,65 @@ class BIM_PT_railing(bpy.types.Panel):
             row = self.layout.row()
             row.label(text="No Railing Found")
             row.operator("bim.add_railing", icon="ADD", text="")
+
+
+class BIM_PT_roof(bpy.types.Panel):
+    bl_label = "IFC Roof"
+    bl_idname = "BIM_PT_roof"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "modifier"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        # always display modifier if it's IFC object
+        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+
+    def draw(self, context):
+        if not RoofData.is_loaded:
+            RoofData.load()
+
+        props = context.active_object.BIMRoofProperties
+
+        if RoofData.data["parameters"]:
+            row = self.layout.row(align=True)
+            row.label(text="Roof parameters", icon="OUTLINER_OB_LATTICE")
+
+            roof_data = RoofData.data["parameters"]["data_dict"]
+
+            if props.is_editing != -1:
+                row = self.layout.row(align=True)
+                row.operator("bim.finish_editing_roof", icon="CHECKMARK", text="Finish editing")
+                row.operator("bim.cancel_editing_roof", icon="CANCEL", text="")
+
+                general_props = props.get_general_kwargs()
+                for prop in general_props:
+                    self.layout.prop(props, prop)
+
+                update_roof_modifier_bmesh(context)
+
+            elif props.is_editing_path:
+                row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="Finish editing path")
+                row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
+
+            else:
+                row.operator("bim.enable_editing_roof", icon="GREASEPENCIL", text="")
+                row.operator("bim.enable_editing_roof_path", icon="ANIM", text="")
+                row.operator("bim.remove_roof", icon="X", text="")
+
+                box = self.layout.box()
+                general_props = props.get_general_kwargs()
+                for prop in general_props:
+                    prop_value = roof_data[prop]
+                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                    row = box.row(align=True)
+                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=str(prop_value))
+        else:
+            row = self.layout.row()
+            row.label(text="No Roof Found")
+            row.operator("bim.add_roof", icon="ADD", text="")
 
 
 class BIM_MT_model(Menu):

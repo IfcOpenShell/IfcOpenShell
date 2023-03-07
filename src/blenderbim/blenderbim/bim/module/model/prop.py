@@ -237,6 +237,7 @@ class BIMModelProperties(PropertyGroup):
             ("DOOR", "Door", ""),
             ("STAIR", "Stair", ""),
             ("RAILING", "Railing", ""),
+            ("ROOF", "Roof", ""),
         ),
         name="Type Template",
         default="MESH",
@@ -564,3 +565,33 @@ class BIMRailingProperties(PropertyGroup):
             "thickness": self.thickness,
             "spacing": self.spacing,
         }
+
+
+class BIMRoofProperties(PropertyGroup):
+    roof_types = (("HIP_ROOF", "HIP_ROOF", ""),)
+    roof_generation_methods = (
+        ("HEIGHT", "HEIGHT", ""),
+        ("ANGLE", "ANGLE", ""),
+    )
+
+    roof_added_previously: bpy.props.BoolProperty(default=False)
+    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing_path: bpy.props.BoolProperty(default=False)
+
+    roof_type: bpy.props.EnumProperty(name="Roof Type", items=roof_types, default="HIP_ROOF")
+    generation_method: bpy.props.EnumProperty(
+        name="Roof Generation Method", items=roof_generation_methods, default="HEIGHT"
+    )
+    height: bpy.props.FloatProperty(name="Height", default=1.0)
+    angle: bpy.props.FloatProperty(name="Slope Angle", default=10, description="In degrees")
+
+    def get_general_kwargs(self):
+        kwargs = {
+            "roof_type": self.roof_type,
+            "generation_method": self.generation_method,
+        }
+        if self.generation_method == "HEIGHT":
+            kwargs["height"] = self.height
+        else:
+            kwargs["angle"] = self.angle
+        return kwargs
