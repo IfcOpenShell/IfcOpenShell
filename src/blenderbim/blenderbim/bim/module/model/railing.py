@@ -243,7 +243,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
 
         # need to make sure all default props will have correct units
         if not props.railing_added_previously:
-            skip_props = ("is_editing", "railing_type", "railing_added_previously", "path_data")
+            skip_props = ("is_editing", "railing_type", "railing_added_previously")
             convert_property_group_from_si(props, skip_props=skip_props)
 
         railing_data = props.get_general_kwargs()
@@ -260,6 +260,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         railing_data["path_data"] = path_data
 
         update_bbim_railing_pset(element, railing_data)
+        refresh()
         update_railing_modifier_ifc_data(context)
         update_railing_modifier_bmesh(context)
         return {"FINISHED"}

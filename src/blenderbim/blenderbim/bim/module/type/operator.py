@@ -279,6 +279,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 context=body,
                 ifc_representation_class=None,
             )
+
         elif template == "WINDOW":
             mesh = bpy.data.meshes.new("IfcWindow")
             obj = bpy.data.objects.new("TYPEX", mesh)
@@ -352,6 +353,25 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
             bpy.ops.bim.add_railing()
+
+        elif template == "ROOF":
+            mesh = bpy.data.meshes.new("IfcRoof")
+            obj = bpy.data.objects.new("TYPEX", mesh)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                predefined_type=predefined_type,
+                ifc_class="IfcRoofType",
+                should_add_representation=True,
+                context=body,
+            )
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.objects.active = None
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         return {"FINISHED"}
