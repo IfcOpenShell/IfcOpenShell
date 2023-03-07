@@ -187,12 +187,12 @@ def get_path_data(obj):
     return path_data
 
 
-class BIM_OT_add_railing(Operator):
+class BIM_OT_add_railing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_railing"
     bl_label = "Railing"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a railing.")
