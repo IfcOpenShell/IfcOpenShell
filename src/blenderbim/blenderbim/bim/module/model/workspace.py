@@ -24,7 +24,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
 from blenderbim.bim.module.model import prop
 
 
@@ -225,6 +225,7 @@ class BimToolUI:
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
+            # unnecessary check because BIM Tool is not available in EDIT mode?
             if context.active_object.mode == "OBJECT":
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
@@ -274,6 +275,7 @@ class BimToolUI:
             row.label(text="", icon="EVENT_G")
             add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
+
         elif AuthoringData.data["active_class"] in (
             "IfcWindow",
             "IfcWindowStandardCase",
@@ -295,11 +297,13 @@ class BimToolUI:
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_F")
             row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
+
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
             add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
+
         elif AuthoringData.data["active_class"] in (
             "IfcCableCarrierSegmentType",
             "IfcCableSegmentType",
@@ -310,6 +314,26 @@ class BimToolUI:
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Extend", icon="EVENT_E")
 
+        elif (
+            (RailingData.is_loaded or not RailingData.load())
+            and RailingData.data["parameters"]
+            and not context.active_object.BIMRailingProperties.is_editing_path
+        ):
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.hotkey", text="Edit Railing Path").hotkey = "S_E"
+
+        elif (
+            (RoofData.is_loaded or not RoofData.load())
+            and RoofData.data["parameters"]
+            and not context.active_object.BIMRoofProperties.is_editing_path
+        ):
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.hotkey", text="Edit Roof Path").hotkey = "S_E"
+
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_O")
@@ -317,6 +341,7 @@ class BimToolUI:
             row.operator("bim.add_opening", text="Apply Void")
         else:
             row.operator("bim.add_potential_opening", text="Add Void")
+
         if AuthoringData.data["is_voidable_element"]:
             if AuthoringData.data["has_visible_openings"]:
                 row.operator("bim.edit_openings", icon="CHECKMARK", text="")
@@ -462,6 +487,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_Q(self):
         if not bpy.context.selected_objects:
             return
+
         bpy.ops.bim.calculate_all_quantities()
 
     def hotkey_S_C(self):
@@ -499,26 +525,48 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             elif self.active_material_usage == "PROFILE":
                 # Extend PROFILE to cursor
                 bpy.ops.bim.extend_profile(join_type="T")
+
         elif self.active_material_usage == "LAYER2" and selected_usages.get("PROFILE", []):
             # Extend PROFILEs to LAYER2
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", []) if o != bpy.context.active_object]
             bpy.ops.bim.extend_profile(join_type="T")
+
         elif self.active_material_usage == "LAYER3" and selected_usages.get("LAYER2", []):
             # Extend LAYER2s to LAYER3
             [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER3", []) if o != bpy.context.active_object]
             bpy.ops.bim.join_wall(join_type="T")
+
         elif self.active_material_usage == "LAYER2":
             # Extend LAYER2s to LAYER2
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
             bpy.ops.bim.join_wall(join_type="T")
+
         elif self.active_material_usage == "PROFILE":
             # Extend PROFILEs to PROFILE
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
+
+        elif (
+            (RailingData.is_loaded or not RailingData.load())
+            and RailingData.data["parameters"]
+            and not bpy.context.active_object.BIMRailingProperties.is_editing_path
+        ):
+            # undo the unselection done above because railing has no usage type 🙃
+            bpy.context.object.select_set(True)
+            bpy.ops.bim.enable_editing_railing_path()
+
+        elif (
+            (RoofData.is_loaded or not RoofData.load())
+            and RoofData.data["parameters"]
+            and not bpy.context.active_object.BIMRoofProperties.is_editing_path
+        ):
+            # undo the unselection done above because roof has no usage type
+            bpy.context.object.select_set(True)
+            bpy.ops.bim.enable_editing_roof_path()
 
     def hotkey_S_F(self):
         if not bpy.context.selected_objects:

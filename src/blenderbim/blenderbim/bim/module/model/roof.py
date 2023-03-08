@@ -25,7 +25,9 @@ import blenderbim
 import blenderbim.tool as tool
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.module.model.door import bm_sort_out_geom
+from blenderbim.bim.module.model.railing import blender_get_viewport_context
 from blenderbim.bim.module.model.data import RoofData, refresh
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 import json
 from math import tan, radians
@@ -135,12 +137,14 @@ def update_roof_modifier_ifc_data(context):
     obj = context.active_object
     props = obj.BIMRoofProperties
     element = tool.Ifc.get_entity(obj)
-    ifc_file = tool.Ifc.get()
 
     # type attributes
     element.PredefinedType = props.roof_type
     # occurences attributes
     # occurences = tool.Ifc.get_all_element_occurences(element)
+
+    # TODO: add Qto_RoofBaseQuantities, need to calculate GrossArea, NetArea, ProjectedArea
+    # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Qto_RoofBaseQuantities.htm
 
 
 def update_bbim_roof_pset(element, roof_data):
@@ -378,10 +382,14 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = obj.BIMRoofProperties
-        element = tool.Ifc.get_entity(obj)
 
         props.is_editing_path = True
         update_roof_modifier_bmesh(context)
+
+        if bpy.context.object.mode != "EDIT":
+            bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.wm.tool_set_by_id(blender_get_viewport_context(), name="bim.cad_tool")
+        ProfileDecorator.install(context)
         return {"FINISHED"}
 
 
@@ -392,10 +400,14 @@ class CancelEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
         props = obj.BIMRoofProperties
-        update_roof_modifier_bmesh(context)
+
+        ProfileDecorator.uninstall()
         props.is_editing_path = False
+
+        update_roof_modifier_bmesh(context)
+        if bpy.context.object.mode == "EDIT":
+            bpy.ops.object.mode_set(mode="OBJECT")
         return {"FINISHED"}
 
 
@@ -412,11 +424,14 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         roof_data = props.get_general_kwargs()
         path_data = get_path_data(obj)
         roof_data["path_data"] = path_data
+        ProfileDecorator.uninstall()
         props.is_editing_path = False
 
         update_bbim_roof_pset(element, roof_data)
-        refresh()  # need RoofData to be updated before update_roof_modifier_bmesh
+        refresh()  # RoofData has to be updated before run update_roof_modifier_bmesh
         update_roof_modifier_bmesh(context)
+        if bpy.context.object.mode == "EDIT":
+            bpy.ops.object.mode_set(mode="OBJECT")
         return {"FINISHED"}
 
 

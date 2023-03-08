@@ -118,6 +118,7 @@ def update_door_modifier_representation(context):
     update_simple_openings(element, props.overall_width, props.overall_height)
 
 
+# TODO: move it out to tools
 def bm_sort_out_geom(geom_data):
     geom_dict = {"verts": [], "edges": [], "faces": []}
 

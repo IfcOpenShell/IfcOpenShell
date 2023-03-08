@@ -612,6 +612,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context)
+        # TODO: test it from properties panel?
         if not bpy.app.background:
             bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
         return {"FINISHED"}

@@ -106,6 +106,7 @@ class Blender:
                     "For applying bmesh in edit mode bmesh should be acquired with `bmesh.from_edit_mesh(me)`."
                 )
             bmesh.update_edit_mesh(mesh)
+            bpy.context.object.update_from_editmode()
         else:
             bm.to_mesh(mesh)
 
