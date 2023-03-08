@@ -30,6 +30,7 @@ from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.door import bm_sort_out_geom
 from blenderbim.bim.module.model.data import RailingData, refresh
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 from mathutils import Vector, Matrix
 from pprint import pprint
@@ -38,6 +39,18 @@ import json
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailing.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailingType.htm
+
+
+# TODO: move it out to tools
+def blender_get_viewport_context():
+    """Get viewport area context for context overriding.
+
+    It's a bit naive since it's just taking the first available `VIEW_3D` area
+    when in real life you can have a couple of those.
+    """
+    area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+    context_override = {"area": area}
+    return context_override
 
 
 def bm_split_edge_at_offset(edge, offset):
@@ -352,10 +365,14 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = obj.BIMRailingProperties
-        element = tool.Ifc.get_entity(obj)
 
         props.is_editing_path = True
         update_railing_modifier_bmesh(context)
+
+        if bpy.context.object.mode != "EDIT":
+            bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.wm.tool_set_by_id(blender_get_viewport_context(), name="bim.cad_tool")
+        ProfileDecorator.install(context)
         return {"FINISHED"}
 
 
@@ -366,10 +383,14 @@ class CancelEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
         props = obj.BIMRailingProperties
-        update_railing_modifier_bmesh(context)
+
+        ProfileDecorator.uninstall()
         props.is_editing_path = False
+
+        update_railing_modifier_bmesh(context)
+        if bpy.context.object.mode == "EDIT":
+            bpy.ops.object.mode_set(mode="OBJECT")
         return {"FINISHED"}
 
 
@@ -386,11 +407,14 @@ class FinishEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         railing_data = props.get_general_kwargs()
         path_data = get_path_data(obj)
         railing_data["path_data"] = path_data
+        ProfileDecorator.uninstall()
         props.is_editing_path = False
 
         update_bbim_railing_pset(element, railing_data)
-        refresh()  # need RailingData to be updated before update_railing_modifier_bmesh
+        refresh()  # RailingData has to be updated before run update_railing_modifier_bmesh
         update_railing_modifier_bmesh(context)
+        if bpy.context.object.mode == "EDIT":
+            bpy.ops.object.mode_set(mode="OBJECT")
         return {"FINISHED"}
 
 

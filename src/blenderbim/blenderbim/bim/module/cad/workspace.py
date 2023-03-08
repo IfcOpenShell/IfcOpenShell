@@ -21,7 +21,7 @@ import bpy
 import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
 
 
 class CadTool(WorkSpaceTool):
@@ -102,6 +102,7 @@ class CadTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_X")
             row.operator("bim.reset_vertex", text="Reset Vertex")
+
         elif hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "AXIS":
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -128,7 +129,30 @@ class CadTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_O")
             row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
+
         else:
+            if (
+                (RailingData.is_loaded or not RailingData.load())
+                and RailingData.data["parameters"]
+                and context.active_object.BIMRailingProperties.is_editing_path
+            ):
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_Q")
+                row.operator("bim.hotkey", text="Apply Railing Path").hotkey = "S_Q"
+                row.operator("bim.cancel_editing_railing_path", icon="CANCEL", text="")
+
+            elif (
+                (RoofData.is_loaded or not RoofData.load())
+                and RoofData.data["parameters"]
+                and context.active_object.BIMRoofProperties.is_editing_path
+            ):
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_Q")
+                row.operator("bim.hotkey", text="Apply Roof Path").hotkey = "S_Q"
+                row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
+
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
@@ -219,6 +243,21 @@ class CadHotkey(bpy.types.Operator):
                 bpy.ops.bim.edit_extrusion_profile()
             elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
                 bpy.ops.bim.edit_extrusion_axis()
+
+            elif (
+                (RailingData.is_loaded or not RailingData.load())
+                and RailingData.data["parameters"]
+                and bpy.context.active_object.BIMRailingProperties.is_editing_path
+            ):
+                bpy.ops.bim.finish_editing_railing_path()
+
+            elif (
+                (RoofData.is_loaded or not RoofData.load())
+                and RoofData.data["parameters"]
+                and bpy.context.active_object.BIMRoofProperties.is_editing_path
+            ):
+                bpy.ops.bim.finish_editing_roof_path()
+
         else:
             bpy.ops.bim.edit_arbitrary_profile()
 

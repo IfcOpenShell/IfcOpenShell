@@ -577,7 +577,7 @@ class BIM_PT_railing(bpy.types.Panel):
                 update_railing_modifier_bmesh(context)
 
             elif props.is_editing_path:
-                row.operator("bim.finish_editing_railing_path", icon="CHECKMARK", text="Finish editing path")
+                row.operator("bim.finish_editing_railing_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_railing_path", icon="CANCEL", text="")
 
             else:
@@ -636,7 +636,7 @@ class BIM_PT_roof(bpy.types.Panel):
                 update_roof_modifier_bmesh(context)
 
             elif props.is_editing_path:
-                row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="Finish editing path")
+                row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
 
             else:
