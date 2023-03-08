@@ -78,6 +78,7 @@ def get_selected_objects(cls): pass
 def set_active_object(cls, obj): pass
 def apply_bmesh(cls, mesh, bm): pass
 def get_bmesh_for_mesh(cls, mesh, clean=False): pass
+def get_viewport_context(cls): pass
 
 
 @interface
