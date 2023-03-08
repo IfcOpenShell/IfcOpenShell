@@ -41,18 +41,6 @@ import json
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailingType.htm
 
 
-# TODO: move it out to tools
-def blender_get_viewport_context():
-    """Get viewport area context for context overriding.
-
-    It's a bit naive since it's just taking the first available `VIEW_3D` area
-    when in real life you can have a couple of those.
-    """
-    area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-    context_override = {"area": area}
-    return context_override
-
-
 def bm_split_edge_at_offset(edge, offset):
     v0, v1 = edge.verts
 
@@ -371,7 +359,7 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
 
         if bpy.context.object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.wm.tool_set_by_id(blender_get_viewport_context(), name="bim.cad_tool")
+        bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
         ProfileDecorator.install(context)
         return {"FINISHED"}
 

@@ -126,3 +126,16 @@ class Blender:
             if not clean:
                 bm.from_mesh(mesh)
         return bm
+    
+    @classmethod
+    def get_viewport_context(cls):
+        """Get viewport area context for context overriding.
+
+        Useful for calling operators outside viewport context.
+
+        It's a bit naive since it's just taking the first available `VIEW_3D` area
+        when in real life you can have a couple of those but should work for the most cases.
+        """
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        context_override = {"area": area}
+        return context_override

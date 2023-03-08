@@ -25,7 +25,6 @@ import blenderbim
 import blenderbim.tool as tool
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.module.model.door import bm_sort_out_geom
-from blenderbim.bim.module.model.railing import blender_get_viewport_context
 from blenderbim.bim.module.model.data import RoofData, refresh
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
@@ -388,7 +387,7 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
         if bpy.context.object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.wm.tool_set_by_id(blender_get_viewport_context(), name="bim.cad_tool")
+        bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
         ProfileDecorator.install(context)
         return {"FINISHED"}
 
