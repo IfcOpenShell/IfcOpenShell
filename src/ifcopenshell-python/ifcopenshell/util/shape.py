@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import ifcopenshell.util.placement
 
 tol = 1e-6
 
@@ -59,6 +60,34 @@ def get_y(geometry):
 def get_z(geometry):
     z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
     return max(z_values) - min(z_values)
+
+
+def get_bbox_centroid(geometry):
+    x_values = [geometry.verts[i] for i in range(0, len(geometry.verts), 3)]
+    y_values = [geometry.verts[i + 1] for i in range(0, len(geometry.verts), 3)]
+    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
+    minx = min(x_values)
+    maxx = max(x_values)
+    miny = min(y_values)
+    maxy = max(y_values)
+    minz = min(z_values)
+    maxz = max(z_values)
+    return (minx + ((maxx - minx) / 2), miny + ((maxy - miny) / 2), minz + ((maxz - minz) / 2))
+
+
+def get_element_bbox_centroid(element, geometry):
+    centroid = get_bbox_centroid(geometry)
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+        return centroid
+    matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    return (matrix @ np.array([*centroid, 1.0]))[0:3]
+
+
+def get_shape_bbox_centroid(shape, geometry):
+    centroid = get_bbox_centroid(geometry)
+    m = shape.transformation.matrix.data
+    mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+    return (matrix @ np.array([*centroid, 1.0]))[0:3]
 
 
 def get_area_vf(vertices, faces):
