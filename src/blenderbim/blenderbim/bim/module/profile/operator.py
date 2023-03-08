@@ -139,7 +139,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context)
-        bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
+        bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
 
 
 class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):

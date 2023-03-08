@@ -947,7 +947,7 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context)
         if not bpy.app.background:
-            bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
+            bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
         return {"FINISHED"}
 
 
