@@ -89,15 +89,16 @@ class Transaction:
             self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
 
     def store_edit(self, element, index, value):
-        self.operations.append(
-            {
-                "action": "edit",
-                "id": element.id(),
-                "index": index,
-                "old": self.serialise_value(element, element[index]),
-                "new": self.serialise_value(element, value),
-            }
-        )
+        if element.id():
+            self.operations.append(
+                {
+                    "action": "edit",
+                    "id": element.id(),
+                    "index": index,
+                    "old": self.serialise_value(element, element[index]),
+                    "new": self.serialise_value(element, value),
+                }
+            )
 
     def store_delete(self, element):
         inverses = {}
