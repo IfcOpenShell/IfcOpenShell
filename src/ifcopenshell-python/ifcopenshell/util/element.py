@@ -334,7 +334,7 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
     .. code:: python
 
         element = ifcopenshell.by_type("IfcWall")[0]
-        material = ifcopenshell.util.element.material(element)
+        material = ifcopenshell.util.element.get_material(element)
     """
     if hasattr(element, "HasAssociations") and element.HasAssociations:
         for relationship in element.HasAssociations:
@@ -349,6 +349,37 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
         relating_type = get_type(element)
         if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
             return get_material(relating_type, should_skip_usage)
+
+
+def get_materials(element, should_inherit=True):
+    """Gets individual materials of an element
+
+    If the element has a material set, the individual materials of that set are
+    returned as a list.
+
+    :param should_inherit: If True, any inherited materials from associated
+        types will be considered.
+    :return: The associated materials of the element.
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.by_type("IfcWall")[0]
+        materials = ifcopenshell.util.element.get_materials(element)
+    """
+    material = get_material(element, should_skip_usage=True, should_inherit=should_inherit)
+    if not material:
+        return []
+    elif material.is_a("IfcMaterial"):
+        return [material]
+    elif material.is_a("IfcMaterialLayerSet"):
+        return [l.Material for l in material.MaterialLayers]
+    elif material.is_a("IfcMaterialProfileSet"):
+        return [p.Material for p in material.MaterialProfiles]
+    elif material.is_a("IfcMaterialConstituentSet"):
+        return [c.Material for c in material.MaterialConstituents]
 
 
 def get_elements_by_material(ifc_file, material):
