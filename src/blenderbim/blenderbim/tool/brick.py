@@ -261,9 +261,11 @@ class Brick(blenderbim.core.tool.Brick):
     def new_brick_file(cls):
         if not BrickStore.schema:
             BrickStore.schema = brickschema.Graph()
+            #BrickStore.schema = brickschema.persistent.VersionedGraphCollection("sqlite://")
             cwd = os.path.dirname(os.path.realpath(__file__))
             schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
             BrickStore.schema.load_file(schema_path)
+            #BrickStore.schema.load_graph(schema_path)
         BrickStore.graph = brickschema.Graph() + BrickStore.schema
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
         BrickStore.graph.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
