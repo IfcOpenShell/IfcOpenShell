@@ -188,3 +188,26 @@ class TestSelector(test.bootstrap.IFC4):
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
         assert subject.Selector.parse(self.file, ".IfcWall", elements=[element])
         assert not subject.Selector.parse(self.file, ".IfcWall", elements=[element2])
+
+    def test_selecting_a_property_via_a_wildcard_pset_name(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobaz")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Baz"})
+        assert subject.Selector.parse(self.file, '.IfcElement[r"Foo.*"."Foo"="Bar"]') == [element]
+
+    def test_selecting_a_property_via_a_wildcard_property_name(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobaz")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Baz"})
+        assert subject.Selector.parse(self.file, '.IfcElement[r"Foo.*"."F.*"="Bar"]') == [element]
+
+    def test_selecting_a_property_via_a_type_attribute(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element_type.Name = "Foo"
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        assert set(subject.Selector.parse(self.file, '.IfcWall[type.Name="Foo"]')) == {element}
