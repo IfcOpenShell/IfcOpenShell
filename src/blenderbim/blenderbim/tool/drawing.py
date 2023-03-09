@@ -960,6 +960,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return [
             v.strip()
             for v in ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "").split(",")
+            if v
         ]
 
     @classmethod
