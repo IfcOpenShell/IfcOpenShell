@@ -113,7 +113,7 @@ def get_area(geometry):
     return get_area_vf(vertices, faces)
 
 
-def get_side_area(geometry):
+def get_side_area(geometry, axis="Y"):
     verts = geometry.verts
     faces = geometry.faces
     vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
@@ -128,7 +128,8 @@ def get_side_area(geometry):
     triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
 
     # Find the faces with a normal vector pointing in the desired +Y normal direction
-    filtered_face_indices = np.where(triangle_normals[:, 1] > tol)[0]
+    axis = {"X": 0, "Y": 1, "Z": 2}[axis]
+    filtered_face_indices = np.where(triangle_normals[:, axis] > tol)[0]
     filtered_faces = faces[filtered_face_indices]
     return get_area_vf(vertices, filtered_faces)
 
