@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+import lark
 import ifcopenshell.util
 import ifcopenshell.util.fm
 import ifcopenshell.util.element
-import lark
 
 
 class Selector:
@@ -35,8 +36,9 @@ class Selector:
                     guid_selector: "#" /[0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$]{22}/
                     class_selector: "." WORD filter ?
                     filter: "[" filter_key (comparison filter_value)? "]"
-                    filter_key: WORD | ESCAPED_STRING | keys_quoted | keys_simple
+                    filter_key: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
+                    keys_regex: "r" ESCAPED_STRING "." ESCAPED_STRING
                     keys_quoted: ESCAPED_STRING "." ESCAPED_STRING
                     keys_simple: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
                     lfunction: and | or
@@ -179,15 +181,17 @@ class Selector:
     @classmethod
     def filter_elements(cls, elements, filter_rule):
         results = []
-        key = filter_rule.children[0].children[0]
-        if not isinstance(key, str):
-            k0 = key.children[0]
-            if k0.type == "ESCAPED_STRING":
-                k0 = k0[1:-1].replace("\\\"", '"')
-            k1 = key.children[1]
-            if k1.type == "ESCAPED_STRING":
-                k1 = k1[1:-1].replace("\\\"", '"')
-            key = [k0, k1]
+        keys = filter_rule.children[0].children[0]
+        is_regex = False
+        if isinstance(keys, str):
+            keys = [keys]
+        elif keys.data == "keys_regex":
+            is_regex = True
+            keys = [keys.children[0][1:-1].replace("\\\"", '"'), keys.children[1][1:-1].replace("\\\"", '"')]
+        elif keys.data == "keys_quoted":
+            keys = [keys.children[0][1:-1].replace("\\\"", '"'), keys.children[1][1:-1].replace("\\\"", '"')]
+        elif keys.data == "keys_simple":
+            keys = [keys.children[0], keys.children[1]]
         comparison = value = None
         if len(filter_rule.children) > 1:
             comparison = filter_rule.children[1].children[0].data
@@ -205,7 +209,7 @@ class Selector:
             elif token_type == "NULL":
                 value = None
         for element in elements:
-            element_value = cls.get_element_value(element, key, value)
+            element_value = cls.get_element_value(element, keys, is_regex=is_regex)
             if element_value is None and value is not None and "not" not in comparison:
                 continue
             if comparison and cls.filter_element(
@@ -217,9 +221,7 @@ class Selector:
         return results
 
     @classmethod
-    def get_element_value(cls, element, keys, value=None):
-        if not isinstance(keys, (tuple,  list)):
-            keys = [keys]
+    def get_element_value(cls, element, keys, is_regex=False):
         value = element
         for key in keys:
             if key == "type":
@@ -229,16 +231,41 @@ class Selector:
             elif key == "container":
                 value = ifcopenshell.util.element.get_container(element)
             elif isinstance(value, ifcopenshell.entity_instance):
-                result = value.get_info().get(key, None)
-                if result is not None:
-                    return result
-                result = ifcopenshell.util.element.get_pset(value, key)
-                if result is None:
-                    value = None
+                attribute = value.get_info().get(key, None)
+
+                if attribute is not None:
+                    value = attribute
                 else:
+                    # Try to extract pset
+                    if is_regex:
+                        psets = ifcopenshell.util.element.get_psets(value)
+                        matching_psets = []
+                        for pset_name, pset in psets.items():
+                            if re.match(key, pset_name):
+                                matching_psets.append(pset)
+                        result = matching_psets or None
+                    else:
+                        result = ifcopenshell.util.element.get_pset(value, key)
+
                     value = result
             elif isinstance(value, dict): # Such as from the result of a prior get_pset
-                return value.get(key, None)
+                if is_regex:
+                    results = []
+                    for prop_name, prop_value in value.items():
+                        if re.match(key, prop_name):
+                            results.append(prop_value)
+                    value = results
+                else:
+                    value = value.get(key, None)
+            elif isinstance(value, list): # If we use regex
+                results = []
+                for v in value:
+                    subvalue = cls.get_element_value(v, [key], is_regex=is_regex)
+                    if isinstance(subvalue, list):
+                        results.extend(subvalue)
+                    else:
+                        results.append(subvalue)
+                value = results
         return value
 
     @classmethod
