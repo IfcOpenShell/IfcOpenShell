@@ -26,7 +26,7 @@ import bmesh
 import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
-from math import acos, pi
+from math import acos, pi, atan, degrees
 from functools import reduce
 from itertools import chain
 from bpy.types import SpaceView3D
@@ -236,10 +236,18 @@ class BaseDecorator:
             if element.is_a("IfcAnnotation"):
                 if element.ObjectType == self.objecttype:
                     results.append(obj)
+
                 elif (
                     self.objecttype == "MISC"
                     and element.ObjectType not in decoration_presets
                     and isinstance(obj.data, bpy.types.Mesh)
+                ):
+                    results.append(obj)
+
+                elif self.objecttype == "FALL" and element.ObjectType in (
+                    "SLOPE_ANGLE",
+                    "SLOPE_FRACTION",
+                    "SLOPE_PERCENT",
                 ):
                     results.append(obj)
         return results
@@ -857,6 +865,125 @@ class RadiusDecorator(BaseDecorator):
             self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
 
 
+class FallDecorator(BaseDecorator):
+    """Decorating text with arrows
+    - head point with arrow
+    """
+
+    objecttype = "FALL"
+
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+    """
+    )
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap1 = vec4(0);
+
+        vec4 p;
+
+        // end edge arrow for last segment
+        if (t1 == 2u) {
+            vec4 head[3];
+            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
+
+            gl_Position = p1;
+            EmitVertex();
+            p = p1w - head[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w - head[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            gl_Position = p1;
+            EmitVertex();
+            EndPrimitive();
+
+            gap1 = dir * viewportDrawingScale * ARROW_SIZE;
+        }
+
+        // stem, adjusted for and arrow
+        gl_Position = p0;
+        EmitVertex();
+        p = p1w - gap1;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, context, obj):
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(context, obj, verts, idxs, topo)
+        self.draw_labels(context, obj)
+
+    def draw_labels(self, context, obj):
+        region = context.region
+        region3d = context.region_data
+        dir = Vector((1, 0))
+        pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
+
+        spline = obj.data.splines[0]
+        spline_points = spline.bezier_points if spline.bezier_points else spline.points
+
+        # generate label text
+        # same function as in svgwriter.py
+        def get_label_text():
+            element = tool.Ifc.get_entity(obj)
+            B, A = [v.co.xyz for v in spline_points[:2]]
+            rise = abs(A.z - B.z)
+            O = A.copy()
+            O.z = B.z
+            run = (B - O).length
+            if run != 0:
+                angle_tg = rise / run
+                angle = round(degrees(atan(angle_tg)))
+            else:
+                angle = 90
+
+            # ues SLOPE_ANGLE as default
+            if element.ObjectType in ("FALL", "SLOPE_ANGLE"):
+                return f"{angle}°"
+            elif element.ObjectType == "SLOPE_FRACTION":
+                if angle == 90:
+                    return "-"
+                return f"{self.format_value(context, rise)} / {self.format_value(context, run)}"
+            elif element.ObjectType == "SLOPE_PERCENT":
+                if angle == 90:
+                    return "-"
+                return f"{round(angle_tg * 100)} %"
+
+        if spline_points:
+            text = get_label_text()
+            self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
+
+    def get_spline_end(self, obj):
+        spline = obj.data.splines[0]
+        spline_points = spline.bezier_points if spline.bezier_points else spline.points
+        if not spline_points:
+            return Vector((0, 0, 0))
+        return obj.matrix_world @ spline_points[0].co
+
+
 class StairDecorator(BaseDecorator):
     """Decorating stairs
     - head point with arrow
@@ -1444,7 +1571,7 @@ class BattingDecorator(BaseDecorator):
             verts, idxs = self.get_editmesh_geom(obj)
         else:
             verts, idxs = self.get_mesh_geom(obj)
-        
+
         # TODO: find the less ugly way to figure thickness
         thickness = DecoratorData.get_batting_thickness(obj)
         region = context.region
@@ -1461,9 +1588,8 @@ class BattingDecorator(BaseDecorator):
             obj,
             verts[:2],
             idxs,
-            extra_float_kwargs={
-                "batting_thickness_winspace": winspace_thickness},
-            is_scale_dependant = False
+            extra_float_kwargs={"batting_thickness_winspace": winspace_thickness},
+            is_scale_dependant=False,
         )
 
 
@@ -1924,6 +2050,7 @@ class DecorationsHandler:
         ElevationDecorator,
         TextDecorator,
         BattingDecorator,
+        FallDecorator,
     ]
 
     installed = None

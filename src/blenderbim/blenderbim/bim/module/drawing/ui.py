@@ -426,6 +426,11 @@ class BIM_PT_annotation_utilities(Panel):
         op.object_type = "FILL_AREA"
 
         row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Fall", icon="SORT_ASC")
+        op.object_type = "FALL"
+        op.data_type = "curve"
+
+        row = layout.row(align=True)
         row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
         row.enabled = context.scene.camera is not None
 

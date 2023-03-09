@@ -31,7 +31,7 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
-from math import pi, ceil
+from math import pi, ceil, atan, degrees
 from mathutils import Vector
 from mathutils import geometry
 from blenderbim.bim.ifc import IfcStore
@@ -162,6 +162,8 @@ class SvgWriter:
                 self.draw_section_level_annotation(obj)
             elif element.ObjectType == "TEXT":
                 self.draw_text_annotation(obj, obj.location)
+            elif element.ObjectType in ("FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
+                self.draw_fall_annotations(obj)
             else:
                 self.draw_misc_annotation(obj)
 
@@ -884,9 +886,83 @@ class SvgWriter:
                 "dominant-baseline": "middle",
             }
 
-            radius = ((matrix_world @ points[-1].co) - (matrix_world @ points[-2].co)).length
+            radius = (points[-1].co - points[-2].co).length
             radius = helper.format_distance(radius)
             tag = element.Description or f"R{radius}"
+
+            self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
+
+    def draw_fall_annotations(self, obj):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        classes = self.get_attribute_classes(obj)
+        element = tool.Ifc.get_entity(obj)
+        matrix_world = obj.matrix_world
+        for spline in obj.data.splines:
+            points = self.get_spline_points(spline)
+            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+            d = " ".join(
+                [
+                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
+                    for p in projected_points
+                ]
+            )
+            d = "M{}".format(d[1:])
+            path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
+
+            p0 = Vector(
+                (
+                    (x_offset + projected_points[0].x) * self.svg_scale,
+                    (y_offset - projected_points[0].y) * self.svg_scale,
+                )
+            )
+            p1 = Vector(
+                (
+                    (x_offset + projected_points[1].x) * self.svg_scale,
+                    (y_offset - projected_points[1].y) * self.svg_scale,
+                )
+            )
+
+            # generate label text
+            # same function as in decoration.py
+            def get_label_text():
+                B, A = [v.co.xyz for v in points[:2]]
+                rise = abs(A.z - B.z)
+                O = A.copy()
+                O.z = B.z
+                run = (B - O).length
+                if run != 0:
+                    angle_tg = rise / run
+                    angle = round( degrees( atan(angle_tg) ))
+                else:
+                    angle = 90
+
+                # ues SLOPE_ANGLE as default
+                if element.ObjectType in ("FALL", "SLOPE_ANGLE"):
+                    return f"{angle}°"
+                elif element.ObjectType == "SLOPE_FRACTION":
+                    if angle == 90:
+                        return "-"
+                    return f"{helper.format_distance(rise)} / {helper.format_distance(run)}"
+                elif element.ObjectType == "SLOPE_PERCENT":
+                    if angle == 90:
+                        return "-"
+                    return f"{round(angle_tg * 100)} %"
+
+            tag = element.Description or get_label_text()
+
+            text_offset = (p0 - p1).xy.normalized() * len(tag)
+            text_position = projected_points[0]
+            text_position = Vector(
+                ((x_offset + text_position.x) * self.svg_scale, (y_offset - text_position.y) * self.svg_scale)
+            )
+            text_position += text_offset
+
+            text_style = {
+                "text-anchor": "middle",
+                "alignment-baseline": "middle",
+                "dominant-baseline": "middle",
+            }
 
             self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
 

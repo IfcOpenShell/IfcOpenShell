@@ -33,7 +33,11 @@ text { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT',
 .PredefinedType-PLANLEVEL { marker-end: url(#plan-level-marker); }
 .PredefinedType-DIMENSION { marker-start: url(#dimension-marker-start); marker-end: url(#dimension-marker-end); }
 .PredefinedType-ANGLE { marker-start: url(#angle-marker-start); marker-end: url(#angle-marker-end); }
-.PredefinedType-RADIUS { marker-end: url(#radius-marker-end); }
+.PredefinedType-RADIUS { marker-end: url(#fall-marker-end); }
+.PredefinedType-FALL { marker-end: url(#radius-marker-end); }
+.PredefinedType-SLOPEANGLE { marker-end: url(#radius-marker-end); }
+.PredefinedType-SLOPEPERCENT { marker-end: url(#radius-marker-end); }
+.PredefinedType-SLOPEFRACTION { marker-end: url(#radius-marker-end); }
 .PredefinedType-DIAMETER { marker-start: url(#diameter-marker-start); marker-end: url(#diameter-marker-end); }
 .PredefinedType-HIDDENLINE { stroke-dasharray: 3, 2; }
 .PredefinedType-STAIRARROW { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
