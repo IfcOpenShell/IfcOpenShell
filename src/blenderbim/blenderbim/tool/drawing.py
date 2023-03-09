@@ -53,6 +53,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             "BREAKLINE": "mesh",
             "DIAMETER": "curve",
             "DIMENSION": "curve",
+            "FALL": "curve",
             "FILL_AREA": "mesh",
             "HIDDEN_LINE": "mesh",
             "LINEWORK": "mesh",
