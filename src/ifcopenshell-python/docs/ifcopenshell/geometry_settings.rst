@@ -530,6 +530,27 @@ In Python, this is set when the iterator is constructed:
     import multiprocessing
     iterator = ifcopenshell.geom.iterator(settings, ifc_file, num_threads=multiprocessing.cpu_count())
 
+offset
+------
+
++---------------+--------------------+---------+
+| Type          | IfcConvert Option  | Default |
++===============+====================+=========+
+| ARRAY<DOUBLE> | ``--model-offset`` | 0,0,0   |
++---------------+--------------------+---------+
+
+Sets an offset to be applied to all the matrixes of geometries returned from
+the iterator.
+
+In Python, this is set in the settings passed to the iterator.
+
+.. code-block:: python
+
+    settings = ifcopenshell.geom.settings()
+    offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
+    offset[0], offset[1], offset[2] = (1, 2, 3)
+    settings.offset = offset
+
 SEW_SHELLS
 ----------
 
