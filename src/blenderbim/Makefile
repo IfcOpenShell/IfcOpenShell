@@ -620,7 +620,7 @@ endif
 	cd dist/working/brickschema-0.5.1/ && cp -r brickschema ../../blenderbim/libs/site/packages/
 	# For now lets bundle the latest nightly schema
 	cd dist/working && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
-	cd dist/working && cp Brick.ttl ../../blenderbim/bim/schema/Brick.ttl
+	cd dist/working && cp Brick.ttl ../blenderbim/bim/schema/Brick.ttl
 	rm -rf dist/working
 
 	# Required by brickschema
