@@ -31,10 +31,12 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
-from math import pi, ceil, atan, degrees
-from mathutils import Vector
-from mathutils import geometry
+
+from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.ifc import IfcStore
+
+from math import pi, ceil, atan, degrees
+from mathutils import geometry, Vector
 from bpy_extras import view3d_utils
 
 
@@ -367,13 +369,25 @@ class SvgWriter:
             self.draw_edge_annotation(obj, classes)
 
     def draw_edge_annotation(self, obj, classes):
-        predefined_type = classes[2]
+        predefined_type = classes[2].split("-", 1)[1]
 
-        if predefined_type.endswith("-BATTING"):
-            x_offset = self.raw_width / 2
-            y_offset = self.raw_height / 2
-            matrix_world = obj.matrix_world
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        matrix_world = obj.matrix_world
 
+        def draw_simple_edge_annotation(v0, v1):
+            v0_global = matrix_world @ obj.data.vertices[v0].co.xyz
+            v1_global = matrix_world @ obj.data.vertices[v1].co.xyz
+            v0 = self.project_point_onto_camera(v0_global)
+            v1 = self.project_point_onto_camera(v1_global)
+            start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+            end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+            line = self.svg.add(
+                self.svg.line(start=start * self.svg_scale, end=end * self.svg_scale, class_=" ".join(classes))
+            )
+
+        # BATTING ANNOTATIONS
+        if predefined_type == "BATTING":
             v0_global = matrix_world @ obj.data.vertices[0].co.xyz
             v1_global = matrix_world @ obj.data.vertices[1].co.xyz
             v0 = self.project_point_onto_camera(v0_global)
@@ -439,23 +453,43 @@ class SvgWriter:
             )
             self.svg.add(self.svg.polyline(points=points, class_=" ".join(classes), style=polyline_style))
 
-        else:
-            x_offset = self.raw_width / 2
-            y_offset = self.raw_height / 2
-            matrix_world = obj.matrix_world
-            for edge in obj.data.edges:
-                v0_global = matrix_world @ obj.data.vertices[edge.vertices[0]].co.xyz
-                v1_global = matrix_world @ obj.data.vertices[edge.vertices[1]].co.xyz
-                v0 = self.project_point_onto_camera(v0_global)
-                v1 = self.project_point_onto_camera(v1_global)
-                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-                vector = end - start
-                line = self.svg.add(
-                    self.svg.line(
-                        start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes)
+        elif predefined_type == "SECTION":
+            section_pset_data = DecoratorData.get_section_pset_data(obj)
+            connect_markers = section_pset_data["HasConnectedSectionLine"]
+            if connect_markers:
+                for edge in obj.data.edges:
+                    draw_simple_edge_annotation(*edge.vertices[:])
+            else:
+                for edge in obj.data.edges:
+                    v0_global = matrix_world @ obj.data.vertices[edge.vertices[0]].co.xyz
+                    v1_global = matrix_world @ obj.data.vertices[edge.vertices[1]].co.xyz
+                    v0 = self.project_point_onto_camera(v0_global)
+                    v1 = self.project_point_onto_camera(v1_global)
+                    start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+                    end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+
+                    edge_dir = (end - start).normalized()
+                    circle_radius = 5
+                    segment_size = circle_radius * 3
+
+                    self.svg.add(
+                        self.svg.line(
+                            start=start * self.svg_scale,
+                            end=start * self.svg_scale + edge_dir * segment_size,
+                            class_=" ".join(classes),
+                        )
                     )
-                )
+                    self.svg.add(
+                        self.svg.line(
+                            start=end * self.svg_scale,
+                            end=end * self.svg_scale - edge_dir * segment_size,
+                            class_=" ".join(classes),
+                        )
+                    )
+
+        else:
+            for edge in obj.data.edges:
+                draw_simple_edge_annotation(*edge.vertices[:])
 
     def draw_leader_annotation(self, obj):
         self.draw_line_annotation(obj)
