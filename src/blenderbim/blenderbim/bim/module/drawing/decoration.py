@@ -304,18 +304,10 @@ class BaseDecorator:
 
     def get_editmesh_geom(self, obj):
         """Parses editmode mesh geometry into line segments"""
-        mesh = bmesh.from_edit_mesh(obj.data)
-        vertices = []
-        indices = []
-        idx = 0
-
-        # TODO: are we adding same verts twice?
-        for edge in mesh.edges:
-            vertices.extend(edge.verts)
-            indices.append((idx, idx + 1))
-            idx += 2
-        vertices = [obj.matrix_world @ v.co for v in vertices]
-
+        # TODO: avoid bmesh here?
+        bm = bmesh.from_edit_mesh(obj.data)
+        indices = [[v.index for v in edge.verts] for edge in bm.edges]
+        vertices = [obj.matrix_world @ v.co for v in bm.verts]
         return vertices, indices
 
     def decorate(self, context, object):
@@ -1469,6 +1461,7 @@ class BreakDecorator(BaseDecorator):
             verts, idxs = self.get_editmesh_geom(obj)
         else:
             verts, idxs = self.get_mesh_geom(obj)
+        print(len(verts), len(idxs))
         self.draw_lines(context, obj, verts, idxs)
 
 
