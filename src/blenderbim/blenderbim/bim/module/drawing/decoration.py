@@ -309,6 +309,7 @@ class BaseDecorator:
         indices = []
         idx = 0
 
+        # TODO: are we adding same verts twice?
         for edge in mesh.edges:
             vertices.extend(edge.verts)
             indices.append((idx, idx + 1))
@@ -1818,6 +1819,7 @@ class SectionDecorator(LevelDecorator):
     GEOM_GLSL = """
     uniform vec2 winsize;
     uniform float viewportDrawingScale;
+    uniform float connect_markers;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -1879,14 +1881,7 @@ class SectionDecorator(LevelDecorator):
         EmitVertex();
         EndPrimitive();
 
-        // start reference divider
-        p = p0w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
+
 
         // end edge circle
         for(int i=0; i<CIRCLE_SEGS; i++) {
@@ -1918,23 +1913,41 @@ class SectionDecorator(LevelDecorator):
         EmitVertex();
         EndPrimitive();
 
+        float divider_line_size;
+        if (connect_markers > 0) {
+            divider_line_size = CIRCLE_SIZE;
+        } else {
+            divider_line_size = CIRCLE_SIZE * 3;
+        }
+
+        // start reference divider
+        p = p0w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * divider_line_size;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
         // end reference divider
         p = p1w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
         gl_Position = WIN2CLIP(p);
         EmitVertex();
-        p = p1w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
+        p = p1w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * divider_line_size;
         gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
 
         // stem
-        p = p0w + gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w - gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
+        if (connect_markers > 0) {
+            p = p0w + gap;
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w - gap;
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
     }
     """
 
@@ -1945,7 +1958,11 @@ class SectionDecorator(LevelDecorator):
             verts, idxs = self.get_mesh_geom(obj)
         vert_map = {v.freeze(): (obj.matrix_world.inverted() @ v).x for v in verts}
         verts = sorted(verts, key=lambda v: vert_map[v], reverse=True)
-        self.draw_lines(context, obj, verts, idxs)
+        # TODO: add dashed line to shader
+        # mind the vertices limit
+        section_pset_data = DecoratorData.get_section_pset_data(obj)
+        connect_markers = section_pset_data["HasConnectedSectionLine"]
+        self.draw_lines(context, obj, verts, idxs, extra_float_kwargs={"connect_markers": float(connect_markers)})
 
 
 class TextDecorator(BaseDecorator):

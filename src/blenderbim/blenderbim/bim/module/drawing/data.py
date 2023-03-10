@@ -136,8 +136,28 @@ class DecoratorData:
         element = tool.Ifc.get_entity(obj)
         if element:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            thickness = ifcopenshell.util.element.get_pset(element, "BBIM_Batting", "Thickness") 
+            thickness = ifcopenshell.util.element.get_pset(element, "BBIM_Batting", "Thickness")
             thickness = thickness * unit_scale if thickness else 1.5
             cls.data[obj.name] = thickness
             return thickness
-        return 1.5
+
+    @classmethod
+    def get_section_pset_data(cls, obj):
+        result = cls.data.get(obj.name, None)
+        if result is not None:
+            return result
+        element = tool.Ifc.get_entity(obj)
+        if element:
+            # default values
+            pset_data = {
+                "HasConnectedSectionLine": True,
+                "ShowStartArrow": True,
+                "StartArrowSymbol": "",
+                "ShowEndArrow": True,
+                "EndArrowSymbol": "",
+            }
+            obj_pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Section") or {}
+            pset_data.update(obj_pset_data)
+
+            cls.data[obj.name] = pset_data
+            return pset_data
