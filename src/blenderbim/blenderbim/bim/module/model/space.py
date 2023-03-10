@@ -40,6 +40,9 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         # now we generate rooms that exclude walls (i.e. not to wall midpoint
         # or exterior / interior edge).
 
+        def msg(self, context):
+            self.layout.label(text="NO ACTIVE STOREY")
+
         props = context.scene.BIMModelProperties
         relating_type_id = props.relating_type_id
         relating_type = None
@@ -51,10 +54,26 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         collection = context.view_layer.active_layer_collection.collection
         collection_obj = bpy.data.objects.get(collection.name)
         if not collection_obj:
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
         spatial_element = tool.Ifc.get_entity(collection_obj)
         if not spatial_element:
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
+
+        active_obj = bpy.context.active_object
+        element = None
+        if bpy.context.selected_objects and active_obj:
+            element = tool.Ifc.get_entity(active_obj)
+            x, y, z = active_obj.matrix_world.translation.xyz
+            mat = active_obj.matrix_world
+            h = active_obj.dimensions.z
+        else:
+            x, y = context.scene.cursor.location.xy
+            z = collection_obj.matrix_world.translation.z
+            mat = Matrix()
+            mat[0][3], mat[1][3], mat[2][3] = x, y, z
+            h = 3
 
         boundary_elements = []
         for subelement in ifcopenshell.util.element.get_decomposition(spatial_element):
@@ -62,8 +81,8 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
                 boundary_elements.append(subelement)
 
         boundary_lines = []
-        for element in boundary_elements:
-            obj = tool.Ifc.get_object(element)
+        for boundary_element in boundary_elements:
+            obj = tool.Ifc.get_object(boundary_element)
             if not obj:
                 continue
             axis = self.get_wall_axis(obj)
@@ -74,8 +93,6 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
 
         unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
         closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
-
-        x, y = context.scene.cursor.location.xy
 
         space_polygon = None
         for polygon in closed_polygons.geoms:
@@ -89,12 +106,13 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         bm.verts.index_update()
         bm.edges.index_update()
 
-        new_verts = [bm.verts.new(v) for v in space_polygon.exterior.coords[0:-1]]
+        mat_invert = mat.inverted()
+        new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], z])) for v in space_polygon.exterior.coords[0:-1]]
         [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
         bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
 
         for interior in space_polygon.interiors:
-            new_verts = [bm.verts.new(v) for v in interior.coords[0:-1]]
+            new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], z])) for v in interior.coords[0:-1]]
             [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
             bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
 
@@ -107,16 +125,11 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
 
         extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
         extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0.0, 0.0, 3.0], verts=extruded_verts)
+        bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
 
         mesh = bpy.data.meshes.new(name="Space")
         bm.to_mesh(mesh)
         bm.free()
-
-        active_obj = bpy.context.active_object
-        element = None
-        if bpy.context.selected_objects and active_obj:
-            element = tool.Ifc.get_entity(active_obj)
 
         if element and element.is_a("IfcSpace"):
             mesh.name = active_obj.data.name
@@ -129,12 +142,11 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 name = "Space"
             obj = bpy.data.objects.new("Space", mesh)
+            obj.matrix_world = mat
             collection.objects.link(obj)
             bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
             element = tool.Ifc.get_entity(obj)
             if relating_type:
-                print(element)
-                print(relating_type)
                 blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
     def get_wall_axis(self, obj):
