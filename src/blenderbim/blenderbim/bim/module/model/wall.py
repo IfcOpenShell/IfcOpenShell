@@ -472,9 +472,6 @@ class DumbWallGenerator:
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
 
-        if self.has_sketch():
-            return  # For now
-            return self.derive_from_sketch()
         return self.derive_from_cursor()
 
     def has_sketch(self):
