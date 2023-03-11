@@ -2,9 +2,12 @@ name: Restart failed daily conda builds
 
 on:
   workflow_run:
-    workflows: [ci-ifcopenshell-conda-daily]
+    workflows: [ ci-ifcopenshell-conda-daily ]
     types:
       - completed
+  push: # Remove this before merging
+    branches:
+    - add-conda-daily-restart-workflow
 
 env:
   REPO_OWNER: IfcOpenShell
@@ -15,19 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     steps:
-    - name: Check for failed runs
-      id: check-failed-runs
-      run: |
-        echo "Checking for failed runs..."
-        # Replace "my-workflow" with the name of your workflow
-        failed_runs=$(curl -s https://api.github.com/repos/${{ env.REPO_OWNER }}/REPO/actions/runs?status=completed&conclusion=failure&workflow_id=${{ env.MY_WORKFLOW }} | jq '. | map(select(.status.code == 143))')
-        echo "Found $(echo $failed_runs | jq length) failed runs"
-    - name: Restart failed runs
-      if: steps.check-failed-runs.outputs.failed_runs != null
-      run: |
-        echo "Restarting failed runs..."
-        for run_id in $(echo $failed_runs | jq -r '.[].id'); do
-          echo "Restarting run $run_id..."
-          curl -s -X POST https://api.github.com/repos/${{ env.REPO_OWNER }}/REPO/actions/runs/$run_id/rerun \
-            -H "Accept: application/vnd.github+json"
-        done
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: Check for failed runs
+        id: check-failed-runs
+        run: |
+          python check_repo_ci_jobs.py
