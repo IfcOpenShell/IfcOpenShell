@@ -34,6 +34,7 @@ import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
+from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 
 
 def element_listener(element, obj):
@@ -759,16 +760,50 @@ class DumbWallJoiner:
             return
         axis1 = tool.Model.get_wall_axis(wall1)
         axis2 = copy.deepcopy(axis1)
-        intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
-        if connection < 0 or connection > 1 or tool.Cad.is_x(connection, (0, 1)):
+        intersect, cut_percentage = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
+        if cut_percentage < 0 or cut_percentage > 1 or tool.Cad.is_x(cut_percentage, (0, 1)):
             return
-        connection = "ATEND" if connection > 0.5 else "ATSTART"
+        connection = "ATEND" if cut_percentage > 0.5 else "ATSTART"
 
         wall2 = self.duplicate_wall(wall1)
         element2 = tool.Ifc.get_entity(wall2)
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element2, connection_type="ATSTART")
+
+        # During the duplication process, unfilled voids are copied, so we need
+        # to check openings on both element1 and element2. Let's check element1
+        # first.
+        for opening in [
+            r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
+        ]:
+            opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_location = opening_matrix.col[3].to_3d()
+            _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
+            if opening_position > cut_percentage:
+                # The opening should be removed from element1.
+                ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
+
+        # Now let's check element2.
+        for opening in [
+            r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
+        ]:
+            opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_location = opening_matrix.col[3].to_3d()
+            _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
+            if opening_position < cut_percentage:
+                # The opening should be removed from element2.
+                ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
+
+        # During the duplication process, filled voids are not copied. So we
+        # only need to check fillings on the original element1.
+        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings if r.RelatedOpeningElement.HasFillings]:
+            filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
+            filling_location = filling_obj.matrix_world.translation
+            _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis1["reference"])
+            if filling_position > cut_percentage:
+                # The filling should be moved from element1 to element2.
+                FilledOpeningGenerator().generate(filling_obj, wall2, target=filling_obj.matrix_world.translation)
 
         axis1["reference"][1] = intersect
         axis2["reference"][0] = intersect
