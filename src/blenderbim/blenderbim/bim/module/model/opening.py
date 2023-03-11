@@ -53,7 +53,7 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class FilledOpeningGenerator:
-    def generate(self, filling_obj, voided_obj):
+    def generate(self, filling_obj, voided_obj, target=None):
         props = bpy.context.scene.BIMModelProperties
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -62,8 +62,14 @@ class FilledOpeningGenerator:
         if not voided_obj or not filling_obj:
             return
 
+        if filling.FillsVoids:
+            ifcopenshell.api.run(
+                "void.remove_opening", tool.Ifc.get(), opening=filling.FillsVoids[0].RelatingOpeningElement
+            )
+
+        if target is None:
+            target = bpy.context.scene.cursor.location
         element = tool.Ifc.get_entity(voided_obj)
-        target = bpy.context.scene.cursor.location
         raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
         if not raycast[0]:
             target = filling_obj.matrix_world.col[3].to_3d().copy()

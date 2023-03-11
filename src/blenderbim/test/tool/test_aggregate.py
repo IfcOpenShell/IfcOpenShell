@@ -29,19 +29,8 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Aggregate)
 
 
-class TestEnableEditing(NewFile):
-    def test_run(self):
-        obj = bpy.data.objects.new("Object", None)
-        subject.enable_editing(obj)
-        assert obj.BIMObjectAggregateProperties.is_editing is True
 
 
-class TestDisableEditing(NewFile):
-    def test_run(self):
-        obj = bpy.data.objects.new("Object", None)
-        subject.enable_editing(obj)
-        subject.disable_editing(obj)
-        assert obj.BIMObjectAggregateProperties.is_editing is False
 
 
 class TestCanAggregate(NewFile):
@@ -117,3 +106,27 @@ class TestCanAggregate(NewFile):
         subelement_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(subelement, subelement_obj)
         assert subject.can_aggregate(element_obj, subelement_obj) is False
+
+class TestDisableEditing(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        subject.enable_editing(obj)
+        subject.disable_editing(obj)
+        assert obj.BIMObjectAggregateProperties.is_editing is False
+
+
+class TestEnableEditing(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        subject.enable_editing(obj)
+        assert obj.BIMObjectAggregateProperties.is_editing is True
+
+
+class TestGetContainer(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcWall()
+        container = ifc.createIfcBuildingStorey()
+        ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
+        assert subject.get_container(element) == container

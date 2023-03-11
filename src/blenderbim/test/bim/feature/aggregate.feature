@@ -34,7 +34,7 @@ Scenario: Unassign object
     And the variable "related_object" is "tool.Ifc.get().by_type('IfcBuildingStorey')[0].id()"
     And I press "bim.assign_object(relating_object={relating_object}, related_object={related_object})"
     And the object "IfcBuildingStorey/My Storey" is selected
-    When I press "bim.unassign_object(relating_object={relating_object}, related_object={related_object})"
+    When I press "bim.unassign_object"
     Then the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
     And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcProject/My Project"
