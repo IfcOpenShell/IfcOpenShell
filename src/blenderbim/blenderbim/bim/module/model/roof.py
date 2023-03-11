@@ -53,7 +53,8 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Need to select some object first.")
             return {"CANCELLED"}
 
-        bpy.ops.mesh.dissolve_limited()
+        # TODO: include this operator in bim.generate_hipped_roof
+        # bpy.ops.mesh.dissolve_limited()
         generate_hipped_roof(obj, self.mode, self.height, self.angle)
         return {"FINISHED"}
 
