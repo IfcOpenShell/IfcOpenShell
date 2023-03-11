@@ -67,6 +67,7 @@ class Aggregate:
     def can_aggregate(cls, relating_object, related_object): pass
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
+    def get_container(cls, element): pass
 
 
 @interface

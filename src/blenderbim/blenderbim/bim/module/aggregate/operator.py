@@ -58,16 +58,22 @@ class BIM_OT_unassign_object(bpy.types.Operator, Operator):
     bl_idname = "bim.unassign_object"
     bl_label = "Unassign Object"
     bl_options = {"REGISTER", "UNDO"}
-    relating_object: bpy.props.IntProperty()
-    related_object: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.unassign_object(
-            tool.Ifc,
-            tool.Collector,
-            relating_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object)),
-            related_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.related_object)),
-        )
+        for obj in bpy.context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if not aggregate:
+                continue
+            core.unassign_object(
+                tool.Ifc,
+                tool.Aggregate,
+                tool.Collector,
+                relating_obj=tool.Ifc.get_object(aggregate),
+                related_obj=tool.Ifc.get_object(element),
+            )
 
 
 class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):

@@ -18,17 +18,10 @@
 
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import ifcopenshell.util.element
 
 
 class Aggregate(blenderbim.core.tool.Aggregate):
-    @classmethod
-    def enable_editing(cls, obj):
-        obj.BIMObjectAggregateProperties.is_editing = True
-
-    @classmethod
-    def disable_editing(cls, obj):
-        obj.BIMObjectAggregateProperties.is_editing = False
-
     @classmethod
     def can_aggregate(cls, relating_obj, related_obj):
         relating_object = tool.Ifc.get_entity(relating_obj)
@@ -50,3 +43,15 @@ class Aggregate(blenderbim.core.tool.Aggregate):
             if relating_object.is_a("IfcProject") and related_object.is_a("IfcSpatialElement"):
                 return True
         return False
+
+    @classmethod
+    def disable_editing(cls, obj):
+        obj.BIMObjectAggregateProperties.is_editing = False
+
+    @classmethod
+    def enable_editing(cls, obj):
+        obj.BIMObjectAggregateProperties.is_editing = True
+
+    @classmethod
+    def get_container(cls, element):
+        return ifcopenshell.util.element.get_container(element)
