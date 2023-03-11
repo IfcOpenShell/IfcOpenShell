@@ -1812,6 +1812,10 @@ class SectionDecorator(LevelDecorator):
     uniform vec2 winsize;
     uniform float viewportDrawingScale;
     uniform float connect_markers;
+    uniform float display_start_symbol;
+    uniform float display_end_symbol;
+    uniform float display_start_circle;
+    uniform float display_end_circle;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -1835,7 +1839,7 @@ class SectionDecorator(LevelDecorator):
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
         vec4 edge = p1w - p0w, side = normalize(edge);
         vec4 gap = side * viewportDrawingScale * CIRCLE_SIZE;
-        vec4 dir = vec4(cross(vec3(side.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
+        vec4 edge_ortho_dir = -vec4(cross(vec3(side.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
         vec4 p;
 
         vec4 head[CIRCLE_SEGS];
@@ -1844,66 +1848,72 @@ class SectionDecorator(LevelDecorator):
         vec4 head5[5];
 
         // start edge circle
-        for(int i=0; i<CIRCLE_SEGS; i++) {
-            p = p0w + head[i];
+        if (display_start_circle > 0) {
+            for(int i=0; i<CIRCLE_SEGS; i++) {
+                p = p0w + head[i];
+                gl_Position = WIN2CLIP(p);
+                EmitVertex();
+            }
+            p = p0w + head[0];
             gl_Position = WIN2CLIP(p);
             EmitVertex();
+            EndPrimitive();
         }
-        p = p0w + head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
 
-        // start edge triangle
-        triangle_head(side, dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
-        p = p0w + head5[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head5[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head5[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head5[3];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head5[4];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
-
-
+        if (display_start_symbol > 0) {
+            // start edge triangle
+            triangle_head(side, edge_ortho_dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
+            p = p0w + head5[0];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p0w + head5[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p0w + head5[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p0w + head5[3];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p0w + head5[4];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
 
         // end edge circle
-        for(int i=0; i<CIRCLE_SEGS; i++) {
-            p = p1w - head[i];
+        if (display_end_circle > 0) {
+            for(int i=0; i<CIRCLE_SEGS; i++) {
+                p = p1w - head[i];
+                gl_Position = WIN2CLIP(p);
+                EmitVertex();
+            }
+            p = p1w - head[0];
             gl_Position = WIN2CLIP(p);
             EmitVertex();
+            EndPrimitive();
         }
-        p = p1w - head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
 
         // end edge triangle
-        triangle_head(side, dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
-        p = p1w + head5[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w + head5[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w + head5[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w + head5[3];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w + head5[4];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
+        if (display_end_symbol > 0) {
+            triangle_head(side, edge_ortho_dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
+            p = p1w + head5[0];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w + head5[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w + head5[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w + head5[3];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w + head5[4];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
 
         float divider_line_size;
         if (connect_markers > 0) {
@@ -1912,30 +1922,39 @@ class SectionDecorator(LevelDecorator):
             divider_line_size = CIRCLE_SIZE * 3;
         }
 
+        // NOTE: basically we consider first vertex to be
+        // start and the second to be the end marker
+        // which is a bit inconsistent with svg
+        // but not that anyone will use multiple edge section annotation
+
         // start reference divider
-        p = p0w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * divider_line_size;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
+        if (display_start_symbol > 0) {
+            p = p0w + side * viewportDrawingScale * divider_line_size;
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p0w - side * viewportDrawingScale * CIRCLE_SIZE;
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
 
         // end reference divider
-        p = p1w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * divider_line_size;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
+        if (display_end_symbol > 0) {
+            p = p1w + side * viewportDrawingScale * CIRCLE_SIZE;
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w - side * viewportDrawingScale * divider_line_size;
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
 
         // stem
         if (connect_markers > 0) {
-            p = p0w + gap;
+            p = p0w + (display_start_symbol > 0 ? gap : vec4(0));
             gl_Position = WIN2CLIP(p);
             EmitVertex();
-            p = p1w - gap;
+            p = p1w - (display_end_symbol > 0 ? gap : vec4(0));
             gl_Position = WIN2CLIP(p);
             EmitVertex();
             EndPrimitive();
@@ -1948,13 +1967,23 @@ class SectionDecorator(LevelDecorator):
             verts, idxs = self.get_editmesh_geom(obj)
         else:
             verts, idxs = self.get_mesh_geom(obj)
-        vert_map = {v.freeze(): (obj.matrix_world.inverted() @ v).x for v in verts}
-        verts = sorted(verts, key=lambda v: vert_map[v], reverse=True)
+
         # TODO: add dashed line to shader
         # mind the vertices limit
-        section_pset_data = DecoratorData.get_section_pset_data(obj)
-        connect_markers = section_pset_data["HasConnectedSectionLine"]
-        self.draw_lines(context, obj, verts, idxs, extra_float_kwargs={"connect_markers": float(connect_markers)})
+        display_data = DecoratorData.get_section_markers_display_data(obj)
+        self.draw_lines(
+            context,
+            obj,
+            verts,
+            idxs,
+            extra_float_kwargs={
+                "connect_markers": float(display_data["connect_markers"]),
+                "display_start_symbol": float(display_data["start"]["add_symbol"]),
+                "display_end_symbol": float(display_data["end"]["add_symbol"]),
+                "display_start_circle": float(display_data["start"]["add_circle"]),
+                "display_end_circle": float(display_data["end"]["add_circle"]),
+            },
+        )
 
 
 class TextDecorator(BaseDecorator):

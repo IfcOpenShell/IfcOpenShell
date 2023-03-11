@@ -454,13 +454,17 @@ class SvgWriter:
             self.svg.add(self.svg.polyline(points=points, class_=" ".join(classes), style=polyline_style))
 
         elif predefined_type == "SECTION":
-            section_pset_data = DecoratorData.get_section_pset_data(obj)
-            connect_markers = section_pset_data["HasConnectedSectionLine"]
+            display_data = DecoratorData.get_section_markers_display_data(obj)
+            connect_markers = display_data["connect_markers"]
+
             if connect_markers:
                 for edge in obj.data.edges:
                     draw_simple_edge_annotation(*edge.vertices[:])
             else:
                 for edge in obj.data.edges:
+                    v0_marker_position = "start" if edge.vertices[0] == 0 else "end"
+                    v1_marker_position = "start" if edge.vertices[1] == 0 else "end"
+
                     v0_global = matrix_world @ obj.data.vertices[edge.vertices[0]].co.xyz
                     v1_global = matrix_world @ obj.data.vertices[edge.vertices[1]].co.xyz
                     v0 = self.project_point_onto_camera(v0_global)
@@ -472,20 +476,23 @@ class SvgWriter:
                     circle_radius = 5
                     segment_size = circle_radius * 3
 
-                    self.svg.add(
-                        self.svg.line(
-                            start=start * self.svg_scale,
-                            end=start * self.svg_scale + edge_dir * segment_size,
-                            class_=" ".join(classes),
+                    if display_data[v0_marker_position]["add_symbol"]:
+                        self.svg.add(
+                            self.svg.line(
+                                start=start * self.svg_scale,
+                                end=start * self.svg_scale + edge_dir * segment_size,
+                                class_=" ".join(classes),
+                            )
                         )
-                    )
-                    self.svg.add(
-                        self.svg.line(
-                            start=end * self.svg_scale,
-                            end=end * self.svg_scale - edge_dir * segment_size,
-                            class_=" ".join(classes),
+
+                    if display_data[v1_marker_position]["add_symbol"]:
+                        self.svg.add(
+                            self.svg.line(
+                                start=end * self.svg_scale,
+                                end=end * self.svg_scale - edge_dir * segment_size,
+                                class_=" ".join(classes),
+                            )
                         )
-                    )
 
         else:
             for edge in obj.data.edges:
@@ -507,58 +514,79 @@ class SvgWriter:
 
         self.draw_line_annotation(obj)
 
-        v1 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, 0)))
-        v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, -1)))
-        angle = -math.degrees((v2 - v1).xy.angle_signed(Vector((0, 1))))
+        display_data = DecoratorData.get_section_markers_display_data(obj)
 
-        for vert in obj.data.vertices:
-            point = obj.matrix_world @ vert.co
-            symbol_position = self.project_point_onto_camera(point)
-            symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
-            transform = "rotate({}, {}, {})".format(
-                angle,
-                (symbol_position * self.svg_scale)[0],
-                (symbol_position * self.svg_scale)[1],
-            )
+        for edge in obj.data.edges:
+            edge_verts = [obj.data.vertices[v_i] for v_i in edge.vertices]
 
-            self.svg.add(
-                self.svg.use("#section-arrow", insert=tuple(symbol_position * self.svg_scale), transform=transform)
-            )
-            self.svg.add(self.svg.use("#section-tag", insert=tuple(symbol_position * self.svg_scale)))
+            # convert edge vertiices coordinates to svg space
+            # to calculate the edge angle and for later use
+            edge_verts_svg = []
+            for vert in edge_verts:
+                point = obj.matrix_world @ vert.co
+                symbol_position = self.project_point_onto_camera(point)
+                symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
+                symbol_position_svg = symbol_position * self.svg_scale
+                edge_verts_svg.append(symbol_position_svg)
 
-            reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
-            text_position = list(symbol_position * self.svg_scale)
-            text_style = {
-                "text-anchor": "middle",
-                "alignment-baseline": "middle",
-                "dominant-baseline": "middle",
-            }
-            self.svg.add(self.svg.text(reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="SECTION", **text_style))
-            self.svg.add(self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="SECTION", **text_style))
+            edge_dir = (edge_verts_svg[1] - edge_verts_svg[0]).normalized()
+            angle = degrees( edge_dir.xy.angle_signed( Vector([1,0]) ) )
+
+            for v_i, symbol_position_svg in zip(edge.vertices, edge_verts_svg):
+                current_marker_position = "start" if v_i == 0 else "end"
+
+                # marker arrow symbol
+                if display_data[current_marker_position]["add_symbol"]:
+                    transform = "rotate({}, {}, {})".format(angle, *symbol_position_svg.xy)
+                    symbol_id = display_data[current_marker_position]["symbol"]
+                    self.svg.add(self.svg.use(f"#{symbol_id}", insert=symbol_position_svg, transform=transform))
+
+                # marker circle and it's text
+                if display_data[current_marker_position]["add_circle"]:
+                    self.svg.add(self.svg.use("#section-tag", insert=symbol_position_svg))
+
+                    reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
+                    text_position = symbol_position_svg
+                    text_style = {
+                        "text-anchor": "middle",
+                        "alignment-baseline": "middle",
+                        "dominant-baseline": "middle",
+                    }
+                    self.svg.add(
+                        self.svg.text(
+                            reference_id,
+                            insert=(text_position[0], text_position[1] - 2.5),
+                            class_="SECTION",
+                            **text_style,
+                        )
+                    )
+                    self.svg.add(
+                        self.svg.text(
+                            sheet_id, 
+                            insert=(text_position[0], text_position[1] + 2.5), 
+                            class_="SECTION", 
+                            **text_style
+                        )
+                    )
 
     def draw_elevation_annotation(self, obj):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         symbol_position = self.project_point_onto_camera(obj.location)
         symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
+        symbol_position_svg = symbol_position * self.svg_scale
 
         v1 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, 0)))
         v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, -1)))
         angle = -math.degrees((v2 - v1).xy.angle_signed(Vector((0, 1))))
 
-        transform = "rotate({}, {}, {})".format(
-            angle,
-            (symbol_position * self.svg_scale)[0],
-            (symbol_position * self.svg_scale)[1],
-        )
+        transform = "rotate({}, {}, {})".format(angle, *symbol_position_svg.xy)
 
-        self.svg.add(
-            self.svg.use("#elevation-arrow", insert=tuple(symbol_position * self.svg_scale), transform=transform)
-        )
-        self.svg.add(self.svg.use("#elevation-tag", insert=tuple(symbol_position * self.svg_scale)))
+        self.svg.add(self.svg.use("#elevation-arrow", insert=symbol_position_svg, transform=transform))
+        self.svg.add(self.svg.use("#elevation-tag", insert=symbol_position_svg))
 
         reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
-        text_position = list(symbol_position * self.svg_scale)
+        text_position = symbol_position_svg
         text_style = {
             "text-anchor": "middle",
             "alignment-baseline": "middle",
@@ -766,7 +794,7 @@ class SvgWriter:
             bm.verts.index_update()
             bm.edges.index_update()
             new_verts = [bm.verts.new(p) for p in points_chunk]
-            new_edges = [bm.edges.new( (new_verts[e[0]], new_verts[e[1]]) ) for e in ((0, 1), (1, 2))]
+            new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in ((0, 1), (1, 2))]
             self.draw_svg_3point_arc(obj, bm)
 
     def draw_svg_3point_arc(self, obj, bm):
@@ -967,7 +995,7 @@ class SvgWriter:
                 run = (B - O).length
                 if run != 0:
                     angle_tg = rise / run
-                    angle = round( degrees( atan(angle_tg) ))
+                    angle = round(degrees(atan(angle_tg)))
                 else:
                     angle = 90
 

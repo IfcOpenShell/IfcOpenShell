@@ -126,6 +126,7 @@ class SchedulesData:
 
 
 class DecoratorData:
+    # stores 1 type of data per object
     data = {}
 
     @classmethod
@@ -142,22 +143,42 @@ class DecoratorData:
             return thickness
 
     @classmethod
-    def get_section_pset_data(cls, obj):
+    def get_section_markers_display_data(cls, obj):
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
-        element = tool.Ifc.get_entity(obj)
-        if element:
-            # default values
-            pset_data = {
-                "HasConnectedSectionLine": True,
-                "ShowStartArrow": True,
-                "StartArrowSymbol": "",
-                "ShowEndArrow": True,
-                "EndArrowSymbol": "",
-            }
-            obj_pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Section") or {}
-            pset_data.update(obj_pset_data)
 
-            cls.data[obj.name] = pset_data
-            return pset_data
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+
+        # default values
+        pset_data = {
+            "HasConnectedSectionLine": True,
+            "ShowStartArrow": True,
+            "StartArrowSymbol": "",
+            "ShowEndArrow": True,
+            "EndArrowSymbol": "",
+        }
+        obj_pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Section") or {}
+        pset_data.update(obj_pset_data)
+
+        # create more usable display data
+        start_symbol = pset_data["StartArrowSymbol"]
+        end_symbol = pset_data["EndArrowSymbol"]
+        display_data = {
+            "start": {
+                "add_circle": pset_data["ShowStartArrow"] and not start_symbol,
+                "add_symbol": pset_data["ShowStartArrow"] or bool(start_symbol),
+                "symbol": start_symbol or "section-arrow",
+            },
+            "end": {
+                "add_circle": pset_data["ShowEndArrow"] and not end_symbol,
+                "add_symbol": pset_data["ShowEndArrow"] or bool(end_symbol),
+                "symbol": end_symbol or "section-arrow",
+            },
+            "connect_markers": pset_data["HasConnectedSectionLine"],
+        }
+
+        cls.data[obj.name] = display_data
+        return display_data
