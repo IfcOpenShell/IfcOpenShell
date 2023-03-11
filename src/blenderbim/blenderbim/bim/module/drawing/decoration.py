@@ -1461,7 +1461,6 @@ class BreakDecorator(BaseDecorator):
             verts, idxs = self.get_editmesh_geom(obj)
         else:
             verts, idxs = self.get_mesh_geom(obj)
-        print(len(verts), len(idxs))
         self.draw_lines(context, obj, verts, idxs)
 
 
