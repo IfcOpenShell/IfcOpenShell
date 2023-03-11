@@ -34,7 +34,7 @@ def to_graph(tree):
 
         for i, (k, v) in enumerate(pairs):
             i = f"{i:03d}"
-            nid = f"{name or 'root'}_{k or i}"
+            nid = f"{name or 'root'}/{k or i}"
             g.add_node(nid, label=k)
             if name:
                 g.add_edge(name, nid)
@@ -259,6 +259,16 @@ class context:
 
     def __getitem__(self, k):
         return list(self)[k]
+
+    def key(self):
+        parts = list(
+            map(
+                lambda s: tuple(map(lambda p: "n" if p.isdigit() else p, s.split("/"))),
+                self.rules,
+            )
+        )
+        assert len(set(parts)) == 1
+        return [x for x in parts[0][::-1] if x != "n"][0]
 
 
 # @todo
@@ -643,6 +653,13 @@ def process_aggregate_initializer(context):
         )
 
 
+def process_index(context):
+    if context.parent().key() == "index_qualifier":
+        return context
+    else:
+        return "[%s - EXPRESS_ONE_BASED_INDEXING]" % context
+
+
 # implemented sizeof() function in generated code
 # codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
 # @todo
@@ -675,7 +692,8 @@ codegen_rule(
 codegen_rule("if_stmt", process_if_stmt)
 codegen_rule("repeat_stmt", process_repeat_stmt)
 # codegen_rule("index", lambda context: '**express_index(%s)' % context)
-codegen_rule("index", lambda context: "[%s - EXPRESS_ONE_BASED_INDEXING]" % context)
+codegen_rule("index", process_index)
+codegen_rule("index_qualifier", process_index)
 codegen_rule("group_qualifier", lambda context: empty())
 codegen_rule("attribute_qualifier", lambda context: ".%s" % context)
 codegen_rule("rel_op", process_rel_op)
@@ -710,7 +728,7 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
         while n := getattr(n, "parent", 0):
             parents.append(n)
 
-        custom_funcs = "usedin", "express_getitem", "typeof"
+        custom_funcs = "is_entity", "usedin", "express_len", "express_getitem", "typeof"
         function_defs = [p.name for p in parents if isinstance(p, ast.FunctionDef)]
         if any(fn in function_defs for fn in custom_funcs):
             return node
@@ -744,7 +762,7 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
         while n := getattr(n, "parent", 0):
             parents.append(n)
 
-        custom_funcs = "usedin", "express_getitem"
+        custom_funcs = "is_entity", "usedin", "express_len", "express_getitem", "typeof"
         function_defs = [p.name for p in parents if isinstance(p, ast.FunctionDef)]
         if any(fn in function_defs for fn in custom_funcs):
             return node
@@ -812,9 +830,37 @@ def exists(v):
         sep="\n",
     )
 
-    print("sizeof = len", file=output, sep="\n")
-    print("hiindex = len", file=output, sep="\n")
-    print("blength = len", file=output, sep="\n")
+    print(
+        """
+def is_entity(inst):
+    if isinstance(inst, ifcopenshell.entity_instance):
+        schema_name = inst.is_a(True).split('.')[0].lower()
+        decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
+        return isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity)
+    return False
+
+def express_len(v):
+    if isinstance(v, ifcopenshell.entity_instance) and not is_entity(v):
+        v = v[0]
+    elif v is None or v is INDETERMINATE:
+        return INDETERMINATE
+    return len(v)
+
+old_range = range
+
+def range(*args):
+    if INDETERMINATE in args:
+        return
+    yield from old_range(*args)
+
+sizeof = express_len
+hiindex = express_len
+blength = express_len
+""",
+        file=output,
+        sep="\n",
+    )
+
     print("loindex = lambda x: 1", file=output, sep="\n")
     print("from math import *", file=output, sep="\n")
 
@@ -856,6 +902,8 @@ class express_set(set):
 
 def express_getitem(aggr, idx, default):
     if aggr is None: return default
+    if isinstance(aggr, ifcopenshell.entity_instance) and not is_entity(aggr):
+        aggr = aggr[0]
     try: return aggr[idx]
     except IndexError as e: return None
 
