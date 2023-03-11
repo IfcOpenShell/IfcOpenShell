@@ -72,6 +72,7 @@ class LaunchTypeManager(bpy.types.Operator):
         row.alignment = "CENTER"
         row.prop(props, "type_predefined_type", text="")
         row.prop(props, "type_template", text="")
+        row.prop(props, "type_name", text="")
         row.operator("bim.add_type", icon="ADD", text="")
 
         row = columns.row(align=True)

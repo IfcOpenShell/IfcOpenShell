@@ -162,6 +162,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMModelProperties
         ifc_class = props.type_class
         predefined_type = props.type_predefined_type
+        name = props.type_name
         template = props.type_template
         ifc_file = tool.Ifc.get()
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
@@ -176,14 +177,14 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 if element:
                     mesh = obj.data.copy()
                     mesh.BIMMeshProperties.ifc_definition_id = 0
-                    obj = bpy.data.objects.new(element.Name or "TYPEX", mesh)
+                    obj = bpy.data.objects.new(element.Name or name, mesh)
             else:
-                mesh = bpy.data.meshes.new("TYPEX")
+                mesh = bpy.data.meshes.new(name)
                 bm = bmesh.new()
                 bmesh.ops.create_cube(bm, size=1)
                 bm.to_mesh(mesh)
                 bm.free()
-                obj = bpy.data.objects.new("TYPEX", mesh)
+                obj = bpy.data.objects.new(name, mesh)
             obj.matrix_world.col[3] = location.to_4d()
             blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -198,7 +199,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             )
         elif template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            obj = bpy.data.objects.new("TYPEX", None)
+            obj = bpy.data.objects.new(name, None)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -231,7 +232,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={"LayerSetDirection": axis})
         elif template == "PROFILESET":
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            obj = bpy.data.objects.new("TYPEX", None)
+            obj = bpy.data.objects.new(name, None)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -267,7 +268,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 "material.assign_profile", ifc_file, material_profile=material_profile, profile=profile
             )
         elif template == "EMPTY":
-            obj = bpy.data.objects.new("TYPEX", None)
+            obj = bpy.data.objects.new(name, None)
             blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -282,7 +283,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "WINDOW":
             mesh = bpy.data.meshes.new("IfcWindow")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -300,7 +301,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "DOOR":
             mesh = bpy.data.meshes.new("IfcDoor")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -318,7 +319,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "STAIR":
             mesh = bpy.data.meshes.new("IfcStairFlight")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
