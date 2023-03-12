@@ -45,7 +45,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             ):
                 if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):
                     obj1, obj2 = obj2, obj1
-                bpy.ops.bim.add_filled_opening(voided_obj=obj1.name, filling_obj=obj2.name)
+                FilledOpeningGenerator().generate(obj2, obj1, target=obj2.matrix_world.translation)
             return {"FINISHED"}
         if element2 and not element1:
             obj1, obj2 = obj2, obj1
