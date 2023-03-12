@@ -79,8 +79,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           sudo /usr/bin/python -m pip install -U pip
-          sudo /usr/bin/python -m pip install xmlschema numpy lxml
-          sudo /usr/bin/python -m pip install src/bcf
+          sudo /usr/bin/python -m pip install xmlschema xsdata numpy lxml
+          sudo /usr/bin/python -m pip install src/bcf --no-deps
           sudo /usr/bin/python -m pip install pytest
           sudo /usr/bin/python -m pip install isodate
           sudo /usr/bin/python -m pip install lark
