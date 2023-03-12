@@ -53,7 +53,7 @@ jobs:
         run: |
           sudo /usr/sbin/update-ccache-symlinks
           mkdir build && cd build
-          PATH="/usr/lib/ccache:$PATH cmake \
+          PATH="/usr/lib/ccache:$PATH" cmake \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
