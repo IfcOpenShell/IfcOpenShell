@@ -58,6 +58,7 @@ class FilledOpeningGenerator:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         filling = tool.Ifc.get_entity(filling_obj)
+        element = tool.Ifc.get_entity(voided_obj)
 
         if not voided_obj or not filling_obj:
             return
@@ -69,28 +70,30 @@ class FilledOpeningGenerator:
 
         if target is None:
             target = bpy.context.scene.cursor.location
-        element = tool.Ifc.get_entity(voided_obj)
-        raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
-        if not raycast[0]:
-            target = filling_obj.matrix_world.col[3].to_3d().copy()
-            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+
+        # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
+        if voided_obj.data:
+            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
             if not raycast[0]:
-                return
+                target = filling_obj.matrix_world.col[3].to_3d().copy()
+                raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+                if not raycast[0]:
+                    return
 
-        # In this prototype, we assume openings are only added to axis-based elements
-        layers = tool.Model.get_material_layer_parameters(element)
-        axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+            # In this prototype, we assume openings are only added to axis-based elements
+            layers = tool.Model.get_material_layer_parameters(element)
+            axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
 
-        new_matrix = voided_obj.matrix_world.copy()
-        new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
+            new_matrix = voided_obj.matrix_world.copy()
+            new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
 
-        if filling.is_a("IfcDoor"):
-            new_matrix[2][3] = voided_obj.matrix_world[2][3]
-        else:
-            new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
+            if filling.is_a("IfcDoor"):
+                new_matrix[2][3] = voided_obj.matrix_world[2][3]
+            else:
+                new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
 
-        filling_obj.matrix_world = new_matrix
-        bpy.context.view_layer.update()
+            filling_obj.matrix_world = new_matrix
+            bpy.context.view_layer.update()
 
         if tool.Ifc.is_moved(voided_obj):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj)
@@ -139,18 +142,25 @@ class FilledOpeningGenerator:
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
         ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
 
-        representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=voided_obj,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
+        voided_objs = [voided_obj]
+        # Openings affect all subelements of an aggregate
+        for subelement in ifcopenshell.util.element.get_decomposition(element):
+            subobj = tool.Ifc.get_object(subelement)
+            if subobj:
+                voided_objs.append(subobj)
 
-        return {"FINISHED"}
+        for voided_obj in voided_objs:
+            if voided_obj.data:
+                representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=voided_obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         filling = settings["related_object"]
@@ -306,21 +316,28 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                 ifcopenshell.api.run(
                     "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
                 )
+
+            decomposed_building_elements = set()
             for building_element in building_elements:
+                decomposed_building_elements.add(building_element)
+                decomposed_building_elements.update(ifcopenshell.util.element.get_decomposition(building_element))
+
+            for building_element in decomposed_building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
-                body = ifcopenshell.util.representation.get_representation(
-                    building_element, "Model", "Body", "MODEL_VIEW"
-                )
-                if body:
-                    blenderbim.core.geometry.switch_representation(
-                        tool.Ifc,
-                        tool.Geometry,
-                        obj=building_obj,
-                        representation=body,
-                        should_reload=True,
-                        is_global=True,
-                        should_sync_changes_first=False,
+                if building_obj and building_obj.data:
+                    body = ifcopenshell.util.representation.get_representation(
+                        building_element, "Model", "Body", "MODEL_VIEW"
                     )
+                    if body:
+                        blenderbim.core.geometry.switch_representation(
+                            tool.Ifc,
+                            tool.Geometry,
+                            obj=building_obj,
+                            representation=body,
+                            should_reload=True,
+                            is_global=True,
+                            should_sync_changes_first=False,
+                        )
         return {"FINISHED"}
 
 
@@ -695,18 +712,27 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
+        decomposed_building_objs = set()
         for obj in building_objs:
-            element = tool.Ifc.get_entity(obj)
-            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            blenderbim.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=body,
-                should_reload=True,
-                is_global=True,
-                should_sync_changes_first=False,
-            )
+            decomposed_building_objs.add(obj)
+            for subelement in ifcopenshell.util.element.get_decomposition(tool.Ifc.get_entity(obj)):
+                subobj = tool.Ifc.get_object(subelement)
+                if subobj:
+                    decomposed_building_objs.add(subobj)
+
+        for obj in decomposed_building_objs:
+            if obj.data:
+                element = tool.Ifc.get_entity(obj)
+                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=body,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
         return {"FINISHED"}
 
     def get_all_building_objects_of_similar_openings(self, opening):
