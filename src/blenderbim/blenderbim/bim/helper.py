@@ -64,14 +64,14 @@ def draw_attribute(attribute, layout, copy_operator=None):
             text=attribute.name,
         )
 
+    if attribute.is_uri:
+        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+        op.data_path = attribute.path_from_id("string_value")
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
-    if attribute.is_uri:
-        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-        op.data_path = attribute.path_from_id("string_value")
 
 
 def import_attributes(ifc_class, props, data, callback=None):
