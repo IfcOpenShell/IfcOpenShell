@@ -10,7 +10,7 @@ REPO_OWNER = os.environ.get("REPO_OWNER", "IfcOpenShell/IfcOpenShell")
 MY_WORKFLOW = os.environ.get("MY_WORKFLOW", "ci-ifcopenshell-conda-daily")
 WORKFLOW_RUN_ID = os.environ.get("WORKFLOW_RUN_ID", None)
 TOKEN = os.environ.get("GITHUB_TOKEN", None)
-# Create a fine-grained personal access token for the repo in question with repo permissions "actions:read"
+# To test this locally create a fine-grained personal access token for this repo with permissions "actions:read"
 # See https://github.com/settings/tokens?type=beta
 
 # This is a list of strings that indicate that a job has stopped abruptly.
