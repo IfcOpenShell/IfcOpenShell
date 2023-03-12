@@ -9,8 +9,8 @@ mapper = {
         'NetArea' : "get_net_footprint_area",
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
-        'GrossWeight' : None,
-        'NetWeight' : None,
+        'GrossWeight' : "get_gross_weight",
+        'NetWeight' : "get_net_weight",
     },
     'Qto_OpeningElementBaseQuantities' : {
         'Width' : "get_length",
@@ -36,8 +36,8 @@ mapper = {
         'GrossSurfaceArea' : "get_gross_surface_area",
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
-        'GrossWeight' : None,
-        'NetWeight' : None,
+        'GrossWeight' : "get_gross_weight",
+        'NetWeight' : "get_net_weight",
     },
     'Qto_VibrationIsolatorBaseQuantities' : {
         'GrossWeight' : None,
@@ -121,7 +121,7 @@ mapper = {
     'Qto_RailBaseQuantities' : {
         'Length' : "get_length",
         'Volume' : "get_net_volume",
-        'Weight' : None,
+        'Weight' : "get_net_weight",
     },
     'Qto_PictorialSignQuantities' : {
         'Area' : "get_net_side_area",
@@ -142,8 +142,8 @@ mapper = {
         'GrossCrossSectionArea' : None,
         'NetCrossSectionArea' : "get_cross_section_area",
         'OuterSurfaceArea' : "get_outer_surface_area",
-        'GrossWeight' : None,
-        'NetWeight' : None,
+        'GrossWeight' : "get_gross_weight",
+        'NetWeight' : "get_net_weight",
     },
     'Qto_HumidifierBaseQuantities' : {
         'GrossWeight' : None,
@@ -250,8 +250,8 @@ mapper = {
         'NetArea' : "get_net_footprint_area",
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
-        'GrossWeight' : None,
-        'NetWeight' : None,
+        'GrossWeight' : "get_gross_weight",
+        'NetWeight' : "get_net_weight",
     },
     'Qto_ImpactProtectionDeviceBaseQuantities' : {
         'Weight' : None,
@@ -292,7 +292,7 @@ mapper = {
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
         'GrossWeight' : "get_gross_weight",
-        'NetWeight' : None,
+        'NetWeight' : "get_net_weight",
     },
     'Qto_PumpBaseQuantities' : {
         'GrossWeight' : None,
@@ -314,8 +314,8 @@ mapper = {
         'NetSurfaceArea' : "get_net_surface_area",
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
-        'GrossWeight' : None,
-        'NetWeight' : None,
+        'GrossWeight' : "get_gross_weight",
+        'NetWeight' : "get_net_weight",
     },
     'Qto_EarthworksCutBaseQuantities' : {
         'Length' : "get_length",
@@ -387,7 +387,7 @@ mapper = {
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
         'GrossWeight' : "get_gross_weight",
-        'NetWeight' : None,
+        'NetWeight' : "get_net_weight",
     },
     'Qto_StairFlightBaseQuantities' : {
         'Length' : "get_stair_length",
@@ -477,7 +477,7 @@ mapper = {
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
         'GrossWeight' : "get_gross_weight",
-        'NetWeight' : None,
+        'NetWeight' : "get_net_weight",
     },
     'Qto_SleeperBaseQuantities' : {
         'Length' : "get_length",
@@ -537,8 +537,8 @@ mapper = {
         'NetSurfaceArea' : "get_net_surface_area",
         'GrossVolume' : "get_gross_volume",
         'NetVolume' : "get_net_volume",
-        'GrossWeight' : None,
-        'NetWeight' : None,
+        'GrossWeight' : "get_gross_weight",
+        'NetWeight' : "get_net_weight",
     },
     'Qto_BodyGeometryValidation' : {
         'GrossSurfaceArea' : "get_gross_surface_area",
