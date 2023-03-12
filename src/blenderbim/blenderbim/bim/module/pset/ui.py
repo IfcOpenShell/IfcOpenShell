@@ -51,14 +51,14 @@ def draw_single_property(prop, layout, copy_operator=None):
         value_name,
         text=prop.metadata.name,
     )
+    if prop.metadata.is_uri:
+        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+        op.data_path = prop.metadata.path_from_id("string_value")
     if prop.metadata.is_optional:
         layout.prop(prop.metadata, "is_null", icon="RADIOBUT_OFF" if prop.metadata.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = prop.metadata.name
-    if prop.metadata.is_uri:
-        op = layout.operator("bim.select_uri_prop", text="", icon="FILE_FOLDER")
-        op.data_path = prop.metadata.path_from_id("string_value")
 
 
 def draw_enumerated_property(prop, layout, copy_operator=None):
