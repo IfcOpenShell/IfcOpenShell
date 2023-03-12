@@ -480,9 +480,20 @@ class QtoCalculator:
         gross_weight = obj_mass_density * gross_volume
         return gross_weight
 
+    def get_net_weight(self, obj):
+        obj_mass_density = self.get_obj_mass_density(obj)
+        if not obj_mass_density:
+            return
+        net_volume = self.get_net_volume(obj)
+        net_weight = obj_mass_density * net_volume
+        return net_weight
+
     def get_obj_mass_density(self, obj):
         entity = tool.Ifc.get_entity(obj)
         material = ifcopenshell.util.element.get_material(entity)
+        if material is None:
+            return
+
         if (
             material.is_a("IfcMaterialLayerSet")
             or material.is_a("IfcMaterialProfileSet")
