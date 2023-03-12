@@ -7,7 +7,7 @@ on:
       - 'test/**'
       - 'conda/**'
       - 'cmake/**'
-      - '.github/workflows/ci_py_only.yml'
+      - '.github/workflows/ci-py-only.yml'
   pull_request:
 
 jobs:
