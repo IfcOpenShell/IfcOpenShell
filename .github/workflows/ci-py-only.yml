@@ -51,10 +51,9 @@ jobs:
 
       - name: Build ifcopenshell
         run: |
+          sudo /usr/sbin/update-ccache-symlinks
           mkdir build && cd build
-          cmake \
-               -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-               -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+          PATH="/usr/lib/ccache:$PATH cmake \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
