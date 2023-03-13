@@ -29,7 +29,8 @@ bl_info = {
 }
 
 import importlib
-from sverchok.utils.logging import info, debug
+import logging
+logger = logging.getLogger('sverchok')
 from sverchok.ui.nodeview_space_menu import add_node_menu
 
 
