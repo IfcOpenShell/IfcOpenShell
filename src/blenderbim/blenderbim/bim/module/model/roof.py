@@ -56,7 +56,7 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
         # argument values are the defaults for `bpy.ops.mesh.dissolve_limited`
         bmesh.ops.dissolve_limit(
-            bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, edges=bm.edges[:]
+            bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, edges=bm.edges[:], verts=bm.verts[:]
         )
         tool.Blender.apply_bmesh(obj.data, bm)
 
@@ -184,7 +184,7 @@ def update_roof_modifier_bmesh(context):
     # apply dissolve limit seems to get more correct results with `generate_hipped_roof`
     # argument values are the defaults for `bpy.ops.mesh.dissolve_limited`
     bmesh.ops.dissolve_limit(
-        bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, verts=bm.edges[:]
+        bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, edges=bm.edges[:], verts=bm.verts[:]
     )
     tool.Blender.apply_bmesh(obj.data, bm)
 
