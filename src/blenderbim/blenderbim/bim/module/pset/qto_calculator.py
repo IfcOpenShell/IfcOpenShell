@@ -530,16 +530,12 @@ class QtoCalculator:
             else:
                 return
 
-
     def get_single_material_mass_density(self, material):
-        for material_property in material.HasProperties:
-            if "Pset_MaterialCommon" in material_property.Name:
-                for prop in material_property.Properties:
-                    if "MassDensity" in prop:
-                        return prop.NominalValue.wrappedValue
+        if material_pset := ifcopenshell.util.element.get_pset(material, "Pset_MaterialCommon"):
+            if material_mass_density := material_pset["MassDensity"]:
+                return material_mass_density
             else:
                 return
-
 
 
     # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
