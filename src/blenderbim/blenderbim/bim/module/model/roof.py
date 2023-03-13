@@ -53,8 +53,13 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Need to select some object first.")
             return {"CANCELLED"}
 
-        # TODO: include this operator in bim.generate_hipped_roof
-        # bpy.ops.mesh.dissolve_limited()
+        bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+        # argument values are the defaults for `bpy.ops.mesh.dissolve_limited`
+        bmesh.ops.dissolve_limit(
+            bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, edges=bm.edges[:]
+        )
+        tool.Blender.apply_bmesh(obj.data, bm)
+
         generate_hipped_roof(obj, self.mode, self.height, self.angle)
         return {"FINISHED"}
 
@@ -179,7 +184,7 @@ def update_roof_modifier_bmesh(context):
     # apply dissolve limit seems to get more correct results with `generate_hipped_roof`
     # argument values are the defaults for `bpy.ops.mesh.dissolve_limited`
     bmesh.ops.dissolve_limit(
-        bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, verts=bm.verts[:]
+        bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, verts=bm.edges[:]
     )
     tool.Blender.apply_bmesh(obj.data, bm)
 

@@ -109,8 +109,13 @@ class Blender:
             bpy.context.object.update_from_editmode()
         else:
             bm.to_mesh(mesh)
-
-        bm.free()
+            # only freeing bmesh if object is in OBJECT mode
+            # because if it's in EDIT mode
+            # freeing mesh will result in dead bmeshes from `bmesh.from_edit_mesh(mesh)`
+            # until you restart EDIT mode
+            # which may result in errors when some other scripts will try to get bmesh
+            bm.free()
+        
         mesh.update()
 
     @classmethod
