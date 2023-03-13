@@ -23,6 +23,31 @@ import ifcopenshell.util.fm
 import ifcopenshell.util.element
 
 
+def get_element_value(element, query):
+    l = lark.Lark(
+        """start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
+                keys_regex: "r" ESCAPED_STRING "." ESCAPED_STRING
+                keys_quoted: ESCAPED_STRING "." ESCAPED_STRING
+                keys_simple: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
+
+                // Embed common.lark for packaging
+                _STRING_INNER: /.*?/
+                _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
+                ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
+                LCASE_LETTER: "a".."z"
+                UCASE_LETTER: "A".."Z"
+                LETTER: UCASE_LETTER | LCASE_LETTER
+                WORD: LETTER+
+                WS: /[ \\t\\f\\r\\n]/+
+
+                %ignore WS // Disregard spaces in text
+             """
+    )
+    start = l.parse(query)
+    filter_query = Selector.parse_filter_query(start.children[0])
+    return Selector.get_element_value(element, filter_query["keys"], filter_query["is_regex"])
+
+
 class Selector:
     @classmethod
     def parse(cls, ifc_file, query, elements=None):
@@ -181,17 +206,7 @@ class Selector:
     @classmethod
     def filter_elements(cls, elements, filter_rule):
         results = []
-        keys = filter_rule.children[0].children[0]
-        is_regex = False
-        if isinstance(keys, str):
-            keys = [keys]
-        elif keys.data == "keys_regex":
-            is_regex = True
-            keys = [keys.children[0][1:-1].replace("\\\"", '"'), keys.children[1][1:-1].replace("\\\"", '"')]
-        elif keys.data == "keys_quoted":
-            keys = [keys.children[0][1:-1].replace("\\\"", '"'), keys.children[1][1:-1].replace("\\\"", '"')]
-        elif keys.data == "keys_simple":
-            keys = [keys.children[0], keys.children[1]]
+        filter_query = cls.parse_filter_query(filter_rule.children[0].children[0])
         comparison = value = None
         if len(filter_rule.children) > 1:
             comparison = filter_rule.children[1].children[0].data
@@ -209,7 +224,7 @@ class Selector:
             elif token_type == "NULL":
                 value = None
         for element in elements:
-            element_value = cls.get_element_value(element, keys, is_regex=is_regex)
+            element_value = cls.get_element_value(element, filter_query["keys"], is_regex=filter_query["is_regex"])
             if element_value is None and value is not None and "not" not in comparison:
                 continue
             if comparison and cls.filter_element(
@@ -219,6 +234,21 @@ class Selector:
             elif not comparison and element_value:
                 results.append(element)
         return results
+
+    @classmethod
+    def parse_filter_query(cls, filter_query):
+        keys = filter_query
+        is_regex = False
+        if isinstance(keys, str):
+            keys = [keys]
+        elif keys.data == "keys_regex":
+            is_regex = True
+            keys = [keys.children[0][1:-1].replace("\\\"", '"'), keys.children[1][1:-1].replace("\\\"", '"')]
+        elif keys.data == "keys_quoted":
+            keys = [keys.children[0][1:-1].replace("\\\"", '"'), keys.children[1][1:-1].replace("\\\"", '"')]
+        elif keys.data == "keys_simple":
+            keys = [keys.children[0], keys.children[1]]
+        return {"keys": keys, "is_regex": is_regex}
 
     @classmethod
     def get_element_value(cls, element, keys, is_regex=False):

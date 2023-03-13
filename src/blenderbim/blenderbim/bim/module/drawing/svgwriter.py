@@ -337,7 +337,7 @@ class SvgWriter:
         if custom_classes:
             classes.extend(custom_classes.split())
         for key in self.metadata:
-            value = ifcopenshell.util.selector.Selector.get_element_value(element, key)
+            value = ifcopenshell.util.selector.get_element_value(element, key)
             if value:
                 classes.append(self.canonicalise_class_name(key) + "-" + self.canonicalise_class_name(str(value)))
         return classes
@@ -671,11 +671,10 @@ class SvgWriter:
         literal = text_literal.Literal
 
         product = tool.Drawing.get_assigned_product(element)
-        selector = ifcopenshell.util.selector.Selector
         variables = {}
         if product != None:
             for variable in re.findall("{{.*?}}", literal):
-                literal = literal.replace(variable, str(selector.get_element_value(product, variable[2:-2]) or ""))
+                literal = literal.replace(variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or ""))
 
         for line_number, text_line in enumerate(literal.replace("\\n", "\n").split("\n")):
             self.svg.add(

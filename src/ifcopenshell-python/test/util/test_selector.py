@@ -22,6 +22,13 @@ import ifcopenshell.api
 import ifcopenshell.util.selector as subject
 
 
+class TestGetElementValue(test.bootstrap.IFC4):
+    def test_selecting_an_elements_value_using_a_query(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.Name = "Foobar"
+        assert subject.get_element_value(element, "Name") == "Foobar"
+
+
 class TestSelector(test.bootstrap.IFC4):
     def test_selecting_by_class(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
