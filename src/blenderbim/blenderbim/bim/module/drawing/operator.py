@@ -612,7 +612,7 @@ class CreateDrawing(bpy.types.Operator):
             classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(material))))
         classes.append("globalid-{}".format(element.GlobalId))
         for attribute in svg_writer.annotations["attributes"]:
-            result = self.selector.get_element_value(element, attribute)
+            result = ifcopenshell.util.selector.get_element_value(element, attribute)
             if result:
                 classes.append(
                     "{}-{}".format(re.sub("[^0-9a-zA-Z]+", "", attribute), re.sub("[^0-9a-zA-Z]+", "", result))
@@ -960,7 +960,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 exec(f"{path} = {value}")
 
     def set_query(self, context):
-        self.selector = ifcopenshell.util.selector.Selector()
         self.include_global_ids = []
         self.exclude_global_ids = []
         for ifc_file in context.scene.DocProperties.ifc_files:
@@ -969,10 +968,10 @@ class ActivateDrawingStyle(bpy.types.Operator):
             except:
                 continue
             if self.drawing_style.include_query:
-                results = self.selector.parse(ifc, self.drawing_style.include_query)
+                results = ifcopenshell.util.selector.Selector.parse(ifc, self.drawing_style.include_query)
                 self.include_global_ids.extend([e.GlobalId for e in results])
             if self.drawing_style.exclude_query:
-                results = self.selector.parse(ifc, self.drawing_style.exclude_query)
+                results = ifcopenshell.util.selector.Selector.parse(ifc, self.drawing_style.exclude_query)
                 self.exclude_global_ids.extend([e.GlobalId for e in results])
         if self.drawing_style.include_query:
             self.parse_filter_query("INCLUDE", context)

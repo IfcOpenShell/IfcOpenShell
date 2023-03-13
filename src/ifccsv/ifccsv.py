@@ -144,7 +144,6 @@ class IfcCsv:
         self.attributes = []
         self.output = ""
         self.format = "csv"
-        self.selector = ifcopenshell.util.selector.Selector()
         self.delimiter = ","
 
     def export(self, ifc_file, elements):
@@ -162,7 +161,7 @@ class IfcCsv:
                     del self.attributes[index]
 
             for attribute in self.attributes:
-                result.append(self.selector.get_element_value(element, attribute))
+                result.append(ifcopenshell.util.selector.get_element_value(element, attribute))
             self.results.append(result)
 
         self.headers = ["GlobalId"]

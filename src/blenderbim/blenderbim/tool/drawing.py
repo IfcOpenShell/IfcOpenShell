@@ -526,10 +526,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         value = element.Literal
         product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
         if product:
-            selector = ifcopenshell.util.selector.Selector()
             variables = {}
             for variable in re.findall("{{.*?}}", value):
-                value = value.replace(variable, str(selector.get_element_value(product, variable[2:-2]) or ""))
+                value = value.replace(variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or ""))
         obj.BIMTextProperties.value = value
 
     # TODO below this point is highly experimental prototype code with no tests
