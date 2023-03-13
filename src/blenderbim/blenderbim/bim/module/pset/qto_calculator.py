@@ -502,8 +502,8 @@ class QtoCalculator:
                 return
 
         if material.is_a('IfcMaterial'):
-            obj_mass_density = self.get_single_material_mass_density(material)
-            return obj_mass_density
+            material_mass_density = ifcopenshell.util.element.get_pset(material, "Pset_MaterialCommon", "MassDensity")
+            return material_mass_density
 
         if material.is_a('IfcMaterialLayerSetUsage'):
             material_layers = material.ForLayerSet.MaterialLayers
@@ -511,13 +511,13 @@ class QtoCalculator:
             thicknesses = []
             obj_mass_density = 0
             for material_layer in material_layers:
-                density = self.get_single_material_mass_density(material_layer.Material)
-                if density is None:
+                material_mass_density = ifcopenshell.util.element.get_pset(material_layer.Material, "Pset_MaterialCommon", "MassDensity")
+                if material_mass_density is None:
                     return
-                densities.append(density)
+                densities.append(material_mass_density)
                 thickness = material_layer.LayerThickness
                 thicknesses.append(thickness)
-                obj_mass_density = obj_mass_density + (density * thickness)
+                obj_mass_density = obj_mass_density + (material_mass_density* thickness)
             total_thickness = sum(thicknesses)
             obj_mass_density = obj_mass_density/total_thickness
             return obj_mass_density
@@ -525,18 +525,10 @@ class QtoCalculator:
         if material.is_a('IfcMaterialProfileSetUsage'):
             material_profiles = material.ForProfileSet.MaterialProfiles
             if len(material_profiles) == 1:
-                obj_mass_density = self.get_single_material_mass_density(material_profiles[0].Material)
-                return obj_mass_density
-            else:
-                return
-
-    def get_single_material_mass_density(self, material):
-        if material_pset := ifcopenshell.util.element.get_pset(material, "Pset_MaterialCommon"):
-            if material_mass_density := material_pset["MassDensity"]:
+                material_mass_density = ifcopenshell.util.element.get_pset(material_profiles[0].Material, "Pset_MaterialCommon", "MassDensity")
                 return material_mass_density
             else:
                 return
-
 
     # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
 
