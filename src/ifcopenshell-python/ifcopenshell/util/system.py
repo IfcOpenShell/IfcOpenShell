@@ -91,7 +91,6 @@ def get_connected_to(element):
     return results
 
 def get_connected_from(element):
-    # Note: this code is for IFC2X3. IFC4 has a different approach.
     results = []
     for port in ifcopenshell.util.system.get_ports(element):
         for relConnectsPort in port.ConnectedFrom:
