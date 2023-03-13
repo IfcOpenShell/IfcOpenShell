@@ -83,18 +83,18 @@ def get_connected_port(port):
 
 
 def get_connected_to(element):
-    # Note: this code is for IFC2X3. IFC4 has a different approach.
     results = []
-    for rel in element.HasPorts:
-        for rel2 in rel.RelatingPort.ConnectedTo:
-            results.extend([r.RelatedElement for r in rel2.RelatedPort.ContainedIn if r.RelatedElement != element])
+    for port in ifcopenshell.util.system.get_ports(element):
+        for relConnectsPort in port.ConnectedTo:
+            for relNest in relConnectsPort.RelatedPort.Nests:
+                results.extend(relNest.RelatingObject)
     return results
-
 
 def get_connected_from(element):
     # Note: this code is for IFC2X3. IFC4 has a different approach.
     results = []
-    for rel in element.HasPorts:
-        for rel2 in rel.RelatingPort.ConnectedFrom:
-            results.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn if r.RelatedElement != element])
+    for port in ifcopenshell.util.system.get_ports(element):
+        for relConnectsPort in port.ConnectedFrom:
+            for relNest in relConnectsPort.RelatingPort.Nests:
+                results.extend(relNest.RelatingObject)
     return results
