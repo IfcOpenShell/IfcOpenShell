@@ -285,6 +285,12 @@ def register():
 def unregister():
     global imported_modules
     for module in reversed(imported_modules):
-        module.unregister()
+        try:
+            module.unregister()
+        except:
+            logger.error(f"Unable to unregister module: {module}")
     for cls in reversed(CLASSES):
-        bpy.utils.unregister_class(cls)
+        try:
+            bpy.utils.unregister_class(cls)
+        except:
+            logger.error(f"Unable to unregister class: {cls}")
