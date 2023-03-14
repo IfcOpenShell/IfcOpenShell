@@ -674,22 +674,28 @@ class SvgWriter:
         variables = {}
         if product != None:
             for variable in re.findall("{{.*?}}", literal):
-                literal = literal.replace(variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or ""))
+                literal = literal.replace(
+                    variable, 
+                    str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or "")
+                )
+
+        text_tag = self.svg.text(
+            "",
+            class_=" ".join(self.get_attribute_classes(text_obj)),
+            **{
+                "text-anchor": text_anchor,
+                "alignment-baseline": alignment_baseline,
+                "dominant-baseline": alignment_baseline,
+                "transform": transform,
+            },
+        )
+        self.svg.add(text_tag)
 
         for line_number, text_line in enumerate(literal.replace("\\n", "\n").split("\n")):
-            self.svg.add(
-                self.svg.text(
-                    text_line,
-                    insert=tuple((text_position * self.svg_scale) + Vector((0, 3.5 * line_number))),
-                    class_=" ".join(self.get_attribute_classes(text_obj)),
-                    **{
-                        "text-anchor": text_anchor,
-                        "alignment-baseline": alignment_baseline,
-                        "dominant-baseline": alignment_baseline,
-                        "transform": transform,
-                    },
-                )
-            )
+            t_span = self.svg.tspan(text_line, insert=(text_position * self.svg_scale))
+            # doing it here and not in tspan constructor because it adds unnecessary spaces
+            t_span.update({"dy": f"{line_number}em"})
+            text_tag.add(t_span)
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
