@@ -83,17 +83,31 @@ def get_connected_port(port):
 
 
 def get_connected_to(element):
+    from blenderbim.bim.ifc import IfcStore
+    ifcSchema = IfcStore.get_file().schema
     results = []
-    for port in ifcopenshell.util.system.get_ports(element):
-        for relConnectsPort in port.ConnectedTo:
-            for relNest in relConnectsPort.RelatedPort.Nests:
-                results.extend(relNest.RelatingObject)
+    if ifcSchema == "IFC4":
+        for port in ifcopenshell.util.system.get_ports(element):
+            for relConnectsPort in port.ConnectedTo:
+                for relNest in relConnectsPort.RelatedPort.Nests:
+                    results.extend(relNest.RelatingObject)
+    elif ifcSchema == "IFC2X3":
+        for port in element.HasPorts:
+            for relConnectsPort in port.RelatingPort.ConnectedTo:
+                results.extend([r.RelatedElement for r in relConnectsPort.RelatedPort.ContainedIn if r.RelatedElement != element])
     return results
 
 def get_connected_from(element):
+    from blenderbim.bim.ifc import IfcStore
+    ifcSchema = IfcStore.get_file().schema
     results = []
-    for port in ifcopenshell.util.system.get_ports(element):
-        for relConnectsPort in port.ConnectedFrom:
-            for relNest in relConnectsPort.RelatingPort.Nests:
-                results.extend(relNest.RelatingObject)
+    if ifcSchema == "IFC4":
+        for port in ifcopenshell.util.system.get_ports(element):
+            for relConnectsPort in port.ConnectedFrom:
+                for relNest in relConnectsPort.RelatedPort.Nests:
+                    results.extend(relNest.RelatingObject)
+    elif ifcSchema == "IFC2X3":
+        for rel in element.HasPorts:
+            for rel2 in rel.RelatingPort.ConnectedFrom:
+                results.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn if r.RelatedElement != element])
     return results
