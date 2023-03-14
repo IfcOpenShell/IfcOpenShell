@@ -36,6 +36,7 @@ class BIM_PT_representations(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
@@ -81,6 +82,7 @@ class BIM_PT_connections(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
@@ -185,6 +187,7 @@ class BIM_PT_derived_placements(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "OBJECT_PT_transform"
 
     def draw(self, context):
