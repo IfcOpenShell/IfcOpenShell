@@ -30,7 +30,7 @@ bl_info = {
 
 import importlib
 import logging
-logger = logging.getLogger('sverchok')
+logger = logging.getLogger('sverchok.ifc')
 from sverchok.ui.nodeview_space_menu import add_node_menu
 
 
