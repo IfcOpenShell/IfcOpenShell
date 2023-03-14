@@ -379,13 +379,16 @@ class BaseDecorator:
 
         batch.draw(self.shader)
 
-    def draw_label(self, context, text, pos, dir, gap=4, center=True, vcenter=False):
+    def draw_label(self, context, text, pos, dir, gap=4, center=True, vcenter=False, font_size=2.5, line_no=0):
         """Draw text label
 
         Args:
           pos: bottom-center
 
         aligned and centered at segment middle
+
+        NOTE: `blf.draw` seems to ignore the \n character, so we have to split the text ourselves
+        and use the `line_no` argument of `draw_label`
         """
         # 0 is the default font, but we're fancier than that
         font_id = self.font_id
@@ -406,7 +409,8 @@ class BaseDecorator:
         # In particular it works only for the OpenGOST font and produces a 2.5mm font size.
         # It probably should be dynamically calculated using system.dpi or something.
         # font_size = 16 <-- this is a good default
-        font_size = int(0.004118616 * mm_to_px)
+        font_size = int(0.004118616 * mm_to_px) * font_size / 2.5
+        pos = pos - Vector((0, line_no * font_size))
 
         blf.size(font_id, font_size, dpi)
 
@@ -2065,9 +2069,14 @@ class TextDecorator(BaseDecorator):
     def draw_labels(self, context, obj):
         region = context.region
         region3d = context.region_data
+        # TODO: support text rotation
         dir = Vector((1, 0))
         pos = location_3d_to_region_2d(region, region3d, obj.matrix_world.translation)
-        self.draw_label(context, obj.BIMTextProperties.value, pos, dir, gap=0, center=False, vcenter=False)
+        font_size = 2.5
+        for line_i, line in enumerate(obj.BIMTextProperties.value.split("\\n")):
+            self.draw_label(
+                context, line, pos, dir, gap=0, center=False, vcenter=False, font_size=font_size, line_no=line_i
+            )
 
 
 class DecorationsHandler:
