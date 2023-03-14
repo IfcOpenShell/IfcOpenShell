@@ -107,7 +107,7 @@ def get_connected_from(element):
                 for relNest in relConnectsPort.RelatedPort.Nests:
                     results.extend(relNest.RelatingObject)
     elif ifcSchema == "IFC2X3":
-        for rel in element.HasPorts:
-            for rel2 in rel.RelatingPort.ConnectedFrom:
-                results.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn if r.RelatedElement != element])
+        for port in element.HasPorts:
+            for relConnectsPort in port.RelatingPort.ConnectedFrom:
+                results.extend([r.RelatedElement for r in relConnectsPort.RelatingPort.ContainedIn if r.RelatedElement != element])
     return results
