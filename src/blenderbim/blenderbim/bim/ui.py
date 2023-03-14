@@ -341,6 +341,7 @@ class BIM_PT_object_metadata(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
@@ -355,6 +356,7 @@ class BIM_PT_geometry_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -370,6 +372,7 @@ class BIM_PT_services_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -385,6 +388,7 @@ class BIM_PT_utilities_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -400,6 +404,7 @@ class BIM_PT_misc_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod

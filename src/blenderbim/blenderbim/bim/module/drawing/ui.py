@@ -293,6 +293,7 @@ class BIM_PT_product_assignments(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
@@ -327,6 +328,7 @@ class BIM_PT_text(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 0
 
     @classmethod
     def poll(cls, context):

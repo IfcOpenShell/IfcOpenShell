@@ -171,6 +171,7 @@ class BIM_PT_object_psets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_object_metadata"
 
     @classmethod
@@ -210,6 +211,7 @@ class BIM_PT_object_qtos(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_object_metadata"
 
     @classmethod
@@ -281,6 +283,7 @@ class BIM_PT_material_set_psets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_object_material"
 
     @classmethod
@@ -315,6 +318,7 @@ class BIM_PT_material_set_item_psets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_object_material"
 
     @classmethod
@@ -505,6 +509,7 @@ class BIM_PT_bulk_property_editor(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
     bl_parent_id = "BIM_PT_utilities_object"
 
@@ -517,9 +522,9 @@ class BIM_PT_rename_parameters(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_bulk_property_editor"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_order = 0
 
     def draw(self, context):
         layout = self.layout
@@ -551,9 +556,9 @@ class BIM_PT_add_edit_custom_properties(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 2
     bl_parent_id = "BIM_PT_bulk_property_editor"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_order = 1
 
     def draw(self, context):
         layout = self.layout
@@ -604,9 +609,9 @@ class BIM_PT_delete_psets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 3
     bl_parent_id = "BIM_PT_bulk_property_editor"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_order = 2
 
     def draw(self, context):
         layout = self.layout
