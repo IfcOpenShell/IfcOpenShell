@@ -18,7 +18,8 @@
 
 
 class Usecase:
-    def __init__(self, file, layer_set=None, material=None):
+    def __init__(self, file, layer_set=None, material=None, thickness=1., ventilated=None, name=None, description=None,
+                 category=None, priority=None):
         """Adds a new layer to a layer set
 
         A layer represents a portion of material within a layered build up,
@@ -39,6 +40,20 @@ class Usecase:
         :type layer_set: ifcopenshell.entity_instance.entity_instance
         :param material: The IfcMaterial that the layer is made out of.
         :type material: ifcopenshell.entity_instance.entity_instance
+        :param thickness: The thickness of the material layer.
+        :type thickness: float
+        :param ventilated: Indication of whether the material layer represents an air layer (or cavity).
+        :type ventilated: bool
+        :param name: The name by which the material layer is known.
+        :type name: str
+        :param description: Definition of the material layer in more descriptive terms than given by attributes Name or Category.
+        :type description: str
+        :param category: Category of the material layer, e.g. the role it has in the layer set it belongs to
+            (such as 'load bearing', 'thermal insulation' etc.).
+        :type category: str
+        :param priority: The relative priority of the layer, expressed as normalised integer range [0..100].
+            Controls how layers intersect in connections and corners of building elements.
+        :type priority: int
         :return: The newly created IfcMaterialLayer
         :rtype: ifcopenshell.entity_instance.entity_instance
 
@@ -79,13 +94,25 @@ class Usecase:
             ifcopenshell.api.run("material.assign_material", model, product=wall_type, material=material_set)
         """
         self.file = file
-        self.settings = {"layer_set": layer_set, "material": material}
+        self.settings = {
+            "layer_set": layer_set, "material": material, "thickness": thickness, "ventilated": ventilated,
+            "name": name, "description": description, "category": category, "priority": priority
+        }
 
     def execute(self):
         layers = list(self.settings["layer_set"].MaterialLayers or [])
-        layer = self.file.create_entity(
-            "IfcMaterialLayer", **{"Material": self.settings["material"], "LayerThickness": 1.0}
-        )
+        args = {"Material": self.settings["material"], "LayerThickness": self.settings["thickness"]}
+        if self.settings["ventilated"]:
+            args["IsVentilated"] = self.settings["ventilated"]
+        if self.settings["name"]:
+            args["Name"] = self.settings["name"]
+        if self.settings["description"]:
+            args["Description"] = self.settings["description"]
+        if self.settings["category"]:
+            args["Category"] = self.settings["category"]
+        if self.settings["priority"]:
+            args["Priority"] = self.settings["priority"]
+        layer = self.file.create_entity("IfcMaterialLayer", **args)
         layers.append(layer)
         self.settings["layer_set"].MaterialLayers = layers
         return layer
