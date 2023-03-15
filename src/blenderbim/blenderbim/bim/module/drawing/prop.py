@@ -38,6 +38,7 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     CollectionProperty,
+    BoolVectorProperty
 )
 
 
@@ -381,9 +382,36 @@ class BIMCameraProperties(PropertyGroup):
         return False
 
 
+DEFAULT_BOX_ALIGNMENT = [False]*6 + [True] + [False]*2
+BOX_ALIGNMENT_POSITIONS = [ "top-left", "top-middle", "top-right", "middle-left", "center", "middle-right", "bottom-left", "bottom-middle", "bottom-right"]
+
 class BIMTextProperties(PropertyGroup):
+    def set_box_alignment(self, new_value):
+        markers = new_value.count(True)
+        if not markers:
+            return
+
+        if markers > 1:
+            prev_value = self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
+            # looking for the first value changed to positive
+            first_changed_value = next( (i for i in range(9) if new_value[i] and new_value[i] != prev_value[i]), None )
+
+            # if nothing have changed we just keep the previous value
+            if first_changed_value is None:
+                return
+            new_value = [False] * 9
+            new_value[first_changed_value] = True
+
+        self["box_alignment"] = new_value
+        position_string = BOX_ALIGNMENT_POSITIONS[ next(i for i in range(9) if new_value[i]) ]
+        self.attributes['BoxAlignment'].set_value( position_string )
+
+    def get_box_alignment(self):
+        return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
+
     is_editing: BoolProperty(name="Is Editing", default=False)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
+    test_prop: StringProperty(name="test_prop", default="TEXT")
     value: StringProperty(name="Value", default="TEXT")
     font_size: EnumProperty(
         items=[
@@ -397,6 +425,10 @@ class BIMTextProperties(PropertyGroup):
         update=refreshFontSize,
         name="Font Size",
     )
+    box_alignment: BoolVectorProperty(name="Box alignment", size=9, 
+        set=set_box_alignment,
+        get=get_box_alignment,
+        default=DEFAULT_BOX_ALIGNMENT)
 
 
 class BIMAssignedProductProperties(PropertyGroup):

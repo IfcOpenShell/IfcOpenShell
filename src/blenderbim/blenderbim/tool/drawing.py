@@ -34,7 +34,7 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
-from blenderbim.bim.module.drawing.prop import get_diagram_scales
+from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS
 
 
 class Drawing(blenderbim.core.tool.Drawing):
@@ -457,6 +457,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         props.attributes.clear()
         text = cls.get_text_literal(obj)
         blenderbim.bim.helper.import_attributes2(text, props.attributes)
+        
+        box_alignment_mask = [False] * 9
+        position_string = props.attributes['BoxAlignment'].string_value
+        box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
+        props.box_alignment = box_alignment_mask
 
     @classmethod
     def import_assigned_product(cls, obj):
