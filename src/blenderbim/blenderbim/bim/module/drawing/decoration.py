@@ -1573,10 +1573,10 @@ class BattingDecorator(BaseDecorator):
         thickness = DecoratorData.get_batting_thickness(obj)
         region = context.region
         region3d = context.region_data
-        original_edge_length = (verts[1]-verts[0]).length
+        original_edge_length = (verts[1] - verts[0]).length
         clipspace_verts = [region3d.perspective_matrix @ v for v in verts[:2]]
-        winspace_verts = [v * Vector([region.width/2, region.height/2, 1]) for v in clipspace_verts]
-        win_space_edge_length = (winspace_verts[1]-winspace_verts[0]).xy.length
+        winspace_verts = [v * Vector([region.width / 2, region.height / 2, 1]) for v in clipspace_verts]
+        win_space_edge_length = (winspace_verts[1] - winspace_verts[0]).xy.length
         k = win_space_edge_length / original_edge_length
         winspace_thickness = k * thickness
 

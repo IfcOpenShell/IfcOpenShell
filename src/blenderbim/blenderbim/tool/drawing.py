@@ -459,9 +459,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         props.attributes.clear()
         text = cls.get_text_literal(obj)
         blenderbim.bim.helper.import_attributes2(text, props.attributes)
-        
+
         box_alignment_mask = [False] * 9
-        position_string = props.attributes['BoxAlignment'].string_value
+        position_string = props.attributes["BoxAlignment"].string_value
         box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
         props.box_alignment = box_alignment_mask
 
@@ -531,7 +531,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def update_text_value(cls, obj):
         props = obj.BIMTextProperties
-        
+
         ifc_literal = cls.get_text_literal(obj)
         if not ifc_literal:
             return
@@ -540,13 +540,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         if product:
             variables = {}
             for variable in re.findall("{{.*?}}", value):
-                value = value.replace(variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or ""))
+                value = value.replace(
+                    variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or "")
+                )
         props.value = value
-
 
     @classmethod
     def update_text_size_pset(cls, obj):
-        """ updates pset `EPset_Annotation.Classes` value
+        """updates pset `EPset_Annotation.Classes` value
         based on current font size from `obj.BIMTextProperties.font_size`
         """
         props = obj.BIMTextProperties
@@ -559,14 +560,14 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         different_font_sizes = [c for c in classes_split if c in FONT_SIZES and c != font_size_str]
 
-        # if there are different font sizes in classes already
-        # or if the current font size is not present in classes 
-        # (except regular because it's default)
-        # then we do need to change pset value in ifc
-        if different_font_sizes \
-            or (font_size_str not in classes_split and font_size_str != 'regular'):
+        # we do need to change pset value in ifc
+        # only if there are different font sizes in classes already
+        # or if the current font size is not present in classes
+        # (except regular font size because it's default)
+        if different_font_sizes or (font_size_str not in classes_split and font_size_str != "regular"):
+            
             classes_split = [c for c in classes_split if c not in FONT_SIZES] + [font_size_str]
-            classes = ' '.join(classes_split)
+            classes = " ".join(classes_split)
 
             ifc_file = tool.Ifc.get()
             pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
@@ -578,7 +579,6 @@ class Drawing(blenderbim.core.tool.Drawing):
                 pset=pset,
                 properties={"Classes": classes},
             )
-
 
     # TODO below this point is highly experimental prototype code with no tests
 
