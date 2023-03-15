@@ -207,7 +207,7 @@ class TestExportTextLiteralAttributes(NewFile):
         assert subject.export_text_literal_attributes(bpy.data.objects.get("Object")) == {
             "Literal": "Literal",
             "Path": "RIGHT",
-            "BoxAlignment": "BoxAlignment",
+            "BoxAlignment": "bottom-left",
         }
 
 
@@ -513,7 +513,7 @@ class TestImportTextAttributes(NewFile):
         element = ifc.createIfcAnnotation()
         element.Representation = ifc.createIfcProductDefinitionShape()
         context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
-        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="BoxAlignment")
+        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item])
         element.Representation.Representations = [representation]
         tool.Ifc.link(element, obj)
@@ -521,7 +521,7 @@ class TestImportTextAttributes(NewFile):
         props = obj.BIMTextProperties
         assert props.attributes.get("Literal").string_value == "Literal"
         assert props.attributes.get("Path").enum_value == "RIGHT"
-        assert props.attributes.get("BoxAlignment").string_value == "BoxAlignment"
+        assert props.attributes.get("BoxAlignment").string_value == "bottom-left"
 
 
 class TestImportAssignedProduct(NewFile):
