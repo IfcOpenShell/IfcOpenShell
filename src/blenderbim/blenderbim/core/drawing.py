@@ -33,6 +33,7 @@ def edit_text(ifc, drawing, obj=None):
         attributes=drawing.export_text_literal_attributes(obj),
     )
     drawing.update_text_value(obj)
+    drawing.update_text_size_pset(obj)
     drawing.disable_editing_text(obj)
 
 

@@ -25,7 +25,7 @@ import blenderbim.tool as tool
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
-from blenderbim.bim.module.drawing.data import DrawingsData
+from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData
 from pathlib import Path
 from blenderbim.bim.prop import Attribute, StrProperty
 from bpy.types import PropertyGroup
@@ -228,10 +228,6 @@ def getVectorStyles(self, context):
     return vector_styles_enum
 
 
-def refreshFontSize(self, context):
-    annotation.Annotator.resize_text(context.active_object)
-
-
 class Variable(PropertyGroup):
     name: StringProperty(name="Name")
     prop_key: StringProperty(name="Property Key")
@@ -408,6 +404,16 @@ class BIMTextProperties(PropertyGroup):
 
     def get_box_alignment(self):
         return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
+    
+    def refreshFontSize(self, context):
+        # force update this object's font size for viewport display
+        DecoratorData.data.pop(context.object.name, None)
+        
+        # TODO: line seems outdated and currently is just throwing error. remove?
+        # File "\blenderbim\bim\module\drawing\annotation.py", line 63, in resize_text
+        #     font_size *= float(text_obj.data.BIMTextProperties.font_size)
+        # AttributeError: 'NoneType' object has no attribute 'BIMTextProperties'
+        # annotation.Annotator.resize_text(context.active_object)
 
     is_editing: BoolProperty(name="Is Editing", default=False)
     attributes: CollectionProperty(name="Attributes", type=Attribute)

@@ -39,6 +39,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
+from blenderbim.bim.module.drawing.data import DecoratorData
 import blenderbim.bim.export_ifc
 from lxml import etree
 from mathutils import Vector
@@ -1361,6 +1362,14 @@ class DisableEditingText(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_text(tool.Drawing, obj=context.active_object)
+
+        # force update this object's font size for viewport display
+        DecoratorData.data.pop(context.object.name, None)
+
+        # TODO: just needed some way to trigger UI update
+        # probably there is more proper way to do it
+        props = context.object.BIMTextProperties
+        props.font_size = props.font_size
 
 
 class EditAssignedProduct(bpy.types.Operator, Operator):
