@@ -39,6 +39,7 @@ class TestEditText:
         drawing.export_text_literal_attributes("obj").should_be_called().will_return("attributes")
         ifc.run("drawing.edit_text_literal", text_literal="text", attributes="attributes").should_be_called()
         drawing.update_text_value("obj").should_be_called()
+        drawing.update_text_size_pset("obj").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
         subject.edit_text(ifc, drawing, obj="obj")
 
