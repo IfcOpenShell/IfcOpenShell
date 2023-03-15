@@ -79,15 +79,72 @@ def get_element_bbox_centroid(element, geometry):
     centroid = get_bbox_centroid(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return centroid
-    matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-    return (matrix @ np.array([*centroid, 1.0]))[0:3]
+    mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
 def get_shape_bbox_centroid(shape, geometry):
     centroid = get_bbox_centroid(geometry)
     m = shape.transformation.matrix.data
     mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
-    return (matrix @ np.array([*centroid, 1.0]))[0:3]
+    return (mat @ np.array([*centroid, 1.0]))[0:3]
+
+
+def get_vertices(geometry):
+    verts = geometry.verts
+    return np.array([np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+
+
+def get_shape_vertices(shape, geometry):
+    m = shape.transformation.matrix.data
+    mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+    return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+
+
+def get_element_vertices(element, geometry):
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+        return get_shape_vertices(geometry)
+    mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+
+
+def get_bottom_elevation(geometry):
+    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
+    return min(z_values)
+
+
+def get_top_elevation(geometry):
+    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
+    return max(z_values)
+
+
+def get_shape_bottom_elevation(shape, geometry):
+    return min([v[2] for v in get_shape_vertices(shape, geometry)])
+
+
+def get_shape_top_elevation(shape, geometry):
+    return max([v[2] for v in get_shape_vertices(shape, geometry)])
+
+
+def get_element_bottom_elevation(element, geometry):
+    return min([v[2] for v in get_element_vertices(element, geometry)])
+
+
+def get_element_top_elevation(element, geometry):
+    return max([v[2] for v in get_element_vertices(element, geometry)])
+
+
+def get_bbox(vertices):
+    x_values = [v[0] for v in vertices]
+    y_values = [v[1] for v in vertices]
+    z_values = [v[2] for v in vertices]
+    minx = min(x_values)
+    maxx = max(x_values)
+    miny = min(y_values)
+    maxy = max(y_values)
+    minz = min(z_values)
+    maxz = max(z_values)
+    return (np.array([minx, miny, minz]), np.array([maxx, maxy, maxz]))
 
 
 def get_area_vf(vertices, faces):
