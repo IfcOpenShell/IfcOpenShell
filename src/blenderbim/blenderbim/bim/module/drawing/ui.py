@@ -355,8 +355,7 @@ class BIM_PT_text(Panel):
             row = self.layout.row(align=True)
             row.prop(props, 'font_size')
 
-            # a bit hacky way to align box alignment widget
-            rows = [self.layout.row(align=True) for i in range(3)]
+            rows = []
             for i in range(9):
                 if i % 3 == 0:
                     split = rows[i//3].split(factor=0.1, align=True)

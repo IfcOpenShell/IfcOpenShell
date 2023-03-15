@@ -125,6 +125,14 @@ class SchedulesData:
         return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"])
 
 
+FONT_SIZES = {
+    'small':   1.8,
+    'regular': 2.5,
+    'large':   3.5,
+    'header':  5.0,
+    'title':   7.0,
+}
+
 class DecoratorData:
     # stores 1 type of data per object
     data = {}
@@ -194,24 +202,19 @@ class DecoratorData:
         if not element:
             return
         
-        classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
-        
-        font_sizes = {
-            'small':   1.8,
-            'regular': 2.5,
-            'large':   3.5,
-            'header':  5,
-            'title':   7,
-        }
-
-        # use `regular` as default
-        if classes:        
-            tags = classes.split()
-            # prioritize smaller font sizes just like in svg
-            font_size_type = next((font_size_type for font_size_type in font_sizes if font_size_type in tags), 'regular')
+        if obj.BIMTextProperties.is_editing:
+            font_size = float(obj.BIMTextProperties.font_size)
         else:
-            font_size_type = 'regular'
+            classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+            
+            # use `regular` as default
+            if classes:        
+                classes_split = classes.split()
+                # prioritize smaller font sizes just like in svg
+                font_size_type = next((font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), 'regular')
+            else:
+                font_size_type = 'regular'
 
-        font_size = font_sizes[font_size_type]
+            font_size = FONT_SIZES[font_size_type]
         cls.data[obj.name] = font_size
         return font_size

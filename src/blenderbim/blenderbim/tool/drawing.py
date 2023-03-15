@@ -34,6 +34,8 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
+
+from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS
 
 
@@ -463,6 +465,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
         props.box_alignment = box_alignment_mask
 
+        font_size = DecoratorData.get_ifc_text_font_size(obj)
+        props.font_size = str(font_size)
+
     @classmethod
     def import_assigned_product(cls, obj):
         element = tool.Ifc.get_entity(obj)
@@ -525,16 +530,55 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def update_text_value(cls, obj):
-        element = cls.get_text_literal(obj)
-        if not element:
+        props = obj.BIMTextProperties
+        
+        ifc_literal = cls.get_text_literal(obj)
+        if not ifc_literal:
             return
-        value = element.Literal
+        value = ifc_literal.Literal
         product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
         if product:
             variables = {}
             for variable in re.findall("{{.*?}}", value):
                 value = value.replace(variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or ""))
-        obj.BIMTextProperties.value = value
+        props.value = value
+
+
+    @classmethod
+    def update_text_size_pset(cls, obj):
+        """ updates pset `EPset_Annotation.Classes` value
+        based on current font size from `obj.BIMTextProperties.font_size`
+        """
+        props = obj.BIMTextProperties
+        element = tool.Ifc.get_entity(obj)
+        # updating text font size in EPset_Annotation.Classes
+        font_size = float(props.font_size)
+        font_size_str = next((key for key in FONT_SIZES if FONT_SIZES[key] == font_size), None)
+        classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+        classes_split = classes.split() if classes else []
+
+        different_font_sizes = [c for c in classes_split if c in FONT_SIZES and c != font_size_str]
+
+        # if there are different font sizes in classes already
+        # or if the current font size is not present in classes 
+        # (except regular because it's default)
+        # then we do need to change pset value in ifc
+        if different_font_sizes \
+            or (font_size_str not in classes_split and font_size_str != 'regular'):
+            classes_split = [c for c in classes_split if c not in FONT_SIZES] + [font_size_str]
+            classes = ' '.join(classes_split)
+
+            ifc_file = tool.Ifc.get()
+            pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+            if not pset:
+                pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="EPset_Annotation")
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                ifc_file,
+                pset=pset,
+                properties={"Classes": classes},
+            )
+
 
     # TODO below this point is highly experimental prototype code with no tests
 
