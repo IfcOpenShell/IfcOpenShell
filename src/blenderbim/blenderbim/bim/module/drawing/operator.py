@@ -154,7 +154,6 @@ class CreateDrawing(bpy.types.Operator):
         self.file = IfcStore.get_file()
 
         with profile("Drawing generation process"):
-
             with profile("Initialize drawing generation process"):
                 self.props = context.scene.DocProperties
                 self.cprops = self.camera.data.BIMCameraProperties

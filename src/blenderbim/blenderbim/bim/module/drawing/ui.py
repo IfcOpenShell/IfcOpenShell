@@ -350,19 +350,19 @@ class BIM_PT_text(Panel):
             row.operator("bim.edit_text", icon="CHECKMARK")
             row.operator("bim.disable_editing_text", icon="CANCEL", text="")
             # skip BoxAlignment since we're going to format it ourselves
-            attributes = [a for a in props.attributes if a.name != 'BoxAlignment']
+            attributes = [a for a in props.attributes if a.name != "BoxAlignment"]
             blenderbim.bim.helper.draw_attributes(attributes, self.layout)
             row = self.layout.row(align=True)
-            row.prop(props, 'font_size')
+            row.prop(props, "font_size")
 
             rows = []
             for i in range(9):
                 if i % 3 == 0:
-                    split = rows[i//3].split(factor=0.1, align=True)
+                    split = rows[i // 3].split(factor=0.1, align=True)
                     split.column()
                 split.prop(props, "box_alignment", text="", index=i)
 
-            text_lines = ["Text box alignment:", props.attributes['BoxAlignment'].string_value, '' ]
+            text_lines = ["Text box alignment:", props.attributes["BoxAlignment"].string_value, ""]
             for i in range(3):
                 split = rows[i].split(factor=0.1, align=False)
                 split.column()
