@@ -33,7 +33,6 @@ import logging
 logger = logging.getLogger('sverchok.ifc')
 from sverchok.ui.nodeview_space_menu import add_node_menu
 
-
 def nodes_index():
     return [
         (
@@ -285,12 +284,6 @@ def register():
 def unregister():
     global imported_modules
     for module in reversed(imported_modules):
-        try:
-            module.unregister()
-        except:
-            logger.error(f"Unable to unregister module: {module}")
+        module.unregister()
     for cls in reversed(CLASSES):
-        try:
-            bpy.utils.unregister_class(cls)
-        except:
-            logger.error(f"Unable to unregister class: {cls}")
+        bpy.utils.unregister_class(cls)
