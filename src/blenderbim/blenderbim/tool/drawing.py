@@ -538,7 +538,6 @@ class Drawing(blenderbim.core.tool.Drawing):
         value = ifc_literal.Literal
         product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
         if product:
-            variables = {}
             for variable in re.findall("{{.*?}}", value):
                 value = value.replace(
                     variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or "")

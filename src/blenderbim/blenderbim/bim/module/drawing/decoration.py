@@ -2073,7 +2073,10 @@ class TextDecorator(BaseDecorator):
         dir = Vector((1, 0))
         pos = location_3d_to_region_2d(region, region3d, obj.matrix_world.translation)
         font_size = DecoratorData.get_ifc_text_font_size(obj)
-        for line_i, line in enumerate(obj.BIMTextProperties.value.split("\\n")):
+        props = obj.BIMTextProperties
+        text = props.get_text() if props.is_editing else props.value
+
+        for line_i, line in enumerate(text.split("\\n")):
             self.draw_label(
                 context, line, pos, dir, gap=0, center=False, vcenter=False, font_size=font_size, line_no=line_i
             )
