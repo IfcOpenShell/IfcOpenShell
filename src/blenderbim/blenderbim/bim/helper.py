@@ -31,9 +31,15 @@ import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
-def draw_attributes(props, layout, copy_operator=None):
-    for attribute in props:
+def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
+    """you can set attribute active in popup with `active_attribute` 
+    meaning you will be able to type into attribute's field without having to click
+    on it first
+    """
+    for attribute in props:            
         row = layout.row(align=True)
+        if attribute == popup_active_attribute:
+            row.activate_init = True
         draw_attribute(attribute, row, copy_operator)
 
 

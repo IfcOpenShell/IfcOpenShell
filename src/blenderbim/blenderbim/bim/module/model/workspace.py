@@ -25,6 +25,7 @@ import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
+from blenderbim.bim.module.drawing.data import TextData
 from blenderbim.bim.module.model import prop
 
 
@@ -333,6 +334,14 @@ class BimToolUI:
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
             row.operator("bim.hotkey", text="Edit Roof Path").hotkey = "S_E"
+        elif (
+            (TextData.is_loaded or not TextData.load())
+            and TextData.data["attributes"]
+        ):
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.hotkey", text="Edit text").hotkey = "S_E" 
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -567,6 +576,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             # undo the unselection done above because roof has no usage type
             bpy.context.object.select_set(True)
             bpy.ops.bim.enable_editing_roof_path()
+
+        elif (
+            (TextData.is_loaded or not TextData.load())
+            and TextData.data["attributes"]
+        ):
+            bpy.context.object.select_set(True)
+            bpy.ops.bim.edit_text_popup()
 
     def hotkey_S_F(self):
         if not bpy.context.selected_objects:
