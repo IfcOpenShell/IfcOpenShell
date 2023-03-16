@@ -1392,7 +1392,7 @@ class EditTextPopup(bpy.types.Operator):
             split = rows[i].split(factor=0.1, align=False)
             split.column()
             split.label(text=text_lines[i])
-    
+
     def cancel(self, context):
         # disable editing when dialog is closed
         bpy.ops.bim.disable_editing_text()
@@ -1407,7 +1407,7 @@ class EditTextPopup(bpy.types.Operator):
             return context.window_manager.invoke_props_dialog(self)
         else:
             bpy.ops.bim.edit_text()
-            return {'FINISHED'}
+            return {"FINISHED"}
 
 
 class EditText(bpy.types.Operator, Operator):
