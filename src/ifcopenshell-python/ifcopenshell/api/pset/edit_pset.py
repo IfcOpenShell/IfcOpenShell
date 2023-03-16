@@ -189,6 +189,7 @@ class Usecase:
         if prop.Name not in self.settings["properties"]:
             return
         value = self.settings["properties"][prop.Name]
+        unit, value = self.unpack_unit_value(value)
         if isinstance(value, list):
             sel_vals = []
             for val in value:
@@ -210,12 +211,15 @@ class Usecase:
             elif isinstance(value, ifcopenshell.entity_instance):
                 prop.EnumerationReference.EnumerationValues = value.EnumerationReference.EnumerationValues
                 prop.EnumerationValues = value.EnumerationValues
+        if unit:
+            prop.Unit = unit
         del self.settings["properties"][prop.Name]
 
     def update_existing_property(self, prop):
         if prop.Name not in self.settings["properties"]:
             return
         value = self.settings["properties"][prop.Name]
+        unit, value = self.unpack_unit_value(value)
         if value is None:
             if self.settings["should_purge"]:
                 del self.settings["properties"][prop.Name]
@@ -230,6 +234,8 @@ class Usecase:
             )
             value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
             prop.NominalValue = self.file.create_entity(primary_measure_type, value)
+        if unit:
+            prop.Unit = unit
         del self.settings["properties"][prop.Name]
 
     def add_new_properties(self):
@@ -237,16 +243,17 @@ class Usecase:
         for name, value in self.settings["properties"].items():
             if value is None:
                 continue
+            unit, value = self.unpack_unit_value(value)
             if isinstance(value, ifcopenshell.entity_instance):
                 if value.is_a(True) == "IFC4.IfcPropertyEnumeratedValue":
                     properties.append(value)
                     continue
                 else:
+                    args = {"Name": name, "NominalValue": value}
+                    if unit:
+                        args["Unit"] = unit
                     properties.append(
-                        self.file.create_entity(
-                            "IfcPropertySingleValue",
-                            **{"Name": name, "NominalValue": value},
-                        )
+                        self.file.create_entity("IfcPropertySingleValue", **args)
                     )
             # TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
             elif isinstance(value, list):
@@ -256,6 +263,7 @@ class Usecase:
                             "IFCPROPERTYENUMERATION",
                             Name=name,
                             EnumerationValues=pset_template.Enumerators.EnumerationValues,
+                            **({"Unit": unit} if unit else {})
                         )
                         prop_enum_value = self.file.create_entity(
                             "IFCPROPERTYENUMERATEDVALUE",
@@ -271,12 +279,12 @@ class Usecase:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
                 value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
                 nominal_value = self.file.create_entity(primary_measure_type, value)
+                args = {"Name": name, "NominalValue": nominal_value}
+                if unit:
+                    args["Unit"] = unit
 
                 properties.append(
-                    self.file.create_entity(
-                        "IfcPropertySingleValue",
-                        **{"Name": name, "NominalValue": nominal_value},
-                    )
+                    self.file.create_entity("IfcPropertySingleValue", **args)
                 )
         return properties
 
@@ -332,3 +340,13 @@ class Usecase:
         elif type_str == "AGGREGATE OF INT":
             return [int(i) for i in value]
         return type_fn(value)
+
+    @staticmethod
+    def unpack_unit_value(value_candidate):
+        unit = None
+        if isinstance(value_candidate, dict):  # Custom IfcUnits can be passed in a dict along with the pset value
+            unit = value_candidate["Unit"]
+            value = value_candidate["NominalValue"]
+        else:
+            value = value_candidate
+        return unit, value
