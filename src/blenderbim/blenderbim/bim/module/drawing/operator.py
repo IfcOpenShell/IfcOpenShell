@@ -143,46 +143,69 @@ class CreateDrawing(bpy.types.Operator):
 
     bl_idname = "bim.create_drawing"
     bl_label = "Create Drawing"
+    bl_description = (
+        "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
+        + "SHIFT+CLICK to print all annotations"
+    )
+    print_all: bpy.props.BoolProperty(name="Print all", default=False)
 
     @classmethod
     def poll(cls, context):
         return bool(tool.Ifc.get() and tool.Drawing.is_camera_orthographic() and tool.Drawing.is_drawing_active())
 
+    def invoke(self, context, event):
+        # printing all annotations on shift+click
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.print_all = True
+        return self.execute(context)
+
     def execute(self, context):
-        self.camera = context.scene.camera
-        self.camera_element = tool.Ifc.get_entity(self.camera)
-        self.file = IfcStore.get_file()
+        if not self.print_all:
+            camera = context.scene.camera
+            cameras = [(camera, tool.Ifc.get_entity(camera))]
+        else:
+            cameras = []
+            for drawing_prop in bpy.context.scene.DocProperties.drawings:
+                camera_element = tool.Ifc.get().by_id(drawing_prop.ifc_definition_id)
+                camera = tool.Ifc.get_object(camera_element)
+                cameras.append((camera, camera_element))
 
-        with profile("Drawing generation process"):
-            with profile("Initialize drawing generation process"):
-                self.props = context.scene.DocProperties
-                self.cprops = self.camera.data.BIMCameraProperties
-                self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
-                self.get_scale()
-                if self.cprops.update_representation(self.camera):
-                    bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
+        for camera, camera_element in cameras:
+            self.camera, self.camera_element = camera, camera_element
+            self.file = IfcStore.get_file()
 
-                self.svg_writer = svgwriter.SvgWriter()
-                self.svg_writer.human_scale = self.human_scale
-                self.svg_writer.scale = self.scale
-                self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
-                self.svg_writer.camera = self.camera
-                self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
-                self.svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
+            with profile("Drawing generation process"):
+                with profile("Initialize drawing generation process"):
+                    self.props = context.scene.DocProperties
+                    self.cprops = self.camera.data.BIMCameraProperties
+                    self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
+                    self.get_scale()
+                    if self.cprops.update_representation(self.camera):
+                        bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
 
-            with profile("Generate underlay"):
-                underlay_svg = self.generate_underlay(context)
+                    self.svg_writer = svgwriter.SvgWriter()
+                    self.svg_writer.human_scale = self.human_scale
+                    self.svg_writer.scale = self.scale
+                    self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
+                    self.svg_writer.camera = self.camera
+                    self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
+                    self.svg_writer.camera_projection = tuple(
+                        self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+                    )
 
-            with profile("Generate linework"):
-                linework_svg = self.generate_linework(context)
+                with profile("Generate underlay"):
+                    underlay_svg = self.generate_underlay(context)
 
-            with profile("Generate annotation"):
-                annotation_svg = self.generate_annotation(context)
+                with profile("Generate linework"):
+                    linework_svg = self.generate_linework(context)
 
-            with profile("Combine SVG layers"):
-                svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
+                with profile("Generate annotation"):
+                    annotation_svg = self.generate_annotation(context)
 
-        open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
+                with profile("Combine SVG layers"):
+                    svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
+
+            open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
 
         return {"FINISHED"}
 
