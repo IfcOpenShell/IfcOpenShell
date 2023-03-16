@@ -380,6 +380,11 @@ class BIM_PT_text(Panel):
                 row.label(text=attribute["name"])
                 row.label(text=attribute["value"])
 
+            row = self.layout.row(align=True)
+            row.label(text="Current value:")
+            row.label(text=props.value)
+
+
 
 class BIM_PT_annotation_utilities(Panel):
     bl_idname = "BIM_PT_annotation_utilities"

@@ -423,6 +423,9 @@ class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     test_prop: StringProperty(name="test_prop", default="TEXT")
+    # Current text value with evaluated experessions stored in `value`.
+    # The original (Literal) value stored in `attributes['Literal']` 
+    # and can be accessed with `get_text()`
     value: StringProperty(name="Value", default="TEXT")
     font_size: EnumProperty(
         items=[
@@ -439,6 +442,10 @@ class BIMTextProperties(PropertyGroup):
     box_alignment: BoolVectorProperty(
         name="Box alignment", size=9, set=set_box_alignment, get=get_box_alignment, default=DEFAULT_BOX_ALIGNMENT
     )
+
+    def get_text(self):
+        text_attribute = self.attributes.get('Literal', None)
+        return text_attribute.string_value if text_attribute else self.text
 
 
 class BIMAssignedProductProperties(PropertyGroup):

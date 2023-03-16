@@ -481,7 +481,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def draw(self, context):
-        props = context.scene.BIMModelProperties
         if self.hotkey == "S_O":
             row = self.layout.row()
             row.prop(self, "x")
