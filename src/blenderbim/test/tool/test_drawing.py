@@ -426,7 +426,7 @@ class TestGetTextLiteral(NewFile):
         element = ifc.createIfcAnnotation()
         element.Representation = ifc.createIfcProductDefinitionShape()
         context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
-        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="BoxAlignment")
+        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item])
         element.Representation.Representations = [representation]
         tool.Ifc.link(element, obj)
