@@ -424,7 +424,7 @@ class BIMTextProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     test_prop: StringProperty(name="test_prop", default="TEXT")
     # Current text value with evaluated experessions stored in `value`.
-    # The original (Literal) value stored in `attributes['Literal']` 
+    # The original (Literal) value stored in `attributes['Literal']`
     # and can be accessed with `get_text()`
     value: StringProperty(name="Value", default="TEXT")
     font_size: EnumProperty(
@@ -444,7 +444,7 @@ class BIMTextProperties(PropertyGroup):
     )
 
     def get_text(self):
-        text_attribute = self.attributes.get('Literal', None)
+        text_attribute = self.attributes.get("Literal", None)
         return text_attribute.string_value if text_attribute else self.text
 
 

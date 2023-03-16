@@ -334,14 +334,11 @@ class BimToolUI:
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
             row.operator("bim.hotkey", text="Edit Roof Path").hotkey = "S_E"
-        elif (
-            (TextData.is_loaded or not TextData.load())
-            and TextData.data["attributes"]
-        ):
+        elif (TextData.is_loaded or not TextData.load()) and TextData.data["attributes"]:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Edit text").hotkey = "S_E" 
+            row.operator("bim.hotkey", text="Edit text").hotkey = "S_E"
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -577,10 +574,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.object.select_set(True)
             bpy.ops.bim.enable_editing_roof_path()
 
-        elif (
-            (TextData.is_loaded or not TextData.load())
-            and TextData.data["attributes"]
-        ):
+        elif (TextData.is_loaded or not TextData.load()) and TextData.data["attributes"]:
             bpy.context.object.select_set(True)
             bpy.ops.bim.edit_text_popup()
 

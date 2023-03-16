@@ -564,7 +564,6 @@ class Drawing(blenderbim.core.tool.Drawing):
         # or if the current font size is not present in classes
         # (except regular font size because it's default)
         if different_font_sizes or (font_size_str not in classes_split and font_size_str != "regular"):
-            
             classes_split = [c for c in classes_split if c not in FONT_SIZES] + [font_size_str]
             classes = " ".join(classes_split)
 

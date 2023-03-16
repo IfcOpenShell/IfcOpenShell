@@ -385,7 +385,6 @@ class BIM_PT_text(Panel):
             row.label(text=props.value)
 
 
-
 class BIM_PT_annotation_utilities(Panel):
     bl_idname = "BIM_PT_annotation_utilities"
     bl_label = "Annotation"
