@@ -660,22 +660,28 @@ class SvgWriter:
         }
         text_anchor = horizontal_alignment[ next(align for align in horizontal_alignment if align in box_alignment) ]
 
+
+        # after pretty indentation some redundant spaces can occur in svg tags
+        # this is why we apply "font-size: 0;" to the text tag to remove those spaces
+        # and add clases to the tspan tags
+        # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
         text = text_obj.BIMTextProperties.value
         text_tag = self.svg.text(
             "",
-            class_=" ".join(self.get_attribute_classes(text_obj)),
             **{
                 "text-anchor": text_anchor,
                 # using dominant-baseline because we plan to use <tspan> subtags
                 # otherwise alignment-baseline would be sufficient
                 "dominant-baseline": alignment_baseline,
                 "transform": transform,
+                "style": "font-size: 0;",
             },
         )
         self.svg.add(text_tag)
 
+        classes = " ".join(self.get_attribute_classes(text_obj))
         for line_number, text_line in enumerate(text.replace("\\n", "\n").split("\n")):
-            t_span = self.svg.tspan(text_line, insert=(text_position * self.svg_scale))
+            t_span = self.svg.tspan(text_line, insert=(text_position * self.svg_scale), class_=classes)
             # doing it here and not in tspan constructor because it adds unnecessary spaces
             t_span.update({"dy": f"{line_number}em"})
             text_tag.add(t_span)
