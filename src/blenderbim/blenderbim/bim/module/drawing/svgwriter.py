@@ -640,58 +640,41 @@ class SvgWriter:
         if symbol:
             self.svg.add(self.svg.use(f"#{symbol}", insert=tuple(text_position * self.svg_scale)))
 
-        if text_literal.BoxAlignment == "top-left":
-            alignment_baseline = "hanging"
-            text_anchor = "start"
-        elif text_literal.BoxAlignment == "top-middle":
-            alignment_baseline = "hanging"
-            text_anchor = "middle"
-        elif text_literal.BoxAlignment == "top-right":
-            alignment_baseline = "hanging"
-            text_anchor = "end"
-        elif text_literal.BoxAlignment == "middle-left":
-            alignment_baseline = "middle"
-            text_anchor = "start"
-        elif text_literal.BoxAlignment == "center":
-            alignment_baseline = "middle"
-            text_anchor = "middle"
-        elif text_literal.BoxAlignment == "middle-right":
-            alignment_baseline = "middle"
-            text_anchor = "end"
-        elif text_literal.BoxAlignment == "bottom-left":
-            alignment_baseline = "baseline"
-            text_anchor = "start"
-        elif text_literal.BoxAlignment == "bottom-middle":
-            alignment_baseline = "baseline"
-            text_anchor = "middle"
-        elif text_literal.BoxAlignment == "bottom-right":
-            alignment_baseline = "baseline"
-            text_anchor = "end"
+        box_alignment = text_literal.BoxAlignment
 
-        literal = text_literal.Literal
+        # reference for alignment values:
+        # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/text-anchor
+        # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/alignment-baseline
+        vertical_alignment = {
+            "top": "hanging",
+            "bottom": "baseline",
+            "center": "middle",
+            "middle": "middle",
+        }
+        alignment_baseline = vertical_alignment[ next(align for align in vertical_alignment if align in box_alignment) ]
+        horizontal_alignment = {
+            "left": "start",
+            "right": "end",
+            "center": "middle",
+            "middle": "middle",
+        }
+        text_anchor = horizontal_alignment[ next(align for align in horizontal_alignment if align in box_alignment) ]
 
-        product = tool.Drawing.get_assigned_product(element)
-        variables = {}
-        if product != None:
-            for variable in re.findall("{{.*?}}", literal):
-                literal = literal.replace(
-                    variable, 
-                    str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or "")
-                )
-
+        text = text_obj.BIMTextProperties.value
         text_tag = self.svg.text(
             "",
             class_=" ".join(self.get_attribute_classes(text_obj)),
             **{
                 "text-anchor": text_anchor,
-                "alignment-baseline": alignment_baseline,
+                # using dominant-baseline because we plan to use <tspan> subtags
+                # otherwise alignment-baseline would be sufficient
                 "dominant-baseline": alignment_baseline,
                 "transform": transform,
             },
         )
         self.svg.add(text_tag)
 
-        for line_number, text_line in enumerate(literal.replace("\\n", "\n").split("\n")):
+        for line_number, text_line in enumerate(text.replace("\\n", "\n").split("\n")):
             t_span = self.svg.tspan(text_line, insert=(text_position * self.svg_scale))
             # doing it here and not in tspan constructor because it adds unnecessary spaces
             t_span.update({"dy": f"{line_number}em"})
