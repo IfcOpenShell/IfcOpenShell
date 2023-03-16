@@ -1364,11 +1364,7 @@ class DisableEditingText(bpy.types.Operator, Operator):
 
         # force update this object's font size for viewport display
         DecoratorData.data.pop(context.object.name, None)
-
-        # TODO: just needed some way to trigger UI update
-        # probably there is more proper way to do it
-        props = context.object.BIMTextProperties
-        props.font_size = props.font_size
+        tool.Blender.update_viewport()
 
 
 class EditAssignedProduct(bpy.types.Operator, Operator):

@@ -144,3 +144,11 @@ class Blender:
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         context_override = {"area": area}
         return context_override
+    
+    @classmethod
+    def update_viewport(cls):        
+        # if it stops working in future Blender versions
+        # there is an alternative:
+        # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
+        tool.Blender.get_viewport_context()['area'].tag_redraw()
