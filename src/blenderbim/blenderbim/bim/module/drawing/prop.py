@@ -416,15 +416,9 @@ class BIMTextProperties(PropertyGroup):
     def get_box_alignment(self):
         return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
 
-    def refreshFontSize(self, context):
+    def refresh_font_size(self, context):
         # force update this object's font size for viewport display
         DecoratorData.data.pop(context.object.name, None)
-
-        # TODO: line seems outdated and currently is just throwing error. remove?
-        # File "\blenderbim\bim\module\drawing\annotation.py", line 63, in resize_text
-        #     font_size *= float(text_obj.data.BIMTextProperties.font_size)
-        # AttributeError: 'NoneType' object has no attribute 'BIMTextProperties'
-        # annotation.Annotator.resize_text(context.active_object)
 
     is_editing: BoolProperty(name="Is Editing", default=False)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
@@ -439,7 +433,7 @@ class BIMTextProperties(PropertyGroup):
             ("7.0", "7.0 - Title", ""),
         ],
         default="2.5",
-        update=refreshFontSize,
+        update=refresh_font_size,
         name="Font Size",
     )
     box_alignment: BoolVectorProperty(
