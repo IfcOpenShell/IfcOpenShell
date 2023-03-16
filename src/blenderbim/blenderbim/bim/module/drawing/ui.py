@@ -346,6 +346,9 @@ class BIM_PT_text(Panel):
         props = context.active_object.BIMTextProperties
 
         if props.is_editing:
+            # shares most of the code with EditTextPopup.draw()
+            # need to keep them in sync or move to some common function
+
             row = self.layout.row(align=True)
             row.operator("bim.edit_text", icon="CHECKMARK")
             row.operator("bim.disable_editing_text", icon="CANCEL", text="")

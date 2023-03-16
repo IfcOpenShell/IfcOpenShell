@@ -39,7 +39,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
-from blenderbim.bim.module.drawing.data import DecoratorData
+from blenderbim.bim.module.drawing.data import DecoratorData, TextData
 import blenderbim.bim.export_ifc
 from lxml import etree
 from mathutils import Vector
@@ -1359,6 +1359,57 @@ class AddSectionsAnnotations(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class EditTextPopup(bpy.types.Operator):
+    bl_idname = "bim.edit_text_popup"
+    bl_label = "Edit Text"
+    first_run: bpy.props.BoolProperty(default=True)
+
+    def draw(self, context):
+        # shares most of the code with BIM_PT_text.draw()
+        # need to keep them in sync or move to some common function
+
+        if not TextData.is_loaded:
+            TextData.load()
+        props = context.active_object.BIMTextProperties
+
+        # skip BoxAlignment since we're going to format it ourselves
+        attributes = [a for a in props.attributes if a.name != "BoxAlignment"]
+        # set first attribute with text to be active by default
+        blenderbim.bim.helper.draw_attributes(attributes, self.layout, popup_active_attribute=attributes[0])
+        row = self.layout.row(align=True)
+        row.prop(props, "font_size")
+
+        # a bit hacky way to align box alignment widget
+        rows = [self.layout.row(align=True) for i in range(3)]
+        for i in range(9):
+            if i % 3 == 0:
+                split = rows[i // 3].split(factor=0.1, align=True)
+                split.column()
+            split.prop(props, "box_alignment", text="", index=i)
+
+        text_lines = ["Text box alignment:", props.attributes["BoxAlignment"].string_value, ""]
+        for i in range(3):
+            split = rows[i].split(factor=0.1, align=False)
+            split.column()
+            split.label(text=text_lines[i])
+    
+    def cancel(self, context):
+        # disable editing when dialog is closed
+        bpy.ops.bim.disable_editing_text()
+
+    def execute(self, context):
+        # can't use invoke() because this operator
+        # will be run indirectly by hotkey
+        # so we use execute() and track whether it's the first run of the operator
+        if self.first_run:
+            bpy.ops.bim.enable_editing_text()
+            self.first_run = False
+            return context.window_manager.invoke_props_dialog(self)
+        else:
+            bpy.ops.bim.edit_text()
+            return {'FINISHED'}
+
+
 class EditText(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_text"
     bl_label = "Edit Text"
@@ -1366,6 +1417,7 @@ class EditText(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.edit_text(tool.Ifc, tool.Drawing, obj=context.active_object)
+        tool.Blender.update_viewport()
 
 
 class EnableEditingText(bpy.types.Operator, Operator):

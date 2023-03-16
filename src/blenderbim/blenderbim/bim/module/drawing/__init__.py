@@ -45,6 +45,7 @@ classes = (
     operator.DuplicateDrawing,
     operator.EditAssignedProduct,
     operator.EditText,
+    operator.EditTextPopup,
     operator.EditVectorStyle,
     operator.EnableEditingAssignedProduct,
     operator.EnableEditingText,
