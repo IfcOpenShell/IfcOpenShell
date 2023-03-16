@@ -26,7 +26,7 @@ from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
 from blenderbim.bim.module.drawing.data import TextData
-from blenderbim.bim.module.model import prop
+from blenderbim.bim.module.model.prop import get_ifc_class
 
 
 class BimTool(WorkSpaceTool):
@@ -466,10 +466,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.active_class = element.is_a()
             self.active_material_usage = tool.Model.get_usage_type(element)
 
-        try:
-            self.has_ifc_class = bool(self.props.ifc_class)
-        except:
-            pass
+        if get_ifc_class(None, None):
+            try:
+                self.has_ifc_class = bool(self.props.ifc_class)
+            except:
+                pass
         getattr(self, f"hotkey_{self.hotkey}")()
 
     def invoke(self, context, event):
