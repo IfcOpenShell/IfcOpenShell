@@ -17,19 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty, BoolProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
 import bmesh
 
 import ifcopenshell
-import blenderbim
 import blenderbim.tool as tool
-from blenderbim.bim.module.model.prop import BIMStairProperties
-from blenderbim.bim.ifc import IfcStore
 
-from mathutils import Vector
-from pprint import pprint
 import json
 import zipfile
 import os.path
@@ -65,7 +57,7 @@ def update_sverchok_modifier(context):
         bm.to_mesh(obj.data)
         bm.free()
     obj.data.update()
-    IfcStore.edited_objs.add(obj)
+    tool.Ifc.edit(obj)
 
 
 # UI operators

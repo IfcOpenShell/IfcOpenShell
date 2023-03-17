@@ -55,7 +55,7 @@ def mode_callback(obj, data):
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
             return
         if obj.mode == "EDIT":
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
             bm = bmesh.from_edit_mesh(obj.data)
             bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
             bmesh.update_edit_mesh(obj.data)
@@ -155,7 +155,7 @@ class AlignWall(bpy.types.Operator):
                 aligner.align_first_layer()
             elif self.align_type == "INTERIOR":
                 aligner.align_last_layer()
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
         return {"FINISHED"}
 
 
