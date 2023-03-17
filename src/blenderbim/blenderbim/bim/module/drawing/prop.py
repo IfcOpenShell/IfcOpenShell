@@ -416,10 +416,6 @@ class BIMTextProperties(PropertyGroup):
     def get_box_alignment(self):
         return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
 
-    def refresh_font_size(self, context):
-        # force update this object's font size for viewport display
-        DecoratorData.data.pop(context.object.name, None)
-
     is_editing: BoolProperty(name="Is Editing", default=False)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     test_prop: StringProperty(name="test_prop", default="TEXT")
@@ -436,16 +432,23 @@ class BIMTextProperties(PropertyGroup):
             ("7.0", "7.0 - Title", ""),
         ],
         default="2.5",
-        update=refresh_font_size,
         name="Font Size",
     )
     box_alignment: BoolVectorProperty(
         name="Box alignment", size=9, set=set_box_alignment, get=get_box_alignment, default=DEFAULT_BOX_ALIGNMENT
     )
 
-    def get_text(self):
-        text_attribute = self.attributes.get("Literal", None)
-        return text_attribute.string_value if text_attribute else self.text
+    def get_text_edited_data(self):
+        """should be called only if `is_editing`
+        etherwise should use `DecoratorData.get_ifc_text_data(obj)` instead
+        because this data could be out of date
+        """
+        text_data = {
+            "text": self.attributes["Literal"].string_value,
+            "font_size": float(self.font_size),
+            "box_alignment": self.attributes["BoxAlignment"].string_value,
+        }
+        return text_data
 
 
 class BIMAssignedProductProperties(PropertyGroup):
