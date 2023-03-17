@@ -139,6 +139,9 @@ def bm_get_indices(sequence):
 
 
 def update_roof_modifier_ifc_data(context):
+    """should be called after new geometry settled
+    since it's going to update ifc representation
+    """
     obj = context.active_object
     props = obj.BIMRoofProperties
     element = tool.Ifc.get_entity(obj)
@@ -150,6 +153,8 @@ def update_roof_modifier_ifc_data(context):
 
     # TODO: add Qto_RoofBaseQuantities, need to calculate GrossArea, NetArea, ProjectedArea
     # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Qto_RoofBaseQuantities.htm
+
+    tool.Ifc.edit(obj)
 
 
 def update_bbim_roof_pset(element, roof_data):
@@ -295,9 +300,9 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         roof_data["path_data"] = path_data
 
         update_bbim_roof_pset(element, roof_data)
-        update_roof_modifier_ifc_data(context)
         refresh()
         update_roof_modifier_bmesh(context)
+        update_roof_modifier_ifc_data(context)
         return {"FINISHED"}
 
 
@@ -437,6 +442,7 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         update_roof_modifier_bmesh(context)
         if bpy.context.object.mode == "EDIT":
             bpy.ops.object.mode_set(mode="OBJECT")
+        update_roof_modifier_ifc_data(context)
         return {"FINISHED"}
 
 

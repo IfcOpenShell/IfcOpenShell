@@ -54,6 +54,9 @@ def bm_split_edge_at_offset(edge, offset):
 
 
 def update_railing_modifier_ifc_data(context):
+    """should be called after new geometry settled
+    since it's going to update ifc representation
+    """
     obj = context.active_object
     props = obj.BIMRailingProperties
     element = tool.Ifc.get_entity(obj)
@@ -79,6 +82,7 @@ def update_railing_modifier_ifc_data(context):
             "Height": props.height,
         },
     )
+    tool.Ifc.edit(obj)
 
 
 def update_bbim_railing_pset(element, railing_data):
@@ -262,8 +266,8 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
 
         update_bbim_railing_pset(element, railing_data)
         refresh()
-        update_railing_modifier_ifc_data(context)
         update_railing_modifier_bmesh(context)
+        update_railing_modifier_ifc_data(context)
         return {"FINISHED"}
 
 
@@ -403,6 +407,7 @@ class FinishEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         update_railing_modifier_bmesh(context)
         if bpy.context.object.mode == "EDIT":
             bpy.ops.object.mode_set(mode="OBJECT")
+        update_railing_modifier_ifc_data(context)
         return {"FINISHED"}
 
 
