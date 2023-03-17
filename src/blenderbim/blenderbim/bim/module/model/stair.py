@@ -252,10 +252,14 @@ def update_stair_modifier(context):
 
 
 def update_ifc_stair_props(obj):
+    """should be called after new geometry settled
+    since it's going to update ifc representation
+    """
     element = tool.Ifc.get_entity(obj)
     props = obj.BIMStairProperties
     ifc_file = tool.Ifc.get()
 
+    element.PredefinedType = "STRAIGHT"
     number_of_risers = props.number_of_treads + 1
     # update IfcStairFlight properties (seems already deprecated but keep it for now)
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStairFlight.htm
@@ -281,6 +285,7 @@ def update_ifc_stair_props(obj):
             "TreadLength": props.tread_depth,
         },
     )
+    tool.Ifc.edit(obj)
 
 
 class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
@@ -400,7 +405,6 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         # update IfcStairFlight properties
-        element.PredefinedType = "STRAIGHT"
         update_ifc_stair_props(obj)
         return {"FINISHED"}
 
