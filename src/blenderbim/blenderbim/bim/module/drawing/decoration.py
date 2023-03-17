@@ -379,7 +379,19 @@ class BaseDecorator:
 
         batch.draw(self.shader)
 
-    def draw_label(self, context, text, pos, dir, gap=4, center=True, vcenter=False, font_size=2.5, line_no=0):
+    def draw_label(
+        self,
+        context,
+        text,
+        pos,
+        dir,
+        gap=4,
+        center=True,
+        vcenter=False,
+        font_size_mm=2.5,
+        line_no=0,
+        box_alignment=None,
+    ):
         """Draw text label
 
         Args:
@@ -409,26 +421,42 @@ class BaseDecorator:
         # In particular it works only for the OpenGOST font and produces a 2.5mm font size.
         # It probably should be dynamically calculated using system.dpi or something.
         # font_size = 16 <-- this is a good default
-        font_size = int(0.004118616 * mm_to_px) * font_size / 2.5
-        pos = pos - Vector((0, line_no * font_size))
+        # TODO: need to synchronize it better with svg
+        font_size_px = int(0.004118616 * mm_to_px) * font_size_mm / 2.5
+        pos = pos - Vector((0, line_no * font_size_px))
 
-        blf.size(font_id, font_size, dpi)
+        blf.size(font_id, font_size_px, dpi)
 
-        w, h = 0, 0
-        if center or vcenter:
+        if box_alignment or center or vcenter:
             w, h = blf.dimensions(font_id, text)
 
-        if center:
-            # horizontal centering
-            pos -= Vector((cos, sin)) * w * 0.5
+        if box_alignment:
+            # TODO: need to work out the rotation too
+            if "bottom" in box_alignment:
+                pass
+            elif "top" in box_alignment:
+                pos -= Vector((0, h))
+            else:
+                pos -= Vector((0, h / 2))  # middle / center
 
-        if vcenter:
-            # vertical centering
-            pos -= Vector((-sin, cos)) * h * 0.5
+            if "left" in box_alignment:
+                pass
+            elif "right" in box_alignment:
+                pos -= Vector((w, 0))
+            else:
+                pos -= Vector((w / 2, 0))
+        else:
+            if center:
+                # horizontal centering
+                pos -= Vector((cos, sin)) * w * 0.5
 
-        if gap:
-            # side-shifting
-            pos += Vector((-sin, cos)) * gap
+            if vcenter:
+                # vertical centering
+                pos -= Vector((-sin, cos)) * h * 0.5
+
+            if gap:
+                # side-shifting
+                pos += Vector((-sin, cos)) * gap
 
         blf.enable(font_id, blf.ROTATION)
         blf.position(font_id, pos.x, pos.y, 0) if hasattr(pos, "x") else blf.position(font_id, 0, 0, 0)
@@ -2072,13 +2100,21 @@ class TextDecorator(BaseDecorator):
         # TODO: support text rotation
         dir = Vector((1, 0))
         pos = location_3d_to_region_2d(region, region3d, obj.matrix_world.translation)
-        font_size = DecoratorData.get_ifc_text_font_size(obj)
         props = obj.BIMTextProperties
-        text = props.get_text() if props.is_editing else props.value
-
-        for line_i, line in enumerate(text.split("\\n")):
+        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
+        box_alignment = text_data["box_alignment"]
+        for line_i, line in enumerate(text_data["text"].split("\\n")):
             self.draw_label(
-                context, line, pos, dir, gap=0, center=False, vcenter=False, font_size=font_size, line_no=line_i
+                context,
+                line,
+                pos,
+                dir,
+                gap=0,
+                center=False,
+                vcenter=False,
+                font_size_mm=text_data["font_size"],
+                line_no=line_i,
+                box_alignment=box_alignment,
             )
 
 

@@ -465,8 +465,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
         props.box_alignment = box_alignment_mask
 
-        font_size = DecoratorData.get_ifc_text_font_size(obj)
-        props.font_size = str(font_size)
+        text_data = DecoratorData.get_ifc_text_data(obj)
+        props.font_size = str(text_data["font_size"])
 
     @classmethod
     def import_assigned_product(cls, obj):

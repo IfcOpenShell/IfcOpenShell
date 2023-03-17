@@ -193,7 +193,7 @@ class DecoratorData:
         return display_data
 
     @classmethod
-    def get_ifc_text_font_size(cls, obj):
+    def get_ifc_text_data(cls, obj):
         """returns font size in mm for current ifc text object"""
         result = cls.data.get(obj.name, None)
         if result is not None:
@@ -203,21 +203,25 @@ class DecoratorData:
         if not element:
             return
 
-        if obj.BIMTextProperties.is_editing:
-            font_size = float(obj.BIMTextProperties.font_size)
+        props = obj.BIMTextProperties
+        # getting font size
+        classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+        # use `regular` as default
+        if classes:
+            classes_split = classes.split()
+            # prioritize smaller font sizes just like in svg
+            font_size_type = next(
+                (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
+            )
         else:
-            classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+            font_size_type = "regular"
+        font_size = FONT_SIZES[font_size_type]
 
-            # use `regular` as default
-            if classes:
-                classes_split = classes.split()
-                # prioritize smaller font sizes just like in svg
-                font_size_type = next(
-                    (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
-                )
-            else:
-                font_size_type = "regular"
+        # other attributes
+        literal = tool.Drawing.get_text_literal(obj)
+        box_alignment = literal.BoxAlignment
+        text = props.value
 
-            font_size = FONT_SIZES[font_size_type]
-        cls.data[obj.name] = font_size
-        return font_size
+        text_data = {"text": text, "font_size": font_size, "box_alignment": box_alignment}
+        cls.data[obj.name] = text_data
+        return text_data
