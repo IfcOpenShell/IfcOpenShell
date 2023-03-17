@@ -117,10 +117,6 @@ class Ifc(blenderbim.core.tool.Ifc):
                 occurences = [element]
         return occurences
 
-    @classmethod
-    def unlink(cls, element=None, obj=None):
-        IfcStore.unlink_element(element, obj)
-
     class Operator:
         def execute(self, context):
             IfcStore.execute_ifc_operator(self, context)

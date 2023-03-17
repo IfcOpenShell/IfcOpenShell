@@ -19,7 +19,6 @@
 
 import ifcopenshell
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
 
 import bpy
 import bmesh
@@ -113,7 +112,7 @@ def update_geonodes_modifier():
         bm.to_mesh(obj.data)
         bm.free()
     obj.data.update()
-    IfcStore.edited_objs.add(obj)
+    tool.Ifc.edit(obj)
 
 
 if __name__ == "__main__":

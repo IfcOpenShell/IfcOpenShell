@@ -349,11 +349,16 @@ class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
     def get_object(cls, entity): pass
+    def get_path(cls): pass
     def get_schema(cls): pass
     def is_deleted(cls, element): pass
     def is_edited(cls, obj): pass
     def is_moved(cls, obj): pass
     def link(cls, element, obj): pass
+    def schema(cls): pass
+    def edit(cls, obj): pass
+    def delete(cls, element): pass
+    def resolve_uri(cls, uri): pass
     def run(cls, command, **kwargs): pass
     def set(cls, ifc): pass
     def unlink(cls, element=None, obj=None): pass

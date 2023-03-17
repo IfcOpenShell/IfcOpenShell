@@ -47,9 +47,9 @@ def mode_callback(obj, data):
         ):
             continue
         if obj.data.BIMMeshProperties.ifc_definition_id:
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
         elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
 
 
 def name_callback(obj, data):
@@ -94,7 +94,7 @@ def name_callback(obj, data):
 
 def color_callback(obj, data):
     if obj.BIMMaterialProperties.ifc_style_id:
-        IfcStore.edited_objs.add(obj)
+        tool.Ifc.edit(obj)
 
 
 def active_object_callback():
