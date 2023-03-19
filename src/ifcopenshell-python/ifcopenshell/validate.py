@@ -125,7 +125,7 @@ def assert_valid_inverse(attr, val, schema):
         aggr = attr.type_of_aggregation_string().upper()
 
         if aggr:
-            aggr_str = f'{aggr} [{b1}:{b2}] OF '
+            aggr_str = f'{aggr} [{b1}:{"?" if b2 == -1 else b2}] OF '
         else:
             aggr_str = ''
 

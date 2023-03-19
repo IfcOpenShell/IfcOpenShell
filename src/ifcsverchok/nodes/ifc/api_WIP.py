@@ -26,8 +26,8 @@ from sverchok.data_structure import updateNode
 import importlib
 
 
-class SvIfcTooltip(bpy.types.Operator):
-    bl_idname = "node.sv_ifc_tooltip"
+class SvIfcTooltipWIP(bpy.types.Operator):
+    bl_idname = "node.sv_ifc_tooltipWIP"
     bl_label = "IFC Info"
     tooltip: bpy.props.StringProperty()
 
