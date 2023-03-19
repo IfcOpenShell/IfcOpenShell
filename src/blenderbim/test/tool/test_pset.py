@@ -36,3 +36,16 @@ class TestGetElementPset(NewFile):
         element = ifc.createIfcWall()
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo")
         assert subject.get_element_pset(element, "Foo") == pset
+
+
+class TestIsPsetEmpty(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcWall()
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo")
+        assert subject.is_pset_empty(pset) is True
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        assert subject.is_pset_empty(pset) is False
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": None})
+        assert subject.is_pset_empty(pset) is True

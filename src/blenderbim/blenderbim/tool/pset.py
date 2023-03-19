@@ -58,3 +58,12 @@ class Pset(blenderbim.core.tool.Pset):
     @classmethod
     def is_pset_applicable(cls, element, pset_name):
         return bool(pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True))
+
+    @classmethod
+    def is_pset_empty(cls, pset):
+        pset_dict = ifcopenshell.util.element.get_property_definition(pset)
+        del pset_dict["id"]
+        for value in pset_dict.values():
+            if value is not None:
+                return False
+        return True
