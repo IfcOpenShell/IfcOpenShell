@@ -707,3 +707,19 @@ class TestCopyDeepIFC4(test.bootstrap.IFC4):
         rel.RelatedObjects = [element]
         rel2 = subject.copy_deep(self.file, rel, exclude_callback=lambda x: x.is_a("IfcWall"))
         assert rel.RelatedObjects == rel2.RelatedObjects
+
+    def test_copying_and_reusing_element_references(self):
+        points = self.file.createIfcCartesianPointList2D()
+        subelement1 = self.file.createIfcIndexedPolyCurve(points)
+        subelement2 = self.file.createIfcIndexedPolyCurve(points)
+        element = self.file.createIfcGeometricCurveSet([subelement1, subelement2])
+        element2 = subject.copy_deep(self.file, element)
+        assert element2.Elements[0].Points.id() == element2.Elements[1].Points.id()
+
+    def test_copying_primitive_entities(self):
+        element = self.file.createIfcIndexedPolyCurve(
+            Segments=(self.file.createIfcLineIndex((1, 2)), self.file.createIfcLineIndex((3, 4)))
+        )
+        element2 = subject.copy_deep(self.file, element)
+        assert element2.Segments[0][0] == (1, 2)
+        assert element2.Segments[1][0] == (3, 4)
