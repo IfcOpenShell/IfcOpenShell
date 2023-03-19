@@ -251,7 +251,7 @@ def i_set_prop_to_value(prop, value):
     try:
         eval(f"bpy.context.{prop}")
     except:
-        assert False, "Property does not exist"
+        assert False, f"Property {prop} does not exist when trying to set to value {value}"
     try:
         exec(f'bpy.context.{prop} = r"{value}"')
     except:
@@ -264,7 +264,7 @@ def i_set_prop_to_value(prop):
     try:
         eval(f"bpy.context.{prop}")
     except:
-        assert False, "Property does not exist"
+        assert False, f"Property {prop} does not exist"
     try:
         exec(f'bpy.context.{prop} = r""')
     except:
