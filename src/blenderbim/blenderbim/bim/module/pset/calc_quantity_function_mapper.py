@@ -133,9 +133,9 @@ mapper = {
         'NetWeight' : None,
     },
     'Qto_CoveringBaseQuantities' : {
-        'Width' : "get_height",
-        'GrossArea' : "get_gross_footprint_area",
-        'NetArea' : "get_net_footprint_area",
+        'Width' : "get_covering_width",
+        'GrossArea' : "get_covering_gross_area",
+        'NetArea' : "get_covering_net_area",
     },
     'Qto_PipeSegmentBaseQuantities' : {
         'Length' : "get_length",
