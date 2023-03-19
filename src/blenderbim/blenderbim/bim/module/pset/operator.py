@@ -219,6 +219,12 @@ class DisablePsetEditing(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         props = get_pset_props(context, self.obj, self.obj_type)
+        pset = tool.Ifc.get().by_id(props.active_pset_id)
+        ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        if tool.Pset.is_pset_empty(pset):
+            ifcopenshell.api.run(
+                "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
+            )
         props.active_pset_id = 0
 
 
@@ -250,16 +256,15 @@ class EditPset(bpy.types.Operator, Operator):
                         e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected
                     ]
 
+        pset = self.file.by_id(pset_id)
         if tool.Ifc.get().by_id(pset_id).is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 self.file,
-                **{
-                    "pset": self.file.by_id(pset_id),
-                    "name": props.active_pset_name,
-                    "properties": properties,
-                    "pset_template": blenderbim.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
-                },
+                pset=pset,
+                name=props.active_pset_name,
+                properties=properties,
+                pset_template=blenderbim.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
             )
         else:
             for key, value in properties.items():
@@ -268,13 +273,17 @@ class EditPset(bpy.types.Operator, Operator):
             ifcopenshell.api.run(
                 "pset.edit_qto",
                 self.file,
-                **{
-                    "qto": self.file.by_id(pset_id),
-                    "name": props.active_pset_name,
-                    "properties": properties,
-                },
+                qto=pset,
+                name=props.active_pset_name,
+                properties=properties,
             )
             bpy.ops.bim.load_cost_item_quantities()
+
+        if tool.Pset.is_pset_empty(pset):
+            ifcopenshell.api.run(
+                "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
+            )
+
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
 
 
