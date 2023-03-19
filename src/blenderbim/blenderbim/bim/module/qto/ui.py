@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from bpy.types import Panel
+import bpy
+from blenderbim.bim.module.qto.data import QtoData
 
 
-class BIM_PT_qto_utilities(Panel):
+class BIM_PT_qto_utilities(bpy.types.Panel):
     bl_idname = "BIM_PT_qto_utilities"
     bl_label = "Quantity Take-off"
     bl_options = {"DEFAULT_CLOSED"}
@@ -28,6 +29,9 @@ class BIM_PT_qto_utilities(Panel):
     bl_category = "BlenderBIM"
 
     def draw(self, context):
+        if not QtoData.is_loaded:
+            QtoData.load()
+
         layout = self.layout
         props = context.scene.BIMQtoProperties
 
@@ -51,9 +55,34 @@ class BIM_PT_qto_utilities(Panel):
         row.prop(props, "qto_name", text="")
         row.prop(props, "prop_name", text="")
         row.operator("bim.quantify_objects", icon="COPYDOWN", text="")
-        
+
         row = layout.row(align=True)
         row.operator("bim.assign_objects_base_qto")
 
         row = layout.row(align=True)
         row.operator("bim.calculate_all_quantities", icon="MOD_EDGESPLIT")
+
+        if context.selected_objects:
+            row = layout.row(align=True)
+            row.label(text=f"Relating Cost Item:")
+
+            if QtoData.data['has_cost_item']:
+                for relating_cost_item in QtoData.data['relating_cost_items']:
+                    row.label(text=f"\n")
+                    row = layout.row(align=True)
+                    row.label(text=f"Cost item name:")
+                    row.label(text=f"{relating_cost_item['cost_item_name']}")
+                    row = layout.row(align=True)
+                    row.label(text=f"Quantity name:")
+                    row.label(text=f"{relating_cost_item['quantity_name']}")
+                    row = layout.row(align=True)
+                    row.label(text=f"Quantity value:")
+                    row.label(text=f"{relating_cost_item['quantity_value']}")
+                    row = layout.row(align=True)
+                    row.label(text=f"Quantity type:")
+                    row.label(text=f"{relating_cost_item['quantity_type']}")
+                    row = layout.row(align=True)
+            else:
+                row = layout.row(align=True)
+                row.label(text = f"No cost item related")
+
