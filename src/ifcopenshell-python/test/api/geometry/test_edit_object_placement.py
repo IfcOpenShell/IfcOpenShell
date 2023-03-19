@@ -266,8 +266,10 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
     def test_changing_placements_relative_to_a_voided_element(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
+        site = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSite")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=site)
         matrix = numpy.array(
             (
                 (1.0, 0.0, 0.0, 1.0),
@@ -298,8 +300,12 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
     def test_changing_placements_relative_to_an_opening(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
+        site = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSite")
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDoor")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=wall, relating_structure=site)
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=site)
         matrix = numpy.array(
             (
                 (1.0, 0.0, 0.0, 1.0),
@@ -316,7 +322,14 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
+        ifcopenshell.api.run("void.add_opening", self.file, opening=element, element=wall)
         ifcopenshell.api.run("void.add_filling", self.file, element=subelement, opening=element)
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=site, matrix=numpy.eye(4), is_si=False
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=wall, matrix=numpy.eye(4), is_si=False
+        )
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
         )
@@ -325,6 +338,9 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         )
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix)
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), submatrix)
+        assert not site.ObjectPlacement.PlacementRelTo
+        assert wall.ObjectPlacement.PlacementRelTo == site.ObjectPlacement
+        assert element.ObjectPlacement.PlacementRelTo == wall.ObjectPlacement
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
 
     def test_changing_placements_relative_to_a_projected_element(self):
