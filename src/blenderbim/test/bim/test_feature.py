@@ -301,6 +301,16 @@ def the_object_name_exists(name) -> bpy.types.Object:
     return obj
 
 
+@given(parsers.parse('the collection "{name}" exists'))
+@when(parsers.parse('the collection "{name}" exists'))
+@then(parsers.parse('the collection "{name}" exists'))
+def the_collection_name_exists(name) -> bpy.types.Collection:
+    obj = bpy.data.collections.get(name)
+    if not obj:
+        assert False, f'The collection "{name}" does not exist'
+    return obj
+
+
 @then(parsers.parse('the object "{name1}" and "{name2}" are different elements'))
 def the_object_name1_and_name2_are_different_elements(name1, name2):
     ifc = an_ifc_file_exists()
@@ -585,7 +595,13 @@ def the_collection_name1_is_in_the_collection_name2(name1, name2):
 @then(parsers.parse('the object "{name}" does not exist'))
 def the_object_name_does_not_exist(name):
     obj = bpy.data.objects.get(name)
-    assert obj is None or len(obj.users_collection) == 0, "Object exists"
+    assert obj is None or len(obj.users_collection) == 0, f"Object {name} exists"
+
+
+@then(parsers.parse('the collection "{name}" does not exist'))
+def the_collection_name_does_not_exist(name):
+    obj = bpy.data.collections.get(name)
+    assert obj is None, f"Collection {name} exists"
 
 
 @then(parsers.parse('objects starting with "{name}" do not exist'))

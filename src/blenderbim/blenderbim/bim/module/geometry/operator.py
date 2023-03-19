@@ -28,6 +28,7 @@ import ifcopenshell.api
 import blenderbim.core.geometry as core
 import blenderbim.core.style
 import blenderbim.core.root
+import blenderbim.core.drawing
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector
@@ -357,6 +358,8 @@ class OverrideDeleteTrait:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
         IfcStore.delete_element(element)
         if obj.users_collection and obj.users_collection[0].name == obj.name:
             parent = ifcopenshell.util.element.get_aggregate(element)
@@ -425,7 +428,11 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
     def _execute(self, context):
         for obj in context.selected_objects:
             self.delete_ifc_object(obj)
-            bpy.data.objects.remove(obj)
+            try:
+                obj.name
+                bpy.data.objects.remove(obj)
+            except:
+                pass
         # Required otherwise gizmos are still visible
         context.view_layer.objects.active = None
         return {"FINISHED"}
