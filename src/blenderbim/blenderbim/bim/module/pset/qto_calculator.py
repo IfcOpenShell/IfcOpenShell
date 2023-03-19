@@ -136,6 +136,48 @@ class QtoCalculator:
         OBB_gross_footprint_area = self.get_gross_footprint_area(OBB_obj)
         return OBB_gross_footprint_area
 
+    def get_parametric_axis(self, obj):
+        relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(obj))
+        if relating_type:
+            parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
+            if parametric:
+                layer_set_direction = None
+                layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
+                if layer_set_direction == "AXIS2":
+                    return "AXIS2"
+                elif layer_set_direction == "AXIS3":
+                    return "AXIS3"
+                else:
+                    return None
+        return None
+
+    def get_covering_gross_area(self, obj):
+        get_parametric_axis = self.get_parametric_axis(obj)
+        if not get_parametric_axis:
+            return self.get_gross_footprint_area(obj)
+        elif get_parametric_axis == "AXIS2":
+            return self.get_gross_side_area(obj)
+        elif get_parametric_axis == "AXIS3":
+            return self.get_gross_footprint_area(obj)
+
+    def get_covering_net_area(self, obj):
+        get_parametric_axis = self.get_parametric_axis(obj)
+        if not get_parametric_axis:
+            return self.get_net_footprint_area(obj)
+        elif get_parametric_axis == "AXIS2":
+            return self.get_net_side_area(obj)
+        elif get_parametric_axis == "AXIS3":
+            return self.get_net_footprint_area(obj)
+
+    def get_covering_width(self, obj):
+        get_parametric_axis = self.get_parametric_axis(obj)
+        if not get_parametric_axis:
+            return self.get_height(obj)
+        elif get_parametric_axis == "AXIS2":
+            return self.get_width(obj)
+        elif get_parametric_axis == "AXIS3":
+            return self.get_height(obj)
+
     def get_width(self, o):
         """_summary_: Returns the width of the object bounding box
 

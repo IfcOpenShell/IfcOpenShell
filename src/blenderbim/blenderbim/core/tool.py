@@ -518,6 +518,7 @@ class Qto:
     def add_product_base_qto(cls, product): pass
     def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
     def get_new_guessed_quantity(cls, object, qto_name, quantity_name, ): pass
+    def get_related_cost_item_quantities(cls, product): pass
 
 
 @interface
@@ -625,7 +626,7 @@ class Sequence:
     def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
     def get_recurrence_pattern_times(cls): pass
     def get_rel_sequence_attributes(cls): pass
-    
+
     def get_selected_resource(cls): pass
     def get_start_date(cls): pass
     def get_task_attribute_value(cls, attribute_name): pass
