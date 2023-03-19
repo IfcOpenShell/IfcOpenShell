@@ -190,6 +190,35 @@ class TestEditPset(test.bootstrap.IFC4):
         assert pset.HasProperties[0].NominalValue.is_a("IfcBoolean")
         assert pset.HasProperties[0].NominalValue.wrappedValue is True
 
+    def test_editing_properties_with_custom_units(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="PRESSUREUNIT", Prefix="GIGA", Name="PASCAL")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={
+                "MyCustom": self.file.createIfcModulusOfElasticityMeasure(20),
+            },
+        )
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={
+                "MyCustom": {"NominalValue": 30, "Unit": custom_unit},
+            },
+        )
+        pset = element.IsDefinedBy[0].RelatingPropertyDefinition
+        unit = pset.HasProperties[0].Unit
+        assert pset.HasProperties[0].Name == "MyCustom"
+        assert pset.HasProperties[0].NominalValue.is_a("IfcModulusOfElasticityMeasure")
+        assert pset.HasProperties[0].NominalValue.wrappedValue == 30
+        assert unit.UnitType == "PRESSUREUNIT"
+        assert unit.Prefix == "GIGA"
+        assert unit.Name == "PASCAL"
+
     def test_editing_properties_of_non_rooted_elements(self):
         element = self.file.createIfcMaterial()
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
