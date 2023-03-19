@@ -130,4 +130,9 @@ class Usecase:
             elif inverse.is_a("IfcRelAssignsToGroup"):
                 if len(inverse.RelatedObjects) == 1:
                     self.file.remove(inverse)
+            elif inverse.is_a("IfcRelAssignsToProduct"):
+                if inverse.RelatingProduct == self.settings["product"]:
+                    self.file.remove(inverse)
+                elif len(inverse.RelatedObject) == 1:
+                    self.file.remove(inverse)
         self.file.remove(self.settings["product"])
