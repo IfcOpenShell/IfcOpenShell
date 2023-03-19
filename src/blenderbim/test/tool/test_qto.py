@@ -142,3 +142,19 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         product = tool.Ifc.get_entity(wall_obj)
         assert not subject.get_base_qto(product) == True
 
+class TestGetRelatedCostItemQuantities(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        product = tool.Ifc.get_entity(wall)
+        schedule = ifcopenshell.api.run("cost.add_cost_schedule", ifc)
+        item = ifcopenshell.api.run("cost.add_cost_item", ifc, cost_schedule=schedule)
+        ifcopenshell.api.run("cost.edit_cost_item", ifc, cost_item=item, attributes={"Name": "Foo"})
+        qto = ifcopenshell.api.run("pset.add_qto", ifc, product=wall, name="Qto_WallBaseQuantities")
+        ifcopenshell.api.run("pset.edit_qto", ifc, qto=qto, properties={"NetVolume": 42.0})
+        ifcopenshell.api.run("cost.assign_cost_item_quantity", ifc, cost_item=item, products=[wall], prop_name="NetVolume")
+        assert subject.get_related_cost_item_quantities(wall)[0]['cost_item_name'] == "Foo"
+        assert subject.get_related_cost_item_quantities(wall)[0]['quantity_name'] == "NetVolume"
+        assert subject.get_related_cost_item_quantities(wall)[0]['quantity_value'] == 42
+        assert subject.get_related_cost_item_quantities(wall)[0]['quantity_type'] == "IfcQuantityVolume"
