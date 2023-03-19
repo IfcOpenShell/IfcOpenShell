@@ -127,3 +127,54 @@ class Qto(blenderbim.core.tool.Qto):
             ):
                 continue
             return rel.RelatingPropertyDefinition
+
+    @classmethod
+    def get_related_cost_item_quantities(cls, product):
+        """_summary_: Returns the related cost item and related quantities of the product
+
+        :param ifc-instance product: ifc instance
+        :type product: ifcopenshell.entity_instance.entity_instance
+
+        :return list of dictionaries in the form [
+        {
+        "cost_item_id" : XX,
+        "cost_item_name" : XX,
+        "quantity_id" : XX,
+        "quantity_name" : XX,
+        "quantity_value" : XX,
+        "quantity_type" : XX
+        }]
+        :rtype list
+
+        Example:
+
+        .. code::Python
+        import blenderbim.tool as tool
+
+        relating_cost_items = tool.Qto.relating_cost_items(my_beautiful_wall)
+        for relating_cost_item in relating_cost_items:
+            print(f"RELATING COST ITEM NAME: {relating_cost_item["cost_item_name"]}")
+            print(f"RELATING COST QUANTITY NAME: {relating_cost_item["quantity_name"]}")
+            ...
+        """
+        quantities = cls.get_base_qto(product).Quantities
+        model = tool.Ifc.get()
+        cost_items = model.by_type("IfcCostItem")
+        result = []
+
+        for cost_item in cost_items:
+            cost_item_quantities = cost_item.CostQuantities if cost_item.CostQuantities is not None else []
+            for cost_item_quantity in cost_item_quantities:
+                for quantity in quantities:
+                    if quantity == cost_item_quantity:
+                        result.append(
+                            {
+                                "cost_item_id" : cost_item.id(),
+                                "cost_item_name" : cost_item.Name,
+                                "quantity_id" : quantity.id(),
+                                "quantity_name" : quantity.Name,
+                                "quantity_value" : quantity[3],
+                                "quantity_type" : quantity.is_a(),
+                            }
+                        )
+        return result
