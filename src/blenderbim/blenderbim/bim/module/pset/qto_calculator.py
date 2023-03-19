@@ -156,7 +156,7 @@ class QtoCalculator:
         if not get_parametric_axis:
             return self.get_gross_footprint_area(obj)
         elif get_parametric_axis == "AXIS2":
-            return self.get_gross_surface_area(obj)
+            return self.get_gross_side_area(obj)
         elif get_parametric_axis == "AXIS3":
             return self.get_gross_footprint_area(obj)
 
@@ -165,15 +165,14 @@ class QtoCalculator:
         if not get_parametric_axis:
             return self.get_net_footprint_area(obj)
         elif get_parametric_axis == "AXIS2":
-            return self.get_net_surface_area(obj)
+            return self.get_net_side_area(obj)
         elif get_parametric_axis == "AXIS3":
             return self.get_net_footprint_area(obj)
-        return self.get_net_footprint_area(obj)
 
     def get_covering_width(self, obj):
         get_parametric_axis = self.get_parametric_axis(obj)
         if not get_parametric_axis:
-            return self.get_net_footprint_area(obj)
+            return self.get_height(obj)
         elif get_parametric_axis == "AXIS2":
             return self.get_width(obj)
         elif get_parametric_axis == "AXIS3":
