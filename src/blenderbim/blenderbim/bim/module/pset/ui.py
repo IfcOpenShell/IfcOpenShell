@@ -93,7 +93,15 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
     icon = "TRIA_DOWN" if pset["is_expanded"] else "TRIA_RIGHT"
     row.operator("bim.toggle_pset_expansion", icon=icon, text="", emboss=False).pset_id = pset_id
     obj_name = get_active_pset_obj_name(context, obj_type)
-    if not props.active_pset_id:
+    if props.active_pset_id == pset_id:
+        row.prop(props, "active_pset_name", icon="COPY_ID", text="")
+        op = row.operator("bim.edit_pset", icon="CHECKMARK", text="")
+        op.obj = obj_name
+        op.obj_type = obj_type
+        op = row.operator("bim.disable_pset_editing", icon="CANCEL", text="")
+        op.obj = obj_name
+        op.obj_type = obj_type
+    elif not props.active_pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
         if "Qto" in pset["Name"] and "Base" in pset["Name"]:
             op = row.operator("bim.calculate_all_quantities", icon="MOD_EDGESPLIT", text="")
@@ -109,14 +117,6 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
         row.label(text=pset["Name"], icon="COPY_ID")
         op = row.operator("bim.remove_pset", icon="X", text="")
         op.pset_id = pset_id
-        op.obj = obj_name
-        op.obj_type = obj_type
-    elif props.active_pset_id == pset_id:
-        row.prop(props, "active_pset_name", icon="COPY_ID", text="")
-        op = row.operator("bim.edit_pset", icon="CHECKMARK", text="")
-        op.obj = obj_name
-        op.obj_type = obj_type
-        op = row.operator("bim.disable_pset_editing", icon="CANCEL", text="")
         op.obj = obj_name
         op.obj_type = obj_type
     if pset["is_expanded"]:
@@ -196,6 +196,9 @@ class BIM_PT_object_psets(Panel):
         op.obj = context.active_object.name
         op.obj_type = "Object"
 
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
+
         for pset in ObjectPsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
 
@@ -236,6 +239,9 @@ class BIM_PT_object_qtos(Panel):
         op.obj = context.active_object.name
         op.obj_type = "Object"
 
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
+
         for qto in ObjectQtosData.data["qtos"]:
             draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Object")
 
@@ -272,6 +278,9 @@ class BIM_PT_material_psets(Panel):
         op.obj = context.active_object.active_material.name
         op.obj_type = "Material"
 
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Material")
+
         for pset in MaterialPsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Material")
 
@@ -306,6 +315,9 @@ class BIM_PT_material_set_psets(Panel):
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj = context.active_object.name
         op.obj_type = "MaterialSet"
+
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "MaterialSet")
 
         for pset in MaterialSetPsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "MaterialSet")
@@ -342,9 +354,11 @@ class BIM_PT_material_set_item_psets(Panel):
         op.obj = context.active_object.name
         op.obj_type = "MaterialSetItem"
 
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "MaterialSetItem")
+
         for pset in MaterialSetItemPsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "MaterialSetItem")
-
 
 
 class BIM_PT_task_qtos(Panel):
@@ -375,6 +389,9 @@ class BIM_PT_task_qtos(Panel):
         row.prop(props, "qto_name", text="")
         op = row.operator("bim.add_qto", icon="ADD", text="")
         op.obj_type = "Task"
+
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Task")
 
         for qto in TaskQtosData.data["qtos"]:
             draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Task")
@@ -407,6 +424,9 @@ class BIM_PT_resource_qtos(Panel):
         op = row.operator("bim.add_qto", icon="ADD", text="")
         op.obj_type = "Resource"
 
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Resource")
+
         for qto in ResourceQtosData.data["qtos"]:
             draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Resource")
 
@@ -437,6 +457,9 @@ class BIM_PT_resource_psets(Panel):
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj_type = "Resource"
+
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Resource")
 
         for pset in ResourcePsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Resource")
@@ -471,6 +494,9 @@ class BIM_PT_profile_psets(Panel):
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj_type = "Profile"
 
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Profile")
+
         for pset in ProfilePsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Profile")
 
@@ -499,6 +525,9 @@ class BIM_PT_work_schedule_psets(Panel):
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj_type = "WorkSchedule"
+
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "WorkSchedule")
 
         for pset in WorkSchedulePsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "WorkSchedule")

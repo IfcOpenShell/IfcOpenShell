@@ -76,6 +76,8 @@ class EnablePsetEditing(bpy.types.Operator):
     bl_label = "Enable Pset Editing"
     bl_options = {"REGISTER", "UNDO"}
     pset_id: bpy.props.IntProperty()
+    pset_name: bpy.props.StringProperty()
+    pset_type: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
@@ -83,10 +85,17 @@ class EnablePsetEditing(bpy.types.Operator):
         self.props = get_pset_props(context, self.obj, self.obj_type)
         self.props.properties.clear()
         ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
-        pset = tool.Ifc.get().by_id(self.pset_id)
-        self.props.active_pset_name = pset.Name
 
-        pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(pset.Name)
+        if self.pset_id:
+            pset = tool.Ifc.get().by_id(self.pset_id)
+            self.props.active_pset_name = pset.Name
+            self.props.active_pset_type = ""
+            pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(pset.Name)
+        else:
+            pset = None
+            self.props.active_pset_name = self.pset_name
+            self.props.active_pset_type = self.pset_type
+            pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(self.pset_name)
 
         if pset_template:
             self.load_from_pset_template(pset_template, pset)
@@ -97,8 +106,11 @@ class EnablePsetEditing(bpy.types.Operator):
         return {"FINISHED"}
 
     def load_from_pset_template(self, pset_template, pset):
-        data = ifcopenshell.util.element.get_property_definition(pset)
-        del data["id"]
+        if pset:
+            data = ifcopenshell.util.element.get_property_definition(pset)
+            del data["id"]
+        else:
+            data = {}
         for prop_template in pset_template.HasPropertyTemplates:
             if not prop_template.is_a("IfcSimplePropertyTemplate"):
                 continue  # Other types not yet supported
@@ -138,15 +150,9 @@ class EnablePsetEditing(bpy.types.Operator):
             return "float"
         elif prop_template.TemplateType == "Q_COUNT":
             return "integer"
-        try:
-            return ifcopenshell.util.attribute.get_primitive_type(
-                IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
-            )
-        except:
-            # TODO: Occurs if the data type is something that exists in
-            # IFC4 and not in IFC2X3. To fully fix this we need to
-            # generate the IFC2X3 pset template definitions.
-            pass
+        return ifcopenshell.util.attribute.get_primitive_type(
+            IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
+        )
 
     def load_enumerated_value(self, prop_template, data):
         enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
@@ -219,13 +225,16 @@ class DisablePsetEditing(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         props = get_pset_props(context, self.obj, self.obj_type)
-        pset = tool.Ifc.get().by_id(props.active_pset_id)
-        ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
-        if tool.Pset.is_pset_empty(pset):
-            ifcopenshell.api.run(
-                "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
-            )
+        if props.active_pset_id:
+            pset = tool.Ifc.get().by_id(props.active_pset_id)
+            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
+            if tool.Pset.is_pset_empty(pset):
+                ifcopenshell.api.run(
+                    "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
+                )
         props.active_pset_id = 0
+        props.active_pset_name = ""
+        props.active_pset_type = ""
 
 
 class EditPset(bpy.types.Operator, Operator):
@@ -241,9 +250,19 @@ class EditPset(bpy.types.Operator, Operator):
         self.file = IfcStore.get_file()
         props = get_pset_props(context, self.obj, self.obj_type)
         ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        element = tool.Ifc.get().by_id(ifc_definition_id)
         properties = {}
 
         pset_id = self.pset_id or props.active_pset_id
+        if pset_id:
+            pset = self.file.by_id(pset_id)
+        elif props.active_pset_type == "PSET":
+            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=props.active_pset_name)
+            props.active_pset_id = pset.id()
+        elif props.active_pset_type == "QTO":
+            pset = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name=props.active_pset_name)
+            props.active_pset_id = pset.id()
+
         if self.properties:
             properties = json.loads(self.properties)
         else:
@@ -256,8 +275,7 @@ class EditPset(bpy.types.Operator, Operator):
                         e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected
                     ]
 
-        pset = self.file.by_id(pset_id)
-        if tool.Ifc.get().by_id(pset_id).is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
+        if pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 self.file,
@@ -278,11 +296,6 @@ class EditPset(bpy.types.Operator, Operator):
                 properties=properties,
             )
             bpy.ops.bim.load_cost_item_quantities()
-
-        if tool.Pset.is_pset_empty(pset):
-            ifcopenshell.api.run(
-                "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
-            )
 
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
 
@@ -338,7 +351,7 @@ class AddPset(bpy.types.Operator, Operator):
                 continue
             element = tool.Ifc.get().by_id(ifc_definition_id)
             if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
-                ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=pset_name)
+                bpy.ops.bim.enable_pset_editing(pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj, obj_type=self.obj_type)
 
 
 class AddQto(bpy.types.Operator, Operator):
@@ -353,14 +366,8 @@ class AddQto(bpy.types.Operator, Operator):
         self.file = IfcStore.get_file()
         props = get_pset_props(context, self.obj, self.obj_type)
         ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
-        ifcopenshell.api.run(
-            "pset.add_qto",
-            self.file,
-            **{
-                "product": self.file.by_id(ifc_definition_id),
-                "name": props.qto_name,
-            },
-        )
+        element = tool.Ifc.get().by_id(ifc_definition_id)
+        bpy.ops.bim.enable_pset_editing(pset_id=0, pset_name=props.qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type)
 
 
 class CalculateQuantity(bpy.types.Operator):
@@ -452,7 +459,11 @@ class CopyPropertyToSelection(bpy.types.Operator, Operator):
     name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        is_pset = tool.Ifc.get().by_id(context.active_object.PsetProperties.active_pset_id).is_a("IfcPropertySet")
+        pset_id = context.active_object.PsetProperties.active_pset_id
+        if pset_id:
+            is_pset = tool.Ifc.get().by_id(pset_id).is_a("IfcPropertySet")
+        else:
+            is_pset = context.active_object.PsetProperties.active_pset_type == "PSET"
         pset_name = context.active_object.PsetProperties.active_pset_name
         prop_value = context.active_object.PsetProperties.properties.get(self.name).metadata.get_value()
         for obj in tool.Blender.get_selected_objects():
