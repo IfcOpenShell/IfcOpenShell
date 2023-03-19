@@ -262,7 +262,7 @@ Scenario: Override delete - without active IFC data
     Given an empty Blender session
     And I add a cube
     And the object "Cube" is selected
-    When I press "object.delete"
+    When I press "bim.override_object_delete"
     Then the object "Cube" does not exist
 
 Scenario: Override delete - with active IFC data
@@ -272,7 +272,7 @@ Scenario: Override delete - with active IFC data
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    When I press "object.delete"
+    When I press "bim.override_object_delete"
     Then the object "IfcWall/Cube" does not exist
 
 Scenario: Override outliner delete
