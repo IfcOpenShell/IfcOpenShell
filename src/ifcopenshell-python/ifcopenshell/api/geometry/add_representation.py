@@ -114,7 +114,16 @@ class Usecase:
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
             return self.create_variable_representation()
-        if self.settings["context"].ContextIdentifier == "Annotation":
+        elif self.settings["ifc_representation_class"] == "IfcTextLiteral":
+            return self.create_text_representation(is_2d=False)
+        elif self.settings["ifc_representation_class"] == "IfcGeometricCurveSet/IfcTextLiteral":
+            shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
+            shape_representation.RepresentationType = "Annotation3D"
+            items = list(shape_representation.Items)
+            items.append(self.create_text())
+            shape_representation.Items = items
+            return shape_representation
+        elif self.settings["context"].ContextIdentifier == "Annotation":
             return self.create_annotation3d_representation()
         elif self.settings["context"].ContextIdentifier == "Axis":
             return self.create_curve3d_representation()
@@ -140,7 +149,7 @@ class Usecase:
 
     def create_plan_representation(self):
         if self.settings["ifc_representation_class"] == "IfcTextLiteral":
-            return self.create_text_representation()
+            return self.create_text_representation(is_2d=True)
         elif self.settings["ifc_representation_class"] == "IfcGeometricCurveSet/IfcTextLiteral":
             shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
             shape_representation.RepresentationType = "Annotation2D"
@@ -194,11 +203,11 @@ class Usecase:
             },
         )
 
-    def create_text_representation(self):
+    def create_text_representation(self, is_2d=False):
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Annotation2D",
+            "Annotation2D" if is_2d else "Annotation3D",
             [self.create_text()],
         )
 

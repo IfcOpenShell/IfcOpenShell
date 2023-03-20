@@ -616,8 +616,7 @@ class SvgWriter:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         element = tool.Ifc.get_entity(text_obj)
-        rep = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
-        text_literal = [i for i in rep.Items if i.is_a("IfcTextLiteral")][0]
+        text_literal = tool.Drawing.get_text_literal(text_obj)
 
         text_position = self.project_point_onto_camera(position)
         text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))

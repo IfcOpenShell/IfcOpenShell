@@ -65,8 +65,7 @@ class TextData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["TEXT", "TEXT_LEADER"]:
             return []
-        rep = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
-        text_literal = [i for i in rep.Items if i.is_a("IfcTextLiteral")][0]
+        text_literal = tool.Drawing.get_text_literal(bpy.context.active_object)
         return [
             {"name": "Literal", "value": text_literal.Literal},
             {"name": "BoxAlignment", "value": text_literal.BoxAlignment},

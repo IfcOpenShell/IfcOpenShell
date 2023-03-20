@@ -304,7 +304,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        rep = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
+        rep = ifcopenshell.util.representation.get_representation(
+            element, "Plan", "Annotation"
+        ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
         if not rep:
             return
         items = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
