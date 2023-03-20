@@ -35,13 +35,11 @@ class TestDisableEditingText:
 
 class TestEditText:
     def test_run(self, ifc, drawing):
-        drawing.get_text_literal("obj").should_be_called().will_return("text")
-        drawing.export_text_literal_attributes("obj").should_be_called().will_return("attributes")
-        ifc.run("drawing.edit_text_literal", text_literal="text", attributes="attributes").should_be_called()
+        drawing.synchronise_ifc_and_text_attributes("obj").should_be_called()
         drawing.update_text_value("obj").should_be_called()
         drawing.update_text_size_pset("obj").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
-        subject.edit_text(ifc, drawing, obj="obj")
+        subject.edit_text(drawing, obj="obj")
 
 
 class TestEnableEditingAssignedProduct:

@@ -39,12 +39,12 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
-from blenderbim.bim.module.drawing.data import DecoratorData, TextData
+from blenderbim.bim.module.drawing.data import DecoratorData
 import blenderbim.bim.export_ifc
 from lxml import etree
 from mathutils import Vector
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal
 from blenderbim.bim.ifc import IfcStore
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -197,6 +197,14 @@ class CreateDrawing(bpy.types.Operator):
                     self.svg_writer.camera_projection = tuple(
                         self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
                     )
+                    pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
+                    related_paths = {
+                        "Stylesheet": pset.get("Stylesheet"),
+                        "Markers": pset.get("Markers"),
+                        "Symbols": pset.get("Symbols"),
+                        "Patterns": pset.get("Patterns"),
+                    }
+                    self.svg_writer.define_related_paths(**related_paths)
 
                 with profile("Generate underlay"):
                     underlay_svg = self.generate_underlay(context)
@@ -230,10 +238,7 @@ class CreateDrawing(bpy.types.Operator):
         # Hacky :)
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
-            pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
-            self.svg_writer.create_blank_svg(svg_path).define_boilerplate(
-                pset.get("Stylesheet"), pset.get("Markers"), pset.get("Symbols"), pset.get("Patterns")
-            )
+            self.svg_writer.create_blank_svg(svg_path).define_boilerplate()
             boilerplate = self.svg_writer.svg.tostring()
             outfile.write(boilerplate.replace("</svg>", ""))
             if underlay:
@@ -1211,30 +1216,39 @@ class EditTextPopup(bpy.types.Operator):
         # shares most of the code with BIM_PT_text.draw()
         # need to keep them in sync or move to some common function
 
-        if not TextData.is_loaded:
-            TextData.load()
         props = context.active_object.BIMTextProperties
 
-        # skip BoxAlignment since we're going to format it ourselves
-        attributes = [a for a in props.attributes if a.name != "BoxAlignment"]
-        # set first attribute with text to be active by default
-        blenderbim.bim.helper.draw_attributes(attributes, self.layout, popup_active_attribute=attributes[0])
+        row = self.layout.row(align=True)
+        row.operator("bim.add_text_literal", icon="ADD", text="Add literal")
+
         row = self.layout.row(align=True)
         row.prop(props, "font_size")
 
-        # a bit hacky way to align box alignment widget
-        rows = [self.layout.row(align=True) for i in range(3)]
-        for i in range(9):
-            if i % 3 == 0:
-                split = rows[i // 3].split(factor=0.1, align=True)
-                split.column()
-            split.prop(props, "box_alignment", text="", index=i)
+        for i, literal_props in enumerate(props.literals):
+            box = self.layout.box()
+            row = self.layout.row(align=True)
 
-        text_lines = ["Text box alignment:", props.attributes["BoxAlignment"].string_value, ""]
-        for i in range(3):
-            split = rows[i].split(factor=0.1, align=False)
-            split.column()
-            split.label(text=text_lines[i])
+            row = box.row(align=True)
+            row.label(text=f"Literal[{i}]:")
+            row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
+
+            # skip BoxAlignment since we're going to format it ourselves
+            attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
+            blenderbim.bim.helper.draw_attributes(attributes, box)
+
+            # a bit hacky way to align box alignment widget
+            rows = [box.row(align=True) for i in range(3)]
+            for i in range(9):
+                if i % 3 == 0:
+                    split = rows[i // 3].split(factor=0.1, align=True)
+                    split.column()
+                split.prop(literal_props, "box_alignment", text="", index=i)
+
+            text_lines = ["Text box alignment:", literal_props.attributes["BoxAlignment"].string_value, ""]
+            for i in range(3):
+                split = rows[i].split(factor=0.1, align=False)
+                split.column()
+                split.label(text=text_lines[i])
 
     def cancel(self, context):
         # disable editing when dialog is closed
@@ -1259,7 +1273,7 @@ class EditText(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_text(tool.Ifc, tool.Drawing, obj=context.active_object)
+        core.edit_text(tool.Drawing, obj=context.active_object)
         tool.Blender.update_viewport()
 
 
@@ -1283,6 +1297,54 @@ class DisableEditingText(bpy.types.Operator, Operator):
         # force update this object's font size for viewport display
         DecoratorData.data.pop(context.object.name, None)
         tool.Blender.update_viewport()
+
+
+class AddTextLiteral(bpy.types.Operator):
+    bl_idname = "bim.add_text_literal"
+    bl_label = "Add text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+
+        # similar to `tool.Drawing.import_text_attributes`
+        literal_props = obj.BIMTextProperties.literals.add()
+        literal_attributes = literal_props.attributes
+        literal_attr_values = {
+            "Literal": "Literal",
+            "Path": "RIGHT",
+            "BoxAlignment": "bottom_left",
+        }
+        # emulates `blenderbim.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)`
+        for attr_name in literal_attr_values:
+            attr = literal_attributes.add()
+            attr.name = attr_name
+            if attr_name == "Path":
+                attr.data_type = "enum"
+                attr.enum_items = '["DOWN", "LEFT", "RIGHT", "UP"]'
+                attr.enum_value = literal_attr_values[attr_name]
+
+            else:
+                attr.data_type = "string"
+                attr.string_value = literal_attr_values[attr_name]
+
+        box_alignment_mask = [False] * 9
+        box_alignment_mask[6] = True  # bottom_left box_alignment
+        literal_props.box_alignment = box_alignment_mask
+        return {"FINISHED"}
+
+
+class RemoveTextLiteral(bpy.types.Operator):
+    bl_idname = "bim.remove_text_literal"
+    bl_label = "Remove text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        obj.BIMTextProperties.literals.remove(self.literal_prop_id)
+        return {"FINISHED"}
 
 
 class EditAssignedProduct(bpy.types.Operator, Operator):
