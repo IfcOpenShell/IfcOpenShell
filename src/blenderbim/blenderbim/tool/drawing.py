@@ -191,7 +191,9 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_annotation_context(cls, target_view):
-        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Annotation", target_view)
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+            return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Annotation", target_view)
+        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", target_view)
 
     @classmethod
     def get_body_context(cls):
@@ -325,6 +327,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
+        ifc_importer.process_context_filter()
         ifc_importer.create_generic_elements(elements)
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)

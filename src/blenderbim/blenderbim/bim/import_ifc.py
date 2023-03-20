@@ -302,12 +302,12 @@ class IfcImporter:
         )
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
-        # Annotation is to accommodate broken Revit files
+        # Annotation ContextType is to accommodate broken Revit files
         # See https://github.com/Autodesk/revit-ifc/issues/187
         self.plan_contexts = [
             c.id()
             for c in self.file.by_type("IfcGeometricRepresentationContext")
-            if c.ContextType in ["Plan", "Annotation"]
+            if c.ContextType in ["Plan", "Annotation"] or c.ContextIdentifier == "Annotation"
         ]
         if self.plan_contexts:
             self.settings_2d.set_context_ids(self.plan_contexts)
