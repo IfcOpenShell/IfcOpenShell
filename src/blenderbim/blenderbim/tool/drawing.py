@@ -187,7 +187,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def export_text_literal_attributes(cls, obj):
-        return blenderbim.bim.helper.export_attributes(obj.BIMTextProperties.attributes)
+        literals = []
+        for literal_props in obj.BIMTextProperties.literals:
+            literal_data = blenderbim.bim.helper.export_attributes(literal_props.attributes)
+            literals.append(literal_data)
+        return literals
 
     @classmethod
     def get_annotation_context(cls, target_view):
@@ -300,7 +304,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return "A" + str(number).zfill(2)
 
     @classmethod
-    def get_text_literal(cls, obj):
+    def get_text_literal(cls, obj, return_list=False):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
@@ -310,8 +314,80 @@ class Drawing(blenderbim.core.tool.Drawing):
         if not rep:
             return
         items = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
-        if items:
-            return items[0]
+
+        if not items:
+            return [] if return_list else None
+        if return_list:
+            return items
+        return items[0]
+
+    @classmethod
+    def remove_literal_from_annotation(cls, obj, literal):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+
+        rep = ifcopenshell.util.representation.get_representation(
+            element, "Plan", "Annotation"
+        ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
+        if not rep:
+            return
+
+        ifc_file = tool.Ifc.get()
+        rep.Items = [l for l in rep.Items if l != literal]
+        ifcopenshell.util.element.remove_deep2(ifc_file, literal)
+
+    @classmethod
+    def synchronise_ifc_and_text_attributes(cls, obj):
+        literals = cls.get_text_literal(obj, return_list=True)
+        literals_attributes = cls.export_text_literal_attributes(obj)
+        defined_ifc_ids = [l.ifc_definition_id for l in obj.BIMTextProperties.literals]
+        ifc_file = tool.Ifc.get()
+
+        for ifc_definition_id, attributes in zip(defined_ifc_ids, literals_attributes):
+            # making sure all literals from text edit exist in ifc
+            if ifc_definition_id == 0:
+                literal = cls.add_literal_to_annotation(obj, **attributes)
+            else:
+                literal = ifc_file.by_id(ifc_definition_id)
+                tool.Ifc.run(
+                    "drawing.edit_text_literal",
+                    text_literal=literal,
+                    attributes=attributes,
+                )
+
+        # remove from ifc the literals that were removed during the edit
+        for literal in literals:
+            if literal.id() not in defined_ifc_ids:
+                cls.remove_literal_from_annotation(obj, literal)
+
+    @classmethod
+    def add_literal_to_annotation(cls, obj, Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left"):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+
+        rep = ifcopenshell.util.representation.get_representation(
+            element, "Plan", "Annotation"
+        ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
+
+        if not rep:
+            return
+
+        ifc_file = tool.Ifc.get()
+
+        origin = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+
+        ifc_literal = ifc_file.createIfcTextLiteralWithExtent(
+            Literal, origin, Path, ifc_file.createIfcPlanarExtent(1000, 1000), BoxAlignment
+        )
+
+        rep.Items = rep.Items + (ifc_literal,)
+        return ifc_literal
 
     @classmethod
     def get_assigned_product(cls, element):
@@ -461,17 +537,20 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def import_text_attributes(cls, obj):
         props = obj.BIMTextProperties
-        props.attributes.clear()
-        text = cls.get_text_literal(obj)
-        blenderbim.bim.helper.import_attributes2(text, props.attributes)
+        props.literals.clear()
 
-        box_alignment_mask = [False] * 9
-        position_string = props.attributes["BoxAlignment"].string_value
-        box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
-        props.box_alignment = box_alignment_mask
+        for ifc_literal in cls.get_text_literal(obj, return_list=True):
+            literal_props = props.literals.add()
+            blenderbim.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)
+
+            box_alignment_mask = [False] * 9
+            position_string = literal_props.attributes["BoxAlignment"].string_value
+            box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
+            literal_props.box_alignment = box_alignment_mask
+            literal_props.ifc_definition_id = ifc_literal.id()
 
         text_data = DecoratorData.get_ifc_text_data(obj)
-        props.font_size = str(text_data["font_size"])
+        props.font_size = str(text_data["FontSize"])
 
     @classmethod
     def import_assigned_product(cls, obj):
@@ -537,11 +616,16 @@ class Drawing(blenderbim.core.tool.Drawing):
     def update_text_value(cls, obj):
         props = obj.BIMTextProperties
 
-        ifc_literal = cls.get_text_literal(obj)
-        if not ifc_literal:
+        literals = cls.get_text_literal(obj, return_list=True)
+        if not literals:
             return
-        product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
-        props.value = cls.replace_text_literal_variables(ifc_literal.Literal, product)
+
+        if not props.literals:
+            cls.import_text_attributes(obj)
+
+        for i, literal in enumerate(literals):
+            product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
+            props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
 
     @classmethod
     def update_text_size_pset(cls, obj):
@@ -960,7 +1044,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         for variable in re.findall("{{.*?}}", text):
             text = text.replace(
                 variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or "")
-                )
+            )
         return text
 
     @classmethod

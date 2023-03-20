@@ -20,7 +20,13 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.drawing.data import ProductAssignmentsData, TextData, SheetsData, SchedulesData, DrawingsData
+from blenderbim.bim.module.drawing.data import (
+    ProductAssignmentsData,
+    SheetsData,
+    SchedulesData,
+    DrawingsData,
+    DecoratorData,
+)
 
 
 class BIM_PT_camera(Panel):
@@ -340,10 +346,8 @@ class BIM_PT_text(Panel):
         return element.is_a("IfcAnnotation") and element.ObjectType in ["TEXT", "TEXT_LEADER"]
 
     def draw(self, context):
-        if not TextData.is_loaded:
-            TextData.load()
-
-        props = context.active_object.BIMTextProperties
+        obj = context.active_object
+        props = obj.BIMTextProperties
 
         if props.is_editing:
             # shares most of the code with EditTextPopup.draw()
@@ -351,38 +355,53 @@ class BIM_PT_text(Panel):
 
             row = self.layout.row(align=True)
             row.operator("bim.edit_text", icon="CHECKMARK")
+            row.operator("bim.add_text_literal", icon="ADD", text="")
             row.operator("bim.disable_editing_text", icon="CANCEL", text="")
-            # skip BoxAlignment since we're going to format it ourselves
-            attributes = [a for a in props.attributes if a.name != "BoxAlignment"]
-            blenderbim.bim.helper.draw_attributes(attributes, self.layout)
+
             row = self.layout.row(align=True)
             row.prop(props, "font_size")
 
-            # a bit hacky way to align box alignment widget
-            rows = [self.layout.row(align=True) for i in range(3)]
-            for i in range(9):
-                if i % 3 == 0:
-                    split = rows[i // 3].split(factor=0.1, align=True)
-                    split.column()
-                split.prop(props, "box_alignment", text="", index=i)
+            for i, literal_props in enumerate(props.literals):
+                box = self.layout.box()
+                row = self.layout.row(align=True)
 
-            text_lines = ["Text box alignment:", props.attributes["BoxAlignment"].string_value, ""]
-            for i in range(3):
-                split = rows[i].split(factor=0.1, align=False)
-                split.column()
-                split.label(text=text_lines[i])
+                row = box.row(align=True)
+                row.label(text=f"Literal[{i}]:")
+                row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
+
+                # skip BoxAlignment since we're going to format it ourselves
+                attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
+                blenderbim.bim.helper.draw_attributes(attributes, box)
+
+                # a bit hacky way to align box alignment widget
+                rows = [box.row(align=True) for i in range(3)]
+                for i in range(9):
+                    if i % 3 == 0:
+                        split = rows[i // 3].split(factor=0.1, align=True)
+                        split.column()
+                    split.prop(literal_props, "box_alignment", text="", index=i)
+
+                text_lines = ["Text box alignment:", literal_props.attributes["BoxAlignment"].string_value, ""]
+                for i in range(3):
+                    split = rows[i].split(factor=0.1, align=False)
+                    split.column()
+                    split.label(text=text_lines[i])
         else:
+            text_data = DecoratorData.get_ifc_text_data(obj)
+
             row = self.layout.row()
             row.operator("bim.enable_editing_text", icon="GREASEPENCIL")
 
-            for attribute in TextData.data["attributes"]:
-                row = self.layout.row(align=True)
-                row.label(text=attribute["name"])
-                row.label(text=attribute["value"])
-
             row = self.layout.row(align=True)
-            row.label(text="Current value:")
-            row.label(text=props.value)
+            row.label(text="FontSize")
+            row.label(text=str(text_data["FontSize"]))
+
+            for literal_data in text_data["Literals"]:
+                box = self.layout.box()
+                for attribute in literal_data:
+                    row = box.row(align=True)
+                    row.label(text=attribute)
+                    row.label(text=literal_data[attribute])
 
 
 class BIM_PT_annotation_utilities(Panel):

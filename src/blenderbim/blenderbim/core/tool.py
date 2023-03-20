@@ -257,6 +257,9 @@ class Drawing:
     def get_name(cls, element): pass
     def get_schedule_location(cls, schedule): pass
     def get_text_literal(cls, obj): pass
+    def remove_literal_from_annotation(cls, obj, literal): pass
+    def synchronise_ifc_and_text_attributes(cls, obj): pass
+    def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
     def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
     def import_schedules(cls): pass

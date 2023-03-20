@@ -153,6 +153,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     def get_styles(cls, obj):
         return [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
 
+    # TODO: multiple Literals?
     @classmethod
     def get_text_literal(cls, representation):
         texts = [i for i in representation.Items if i.is_a("IfcTextLiteral")]

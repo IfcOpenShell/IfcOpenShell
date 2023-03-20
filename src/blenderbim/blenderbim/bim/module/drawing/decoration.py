@@ -2028,8 +2028,8 @@ class TextDecorator(BaseDecorator):
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
         + """
-        #define ARROW_ANGLE PI / 12.0
-        #define ARROW_SIZE 16.0
+        #define CIRCLE_SIZE 4.0
+        #define CIRCLE_SEGS_ASTERISK 6
     """
     )
 
@@ -2040,54 +2040,34 @@ class TextDecorator(BaseDecorator):
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
 
+    void circle_head_asterisk(in float size, out vec4 head[CIRCLE_SEGS_ASTERISK]) {
+        float angle_d = PI * 2 / CIRCLE_SEGS_ASTERISK;
+        for(int i = 0; i<CIRCLE_SEGS_ASTERISK; i++) {
+            float angle = angle_d * i;
+            head[i] = vec4(cos(angle), sin(angle), 0, 0) * size;
+        }
+    }
+
     void main() {
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
 
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-
+        vec4 p0 = gl_in[0].gl_Position;
+        vec4 p0w = CLIP2WIN(p0);
         vec4 p;
+        
+        vec4 head[CIRCLE_SEGS_ASTERISK];
+        circle_head_asterisk(viewportDrawingScale * CIRCLE_SIZE, head);
 
-        vec4 head[3];
-        arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
-
-        // start edge arrow
-        gl_Position = p0;
-        EmitVertex();
-        p = p0w + head[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        gl_Position = p0;
-        EmitVertex();
-        EndPrimitive();
-
-        // end edge arrow
-        gl_Position = p1;
-        EmitVertex();
-        p = p1w - head[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w - head[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        gl_Position = p1;
-        EmitVertex();
-        EndPrimitive();
-
-        // stem, with gaps for arrows
-        p = p0w + head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w - head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
+        for (int i=0; i < CIRCLE_SEGS_ASTERISK/2; i++) {
+            p = p0w + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p0w + head[i+CIRCLE_SEGS_ASTERISK/2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
     }
     """
 
@@ -2102,20 +2082,36 @@ class TextDecorator(BaseDecorator):
         pos = location_3d_to_region_2d(region, region3d, obj.matrix_world.translation)
         props = obj.BIMTextProperties
         text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
-        box_alignment = text_data["box_alignment"]
-        for line_i, line in enumerate(text_data["text"].split("\\n")):
-            self.draw_label(
-                context,
-                line,
-                pos,
-                dir,
-                gap=0,
-                center=False,
-                vcenter=False,
-                font_size_mm=text_data["font_size"],
-                line_no=line_i,
-                box_alignment=box_alignment,
-            )
+        literals_data = text_data["Literals"]
+
+        # draw asterisk symbol to visually indicate that there are multiple literals
+        if len(literals_data) > 1:
+            verts = [obj.location]
+            idxs = [(0, 0)]
+            self.draw_lines(context, obj, verts, idxs)
+
+        box_alignment_used = []
+        for literal_data in literals_data:
+            box_alignment = literal_data["BoxAlignment"]
+            # Skip literals with the same box alignment to prevent visual clutter in viewport
+            # User is still indicated by the asterisk symbol
+            if box_alignment in box_alignment_used:
+                continue
+            box_alignment_used.append(box_alignment)
+
+            for line_i, line in enumerate(literal_data["CurrentValue"].split("\\n")):
+                self.draw_label(
+                    context,
+                    line,
+                    pos,
+                    dir,
+                    gap=0,
+                    center=False,
+                    vcenter=False,
+                    font_size_mm=text_data["FontSize"],
+                    line_no=line_i,
+                    box_alignment=box_alignment,
+                )
 
 
 class DecorationsHandler:
