@@ -684,12 +684,14 @@ class Usecase:
 
     def create_annotation3d_representation(self):
         items = []
-        curves = self.create_curves(should_exclude_faces=True, is_2d=False)
-        if curves:
-            items.append(self.file.createIfcGeometricCurveSet(curves))
-        surfaces = self.create_curve_bounded_planes()
-        if surfaces:
-            items.append(self.file.createIfcGeometricSet(surfaces))
+        if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
+            items = self.create_annotation_fill_areas(is_2d=False)
+        else:
+            items = [self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=False))]
+        # TODO Unsure when it is appropriate to use curve bounded planes
+        # surfaces = self.create_curve_bounded_planes()
+        # if surfaces:
+        #     items.append(self.file.createIfcGeometricSet(surfaces))
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,

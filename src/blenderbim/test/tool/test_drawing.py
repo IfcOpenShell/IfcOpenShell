@@ -217,8 +217,12 @@ class TestGetAnnotationContext(NewFile):
         context = ifc.createIfcGeometricRepresentationSubContext(
             ContextType="Plan", ContextIdentifier="Annotation", TargetView="PLAN_VIEW"
         )
+        context2 = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model", ContextIdentifier="Annotation", TargetView="ELEVATION_VIEW"
+        )
         tool.Ifc.set(ifc)
         assert subject.get_annotation_context("PLAN_VIEW") == context
+        assert subject.get_annotation_context("ELEVATION_VIEW") == context2
 
 
 class TestGetBodyContext(NewFile):
