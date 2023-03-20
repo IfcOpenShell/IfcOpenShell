@@ -157,28 +157,33 @@ class CreateDrawing(bpy.types.Operator):
         # printing all annotations on shift+click
         if event.type == "LEFTMOUSE" and event.shift:
             self.print_all = True
+        else:
+            # can't rely on default value since `self.print_all = True`
+            # will set the value to `True` for all future calls
+            self.print_all = False
         return self.execute(context)
 
     def execute(self, context):
-        if not self.print_all:
-            camera = context.scene.camera
-            cameras = [(camera, tool.Ifc.get_entity(camera))]
-        else:
-            cameras = []
-            for drawing_prop in bpy.context.scene.DocProperties.drawings:
-                camera_element = tool.Ifc.get().by_id(drawing_prop.ifc_definition_id)
-                camera = tool.Ifc.get_object(camera_element)
-                cameras.append((camera, camera_element))
+        self.props = context.scene.DocProperties
 
-        for camera, camera_element in cameras:
-            self.camera, self.camera_element = camera, camera_element
+        if self.print_all:
+            original_drawing_id = self.props.active_drawing_id
+            drawings_to_print = [drawing.ifc_definition_id for drawing in self.props.drawings]
+        else:
+            drawings_to_print = [self.props.active_drawing_id]
+
+        for drawing_id in drawings_to_print:
+            if self.print_all:
+                bpy.ops.bim.activate_view(drawing=drawing_id)
+
+            self.camera = context.scene.camera
+            self.camera_element = tool.Ifc.get_entity(self.camera)
             self.file = IfcStore.get_file()
 
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):
-                    self.props = context.scene.DocProperties
                     self.cprops = self.camera.data.BIMCameraProperties
-                    self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
+                    self.drawing_name = self.file.by_id(drawing_id).Name
                     self.get_scale()
                     if self.cprops.update_representation(self.camera):
                         bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
@@ -207,6 +212,8 @@ class CreateDrawing(bpy.types.Operator):
 
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
 
+        if self.print_all:
+            bpy.ops.bim.activate_view(drawing=original_drawing_id)
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
