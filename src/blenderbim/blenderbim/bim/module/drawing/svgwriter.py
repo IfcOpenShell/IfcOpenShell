@@ -664,7 +664,8 @@ class SvgWriter:
         # this is why we apply "font-size: 0;" to the text tag to remove those spaces
         # and add clases to the tspan tags
         # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
-        text = text_obj.BIMTextProperties.value
+        product = tool.Drawing.get_assigned_product(element)
+        text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
         text_tag = self.svg.text(
             "",
             **{
