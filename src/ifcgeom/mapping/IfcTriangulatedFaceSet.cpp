@@ -17,51 +17,51 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
-
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcTriangulatedFaceSet
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS_Shape& shape) {
-	IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
-	auto coord_list = point_list->CoordList();
-	std::vector<std::vector<int>> indices = l->CoordIndex();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet* inst) {
+	IfcSchema::IfcCartesianPointList3D* point_list = inst->Coordinates();
+	auto coordinates = point_list->CoordList();
+	std::vector<std::vector<int>> indices_list = inst->CoordIndex();
 
-	faceset_helper<
-		std::vector<double>,
-		std::vector<int>
-	> helper(this, coord_list, indices, l->Closed().get_value_or(false));
+	std::vector<taxonomy::point3> points;
+	points.reserve(coordinates.size());
+	for (auto& coords : coordinates) {
+		points.push_back(taxonomy::point3(
+			coords.size() < 1 ? 0. : coords[0] * length_unit_,
+			coords.size() < 2 ? 0. : coords[1] * length_unit_,
+			coords.size() < 3 ? 0. : coords[2] * length_unit_));
+	}
 
-	TopTools_ListOfShape faces;
+	int max_index = (int)points.size();
 
-	for (auto it = indices.begin(); it != indices.end(); ++it) {
-		TopoDS_Wire w;
-		if (helper.wire(*it, w)) {
-			BRepBuilderAPI_MakeFace mf(w);
-			if (mf.IsDone()) {
-				faces.Append(mf.Face());
+	auto shell = new taxonomy::shell;
+
+	for (auto& indices : indices_list) {
+		auto fa = new taxonomy::face;
+		shell->children.push_back(fa);
+
+		{
+			auto loop = new taxonomy::loop;
+			fa->children = { loop };
+			loop->external = true;
+			taxonomy::point3 previous;
+			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
+				if (*jt < 1 || *jt > max_index) {
+					throw IfcParse::IfcException("IfcTriangulatedFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+				}
+				const taxonomy::point3& current = points[(*jt) - 1];
+				if (jt != indices.begin()) {
+					loop->children.push_back(new taxonomy::edge(previous, current));
+				}
+				previous = current;
 			}
 		}
 	}
-	
-	if (faces.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !util::create_solid_from_faces(faces, shape, getValue(GV_PRECISION))) {
-		TopoDS_Compound compound;
-		BRep_Builder builder;
-		builder.MakeCompound(compound);
-
-		TopTools_ListIteratorOfListOfShape face_iterator;
-		for (face_iterator.Initialize(faces); face_iterator.More(); face_iterator.Next()) {
-			builder.Add(compound, face_iterator.Value());
-		}
-		shape = compound;
-	}
-	
-	return true;
 }
 
 #endif

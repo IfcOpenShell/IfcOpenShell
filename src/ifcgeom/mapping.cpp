@@ -17,17 +17,18 @@
 *                                                                              *
 ********************************************************************************/
 
+/*
 #include "IfcGeom.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomShapeType.h"
 #include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #include <BRepCheck_Analyzer.hxx>
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define Kernel POSTFIX_SCHEMA(Kernel)
 
 using namespace IfcUtil;
 
-bool IfcGeom::Kernel::convert_shapes(const IfcBaseInterface* l, IfcRepresentationShapeItems& r) {
+bool IfcGeom::Kernel::convert_shapes(const IfcBaseInterface* l, ConversionResults& r) {
 	if (shape_type(l) != ST_SHAPELIST) {
 		TopoDS_Shape shp;
 		if (convert_shape(l, shp)) {
@@ -35,7 +36,7 @@ bool IfcGeom::Kernel::convert_shapes(const IfcBaseInterface* l, IfcRepresentatio
 			if (l->as<IfcSchema::IfcRepresentationItem>()) {
 				style = get_style(l->as<IfcSchema::IfcRepresentationItem>());
 			}
-			r.push_back(IfcGeom::IfcRepresentationShapeItem(l->data().id(), shp, style));
+			r.push_back(IfcGeom::ConversionResult(l->data().id(), shp, style));
 			return true;
 		}
 		return false;
@@ -68,7 +69,7 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseInterface* l, TopoDS_Shape& r) 
 	ignored = (!include_solids_and_surfaces && (st == ST_SHAPE || st == ST_FACE)) || (!include_curves && (st == ST_WIRE || st == ST_CURVE));
 	if (st == ST_SHAPELIST) {
 		processed = true;
-		IfcRepresentationShapeItems items;
+		ConversionResults items;
 		success = convert_shapes(l, items) && util::flatten_shape_list(items, r, false, getValue(GV_PRECISION));
 	} else if (st == ST_SHAPE && include_solids_and_surfaces) {
 #include "mapping_shape.i"
@@ -131,3 +132,4 @@ bool IfcGeom::Kernel::convert_curve(const IfcBaseInterface* l, Handle(Geom_Curve
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;
 }
+*/

@@ -23,7 +23,7 @@
 #ifdef WITH_GLTF
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -37,7 +37,7 @@ private:
 	std::map<std::string, int> materials_, meshes_;
 	json json_, node_array_;
 
-	int writeMaterial(const IfcGeom::Material& style);
+	int writeMaterial(const ifcopenshell::geometry::taxonomy::style& style);
 public:
 	GltfSerializer(const std::string& filename, const SerializerSettings& settings);
 	virtual ~GltfSerializer();

@@ -1,9 +1,10 @@
 #include "layerset.h"
+#include "OpenCascadeConversionResult.h"
 
 #include "base_utils.h"
 #include "boolean_utils.h"
 
-#include "../ifcparse/IfcLogger.h"
+#include "../../../ifcparse/IfcLogger.h"
 
 #include <BRep_Tool.hxx>
 
@@ -29,6 +30,8 @@
 #include <BRepCheck_Analyzer.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <NCollection_IncAllocator.hxx>
+
+using namespace ifcopenshell::geometry;
 
 namespace {
 
@@ -161,7 +164,7 @@ namespace {
 }
 
 
-bool IfcGeom::util::apply_folded_layerset(const IfcRepresentationShapeItems& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<std::shared_ptr<const SurfaceStyle>>& styles, IfcRepresentationShapeItems& result, double tol) {
+bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style>& styles, ConversionResults& result, double tol) {
 	Bnd_Box bb;
 	TopoDS_Shape input;
 	flatten_shape_list(items, input, false, tol);
@@ -243,11 +246,11 @@ bool IfcGeom::util::apply_folded_layerset(const IfcRepresentationShapeItems& ite
 
 	} else if (shells.Extent() == 1) {
 
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a, b;
-			if (split_solid_by_shell(it->Shape(), shells.First(), a, b, tol)) {
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, !!styles[0] ? styles[0] : it->StylePtr()));
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, !!styles[1] ? styles[1] : it->StylePtr()));
+			if (split_solid_by_shell(((OpenCascadeShape*)it->Shape())->shape(), shells.First(), a, b, tol)) {
+				result.push_back(ConversionResult(it->ItemId(), it->Placement(), new OpenCascadeShape(b), &(!!styles[0].diffuse ? styles[0] : it->Style())));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement(), new OpenCascadeShape(a), &(!!styles[1].diffuse ? styles[1] : it->Style())));
 			} else {
 				continue;
 			}
@@ -257,16 +260,16 @@ bool IfcGeom::util::apply_folded_layerset(const IfcRepresentationShapeItems& ite
 
 	} else {
 
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-			const TopoDS_Shape& s = it->Shape();
+			const TopoDS_Shape& s = ((OpenCascadeShape*)it->Shape())->shape();
 			TopoDS_Solid sld;
 			ensure_fit_for_subtraction(s, sld, tol);
 
 			std::vector<TopoDS_Shape> slices;
-			if (split(it->Shape(), shells, tol, slices) && slices.size() == styles.size()) {
+			if (split(s, shells, tol, slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), slices[i], !!styles[i] ? styles[i] : it->StylePtr()));
+					result.push_back(ConversionResult(it->ItemId(), it->Placement(), new OpenCascadeShape(slices[i]), &(!!styles[i].diffuse ? styles[i] : it->Style())));
 				}
 			} else {
 				return false;
@@ -279,18 +282,18 @@ bool IfcGeom::util::apply_folded_layerset(const IfcRepresentationShapeItems& ite
 
 }
 
-bool IfcGeom::util::apply_layerset(const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<std::shared_ptr<const SurfaceStyle>>& styles, IfcRepresentationShapeItems& result, double tol) {
+bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style>& styles, ConversionResults& result, double tol) {
 	if (surfaces.size() < 3) {
 
 		return false;
 
 	} else if (surfaces.size() == 3) {
 
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a, b;
-			if (split_solid_by_surface(it->Shape(), surfaces[1], a, b, tol)) {
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, !!styles[0] ? styles[0] : it->StylePtr()));
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, !!styles[1] ? styles[1] : it->StylePtr()));
+			if (split_solid_by_surface(((OpenCascadeShape*)it->Shape())->shape(), surfaces[1], a, b, tol)) {
+				result.push_back(ConversionResult(it->ItemId(), it->Placement(),new OpenCascadeShape(b), &(!!styles[0].diffuse ? styles[0] : it->Style())));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement(),new OpenCascadeShape(a), &(!!styles[1].diffuse ? styles[1] : it->Style())));
 			} else {
 				continue;
 			}
@@ -304,7 +307,7 @@ bool IfcGeom::util::apply_layerset(const IfcRepresentationShapeItems& items, con
 		// Determine whether sequence of surfaces is consistent with surface normal, so that
 		// layer operations are applied in the correct order. This seems to be always the case.
 		Bnd_Box bb;
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			BRepBndLib::Add(it->Shape(), bb);
 		}
 
@@ -329,9 +332,9 @@ bool IfcGeom::util::apply_layerset(const IfcRepresentationShapeItems& items, con
 		mass.ChangeCoord() += n1.XYZ();
 		*/
 
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-			const TopoDS_Shape& s = it->Shape();
+			const TopoDS_Shape& s = ((OpenCascadeShape*)it->Shape())->shape();
 			TopoDS_Solid sld;
 			ensure_fit_for_subtraction(s, sld, tol);
 
@@ -350,14 +353,14 @@ bool IfcGeom::util::apply_layerset(const IfcRepresentationShapeItems& items, con
 			/*
 			// enable this is you want to see how IfcOpenShell has placed the layer surfaces
 			for (auto& x : operands) {
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), x, nullptr));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement(), x, nullptr));
 			}
 			*/
 
 			std::vector<TopoDS_Shape> slices;
-			if (split(it->Shape(), operands, tol, slices) && slices.size() == styles.size()) {
+			if (split(s, operands, tol, slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), slices[i], !!styles[i] ? styles[i] : it->StylePtr()));
+					result.push_back(ConversionResult(it->ItemId(), it->Placement(), new OpenCascadeShape(slices[i]), &(!!styles[i].diffuse ? styles[i] : it->Style())));
 				}
 			} else {
 				return false;

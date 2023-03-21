@@ -78,29 +78,29 @@ void GltfSerializer::writeHeader() {
 	json_["materials"] = json::array();
 }
 
-int GltfSerializer::writeMaterial(const IfcGeom::Material& style) {
-	auto it = materials_.find(style.name());
+int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style& style) {
+	auto it = materials_.find(style.name);
 	if (it != materials_.end()) {
 		return it->second;
 	}
 	
 	int idx = json_["materials"].size();
-	materials_[style.name()] = idx;
+	materials_[style.name] = idx;
 
 	std::array<double, 4> base;
 	base.fill(1.0);
-	if (style.hasDiffuse()) {
+	if (style.diffuse) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = style.diffuse()[i];
+			base[i] = style.diffuse.ccomponents()(i);
 		}
 	}
-	if (style.hasTransparency()) {
-		base[3] = 1. - style.transparency();
+	if (style.transparency == style.transparency) {
+		base[3] = 1. - style.transparency;
 	}
 
 	json_["materials"].push_back({ {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
 	
-	if (style.hasTransparency() && style.transparency() > 1.e-9) {
+	if (style.transparency == style.transparency && style.transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
 	}
 
@@ -164,13 +164,14 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 
 	node_array_.push_back(json_["nodes"].size());
 
-	const std::vector<double>& m = o->transformation().matrix().data();
+	const auto& m = o->transformation().data().ccomponents();
 	// nb: note that this contains the Y-UP transform as well.
+	// @todo check
 	const std::array<double, 16> matrix_flat = {
-		m[0], m[ 2], -m[ 1], 0,
-		m[3], m[ 5], -m[ 4], 0,
-		m[6], m[ 8], -m[ 7], 0,
-		m[9], m[11], -m[10], 1
+		m(0,0), m(2,0), -m(1,0), m(3,0),
+		m(0,1), m(2,1), -m(1,1), m(3,1),
+		m(0,2), m(2,2), -m(1,2), m(3,2),
+		m(0,3), m(2,3), -m(1,3), m(3,3)
 	};
 	static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 	

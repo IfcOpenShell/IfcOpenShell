@@ -35,10 +35,9 @@
 #include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../ifcgeom/IfcGeomFilter.h"
+#include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/IfcGeomRenderStyles.h"
 
 #include "../ifcparse/utils.h"
 
@@ -212,6 +211,7 @@ int main(int argc, char** argv) {
 	path_t log_file;
 	path_t cache_file;
 	std::string log_format;
+	std::string geometry_kernel;
 
     po::options_description generic_options("Command line options");
 	verbosity_counter vcounter;
@@ -249,9 +249,19 @@ int main(int argc, char** argv) {
 
 	int num_threads;
 	std::string offset_str, rotation_str;
+
+	std::string default_kernel;
+#ifdef IFOPSH_WITH_CGAL
+	default_kernel = "cgal";
+#endif
+#ifdef IFOPSH_WITH_OPENCASCADE
+	default_kernel = "opencascade";
+#endif
     
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
+		("kernel", po::value<std::string>(&geometry_kernel)->default_value(default_kernel),
+			"Geometry kernel to use (opencascade or cgal).")
 		("threads,j", po::value<int>(&num_threads)->default_value(1),
 			"Number of parallel processing threads for geometry interpretation.")
 		("plan",
@@ -799,7 +809,7 @@ int main(int argc, char** argv) {
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == OBJ);
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == OBJ || output_extension == STP || output_extension == IGS);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
 	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells || output_extension == SVG); // svg depends on correct solids for boolean subtractions for hlr
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
@@ -835,7 +845,7 @@ int main(int argc, char** argv) {
 
 	if (vmap.count("force-space-transparency")) {
 		settings.force_space_transparency(force_space_transparency);
-		IfcGeom::update_default_style("IfcSpace").Transparency().reset(force_space_transparency);
+		IfcGeom::update_default_style("IfcSpace").transparency = force_space_transparency;
 	}
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
@@ -950,7 +960,7 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 
-			IfcGeom::Iterator tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
+			IfcGeom::Iterator tmp_context_iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads);
 			
 			time_t start, end;
 			time(&start);
@@ -973,10 +983,10 @@ int main(int argc, char** argv) {
 			time(&end);
             if (!quiet) Logger::Status("Done ! Bounds computed in " + format_duration(start, end));
 
-            gp_XYZ center = (tmp_context_iterator.bounds_min() + tmp_context_iterator.bounds_max()) * 0.5;
-            offset[0] = -center.X();
-            offset[1] = -center.Y();
-            offset[2] = -center.Z();
+            auto center = (tmp_context_iterator.bounds_min().ccomponents() + tmp_context_iterator.bounds_max().ccomponents()) * 0.5;
+            offset[0] = -center(0);
+            offset[1] = -center(1);
+            offset[2] = -center(2);
         } else {
             if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
                 cerr_ << "[Error] Invalid use of --model-offset\n";
@@ -991,7 +1001,7 @@ int main(int argc, char** argv) {
         Logger::Notice(msg.str());
     }
 
-	IfcGeom::Iterator context_iterator(settings, ifc_file, filter_funcs, num_threads);
+	IfcGeom::Iterator context_iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads);
 
 #ifdef WITH_HDF5
 	std::unique_ptr<HdfSerializer> cache;
@@ -1107,7 +1117,7 @@ int main(int argc, char** argv) {
 	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
 	// wrap an iterator of all geometrical products in the Ifc file. 
 	// IfcGeom::Iterator::get() returns an IfcGeom::TriangulationElement or 
-	// -BRepElement pointer, based on current settings. (see IfcGeomIterator.h 
+	// -BRepElement pointer, based on current settings. (see Iterator.h 
 	// for definition) IfcGeom::Iterator::next() is used to poll whether more 
 	// geometrical entities are available. None of these functions throw 
 	// exceptions, neither for parsing errors or geometrical errors. Upon 
@@ -1539,7 +1549,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 
-	IfcGeom::Iterator context_iterator(settings, &f);
+	IfcGeom::Iterator context_iterator(settings, &f, {}, 1);
 
 	if (!context_iterator.initialize()) {
 		return;
@@ -1586,7 +1596,8 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		}
 
 		if (geom_object && geom_object->geometry_pointer() == previous_geometry_pointer) {
-			objects->push(geom_object->product());
+			// @todo
+			objects->push(const_cast<IfcUtil::IfcBaseEntity*>(geom_object->product()));
 		} else {
 			if (quantity) {
 				auto rel = latebound_access::create(f, "IfcRelDefinesByProperties");
@@ -1633,7 +1644,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
 				latebound_access::set(quantity_count, "Name", std::string("Surface Genus"));
 				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
-				latebound_access::set(quantity_count, "CountValue", IfcGeom::util::surface_genus(part.Shape()));
+				latebound_access::set(quantity_count, "CountValue", part.Shape()->surface_genus());
 
 				quantities_2->push(quantity_count);				
 			}
@@ -1647,7 +1658,8 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 			}
 
 			objects.reset(new aggregate_of_instance);
-			objects->push(geom_object->product());
+			// @todo
+			objects->push(const_cast<IfcUtil::IfcBaseEntity*>(geom_object->product()));
 		}
 
 		previous_geometry_pointer = geom_object->geometry_pointer();

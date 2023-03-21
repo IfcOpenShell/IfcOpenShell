@@ -17,27 +17,21 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf) {
-	IN_CACHE(IfcObjectPlacement,l,gp_Trsf,trsf)
-	if ( ! l->declaration().is(IfcSchema::IfcLocalPlacement::Class()) ) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l);
-		return false; 		
-	}
-	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)l;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
+	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)inst;
+	auto m4 = new taxonomy::matrix4;
 	for (;;) {
-
-		gp_Trsf trsf2;
 		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
+		// @todo this type check is wrong and unnecessary?
 		if (relplacement->as<IfcSchema::IfcAxis2Placement3D>()) {
-			IfcGeom::Kernel::convert(relplacement->as<IfcSchema::IfcAxis2Placement3D>(),trsf2);
-			trsf.PreMultiply(trsf2);
+			taxonomy::matrix4 trsf2 = as<taxonomy::matrix4>(map(relplacement));
+			// @todo check
+			m4->components() = trsf2.ccomponents() * m4->ccomponents();
 		}
-
 		if (current->PlacementRelTo()) {
 			IfcSchema::IfcObjectPlacement* parent = current->PlacementRelTo();
 
@@ -68,8 +62,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 		}
 	}
 
-	trsf.PreMultiply(offset_and_rotation);
-	
-	CACHE(IfcObjectPlacement,l,trsf)
-	return true;
+	// @todo
+	// m4->components() = offset_and_rotation_ * m4->components();
+
+	return m4;
 }

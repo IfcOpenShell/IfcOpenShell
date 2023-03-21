@@ -17,56 +17,69 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/profile_helper.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Shape& face) {
-	const double x1 = l->OverallWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double y = l->OverallDepth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double d1 = l->WebThickness() / 2.0f  * getValue(GV_LENGTH_UNIT);
-	const double dy1 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
+	const double x1 = inst->OverallWidth() / 2.0f * length_unit_;
+	const double y = inst->OverallDepth() / 2.0f * length_unit_;
+	const double d1 = inst->WebThickness() / 2.0f  * length_unit_;
+	const double dy1 = inst->FlangeThickness() * length_unit_;
 
-	bool doFillet1 = !!l->FilletRadius();
+	bool doFillet1 = !!inst->FilletRadius();
 	double f1 = 0.;
 	if ( doFillet1 ) {
-		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *inst->FilletRadius() * length_unit_;
 	}
 
 	bool doFillet2 = doFillet1;
 	double x2 = x1, dy2 = dy1, f2 = f1;
 
 	// @todo in IFC4 a IfcAsymmetricIShapeProfileDef is not a subtype anymore of IfcIShapeProfileDef!
-	if (l->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
-		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
-		x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
+	if (inst->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
+		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) inst;
+		x2 = assym->TopFlangeWidth() / 2. * length_unit_;
 		doFillet2 = !!assym->TopFlangeFilletRadius();
 		if (doFillet2) {
-			f2 = *assym->TopFlangeFilletRadius() * getValue(GV_LENGTH_UNIT);
+			f2 = *assym->TopFlangeFilletRadius() * length_unit_;
 		}
 		if (assym->TopFlangeThickness()) {
-			dy2 = *assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
+			dy2 = *assym->TopFlangeThickness() * length_unit_;
 		}
-	}	
-
-	if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || dy1 < ALMOST_ZERO || dy2 < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
 	}
 
-	gp_Trsf2d trsf2d;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+
+	if ( x1 < tol || x2 < tol || y < tol || d1 < tol || dy1 < tol || dy2 < tol) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return nullptr;
+	}
+
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	double coords[24] = {-x1,-y, x1,-y, x1,-y+dy1, d1,-y+dy1, d1,y-dy2, x2,y-dy2, x2,y, -x2,y, -x2,y-dy2, -d1,y-dy2, -d1,-y+dy1, -x1,-y+dy1};
-	int fillets[4] = {3,4,9,10};
-	double radii[4] = {f1,f2,f2,f1};
-	return util::profile_helper(12,coords,(doFillet1||doFillet2) ? 4 : 0,fillets,radii,trsf2d,face);
+	return profile_helper(m4, {
+		{{-x1,-y}},
+		{{x1,-y}},
+		{{x1,-y + dy1}},
+		{{d1,-y + dy1},{ f1} },
+		{{d1,y - dy2},{f2} },
+		{{x2,y - dy2}},
+		{{x2,y}},
+		{{-x2,y}},
+		{{-x2,y - dy2}},
+		{{-d1,y - dy2},{f2} },
+		{{-d1,-y + dy1},{f1} },
+		{{-x1,-y + dy1}}
+	});
 }

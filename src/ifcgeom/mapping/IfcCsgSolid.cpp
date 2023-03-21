@@ -17,10 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCsgSolid* l, TopoDS_Shape& shape) {
-	return convert_shape(l->TreeRootExpression(), shape);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCsgSolid* inst) {
+	return map(inst->TreeRootExpression());
 }

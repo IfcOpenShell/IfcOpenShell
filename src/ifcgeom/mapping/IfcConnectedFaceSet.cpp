@@ -17,101 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#include "../ifcgeom/IfcGeom.h"
-
-#include <TopoDS.hxx>
-#include <TopoDS_Face.hxx>
-#include <memory>
-
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
-	std::unique_ptr<faceset_helper<>> helper_scope;
-
-	IfcSchema::IfcCartesianPoint::list::ptr points = IfcParse::traverse((IfcUtil::IfcBaseClass*) l)->as<IfcSchema::IfcCartesianPoint>();
-	std::vector<const IfcSchema::IfcCartesianPoint*> points_(points->begin(), points->end());
-
-	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
-	std::vector<const IfcSchema::IfcPolyLoop*> loops_(loops->begin(), loops->end());
-
-	helper_scope.reset(new faceset_helper<>(
-		this,
-		points_,
-		loops_,
-		l->declaration().is(IfcSchema::IfcClosedShell::Class())
-		));
-
-	faceset_helper_ = helper_scope.get();
-
-	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
-
-	double min_face_area = faceset_helper_
-		? (faceset_helper_->epsilon() * faceset_helper_->epsilon() / 20.)
-		: getValue(GV_MINIMAL_FACE_AREA);
-
-	TopTools_ListOfShape face_list;
-	for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
-		bool success = false;
-		TopoDS_Face face;
-
-		try {
-			success = convert_face(*it, face);
-		} catch (const std::exception& e) {
-			Logger::Error(e);
-		} catch (const Standard_Failure& e) {
-			if (e.GetMessageString() && strlen(e.GetMessageString())) {
-				Logger::Error(e.GetMessageString());
-			} else {
-				Logger::Error("Unknown error creating face");
-			}
-		} catch (...) {
-			Logger::Error("Unknown error creating face");
-		}
-
-		if (!success) {
-			Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it));
-			continue;
-		}
-
-		if (face.ShapeType() == TopAbs_COMPOUND) {
-			TopoDS_Iterator face_it(face, false);
-			for (; face_it.More(); face_it.Next()) {
-				if (face_it.Value().ShapeType() == TopAbs_FACE) {
-					// This should really be the case. This is not asserted.
-					const TopoDS_Face& triangle = TopoDS::Face(face_it.Value());
-					if (util::face_area(triangle) > min_face_area) {
-						face_list.Append(triangle);
-					} else {
-						Logger::Message(Logger::LOG_WARNING, "Degenerate face:", (*it));
-					}
-				}
-			}
-		} else {
-			if (util::face_area(face) > min_face_area) {
-				face_list.Append(face);
-			} else {
-				Logger::Message(Logger::LOG_WARNING, "Degenerate face:", (*it));
-			}
-		}
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcConnectedFaceSet* inst) {
+	auto shell = map_to_collection<taxonomy::shell>(this, inst->CfsFaces());
+	if (shell == nullptr) {
+		return nullptr;
 	}
-
-	if (face_list.Extent() == 0) {
-		return false;
-	}
-
-	if (face_list.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !util::create_solid_from_faces(face_list, shape, getValue(GV_PRECISION))) {
-		TopoDS_Compound compound;
-		BRep_Builder builder;
-		builder.MakeCompound(compound);
-
-		TopTools_ListIteratorOfListOfShape face_iterator;
-		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-			builder.Add(compound, face_iterator.Value());
-		}
-		shape = compound;
-	}
-
-	return true;
+	shell->closed = inst->declaration().is(IfcSchema::IfcClosedShell::Class());
+	return shell;
 }

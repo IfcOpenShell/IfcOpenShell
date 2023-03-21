@@ -17,48 +17,47 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Vec.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Trsf.hxx>
-#include <BRepOffsetAPI_MakePipeShell.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <TopExp.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRepAlgoAPI_Cut.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
-
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcExtrudedAreaSolidTapered
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, TopoDS_Shape& shape) {
-	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
-	if (height < getValue(GV_PRECISION)) {
-		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
-		return false;
+
+#define mapping POSTFIX_SCHEMA(mapping)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolidTapered* inst) {
+	const double height = inst->Depth() * length_unit_;
+	if (height < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", inst);
+		return nullptr;
 	}
 
-	TopoDS_Shape face1, face2;
-	if (!convert_face(l->SweptArea(), face1)) return false;
-	if (!convert_face(l->EndSweptArea(), face2)) return false;
+	taxonomy::direction3 dir = as<taxonomy::direction3>(map(inst->ExtrudedDirection()));
+	Eigen::Affine3d af3d(Eigen::Translation3d(height * dir.ccomponents()));
+	Eigen::Matrix4d end_profile = af3d.matrix();
 
+	auto loft = new taxonomy::loft;
+	loft->children = {
+		map(inst->SweptArea()),
+		map(inst->EndSweptArea())
+	};
+
+	auto old = ((taxonomy::geom_item*)loft->children.back())->matrix.ccomponents();
+	((taxonomy::geom_item*)loft->children.back())->matrix.components() = old * end_profile;
+
+	return loft;
+
+	/*
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf);
+		IfcGeom::Kernel::convert(inst->Position(), trsf);
 	}
 
 	gp_Dir dir;
-	convert(l->ExtrudedDirection(), dir);
+	convert(inst->ExtrudedDirection(), dir);
 
 	gp_Trsf end_profile;
 	end_profile.SetTranslation(height * dir);
@@ -105,9 +104,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 		// not complete.
 		if (shell.IsNull()) {
 			shell = result;
-		} else if (l->SweptArea()->declaration().is(IfcSchema::IfcCircleHollowProfileDef::Class()) ||
-			l->SweptArea()->declaration().is(IfcSchema::IfcRectangleHollowProfileDef::Class()) ||
-			l->SweptArea()->declaration().is(IfcSchema::IfcArbitraryProfileDefWithVoids::Class()))
+		} else if (inst->SweptArea()->declaration().is(IfcSchema::IfcCircleHollowProfileDef::Class()) ||
+			inst->SweptArea()->declaration().is(IfcSchema::IfcRectangleHollowProfileDef::Class()) ||
+			inst->SweptArea()->declaration().is(IfcSchema::IfcArbitraryProfileDefWithVoids::Class()))
 		{
 			// @todo properly check for failure and all.
 			shell = BRepAlgoAPI_Cut(shell, result).Shape();
@@ -137,5 +136,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 	}
 
 	return !shape.IsNull();
+	*/
 }
 #endif

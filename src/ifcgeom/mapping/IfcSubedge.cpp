@@ -17,32 +17,13 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopExp.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRep_Tool.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSubedge* l, TopoDS_Wire& result) {
-	TopoDS_Wire temp;
-	if (convert_wire(l->ParentEdge(), result) && convert((IfcSchema::IfcEdge*) l, temp)) {
-		TopExp_Explorer exp(result, TopAbs_EDGE);
-		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
-		Standard_Real u1, u2;
-		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u1, u2);
-		TopoDS_Vertex v1, v2;
-		TopExp::Vertices(temp, v1, v2);
-		BRepBuilderAPI_MakeWire mw;
-		mw.Add(BRepBuilderAPI_MakeEdge(crv, v1, v2));
-		result = mw.Wire();
-		return true;
-	} else {
-		return false;
-	}
+/*
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcSubedge* inst) {
+	// @todo
+	return nullptr;
 }
+*/

@@ -17,24 +17,26 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pln.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <TopoDS_Face.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRectangularTrimmedSurface* inst) {
+	// @todo we'll need to add support for p-curves at some point, but not now.
+	return nullptr;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularTrimmedSurface* l, TopoDS_Shape& face) {
-	if (!l->BasisSurface()->declaration().is(IfcSchema::IfcPlane::Class())) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported BasisSurface:", l->BasisSurface());
+	/*
+	if (!inst->BasisSurface()->declaration().is(IfcSchema::IfcPlane::Class())) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported BasisSurface:", inst->BasisSurface());
 		return false;
 	}
 	gp_Pln pln;
-	IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) l->BasisSurface(), pln);
+	IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst->BasisSurface(), pln);
 
-	BRepBuilderAPI_MakeFace mf(pln, l->U1(), l->U2(), l->V1(), l->V2());
+	BRepBuilderAPI_MakeFace mf(pln, inst->U1(), inst->U2(), inst->V1(), inst->V2());
 
 	face = mf.Face();
 
 	return true;
+	*/
 }

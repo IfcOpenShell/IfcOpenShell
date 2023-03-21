@@ -1,6 +1,6 @@
 #include "../ifcgeom/kernels/cgal/CgalKernel.h"
-#include "../ifcgeom/schema_agnostic/IfcGeomFilter.h"
-#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom/IfcGeomFilter.h"
+#include "../ifcgeom/Iterator.h"
 
 #include <CGAL/box_intersection_d.h>
 #include <CGAL/minkowski_sum_3.h>
@@ -415,7 +415,7 @@ struct remove_thickness {
 
 
 struct intersection_validator {
-	typedef std::list<std::pair<IfcUtil::IfcBaseEntity*, CGAL::Nef_polyhedron_3<Kernel_>> > nefs_t;
+	typedef std::list<std::pair<const IfcUtil::IfcBaseEntity*, CGAL::Nef_polyhedron_3<Kernel_>> > nefs_t;
 	typedef CGAL::Box_intersection_d::Box_with_handle_d<double, 3, nefs_t::value_type*> Box;
 
 	std::vector<Box> boxes;
@@ -427,23 +427,23 @@ struct intersection_validator {
 	double total_minkowsky_time = 0.;
 	double total_box_time = 0.;
 
-	std::set<IfcUtil::IfcBaseEntity*> succesfully_processed;
+	std::set<const IfcUtil::IfcBaseEntity*> succesfully_processed;
 
 	intersection_validator(IfcParse::IfcFile& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress) {
 
-		ifcopenshell::geometry::settings settings;
-		settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
-		settings.set(ifcopenshell::geometry::settings::WELD_VERTICES, false);
-		settings.set(ifcopenshell::geometry::settings::SEW_SHELLS, true);
-		settings.set(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS, true);
-		settings.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
-		settings.set(ifcopenshell::geometry::settings::DISABLE_OPENING_SUBTRACTIONS, true);
+		IfcGeom::IteratorSettings settings;
+		settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+		settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+		settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
+		settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
+		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+		settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, true);
 
 		std::vector<ifcopenshell::geometry::filter_t> spaces_and_walls = {
 			IfcGeom::entity_filter(true, false, entities)
 		};
 
-		ifcopenshell::geometry::Iterator context_iterator("cgal", settings, &f, spaces_and_walls);
+		IfcGeom::Iterator context_iterator("cgal", settings, &f, spaces_and_walls, 1);
 
 		if (!context_iterator.initialize()) {
 			return;
@@ -460,7 +460,7 @@ struct intersection_validator {
 			if (num_created) {
 				has_more = context_iterator.next();
 			}
-			ifcopenshell::geometry::NativeElement* geom_object = nullptr;
+			IfcGeom::BRepElement* geom_object = nullptr;
 			if (has_more) {
 				geom_object = context_iterator.get_native();
 			}
@@ -475,8 +475,8 @@ struct intersection_validator {
 
 			for (auto& g : geom_object->geometry()) {
 				auto s = ((ifcopenshell::geometry::CgalShape*) g.Shape())->shape();
-				const auto& m = *g.Placement().components;
-				const auto& n = *geom_object->transformation().data().components;
+				const auto& m = g.Placement().ccomponents();
+				const auto& n = geom_object->transformation().data().ccomponents();
 
 				const cgal_placement_t trsf(
 					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
@@ -566,8 +566,11 @@ struct intersection_validator {
 				" objects                                ");
 		}
 
+		/*
+		// @todo
 		total_geom_time = context_iterator.converter().total_geom_time;
 		total_map_time = context_iterator.converter().total_map_time;
+		*/
 	}
 
 	template <typename Fn>

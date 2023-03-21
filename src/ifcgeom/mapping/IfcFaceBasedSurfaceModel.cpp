@@ -17,22 +17,11 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom/IfcGeom.h"
-#include <memory>
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
-	bool part_success = false;
-	IfcSchema::IfcConnectedFaceSet::list::ptr facesets = l->FbsmFaces();
-	auto collective_style = get_style(l);
-	for( IfcSchema::IfcConnectedFaceSet::list::it it = facesets->begin(); it != facesets->end(); ++ it ) {
-		TopoDS_Shape s;
-		auto shell_style = get_style(*it);
-		if (convert_shape(*it,s)) {
-			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, shell_style ? shell_style : collective_style));
-			part_success |= true;
-		}
-	}
-	return part_success;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcFaceBasedSurfaceModel* inst) {
+	// @todo check styles?
+	return map_to_collection(this, inst->FbsmFaces());
 }

@@ -11,16 +11,16 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress);
 
 
-	ifcopenshell::geometry::settings settings;
-	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
-	settings.set(ifcopenshell::geometry::settings::WELD_VERTICES, false);
-	settings.set(ifcopenshell::geometry::settings::SEW_SHELLS, true);
-	settings.set(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS, true);
-	settings.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
-	settings.set(ifcopenshell::geometry::settings::DISABLE_OPENING_SUBTRACTIONS, true);
+	IfcGeom::IteratorSettings settings;
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
+	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, true);
 
-	settings.set(ifcopenshell::geometry::settings::INCLUDE_CURVES, true);
-	settings.set(ifcopenshell::geometry::settings::EXCLUDE_SOLIDS_AND_SURFACES, true);
+	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES, true);
+	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES, true);
 	
 	ifcopenshell::geometry::Converter c("cgal", &f, settings);
 
@@ -106,7 +106,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 			return;
 		}
 
-		auto get_axis_parameter_min_max = [&c, &x_poly](IfcUtil::IfcBaseEntity* inst) {
+		auto get_axis_parameter_min_max = [&c, &x_poly](const IfcUtil::IfcBaseEntity* inst) {
 			auto item = c.mapping()->map(inst);
 			auto shaperep = ((taxonomy::collection*) item)->children[0];
 			auto loop = ((taxonomy::collection*) shaperep)->children[0];
@@ -123,8 +123,8 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 					auto p0 = boost::get<taxonomy::point3>(first_vertex);
 					auto p1 = boost::get<taxonomy::point3>(last_vertex);
 					
-					auto v0 = *((taxonomy::geom_item*)item)->matrix.components * p0.components->homogeneous();
-					auto v1 = *((taxonomy::geom_item*)item)->matrix.components * p1.components->homogeneous();
+					auto v0 = ((taxonomy::geom_item*)item)->matrix.ccomponents() * p0.ccomponents().homogeneous();
+					auto v1 = ((taxonomy::geom_item*)item)->matrix.ccomponents() * p1.ccomponents().homogeneous();
 
 					auto P0 = Kernel_::Point_3(v0(0), v0(1), v0(2));
 					auto P1 = Kernel_::Point_3(v1(0), v1(1), v1(2));

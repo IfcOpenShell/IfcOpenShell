@@ -1,4 +1,4 @@
-#include "IfcGeomIteratorSettings.h"
+#include "IteratorSettings.h"
 
 #include "../ifcparse/IfcLogger.h"
 

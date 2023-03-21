@@ -43,61 +43,25 @@
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 
-#include "../ifcparse/macros.h"
-#include "../ifcparse/IfcParse.h"
-#include "../ifcparse/IfcBaseClass.h"
+#include "../../../ifcgeom/AbstractKernel.h" 
 
-#include "../ifcgeom_schema_agnostic/IfcGeomElement.h" 
-#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h" 
-#include "../ifcgeom_schema_agnostic/IfcRepresentationShapeItem.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomShapeType.h"
-#include "../ifcgeom_schema_agnostic/Kernel.h"
-#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
+#include "../../../ifcgeom/IfcGeomElement.h" 
+#include "../../../ifcgeom/IfcGeomRepresentation.h" 
+#include "../../../ifcgeom/ConversionResult.h"
 
-// Define this in case you want to conserve memory usage at all cost. This has been
-// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
-// #define NO_CACHE
+#include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
-#ifdef NO_CACHE
+#include "../../../ifcgeom/ifc_geom_api.h"
 
-#define IN_CACHE(T,E,t,e)
-#define CACHE(T,E,e)
+#include "../../../ifcgeom/taxonomy.h"
+#include "../../../ifcgeom/ConversionSettings.h"
 
-#else
-
-#define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->data().id());\
-if ( it != cache.T.end() ) { e = it->second; return true; }
-#define CACHE(T,E,e) cache.T[E->data().id()] = e;
-
-#endif
-
-#define INCLUDE_PARENT_DIR(x) STRINGIFY(../ifcparse/x.h)
-#include INCLUDE_PARENT_DIR(IfcSchema)
-#undef INCLUDE_PARENT_DIR
-#define INCLUDE_PARENT_DIR(x) STRINGIFY(../ifcparse/x-definitions.h)
-#include INCLUDE_PARENT_DIR(IfcSchema)
+// @todo remove once merged to same ns.
+using namespace ifcopenshell::geometry;
 
 namespace IfcGeom {
-	
-class IFC_GEOM_API MAKE_TYPE_NAME(Cache) {
-public:
-#include "mapping_cache.i"
-	std::map<int, TopoDS_Shape> Shape;
-};
 
-namespace util {
-	template <typename T>
-	typename std::enable_if<std::is_pointer<T>::value, T&>::type conditional_address_of(T& t) {
-		return t;
-	}
-
-	template <typename T>
-	typename std::enable_if<!std::is_pointer<T>::value, T*>::type conditional_address_of(T& t) {
-		return &t;
-	}
-}
-
-class IFC_GEOM_API MAKE_TYPE_NAME(Kernel) : public IfcGeom::Kernel {
+class IFC_GEOM_API OpenCascadeKernel : public kernels::AbstractKernel {
 private:
 
 	/*
@@ -108,20 +72,18 @@ private:
 	threshiold are merged, so consider points a, b, c, distance(a, b) < eps then M(a, b) = Null, M(a, b) = M(a, c).
 	*/
 
-	template <typename CP=const IfcSchema::IfcCartesianPoint*, typename LP=const IfcSchema::IfcPolyLoop*>
 	class faceset_helper {
 	private:
-		MAKE_TYPE_NAME(Kernel)* kernel_;
-		std::set<typename std::conditional<std::is_pointer<LP>::value, LP, const LP*>::type> duplicates_;
-		std::map<const void*, int> vertex_mapping_;
+		OpenCascadeKernel* kernel_;
+		std::set<int> duplicates_;
+		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
-		// not always in use
-		const std::vector<std::vector<double>>* points_ = nullptr;
 		double eps_;
 		bool non_manifold_;
 		
-		void loop_(const LP& lp, const std::function<void(int, int, bool)>& callback);
+		void loop_(const taxonomy::loop* ps, const std::function<void(int, int, bool)>& callback);
 
+		/*
 		bool construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l);
 		bool construct(const std::vector<double>& cp, gp_Pnt* l);
 
@@ -135,13 +97,9 @@ private:
 
 		std::vector<const void*> get_idxs(const IfcSchema::IfcPolyLoop* lp);
 		std::vector<const void*> get_idxs(const std::vector<int>& it);
+		*/
 	public:
-		faceset_helper(
-			MAKE_TYPE_NAME(Kernel)* kernel, 
-			const std::vector<CP>& points,
-			const std::vector<LP>& indices,
-			bool should_by_closed);
-
+		faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell* l);
 		~faceset_helper();
 
 		bool non_manifold() const { return non_manifold_; }
@@ -150,280 +108,64 @@ private:
 		
 		bool edge(int A, int B, TopoDS_Edge& e);
 
-		bool wire(const LP& loop, TopoDS_Wire& wire);
-		bool wires(const LP& loop, TopTools_ListOfShape& wires);
+		bool wire(const taxonomy::loop* loop, TopoDS_Wire& wire);
+		bool wires(const taxonomy::loop* loop, TopTools_ListOfShape& wires);
 	};
 
-	double deflection_tolerance;
-	double max_faces_to_orient;
-	double ifc_length_unit;
-	double ifc_planeangle_unit;
-	double modelling_precision;
-	double dimensionality;
-	double layerset_first;
-	double no_wire_intersection_check;
-	double no_wire_intersection_tolerance;
-	double precision_factor;
-	double boolean_debug_setting;
-	double boolean_attempt_2d;
+	faceset_helper* faceset_helper_;
 
-	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-	const IfcParse::declaration* placement_rel_to_type_;
-	const IfcUtil::IfcBaseEntity* placement_rel_to_instance_;
-
-	faceset_helper<>* faceset_helper_;
-	double disable_boolean_result;
-
+	// @todo these should be moved to the mapping
+	/*
 	gp_Vec offset = gp_Vec{0.0, 0.0, 0.0};
 	gp_Quaternion rotation = gp_Quaternion{};
 	gp_Trsf offset_and_rotation = gp_Trsf();
+	*/
 
-#ifndef NO_CACHE
-	MAKE_TYPE_NAME(Cache) cache;
-#endif
-
-	std::map<int, std::shared_ptr<const SurfaceStyle>> style_cache;
-
-	std::shared_ptr<const SurfaceStyle> internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
+	double precision_;
 
 public:
-	MAKE_TYPE_NAME(Kernel)()
-		: IfcGeom::Kernel()
-		, deflection_tolerance(0.001)
-		, max_faces_to_orient(-1.0)
-		, ifc_length_unit(1.0)
-		, ifc_planeangle_unit(-1.0)
-		, modelling_precision(0.00001)
-		, dimensionality(1.)
-		, layerset_first(-1.)
-
-		, no_wire_intersection_check(-1)
-		, no_wire_intersection_tolerance(-1)
-		, precision_factor(10.)
-		, boolean_debug_setting(false)
-		, boolean_attempt_2d(true)
-
-		, placement_rel_to_type_(nullptr)
-		, placement_rel_to_instance_(nullptr)
+	OpenCascadeKernel(const ConversionSettings& settings)
+		: AbstractKernel("opencascade", settings)
 		, faceset_helper_(nullptr)
-		, disable_boolean_result(-1.)
+		, precision_(settings.getValue(ConversionSettings::GV_PRECISION))
 	{}
 
-	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other)
-		: IfcGeom::Kernel()
-		, deflection_tolerance(other.deflection_tolerance)
-		, max_faces_to_orient(other.max_faces_to_orient)
-		, ifc_length_unit(other.ifc_length_unit)
-		, ifc_planeangle_unit(other.ifc_planeangle_unit)
-		, modelling_precision(other.modelling_precision)
-		, dimensionality(other.dimensionality)
-		, layerset_first(other.layerset_first)
-		, no_wire_intersection_check(other.no_wire_intersection_check)
-		, no_wire_intersection_tolerance(other.no_wire_intersection_tolerance)
-		, precision_factor(other.precision_factor)
-		, boolean_debug_setting(other.boolean_debug_setting)
-		, boolean_attempt_2d(other.boolean_attempt_2d)
-		, placement_rel_to_type_(other.placement_rel_to_type_)
-		, placement_rel_to_instance_(other.placement_rel_to_instance_)
-		// @nb faceset_helper_ always initialized to 0
-		, faceset_helper_(nullptr)
-		, disable_boolean_result(other.disable_boolean_result)
-		, offset(other.offset)
-		, rotation(other.rotation)
-		, offset_and_rotation(other.offset_and_rotation)
-	{
+	bool convert(const taxonomy::extrusion*, TopoDS_Shape&);
+	bool convert(const taxonomy::face*, TopoDS_Shape&);
+	bool convert(const taxonomy::loop*, TopoDS_Wire&);
+	bool convert(const taxonomy::matrix4*, gp_GTrsf&);
+	bool convert(const taxonomy::shell*, TopoDS_Shape&);
+	bool convert(const taxonomy::solid*, TopoDS_Shape&);
+	bool convert(const taxonomy::bspline_surface* bs, Handle(Geom_Surface) surf);
+
+	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t);
+	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t);
+	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t);
+
+	virtual bool convert_impl(const taxonomy::face*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::solid*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::shell*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::extrusion*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::boolean_result*, IfcGeom::ConversionResults&);
+
+	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::item*, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
+
+	template <typename T, typename U>
+	static T convert_xyz(const U& u) {
+		const auto& vs = u.ccomponents();
+		return T(vs(0), vs(1), vs(2));
 	}
 
-	MAKE_TYPE_NAME(Kernel)& operator=(const MAKE_TYPE_NAME(Kernel)& other) {
-		deflection_tolerance = other.deflection_tolerance;
-		max_faces_to_orient = other.max_faces_to_orient;
-		ifc_length_unit = other.ifc_length_unit;
-		ifc_planeangle_unit = other.ifc_planeangle_unit;
-		modelling_precision = other.modelling_precision;
-		dimensionality = other.dimensionality;		
-		layerset_first = other.layerset_first;
-		no_wire_intersection_check = other.no_wire_intersection_check;
-		no_wire_intersection_tolerance = other.no_wire_intersection_tolerance;
-		precision_factor = other.precision_factor;
-		boolean_debug_setting = other.boolean_debug_setting;
-		boolean_attempt_2d = other.boolean_attempt_2d;
-		placement_rel_to_type_ = other.placement_rel_to_type_;
-		placement_rel_to_instance_ = other.placement_rel_to_instance_;
-		disable_boolean_result = other.disable_boolean_result;
-		offset = other.offset;
-		rotation = other.rotation;
-		offset_and_rotation = other.offset_and_rotation;
-		return *this;
+	// @todo eliminate
+	template <typename T, typename U>
+	static T convert_xyz2(const U& vs) {
+		return T(vs(0), vs(1), vs(2));
 	}
-
-	void set_offset(const std::array<double, 3>& offset);
-	void set_rotation(const std::array<double, 4>& rotation);
-	double get_wire_intersection_tolerance(const TopoDS_Wire&) const;
-	
-	bool convert_shapes(const IfcUtil::IfcBaseInterface* L, IfcRepresentationShapeItems& result);
-	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseInterface* L);
-	bool convert_shape(const IfcUtil::IfcBaseInterface* L, TopoDS_Shape& result);
-	bool convert_wire(const IfcUtil::IfcBaseInterface* L, TopoDS_Wire& result);
-	bool convert_curve(const IfcUtil::IfcBaseInterface* L, Handle(Geom_Curve)& result);
-	bool convert_face(const IfcUtil::IfcBaseInterface* L, TopoDS_Shape& result);
-	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
-
-	bool convert_layerset(const IfcSchema::IfcProduct*, std::vector<Handle_Geom_Surface>&, std::vector<std::shared_ptr<const SurfaceStyle>>&, std::vector<double>&);
-	bool fold_layers(const IfcSchema::IfcWall*, const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<double>&, std::vector< std::vector<Handle_Geom_Surface> >&);
-	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
-
-	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
-	const IfcSchema::IfcRepresentationItem* find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item);
-
-	bool is_identity_transform(IfcUtil::IfcBaseInterface*);
-
-	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
-
-	IfcSchema::IfcRepresentation* find_representation(const IfcSchema::IfcProduct*, const std::string&);
-
-	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
-
-    IfcGeom::BRepElement* create_brep_for_representation_and_product(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
-
-    IfcGeom::BRepElement* create_brep_for_processed_representation(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement*);
-
-	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
-	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
-	IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation*);
-	std::shared_ptr<const SurfaceStyle> get_style(const IfcSchema::IfcRepresentationItem*);
-	std::shared_ptr<const SurfaceStyle> get_style(const IfcSchema::IfcMaterial*);
-	
-	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
-		std::vector<IfcSchema::IfcPresentationStyle*> prs_styles;
-
-#ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
-		aggregate_of_instance::ptr style_assignments = si->Styles();
-		for (aggregate_of_instance::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-			
-			// Using IfcPresentationStyleAssignment is deprecated, use the direct assignment of a subtype of IfcPresentationStyle instead.
-			auto style_k = (*kt)->as<IfcSchema::IfcPresentationStyle>();
-			if (style_k) {
-				prs_styles.push_back(style_k);
-				continue;
-			}
-
-			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {
-				continue;
-			}
-
-			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
-
-			Logger::Warning("Deprecated usage of", style_assignment);
-
-			// Only in case of 2x3 or old style IfcPresentationStyleAssignment
-			auto styles = style_assignment->Styles();
-
-#elif defined SCHEMA_HAS_IfcPresentationStyleAssignment
-		IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = si->Styles();
-		for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-			IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
-
-			// Only in case of 2x3 or old style IfcPresentationStyleAssignment
-			auto styles = style_assignment->Styles();
-#else
-    		auto styles = si->Styles();
-#endif
-
-			for (auto lt = styles->begin(); lt != styles->end(); ++lt) {
-				auto style_l = (*lt)->as<IfcSchema::IfcPresentationStyle>();
-				if (style_l) {
-					prs_styles.push_back(style_l);
-				}
-			}
-#if defined(SCHEMA_HAS_IfcStyleAssignmentSelect) || defined(SCHEMA_HAS_IfcPresentationStyleAssignment)
-	   }
-#endif
-		
-		for (auto& style : prs_styles) {
-			if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-				IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
-				if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-					aggregate_of_instance::ptr styles_elements = surface_style->Styles();
-					for (aggregate_of_instance::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-						if ((*mt)->declaration().is(T::Class())) {
-							return std::make_pair(surface_style, (T*) *mt);
-						}
-					}
-				}
-			}
-		}
-
-		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
-	}
-
-	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
-  		// For certain representation items, most notably boolean operands,
-		// a style definition might reside on one of its operands.
-		representation_item = find_item_carrying_style(representation_item);
-
-		if (representation_item->as<IfcSchema::IfcStyledItem>()) {
-			return _get_surface_style<T>(representation_item->as<IfcSchema::IfcStyledItem>());
-		}
-		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
-		if (styled_items->size()) {
-			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we return after the first IfcStyledItem:
-			return _get_surface_style<T>(*styled_items->begin());
-		}
-		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
-	}
-
-	void purge_cache() { 
-		// Rather hack-ish, but a stopgap solution to keep memory under control
-		// for large files. SurfaceStyles need to be kept at all costs, as they
-		// are read later on when serializing Collada files.
-#ifndef NO_CACHE
-		cache = MAKE_TYPE_NAME(Cache)();
-#endif
-	}
-
-	void set_conversion_placement_rel_to_type(const IfcParse::declaration* type);
-	void set_conversion_placement_rel_to_instance(const IfcUtil::IfcBaseEntity* instance);
-
-#include "mapping_kernel_header.i"
-
-	virtual void setValue(GeomValue var, double value);
-	virtual double getValue(GeomValue var) const;
-
-	virtual IfcGeom::BRepElement* convert(
-		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
-		IfcUtil::IfcBaseClass* product)
-	{
-		return create_brep_for_representation_and_product(settings, representation->as<IfcSchema::IfcRepresentation>(), product->as<IfcSchema::IfcProduct>());
-	}
-
-	virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {
-		IfcRepresentationShapeItems items;
-		bool success = convert_shapes(item, items);
-		if (!success) {
-			throw IfcParse::IfcException("Failed to process representation item");
-		}
-		return items;
-	}
-
-	virtual bool convert_placement(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
-		if (item->as<IfcSchema::IfcObjectPlacement>()) {
-			try {
-				return convert(item->as<IfcSchema::IfcObjectPlacement>(), trsf);
-			} catch (std::exception& e) { 
-				Logger::Error(e, item); 
-			} catch (...) { 
-				Logger::Error("Failed processing placement", item); 
-			}
-		}
-		return false;
-	}
-
 };
 
-IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& shape, double deflection);
-IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& shape, bool advanced);
+IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate_)(const TopoDS_Shape& shape, double deflection);
+IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise_)(const TopoDS_Shape& shape, bool advanced);
 
 }
 #endif

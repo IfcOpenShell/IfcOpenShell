@@ -17,18 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Vec.hxx>
-#include <Geom_Line.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& curve) {
-	gp_Pnt pnt;gp_Vec vec;
-	convert(l->Pnt(),pnt);
-	convert(l->Dir(),vec);	
-	// See note at IfcGeomWires.cpp:237
-	curve = new Geom_Line(pnt,vec);
-	return true;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcLine* inst) {
+	// @todo test with trimmed curve on non-normalized direction
+	auto l = new taxonomy::line;
+	taxonomy::point3 pnt = as<taxonomy::point3>(map(inst->Pnt()));
+	taxonomy::direction3 dir = as<taxonomy::direction3>(map(inst->Dir()));
+	l->matrix = taxonomy::matrix4(pnt.ccomponents(), dir.ccomponents());
+	return l;
 }

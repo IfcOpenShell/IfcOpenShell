@@ -20,7 +20,9 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
-#include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
+#include "../../../ifcgeom/IfcGeomElement.h"
+
+#undef Handle
 
 #include <boost/property_map/property_map.hpp>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
@@ -52,11 +54,11 @@ typedef CGAL::Polyhedron_3<Kernel_> cgal_shape_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::vertex_descriptor cgal_vertex_descriptor_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::face_descriptor cgal_face_descriptor_t;
 
-#include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
+#include "../../../ifcgeom/ConversionResult.h"
 
 namespace ifcopenshell { namespace geometry {
 
-	class CgalShape : public ConversionResultShape {
+	class CgalShape : public IfcGeom::ConversionResultShape {
     public:
         CgalShape(const cgal_shape_t& shape)
             : shape_(shape)
@@ -65,13 +67,13 @@ namespace ifcopenshell { namespace geometry {
 		const cgal_shape_t& shape() const { return shape_; }
 		operator const cgal_shape_t& () { return shape_; }
 
-		virtual void Triangulate(const settings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const;
+		virtual void Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
 		
 		virtual void Serialize(std::string&) const {
 			throw std::runtime_error("Not implemented");
 		}
 
-		virtual ConversionResultShape* clone() const {
+		virtual IfcGeom::ConversionResultShape* clone() const {
 			return new CgalShape(shape_);
 		}
 
@@ -79,9 +81,14 @@ namespace ifcopenshell { namespace geometry {
 			throw std::runtime_error("Not implemented");
 		}
 
-		virtual int surface_genus() const {
-			throw std::runtime_error("Not implemented");
-		}
+		virtual double bounding_box(void*&) const;
+
+		virtual int num_vertices() const;
+
+		virtual void set_box(void*);
+
+		virtual int surface_genus() const;
+
     private:
         cgal_shape_t shape_;
 	};

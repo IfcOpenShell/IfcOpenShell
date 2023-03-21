@@ -23,32 +23,22 @@
 #include <gp_Dir2d.hxx>
 #include <gp_Trsf2d.hxx>
 #include <gp_Ax2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "mapping.h"
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define mapping POSTFIX_SCHEMA(mapping)
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement2D* l, gp_Trsf2d& trsf) {
-	IN_CACHE(IfcAxis2Placement2D,l,gp_Trsf2d,trsf)
-	gp_Pnt P; gp_Dir V (1,0,0);
+using namespace ifcopenshell::geometry;
 
-	if (!l->Location()->declaration().is("IfcCartesianPoint")) {
-		// only applicable to 4x3 rc2
-		Logger::Error("Not implemented", l->Location());
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement2D* inst) {
+	Eigen::Vector3d P, axis(0, 0, 1), V(1, 0, 0);
+	{
+		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Location()));
+		P = *v.components_;
 	}
-
-	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(),P);
-	if (l->RefDirection()) {
-		IfcGeom::Kernel::convert(l->RefDirection(), V);
+	const bool hasRef = !!inst->RefDirection();
+	if (hasRef) {
+		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->RefDirection()));
+		V = *v.components_;
 	}
-
-	gp_Ax2d axis(gp_Pnt2d(P.X(),P.Y()), gp_Dir2d(V.X(),V.Y()));
-	
-	if (!util::axis_equal(axis, gp_Ax2d(), getValue(GV_PRECISION))) {
-		trsf.SetTransformation(axis, gp_Ax2d());
-	}
-
-	CACHE(IfcAxis2Placement2D,l,trsf)
-	return true;
+	return new taxonomy::matrix4(P, axis, V);
 }

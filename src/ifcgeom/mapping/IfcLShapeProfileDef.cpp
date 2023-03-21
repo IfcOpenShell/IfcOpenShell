@@ -17,34 +17,36 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/profile_helper.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Shape& face) {
-	const bool hasSlope = !!l->LegSlope();
-	const bool doEdgeFillet = !!l->EdgeRadius();
-	const bool doFillet = !!l->FilletRadius();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcLShapeProfileDef* inst) {
+	const bool hasSlope = !!inst->LegSlope();
+	const bool doEdgeFillet = !!inst->EdgeRadius();
+	const bool doFillet = !!inst->FilletRadius();
 
-	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double x = l->Width().get_value_or(l->Depth()) / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double d = l->Thickness() * getValue(GV_LENGTH_UNIT);
-	const double slope = l->LegSlope().get_value_or(0.) * getValue(GV_PLANEANGLE_UNIT);
+	const double y = inst->Depth() / 2.0f * length_unit_;
+	const double x = inst->Width().get_value_or(inst->Depth()) / 2.0f * length_unit_;
+	const double d = inst->Thickness() * length_unit_;
+	const double slope = inst->LegSlope().get_value_or(0.) * angle_unit_;
 	
 	double f1 = 0.0f;
 	double f2 = 0.0f;
 	if (doFillet) {
-		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *inst->FilletRadius() * length_unit_;
 	}
 	if ( doEdgeFillet) {
-		f2 = *l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f2 = *inst->EdgeRadius() * length_unit_;
 	}
 
-	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+
+	if ( x < tol || y < tol || d < tol) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return nullptr;
 	}
 
 	double xx = -x+d;
@@ -74,26 +76,31 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Sh
 
 		const double det = a1*b2 - a2*b1;
 
-		if (ALMOST_THE_SAME(det, 0.)) {
-			Logger::Message(Logger::LOG_NOTICE, "Legs do not intersect for:",l);
-			return false;
+		if (std::fabs(det) < 1.e-5) {
+			Logger::Message(Logger::LOG_NOTICE, "Legs do not intersect for:", inst);
+			return nullptr;
 		}
 
 		xx = (b2*c1 - b1*c2) / det;
 		xy = (a1*c2 - a2*c1) / det;
 	}
 
-	gp_Trsf2d trsf2d;
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	double coords[12] = {-x,-y, x,-y, x,-y+d-dy1, xx, xy, -x+d-dx1,y, -x,y};
-	int fillets[3] = {2,3,4};
-	double radii[3] = {f2,f1,f2};
-	return util::profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
+	return profile_helper(m4, {
+		{{-x,-y}},
+		{{x,-y}},
+		{{x,-y + d - dy1},{f2} },
+		{{xx, xy},{f1} },
+		{{-x + d - dx1,y},{f2} },
+		{{-x,y}}
+	});
 }

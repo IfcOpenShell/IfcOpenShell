@@ -20,6 +20,7 @@
 #include "OpenCascadeBasedSerializer.h"
 
 #include "../ifcparse/utils.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #include <string>
 #include <fstream>
@@ -37,13 +38,10 @@ bool OpenCascadeBasedSerializer::ready() {
 }
 
 void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement* o) {
-	TopoDS_Shape compound = o->geometry().as_compound();
-	gp_Trsf trsf = o->transformation().data();
-	const IfcGeom::ElementSettings& settings = o->geometry().settings();
-	if (settings.get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS) && settings.unit_magnitude() != 1.0) {
-		trsf.SetTranslationPart(trsf.TranslationPart() / settings.unit_magnitude());
-	}
-	writeShape(object_id(o), compound.Moved(trsf));
+	auto itm = o->geometry().as_compound();
+	TopoDS_Shape compound = ((ifcopenshell::geometry::OpenCascadeShape*)itm)->shape();
+	writeShape(object_id(o), compound);
+	delete itm;
 }
 
 #define RATHER_SMALL (1e-3)

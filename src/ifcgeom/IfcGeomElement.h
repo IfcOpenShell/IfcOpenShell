@@ -27,56 +27,22 @@
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcparse/IfcLogger.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
-#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
+#include "../ifcgeom/IfcGeomRepresentation.h"
+#include "../ifcgeom/IteratorSettings.h"
+#include "../ifcgeom/ifc_geom_api.h"
 
 namespace IfcGeom {
-
-	class Matrix {
-	private:
-		std::vector<double> _data;
-	public:
-		Matrix(const ElementSettings& settings, const gp_Trsf& trsf) {
-			// Convert the gp_Trsf into a 4x3 Matrix
-			// Note that in case the CONVERT_BACK_UNITS setting is enabled
-			// the translation component of the matrix needs to be divided
-			// by the magnitude of the IFC model length unit because
-			// internally in IfcOpenShell everything is measured in meters.
-			for(int i = 1; i < 5; ++i) {
-				for (int j = 1; j < 4; ++j) {
-					const double trsf_value = trsf.Value(j,i);
-                    const double matrix_value = i == 4 && settings.get(IteratorSettings::CONVERT_BACK_UNITS)
-						? trsf_value / settings.unit_magnitude()
-						: trsf_value;
-					_data.push_back(static_cast<double>(matrix_value));
-				}
-			}
-		}
-		const std::vector<double>& data() const { return _data; }
-	};
 
 	class Transformation {
 	private:
 		ElementSettings settings_;
-		gp_Trsf trsf_;
-		Matrix matrix_;
+		ifcopenshell::geometry::taxonomy::matrix4 matrix_;
 	public:
-		Transformation(const ElementSettings& settings, const gp_Trsf& trsf)
+		Transformation(const ElementSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& matrix)
 			: settings_(settings)
-			, trsf_(trsf)
-			, matrix_(settings, trsf) 
+			, matrix_(matrix)
 		{}
-		const gp_Trsf& data() const { return trsf_; }
-		const Matrix& matrix() const { return matrix_; }
-
-		Transformation inverted() const {
-			return Transformation(settings_, trsf_.Inverted());
-		}
-
-		Transformation multiplied(const Transformation& other) const {
-			return Transformation(settings_, trsf_.Multiplied(other.data()));
-		}
+		const ifcopenshell::geometry::taxonomy::matrix4& data() const { return matrix_; }
 	};
 
 	class Element {
@@ -89,7 +55,7 @@ namespace IfcGeom {
 		std::string _context;
 		std::string _unique_id;
 		Transformation _transformation;
-        IfcUtil::IfcBaseEntity* product_;
+        const IfcUtil::IfcBaseEntity* product_;
 		std::vector<const IfcGeom::Element*> _parents;
 	public:
 
@@ -123,12 +89,12 @@ namespace IfcGeom {
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation& transformation() const { return _transformation; }
-        IfcUtil::IfcBaseEntity* product() const { return product_; }
+        const IfcUtil::IfcBaseEntity* product() const { return product_; }
 		const std::vector<const IfcGeom::Element*> parents() const { return _parents; }
 		void SetParents(std::vector<const IfcGeom::Element*> newparents) { _parents = newparents; }
 
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
-            const std::string& guid, const std::string& context, const gp_Trsf& trsf, IfcUtil::IfcBaseEntity* product)
+            const std::string& guid, const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4& trsf, const IfcUtil::IfcBaseEntity* product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
 		{ 
@@ -164,17 +130,14 @@ namespace IfcGeom {
 		const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry_pointer() const { return _geometry; }
 		const IfcGeom::Representation::BRep& geometry() const { return *_geometry; }
 		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
-            const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry,
-			IfcUtil::IfcBaseEntity* product)
+            const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4& trsf, const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry,
+			const IfcUtil::IfcBaseEntity* product)
 			: Element(geometry->settings() ,id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
 		{}
 
 		bool calculate_projected_surface_area(double& along_x, double& along_y, double& along_z) const {
-			const auto& trsf = this->transformation().data();
-			const gp_Mat& mat = trsf.HVectorialPart();
-			gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));
-			return geometry().calculate_projected_surface_area(ax, along_x, along_y, along_z);
+			return geometry().calculate_projected_surface_area(this->transformation().data(), along_x, along_y, along_z);
 		}
 	private:
 		BRepElement(const BRepElement& other);

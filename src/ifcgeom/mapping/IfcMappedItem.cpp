@@ -17,56 +17,35 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_GTrsf.hxx>
-#include <gp_Trsf.hxx>
-#include <gp_Trsf2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcMappedItem* inst) {
+	IfcSchema::IfcCartesianTransformationOperator* transform = inst->MappingTarget();
+	auto qqq = (taxonomy::matrix4*)map(transform);
+	taxonomy::matrix4 gtrsf = *qqq;
+	IfcSchema::IfcRepresentationMap* rmap = inst->MappingSource();
+	IfcSchema::IfcAxis2Placement* placement = rmap->MappingOrigin();
+	taxonomy::matrix4 trsf2 = *(taxonomy::matrix4*)(map(placement));
+	Eigen::Matrix4d res = gtrsf.ccomponents() * trsf2.ccomponents();
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentationShapeItems& shapes) {
-	gp_GTrsf gtrsf;
-	IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
-	if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator3DnonUniform::Class()) ) {
-		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
-	} else if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator2DnonUniform::Class()) ) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform);
-		return false;
-	} else if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator3D::Class()) ) {
-		gp_Trsf trsf;
-		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
-		gtrsf = trsf;
-	} else if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator2D::Class()) ) {
-		gp_Trsf2d trsf_2d;
-		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator2D*)transform,trsf_2d);
-		gtrsf = (gp_Trsf) trsf_2d;
+	// @todo immutable for caching?
+	// @todo allow for multiple levels of matrix?
+	auto shapes = map(rmap->MappedRepresentation());
+	if (shapes == nullptr) {
+		return shapes;
 	}
-	IfcSchema::IfcRepresentationMap* map = l->MappingSource();
-	IfcSchema::IfcAxis2Placement* placement = map->MappingOrigin();
-	gp_Trsf trsf;
-	if (placement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
-		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
-	} else {
-		gp_Trsf2d trsf_2d;
-		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf_2d);
-		trsf = trsf_2d;
-	}
-	gtrsf.Multiply(trsf);
 
-	auto mapped_item_style = get_style(l);
-	
-	const size_t previous_size = shapes.size();
-	bool b = convert_shapes(map->MappedRepresentation(), shapes);
-	
-	for (size_t i = previous_size; i < shapes.size(); ++ i ) {
-		shapes[i].prepend(gtrsf);
+	auto collection = new taxonomy::collection;
+	collection->children.push_back(shapes);
+	collection->matrix = res;
 
-		// Apply styles assigned to the mapped item only if on
-		// a more granular level no styles have been applied
-		if (!shapes[i].hasStyle()) {
-			shapes[i].setStyle(mapped_item_style);
+	if (shapes != nullptr) {
+		for (auto& c : ((taxonomy::collection*)shapes)->children) {
+			// @todo previously style was also copied.
 		}
 	}
 
-	return b;
+	return collection;
 }

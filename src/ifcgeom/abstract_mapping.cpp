@@ -2,21 +2,30 @@
 
 #include "../ifcparse/IfcFile.h"
 
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+
 ifcopenshell::geometry::impl::MappingFactoryImplementation& ifcopenshell::geometry::impl::mapping_implementations() {
 	static MappingFactoryImplementation impl;
 	return impl;
 }
 
-extern void init_MappingImplementation_Ifc2x3(ifcopenshell::geometry::impl::MappingFactoryImplementation*);
-extern void init_MappingImplementation_Ifc4(ifcopenshell::geometry::impl::MappingFactoryImplementation*);
-extern void init_MappingImplementation_Ifc4x1(ifcopenshell::geometry::impl::MappingFactoryImplementation*);
-extern void init_MappingImplementation_Ifc4x2(ifcopenshell::geometry::impl::MappingFactoryImplementation*);
+// Declares the schema-based external kernel initialization routines:
+// - extern void init_MappingImplementation_Ifc2x3(IfcGeom::impl::MappingFactoryImplementation*);
+// - ...
+#define EXTERNAL_DEFS(r, data, elem) \
+	extern void BOOST_PP_CAT(init_MappingImplementation_Ifc, elem)(ifcopenshell::geometry::impl::MappingFactoryImplementation*);
+
+// Declares the schema-based external iterator initialization routines:
+// - init_MappingImplementation_Ifc2x3(this);
+// - ...
+#define CALL_DEFS(r, data, elem) \
+	BOOST_PP_CAT(init_MappingImplementation_Ifc, elem)(this);
+
+BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 
 ifcopenshell::geometry::impl::MappingFactoryImplementation::MappingFactoryImplementation() {
-	init_MappingImplementation_Ifc2x3(this);
-	init_MappingImplementation_Ifc4(this);
-	init_MappingImplementation_Ifc4x1(this);
-	init_MappingImplementation_Ifc4x2(this);
+	BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
 }
 
 void ifcopenshell::geometry::impl::MappingFactoryImplementation::bind(const std::string& schema_name, ifcopenshell::geometry::impl::mapping_fn fn) {
@@ -24,12 +33,14 @@ void ifcopenshell::geometry::impl::MappingFactoryImplementation::bind(const std:
 	this->insert(std::make_pair(schema_name_lower, fn));
 }
 
-ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(IfcParse::IfcFile* file, settings& s) {
+ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(IfcParse::IfcFile* file, IfcGeom::IteratorSettings& s) {
 	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
 	std::map<std::string, ifcopenshell::geometry::impl::mapping_fn>::const_iterator it;
 	it = this->find(schema_name_lower);
 	if (it == end()) {
 		throw IfcParse::IfcException("No geometry mapping registered for " + schema_name_lower);
 	}
-	return it->second(file, s);
+	auto new_mapping = it->second(file, s);
+	new_mapping->initialize_settings();
+	return new_mapping;
 }

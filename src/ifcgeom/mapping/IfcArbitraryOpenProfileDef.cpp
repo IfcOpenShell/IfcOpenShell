@@ -17,11 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom/IfcGeom.h"
-
+#include "mapping.h"
 #define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define mapping POSTFIX_SCHEMA(mapping)
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryOpenProfileDef* l, TopoDS_Wire& result) {
-	return convert_wire(l->Curve(), result);
+using namespace ifcopenshell::geometry;
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef* inst) {
+	return map(inst->Curve());
 }

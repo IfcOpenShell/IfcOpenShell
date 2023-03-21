@@ -17,28 +17,24 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Pln.hxx>
-#include <Geom_TrimmedCurve.hxx>
-#include <Geom_OffsetCurve.hxx>
-#include <BRepOffsetAPI_MakeOffset.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRep_Tool.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) {
+	const double d = inst->Thickness() * length_unit_ / 2.;
+	auto f = new taxonomy::face;
+	auto ofc = new taxonomy::offset_curve;
+	ofc->basis = map(inst->Curve());
+	ofc->offset = d;
+	f->children.push_back(ofc);
+	return f;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCenterLineProfileDef* l, TopoDS_Shape& face) {
-	const double d = l->Thickness() * getValue(GV_LENGTH_UNIT) / 2.;
+	// @todo we still need to handle this in the l
 
+	/*
 	TopoDS_Wire wire;
-	if (!convert_wire(l->Curve(), wire)) return false;
+	if (!convert_wire(inst->Curve(), wire)) return false;
 
 	// BRepOffsetAPI_MakeOffset insists on creating circular arc
 	// segments for joining the curves that constitute the center
@@ -81,4 +77,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCenterLineProfileDef* l, TopoD
 		face = BRepBuilderAPI_MakeFace(TopoDS::Wire(offset));
 	}
 	return true;
+	*/
 }

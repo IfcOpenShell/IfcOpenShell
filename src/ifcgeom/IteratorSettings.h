@@ -132,7 +132,7 @@ namespace IfcGeom
         double deflection_tolerance() const { return deflection_tolerance_; }
 		double angular_tolerance() const { return angular_tolerance_; }
 		double force_space_transparency() const { return force_space_transparency_; }
-		std::set<int> context_ids() const { return context_ids_; }
+		const std::set<int>& context_ids() const { return context_ids_; }
 
 		/// @todo Using deflection tolerance of 1e-6 or smaller hangs the conversion, research more in-depth.
 		/// This bug can be reproduced e.g. with the Duplex model that can be found from http://www.nibs.org/?page=bsa_commonbimfiles#project1

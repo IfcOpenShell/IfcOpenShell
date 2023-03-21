@@ -1,6 +1,6 @@
 #include "../ifcgeom/kernels/cgal/CgalKernel.h"
-#include "../ifcgeom/schema_agnostic/IfcGeomFilter.h"
-#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom/IfcGeomFilter.h"
+#include "../ifcgeom/Iterator.h"
 
 #include <CGAL/Polygon_mesh_processing/measure.h>
 #include <CGAL/Polygon_mesh_processing/bbox.h>
@@ -8,29 +8,29 @@
 #include <algorithm>
 
 void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
-	ifcopenshell::geometry::settings settings;
-	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
-	settings.set(ifcopenshell::geometry::settings::WELD_VERTICES, false);
-	settings.set(ifcopenshell::geometry::settings::SEW_SHELLS, true);
-	settings.set(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS, true);
-	settings.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
-	settings.set(ifcopenshell::geometry::settings::DISABLE_OPENING_SUBTRACTIONS, true);
+	IfcGeom::IteratorSettings settings;
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
+	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, true);
 
 	std::vector<ifcopenshell::geometry::filter_t> no_openings_and_spaces = {
 		IfcGeom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
 	};
 
-	ifcopenshell::geometry::Iterator context_iterator("cgal", settings, &f, no_openings_and_spaces);
+	IfcGeom::Iterator context_iterator("cgal", settings, &f, no_openings_and_spaces, 1);
 
-	auto get_elevation = [](IfcUtil::IfcBaseClass* a) {
-		return ((IfcUtil::IfcBaseEntity*)a)->get_value_or<double>("Elevation", 0.);
+	auto get_elevation = [](const IfcUtil::IfcBaseClass* a) {
+		return ((const IfcUtil::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);
 	};
 
 	// latebound inverse attribute lookup not working
 	auto rels = f.instances_by_type("IfcRelContainedInSpatialStructure");
-	std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> elem_to_storey;
+	std::map<const IfcUtil::IfcBaseClass*, const IfcUtil::IfcBaseClass*> elem_to_storey;
 	std::for_each(rels->begin(), rels->end(), [&elem_to_storey](IfcUtil::IfcBaseClass* r) {
-		auto elems = ((IfcUtil::IfcBaseEntity*)r)->get_value<IfcEntityList::ptr>("RelatedElements");
+		auto elems = ((IfcUtil::IfcBaseEntity*)r)->get_value<aggregate_of_instance::ptr>("RelatedElements");
 		auto storey = ((IfcUtil::IfcBaseEntity*)r)->get_value<IfcUtil::IfcBaseClass*>("RelatingStructure");
 
 		if (storey->declaration().name() == "IfcBuildingStorey") {
@@ -41,8 +41,8 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 	});	
 
 	auto storeys = f.instances_by_type("IfcBuildingStorey");
-	std::vector<IfcUtil::IfcBaseClass*> storeys_sorted(storeys->begin(), storeys->end());
-	std::sort(storeys_sorted.begin(), storeys_sorted.end(), [&get_elevation](IfcUtil::IfcBaseClass* a, IfcUtil::IfcBaseClass* b) {
+	std::vector<const IfcUtil::IfcBaseClass*> storeys_sorted(storeys->begin(), storeys->end());
+	std::sort(storeys_sorted.begin(), storeys_sorted.end(), [&get_elevation](const IfcUtil::IfcBaseClass* a, const IfcUtil::IfcBaseClass* b) {
 		return get_elevation(a) < get_elevation(b);
 	});
 
@@ -108,7 +108,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		ifcopenshell::geometry::NativeElement* geom_object = nullptr;
+		IfcGeom::BRepElement* geom_object = nullptr;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}
@@ -132,8 +132,8 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 
 		for (auto& g : geom_object->geometry()) {
 			auto s = ((ifcopenshell::geometry::CgalShape*) g.Shape())->shape();
-			const auto& m = *g.Placement().components;
-			const auto& n = *geom_object->transformation().data().components;
+			const auto& m = g.Placement().ccomponents();
+			const auto& n = geom_object->transformation().data().ccomponents();
 
 			const cgal_placement_t trsf(
 				m(0, 0), m(0, 1), m(0, 2), m(0, 3),

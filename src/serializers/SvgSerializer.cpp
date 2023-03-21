@@ -19,7 +19,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom_schema_agnostic/Kernel.h"
+#include "../ifcgeom/abstract_mapping.h"
 
 #include <string>
 #include <fstream>
@@ -78,7 +78,8 @@
 #include <Extrema_ExtPElS.hxx>
 
 #include "../ifcparse/IfcGlobalId.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../ifcgeom/kernels/opencascade/base_utils.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
@@ -353,7 +354,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 	p.second.push_back(path);
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, IfcUtil::IfcBaseEntity* storey, const std::string& id) {
+SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const IfcUtil::IfcBaseEntity* storey, const std::string& id) {
 	auto key = std::make_pair(std::make_pair(storey, ""), path_object());
 	SvgSerializer::path_object& p = paths.insert(key)->second;
 	drawing_metadata[key.first].pln_3d = pln;
@@ -370,7 +371,7 @@ SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const s
 }
 
 namespace {
-	boost::optional<std::pair<IfcUtil::IfcBaseEntity*, double>> storey_elevation_from_element(const IfcGeom::BRepElement* o) {
+	boost::optional<std::pair<const IfcUtil::IfcBaseEntity*, double>> storey_elevation_from_element(const IfcGeom::BRepElement* o) {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
 				try {
@@ -476,7 +477,7 @@ namespace {
 	};
 
 	template <typename It>
-	void enumerate_string_properties(IfcUtil::IfcBaseEntity* product, It output_it) {
+	void enumerate_string_properties(const IfcUtil::IfcBaseEntity* product, It output_it) {
 		auto rels = product->get_inverse("IsDefinedBy");
 		for (auto& rel : *rels) {
 			if (rel->declaration().is("IfcRelDefinesByProperties")) {
@@ -543,7 +544,10 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
 	std::vector<boost::optional<std::vector<double>>> dash_arrays;
 
-	TopoDS_Shape compound_local = brep_obj->geometry().as_compound();
+	auto itm = brep_obj->geometry().as_compound();
+	TopoDS_Shape compound_local = ((ifcopenshell::geometry::OpenCascadeShape*)itm)->shape();
+	delete itm;
+
 	for (auto& x : brep_obj->geometry()) {
 		dash_arrays.emplace_back();
 
@@ -574,7 +578,14 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 		}
 	}
 
-	const gp_Trsf& trsf = brep_obj->transformation().data();
+	gp_Trsf trsf;
+	// @todo
+	const auto& m = brep_obj->transformation().data().ccomponents();
+	trsf.SetValues(
+		m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+		m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+		m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+	);
 
 	const bool is_section = (section_ref_ && object_type && *section_ref_ == *object_type);
 	bool is_elevation = false;
@@ -693,7 +704,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	}
 
 	auto p = storey_elevation_from_element(brep_obj);
-	IfcUtil::IfcBaseEntity* storey = p ? p->first : nullptr;
+	const IfcUtil::IfcBaseEntity* storey = p ? p->first : nullptr;
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
@@ -891,7 +902,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		gp_Vec projection_direction;
 		gp_Pln projection_plane;
 
-		IfcUtil::IfcBaseEntity* storey = nullptr;
+		const IfcUtil::IfcBaseEntity* storey = nullptr;
 		std::string drawing_name;
 
 		bool use_hlr = always_project_;
@@ -1874,9 +1885,19 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 				auto desc = (std::string) *ds;
 
 				if (object_type == "Text") {
-					IfcGeom::Kernel kernel(file);
-					gp_Trsf trsf;
-					if (kernel.convert_placement(*pl, trsf)) {
+					auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_);
+					auto item = mapping->map(*pl);
+					auto matrix = (ifcopenshell::geometry::taxonomy::matrix4*) item;
+					delete mapping;
+					if (item) {
+						gp_Trsf trsf;
+						auto& m = matrix->ccomponents();
+						trsf.SetValues(
+							m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+							m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+							m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+						);
+						delete matrix;
 
 						auto v = gp_Pnt(trsf.TranslationPart());
 
@@ -2319,8 +2340,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (!storeys || storeys->size() == 0) {
-
-		IfcGeom::Kernel kernel(f);
+		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_);
 
 		std::vector<const IfcParse::declaration*> to_derive_from;
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
@@ -2331,9 +2351,13 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
 					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
 					if (!product->get("ObjectPlacement")->isNull()) {
+						auto item = mapping->map(*product->get("ObjectPlacement"));
+						auto matrix = (ifcopenshell::geometry::taxonomy::matrix4*) item;
 						gp_Trsf trsf;
-						if (kernel.convert_placement(*product->get("ObjectPlacement"), trsf)) {
-							setSectionHeight(trsf.TranslationPart().Z() + 1.);
+						if (matrix) {
+							// @todo shouldn't this take into account configurable section height?
+							setSectionHeight(matrix->translation_part()(3) + 1.);
+							delete matrix;
 							Logger::Warning("No building storeys encountered, used for reference:", product);
 							return;
 						}
@@ -2342,11 +2366,13 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 			}
 		}
 
+		delete mapping;
+
 		Logger::Warning("No building storeys encountered, output might be invalid or missing");
 	}
 }
 
-void SvgSerializer::setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey) {
+void SvgSerializer::setSectionHeight(double h, const IfcUtil::IfcBaseEntity* storey) {
 	section_data_.emplace();
 	section_data_->push_back(horizontal_plan{ storey, h, 0., std::numeric_limits<double>::infinity() });
 }
@@ -2401,11 +2427,11 @@ namespace {
 std::string SvgSerializer::writeMetadata(const drawing_meta& m) {
 	gp_Trsf trsf;
 	trsf.SetTransformation(m.pln_3d.Position(), gp::XOY());
-	auto m43 = IfcGeom::Matrix(IfcGeom::ElementSettings(IfcGeom::IteratorSettings(), 1., ""), trsf).data();
+	// @todo
 	std::array<std::array<double, 4>, 4> m4 = {{
-		{{ (double)m43[0], (double)m43[3], (double)m43[6], (double)m43[9] }},
-		{{ (double)m43[1], (double)m43[4], (double)m43[7], (double)m43[10] }},
-		{{ (double)m43[2], (double)m43[5], (double)m43[8], (double)m43[11] }},
+		{{ 1, 0, 0, 0 }},
+		{{ 0, 1, 0, 0 }},
+		{{ 0, 0, 1, 0 }},
 		{{ 0, 0, 0, 1 }}
 	}};
 	return namespace_prefix_ + "plane=\""+ array_to_string(m4) +"\" " +

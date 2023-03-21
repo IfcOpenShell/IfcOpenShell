@@ -17,50 +17,52 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/wire_utils.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#include <gp_Pnt.hxx>
-#include <BRepBuilderAPI_MakePolygon.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopTools_ListOfShape.hxx>
+#include "../profile_helper.h"
 
-#define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& result) {
-	IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
+	IfcSchema::IfcCartesianPoint::list::ptr points = inst->Polygon();
 
 	// Parse and store the points in a sequence
-	TColgp_SequenceOfPnt polygon;
-	for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
-		gp_Pnt pnt;
-		IfcGeom::Kernel::convert(*it, pnt);
-		polygon.Append(pnt);
-	}
+	std::vector<taxonomy::point3> polygon;
+	polygon.reserve(points->size());
+	std::transform(points->begin(), points->end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint* p) {
+		return as<taxonomy::point3>(map(p));
+	});
 
 	// A loop should consist of at least three vertices
-	int original_count = polygon.Length();
+	int original_count = polygon.size();
 	if (original_count < 3) {
-		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l);
-		return false;
+		Logger::Message(Logger::LOG_WARNING, "Not enough edges for:", inst);
+		return nullptr;
 	}
 
-	// Remove points that are too close to one another
-	const double eps = getValue(GV_PRECISION) * 10;
-	util::remove_duplicate_points_from_loop(polygon, true, eps);
+	// @todo Remove points that are too close to one another
+	const double eps = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	// util::remove_duplicate_points_from_loop(polygon, true, eps);
 
-	int count = polygon.Length();
+	int count = polygon.size();
 	if (original_count - count != 0) {
 		std::stringstream ss; ss << (original_count - count) << " edges removed for:"; 
-		Logger::Message(Logger::LOG_WARNING, ss.str(), l);
+		Logger::Message(Logger::LOG_WARNING, ss.str(), inst);
 	}
 
 	if (count < 3) {
-		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l);
-		return false;
+		Logger::Message(Logger::LOG_WARNING, "Not enough edges for:", inst);
+		return nullptr;
 	}
 
+	// Contrary to polyline the loop is implicitly closed
+	polygon.push_back(polygon.front());
+
+	return polygon_from_points(polygon);
+
+	// @todo make sure wire intersection check happens
+
+	/*
 	BRepBuilderAPI_MakePolygon w;
 	for (int i = 1; i <= polygon.Length(); ++i) {
 		w.Add(polygon.Value(i));
@@ -76,4 +78,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	}
 
 	return true;
+	*/
 }

@@ -17,41 +17,58 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/profile_helper.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCShapeProfileDef* l, TopoDS_Shape& face) {
-	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double x = l->Width() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double d1 = l->WallThickness() * getValue(GV_LENGTH_UNIT);
-	const double d2 = l->Girth() * getValue(GV_LENGTH_UNIT);
-	bool doFillet = !!l->InternalFilletRadius();
+#include <array>
+#include <vector>
+#include <boost/optional/optional.hpp>
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCShapeProfileDef* inst) {
+	const double y = inst->Depth() / 2.0f * length_unit_;
+	const double x = inst->Width() / 2.0f * length_unit_;
+	const double d1 = inst->WallThickness() * length_unit_;
+	const double d2 = inst->Girth() * length_unit_;
+	bool doFillet = !!inst->InternalFilletRadius();
 	double f1 = 0;
 	double f2 = 0;
 	if ( doFillet ) {
-		f1 = *l->InternalFilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *inst->InternalFilletRadius() * length_unit_;
 		f2 = f1 + d1;
 	}
 
-	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+
+	if ( x < tol || y < tol || d1 < tol || d2 < tol) {
+		Logger::Message(Logger::LOG_NOTICE," Skipping zero sized profile:", inst);
+		return nullptr;
 	}
 
-	gp_Trsf2d trsf2d;
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	double coords[24] = {-x,-y,x,-y,x,-y+d2,x-d1,-y+d2,x-d1,-y+d1,-x+d1,-y+d1,-x+d1,y-d1,x-d1,y-d1,x-d1,y-d2,x,y-d2,x,y,-x,y};
-	int fillets[8] = {0,1,4,5,6,7,10,11};
-	double radii[8] = {f2,f2,f1,f1,f1,f1,f2,f2};
-	return util::profile_helper(12,coords,doFillet ? 8 : 0,fillets,radii,trsf2d,face);
+	return profile_helper(m4, {
+		{{-x,-y},{f2}},
+		{{x,-y},{f2}},
+		{{x,-y + d2}},
+		{{x - d1,-y + d2}},
+		{{x - d1,-y + d1},{f1}},
+		{{-x + d1,-y + d1},{f1}},
+		{{-x + d1,y - d1},{f1}},
+		{{x - d1,y - d1},{f1}},
+		{{x - d1,y - d2}},
+		{{x,y - d2}},
+		{{x,y},{f2}},
+		{{-x,y},{f2}}
+	});
 }

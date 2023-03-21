@@ -17,23 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom/IfcGeom.h"
-#include <memory>
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
-	aggregate_of_instance::ptr shells = l->SbsmBoundary();
-	auto collective_style = get_style(l);
-	for( aggregate_of_instance::it it = shells->begin(); it != shells->end(); ++ it ) {
-		TopoDS_Shape s;
-		decltype(collective_style) shell_style;
-		if ((*it)->declaration().is(IfcSchema::IfcRepresentationItem::Class())) {
-			shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
-		}
-		if (convert_shape(*it,s)) {
-			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, shell_style ? shell_style : collective_style));
-		}
-	}
-	return true;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcShellBasedSurfaceModel* inst) {
+	return map_to_collection(this, inst->SbsmBoundary());
 }

@@ -17,6 +17,40 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcFace* inst) {
+	taxonomy::face* face = new taxonomy::face;
+	auto bounds = inst->Bounds();
+	for (auto& bound : *bounds) {
+		if (auto r = map(bound->Bound())) {
+			if (!bound->Orientation()) {
+				r->reverse();
+			}
+			if (bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class())) {
+				((taxonomy::loop*)r)->external = true;
+				/*
+				// Make a copy in case we need immutability later for e.g. caching
+				auto s = r->clone();
+				((taxonomy::loop*)s)->external = true;
+				delete r;
+				r = s;
+				*/
+			}
+			face->children.push_back(r);
+		}
+	}
+	if (face->children.empty()) {
+		delete face;
+		return nullptr;
+	}
+	return face;
+}
+
+/*
+
 #include <gp_Vec.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pln.hxx>
@@ -35,19 +69,19 @@
 #include <BRepLib_FindSurface.hxx>
 #include <ShapeExtend_MsgRegistrator.hxx>
 #include <Message_Msg.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
 
 #include "../ifcgeom_schema_agnostic/face_definition.h"
 #include "../ifcgeom_schema_agnostic/wire_utils.h"
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define mapping POSTFIX_SCHEMA(mapping)
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result) {
-	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcFace* l, TopoDS_Shape& result) {
+	IfcSchema::IfcFaceBound::list::ptr bounds = inst->Bounds();
 
 	util::face_definition fd;
 
-	const bool is_face_surface = l->declaration().is(IfcSchema::IfcFaceSurface::Class());
+	const bool is_face_surface = inst->declaration().is(IfcSchema::IfcFaceSurface::Class());
 
 	if (is_face_surface) {
 		IfcSchema::IfcFaceSurface* fs = (IfcSchema::IfcFaceSurface*) l;
@@ -335,3 +369,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 
 	return true;
 }
+
+*/

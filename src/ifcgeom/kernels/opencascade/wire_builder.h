@@ -20,7 +20,7 @@
 #ifndef WIRE_BUILDER_H
 #define WIRE_BUILDER_H
 
-#include "../ifcparse/IfcBaseClass.h"
+#include "../../../ifcparse/IfcBaseClass.h"
 
 #include <Geom_Curve.hxx>
 

@@ -17,43 +17,51 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include <Geom_Circle.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/wire_utils.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include <boost/math/constants/constants.hpp>
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircleProfileDef* l, TopoDS_Shape& face) {
-	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
-	if ( r == 0.0f ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
+	std::vector<double> radii = { inst->Radius() * length_unit_ };
+
+	if (inst->as<IfcSchema::IfcCircleHollowProfileDef>()) {
+		double t = inst->as<IfcSchema::IfcCircleHollowProfileDef>()->WallThickness() * length_unit_;
+		radii.push_back(radii.front() - t);
 	}
-	
-	gp_Trsf2d trsf2d;
-	bool has_position = true;
+
+	auto f = new taxonomy::face;
+
+	for (auto it = radii.begin(); it != radii.end(); ++it) {
+		const double r = *it;
+		const bool exterior = it == radii.begin();
+
+		auto c = new taxonomy::circle;
+		c->radius = r;
+
+		bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+		has_position = !!inst->Position();
 #endif
-	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		if (has_position) {
+			taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+			if (m.components_) {
+				c->matrix = *m.components_;
+			}
+		}
+
+		auto e = new taxonomy::edge;
+		e->basis = c;
+		e->start = 0.;
+		e->end = 2 * boost::math::constants::pi<double>();
+
+		auto l = new taxonomy::loop;
+		l->children = { e };
+		l->external = exterior;
+
+		f->children.push_back(l);
 	}
-	gp_Ax2 ax = gp_Ax2().Transformed(trsf2d);
 
-	
-	Handle(Geom_Circle) circle = new Geom_Circle(ax, r);
-	TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(circle);
-
-	BRepBuilderAPI_MakeWire w;
-	w.Add(edge);
-
-	TopoDS_Face f;
-	bool success = util::convert_wire_to_face(w, f, {false, false, 0., 0.});
-	if (success) face = f;
-	return success;
+	return f;
 }

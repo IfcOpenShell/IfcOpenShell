@@ -1,7 +1,7 @@
 #define SCHEMA_METHOD
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/Serializer.h"
+#include "../ifcgeom/Serializer.h"
 #include "../ifcparse/IfcFile.h"
 
 #include <boost/function.hpp>

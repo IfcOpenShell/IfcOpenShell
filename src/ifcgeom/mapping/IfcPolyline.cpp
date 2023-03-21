@@ -17,53 +17,35 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <BRepBuilderAPI_MakePolygon.hxx>
-#include <TopoDS_Wire.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/wire_utils.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& result) {
-	IfcSchema::IfcCartesianPoint::list::ptr points = l->Points();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
+	IfcSchema::IfcCartesianPoint::list::ptr points = inst->Points();
 
 	// Parse and store the points in a sequence
-	TColgp_SequenceOfPnt polygon;
-	for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
-		gp_Pnt pnt;
-		IfcGeom::Kernel::convert(*it, pnt);
-		polygon.Append(pnt);
-	}
+	std::vector<taxonomy::point3> polygon;
+	polygon.reserve(points->size());
+	std::transform(points->begin(), points->end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint* p) {
+		return as<taxonomy::point3>(map(p));
+	});
 
-	// @todo the strict tolerance should also govern these arbitrary precision increases
-	const double eps = getValue(GV_PRECISION) * 10;
-	const bool closed_by_proximity = polygon.Length() >= 3 && polygon.First().Distance(polygon.Last()) < eps;
+	const bool closed_by_proximity = polygon.size() >= 3 && (*polygon.front().components_ - *polygon.back().components_).norm() < conv_settings_.getValue(ConversionSettings::GV_PRECISION);
 	if (closed_by_proximity) {
-		// tfk: note 1-based
-		polygon.Remove(polygon.Length());
+		polygon.resize(polygon.size() - 1);
+		polygon.push_back(polygon.front());
 	}
 
-	// Remove points that are too close to one another
-	util::remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
+	// @todo Remove points that are too close to one another
+	// util::remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
 
-	if (polygon.Length() < 2) {
+	if (polygon.size() < 2) {
 		// We somehow need to signal we fail this curve on purpose not to trigger an error.
-		BRep_Builder B;
-		B.MakeWire(result);
-		return false;
-	}
-	
-	BRepBuilderAPI_MakePolygon w;
-	for (int i = 1; i <= polygon.Length(); ++i) {
-		w.Add(polygon.Value(i));
+		return nullptr;
 	}
 
-	if (closed_by_proximity) {
-		w.Close();
-	}
-
-	result = w.Wire();
-	return true;
+	return polygon_from_points(polygon);
 }

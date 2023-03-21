@@ -19,23 +19,31 @@
 
 #include <gp_Pnt.hxx>
 #include <gp_Dir.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+using namespace ifcopenshell::geometry;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis1Placement* l, gp_Ax1& ax) {
-	IN_CACHE(IfcAxis1Placement,l,gp_Ax1,ax)
-	gp_Pnt o;gp_Dir axis = gp_Dir(0,0,1);
-
-	if (!l->Location()->declaration().is("IfcCartesianPoint")) {
-		// only applicable to 4x3 rc2
-		Logger::Error("Not implemented", l->Location());
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis1Placement* inst) {
+	Eigen::Vector3d P, axis(0, 0, 1), ref;
+	{
+		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Location()));
+		P = *v.components_;
+	}
+	const bool hasAxis = inst->Axis();
+	if (hasAxis) {
+		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->Axis()));
+		axis = *v.components_;
+	}
+	
+	// @todo not sure what to do with ref, we're probably never reading it,
+	// because we just created an Axis1 again from it in the kernel, but
+	// to this constructor we need to supply something valid.
+	if (std::abs(axis.x()) > std::abs(axis.z())) {
+		ref = Eigen::Vector3d(0, 0, 1).cross(axis).normalized();
+	} else {
+		ref = Eigen::Vector3d(1, 0, 0).cross(axis).normalized();
 	}
 
-	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(),o);
-	if ( l->Axis() ) IfcGeom::Kernel::convert(l->Axis(), axis);
-	ax = gp_Ax1(o, axis);
-	CACHE(IfcAxis1Placement,l,ax)
-	return true;
+	return new taxonomy::matrix4(P, axis, ref);
 }

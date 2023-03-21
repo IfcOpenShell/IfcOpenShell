@@ -17,39 +17,23 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <BRepAlgoAPI_Cut.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include <memory>
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepresentationShapeItems& shape) {
-	TopoDS_Shape s;
-	auto collective_style = get_style(l);
-	if (convert_shape(l->Outer(),s) ) {
-		auto indiv_style = get_style(l->Outer());
-
-		IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
-		if (l->declaration().is(IfcSchema::IfcFacetedBrepWithVoids::Class())) {
-			voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
-		}
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcManifoldSolidBrep* inst) {
+	IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
+	if (inst->declaration().is(IfcSchema::IfcFacetedBrepWithVoids::Class())) {
+		voids = inst->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
+	}
 #ifdef SCHEMA_HAS_IfcAdvancedBrepWithVoids
-		if (l->declaration().is(IfcSchema::IfcAdvancedBrepWithVoids::Class())) {
-			voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
-		}
+	if (inst->declaration().is(IfcSchema::IfcAdvancedBrepWithVoids::Class())) {
+		voids = inst->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
+	}
 #endif
 
-		for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
-			TopoDS_Shape s2;
-			/// @todo No extensive shapefixing since shells should be disjoint.
-			/// @todo Awaiting generalized boolean ops module with appropriate checking
-			if (convert_shape(l->Outer(), s2)) {
-				s = BRepAlgoAPI_Cut(s, s2).Shape();
-			}
-		}
+	auto solid = map_to_collection<taxonomy::solid>(this, voids);
+	solid->children.insert(solid->children.begin(), map(inst->Outer()));
 
-		shape.push_back(IfcRepresentationShapeItem(l->data().id(), s, indiv_style ? indiv_style : collective_style));
-		return true;
-	}
-	return false;
+	return solid;
 }

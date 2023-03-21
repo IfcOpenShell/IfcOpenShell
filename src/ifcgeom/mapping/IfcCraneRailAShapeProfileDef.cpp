@@ -17,50 +17,51 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/profile_helper.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
 #ifdef SCHEMA_HAS_IfcCraneRailAShapeProfileDef
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCraneRailAShapeProfileDef* l, TopoDS_Shape& face) {
-	double oh = l->OverallHeight() * getValue(GV_LENGTH_UNIT);
-	double bw2 = l->BaseWidth2() * getValue(GV_LENGTH_UNIT);
-	double hw = l->HeadWidth() * getValue(GV_LENGTH_UNIT);
-	double hd2 = l->HeadDepth2() * getValue(GV_LENGTH_UNIT);
-	double hd3 = l->HeadDepth3() * getValue(GV_LENGTH_UNIT);
-	double wt = l->WebThickness() * getValue(GV_LENGTH_UNIT);
-	double bw4 = l->BaseWidth4() * getValue(GV_LENGTH_UNIT);
-	double bd1 = l->BaseDepth1() * getValue(GV_LENGTH_UNIT);
-	double bd2 = l->BaseDepth2() * getValue(GV_LENGTH_UNIT);
-	double bd3 = l->BaseDepth3() * getValue(GV_LENGTH_UNIT);
 
-	gp_Trsf2d trsf2d;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCraneRailAShapeProfileDef* inst) {
+	double oh = inst->OverallHeight() * length_unit_;
+	double bw2 = inst->BaseWidth2() * length_unit_;
+	double hw = inst->HeadWidth() * length_unit_;
+	double hd2 = inst->HeadDepth2() * length_unit_;
+	double hd3 = inst->HeadDepth3() * length_unit_;
+	double wt = inst->WebThickness() * length_unit_;
+	double bw4 = inst->BaseWidth4() * length_unit_;
+	double bd1 = inst->BaseDepth1() * length_unit_;
+	double bd2 = inst->BaseDepth2() * length_unit_;
+	double bd3 = inst->BaseDepth3() * length_unit_;
+
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	double coords[28] = {
-		-hw / 2., +oh / 2.,
-		-hw / 2., +oh / 2. - hd3,
-		-wt / 2., +oh / 2. - hd2,
-		-wt / 2., -oh / 2. + bd2,
-		-bw4 / 2., -oh / 2. + bd3,
-		-bw2 / 2., -oh / 2. + bd1,
-		-bw2 / 2., -oh / 2.,
-		+bw2 / 2., -oh / 2.,
-		+bw2 / 2., -oh / 2. + bd1,
-		+bw4 / 2., -oh / 2. + bd3,
-		+wt / 2., -oh / 2. + bd2,
-		+wt / 2., +oh / 2. - hd2,
-		+hw / 2., +oh / 2. - hd3,
-		+hw / 2., +oh / 2.
-	};
-
-	return util::profile_helper(14, coords, 0, 0, 0, trsf2d, face);
+	return profile_helper(m4, {
+		{{-hw / 2., +oh / 2.}},
+		{{-hw / 2., +oh / 2. - hd3}},
+		{{-wt / 2., +oh / 2. - hd2}},
+		{{-wt / 2., -oh / 2. + bd2}},
+		{{-bw4 / 2., -oh / 2. + bd3}},
+		{{-bw2 / 2., -oh / 2. + bd1}},
+		{{-bw2 / 2., -oh / 2.}},
+		{{+bw2 / 2., -oh / 2.}},
+		{{+bw2 / 2., -oh / 2. + bd1}},
+		{{+bw4 / 2., -oh / 2. + bd3}},
+		{{+wt / 2., -oh / 2. + bd2}},
+		{{+wt / 2., +oh / 2. - hd2}},
+		{{+hw / 2., +oh / 2. - hd3}},
+		{{+hw / 2., +oh / 2.}}
+	});
 }
 #endif

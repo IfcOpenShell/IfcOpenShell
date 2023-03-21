@@ -78,9 +78,10 @@
 // can probably be reduced, but for now it's identical to the includes
 // of the module definition below.
 %{
-	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-	#include "../ifcgeom_schema_agnostic/Serialization.h"
-	#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
+	#include "../ifcgeom/Iterator.h"
+	#include "../ifcgeom/taxonomy.h"
+	#include "../ifcgeom/Serialization/Serialization.h"
+	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
@@ -134,9 +135,11 @@
 %include "utils/typemaps_out.i"
 
 %module ifcopenshell_wrapper %{
-	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-	#include "../ifcgeom_schema_agnostic/Serialization.h"
-	#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
+	#include "../ifcgeom/Converter.h"
+	#include "../ifcgeom/taxonomy.h"
+	#include "../ifcgeom/Serialization/Serialization.h"
+	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
+	#include "../ifcgeom/Iterator.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"

@@ -17,67 +17,29 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <TColgp_Array1OfPnt.hxx>
-#include <TColStd_Array1OfReal.hxx>
-#include <TColStd_Array1OfInteger.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include <Geom_BSplineCurve.hxx>
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+
+#define mapping POSTFIX_SCHEMA(mapping)
+
+using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
-
-	const bool is_rational = l->declaration().is(IfcSchema::IfcRationalBSplineCurveWithKnots::Class());
-
-	const IfcSchema::IfcCartesianPoint::list::ptr cps = l->ControlPointsList();
-	const std::vector<int> mults = l->KnotMultiplicities();
-	const std::vector<double> knots = l->Knots();
-
-	TColgp_Array1OfPnt      Poles(0,  cps->size() - 1);
-	TColStd_Array1OfReal    Weights(0, cps->size() - 1);
-	TColStd_Array1OfReal    Knots(0, (int)knots.size() - 1);
-	TColStd_Array1OfInteger Mults(0, (int)mults.size() - 1);
-	Standard_Integer        Degree = l->Degree();
-	Standard_Boolean        Periodic = false; 
-	// @tfk: it appears to be wrong to expect a period curve when the curve is closed, see #586
-	// Standard_Boolean     Periodic = l->ClosedCurve();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcBSplineCurveWithKnots* inst) {
+	auto bc = new taxonomy::bspline_curve;
 	
-	int i;
+	const IfcSchema::IfcCartesianPoint::list::ptr cps = inst->ControlPointsList();
+	std::vector<taxonomy::point3> points;
+	std::transform(cps->begin(), cps->end(), std::back_inserter(points), [this](IfcSchema::IfcCartesianPoint* cp) { return as<taxonomy::point3>(map(cp)); });
+	bc->control_points = points;
+		
+	bc->multiplicities = inst->KnotMultiplicities();
+	bc->knots = inst->Knots();
+	if (inst->as<IfcSchema::IfcRationalBSplineCurveWithKnots>()) {
+		bc->weights = inst->as<IfcSchema::IfcRationalBSplineCurveWithKnots>()->WeightsData();
+	}
+	bc->degree = inst->Degree();
 
-	if (is_rational) {
-		IfcSchema::IfcRationalBSplineCurveWithKnots* rl = (IfcSchema::IfcRationalBSplineCurveWithKnots*)l;
-		std::vector<double> weights = rl->WeightsData();
-
-		i = 0;
-		for (std::vector<double>::const_iterator it = weights.begin(); it != weights.end(); ++it, ++i) {
-			Weights(i) = *it;
-		}
-	}
-
-	i = 0;
-	for (IfcSchema::IfcCartesianPoint::list::it it = cps->begin(); it != cps->end(); ++it, ++i) {
-		gp_Pnt pnt;
-		if (!convert(*it, pnt)) return false;
-		Poles(i) = pnt;
-	}
-	
-	i = 0;
-	for (std::vector<int>::const_iterator it = mults.begin(); it != mults.end(); ++it, ++i) {
-		Mults(i) = *it;
-	}
-
-	i = 0;
-	for (std::vector<double>::const_iterator it = knots.begin(); it != knots.end(); ++it, ++i) {
-		Knots(i) = *it;
-	}
-	
-	if (is_rational) {
-		curve = new Geom_BSplineCurve(Poles, Weights, Knots, Mults, Degree, Periodic);
-	} else {
-		curve = new Geom_BSplineCurve(Poles, Knots, Mults, Degree, Periodic);
-	}
-	return true;
+	return bc;
 }
 #endif

@@ -1,6 +1,8 @@
 #ifndef BASE_UTILS_H
 #define BASE_UTILS_H
 
+#include "../../../ifcgeom/ConversionResult.h"
+
 #include <gp_Ax3.hxx>
 #include <gp_Pln.hxx>
 #include <gp_Pnt.hxx>
@@ -65,6 +67,8 @@ namespace IfcGeom {
 
 		TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 		TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
+
+		bool flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, double tol);
 	}
 }
 

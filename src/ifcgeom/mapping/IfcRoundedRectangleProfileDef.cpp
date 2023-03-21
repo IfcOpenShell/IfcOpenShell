@@ -17,33 +17,38 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/profile_helper.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l, TopoDS_Shape& face) {
-	const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
-	const double r = l->RoundingRadius() * getValue(GV_LENGTH_UNIT);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRoundedRectangleProfileDef* inst) {
+	const double x = inst->XDim() / 2.0f * length_unit_;
+	const double y = inst->YDim() / 2.0f  * length_unit_;
+	const double r = inst->RoundingRadius() * length_unit_;
 
-	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || r < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+
+	if (x < tol || y < tol) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return nullptr;
 	}
 
-	gp_Trsf2d trsf2d;
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	double coords[8] = {-x,-y, x,-y, x,y, -x,y};
-	int fillets[4] = {0,1,2,3};
-	double radii[4] = {r,r,r,r};
-	return util::profile_helper(4,coords,4,fillets,radii,trsf2d,face);
+	return profile_helper(m4, {
+		{{-x,-y}, {r}},
+		{{x,-y}, {r}},
+		{{x,y}, {r}},
+		{{-x,y}, {r}}
+	});
 }

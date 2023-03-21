@@ -17,23 +17,23 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <TopoDS_Face.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include <Geom_ToroidalSurface.hxx>
-
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcToroidalSurface
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcToroidalSurface* l, TopoDS_Shape& face) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcToroidalSurface* inst) {
+	return nullptr;
+
+	/*
 	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(), trsf);
+	IfcGeom::Kernel::convert(inst->Position(), trsf);
 
 	// IfcElementarySurface.Position has unit scale factor
-	face = BRepBuilderAPI_MakeFace(new Geom_ToroidalSurface(gp::XOY(), l->MajorRadius() * getValue(GV_LENGTH_UNIT), l->MinorRadius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
+	face = BRepBuilderAPI_MakeFace(new Geom_ToroidalSurface(gp::XOY(), inst->MajorRadius() * length_unit_, inst->MinorRadius() * length_unit_), getValue(GV_PRECISION)).Face().Moved(trsf);
 	return true;
+	*/
 }
 
 #endif

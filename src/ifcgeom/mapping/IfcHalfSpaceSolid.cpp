@@ -17,26 +17,22 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Ax1.hxx>
-#include <gp_Pln.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <TopoDS_Face.hxx>
-#include <BRepPrimAPI_MakeHalfSpace.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, TopoDS_Shape& shape) {
-	IfcSchema::IfcSurface* surface = l->BaseSurface();
-	if ( ! surface->declaration().is(IfcSchema::IfcPlane::Class()) ) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcHalfSpaceSolid* inst) {
+	IfcSchema::IfcSurface* surface = inst->BaseSurface();
+	if (!surface->declaration().is(IfcSchema::IfcPlane::Class())) {
 		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface);
-		return false;
+		return nullptr;
 	}
-	gp_Pln pln;
-	IfcGeom::Kernel::convert((IfcSchema::IfcPlane*)surface,pln);
-	const gp_Pnt pnt = pln.Location().Translated( l->AgreementFlag() ? -pln.Axis().Direction() : pln.Axis().Direction());
-	shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
-	return true;
+	auto p = new taxonomy::plane;
+	p->matrix = as<taxonomy::matrix4>(map(((IfcSchema::IfcPlane*)surface)->Position()));
+	auto f = new taxonomy::face;
+	f->orientation.reset(!inst->AgreementFlag());
+	f->basis = p;
+	auto s = new taxonomy::solid;
+	s->children.push_back(f);
+	return s;
 }

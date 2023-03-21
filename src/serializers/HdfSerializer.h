@@ -29,7 +29,7 @@
 #include "H5Cpp.h"
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
 
 #define USE_BINARY
 
@@ -88,8 +88,8 @@ private:
 	std::map<std::string, std::string> group_cache_;
 
 	H5::Group createRepresentationGroup(const H5::Group& element_group, const std::string& gid);
-	void read_surface_style(surface_style_serialization& sss, std::shared_ptr<IfcGeom::SurfaceStyle>& style_ptr);
-	void write_style(surface_style_serialization& data, const IfcGeom::SurfaceStyle& s);
+	void read_surface_style(surface_style_serialization& sss, ifcopenshell::geometry::taxonomy::style& style_ptr);
+	void write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style& s);
 
 public:
 	HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings, bool read_only=false);

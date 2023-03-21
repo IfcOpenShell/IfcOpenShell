@@ -17,53 +17,21 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <gp_Ax3.hxx>
-#include <gp_Pln.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <ShapeFix_Shape.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_Shape& face) {
-	gp_Pln pln;
-	if (!IfcGeom::Kernel::convert(l->BasisSurface(), pln)) {
-		return false;
-	}
-
-	gp_Trsf trsf;
-	trsf.SetTransformation(pln.Position(), gp::XOY());
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCurveBoundedPlane* inst) {
+	taxonomy::plane pl = as<taxonomy::plane>(map(inst->BasisSurface()));
+	auto f = new taxonomy::face;
+	f->children.push_back(map(inst->OuterBoundary()));
 	
-	TopoDS_Wire outer;
-	if (!convert_wire(l->OuterBoundary(), outer)) {
-		return false;
-	}
-	
-	BRepBuilderAPI_MakeFace mf(outer);
-
-	if (!mf.IsDone() || mf.Shape().IsNull()) {
-		Logger::Error("Invalid outer boundary:", l->OuterBoundary());
-		return false;
-	}
-	
-	IfcSchema::IfcCurve::list::ptr boundaries = l->InnerBoundaries();
+	IfcSchema::IfcCurve::list::ptr boundaries = inst->InnerBoundaries();
 
 	for (IfcSchema::IfcCurve::list::it it = boundaries->begin(); it != boundaries->end(); ++it) {
-		TopoDS_Wire inner;
-		if (convert_wire(*it, inner)) {
-			mf.Add(inner);
-		}
+		f->children.push_back(map(*it));
 	}
+	f->matrix = pl.matrix;
 
-	ShapeFix_Shape sfs(mf.Face());
-	sfs.Perform();
-
-	// `trsf` consitutes the placement of the plane and therefore has unit scale factor
-	face = TopoDS::Face(sfs.Shape()).Moved(trsf);
-	
-	return true;
+	return f;
 }

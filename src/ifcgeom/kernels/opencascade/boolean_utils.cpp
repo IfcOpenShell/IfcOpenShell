@@ -1,7 +1,7 @@
 #include "boolean_utils.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "IfcGeomTree.h"
+#include "base_utils.h"
 
 #include <BRepBuilderAPI_Copy.hxx>
 #include <TopExp_Explorer.hxx>
@@ -833,6 +833,25 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	if (fuzziness < 0.) {
 		fuzziness = settings.precision / 10.;
 	}
+
+	/*
+	{
+		TopoDS_Compound C;
+		BRep_Builder BB;
+		BB.MakeCompound(C);
+
+		BB.Add(C, a_input);
+
+		TopTools_ListIteratorOfListOfShape it(b_input);
+		for (; it.More(); it.Next()) {
+			BB.Add(C, it.Value());
+		}
+
+		result = C;
+	}
+
+	return true;
+	*/
 
 	// @todo, it does seem a bit odd, we first triangulate non-planar faces
 	// to later unify them again. Can we make this a bit more intelligent?

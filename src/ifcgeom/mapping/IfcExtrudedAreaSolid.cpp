@@ -17,91 +17,42 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Vec.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Trsf.hxx>
-#include <BRepPrimAPI_MakePrism.hxx>
-#include "../ifcgeom/IfcGeom.h"
-
 // uncomment if you'd like negative or close to zero extrusion depths to succeed
 // #define PERMISSIVE_EXTRUSION
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
-	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
-	if (height < getValue(GV_PRECISION)) {
-		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
+	const double height = inst->Depth() * length_unit_;
+	if (height < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", inst);
 #ifndef PERMISSIVE_EXTRUSION
-		return false;
+		return nullptr;
 #endif
 	}
 
-	TopoDS_Shape face;
-	if ( !convert_face(l->SweptArea(),face) ) return false;
-
-	gp_Trsf trsf;
+	taxonomy::matrix4 matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf);
+		matrix = as<taxonomy::matrix4>(map(inst->Position()));
 	}
 
 #ifdef PERMISSIVE_EXTRUSION
 	if (abs(height) < getValue(GV_PRECISION)) {
-		shape = face;
-
-		if (has_position && !shape.IsNull()) {
-			// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
-			// and therefore has a unit scale factor
-			shape.Move(trsf);
-		}
-
-		return true;
+		face->matrix = matrix;
+		return face;
 	}
 #endif
 
-	gp_Dir dir;
-	convert(l->ExtrudedDirection(),dir);
-
-	shape.Nullify();
-
-	/*
-	// @nb This logic was probably flawed always as this does not by itself result in a valid compsolid...
-	if (face.ShapeType() == TopAbs_COMPOUND) {
-		
-		// For compounds (most likely the result of a IfcCompositeProfileDef) 
-		// create a compound solid shape.
-		
-		TopExp_Explorer exp(face, TopAbs_FACE);
-		
-		TopoDS_CompSolid compound;
-		BRep_Builder builder;
-		builder.MakeCompSolid(compound);
-		
-		int num_faces_extruded = 0;
-		for (; exp.More(); exp.Next(), ++num_faces_extruded) {
-			builder.Add(compound, BRepPrimAPI_MakePrism(exp.Current(), height*dir));
-		}
-
-		if (num_faces_extruded) {
-			shape = compound;
-		}
-
-	}
-	*/
-	
-	if (shape.IsNull()) {	
-		shape = BRepPrimAPI_MakePrism(face, height*dir);
-	}
-
-	if (has_position && !shape.IsNull()) {
-		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
-		// and therefore has a unit scale factor
-		shape.Move(trsf);
-	}
-
-	return !shape.IsNull();
+	return new taxonomy::extrusion(
+		matrix,
+		as<taxonomy::face>(map(inst->SweptArea())),
+		as<taxonomy::direction3>(map(inst->ExtrudedDirection())),
+		height
+	);
 }

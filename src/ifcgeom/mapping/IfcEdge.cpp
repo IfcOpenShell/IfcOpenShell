@@ -17,38 +17,32 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS_Wire.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdge* l, TopoDS_Wire& result) {
-	if (!l->EdgeStart()->declaration().is(IfcSchema::IfcVertexPoint::Class()) || !l->EdgeEnd()->declaration().is(IfcSchema::IfcVertexPoint::Class())) {
-		Logger::Message(Logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", l);
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcEdge* inst) {
+	if (!inst->EdgeStart()->declaration().is(IfcSchema::IfcVertexPoint::Class()) || !inst->EdgeEnd()->declaration().is(IfcSchema::IfcVertexPoint::Class())) {
+		Logger::Message(Logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", inst);
+		return nullptr;
 	}
 
-	IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) l->EdgeStart())->VertexGeometry();
-	IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) l->EdgeEnd())->VertexGeometry();
+	IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) inst->EdgeStart())->VertexGeometry();
+	IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) inst->EdgeEnd())->VertexGeometry();
 	if (!pnt1->declaration().is(IfcSchema::IfcCartesianPoint::Class()) || !pnt2->declaration().is(IfcSchema::IfcCartesianPoint::Class())) {
-		Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", l);
-		return false;
-	}
-	
-	gp_Pnt p1, p2;
-	if (!convert(((IfcSchema::IfcCartesianPoint*)pnt1), p1) ||
-		!convert(((IfcSchema::IfcCartesianPoint*)pnt2), p2))
-	{
-		return false;
+		Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", inst);
+		return nullptr;
 	}
 
-	BRepBuilderAPI_MakeWire mw;
-	mw.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+	auto e = new taxonomy::edge;
 
-	result = mw.Wire();
-	return true;
+	e->start = as<taxonomy::point3>(map(pnt1));
+	e->end = as<taxonomy::point3>(map(pnt2));
+
+	if (inst->as<IfcSchema::IfcEdgeCurve>()) {
+		e->basis = map(inst->as<IfcSchema::IfcEdgeCurve>()->EdgeGeometry());
+		e->orientation = inst->as<IfcSchema::IfcEdgeCurve>()->SameSense();
+	}
+
+	return e;
 }

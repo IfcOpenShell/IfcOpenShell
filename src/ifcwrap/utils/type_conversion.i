@@ -139,7 +139,7 @@
 	PyObject* pythonize(const IfcParse::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__entity, 0);             }
 	PyObject* pythonize(const IfcParse::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
 	// NB: This cannot be temporary as a Python object is constructed from a pointer to the address of this object
-	PyObject* pythonize(const IfcGeom::Material& t)     { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_IfcGeom__Material, 0);           }
+	// PyObject* pythonize(const IfcGeom::Material& t)     { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_IfcGeom__Material, 0);           }
 	
 	PyObject* pythonize(const boost::dynamic_bitset<>& t) { 
 		std::string bitstring;

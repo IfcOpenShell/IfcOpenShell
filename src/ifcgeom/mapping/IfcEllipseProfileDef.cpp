@@ -17,51 +17,49 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include <Geom_Ellipse.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/wire_utils.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipseProfileDef* l, TopoDS_Shape& face) {
-	double rx = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
-	double ry = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
-
-	if ( rx < ALMOST_ZERO || ry < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcEllipseProfileDef* inst) {
+	double rx = inst->SemiAxis1() * length_unit_;
+	double ry = inst->SemiAxis2() * length_unit_;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	if (rx < tol || ry < tol) {
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", inst);
+		return nullptr;
 	}
 
 	const bool rotated = ry > rx;
 
-	gp_Trsf2d trsf2d;
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	gp_Ax2 ax = gp_Ax2();
-	if (rotated) {
-		ax.Rotate(ax.Axis(), M_PI / 2.);
+	if (ry > rx) {
+		auto m4_copy = m4;
+		m4 <<
+			-m4_copy.col(1),
+			m4_copy.col(0),
+			m4_copy.col(2),
+			m4_copy.col(3);
 		std::swap(rx, ry);
 	}
-	ax.Transform(trsf2d);
 
-	BRepBuilderAPI_MakeWire w;
-	Handle(Geom_Ellipse) ellipse = new Geom_Ellipse(ax, rx, ry);
-	TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(ellipse);
-	w.Add(edge);
-
-	TopoDS_Face f;
-	bool success = util::convert_wire_to_face(w, f, {false, false, 0., 0.});
-	if (success) face = f;
-	return success;
+	auto fc = new taxonomy::face;
+	auto lp = new taxonomy::loop;
+	auto ed = new taxonomy::edge;
+	auto el = new taxonomy::ellipse;
+	el->radius = rx;
+	el->radius2 = ry;
+	ed->basis = el;
+	lp->children.push_back(ed);
+	fc->children.push_back(lp);
+	return fc;
 }
