@@ -21,33 +21,72 @@
 #include <gp_Dir.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Ax3.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperator3D* l, gp_Trsf& trsf) {
-	IN_CACHE(IfcCartesianTransformationOperator3D,l,gp_Trsf,trsf)
-	gp_Pnt origin;
-	IfcGeom::Kernel::convert(l->LocalOrigin(),origin);
-	gp_Dir axis1 (1.,0.,0.);
-	gp_Dir axis2 (0.,1.,0.);
-	gp_Dir axis3 (0.,0.,1.);
-	if ( l->Axis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
-	if ( l->Axis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
-	if ( l->Axis3() ) IfcGeom::Kernel::convert(l->Axis3(),axis3);
-	gp_Ax3 ax3 (origin,axis3,axis1);
-	if ( axis2.Dot(ax3.YDirection()) < 0 ) ax3.YReverse();
-	
-	if (!util::axis_equal(ax3, (gp_Ax3) gp::XOY(), getValue(GV_PRECISION))) {
-		trsf.SetTransformation(ax3);
-		trsf.Invert();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3D* inst) {
+
+	Eigen::Vector4d origin;
+	Eigen::Vector4d axis1(1., 0., 0., 0.);
+	Eigen::Vector4d axis2(0., 1., 0., 0.);
+	Eigen::Vector4d axis3(0., 0., 1., 0.);
+
+	taxonomy::point3 O = as<taxonomy::point3>(map(inst->LocalOrigin()));
+	origin << *O.components_, 1.0;
+
+	if (inst->Axis1()) {
+		taxonomy::direction3 ax1 = as<taxonomy::direction3>(map(inst->Axis1()));
+		axis1 << *ax1.components_, 0.0;
 	}
-	
-	if (l->Scale() && !ALMOST_THE_SAME(*l->Scale(), 1.)) {
-		trsf.SetScaleFactor(*l->Scale());
+	if (inst->Axis2()) {
+		taxonomy::direction3 ax2 = as<taxonomy::direction3>(map(inst->Axis2()));
+		axis2 << *ax2.components_, 0.0;
+	}
+	if (inst->Axis3()) {
+		taxonomy::direction3 ax3 = as<taxonomy::direction3>(map(inst->Axis3()));
+		axis3 << *ax3.components_, 0.0;
 	}
 
-	CACHE(IfcCartesianTransformationOperator3D,l,trsf)
-	return true;
+	auto m4 = new taxonomy::matrix4(origin.head<3>(), axis3.head<3>(), axis1.head<3>());
+	if (m4->ccomponents().col(1).dot(axis2) < 0.) {
+		m4->components().col(1) *= -1.;
+	}
+
+	double scale1, scale2, scale3;
+	scale1 = scale2 = scale3 = 1.;
+
+	if (inst->Scale()) {
+		scale1 = *inst->Scale();
+	}
+	if (inst->as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>()) {
+		auto nu = inst->as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>();
+		scale2 = nu->Scale2() ? *nu->Scale2() : scale1;
+		scale3 = nu->Scale3() ? *nu->Scale3() : scale1;
+	}
+
+	if (scale1 != 1.) {
+		m4->components().col(0) *= scale1;
+	}
+	if (scale2 != 1.) {
+		m4->components().col(1) *= scale2;
+	}
+	if (scale3 != 1.) {
+		m4->components().col(2) *= scale3;
+	}
+
+	return m4;
+
+	/*
+	auto m = new taxonomy::matrix4;
+
+	// @todo is this necessary?
+	m->components() = m->components().inverse();
+	m->components().transposeInPlace();
+
+	// @todo tag identity?
+
+	return m;
+	*/
 }

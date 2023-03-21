@@ -17,29 +17,22 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <gp_Trsf2d.hxx>
-#include <Geom_Circle.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define ALMOST_ZERO 1.e-7;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
-	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
-	if ( r < ALMOST_ZERO ) { 
-		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l);
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircle* inst) {
+	const double r = inst->Radius() * length_unit_;
+	if (r < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) { 
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", inst);
+		return nullptr;
 	}
-	gp_Trsf trsf;
-	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->as<IfcSchema::IfcAxis2Placement3D>()) {
-		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement3D>(),trsf);
-	} else {
-		gp_Trsf2d trsf2d;
-		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement2D>(),trsf2d);
-		trsf = trsf2d;
-	}
-	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
-	curve = new Geom_Circle(ax, r);
-	return true;
+
+	IfcSchema::IfcAxis2Placement* placement = inst->Position();
+	auto c = new taxonomy::circle;
+	c->radius = r;
+	c->matrix = as<taxonomy::matrix4>(map(placement));
+	return c;
 }

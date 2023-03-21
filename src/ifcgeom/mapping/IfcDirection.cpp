@@ -17,19 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Dir.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcDirection* l, gp_Dir& dir) {
-	IN_CACHE(IfcDirection,l,gp_Dir,dir)
-	std::vector<double> xyz = l->DirectionRatios();
-	dir = gp_Dir(
-		xyz.size()     ? xyz[0] : 0.0f,
-		xyz.size() > 1 ? xyz[1] : 0.0f,
-		xyz.size() > 2 ? xyz[2] : 0.0f
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcDirection* inst) {
+	auto coords = inst->DirectionRatios();
+	return new taxonomy::direction3(
+		coords.size() >= 1 ? coords[0] : 0.,
+		coords.size() >= 2 ? coords[1] : 0.,
+		coords.size() >= 3 ? coords[2] : 0.
 	);
-	CACHE(IfcDirection,l,dir)
-	return true;
 }

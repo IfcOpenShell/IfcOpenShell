@@ -17,37 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <TopoDS_Face.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeProfileDef* l, TopoDS_Shape& face) {
-	// BRepBuilderAPI_MakeFace mf;
-
-	TopoDS_Compound compound;
-	BRep_Builder builder;
-	builder.MakeCompound(compound);
-
-	IfcSchema::IfcProfileDef::list::ptr profiles = l->Profiles();
-	//bool first = true;
-	for (IfcSchema::IfcProfileDef::list::it it = profiles->begin(); it != profiles->end(); ++it) {
-		TopoDS_Face f;
-		if (convert_face(*it, f)) {
-			builder.Add(compound, f);
-			/* TopExp_Explorer exp(f, TopAbs_WIRE);
-			for (; exp.More(); exp.Next()) {
-				const TopoDS_Wire& wire = TopoDS::Wire(exp.Current());
-				if (first) {
-					mf.Init(BRepBuilderAPI_MakeFace(wire));
-				} else {
-					mf.Add(wire);
-				}
-				first = false;
-			} */
-		}
-	}
-
-	face = compound;
-	return !face.IsNull();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeProfileDef* inst) {
+	// @todo double check that this is actually supported
+	IfcSchema::IfcProfileDef::list::ptr profiles = inst->Profiles();
+	return map_to_collection<>(this, profiles);
 }

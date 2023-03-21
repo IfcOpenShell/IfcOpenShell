@@ -17,68 +17,60 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <TopExp_Explorer.hxx>
-#include <ShapeFix_Shape.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/profile_helper.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, TopoDS_Shape& face) {
-	const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
-	const double d = l->WallThickness() * getValue(GV_LENGTH_UNIT);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef* inst) {
+	const double x = inst->XDim() / 2.0f * length_unit_;
+	const double y = inst->YDim() / 2.0f  * length_unit_;
+	const double d = inst->WallThickness() * length_unit_;
 
-	const bool fr1 = !!l->OuterFilletRadius();
-	const bool fr2 = !!l->InnerFilletRadius();
+	const bool fr1 = !!inst->OuterFilletRadius();
+	const bool fr2 = !!inst->InnerFilletRadius();
 
-	const double r1 = fr1 ? (*l->OuterFilletRadius()) * getValue(GV_LENGTH_UNIT) : 0.;
-	const double r2 = fr2 ? (*l->InnerFilletRadius()) * getValue(GV_LENGTH_UNIT) : 0.;
+	const double r1 = fr1 ? (*inst->OuterFilletRadius()) * length_unit_ : 0.;
+	const double r2 = fr2 ? (*inst->InnerFilletRadius()) * length_unit_ : 0.;
 	
-	if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+
+	if (x < tol || y < tol) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return nullptr;
 	}
 
-	TopoDS_Face f1;
-	TopoDS_Face f2;
-
-	gp_Trsf2d trsf2d;
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	double coords1[8] = {-x  ,-y,   x  ,-y,   x,  y,   -x,  y  };
-	double coords2[8] = {-x+d,-y+d, x-d,-y+d, x-d,y-d, -x+d,y-d};
-	double radii1[4] = {r1,r1,r1,r1};
-	double radii2[4] = {r2,r2,r2,r2};
-	int fillets[4] = {0,1,2,3};
+	auto s1 = profile_helper(m4, {
+		{{-x ,-y},{ r1} },
+		{{x, -y}, {r1} },
+		{{x, y}, {r1} },
+		{{-x, y}, {r1} }
+	});
 
-	bool s1 = util::profile_helper(4,coords1,fr1 ? 4 : 0,fillets,radii1,trsf2d,f1);
-	bool s2 = util::profile_helper(4,coords2,fr2 ? 4 : 0,fillets,radii2,trsf2d,f2);
+	auto s2 = profile_helper(m4, {
+		{{-x + d, -y + d}, { r2}},
+		{{x - d, -y + d}, { r2}},
+		{{x - d, y - d}, { r2}},
+		{{-x + d, y - d}, { r2}}
+	});
 
-	if (!s1 || !s2) return false;
+	if (!s1 || !s2) {
+		return nullptr;
+	}
 
-	TopExp_Explorer exp1(f1, TopAbs_WIRE);
-	TopExp_Explorer exp2(f2, TopAbs_WIRE);
+	s1->children.push_back(s2->children[0]);
+	delete s2;
 
-	TopoDS_Wire w1 = TopoDS::Wire(exp1.Current());	
-	TopoDS_Wire w2 = TopoDS::Wire(exp2.Current());
-
-	BRepBuilderAPI_MakeFace mf(w1, false);
-	mf.Add(w2);
-
-	ShapeFix_Shape sfs(mf.Face());
-	sfs.Perform();
-	face = TopoDS::Face(sfs.Shape());	
-	return true;
+	return s1;
 }

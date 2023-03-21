@@ -21,9 +21,8 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepOffsetAPI_MakePipeShell.hxx>
 
-#include "../ifcparse/IfcLogger.h"
-#include "../ifcgeom_schema_agnostic/Kernel.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../../../ifcparse/IfcLogger.h"
+#include "base_utils.h"
 
 bool IfcGeom::util::wire_is_c1_continuous(const TopoDS_Wire & w, double tol) {
 	// NB Note that c0 continuity is NOT checked!

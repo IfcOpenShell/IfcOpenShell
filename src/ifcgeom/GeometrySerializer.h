@@ -20,8 +20,8 @@
 #ifndef GEOMETRYSERIALIZER_H
 #define GEOMETRYSERIALIZER_H
 
-#include "../ifcgeom_schema_agnostic/Serializer.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
+#include "../ifcgeom/Serializer.h"
+#include "../ifcgeom/IfcGeomElement.h"
 
 class SerializerSettings : public IfcGeom::IteratorSettings
 {

@@ -17,38 +17,38 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Vec.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Pnt2d.hxx>
-#include <gp_Trsf.hxx>
-#include <gp_Ax1.hxx>
-#include <gp_Ax3.hxx>
-#include <gp_Pln.hxx>
-#include <BRepOffsetAPI_MakePipeShell.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
-#include <ShapeFix_Edge.hxx>
-#include <ShapeAnalysis_Surface.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* inst) {
+	taxonomy::face f = as<taxonomy::face>(map(inst->SweptArea()));
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l, TopoDS_Shape& shape) {
+	taxonomy::matrix4 matrix;
+	bool has_position = true;
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
+	has_position = inst->Position() != nullptr;
+#endif
+	if (has_position) {
+		matrix = as<taxonomy::matrix4>(map(inst->Position()));
+	}
+
+	auto scs = new taxonomy::surface_curve_sweep(matrix, f, map(inst->ReferenceSurface()), map(inst->Directrix()));
+	scs->matrix = matrix;
+
+	return scs;
+
+	/*
 	gp_Trsf directrix;
 	TopoDS_Shape face;
 	TopoDS_Face surface_face;
 	TopoDS_Wire wire, section;
 
-	const bool is_plane = l->ReferenceSurface()->declaration().is(IfcSchema::IfcPlane::Class());
+	const bool is_plane = inst->ReferenceSurface()->declaration().is(IfcSchema::IfcPlane::Class());
 
 	if (!is_plane) {
 		TopoDS_Shape surface_shell;
-		if (!convert_shape(l->ReferenceSurface(), surface_shell)) {
+		if (!convert_shape(inst->ReferenceSurface(), surface_shell)) {
 			Logger::Error("Failed to convert reference surface", l);
 			return false;
 		}
@@ -58,20 +58,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 		}
 		surface_face = TopoDS::Face(TopExp_Explorer(surface_shell, TopAbs_FACE).Current());
 	}
-	
-	gp_Trsf trsf;
-	bool has_position = true;
-#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
-#endif
-	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf);
-	}
-
-	if (!convert_face(l->SweptArea(), face) || 
-		!convert_wire(l->Directrix(), wire)    ) {
-		return false;
-	}
 
 	gp_Pln pln;
 	gp_Pnt directrix_origin;
@@ -79,7 +65,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	bool directrix_on_plane = is_plane;
 
 	if (is_plane) {
-		IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) l->ReferenceSurface(), pln);
+		IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst->ReferenceSurface(), pln);
 
 		// As per Informal propositions 2: The Directrix shall lie on the ReferenceSurface.
 		// This is not always the case with the test files in the repository. I am not sure
@@ -154,4 +140,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	}
 
 	return true;
+	*/
 }

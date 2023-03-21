@@ -17,21 +17,23 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <BRepPrimAPI_MakeSphere.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSphere* l, TopoDS_Shape& shape) {
-	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcSphere* inst) {
+	// @todo
+	return nullptr;
+	/*
+	const double r = inst->Radius() * length_unit_;
 	
 	BRepPrimAPI_MakeSphere builder(r);
 	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(),trsf);
+	IfcGeom::Kernel::convert(inst->Position(),trsf);
 	
 	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
 
 	return true;
+	*/
 }

@@ -17,54 +17,45 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Pnt2d.hxx>
-#include <gp_Dir2d.hxx>
-#include <gp_Trsf2d.hxx>
-#include <gp_Ax2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2D* inst) {
+	auto m = new taxonomy::matrix4;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperator2D* l, gp_Trsf2d& trsf) {
-	IN_CACHE(IfcCartesianTransformationOperator2D,l,gp_Trsf2d,trsf)
+	Eigen::Vector4d origin, axis1(1.0, 0.0, 0.0, 0.0), axis2(0.0, 1.0, 0.0, 0.0), axis3(0.0, 0.0, 1.0, 0.0);
 
-	gp_Pnt origin;
-	gp_Dir axis1 (1.,0.,0.);
-	gp_Dir axis2 (0.,1.,0.);
-	
-	IfcGeom::Kernel::convert(l->LocalOrigin(),origin);
-	if ( l->Axis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
-	if ( l->Axis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
-	
-	const gp_Pnt2d origin2d(origin.X(), origin.Y());
-	const gp_Dir2d axis12d(axis1.X(), axis1.Y());
-	const gp_Dir2d axis22d(axis2.X(), axis2.Y());
+	taxonomy::point3 O = as<taxonomy::point3>(map(inst->LocalOrigin()));
+	origin << *O.components_, 1.0;
 
-	// A better match to represent the IfcCartesianTransformationOperator2D would
-	// be the gp_Ax22d, but to my knowledge no easy way exists to convert it into
-	// a gp_Trsf2d. Easiest would probably be to simply update the underlying
-	// gp_Mat2d directly.
-	
-	const gp_Ax2d ax2d (origin2d, axis12d);
-	trsf.SetTransformation(ax2d);
-	
-	if ( ax2d.Direction().Rotated(M_PI / 2.).Dot(axis22d) < 0. ) {
-		gp_Trsf2d mirror; mirror.SetMirror(ax2d);
-		trsf.Multiply(mirror);
+	if (inst->Axis1()) {
+		taxonomy::direction3 ax1 = as<taxonomy::direction3>(map(inst->Axis1()));
+		axis1 << *ax1.components_, 0.0;
+	}
+	if (inst->Axis2()) {
+		taxonomy::direction3 ax2 = as<taxonomy::direction3>(map(inst->Axis1()));
+		axis2 << *ax2.components_, 0.0;
 	}
 
-	trsf.Invert();
-	if (l->Scale() && !ALMOST_THE_SAME(*l->Scale(), 1.)) {
-		trsf.SetScaleFactor(*l->Scale());
+	double scale1, scale2;
+	scale1 = scale2 = 1.0;
+
+	if (inst->Scale()) {
+		scale1 = *inst->Scale();
+	}
+	if (inst->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>()) {
+		auto nu = inst->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>();
+		scale2 = nu->Scale2() ? *nu->Scale2() : scale1;
 	}
 
-	if (util::is_identity(trsf, getValue(GV_PRECISION))) {
-		trsf = gp_Trsf2d();
-	}
+	m->components() <<
+		axis1 * scale1,
+		axis2 * scale2,
+		axis3,
+		origin;
 
-	CACHE(IfcCartesianTransformationOperator2D,l,trsf)
-	return true;
+	m->components().transposeInPlace();
+
+	return m;
 }

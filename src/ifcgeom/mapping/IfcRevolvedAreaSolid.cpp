@@ -17,36 +17,41 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Trsf.hxx>
-#include <gp_Ax1.hxx>
-#include <TopoDS.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRepPrimAPI_MakeRevol.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include <boost/math/constants/constants.hpp>
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_Shape& shape) {
-	const double ang = l->Angle() * getValue(GV_PLANEANGLE_UNIT);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid* inst) {
+	const double ang = inst->Angle() * angle_unit_;
 
-	TopoDS_Shape face;
-	if ( ! convert_face(l->SweptArea(),face) ) return false;
+	as<taxonomy::face>(map(inst->SweptArea()));
+	
+	boost::optional<double> angle;
 
-	gp_Ax1 ax1;
-	IfcGeom::Kernel::convert(l->Axis(), ax1);
-
-	gp_Trsf trsf;
+	taxonomy::matrix4 matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf);
+		matrix = as<taxonomy::matrix4>(map(inst->Position()));
 	}
 
+	if (ang < boost::math::constants::pi<double>() * 2. - 1.e-5) {
+		angle = ang;
+	}
 
+	return new taxonomy::revolve(
+		matrix,
+		as<taxonomy::face>(map(inst->SweptArea())),
+		as<taxonomy::point3>(map(inst->Axis()->Location())),
+		as<taxonomy::direction3>(map(inst->Axis()->Axis())),
+		angle
+	);
+
+	/*
 	{
 		// https://github.com/IfcOpenShell/IfcOpenShell/issues/1030
 		// Check whether Axis does not intersect SweptArea
@@ -84,18 +89,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 			Logger::Warning("Warning Axis and SweptArea intersecting", l);
 		}
 	}
-
-	if (ang >= M_PI * 2. - ALMOST_ZERO) {
-		shape = BRepPrimAPI_MakeRevol(face, ax1);
-	} else {
-		shape = BRepPrimAPI_MakeRevol(face, ax1, ang);
-	}
-
-	if (has_position) {
-		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
-		// and therefore has a unit scale factor
-		shape.Move(trsf);
-	}
-
-	return !shape.IsNull();
+	*/
 }

@@ -17,19 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianPoint* l, gp_Pnt& point) {
-	IN_CACHE(IfcCartesianPoint,l,gp_Pnt,point)
-	std::vector<double> xyz = l->Coordinates();
-	point = gp_Pnt(
-		xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
-		xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
-		xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianPoint* inst) {
+	std::vector<double> xyz = inst->Coordinates();
+	return new taxonomy::point3(
+		xyz.size() >= 1 ? xyz[0] * length_unit_ : 0.,
+		xyz.size() >= 2 ? xyz[1] * length_unit_ : 0.,
+		xyz.size() >= 3 ? xyz[2] * length_unit_ : 0.
 	);
-	CACHE(IfcCartesianPoint,l,point)
-	return true;
 }

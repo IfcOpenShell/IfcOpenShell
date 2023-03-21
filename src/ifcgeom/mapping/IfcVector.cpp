@@ -17,17 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Vec.hxx>
-#include <gp_Dir.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcVector* l, gp_Vec& v) {
-	IN_CACHE(IfcVector,l,gp_Vec,v)
-	gp_Dir d;
-	IfcGeom::Kernel::convert(l->Orientation(),d);
-	v = l->Magnitude() * getValue(GV_LENGTH_UNIT) * d;
-	CACHE(IfcVector,l,v)
-	return true;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcVector* inst) {
+	auto d = (taxonomy::direction3*) map(inst->Orientation());
+	d->components() *= inst->Magnitude() * length_unit_;
+	return d;
 }

@@ -17,36 +17,32 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <gp_Ax1.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRepPrimAPI_MakeRevol.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcSurfaceOfRevolution* inst) {
+	return nullptr;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS_Shape& shape) {
+	/*
 	TopoDS_Wire wire;
-	if ( !convert_wire(l->SweptCurve(), wire) ) {
+	if ( !convert_wire(inst->SweptCurve(), wire) ) {
 		TopoDS_Face face;
-		if ( !convert_face(l->SweptCurve(),face) ) return false;
+		if ( !convert_face(inst->SweptCurve(),face) ) return false;
 		TopExp_Explorer exp(face, TopAbs_WIRE);
 		wire = TopoDS::Wire(exp.Current());
 	}
 
 	gp_Ax1 ax1;
-	IfcGeom::Kernel::convert(l->AxisPosition(), ax1);
+	IfcGeom::Kernel::convert(inst->AxisPosition(), ax1);
 
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf);
+		IfcGeom::Kernel::convert(inst->Position(), trsf);
 	}
 	
 	shape = BRepPrimAPI_MakeRevol(wire, ax1);
@@ -58,4 +54,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 	}
 
 	return !shape.IsNull();
+	*/
 }

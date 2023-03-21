@@ -17,23 +17,17 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <Geom_CylindricalSurface.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <TopoDS_Face.hxx>
-#include "../ifcgeom/IfcGeom.h"
-
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcCylindricalSurface
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_Shape& face) {
-	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(),trsf);
-	
-	// IfcElementarySurface.Position has unit scale factor
-	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
-	return true;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCylindricalSurface* inst) {
+	auto c = new taxonomy::cylinder;
+	c->radius = inst->Radius() * length_unit_;
+	c->matrix = as<taxonomy::matrix4>(map(inst->Position()));
+	return c;
 }
 
 #endif

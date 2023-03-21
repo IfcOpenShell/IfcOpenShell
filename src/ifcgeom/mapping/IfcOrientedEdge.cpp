@@ -17,19 +17,14 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <TopoDS_Wire.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcOrientedEdge* l, TopoDS_Wire& result) {
-	if (convert_wire(l->EdgeElement(), result)) {
-		if (!l->Orientation()) {
-			result.Reverse();
-		}
-		return true;
-	} else {
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcOrientedEdge* inst) {
+	auto e = map(inst->EdgeElement());
+	if (!inst->Orientation()) {
+		e->reverse();
 	}
+	return e;
 }

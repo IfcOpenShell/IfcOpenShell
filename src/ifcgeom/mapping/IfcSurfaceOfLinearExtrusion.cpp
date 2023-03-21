@@ -17,39 +17,34 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Vec.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Trsf.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRepPrimAPI_MakePrism.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcSurfaceOfLinearExtrusion* inst) {
+	return nullptr;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, TopoDS_Shape& shape) {
+	/*
 	TopoDS_Wire wire;
-	if ( !convert_wire(l->SweptCurve(), wire) ) {
+	if ( !convert_wire(inst->SweptCurve(), wire) ) {
 		TopoDS_Face face;
-		if ( !convert_face(l->SweptCurve(),face) ) return false;
+		if ( !convert_face(inst->SweptCurve(),face) ) return false;
 		TopExp_Explorer exp(face, TopAbs_WIRE);
 		wire = TopoDS::Wire(exp.Current());
 	}
-	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
+	const double height = inst->Depth() * length_unit_;
 	
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf);
+		IfcGeom::Kernel::convert(inst->Position(), trsf);
 	}
 
 	gp_Dir dir;
-	convert(l->ExtrudedDirection(),dir);
+	convert(inst->ExtrudedDirection(),dir);
 
 	shape = BRepPrimAPI_MakePrism(wire, height*dir);
 	
@@ -60,4 +55,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, T
 	}
 	
 	return !shape.IsNull();
+	*/
 }

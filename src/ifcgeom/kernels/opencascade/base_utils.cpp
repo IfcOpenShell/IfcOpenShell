@@ -1,6 +1,8 @@
 #include "base_utils.h"
 
-#include "../ifcparse/IfcLogger.h"
+#include "../../../ifcparse/IfcLogger.h"
+#include "OpenCascadeConversionResult.h"
+#include "boolean_utils.h"
 
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
@@ -39,6 +41,8 @@
 #include <ShapeFix_Shape.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
+
+#include <BRepAlgoAPI_Fuse.hxx>
 
 #include <TopTools_IndexedMapOfShape.hxx>
 
@@ -738,4 +742,67 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 	}
 
 	return valid_shell;
+}
+
+bool IfcGeom::util::flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, double tol) {
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+
+	result = TopoDS_Shape();
+
+	for (IfcGeom::ConversionResults::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
+		TopoDS_Shape merged;
+		const TopoDS_Shape& s = ((ifcopenshell::geometry::OpenCascadeShape*)it->Shape())->shape();
+		if (fuse) {
+			util::ensure_fit_for_subtraction(s, merged, tol);
+		} else {
+			merged = s;
+		}
+
+		// @todo refactor, also should be GTrsf
+		const auto& m = it->Placement().ccomponents();
+		gp_Trsf trsf;
+		trsf.SetValues(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+		);
+
+		const TopoDS_Shape moved_shape = util::apply_transformation(merged, trsf);
+
+		if (shapes.size() == 1) {
+			result = moved_shape;
+			return true;
+		}
+
+		if (fuse) {
+			if (result.IsNull()) {
+				result = moved_shape;
+			} else {
+				BRepAlgoAPI_Fuse brep_fuse(result, moved_shape);
+				if (brep_fuse.IsDone()) {
+					TopoDS_Shape fused = brep_fuse;
+
+					ShapeFix_Shape fix(result);
+					fix.Perform();
+					result = fix.Shape();
+
+					bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+					if (is_valid) {
+						result = fused;
+					}
+				}
+			}
+		} else {
+			builder.Add(compound, moved_shape);
+		}
+	}
+
+	if (!fuse) {
+		result = compound;
+	}
+
+	const bool success = !result.IsNull();
+	return success;
 }

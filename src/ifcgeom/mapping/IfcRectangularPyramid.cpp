@@ -17,32 +17,112 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <BRepPrimAPI_MakeWedge.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
-#include <Standard_Version.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRectangularPyramid* inst) {
+	const double dx = inst->XLength() * length_unit_;
+	const double dy = inst->YLength() * length_unit_;
+	const double dz = inst->Height() * length_unit_;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularPyramid* l, TopoDS_Shape& shape) {
-	const double dx = l->XLength() * getValue(GV_LENGTH_UNIT);
-	const double dy = l->YLength() * getValue(GV_LENGTH_UNIT);
-	const double dz = l->Height() * getValue(GV_LENGTH_UNIT);
-	
-	BRepPrimAPI_MakeWedge builder(dx, dz, dy, dx / 2., dy / 2., dx / 2., dy / 2.);
-	
-	gp_Trsf trsf1, trsf2;
-	trsf2.SetValues(
-		1, 0, 0, 0,
-		0, 0, 1, 0,
-		0, 1, 0, 0
-#if OCC_VERSION_HEX < 0x60800
-		, Precision::Angular(), Precision::Confusion()
-#endif			
-	);
-	
-	IfcGeom::Kernel::convert(l->Position(), trsf1);
-	shape = BRepBuilderAPI_Transform(builder.Solid(), trsf1 * trsf2);
-	return true;
+	auto solid = new taxonomy::solid;
+	auto shell = new taxonomy::shell;
+	solid->children.push_back(shell);
+
+	// Base
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 4> points{
+			taxonomy::point3(0, 0, 0),
+			taxonomy::point3(dx, 0, 0),
+			taxonomy::point3(dx, dy, 0),
+			taxonomy::point3(0, dy, 0)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
+		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+	}
+
+	// Lateral faces
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 3> points{
+			taxonomy::point3(0, 0, 0),
+			taxonomy::point3(0, dy, 0),
+			taxonomy::point3(0.5*dx, 0.5*dy, dz)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[0]));
+	}
+
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 3> points{
+			taxonomy::point3(0, dy, 0),
+			taxonomy::point3(dx, dy, 0),
+			taxonomy::point3(0.5*dx, 0.5*dy, dz)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[0]));
+	}
+
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 3> points{
+			taxonomy::point3(dx, dy, 0),
+			taxonomy::point3(dx, 0, 0),
+			taxonomy::point3(0.5*dx, 0.5*dy, dz)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[0]));
+	}
+
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 3> points{
+			taxonomy::point3(dx, 0, 0),
+			taxonomy::point3(0, 0, 0),
+			taxonomy::point3(0.5*dx, 0.5*dy, dz)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[0]));
+	}
+
+	return solid;
 }

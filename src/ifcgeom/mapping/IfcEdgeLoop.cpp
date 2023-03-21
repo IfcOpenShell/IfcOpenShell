@@ -17,26 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& result) {
-	IfcSchema::IfcOrientedEdge::list::ptr li = l->EdgeList();
-	BRepBuilderAPI_MakeWire mw;
-	for (IfcSchema::IfcOrientedEdge::list::it it = li->begin(); it != li->end(); ++it) {
-		TopoDS_Wire w;
-		if (convert_wire(*it, w)) {
-			mw.Add(TopoDS::Edge(TopoDS_Iterator(w).Value()));
-		}
-	}
-	if (!mw.IsDone()) {
-		return false;
-	}
-	result = mw.Wire();
-	return true;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcEdgeLoop* inst) {
+	return map_to_collection<taxonomy::loop>(this, inst->EdgeList());
 }

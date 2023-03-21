@@ -17,42 +17,37 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <gp_Trsf2d.hxx>
-#include <Geom_Ellipse.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve) {
-	double x = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
-	double y = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
-	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { 
-		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l);
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcEllipse* inst) {
+	double x = inst->SemiAxis1() * length_unit_;
+	double y = inst->SemiAxis2() * length_unit_;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	if (x < tol || y < tol) {
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", inst);
+		return nullptr;
 	}
+
+	auto el = new taxonomy::ellipse;
+	el->matrix = as<taxonomy::matrix4>(map(inst->Position()));
+
 	// Open Cascade does not allow ellipses of which the minor radius
 	// is greater than the major radius. Hence, in this case, the
-	// ellipse is rotated. Note that special care needs to be taken
+	// ellipse is rotated. Note that special care is taken
 	// when creating a trimmed curve off of an ellipse like this.
-	const bool rotated = y > x;
-	gp_Trsf trsf;
-	
-	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->as<IfcSchema::IfcAxis2Placement3D>()) {
-		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement3D>(), trsf);
-	} else {
-		gp_Trsf2d trsf2d;
-		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement2D>(), trsf2d);
-		trsf = trsf2d;
-	}
-
-	gp_Ax2 ax = gp_Ax2();
-	if (rotated) {
-		ax.Rotate(ax.Axis(), M_PI / 2.);
+	if (y > x) {
+		el->matrix.components() <<
+			-el->matrix.ccomponents().col(1),
+			el->matrix.ccomponents().col(0),
+			el->matrix.ccomponents().col(2),
+			el->matrix.ccomponents().col(3);
 		std::swap(x, y);
 	}
-	ax.Transform(trsf);
-	curve = new Geom_Ellipse(ax, x, y);
-	return true;
+
+	el->radius = x;
+	el->radius2 = y;
+
+	return el;
 }

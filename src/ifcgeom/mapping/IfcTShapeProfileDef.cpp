@@ -17,29 +17,31 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/profile_helper.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Shape& face) {
-	const bool doFlangeEdgeFillet = !!l->FlangeEdgeRadius();
-	const bool doWebEdgeFillet = !!l->WebEdgeRadius();
-	const bool doFillet = !!l->FilletRadius();
-	const bool hasFlangeSlope = !!l->FlangeSlope();
-	const bool hasWebSlope = !!l->WebSlope();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcTShapeProfileDef* inst) {
+	const bool doFlangeEdgeFillet = !!inst->FlangeEdgeRadius();
+	const bool doWebEdgeFillet = !!inst->WebEdgeRadius();
+	const bool doFillet = !!inst->FilletRadius();
+	const bool hasFlangeSlope = !!inst->FlangeSlope();
+	const bool hasWebSlope = !!inst->WebSlope();
 
-	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double x = l->FlangeWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double d1 = l->WebThickness() * getValue(GV_LENGTH_UNIT);
-	const double d2 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
-	const double flangeSlope = hasFlangeSlope ? (*l->FlangeSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
-	const double webSlope = hasWebSlope ? (*l->WebSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double y = inst->Depth() / 2.0f * length_unit_;
+	const double x = inst->FlangeWidth() / 2.0f * length_unit_;
+	const double d1 = inst->WebThickness() * length_unit_;
+	const double d2 = inst->FlangeThickness() * length_unit_;
+	const double flangeSlope = hasFlangeSlope ? (*inst->FlangeSlope() * angle_unit_) : 0.;
+	const double webSlope = hasWebSlope ? (*inst->WebSlope() * angle_unit_) : 0.;
 
-	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+
+	if (x < tol || y < tol || d1 < tol || d2 < tol) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return nullptr;
 	}
 	
 	double dy1 = 0.0f;
@@ -51,13 +53,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Sh
 	double f3 = 0.0f;
 
 	if (doFillet) {
-		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *inst->FilletRadius() * length_unit_;
 	}
 	if (doWebEdgeFillet) {
-		f2 = *l->WebEdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f2 = *inst->WebEdgeRadius() * length_unit_;
 	}
 	if (doFlangeEdgeFillet) {
-		f3 = *l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f3 = *inst->FlangeEdgeRadius() * length_unit_;
 	}
 
 	double xx, xy;
@@ -85,9 +87,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Sh
 
 		const double det = a1*b2 - a2*b1;
 
-		if (ALMOST_THE_SAME(det, 0.)) {
-			Logger::Message(Logger::LOG_NOTICE, "Web and flange do not intersect for:",l);
-			return false;
+		if (std::fabs(det) < 1.e-5) {
+			Logger::Message(Logger::LOG_NOTICE, "Web and flange do not intersect for:", inst);
+			return nullptr;
 		}
 
 		xx = (b2*c1 - b1*c2) / det;
@@ -97,17 +99,24 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Sh
 		xy = y - d2;
 	}
 
-	gp_Trsf2d trsf2d;
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	double coords[16] = {d1/2.-dx2,-y, xx,xy, x,y-d2+dy2, x,y, -x,y, -x,y-d2+dy2, -xx,xy, -d1/2.+dx2,-y};
-	int fillets[6] = {0,1,2,5,6,7};
-	double radii[6] = {f2,f1,f3,f3,f1,f2};
-	return util::profile_helper(8, coords, (doFillet || doWebEdgeFillet || doFlangeEdgeFillet) ? 6 : 0, fillets, radii, trsf2d, face);
+	return profile_helper(m4, {
+		{{d1 / 2. - dx2,-y},{ f2} },
+		{{xx,xy},{ f1}},
+		{{x,y - d2 + dy2},{ f3}},
+		{{x,y}},
+		{{-x,y}},
+		{{-x,y - d2 + dy2},{f3}},
+		{{-xx,xy},{f1}},
+		{{-d1 / 2. + dx2,-y},{f2}}
+	});
 }

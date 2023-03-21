@@ -19,20 +19,18 @@
 
 #include <gp_Pnt.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+using namespace ifcopenshell::geometry;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcBoundingBox* l, TopoDS_Shape& shape) {
-	const double dx = l->XDim() * getValue(GV_LENGTH_UNIT);
-	const double dy = l->YDim() * getValue(GV_LENGTH_UNIT);
-	const double dz = l->ZDim() * getValue(GV_LENGTH_UNIT);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcBoundingBox* inst) {
+	const double dx = inst->XDim() * length_unit_;
+	const double dy = inst->YDim() * length_unit_;
+	const double dz = inst->ZDim() * length_unit_;
 
-	gp_Pnt corner;
-	IfcGeom::Kernel::convert(l->Corner(), corner);
-	BRepPrimAPI_MakeBox builder(corner, dx, dy, dz);
+	taxonomy::point3 corner = as<taxonomy::point3>(map(inst->Corner()));
+	auto solid = create_box(corner.ccomponents().x(), corner.ccomponents().y(), corner.ccomponents().z(), dx, dy, dz);
 
-	shape = builder.Solid();
-
-	return true;
+	return solid;
 }

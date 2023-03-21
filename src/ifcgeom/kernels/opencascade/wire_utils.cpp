@@ -1,10 +1,11 @@
 #include "wire_utils.h"
 
-#include "../ifcparse/IfcLogger.h"
-#include "../ifcgeom_schema_agnostic/Kernel.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
-#include "../ifcgeom_schema_agnostic/boolean_utils.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
+#include "../../../ifcparse/IfcLogger.h"
+#include "../../../ifcgeom/ConversionSettings.h"
+
+#include "base_utils.h"
+#include "boolean_utils.h"
+#include "IfcGeomTree.h"
 
 #include <TopExp.hxx>
 #include <TopoDS.hxx>

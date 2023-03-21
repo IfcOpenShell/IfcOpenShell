@@ -17,22 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <GC_MakeCircle.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS_Wire.hxx>
-#include <BRep_Tool.hxx>
-#include "../ifcgeom/IfcGeom.h"
-
-#define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcIndexedPolyCurve
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wire& result) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 	
-	IfcSchema::IfcCartesianPointList* point_list = l->Points();
+	IfcSchema::IfcCartesianPointList* point_list = inst->Points();
 	std::vector< std::vector<double> > coordinates;
 	if (point_list->as<IfcSchema::IfcCartesianPointList2D>()) {
 		coordinates = point_list->as<IfcSchema::IfcCartesianPointList2D>()->CoordList();
@@ -40,43 +33,37 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 		coordinates = point_list->as<IfcSchema::IfcCartesianPointList3D>()->CoordList();
 	}
 
-	std::vector<gp_Pnt> points;
+	std::vector<taxonomy::point3> points;
 	points.reserve(coordinates.size());
-	for (std::vector< std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
-		const std::vector<double>& coords = *it;
-		points.push_back(gp_Pnt(
-			coords.size() < 1 ? 0. : coords[0] * getValue(GV_LENGTH_UNIT),
-			coords.size() < 2 ? 0. : coords[1] * getValue(GV_LENGTH_UNIT),
-			coords.size() < 3 ? 0. : coords[2] * getValue(GV_LENGTH_UNIT)));
+	for (auto& coords : coordinates) {
+		points.push_back(taxonomy::point3(
+			coords.size() < 1 ? 0. : coords[0] * length_unit_,
+			coords.size() < 2 ? 0. : coords[1] * length_unit_,
+			coords.size() < 3 ? 0. : coords[2] * length_unit_));
 	}
 
 	int max_index = (int) points.size();
 
-	BRepBuilderAPI_MakeWire w;
+	taxonomy::loop* loop;
 
 	// ignored, just for capturing the curve parameters on the null check
 	double u, v;
 
-	if(l->Segments()) {
-		aggregate_of_instance::ptr segments = *l->Segments();
+	if(inst->Segments()) {
+		aggregate_of_instance::ptr segments = *inst->Segments();
 		for (aggregate_of_instance::it it = segments->begin(); it != segments->end(); ++it) {
 			IfcUtil::IfcBaseClass* segment = *it;
 			if (segment->declaration().is(IfcSchema::IfcLineIndex::Class())) {
 				IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
 				std::vector<int> indices = *line;
-				gp_Pnt previous;
+				taxonomy::point3 previous;
 				for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 					if (*jt < 1 || *jt > max_index) {
 						throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 					}
-					const gp_Pnt& current = points[*jt - 1];
+					const taxonomy::point3& current = points[*jt - 1];
 					if (jt != indices.begin()) {
-						BRepBuilderAPI_MakeEdge me(previous, current);
-						if (me.IsDone() && !BRep_Tool::Curve(me.Edge(), u, v).IsNull()) {
-							w.Add(me.Edge());
-						} else {
-							Logger::Warning("Ignoring segment on", l);
-						}
+						loop->children.push_back(new taxonomy::edge(previous, current));
 					}
 					previous = current;
 				}
@@ -92,33 +79,31 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 						throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(idx));
 					}
 				}
-				const gp_Pnt& a = points[indices[0] - 1];
-				const gp_Pnt& b = points[indices[1] - 1];
-				const gp_Pnt& c = points[indices[2] - 1];
-				Handle(Geom_Circle) circ = GC_MakeCircle(a, b, c).Value();
-				BRepBuilderAPI_MakeEdge me(circ, a, c);
-				if (me.IsDone() && !BRep_Tool::Curve(me.Edge(), u, v).IsNull()) {
-					w.Add(me.Edge());
+				const auto& a = points[indices[0] - 1];
+				const auto& b = points[indices[1] - 1];
+				const auto& c = points[indices[2] - 1];
+
+				auto circ = taxonomy::circle::from_3_points(a.ccomponents(), b.ccomponents(), c.ccomponents());
+				if (circ) {
+					auto e = new taxonomy::edge(a, c);
+					e->basis = circ;
+					loop->children.push_back(e);
 				} else {
-					Logger::Warning("Ignoring segment on", l);
+					Logger::Warning("Ignoring segment on", inst);
 				}
 			} else {
 				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + segment->declaration().name());
 			}
 		}
 	} else if (points.begin() < points.end()) {
-        std::vector<gp_Pnt>::const_iterator previous = points.begin();
-        for (std::vector<gp_Pnt>::const_iterator current = previous+1; current < points.end(); ++current){
-			BRepBuilderAPI_MakeEdge me(*previous, *current);
-			if (me.IsDone() && !BRep_Tool::Curve(me.Edge(), u, v).IsNull()) {
-				w.Add(me.Edge());
-				previous = current;
-			}
+        auto previous = points.begin();
+        for (auto current = previous+1; current < points.end(); ++current){
+			loop->children.push_back(new taxonomy::edge(*previous, *current));
+			previous = current;
         }
     }
-
-	result = w.Wire();
-	return true;
+	
+	return loop;
 }
 
 #endif

@@ -28,8 +28,9 @@
 #define BOOST_REGEX_NO_W32
 #endif
 
-#include "Kernel.h"
+#include "../ifcgeom/AbstractKernel.h"
 #include "../ifcparse/IfcFile.h"
+#include "../ifcgeom/abstract_mapping.h"
 
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -70,7 +71,13 @@ namespace IfcGeom {
         bool traverse_match(IfcUtil::IfcBaseEntity* prod, const filter_t& pred) const
         {
             IfcUtil::IfcBaseEntity* parent, *current = prod;
-            while ((parent = IfcGeom::Kernel::get_decomposing_entity(current, traverse_openings)) != nullptr) {
+			// @todo examine if this can indeed be static. For now usage is only
+			// in IfcConvert so invocation is bound to a single file with a single
+			// schema.
+			// @todo pass settings
+			IfcGeom::IteratorSettings s;
+			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file, s);
+            while ((parent = mapping->get_decomposing_entity(current, traverse_openings)) != nullptr) {
                 if (pred(parent)) {
                     return true;
                 }
@@ -175,7 +182,10 @@ namespace IfcGeom {
 			: wildcard_filter(include, traverse, patterns) {}
 
 		bool match(IfcUtil::IfcBaseEntity* prod) const {
-            layer_map_t layers = IfcGeom::Kernel::get_layers(prod);
+			// @todo
+			IfcGeom::IteratorSettings s;
+			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file, s);
+			layer_map_t layers = mapping->get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();
         }
 

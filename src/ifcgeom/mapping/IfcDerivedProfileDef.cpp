@@ -17,22 +17,13 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <gp_Trsf2d.hxx>
-#include <TopoDS_Face.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcDerivedProfileDef* l, TopoDS_Shape& face) {
-	TopoDS_Face f;
-	gp_Trsf2d trsf2d;
-	if (convert_face(l->ParentProfile(), f) && IfcGeom::Kernel::convert(l->Operator(), trsf2d)) {
-		gp_Trsf trsf = trsf2d;
-		face = BRepBuilderAPI_Transform(f, trsf).Shape();
-		return true;
-	} else {
-		return false;
-	}
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcDerivedProfileDef* inst) {
+	auto it = map(inst->ParentProfile());
+	taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Operator()));
+	((taxonomy::geom_item*)it)->matrix.components() *= m.ccomponents();
+	return it;
 }

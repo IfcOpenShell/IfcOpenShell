@@ -20,26 +20,8 @@
 #ifndef IFCGEOMREPRESENTATION_H
 #define IFCGEOMREPRESENTATION_H
 
-#include <BRepMesh_IncrementalMesh.hxx>
-#include <BRepGProp_Face.hxx>
-
-#include <Poly_Triangulation.hxx>
-#include <TColgp_Array1OfPnt.hxx>
-#include <TColgp_Array1OfPnt2d.hxx>
-
-#include <TopoDS.hxx>
-#include <BRepTools.hxx>
-#include <TopExp_Explorer.hxx>
-
-#include <BRepAdaptor_Curve.hxx>
-#include <GCPnts_QuasiUniformDeflection.hxx>
-#include <Geom_SphericalSurface.hxx>
-
-#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom_schema_agnostic/IfcRepresentationShapeItem.h"
-
-#include <TopoDS_Compound.hxx>
+#include "../ifcgeom/IteratorSettings.h"
+#include "../ifcgeom/ConversionResult.h"
 
 #include <map>
 
@@ -63,25 +45,25 @@ namespace IfcGeom {
 		class IFC_GEOM_API BRep : public Representation {
 		private:
 			std::string id_;
-			const IfcGeom::IfcRepresentationShapeItems shapes_;
+			const IfcGeom::ConversionResults shapes_;
 			BRep(const BRep& other);
 			BRep& operator=(const BRep& other);
 		public:
-			BRep(const ElementSettings& settings, const std::string& id, const IfcGeom::IfcRepresentationShapeItems& shapes)
+			BRep(const ElementSettings& settings, const std::string& id, const IfcGeom::ConversionResults& shapes)
 				: Representation(settings)
 				, id_(id)
 				, shapes_(shapes)
 			{}
 			virtual ~BRep() {}
-			IfcGeom::IfcRepresentationShapeItems::const_iterator begin() const { return shapes_.begin(); }
-			IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return shapes_.end(); }
-			const IfcGeom::IfcRepresentationShapeItems& shapes() const { return shapes_; }
+			IfcGeom::ConversionResults::const_iterator begin() const { return shapes_.begin(); }
+			IfcGeom::ConversionResults::const_iterator end() const { return shapes_.end(); }
+			const IfcGeom::ConversionResults& shapes() const { return shapes_; }
 			const std::string& id() const { return id_; }
-			TopoDS_Compound as_compound(bool force_meters = false) const;
+			IfcGeom::ConversionResultShape* as_compound(bool force_meters = false) const;
 
 			bool calculate_volume(double&) const;
 			bool calculate_surface_area(double&) const;
-			bool calculate_projected_surface_area(const gp_Ax3& ax, double& along_x, double& along_y, double& along_z) const;
+			bool calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4& ax, double& along_x, double& along_y, double& along_z) const;
 		};
 
 		class IFC_GEOM_API Serialization : public Representation  {
@@ -117,16 +99,11 @@ namespace IfcGeom {
 			std::vector<int> _faces;
 			std::vector<int> _edges;
 			std::vector<double> _normals;
-            std::vector<double> uvs_;
+			std::vector<double> uvs_;
 			std::vector<int> _material_ids;
-			std::vector<Material> _materials;
+			std::vector<ifcopenshell::geometry::taxonomy::style> _materials;
 			size_t weld_offset_;
 			VertexKeyMap welds;
-
-			// when read from serialization, the element needs to take ownership of the styles,
-			// the material vector is constructor off of this.
-			// @todo this can be improved
-			std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>> styles_;
 
 		public:
 			const std::string& id() const { return id_; }
@@ -134,12 +111,13 @@ namespace IfcGeom {
 			const std::vector<int>& faces() const { return _faces; }
 			const std::vector<int>& edges() const { return _edges; }
 			const std::vector<double>& normals() const { return _normals; }
-            const std::vector<double>& uvs() const { return uvs_; }
+			std::vector<double>& uvs() { return uvs_; }
+			const std::vector<double>& uvs() const { return uvs_; }
 			const std::vector<int>& material_ids() const { return _material_ids; }
-			const std::vector<Material>& materials() const { return _materials; }
+			const std::vector<ifcopenshell::geometry::taxonomy::style>& materials() const { return _materials; }
 
 			Triangulation(const BRep& shape_model);
-			
+
 			Triangulation(
 				ElementSettings settings,
 				const std::string& id,
@@ -149,7 +127,8 @@ namespace IfcGeom {
 				const std::vector<double>& normals,
 				const std::vector<double>& uvs,
 				const std::vector<int>& material_ids,
-				const std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>>& styles)
+				const std::vector<ifcopenshell::geometry::taxonomy::style>& materials
+			)
 				: Representation(settings)
 				, id_(id)
 				, _verts(verts)
@@ -158,12 +137,8 @@ namespace IfcGeom {
 				, _normals(normals)
 				, uvs_(uvs)
 				, _material_ids(material_ids)
-				, styles_(styles)
-			{
-				for (auto& s : styles_) {
-					_materials.push_back(IfcGeom::Material(s));
-				}
-			}
+				, _materials(materials)
+			{}
 
 			virtual ~Triangulation() {}
 
@@ -171,10 +146,44 @@ namespace IfcGeom {
             /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
 			static std::vector<double> box_project_uvs(const std::vector<double> &vertices, const std::vector<double> &normals);
 
-		private:
 			/// Welds vertices that belong to different faces
-			int addVertex(int material_index, const gp_XYZ& p);
+			int addVertex(int material_index, double X, double Y, double Z);
+
+			void addNormal(double X, double Y, double Z) {
+				_normals.push_back(X);
+				_normals.push_back(Y);
+				_normals.push_back(Z);
+			}
+
+			void addFace(int style, int i0, int i1, int i2) {
+				_faces.push_back(i0);
+				_faces.push_back(i1);
+				_faces.push_back(i2);
+
+				_material_ids.push_back(style);
+			}
+
+			void addEdge(int style, int i0, int i1) {
+				_edges.push_back(i0);
+				_edges.push_back(i1);
+
+				_material_ids.push_back(style);
+			}
+
+			void registerEdge(int i0, int i1) {
+				_edges.push_back(i0);
+				_edges.push_back(i1);
+			}
+
 			void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int> >& edges_temp);
+
+
+		private:
+
+			void resetWelds() {
+				weld_offset_ += welds.size();
+				welds.clear();
+			}
 
 			Triangulation();
 			Triangulation(const Triangulation&);

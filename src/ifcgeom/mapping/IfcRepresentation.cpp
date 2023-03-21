@@ -17,12 +17,39 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
+	const bool use_body = !this->settings_.get(IfcGeom::IteratorSettings::INCLUDE_CURVES);
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresentationShapeItems& shapes) {
-	IfcSchema::IfcRepresentationItem::list::ptr items = l->Items();
+	auto items = map_to_collection(this, inst->Items());
+	if (items == nullptr) {
+		return nullptr;
+	}
+
+	/*
+	// Don't blindly flatten, as we're culling away IfcMappedItem transformations
+
+	auto flat = flatten(items);
+	if (flat == nullptr) {
+		return nullptr;
+	}
+	*/
+
+	// @todo
+	// if (s.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s).More() && TopoDS_Iterator(s).Value().ShapeType() == TopAbs_SOLID) {
+
+	return filter_in_place(items, [&use_body](taxonomy::item* i) {
+		// @todo just filter loops for now.
+		return (i->kind() != taxonomy::LOOP) == use_body;
+	});
+}
+
+/*
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* l, ConversionResults& shapes) {
+	IfcSchema::IfcRepresentationItem::list::ptr items = inst->Items();
 	bool part_succes = false;
 	if ( items->size() ) {
 		for ( IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++ it ) {
@@ -35,10 +62,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 					if (s.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s).More() && TopoDS_Iterator(s).Value().ShapeType() == TopAbs_SOLID) {
 						TopoDS_Iterator topo_it(s);
 						for (; topo_it.More(); topo_it.Next()) {
-							shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), topo_it.Value(), get_style(representation_item)));
+							shapes.push_back(ConversionResult(representation_item->data().id(), topo_it.Value(), get_style(representation_item)));
 						}
 					} else {
-						shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), s, get_style(representation_item)));
+						shapes.push_back(ConversionResult(representation_item->data().id(), s, get_style(representation_item)));
 					}
 					part_succes |= true;
 				}
@@ -47,3 +74,4 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 	}
 	return part_succes;
 }
+*/

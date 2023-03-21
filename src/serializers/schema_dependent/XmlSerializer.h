@@ -20,19 +20,28 @@
 #ifndef XMLSERIALIZERIMPL_H
 #define XMLSERIALIZERIMPL_H
 
+#include "../../ifcgeom/abstract_mapping.h"
 #include "../../ifcparse/macros.h"
 #include "../../serializers/XmlSerializer.h"
 
 #define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
+#undef INCLUDE_PARENT_PARENT_DIR
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x-definitions.h)
+#include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
-class MAKE_TYPE_NAME(XmlSerializer) : public XmlSerializer {
+class POSTFIX_SCHEMA(XmlSerializer) : public XmlSerializer {
 private:
 	IfcParse::IfcFile* file;
 
+	// @todo
+	IfcGeom::IteratorSettings settings_;
+	ifcopenshell::geometry::abstract_mapping* mapping_;
+
 public:
-	MAKE_TYPE_NAME(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
+	POSTFIX_SCHEMA(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
 		: XmlSerializer(0, "")
+		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_))
 	{
 		this->file = file;
 		this->xml_filename = xml_filename;

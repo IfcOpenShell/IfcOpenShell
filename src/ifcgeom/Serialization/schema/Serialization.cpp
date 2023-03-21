@@ -15,8 +15,20 @@
 #include <TColStd_Array1OfInteger.hxx>
 #include <Geom_BezierCurve.hxx>
 #include <Geom_TrimmedCurve.hxx>
+#include <BRep_Tool.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+#include <TopoDS_Wire.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
 
-#include "IfcGeom.h"
+#include "../../../ifcparse/macros.h"
+#include "../../../ifcparse/IfcParse.h"
+
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../../ifcparse/x.h)
+#include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
+#undef INCLUDE_PARENT_PARENT_DIR
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../../ifcparse/x-definitions.h)
+#include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
 template <typename T, typename U>
 int convert_to_ifc(const T& t, U*& u, bool /*advanced*/) {
@@ -565,7 +577,7 @@ int convert_to_ifc(const TopoDS_Shape& s, U*& item, bool advanced) {
 	return faces->size();
 }
 
-IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& shape, bool advanced) {
+IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise)(const TopoDS_Shape& shape, bool advanced) {
 
 #ifndef SCHEMA_HAS_IfcAdvancedBrep
 	advanced = false;
@@ -677,7 +689,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 	return new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 }
 
-IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& shape, double deflection) {
+IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate)(const TopoDS_Shape& shape, double deflection) {
 	BRepMesh_IncrementalMesh(shape, deflection);
 
 	IfcSchema::IfcFace::list::ptr faces(new IfcSchema::IfcFace::list);

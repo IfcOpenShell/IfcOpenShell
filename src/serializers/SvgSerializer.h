@@ -22,7 +22,7 @@
 #ifndef SVGSERIALIZER_H
 #define SVGSERIALIZER_H
 
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
 #include "../serializers/serializers_api.h"
 #include "../serializers/util.h"
 
@@ -44,7 +44,7 @@
 #include <string>
 #include <limits>
 
-typedef std::pair<IfcUtil::IfcBaseEntity*, std::string> drawing_key;
+typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
 
 struct storey_sorter {
 	bool operator()(const drawing_key& ad, const drawing_key& bd) const {
@@ -88,12 +88,12 @@ struct storey_sorter {
 				}
 			}
 		}
-		return std::less<IfcUtil::IfcBaseEntity*>()(a, b);
+		return std::less<const IfcUtil::IfcBaseEntity*>()(a, b);
 	}
 };
 
 struct horizontal_plan {
-	IfcUtil::IfcBaseEntity* storey;
+	const IfcUtil::IfcBaseEntity* storey;
 	double elevation, offset, next_elevation;
 };
 
@@ -113,8 +113,8 @@ struct geometry_data {
 	TopoDS_Shape compound_local;
 	std::vector<boost::optional<std::vector<double>>> dash_arrays;
 	gp_Trsf trsf;
-	IfcUtil::IfcBaseEntity* product;
-	IfcUtil::IfcBaseEntity* storey;
+	const IfcUtil::IfcBaseEntity* product;
+	const IfcUtil::IfcBaseEntity* storey;
 	double storey_elevation;
 	std::string ifc_name, svg_name;
 };
@@ -169,10 +169,10 @@ protected:
 	int profile_threshold_;
 
 	IfcParse::IfcFile* file;
-	IfcUtil::IfcBaseEntity* storey_;
+	const IfcUtil::IfcBaseEntity* storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 	std::map<drawing_key, drawing_meta> drawing_metadata;
-	std::map<IfcUtil::IfcBaseEntity*, hlr_t> storey_hlr;
+	std::map<const IfcUtil::IfcBaseEntity*, hlr_t> storey_hlr;
 
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
@@ -235,14 +235,14 @@ public:
     void write(const IfcGeom::BRepElement* o);
     void write(path_object& p, const TopoDS_Shape& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
-    path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
+    path_object& start_path(const gp_Pln& p, const IfcUtil::IfcBaseEntity* storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
 	bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
-	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0);
+	void setSectionHeight(double h, const IfcUtil::IfcBaseEntity* storey = 0);
 	void setSectionHeightsFromStoreys(double offset=1.2);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }

@@ -43,14 +43,14 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		return;
 	}
 
-	ifcopenshell::geometry::settings settings;
+	IfcGeom::IteratorSettings settings;
 
-	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
-	settings.set(ifcopenshell::geometry::settings::WELD_VERTICES, false);
-	settings.set(ifcopenshell::geometry::settings::SEW_SHELLS, true);
-	settings.set(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS, true);
-	settings.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
-	settings.set(ifcopenshell::geometry::settings::DISABLE_OPENING_SUBTRACTIONS, true);
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
+	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, true);
 
 	ifcopenshell::geometry::Converter c("cgal", &f2, settings);
 
@@ -72,7 +72,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 				for (auto& e : wire->children) {
 					auto edge = (taxonomy::edge*) e;
 					auto p3 = boost::get<taxonomy::point3>(edge->start);
-					auto p4 = *((taxonomy::geom_item*)item)->matrix.components * p3.components->homogeneous();
+					auto p4 = ((taxonomy::geom_item*)item)->matrix.ccomponents() * p3.ccomponents().homogeneous();
 					Kernel_::Point_3 P(p4(0), p4(1), p4(2));
 					elem_to_space_boundary_coords[{g1, g2}].emplace_back(P);
 				}

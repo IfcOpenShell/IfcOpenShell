@@ -17,101 +17,84 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
+	auto loop = new taxonomy::loop;
+
+#ifdef SCHEMA_HAS_IfcSegment
+	// 4x3
+	IfcSchema::IfcSegment::list::ptr segments = inst->Segments();
+#else
+	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = inst->Segments();
+#endif
+	
+	for (auto& segment : *segments) {
+		if (!(segment)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
+			Logger::Error("Not implemented", segment);
+			return nullptr;
+		}
+
+		IfcSchema::IfcCurve* curve = ((IfcSchema::IfcCompositeCurveSegment*)(segment))->ParentCurve();
+
+		if (curve->as<IfcSchema::IfcLine>()) {
+			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
+			double u0 = 0.0;
+			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
+			if (u1 < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
+				Logger::Warning("Segment length below tolerance", segment);
+			}
+
+			auto e = new taxonomy::edge;
+			e->basis = map(curve);
+			e->start = u0;
+			e->end = u1;
+			e->orientation_2.reset(segment->SameSense());
+
+			loop->children.push_back(e);
+		} else {
+			auto crv = map(segment->ParentCurve());
+			if (crv) {
+				if (crv->kind() == taxonomy::EDGE) {
+					((taxonomy::edge*)crv)->orientation_2.reset(segment->SameSense());
+					loop->children.push_back(crv);
+				} else if (crv->kind() == taxonomy::LOOP) {
+					if (!segment->SameSense()) {
+						crv->reverse();
+					}
+					auto curve_segments = ((taxonomy::loop*)crv)->children_as<taxonomy::edge>();
+					for (auto& s : curve_segments) {
+						loop->children.push_back(s);
+					}
+					// @todo delete crv without children
+				}
+			}
+		}
+	}
+
+	aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
+	const bool force_close = profile && profile->size() > 0;
+	loop->closed = force_close;
+	return loop;
+}
+
+/*
+
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
-#include "../ifcgeom/IfcGeom.h"
-
+#include "mapping.h"
 #include "../ifcgeom_schema_agnostic/wire_builder.h"
 
 #define _USE_MATH_DEFINES
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define mapping POSTFIX_SCHEMA(mapping)
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
-	if ( getValue(GV_PLANEANGLE_UNIT)<0 ) {
-		Logger::Message(Logger::LOG_WARNING,"Creating a composite curve without unit information:",l);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
 
-		// Temporarily pretend we do have unit information
-		setValue(GV_PLANEANGLE_UNIT,1.0);
-		
-		bool succes_radians = false;
-        bool succes_degrees = false;
-        bool use_radians = false;
-        bool use_degrees = false;
-
-		// First try radians
-		TopoDS_Wire wire_radians, wire_degrees;
-        try {
-		    succes_radians = IfcGeom::Kernel::convert(l,wire_radians);
-        } catch (const std::exception& e) {
-			Logger::Notice(e);
-		} catch (const Standard_Failure& e) {
-			if (e.GetMessageString() && strlen(e.GetMessageString())) {
-				Logger::Notice(e.GetMessageString());
-			} else {
-				Logger::Notice("Unknown error using radians");
-			}
-		} catch (...) {
-			Logger::Notice("Unknown error using radians");
-		}
-
-		// Now try degrees
-		setValue(GV_PLANEANGLE_UNIT,0.0174532925199433);
-        try {
-		    succes_degrees = IfcGeom::Kernel::convert(l,wire_degrees);
-        } catch (const std::exception& e) {
-			Logger::Notice(e);
-		} catch (const Standard_Failure& e) {
-			if (e.GetMessageString() && strlen(e.GetMessageString())) {
-				Logger::Notice(e.GetMessageString());
-			} else {
-				Logger::Notice("Unknown error using degrees");
-			}
-		} catch (...) {
-			Logger::Notice("Unknown error using degrees");
-		}
-
-		// Restore to unknown unit state
-		setValue(GV_PLANEANGLE_UNIT,-1.0);
-
-		if ( succes_degrees && ! succes_radians ) {
-			use_degrees = true;
-		} else if ( succes_radians && ! succes_degrees ) {
-			use_radians = true;
-		} else if ( succes_radians && succes_degrees ) {
-			if ( wire_degrees.Closed() && ! wire_radians.Closed() ) {
-				use_degrees = true;
-			} else if ( wire_radians.Closed() && ! wire_degrees.Closed() ) {
-				use_radians = true;
-			} else {
-				// No heuristic left to prefer the one over the other,
-				// apparently both variants are equally successful.
-				// The curve might be composed of only straight segments.
-				// Let's go with the wire created using radians as that
-				// at least is a SI unit.
-				use_radians = true;
-			}
-		}
-
-		if ( use_radians ) {
-			Logger::Message(Logger::LOG_NOTICE,"Used radians to create composite curve");
-            wire = wire_radians;
-		} else if ( use_degrees ) {
-			Logger::Message(Logger::LOG_NOTICE,"Used degrees to create composite curve");
-            wire = wire_degrees;
-		}
-
-		return use_radians || use_degrees;
-	}
-
-#ifdef SCHEMA_HAS_IfcSegment
-	// 4x3
-	IfcSchema::IfcSegment::list::ptr segments = l->Segments();
-#else
-	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
-#endif
 
 	TopTools_ListOfShape converted_segments;
 	
@@ -135,7 +118,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 			Handle_Geom_Curve handle;
 			convert_curve(curve, handle);
 			double u0 = 0.0;
-			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * getValue(GV_LENGTH_UNIT);
+			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
 			if (u1 < getValue(GV_PRECISION)) {
 				Logger::Warning("Segment length below tolerance", *it);
 			}
@@ -172,7 +155,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
-	aggregate_of_instance::ptr profile = l->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
+	aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
 	const bool force_close = profile && profile->size() > 0;
 
 	util::wire_builder bld(getValue(GV_PRECISION), l);
@@ -181,3 +164,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 
 	return true;
 }
+
+*/

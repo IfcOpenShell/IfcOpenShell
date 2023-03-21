@@ -21,36 +21,32 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include <ShapeFix_Shape.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/wire_utils.h"
+#include "mapping.h"
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define mapping POSTFIX_SCHEMA(mapping)
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcAnnotationFillArea* l, TopoDS_Shape& face) {
-	TopoDS_Wire outer_boundary;
-	if (!convert_wire(l->OuterBoundary(), outer_boundary)) {
-		return false;
-	}
+using namespace ifcopenshell::geometry;
 
-	util::assert_closed_wire(outer_boundary, getValue(GV_PRECISION));
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcAnnotationFillArea* inst) {
+	auto loop = map(inst->OuterBoundary());
+	if (loop) {
+		auto face = new taxonomy::face;
+		((taxonomy::loop*)loop)->external = true;
+		face->children = { loop };
 
-	BRepBuilderAPI_MakeFace mf(outer_boundary);
-
-	if (l->InnerBoundaries()) {
-		IfcSchema::IfcCurve::list::ptr inner_boundaries = *l->InnerBoundaries();
-
-		for(IfcSchema::IfcCurve::list::it it = inner_boundaries->begin(); it != inner_boundaries->end(); ++it) {
-			TopoDS_Wire hole;
-			if (convert_wire(*it, hole)) {
-				util::assert_closed_wire(hole, getValue(GV_PRECISION));
-				mf.Add(hole);
+		if (inst->InnerBoundaries()) {
+			IfcSchema::IfcCurve::list::ptr inner_boundaries = *inst->InnerBoundaries();
+			for (auto& v : *inner_boundaries) {
+				auto inner_loop = map(v);
+				if (inner_loop) {
+					((taxonomy::loop*)inner_loop)->external = false;
+					face->children.push_back(inner_loop);
+				}
 			}
 		}
+
+		return face;
+	} else {
+		return nullptr;
 	}
-
-	ShapeFix_Shape sfs(mf.Face());
-	sfs.Perform();
-	face = sfs.Shape();
-
-	return true;
 }

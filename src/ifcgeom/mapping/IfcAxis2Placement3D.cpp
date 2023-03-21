@@ -22,55 +22,42 @@
 #include <gp_Dir.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Ax3.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "mapping.h"
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define mapping POSTFIX_SCHEMA(mapping)
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement3D* l, gp_Trsf& trsf) {
-	IN_CACHE(IfcAxis2Placement3D, l, gp_Trsf, trsf)
+using namespace ifcopenshell::geometry;
 
-	gp_Pnt o;
-	gp_Dir axis(0, 0, 1);
-	gp_Dir refDirection;
-
-	if (!l->Location()->declaration().is("IfcCartesianPoint")) {
-		// only applicable to 4x3 rc2
-		Logger::Error("Not implemented", l->Location());
-		return false;
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
+	Eigen::Vector3d o, axis(0, 0, 1), refDirection, X(1, 0, 0);
+	{
+		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Location()));
+		o = *v.components_;
 	}
-
-	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(), o);
-	const bool hasAxis = !!l->Axis();
-	const bool hasRef = !!l->RefDirection();
+	const bool hasAxis = !!inst->Axis();
+	const bool hasRef = !!inst->RefDirection();
 
 	if (hasAxis != hasRef) {
-		Logger::Warning("Axis and RefDirection should be specified together", l);
+		Logger::Warning("Axis and RefDirection should be specified together", inst);
 	}
 
 	if (hasAxis) {
-		IfcGeom::Kernel::convert(l->Axis(), axis);
+		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->Axis()));
+		axis = *v.components_;
 	}
 
 	if (hasRef) {
-		IfcGeom::Kernel::convert(l->RefDirection(), refDirection);
+		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->RefDirection()));
+		refDirection = *v.components_;
 	} else {
-		if (!axis.IsParallel(gp::DX(), 1.e-5)) {
-			refDirection = gp::DX();
+		if (acos(axis.dot(X)) > 1.e-5) {
+			refDirection = { 1., 0., 0. };
 		} else {
-			refDirection = gp::DZ();
+			refDirection = { 0., 0., 1. };
 		}
-		gp_Vec Xvec = axis.Dot(refDirection) * axis;
-		gp_Vec Xaxis = refDirection.XYZ() - Xvec.XYZ();
+		auto Xvec = axis.dot(refDirection) * axis;
+		auto Xaxis = refDirection - Xvec;
 		refDirection = Xaxis;
 	}
-
-	gp_Ax3 ax3(o, axis, refDirection);
-
-	if (!util::axis_equal(ax3, (gp_Ax3) gp::XOY(), getValue(GV_PRECISION))) {
-		trsf.SetTransformation(ax3, gp::XOY());
-	}
-	
-	CACHE(IfcAxis2Placement3D,l,trsf)
-	return true;
+	return new taxonomy::matrix4(o, axis, refDirection);
 }

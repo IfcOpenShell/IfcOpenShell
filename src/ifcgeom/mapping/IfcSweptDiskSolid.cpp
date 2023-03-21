@@ -17,30 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <Geom_Circle.hxx>
-#include <Geom_Ellipse.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopExp.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRepAlgoAPI_Cut.hxx>
-#include <ShapeFix_Shape.hxx>
-#include <BRepCheck_Analyzer.hxx>
-#include <Geom_Line.hxx>
-#include <Geom_Plane.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <BRepFilletAPI_MakeFillet2d.hxx>
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../profile_helper.h"
 
-#include "../ifcgeom_schema_agnostic/sweep_utils.h"
-#include "../ifcgeom_schema_agnostic/wire_utils.h"
-#include "../ifcgeom_schema_agnostic/face_definition.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include <boost/math/constants/constants.hpp>
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
-
+/*
 namespace {
 	std::string format_edge(const TopoDS_Edge& e) {
 		std::ostringstream oss;
@@ -62,25 +47,77 @@ namespace {
 		return oss.str();
 	}
 }
+*/
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
+	auto loop = map(inst->Directrix());
+
+	// Start- EndParam became optional in IFC4
+#ifdef SCHEMA_IfcSweptDiskSolid_StartParam_IS_OPTIONAL
+	auto sp = inst->StartParam();
+	auto ep = inst->EndParam();
+#else
+	boost::optional<double> sp, ep;
+	sp = inst->StartParam();
+	ep = inst->EndParam();
+#endif
+
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+
+#ifdef SCHEMA_HAS_IfcSweptDiskSolidPolygonal
+	if (inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
+		auto fr = inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()->FilletRadius();
+		if (fr && *fr > tol) {
+			fillet_loop((taxonomy::loop*)loop, *fr);
+		}
+	}
+#endif
+
+	std::vector<double> radii = { inst->Radius() * length_unit_ };
+
+	if (inst->InnerRadius()) {
+		// Subtraction of pipes with small radii is unstable.
+		radii.push_back(*inst->InnerRadius() * length_unit_);
+	}
+
+	taxonomy::face f;
+
+	{
+		for (auto it = radii.begin(); it != radii.end(); ++it) {
+			const double r = *it;
+			const bool exterior = it == radii.begin();
+
+			auto c = new taxonomy::circle;
+			c->radius = r;
+
+			auto e = new taxonomy::edge;
+			e->basis = c;
+			e->start = 0.;
+			e->end = 2 * boost::math::constants::pi<double>();
+
+			auto l = new taxonomy::loop;
+			l->children = { e };
+			l->external = exterior;
+
+			f.children.push_back(l);
+		}
+	}
+
+	return new taxonomy::surface_curve_sweep(taxonomy::matrix4(), f, nullptr, loop);
+
+
+	
+	/*
+	
 	TopoDS_Wire wire, section1, section2;
 
-	bool hasInnerRadius = !!l->InnerRadius();
+	bool hasInnerRadius = !!inst->InnerRadius();
 
-	if (!convert_wire(l->Directrix(), wire)) {
+	if (!convert_wire(inst->Directrix(), wire)) {
 		return false;
 	}
 	
-	// Start- EndParam became optional in IFC4
-#ifdef SCHEMA_IfcSweptDiskSolid_StartParam_IS_OPTIONAL
-	auto sp = l->StartParam();
-	auto ep = l->EndParam();
-#else
-	boost::optional<double> sp, ep;
-	sp = l->StartParam();
-	ep = l->EndParam();
-#endif
+
 
 	if (util::count(wire, TopAbs_EDGE) == 1 && sp && ep) {
 		TopoDS_Vertex v0, v1;
@@ -108,8 +145,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	double fillet = 0.;
 
 #ifdef SCHEMA_HAS_IfcSweptDiskSolidPolygonal
-	if (l->as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
-		auto fr = l->as<IfcSchema::IfcSweptDiskSolidPolygonal>()->FilletRadius();
+	if (inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
+		auto fr = inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()->FilletRadius();
 		if (fr) {
 			fillet = *fr;
 		}
@@ -132,11 +169,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 					const TopoDS_Edge& a = sorted_edges[i];
 					const TopoDS_Edge& b = sorted_edges[j % sorted_edges.size()];
 
-					/*
-					std::wcout << "INPUT:" << std::endl;
-					std::wcout << "a " << format_edge(a).c_str() << std::endl;
-					std::wcout << "b " << format_edge(b).c_str() << std::endl;
-					*/
+					// std::wcout << "INPUT:" << std::endl;
+					// std::wcout << "a " << format_edge(a).c_str() << std::endl;
+					// std::wcout << "b " << format_edge(b).c_str() << std::endl;
 
 					// @todo this code is duplicated with code from IfcFace, refactor
 					// Help Open Cascade by finding the plane more efficiently
@@ -188,12 +223,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 								// Delete BC
 								sorted_edges.erase(sorted_edges.begin() + i);
 
-								/*
-								std::wcout << "OUTPUT:" << std::endl;
-								for (auto& e : new_sorted_edges) {
-									std::wcout << " " << format_edge(e).c_str() << std::endl;
-								}
-								*/
+								// std::wcout << "OUTPUT:" << std::endl;
+								// for (auto& e : new_sorted_edges) {
+								// 	std::wcout << " " << format_edge(e).c_str() << std::endl;
+								// }
 
 								// Insert AB1 B1B2 B2C
 								sorted_edges.insert(sorted_edges.begin() + i, new_sorted_edges.begin(), new_sorted_edges.end());
@@ -235,7 +268,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
 	
-	util::process_sweep(wire, l->Radius() * getValue(GV_LENGTH_UNIT), shape);
+	util::process_sweep(wire, inst->Radius() * length_unit_, shape);
 
 	if (shape.IsNull()) {
 		return false;
@@ -245,7 +278,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 
 	if (hasInnerRadius) {
 		// Subtraction of pipes with small radii is unstable.
-		r2 = *l->InnerRadius() * getValue(GV_LENGTH_UNIT);
+		r2 = *inst->InnerRadius() * length_unit_;
 	}
 
 	if (r2 > getValue(GV_PRECISION) * 10.) {
@@ -283,4 +316,5 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	}
 
 	return true;
+	*/
 }

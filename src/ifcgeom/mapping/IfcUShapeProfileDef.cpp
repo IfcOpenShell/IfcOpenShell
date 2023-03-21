@@ -17,22 +17,22 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf2d.hxx>
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/profile_helper.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "../profile_helper.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Shape& face) {
-	const bool doEdgeFillet = !!l->EdgeRadius();
-	const bool doFillet = !!l->FilletRadius();
-	const bool hasSlope = !!l->FlangeSlope();
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcUShapeProfileDef* inst) {
+	const bool doEdgeFillet = !!inst->EdgeRadius();
+	const bool doFillet = !!inst->FilletRadius();
+	const bool hasSlope = !!inst->FlangeSlope();
 
-	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double x = l->FlangeWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double d1 = l->WebThickness() * getValue(GV_LENGTH_UNIT);
-	const double d2 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
-	const double slope = l->FlangeSlope().get_value_or(0.) * getValue(GV_PLANEANGLE_UNIT);
+	const double y = inst->Depth() / 2.0f * length_unit_;
+	const double x = inst->FlangeWidth() / 2.0f * length_unit_;
+	const double d1 = inst->WebThickness() * length_unit_;
+	const double d2 = inst->FlangeThickness() * length_unit_;
+	const double slope = inst->FlangeSlope().get_value_or(0.) * angle_unit_;
 	
 	double dy1 = 0.0f;
 	double dy2 = 0.0f;
@@ -40,10 +40,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Sh
 	double f2 = 0.0f;
 
 	if (doFillet) {
-		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *inst->FilletRadius() * length_unit_;
 	}
 	if (doEdgeFillet) {
-		f2 = *l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f2 = *inst->EdgeRadius() * length_unit_;
 	}
 
 	if (hasSlope) {
@@ -51,22 +51,31 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Sh
 		dy2 = x * tan(slope);
 	}
 
-	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
-		return false;
+	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+
+	if (x < tol || y < tol || d1 < tol || d2 < tol) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return nullptr;
 	}
 
-	gp_Trsf2d trsf2d;
+	Eigen::Matrix4d m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = l->Position() != nullptr;
+	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(l->Position(), trsf2d);
+		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = m.ccomponents();
 	}
 
-	double coords[16] = {-x,-y, x,-y, x,-y+d2-dy2, -x+d1,-y+d2+dy1, -x+d1,y-d2-dy1, x,y-d2+dy2, x,y, -x,y};
-	int fillets[4] = {2,3,4,5};
-	double radii[4] = {f2,f1,f1,f2};
-	return util::profile_helper(8, coords, (doFillet || doEdgeFillet) ? 4 : 0, fillets, radii, trsf2d, face);
+	return profile_helper(m4, {
+		{{-x,-y}},
+		{{x,-y}},
+		{{x,-y + d2 - dy2},{f2} },
+		{{-x + d1,-y + d2 + dy1},{ f1}},
+		{{-x + d1,y - d2 - dy1},{ f1}},
+		{{x,y - d2 + dy2},{ f2}},
+		{{x,y}},
+		{{-x,y}}
+	});
 }

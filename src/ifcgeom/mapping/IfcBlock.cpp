@@ -19,21 +19,18 @@
 
 #include <gp_Trsf.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
-#include "../ifcgeom/IfcGeom.h"
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+using namespace ifcopenshell::geometry;
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcBlock* l, TopoDS_Shape& shape) {
-	const double dx = l->XLength() * getValue(GV_LENGTH_UNIT);
-	const double dy = l->YLength() * getValue(GV_LENGTH_UNIT);
-	const double dz = l->ZLength() * getValue(GV_LENGTH_UNIT);
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcBlock* inst) {
+	const double dx = inst->XLength() * length_unit_;
+	const double dy = inst->YLength() * length_unit_;
+	const double dz = inst->ZLength() * length_unit_;
 
-	BRepPrimAPI_MakeBox builder(dx, dy, dz);
-	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(),trsf);
+	auto solid = create_box(dx, dy, dz);
+	solid->matrix = as<taxonomy::matrix4>(map(inst->Position()));
 
-	// IfcCsgPrimitive3D.Position has unit scale factor
-	shape = builder.Solid().Moved(trsf);
-
-	return true;
+	return solid;
 }

@@ -20,13 +20,12 @@
 #ifndef IFCGEOMTREE_H
 #define IFCGEOMTREE_H
 
-#include "../ifcparse/IfcFile.h"
+#include "../../../ifcparse/IfcFile.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom_schema_agnostic/Kernel.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../../../ifcgeom/IfcGeomElement.h"
+#include "../../../ifcgeom/Iterator.h"
+#include "OpenCascadeConversionResult.h"
+#include "base_utils.h"
 
 #include <NCollection_UBTree.hxx>
 #include <BRepBndLib.hxx>
@@ -39,13 +38,15 @@
 #include <TopTools_DataMapOfShapeInteger.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepExtrema_ExtPF.hxx>
+#include <TopoDS_Face.hxx>
+#include <TopoDS.hxx>
 
 namespace IfcGeom {
 
 	struct ray_intersection_result {
 		double distance;
 		int style_index;
-		IfcUtil::IfcBaseEntity* instance;
+		const IfcUtil::IfcBaseEntity* instance;
 		std::array<double, 3> position;
 		std::array<double, 3> normal;
 		double ray_distance;
@@ -267,8 +268,16 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
-				auto compound = elem->geometry().as_compound();
-				compound.Move(elem->transformation().data());
+				auto shp = elem->geometry().as_compound();
+				auto compound = ((OpenCascadeShape*)shp)->shape();
+				const auto& m = elem->transformation().data().ccomponents();
+				gp_Trsf tr;
+				tr.SetValues(
+					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+					m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+				);
+				compound.Move(tr);
 				return select(compound, completely_within, extend);
 			}
 
@@ -354,7 +363,7 @@ namespace IfcGeom {
 		};
 	}
 
-	class tree : public impl::tree<IfcUtil::IfcBaseEntity*> {
+	class tree : public impl::tree<const IfcUtil::IfcBaseEntity*> {
 	public:
 
 		tree() {};
@@ -377,7 +386,7 @@ namespace IfcGeom {
 			settings_.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 			settings_.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
 
-			IfcGeom::Iterator it(settings_, &f);
+			IfcGeom::Iterator it(settings_, &f, {}, 1);
 
 			add_file(it);
 		}
@@ -394,27 +403,30 @@ namespace IfcGeom {
 			if (!elem) {
 				return;
 			}
-			auto compound = elem->geometry().as_compound();
-			compound.Move(elem->transformation().data());
+			auto compound_generic = elem->geometry().as_compound();
+			auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)compound_generic)->shape();
+			
+			const auto& m = elem->transformation().data().ccomponents();
+			gp_Trsf tr;
+			tr.SetValues(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+			);
+
+			compound.Move(tr);
 			add(elem->product(), compound);
 			auto git = elem->geometry().begin();
 
 			if (enable_face_styles_) {
 				TopoDS_Iterator it(compound);
 				for (; it.More(); it.Next(), ++git) {
-					std::unique_ptr<IfcGeom::Material> adaptor;					
-					if (git->hasStyle()) {
-						adaptor.reset(new Material(git->StylePtr()));
-					} else {
-						adaptor.reset(new Material(IfcGeom::get_default_style(elem->type())));
-					}
-					
 					// Assumption is that the number of styles is small, so the linear lookup time is not significant.
-					auto sit = std::find(styles_.begin(), styles_.end(), *adaptor);
+					auto sit = std::find(styles_.begin(), styles_.end(), git->Style());
 					size_t index;
 					if (sit == styles_.end()) {
 						index = styles_.size();
-						styles_.push_back(*adaptor);
+						styles_.push_back(git->Style());
 					} else {
 						index = std::distance(styles_.begin(), sit);
 					}
@@ -492,7 +504,7 @@ namespace IfcGeom {
 			enable_face_styles_ = b;
 		}
 
-		const std::vector<IfcGeom::Material>& styles() const {
+		const std::vector<ifcopenshell::geometry::taxonomy::style>& styles() const {
 			return styles_;
 		}
 
@@ -500,7 +512,7 @@ namespace IfcGeom {
 		typedef TopTools_DataMapOfShapeInteger face_style_map_t;
 
 		face_style_map_t face_styles_;
-		std::vector<IfcGeom::Material> styles_;
+		std::vector<ifcopenshell::geometry::taxonomy::style> styles_;
 	};
 
 }

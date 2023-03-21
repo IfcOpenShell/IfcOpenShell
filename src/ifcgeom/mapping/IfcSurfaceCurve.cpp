@@ -17,13 +17,13 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcgeom/IfcGeom.h"
-
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#include "mapping.h"
+#define mapping POSTFIX_SCHEMA(mapping)
+using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcSurfaceCurve
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurve* sc, Handle(Geom_Curve)& curve) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcSurfaceCurve* inst) {
 	// @todo take into account PCurves.
-	return convert_curve(sc->Curve3D(), curve);
+	return map(inst->Curve3D());
 }
 #endif
