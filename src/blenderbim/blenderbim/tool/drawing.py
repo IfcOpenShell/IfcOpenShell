@@ -540,14 +540,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_literal = cls.get_text_literal(obj)
         if not ifc_literal:
             return
-        value = ifc_literal.Literal
         product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
-        if product:
-            for variable in re.findall("{{.*?}}", value):
-                value = value.replace(
-                    variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or "")
-                )
-        props.value = value
+        props.value = cls.replace_text_literal_variables(ifc_literal.Literal, product)
 
     @classmethod
     def update_text_size_pset(cls, obj):
@@ -958,6 +952,16 @@ class Drawing(blenderbim.core.tool.Drawing):
         b_block = cls.get_camera_block(b)
         b_tree = mathutils.bvhtree.BVHTree.FromPolygons(b_block["verts"], b_block["faces"])
         return bool(a_tree.overlap(b_tree))
+
+    @classmethod
+    def replace_text_literal_variables(cls, text, product):
+        if not product:
+            return text
+        for variable in re.findall("{{.*?}}", text):
+            text = text.replace(
+                variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or "")
+                )
+        return text
 
     @classmethod
     def sync_object_representation(cls, obj):
