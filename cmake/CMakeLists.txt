@@ -62,6 +62,8 @@ OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OF
 endif()
 OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
+OPTION(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
+OPTION(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
 
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
@@ -164,11 +166,17 @@ set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
 endif()
 
 
-list(APPEND GEOMETRY_KERNELS opencascade)
 
 if (NOT MINIMAL_BUILD)
-add_definitions(-DIFOPSH_USE_CGAL)
+if (WITH_CGAL)
+add_definitions(-DIFOPSH_WITH_CGAL)
 list(APPEND GEOMETRY_KERNELS cgal)
+endif()
+endif()
+
+if (WITH_OPENCASCADE)
+add_definitions(-DIFOPSH_WITH_OPENCASCADE)
+list(APPEND GEOMETRY_KERNELS opencascade)
 endif()
 
 # Set INSTALL_RPATH for target
@@ -275,6 +283,8 @@ IF(MSVC)
     add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
 ENDIF()
 
+if (WITH_OPENCASCADE)
+
 # Open CASCADE
 IF("${OCC_INCLUDE_DIR}" STREQUAL "")
     FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
@@ -363,6 +373,8 @@ if(OCCT_STATIC)
     if (NOT WIN32)
         set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
     endif()
+endif()
+
 endif()
 
 endif(BUILD_IFCGEOM)
@@ -617,7 +629,7 @@ ENDIF()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
-    ${EIGEN_DIR}
+    ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR}
 )
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
@@ -710,11 +722,26 @@ if (BUILD_IFCGEOM)
 	endforeach()
 	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
+
 if (BUILD_CONVERT OR BUILD_IFCPYTHON)
 	foreach(s ${SCHEMA_VERSIONS})
 		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${s})
 	endforeach()
 	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
+
+	if (WITH_OPENCASCADE)
+		foreach(s ${SCHEMA_VERSIONS})
+			set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${s})
+
+			add_library(geometry_serializer_ifc${s} STATIC ../src/ifcgeom/Serialization/schema/Serialization.cpp)
+			set_target_properties(geometry_serializer_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
+			list(APPEND geometry_serializer_libraries geometry_serializer_ifc${s})
+		endforeach()
+
+		add_library(geometry_serializer STATIC ../src/ifcgeom/Serialization/Serialization.cpp)
+		target_link_libraries(geometry_serializer ${geometry_serializer_libraries})
+		set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} geometry_serializer ${geometry_serializer_libraries})
+	endif()
 endif()
 
 # IfcParse
@@ -755,6 +782,18 @@ set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERS
 TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
 
 if (BUILD_IFCGEOM)
+
+find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
+find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
+if(NOT libGMP)
+        message(FATAL_ERROR "Unable to find GMP library files, aborting")
+endif()
+if(NOT libMPFR)
+        message(FATAL_ERROR "Unable to find MPFR library files, aborting")
+endif()
+
+list(APPEND CGAL_LIBRARIES "${libMPFR}")
+list(APPEND CGAL_LIBRARIES "${libGMP}")
 
 foreach(kernel ${GEOMETRY_KERNELS})
 
