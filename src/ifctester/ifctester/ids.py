@@ -78,10 +78,10 @@ class Ids:
 
     def asdict(self):
         ids_dict = {
-            "@xmlns": "http://standards.buildingsmart.org/IDS",
-            "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
-            "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
+            "@xmlns": "https://standards.buildingsmart.org/IDS",
+            "@xmlns:xs": "https://www.w3.org/2001/XMLSchema",
+            "@xmlns:xsi": "https://www.w3.org/2001/XMLSchema-instance",
+            "@xsi:schemaLocation": "https://standards.buildingsmart.org/IDS/ids_09.xsd",
             "info": self.info,
             "specifications": {"specification": []},
         }
