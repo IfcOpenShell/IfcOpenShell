@@ -35,6 +35,7 @@ classes = (
     operator.SwitchRepresentation,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
     ui.BIM_PT_derived_placements,
     ui.BIM_PT_representations,
@@ -48,6 +49,7 @@ addon_keymaps = []
 
 
 def register():
+    bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
     bpy.types.OBJECT_PT_transform.append(ui.BIM_PT_transform)
     bpy.types.VIEW3D_MT_object.append(ui.object_menu)
@@ -71,6 +73,7 @@ def unregister():
     bpy.types.VIEW3D_MT_object.remove(ui.object_menu)
     bpy.types.OBJECT_PT_transform.remove(ui.BIM_PT_transform)
     del bpy.types.Scene.BIMGeometryProperties
+    del bpy.types.Object.BIMGeometryProperties
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:

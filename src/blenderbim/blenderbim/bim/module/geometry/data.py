@@ -35,6 +35,7 @@ class RepresentationsData:
     @classmethod
     def load(cls):
         cls.data = {"representations": cls.representations()}
+        cls.data["contexts"] = cls.contexts()
         cls.is_loaded = True
 
     @classmethod
@@ -62,6 +63,25 @@ class RepresentationsData:
                 data["ContextIdentifier"] = representation.ContextOfItems.ContextIdentifier or ""
                 data["TargetView"] = representation.ContextOfItems.TargetView or ""
             results.append(data)
+        return results
+
+    @classmethod
+    def contexts(cls):
+        results = []
+        for element in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            results.append((str(element.id()), element.ContextType or "Unnamed", ""))
+        for element in tool.Ifc.get().by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
+            results.append(
+                (
+                    str(element.id()),
+                    "{}/{}/{}".format(
+                        element.ContextType or "Unnamed",
+                        element.ContextIdentifier or "Unnamed",
+                        element.TargetView or "Unnamed",
+                    ),
+                    "",
+                )
+            )
         return results
 
 
