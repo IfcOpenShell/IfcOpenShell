@@ -19,6 +19,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef SVGSERIALIZER_H
 #define SVGSERIALIZER_H
 
@@ -342,4 +344,5 @@ protected:
 	std::string writeMetadata(const drawing_meta& m);
 };
 
+#endif
 #endif

@@ -17,8 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Trsf.hxx>
-#include <BRepPrimAPI_MakeBox.hxx>
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 

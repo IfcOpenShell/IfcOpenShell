@@ -17,11 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Trsf.hxx>
-#include <gp_Ax3.hxx>
-
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;

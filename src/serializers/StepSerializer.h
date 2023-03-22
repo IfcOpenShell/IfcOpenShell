@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef STEPSERIALIZER_H
 #define STEPSERIALIZER_H
 
@@ -58,4 +60,5 @@ public:
 	}
 };
 
+#endif
 #endif

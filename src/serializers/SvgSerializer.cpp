@@ -19,6 +19,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #include "../ifcgeom/abstract_mapping.h"
 
 #include <string>
@@ -2437,3 +2439,5 @@ std::string SvgSerializer::writeMetadata(const drawing_meta& m) {
 	return namespace_prefix_ + "plane=\""+ array_to_string(m4) +"\" " +
 		namespace_prefix_ + "matrix3=\"" + array_to_string(m.matrix_3) + "\"";
 }
+
+#endif

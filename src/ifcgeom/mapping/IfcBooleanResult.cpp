@@ -17,8 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <TopoDS_Wire.hxx>
-#include <Standard_Version.hxx>
 #include "mapping.h"
 
 #define mapping POSTFIX_SCHEMA(mapping)

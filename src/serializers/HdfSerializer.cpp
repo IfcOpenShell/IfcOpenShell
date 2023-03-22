@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifdef WITH_HDF5
+#if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
 
 #include "HdfSerializer.h"
 
