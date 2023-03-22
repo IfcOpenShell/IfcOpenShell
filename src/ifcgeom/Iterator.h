@@ -69,6 +69,10 @@
 #include "../ifcgeom/abstract_mapping.h"
 #include "../ifcgeom/GeometrySerializer.h"
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+#include <Standard_Failure.hxx>
+#endif
+
 #include <boost/algorithm/string.hpp>
 
 #include <map>

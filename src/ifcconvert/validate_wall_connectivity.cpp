@@ -1,3 +1,5 @@
+#ifdef IFOPSH_WITH_CGAL
+
 #include "validation_utils.h"
 
 #include <CGAL/Polygon_mesh_processing/bbox.h>
@@ -196,3 +198,4 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 	std::wcout << "total_conversion_to_poly_time " << conversion_to_poly << std::endl;
 }
 
+#endif

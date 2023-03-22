@@ -579,6 +579,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 #endif
 
+#ifdef IFOPSH_WITH_CGAL
+
 %ignore svgfill::svg_to_line_segments;
 %ignore svgfill::line_segments_to_polygons;
 
@@ -617,3 +619,4 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 %}
 
+#endif

@@ -785,6 +785,8 @@ TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_
 
 if (BUILD_IFCGEOM)
 
+if (WITH_CGAL)
+
 find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
 find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
 if(NOT libGMP)
@@ -796,6 +798,8 @@ endif()
 
 list(APPEND CGAL_LIBRARIES "${libMPFR}")
 list(APPEND CGAL_LIBRARIES "${libGMP}")
+
+endif()
 
 foreach(kernel ${GEOMETRY_KERNELS})
 
@@ -957,7 +961,9 @@ IF(NOT MINIMAL_BUILD AND BUILD_IFCMAX)
 	ADD_SUBDIRECTORY(../src/ifcmax ifcmax)
 ENDIF()
 if (NOT MINIMAL_BUILD)
+if (WITH_CGAL)
 ADD_SUBDIRECTORY(../src/svgfill svgfill)
+endif()
 endif()
 
 # CMake installation targets
