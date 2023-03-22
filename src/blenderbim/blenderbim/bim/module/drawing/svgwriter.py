@@ -723,14 +723,14 @@ class SvgWriter:
                 **{
                     "transform": transform,
                     "style": "font-size: 0;",
-                    "insert": text_position_svg,
                 },
                 **get_box_alignment_parameters(text_literal.BoxAlignment),
             )
             self.svg.add(text_tag)
 
             for line_number, text_line in enumerate(text.replace("\\n", "\n").split("\n")):
-                t_span = self.svg.tspan(text_line, class_=classes_str)
+                # position has to be inserted at tspan to avoid x offset between tspans
+                t_span = self.svg.tspan(text_line, class_=classes_str, insert=text_position_svg)
                 # doing it here and not in tspan constructor because constructor adds unnecessary spaces
                 t_span.update({"dy": f"{line_number}em"})
                 text_tag.add(t_span)
