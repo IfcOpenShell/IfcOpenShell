@@ -1,3 +1,5 @@
+#ifdef IFOPSH_WITH_CGAL
+
 #include "validation_utils.h"
 
 double facet_area(const cgal_shape_t::Facet_handle& f) {
@@ -26,3 +28,5 @@ void dump_facet(const cgal_shape_t::Facet_handle& f) {
 	auto osss = oss.str();
 	std::wcout << osss.c_str() << std::endl;
 }
+
+#endif

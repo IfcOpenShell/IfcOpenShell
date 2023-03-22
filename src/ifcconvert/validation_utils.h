@@ -1,3 +1,5 @@
+#ifdef IFOPSH_WITH_CGAL
+
 #include "../ifcgeom/kernels/cgal/CgalKernel.h"
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -582,3 +584,5 @@ struct intersection_validator {
 		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), fn);
 	}
 };
+
+#endif

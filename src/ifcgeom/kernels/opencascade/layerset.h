@@ -4,6 +4,7 @@
 #include "../../ConversionResult.h"
 
 #include <Geom_Surface.hxx>
+#include <TopoDS_Shape.hxx>
 
 #include <list>
 #include <vector>

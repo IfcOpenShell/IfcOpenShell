@@ -1,3 +1,5 @@
+#ifdef IFOPSH_WITH_CGAL
+
 #include "validation_utils.h"
 
 using namespace ifcopenshell::geometry;
@@ -183,3 +185,5 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		}
 	}
 }
+
+#endif

@@ -1,3 +1,5 @@
+#ifdef IFOPSH_WITH_CGAL
+
 #include "../ifcgeom/kernels/cgal/CgalKernel.h"
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -231,3 +233,5 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 			" objects                                ");
 	}
 }
+
+#endif

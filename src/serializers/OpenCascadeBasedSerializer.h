@@ -27,6 +27,8 @@
 
 #include "../ifcgeom/GeometrySerializer.h"
 
+#include <TopoDS_Shape.hxx>
+
 class SERIALIZERS_API OpenCascadeBasedSerializer : public WriteOnlyGeometrySerializer {
 	OpenCascadeBasedSerializer(const OpenCascadeBasedSerializer&); //N/A
 	OpenCascadeBasedSerializer& operator =(const OpenCascadeBasedSerializer&); //N/A
