@@ -24,6 +24,9 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+
 #include <iostream>
 #include <boost/cstdint.hpp>
 
@@ -38,10 +41,12 @@
 #include <fcntl.h>
 #endif
 
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
+#include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcLogger.h"
+
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -298,12 +303,12 @@ protected:
 		swrite(s, geom->name());
 		swrite(s, geom->type());
 		swrite<int32_t>(s, geom->parent_id());
-		const std::vector<double>& m = geom->transformation().matrix().data();
+		const auto& m = geom->transformation().data().ccomponents();
 		const double matrix_array[16] = {
-			m[0], m[3], m[6], m[ 9],
-			m[1], m[4], m[7], m[10],
-			m[2], m[5], m[8], m[11],
-			   0,    0,    0,     1
+			m(0,0), m(0,1), m(0,2), m(0,3),
+			m(1,0), m(1,1), m(1,2), m(1,3),
+			m(2,0), m(2,1), m(2,2), m(2,3),
+			m(3,0),	m(3,1),	m(3,2),	m(3,3)
 		};
 		swrite(s, std::string((char*)matrix_array, 16 * sizeof(double)));
 		
@@ -347,15 +352,15 @@ protected:
 		{ 
 			// We remove the blanks here from the material array. I.e. materials without a diffuse color
 			std::vector<boost::optional<std::array<float, 4> > > diffuse_color_array;
-			for (std::vector<IfcGeom::Material>::const_iterator it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
-				const IfcGeom::Material& mat = *it;
-				if (mat.hasDiffuse()) {
-					const double* color = mat.diffuse();
+			for (auto it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
+				const auto& mat = *it;
+				if (mat.diffuse) {
+					const auto& color = mat.diffuse.ccomponents();
 					diffuse_color_array.push_back(std::array<float, 4>{
-						static_cast<float>(color[0]),
-						static_cast<float>(color[1]),
-						static_cast<float>(color[2]),
-						mat.hasTransparency() ? static_cast<float>(1. - mat.transparency()) : 1.f
+						static_cast<float>(color(0)),
+						static_cast<float>(color(1)),
+						static_cast<float>(color(2)),
+						mat.transparency == mat.transparency ? static_cast<float>(1. - mat.transparency) : 1.f
 					});
 				} else {
 					diffuse_color_array.emplace_back();
@@ -500,7 +505,9 @@ public:
 		boost::optional<gp_Dir> largest_face_dir;
 
 		{
-			TopoDS_Compound compound = elem_->geometry().as_compound(true);
+			auto shp = elem_->geometry().as_compound(true);
+			auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape();
+			delete shp;
 			TopExp_Explorer exp(compound, TopAbs_FACE);
 			for (; exp.More(); exp.Next()) {
 				GProp_GProps prop;
