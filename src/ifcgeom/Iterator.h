@@ -669,7 +669,7 @@ namespace IfcGeom {
 				instance_type = ifc_entity->declaration().name();
 
 				if (ifc_entity->declaration().is("IfcRoot")) {
-					product_guid = *ifc_entity->get("GlobalId");
+					product_guid = (std::string) *ifc_entity->get("GlobalId");
 					product_name = ifc_entity->get_value<std::string>("Name", "");
 				}
 
