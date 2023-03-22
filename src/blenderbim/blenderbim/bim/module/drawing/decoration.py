@@ -181,6 +181,11 @@ class BaseDecorator:
             defines=self.DEF_GLSL,
         )
 
+        self.font_id = blf.load(
+            os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
+        )
+
+    def get_camera_width_mm(self):
         # Horrific prototype code to ensure bgl draws at drawing scales
         # https://blender.stackexchange.com/questions/16493/is-there-a-way-to-fit-the-viewport-to-the-current-field-of-view
         def is_landscape(render):
@@ -200,11 +205,9 @@ class BaseDecorator:
             camera_width_model = camera.data.ortho_scale
         else:
             camera_width_model = camera.data.ortho_scale / render.resolution_y * render.resolution_x
-        self.camera_width_mm = get_scale(camera) * camera_width_model
 
-        self.font_id = blf.load(
-            os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
-        )
+        camera_width_mm = get_scale(camera) * camera_width_model
+        return camera_width_mm
 
     def camera_zoom_to_factor(self, zoom):
         return math.pow(((zoom / 50) + math.sqrt(2)) / 2, 2)
@@ -368,7 +371,7 @@ class BaseDecorator:
             # Horrific prototype code
             factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
             camera_width_px = factor * context.region.width
-            mm_to_px = camera_width_px / self.camera_width_mm
+            mm_to_px = camera_width_px / self.get_camera_width_mm()
             # 0.00025 is a magic constant number I visually discovered to get the right number.
             # It probably should be dynamically calculated using system.dpi or something.
             viewport_drawing_scale = 0.00025 * mm_to_px
@@ -417,7 +420,7 @@ class BaseDecorator:
         # Horrific prototype code
         factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
         camera_width_px = factor * context.region.width
-        mm_to_px = camera_width_px / self.camera_width_mm
+        mm_to_px = camera_width_px / self.get_camera_width_mm()
         # 0.004118616 is a magic constant number I visually discovered to get the right number.
         # In particular it works only for the OpenGOST font and produces a 2.5mm font size.
         # It probably should be dynamically calculated using system.dpi or something.
