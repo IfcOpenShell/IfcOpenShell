@@ -58,7 +58,7 @@ class BIM_PT_representations(Panel):
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
-        prop_with_search(row, context.scene.BIMRootProperties, "contexts", text="")
+        prop_with_search(row, context.active_object.BIMGeometryProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         for representation in RepresentationsData.data["representations"]:

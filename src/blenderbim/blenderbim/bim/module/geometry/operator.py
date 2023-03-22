@@ -34,7 +34,6 @@ import blenderbim.bim.handler
 from mathutils import Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.root.prop import get_contexts
 
 
 class Operator:
@@ -60,27 +59,20 @@ class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-    context_id: bpy.props.IntProperty()
-    ifc_representation_class: bpy.props.StringProperty()
-    profile_set_usage: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifc_context = self.context_id
-        if not ifc_context and get_contexts(self, context):
-            ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
+        ifc_context = int(context.active_object.BIMGeometryProperties.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         core.add_representation(
             tool.Ifc,
             tool.Geometry,
             tool.Style,
             tool.Surveyor,
-            obj=obj,
+            obj=context.active_object,
             context=ifc_context,
-            ifc_representation_class=self.ifc_representation_class,
-            profile_set_usage=tool.Ifc.get().by_id(self.profile_set_usage) if self.profile_set_usage else None,
+            ifc_representation_class=None,
+            profile_set_usage=None,
         )
 
 
