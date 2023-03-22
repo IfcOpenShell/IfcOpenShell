@@ -412,7 +412,7 @@ class BaseDecorator:
         ang = -Vector((1, 0)).angle_signed(text_dir)
         cos = math.cos(ang)
         sin = math.sin(ang)
-        rotated_y_axis = Vector([-sin, cos])
+        rotation_matrix = Matrix.Rotation(-ang, 2)
 
         # Horrific prototype code
         factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
@@ -424,7 +424,7 @@ class BaseDecorator:
         # font_size = 16 <-- this is a good default
         # TODO: need to synchronize it better with svg
         font_size_px = int(0.004118616 * mm_to_px) * font_size_mm / 2.5
-        pos = pos - line_no * font_size_px * rotated_y_axis
+        pos = pos - line_no * font_size_px * rotation_matrix[1]
 
         blf.size(font_id, font_size_px, dpi)
 
@@ -432,20 +432,24 @@ class BaseDecorator:
             w, h = blf.dimensions(font_id, text)
 
         if box_alignment:
-            # TODO: need to work out the rotation too
+            box_alignment_offset = Vector((0, 0))
             if "bottom" in box_alignment:
                 pass
             elif "top" in box_alignment:
-                pos -= Vector((0, h))
+                box_alignment_offset += Vector((0, h))
             else:
-                pos -= Vector((0, h / 2))  # middle / center
+                # middle / center
+                box_alignment_offset += Vector((0, h / 2))  
 
             if "left" in box_alignment:
                 pass
             elif "right" in box_alignment:
-                pos -= Vector((w, 0))
+                box_alignment_offset += Vector((w, 0))
             else:
-                pos -= Vector((w / 2, 0))
+                # middle / center
+                box_alignment_offset += Vector((w / 2, 0))
+            
+            pos -= rotation_matrix.transposed() @ box_alignment_offset
         else:
             if center:
                 # horizontal centering
