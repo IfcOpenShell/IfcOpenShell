@@ -17,12 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Pnt2d.hxx>
-#include <gp_Dir2d.hxx>
-#include <gp_Trsf2d.hxx>
-#include <gp_Ax2d.hxx>
 #include "mapping.h"
 
 #define mapping POSTFIX_SCHEMA(mapping)

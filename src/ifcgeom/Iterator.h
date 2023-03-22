@@ -681,13 +681,17 @@ namespace IfcGeom {
 				m4 = ((taxonomy::geom_item*) converter_->mapping()->map(ifc_product))->matrix;
 			} catch (const std::exception& e) {
 				Logger::Error(e);
-			} catch (const Standard_Failure& e) {
+			}
+#ifdef IFOPSH_WITH_OPENCASCADE
+			catch (const Standard_Failure& e) {
 				if (e.GetMessageString() && strlen(e.GetMessageString())) {
 					Logger::Error(e.GetMessageString());
 				} else {
 					Logger::Error("Unknown error returning product");
 				}
-			} catch (...) {
+			}
+#endif
+			catch (...) {
 				Logger::Error("Unknown error returning product");
 			}
 
@@ -703,13 +707,17 @@ namespace IfcGeom {
 				product = create_shape_model_for_next_entity();
 			} catch (const std::exception& e) {
 				Logger::Error(e);
-			} catch (const Standard_Failure& e) {
+			}
+#ifdef IFOPSH_WITH_OPENCASCADE
+			catch (const Standard_Failure& e) {
 				if (e.GetMessageString() && strlen(e.GetMessageString())) {
 					Logger::Error(e.GetMessageString());
 				} else {
 					Logger::Error("Unknown error creating geometry");
 				}
-			} catch (...) {
+			}
+#endif
+			catch (...) {
 				Logger::Error("Unknown error creating geometry");
 			}
 			return product;

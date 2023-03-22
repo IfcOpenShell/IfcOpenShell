@@ -24,9 +24,6 @@
 #include "../ifcgeom/IteratorSettings.h"
 #include "../ifcgeom/taxonomy.h"
 
-#include <gp_GTrsf.hxx>
-#include <TopoDS_Shape.hxx>
-
 #include <vector>
 
 namespace IfcGeom {	

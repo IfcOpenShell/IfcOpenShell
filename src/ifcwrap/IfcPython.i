@@ -80,8 +80,12 @@
 %{
 	#include "../ifcgeom/Iterator.h"
 	#include "../ifcgeom/taxonomy.h"
+#ifdef IFOPSH_WITH_OPENCASCADE
 	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
+
+	#include <BRepTools_ShapeSet.hxx>
+#endif
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
@@ -121,8 +125,6 @@
 	#include "../ifcparse/utils.h"
 
 	#include "../svgfill/src/svgfill.h"
-
-	#include <BRepTools_ShapeSet.hxx>
 %}
 
 // Create docstrings for generated python code.
@@ -137,8 +139,12 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/Converter.h"
 	#include "../ifcgeom/taxonomy.h"
+#ifdef IFOPSH_WITH_OPENCASCADE
 	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
+
+	#include <BRepTools_ShapeSet.hxx>
+#endif
 	#include "../ifcgeom/Iterator.h"
 
 	#include "../serializers/SvgSerializer.h"
@@ -181,8 +187,6 @@
 	#include "../ifcparse/utils.h"
 
 	#include "../svgfill/src/svgfill.h"
-
-	#include <BRepTools_ShapeSet.hxx>
 %}
 
 %include "IfcGeomWrapper.i"

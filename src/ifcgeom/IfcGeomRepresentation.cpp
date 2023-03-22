@@ -19,6 +19,11 @@
 
 #include "IfcGeomRepresentation.h"
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+#include "../ifcparse/IfcLogger.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+#include "../ifcgeom/kernels/opencascade/base_utils.h"
+
 #include <BRep_Tool.hxx>
 #include <BRepTools.hxx>
 #include <BRep_Builder.hxx>
@@ -28,49 +33,6 @@
 #include <GProp_GProps.hxx>
 #include <TopoDS.hxx>
 
-#include "../ifcparse/IfcLogger.h"
-#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
-#include "../ifcgeom/kernels/opencascade/base_utils.h"
-
-IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
-	: Representation(brep.settings())
-	, id_(brep.id())
-{
-	ConversionResultShape* shape = brep.as_compound();
-	TopoDS_Compound compound = TopoDS::Compound(((ifcopenshell::geometry::OpenCascadeShape*)shape)->shape());
-	delete shape;
-
-	for (auto it = brep.begin(); it != brep.end(); ++it) {
-		int sid = -1;
-
-		if (it->hasStyle()) {
-			const auto& clr = it->Style().diffuse.ccomponents();
-			surface_styles_.push_back(clr(0));
-			surface_styles_.push_back(clr(1));
-			surface_styles_.push_back(clr(2));
-
-			sid = it->Style().instance ? it->Style().instance->data().id() : -1;
-		} else {
-			surface_styles_.push_back(-1.);
-			surface_styles_.push_back(-1.);
-			surface_styles_.push_back(-1.);
-		}
-
-		if (it->hasStyle() && it->Style().has_transparency()) {
-			surface_styles_.push_back(1. - it->Style().transparency);
-		} else {
-			surface_styles_.push_back(1.);
-		}
-
-		surface_style_ids_.push_back(sid);
-	}
-
-	std::stringstream sstream;
-	BRepTools::Write(compound,sstream);
-	brep_data_ = sstream.str();
-}
-
-// todo copied from kernel
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_GTransform.hxx>
 
@@ -94,41 +56,6 @@ TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
 		return apply_transformation(s, t.Trsf());
 	}
 }
-
-IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool force_meters) const {
-	TopoDS_Compound compound;
-	BRep_Builder builder;
-	builder.MakeCompound(compound);
-
-	for (auto it = begin(); it != end(); ++it) {
-		const TopoDS_Shape& s = *(ifcopenshell::geometry::OpenCascadeShape*)it->Shape();
-
-		// @todo, check
-		gp_GTrsf trsf;
-		if (it->Placement().components_) {
-			gp_Trsf tr;
-			const auto& m = it->Placement().ccomponents();
-			tr.SetValues(
-				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-			);
-			trsf = tr;
-		}
-
-		if (!force_meters && settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
-			gp_Trsf scale;
-			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
-			trsf.PreMultiply(scale);
-		}
-
-		const TopoDS_Shape moved_shape = apply_transformation(s, trsf);
-		builder.Add(compound, moved_shape);
-	}
-
-	return new ifcopenshell::geometry::OpenCascadeShape(compound);
-}
-
 
 namespace {
 	void accumulate(const gp_Ax3& ax, const gp_Dir& normal, double area, double& along_x, double& along_y, double& along_z) {
@@ -212,8 +139,91 @@ namespace {
 		}
 	}
 }
+#endif
+
+IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
+	: Representation(brep.settings())
+	, id_(brep.id())
+{
+#ifdef IFOPSH_WITH_OPENCASCADE
+	ConversionResultShape* shape = brep.as_compound();
+	TopoDS_Compound compound = TopoDS::Compound(((ifcopenshell::geometry::OpenCascadeShape*)shape)->shape());
+	delete shape;
+
+	for (auto it = brep.begin(); it != brep.end(); ++it) {
+		int sid = -1;
+
+		if (it->hasStyle()) {
+			const auto& clr = it->Style().diffuse.ccomponents();
+			surface_styles_.push_back(clr(0));
+			surface_styles_.push_back(clr(1));
+			surface_styles_.push_back(clr(2));
+
+			sid = it->Style().instance ? it->Style().instance->data().id() : -1;
+		} else {
+			surface_styles_.push_back(-1.);
+			surface_styles_.push_back(-1.);
+			surface_styles_.push_back(-1.);
+		}
+
+		if (it->hasStyle() && it->Style().has_transparency()) {
+			surface_styles_.push_back(1. - it->Style().transparency);
+		} else {
+			surface_styles_.push_back(1.);
+		}
+
+		surface_style_ids_.push_back(sid);
+	}
+
+	std::stringstream sstream;
+	BRepTools::Write(compound,sstream);
+	brep_data_ = sstream.str();
+#else
+	throw std::runtime_error("Not available without Open Cascade");
+#endif
+}
+
+IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool force_meters) const {
+#ifdef IFOPSH_WITH_OPENCASCADE
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+
+	for (auto it = begin(); it != end(); ++it) {
+		const TopoDS_Shape& s = *(ifcopenshell::geometry::OpenCascadeShape*)it->Shape();
+
+		// @todo, check
+		gp_GTrsf trsf;
+		if (it->Placement().components_) {
+			gp_Trsf tr;
+			const auto& m = it->Placement().ccomponents();
+			tr.SetValues(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+			);
+			trsf = tr;
+		}
+
+		if (!force_meters && settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
+			gp_Trsf scale;
+			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
+			trsf.PreMultiply(scale);
+		}
+
+		const TopoDS_Shape moved_shape = apply_transformation(s, trsf);
+		builder.Add(compound, moved_shape);
+	}
+
+	return new ifcopenshell::geometry::OpenCascadeShape(compound);
+#else
+        throw std::runtime_error("Not available without Open Cascade");
+#endif
+}
+
 
 bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
+#ifdef IFOPSH_WITH_OPENCASCADE
 	try {
 		area = 0.;
 
@@ -228,9 +238,13 @@ bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
 		Logger::Error("Error during calculation of surface area");
 		return false;
 	}
+#else
+        throw std::runtime_error("Not available without Open Cascade");
+#endif
 }
 
 bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
+#ifdef IFOPSH_WITH_OPENCASCADE
 	try {
 		volume = 0.;
 
@@ -249,9 +263,13 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 		Logger::Error("Error during calculation of volume");
 		return false;
 	}
+#else
+        throw std::runtime_error("Not available without Open Cascade");
+#endif
 }
 
 bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4& place, double & along_x, double & along_y, double & along_z) const {
+#ifdef IFOPSH_WITH_OPENCASCADE
 	try {
 		gp_GTrsf trsf;
 
@@ -291,6 +309,9 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcop
 		Logger::Error("Error during calculation of projected surface area");
 		return false;
 	}
+#else
+        throw std::runtime_error("Not available without Open Cascade");
+#endif
 }
 
 IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)

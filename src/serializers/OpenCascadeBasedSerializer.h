@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef OPENCASCADEBASEDSERIALIZER_H
 #define OPENCASCADEBASEDSERIALIZER_H
 
@@ -46,4 +48,5 @@ public:
 	void setFile(IfcParse::IfcFile*) {}
 };
 
+#endif
 #endif

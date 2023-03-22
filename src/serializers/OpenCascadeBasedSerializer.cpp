@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #include "OpenCascadeBasedSerializer.h"
 
 #include "../ifcparse/utils.h"
@@ -62,3 +64,6 @@ const char* OpenCascadeBasedSerializer::getSymbolForUnitMagnitude(float mag) {
 		return 0;
 	}
 }
+
+#endif
+

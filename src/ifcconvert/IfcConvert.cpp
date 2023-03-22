@@ -41,10 +41,14 @@
 
 #include "../ifcparse/utils.h"
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #include <Standard_Version.hxx>
 
 #if OCC_VERSION_HEX < 0x60900
 #include <IGESControl_Controller.hxx>
+#endif
+
 #endif
 
 #include <boost/program_options.hpp>
@@ -54,6 +58,7 @@
 #include <sstream>
 #include <set>
 #include <time.h>
+#include <iomanip>
 
 #if USE_VLD
 #include <vld.h>
@@ -86,7 +91,11 @@ namespace po = boost::program_options;
 
 void print_version()
 {
-    cout_ << "IfcOpenShell IfcConvert " << IFCOPENSHELL_VERSION << " (OCC " << OCC_VERSION_STRING_EXT << ")\n";
+    cout_ << "IfcOpenShell IfcConvert " << IFCOPENSHELL_VERSION;
+#ifdef IFOPSH_WITH_OPENCASCADE
+    cout_ << " (OCC " << OCC_VERSION_STRING_EXT << ")";
+#endif
+    cout_ << "\n";
 }
 
 void print_usage(bool suggest_help = true)
@@ -383,7 +392,9 @@ int main(int argc, char** argv) {
 	std::string section_ref, elevation_ref, elevation_ref_guid;
 	// "none", "full" or "left"
 	std::string storey_height_display;
+#ifdef IFOPSH_WITH_OPENCASCADE
 	SvgSerializer::storey_height_display_types svg_storey_height_display = SvgSerializer::SH_NONE;
+#endif
 
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -549,6 +560,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+#ifdef IFOPSH_WITH_OPENCASCADE
 	if (vmap.count("draw-storey-heights")) {
 		boost::to_lower(storey_height_display);
 
@@ -564,6 +576,7 @@ int main(int argc, char** argv) {
 			return EXIT_FAILURE;
 		}
 	}
+#endif
     
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
@@ -861,6 +874,7 @@ int main(int argc, char** argv) {
 	} else if (output_extension == GLB) {
 		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 #endif
+#ifdef IFOPSH_WITH_OPENCASCADE
 	} else if (output_extension == STP) {
 		serializer = boost::make_shared<StepSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 	} else if (output_extension == IGS) {
@@ -872,15 +886,13 @@ int main(int argc, char** argv) {
 	} else if (output_extension == SVG) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
-	}
 #ifdef WITH_HDF5
-	else if (output_extension == HDF) {
+	} else if (output_extension == HDF) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
-	}
 #endif
-	
-	else {
+#endif	
+	} else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
 		print_usage();
@@ -1003,7 +1015,7 @@ int main(int argc, char** argv) {
 
 	IfcGeom::Iterator context_iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads);
 
-#ifdef WITH_HDF5
+#if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
 	std::unique_ptr<HdfSerializer> cache;
 	if (vmap.count("cache-file") || vmap.count("cache")) {
 		if (!vmap.count("cache-file")) {
@@ -1028,6 +1040,7 @@ int main(int argc, char** argv) {
 
 	serializer->setFile(context_iterator.file());
 
+#ifdef IFOPSH_WITH_OPENCASCADE
 	if (output_extension == SVG) {
 		if (vmap.count("section-height-from-storeys") != 0) {
 			if (vmap.count("section-height")) {
@@ -1099,6 +1112,7 @@ int main(int argc, char** argv) {
 			);
 		}		
 	}
+#endif
 
     if (convert_back_units) {
 		serializer->setUnitNameAndMagnitude(context_iterator.unit_name(), static_cast<float>(context_iterator.unit_magnitude()));

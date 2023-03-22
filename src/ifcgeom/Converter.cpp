@@ -45,8 +45,6 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	}
 
 	if (settings_.get(IfcGeom::IteratorSettings::APPLY_LAYERSETS)) {
-		TopoDS_Shape merge;
-		
 		ifcopenshell::geometry::layerset_information layerinfo;
 		std::vector<ifcopenshell::geometry::endpoint_connection> neighbours;
 		std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information> neigbour_layers;

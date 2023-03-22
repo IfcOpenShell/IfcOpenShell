@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef IGESSERIALIZER_H
 #define IGESSERIALIZER_H
 
@@ -61,4 +63,5 @@ public:
 	}
 };
 
+#endif
 #endif

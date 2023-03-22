@@ -21,6 +21,8 @@ ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
 TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
 set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
 
+if (WITH_OPENCASCADE)
+
 ADD_EXECUTABLE(IfcOpenHouse IfcOpenHouse.cpp)
 TARGET_LINK_LIBRARIES(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES})
 set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
@@ -28,3 +30,6 @@ set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
 ADD_EXECUTABLE(IfcAdvancedHouse IfcAdvancedHouse.cpp)
 TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES})
 set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
+
+endif()
+

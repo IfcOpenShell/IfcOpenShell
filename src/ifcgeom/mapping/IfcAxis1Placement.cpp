@@ -17,8 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Dir.hxx>
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 

@@ -17,10 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <ShapeFix_Shape.hxx>
 #include "mapping.h"
 
 #define mapping POSTFIX_SCHEMA(mapping)

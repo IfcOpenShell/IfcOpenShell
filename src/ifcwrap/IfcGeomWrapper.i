@@ -73,6 +73,8 @@
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 %template(ray_intersection_results) std::vector<IfcGeom::ray_intersection_result>;
 
 // A Template instantantation should be defined before it is used as a base class. 
@@ -137,6 +139,8 @@
 	}
 
 }
+
+#endif
 
 // A visitor
 %{
@@ -551,6 +555,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 %}
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 %inline %{
 	IfcUtil::IfcBaseClass* serialise(const std::string& schema_name, const std::string& shape_str, bool advanced=true) {
 		std::stringstream stream(shape_str);
@@ -570,6 +576,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return IfcGeom::tesselate(schema_name, shp, d);
 	}
 %}
+
+#endif
 
 %ignore svgfill::svg_to_line_segments;
 %ignore svgfill::line_segments_to_polygons;

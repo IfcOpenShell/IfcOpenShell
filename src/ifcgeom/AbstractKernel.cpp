@@ -1,6 +1,7 @@
 #include "AbstractKernel.h"
 
 #include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom/ConversionSettings.h"
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
@@ -10,6 +11,8 @@
 #ifdef IFOPSH_WITH_CGAL
 #include "../ifcgeom/kernels/cgal/CgalKernel.h"
 #endif
+
+using namespace ifcopenshell::geometry;
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::item* item, IfcGeom::ConversionResults& results) {
 	// std::stringstream ss;
