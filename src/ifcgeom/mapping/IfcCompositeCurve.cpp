@@ -31,13 +31,15 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = inst->Segments();
 #endif
 	
-	for (auto& segment : *segments) {
-		if (!(segment)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
-			Logger::Error("Not implemented", segment);
+	for (auto& segment_ : *segments) {
+		if (!(segment_)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
+			Logger::Error("Not implemented", segment_);
 			return nullptr;
 		}
+		
+		auto segment = (IfcSchema::IfcCompositeCurveSegment*) segment_;
 
-		IfcSchema::IfcCurve* curve = ((IfcSchema::IfcCompositeCurveSegment*)(segment))->ParentCurve();
+		IfcSchema::IfcCurve* curve = segment->ParentCurve();
 
 		if (curve->as<IfcSchema::IfcLine>()) {
 			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
