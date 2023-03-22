@@ -54,6 +54,9 @@ def create_project(ifc, project, schema=None, template=None):
         context_type="Model", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent=model
     )
     project.run_context_add_context(
+        context_type="Model", context_identifier="Annotation", target_view="MODEL_VIEW", parent=model
+    )
+    project.run_context_add_context(
         context_type="Model", context_identifier="Profile", target_view="ELEVATION_VIEW", parent=model
     )
     plan = project.run_context_add_context(context_type="Plan", context_identifier="", target_view="", parent=0)
