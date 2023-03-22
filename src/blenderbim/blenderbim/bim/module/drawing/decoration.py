@@ -2075,47 +2075,17 @@ class TextDecorator(BaseDecorator):
     def decorate(self, context, obj):
         self.draw_labels(context, obj)
 
-    def project_point_onto_camera(self, point, camera_projection):
-        # TODO is this needlessly complex?
-        camera = bpy.context.scene.camera
-        return camera.matrix_world.inverted() @ geometry.intersect_line_plane(
-            point.xyz,
-            point.xyz - Vector(camera_projection),
-            camera.location,
-            Vector(camera_projection),
-        )
-
-    def get_camera_dimensions(self):
-        render = bpy.context.scene.render
-        camera = bpy.context.scene.camera
-        if render.resolution_x > render.resolution_y: # is_landscape
-            width = camera.data.ortho_scale
-            height = width / render.resolution_x * render.resolution_y
-        else:
-            height = camera.data.ortho_scale
-            width = height / render.resolution_y * render.resolution_x
-        return width, height
-
     def draw_labels(self, context, obj):
         region = context.region
         region3d = context.region_data
 
-        # TODO: optimize for realtime viewport render
-        # currently it's just copied from svgwriter
-        # to make rotation work in viewport
-        camera = bpy.context.scene.camera
-        camera_dimensions = Vector(self.get_camera_dimensions())
-        x_offset, y_offset = camera_dimensions / 2
-        position = obj.matrix_world.translation
-        camera_projection = tuple(
-            camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        )
-        text_position = self.project_point_onto_camera(position, camera_projection)
-        text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
-        local_x_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        projected_x_axis = self.project_point_onto_camera(position + local_x_axis, camera_projection)
-        text_dir = (Vector((x_offset + projected_x_axis.x, y_offset + projected_x_axis.y)) - text_position)
+        def matrix_only_rotation(m):
+            return m.to_3x3().normalized().to_4x4()
 
+        text_dir = Vector((1,0))
+        text_dir_world = matrix_only_rotation(region3d.perspective_matrix.inverted()) @ text_dir.to_3d()
+        text_dir_world_rotated = matrix_only_rotation(obj.matrix_world) @ text_dir_world
+        text_dir = (matrix_only_rotation(region3d.perspective_matrix) @ text_dir_world_rotated).to_2d().normalized()
 
         pos = location_3d_to_region_2d(region, region3d, obj.matrix_world.translation)
         props = obj.BIMTextProperties
