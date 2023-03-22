@@ -735,6 +735,15 @@ namespace IfcGeom {
 		{
 		}
 
+		Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file)
+			: settings_(settings)
+			, ifc_file(file)
+			, owns_ifc_file(false)
+			, num_threads_(1)
+			, geometry_library_("opencascade")
+		{
+		}
+
 		~Iterator() {
 			if (owns_ifc_file) {
 				delete ifc_file;
