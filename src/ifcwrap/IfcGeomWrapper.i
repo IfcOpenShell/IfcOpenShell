@@ -353,7 +353,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %extend IfcGeom::Transformation {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        matrix = property(matrix)
+        matrix = property(data)
 	%}
 };
 
