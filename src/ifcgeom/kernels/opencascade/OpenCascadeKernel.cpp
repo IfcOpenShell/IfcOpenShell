@@ -137,7 +137,7 @@
 // #include "../../../ifcparse/IfcFile.h"
 // 
 
-#include "OpencascadeKernel.h"
+#include "OpenCascadeKernel.h"
 
 // #include "IfcGeomTree.h"
 
