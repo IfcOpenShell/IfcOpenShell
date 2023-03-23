@@ -86,6 +86,7 @@ def switch_representation(
     should_reload=True,
     is_global=True,
     should_sync_changes_first=False,
+    apply_openings=True,
 ):
     """Function can switch to representation that wasn't yet assigned to that object. See #2766."""
     if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
@@ -98,7 +99,7 @@ def switch_representation(
     existing_data = geometry.get_representation_data(representation)
 
     if should_reload or not existing_data:
-        data = geometry.import_representation(obj, representation)
+        data = geometry.import_representation(obj, representation, apply_openings=apply_openings)
         geometry.rename_object(data, geometry.get_representation_name(representation))
         geometry.link(representation, data)
     else:

@@ -18,6 +18,8 @@
 
 import bpy
 import bmesh
+import struct
+import hashlib
 import logging
 import numpy as np
 import ifcopenshell
@@ -620,3 +622,126 @@ class OverridePasteBuffer(bpy.types.Operator):
             for obj in context.selected_objects:
                 blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         return {"FINISHED"}
+
+
+class OverrideModeSet(bpy.types.Operator):
+    bl_idname = "bim.override_mode_set"
+    bl_label = "IFC Mode Set"
+    bl_options = {"REGISTER", "UNDO"}
+    should_save: bpy.props.BoolProperty(name="Should Save", default=True)
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
+
+    def execute(self, context):
+        objs = context.selected_objects or [context.active_object]
+        context.active_object.select_set(True)
+        edited_objs = []
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if self.active_mode == "EDIT":
+                # We are switching from EDIT to OBJECT mode.
+                if obj.data.BIMMeshProperties.ifc_definition_id:
+                    representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                    if representation.RepresentationType in ("Tessellation", "Brep"):
+                        edited_objs.append(obj)
+            else:
+                # We are switching from OBJECT to EDIT mode.
+                usage_type = tool.Model.get_usage_type(element)
+                if usage_type:
+                    # Parametric objects shall not be edited as meshes as they
+                    # can be modified to be incompatible with the parametric
+                    # constraints.
+                    obj.select_set(False)
+                    continue
+
+                if obj.data.BIMMeshProperties.ifc_definition_id:
+                    representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                    if representation.RepresentationType in ("Tessellation", "Brep"):
+                        if element.HasOpenings:
+                            # Mesh elements with openings must disable openings
+                            # so that you can edit the original topology.
+                            core.switch_representation(
+                                tool.Ifc,
+                                tool.Geometry,
+                                obj=obj,
+                                representation=representation,
+                                should_reload=True,
+                                is_global=True,
+                                should_sync_changes_first=False,
+                                apply_openings=False,
+                            )
+                        obj.data.BIMMeshProperties.mesh_checksum = self.get_mesh_checksum(obj.data)
+        if not context.selected_objects:
+            return {"FINISHED"}
+        bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        for obj in edited_objs:
+            if self.should_save and obj.data.BIMMeshProperties.mesh_checksum != self.get_mesh_checksum(obj.data):
+                bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
+                if element.HasOpenings:
+                    representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                    # Mesh elements with openings must disable openings
+                    # so that you can edit the original topology.
+                    core.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=representation,
+                        should_reload=True,
+                        is_global=True,
+                        should_sync_changes_first=False,
+                        apply_openings=True,
+                    )
+            else:
+                representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                core.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                    apply_openings=True,
+                )
+
+        return {"FINISHED"}
+
+    def draw(self, context):
+        row = self.layout.row(align=True)
+        if self.active_mode == "EDIT":
+            row.prop(self, "should_save")
+
+    def invoke(self, context, event):
+        if not tool.Ifc.get():
+            return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        objs = context.selected_objects or [context.active_object]
+        obj = objs[0]
+        self.active_mode = obj.mode
+        if self.active_mode == "EDIT":
+            return context.window_manager.invoke_props_dialog(self)
+        return self.execute(context)
+
+    def get_mesh_checksum(self, mesh):
+        # Get mesh data
+        vertices = mesh.vertices[:]
+        edges = mesh.edges[:]
+        faces = mesh.polygons[:]
+
+        # Convert mesh data to bytes
+        data_bytes = b''
+        for v in vertices:
+            data_bytes += struct.pack('3f', *v.co)
+        for e in edges:
+            data_bytes += struct.pack('2i', *e.vertices)
+        for f in faces:
+            data_bytes += struct.pack('%di' % len(f.vertices), *f.vertices)
+
+        # Generate hash of mesh data
+        hasher = hashlib.sha1()
+        hasher.update(data_bytes)
+        return hasher.hexdigest()

@@ -169,7 +169,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return data.users != 0
 
     @classmethod
-    def import_representation(cls, obj, representation):
+    def import_representation(cls, obj, representation, apply_openings=True):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
@@ -178,7 +178,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         context = representation.ContextOfItems
         if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
-            if element.is_a("IfcTypeProduct"):
+            if element.is_a("IfcTypeProduct") or not apply_openings:
                 shape = ifcopenshell.geom.create_shape(settings, representation)
             else:
                 shape = ifcopenshell.geom.create_shape(settings, element)
