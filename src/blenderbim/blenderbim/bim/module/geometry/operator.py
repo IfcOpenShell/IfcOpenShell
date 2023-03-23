@@ -630,15 +630,18 @@ class OverrideModeSet(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     should_save: bpy.props.BoolProperty(name="Should Save", default=True)
 
-    @classmethod
-    def poll(cls, context):
-        return context.active_object
-
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         objs = context.selected_objects or [context.active_object]
-        context.active_object.select_set(True)
+        if context.active_object:
+            context.active_object.select_set(True)
         edited_objs = []
         for obj in objs:
+            if not obj:
+                continue
+
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
