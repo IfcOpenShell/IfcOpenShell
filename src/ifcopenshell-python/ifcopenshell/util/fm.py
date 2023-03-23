@@ -141,10 +141,7 @@ def get_fmhem_types(ifc_file):
         fmhem_classes = fmhem_classes_ifc4
     for ifc_class in fmhem_classes:
         try:
-            if ifc_class in ("IfcEnergyConversionDeviceType", "IfcFlowTerminalType"):
-                elements += [e for e in ifc_file.by_type(ifc_class) if not e.is_a() not in fmhem_excluded_classes]
-            else:
-                elements += ifc_file.by_type(ifc_class)
+            elements += [e for e in ifc_file.by_type(ifc_class) if not e.is_a() not in fmhem_excluded_classes]
         except:
             pass
     return elements
