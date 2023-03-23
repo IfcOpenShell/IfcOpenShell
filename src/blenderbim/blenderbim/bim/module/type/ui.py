@@ -29,7 +29,6 @@ class BIM_PT_type(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_order = 1
     bl_parent_id = "BIM_PT_object_metadata"
 
     @classmethod

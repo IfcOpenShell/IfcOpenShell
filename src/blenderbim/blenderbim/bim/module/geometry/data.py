@@ -42,6 +42,11 @@ class RepresentationsData:
     def representations(cls):
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
+
+        active_representation_id = None
+        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
+            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+
         representations = []
         if element.is_a("IfcProduct") and element.Representation:
             representations = element.Representation.Representations
@@ -58,6 +63,7 @@ class RepresentationsData:
                 "ContextIdentifier": "",
                 "TargetView": "",
                 "RepresentationType": representation_type or "",
+                "is_active": representation.id() == active_representation_id,
             }
             if representation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
                 data["ContextIdentifier"] = representation.ContextOfItems.ContextIdentifier or ""
