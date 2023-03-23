@@ -127,7 +127,7 @@ class AssignClass(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         props = context.scene.BIMRootProperties
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects or [context.active_object]
         ifc_class = self.ifc_class or props.ifc_class
         predefined_type = self.userdefined_type if self.predefined_type == "USERDEFINED" else self.predefined_type
         ifc_context = self.context_id
