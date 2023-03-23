@@ -301,7 +301,7 @@ class Geometry:
     def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
-    def import_representation(cls, obj, representation): pass
+    def import_representation(cls, obj, representation, apply_openings=True): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
