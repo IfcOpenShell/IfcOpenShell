@@ -522,9 +522,9 @@ class FilterModelElements(Operator):
                 selection += " & " if f.and_or == "and" else " | "
                 selection += f".{query.active_option}"
 
-            if value in ("True", "False"):
+            if f.value in ("True", "False"):
                 value = f.value
-            elif value.isnumeric() and str(float(value))[0] == value[0]:
+            elif f.value.isnumeric() and str(float(f.value))[0] == f.value[0]:
                 value = f.value
             else:
                 value = f'"{f.value}"'
