@@ -56,6 +56,9 @@ class Ifc(blenderbim.core.tool.Ifc):
 
     @classmethod
     def is_moved(cls, obj):
+        element = cls.get_entity(obj)
+        if not element or element.is_a("IfcTypeProduct") or element.is_a("IfcProject"):
+            return False
         if not obj.BIMObjectProperties.location_checksum:
             return True  # Let's be conservative
         loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))

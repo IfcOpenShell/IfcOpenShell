@@ -155,7 +155,7 @@ class IfcExporter:
 
     def sync_object_placement(self, obj):
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if element.is_a("IfcTypeProduct") or element.is_a("IfcProject") or not tool.Ifc.is_moved(obj):
+        if not tool.Ifc.is_moved(obj):
             return
         blender_matrix = np.array(obj.matrix_world)
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
