@@ -27,7 +27,8 @@ classes = (
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
-    operator.OverrideModeSet,
+    operator.OverrideModeSetEdit,
+    operator.OverrideModeSetObject,
     operator.OverrideOutlinerDelete,
     operator.OverridePasteBuffer,
     operator.RemoveConnection,
@@ -60,13 +61,13 @@ def register():
         kmi = km.keymap_items.new("bim.override_object_duplicate_move", "D", "PRESS", shift=True)
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked", "D", "PRESS", alt=True)
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
-        kmi = km.keymap_items.new("bim.override_mode_set", "TAB", "PRESS")
+        kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")
         kmi = km.keymap_items.new("bim.override_object_delete", "X", "PRESS")
         kmi = km.keymap_items.new("bim.override_object_delete", "DEL", "PRESS")
         kmi.properties.confirm = False
 
         km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
-        kmi = km.keymap_items.new("bim.override_mode_set", "TAB", "PRESS")
+        kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
 
         km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
