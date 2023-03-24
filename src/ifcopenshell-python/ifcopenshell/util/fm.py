@@ -141,7 +141,7 @@ def get_fmhem_types(ifc_file):
         fmhem_classes = fmhem_classes_ifc4
     for ifc_class in fmhem_classes:
         try:
-            elements += [e for e in ifc_file.by_type(ifc_class) if not e.is_a() not in fmhem_excluded_classes]
+            elements += [e for e in ifc_file.by_type(ifc_class) if e.is_a() not in fmhem_excluded_classes]
         except:
             pass
     return elements
