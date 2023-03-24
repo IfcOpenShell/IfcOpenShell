@@ -32,7 +32,7 @@ class Annotator:
         if related_element is None:
             location, _, _, _ = Annotator.get_placeholder_coords(bpy.context)
         else:
-            obj.data.BIMTextProperties.related_element = related_element
+            obj.data.BIMAssignedProductProperties.related_element = related_element
             location = related_element.location
         obj.location = location
         obj.hide_render = True
