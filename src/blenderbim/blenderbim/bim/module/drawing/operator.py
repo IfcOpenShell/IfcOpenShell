@@ -1357,6 +1357,7 @@ class EditAssignedProduct(bpy.types.Operator, Operator):
         if context.active_object.BIMAssignedProductProperties.relating_product:
             product = tool.Ifc.get_entity(context.active_object.BIMAssignedProductProperties.relating_product)
         core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
+        tool.Blender.update_viewport()
 
 
 class EnableEditingAssignedProduct(bpy.types.Operator, Operator):

@@ -803,7 +803,12 @@ class LeaderDecorator(BaseDecorator):
         region3d = context.region_data
         dir = Vector((1, 0))
         pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
-        self.draw_label(context, obj.BIMTextProperties.value, pos, dir, gap=0, center=False, vcenter=False)
+
+        props = obj.BIMTextProperties
+        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
+        text = text_data["Literals"][0]['CurrentValue']
+
+        self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
 
 
 class RadiusDecorator(BaseDecorator):
