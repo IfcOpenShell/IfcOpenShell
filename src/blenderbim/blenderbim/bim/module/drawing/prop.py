@@ -26,6 +26,7 @@ import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
 from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData
+from blenderbim.bim.module.drawing.data import refresh as refresh_drawing_data
 from pathlib import Path
 from blenderbim.bim.prop import Attribute, StrProperty
 from bpy.types import PropertyGroup
@@ -213,6 +214,7 @@ def toggleDecorations(self, context):
         collection = context.scene.camera.users_collection[0]
         for obj in collection.objects:
             tool.Drawing.update_text_value(obj)
+        refresh_drawing_data()
         decoration.DecorationsHandler.install(context)
     else:
         decoration.DecorationsHandler.uninstall()
