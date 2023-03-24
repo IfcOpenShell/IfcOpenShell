@@ -299,7 +299,8 @@ class SelectIfcClashResults(bpy.types.Operator):
             for scene in obj.users_scene:
                 if scene.BIMProperties.ifc_file:
                     ifc_file = scene.BIMProperties.ifc_file
-                    break
+                    if scene.library:
+                        break
 
             if ifc_file:
                 if ifc_file not in IfcStore.session_files:
