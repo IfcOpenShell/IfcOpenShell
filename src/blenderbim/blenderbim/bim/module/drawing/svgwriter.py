@@ -665,22 +665,25 @@ class SvgWriter:
         classes_str = " ".join(self.get_attribute_classes(text_obj))
 
         symbol = tool.Drawing.get_annotation_symbol(element)
+        template_text_fields = []
         if symbol:
             symbol_svg = self.find_xml_symbol_by_id(symbol)
             if symbol_svg:
                 symbol_xml = symbol_svg.get_xml()
                 template_text_fields = symbol_xml.findall('.//text[@data-type="text-template"]')
-                # if there is a simple with template text fields
+                # if there is a symbol with template text fields
                 # then we just populate it's fields with the data from text literals
                 if template_text_fields:
                     symbol_xml.attrib["transform"] = f"translate({', '.join(map(str, text_position_svg))})"
                     symbol_xml.attrib.pop("id")
-                    for i, field in enumerate(template_text_fields):
-                        field.text = tool.Drawing.replace_text_literal_variables(text_literals[i].Literal, product)
+                    # note: zip makes sure that we iterate over the shortest list
+                    for field, text_literal in zip(template_text_fields, text_literals):
+                        field.text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
                         field.attrib["class"] = classes_str
                     self.svg.add(symbol_svg)
                     return None
-            else:
+
+            if not symbol_svg or not template_text_fields:
                 self.svg.add(self.svg.use(f"#{symbol}", insert=text_position_svg))
 
         def get_box_alignment_parameters(box_alignment):
