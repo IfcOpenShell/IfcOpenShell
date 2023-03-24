@@ -829,7 +829,10 @@ class ExportIFC(bpy.types.Operator):
                 self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
             return self.execute(context)
         if not self.filepath:
-            self.filepath = Path(bpy.data.filepath).with_suffix(".ifc").__str__()
+            if bpy.data.is_saved:
+                self.filepath = Path(bpy.data.filepath).with_suffix(".ifc").__str__()
+            else:
+                self.filepath = "untitled.ifc"
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
