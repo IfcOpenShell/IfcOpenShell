@@ -116,6 +116,16 @@ class TestAppendAsset(test.bootstrap.IFC4):
     def test_append_a_type_product_with_its_styles(self):
         library = ifcopenshell.api.run("project.create_file")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        history = library.createIfcOwnerHistory()
+        element.OwnerHistory = history
+
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        rel = ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        # We share a history. This ensures that we continue to check all
+        # whitelisted inverses even though one of the subelements (i.e. this
+        # shared history) is already processed. See bug #2837.
+        rel.OwnerHistory = history
+
         item = library.createIfcBoundingBox()
         library.createIfcStyledItem(Item=item)
         mapped_rep = library.createIfcShapeRepresentation(Items=[item])
