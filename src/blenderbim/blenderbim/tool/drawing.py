@@ -1042,9 +1042,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         if not product:
             return text
         for variable in re.findall("{{.*?}}", text):
-            text = text.replace(
-                variable, str(ifcopenshell.util.selector.get_element_value(product, variable[2:-2]) or "")
-            )
+            value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
+            if isinstance(value, (list, tuple)):
+                value = ", ".join(str(v) for v in value)
+            text = text.replace(variable, str(value))
         return text
 
     @classmethod
