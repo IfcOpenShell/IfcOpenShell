@@ -26,9 +26,9 @@ import ifcopenshell.util.element
 def get_element_value(element, query):
     l = lark.Lark(
         """start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
-                keys_regex: "r" ESCAPED_STRING "." ESCAPED_STRING
-                keys_quoted: ESCAPED_STRING "." ESCAPED_STRING
-                keys_simple: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
+                keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
+                keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
+                keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
 
                 // Embed common.lark for packaging
                 _STRING_INNER: /.*?/
@@ -63,9 +63,9 @@ class Selector:
                     filter: "[" filter_key (comparison filter_value)? "]"
                     filter_key: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
-                    keys_regex: "r" ESCAPED_STRING "." ESCAPED_STRING
-                    keys_quoted: ESCAPED_STRING "." ESCAPED_STRING
-                    keys_simple: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
+                    keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
+                    keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
+                    keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
                     lfunction: and | or
                     inverse_relationship: types | decomposed_by | bounded_by | grouped_by
                     types: "*"
@@ -243,21 +243,29 @@ class Selector:
             keys = [keys]
         elif keys.data == "keys_regex":
             is_regex = True
-            keys = [keys.children[0][1:-1].replace("\\\"", '"'), keys.children[1][1:-1].replace("\\\"", '"')]
+            keys = [k[1:-1].replace("\\\"", '"') for k in keys.children]
         elif keys.data == "keys_quoted":
-            keys = [keys.children[0][1:-1].replace("\\\"", '"'), keys.children[1][1:-1].replace("\\\"", '"')]
+            keys = [k[1:-1].replace("\\\"", '"') for k in keys.children]
         elif keys.data == "keys_simple":
-            keys = [keys.children[0], keys.children[1]]
+            keys = keys.children
         return {"keys": keys, "is_regex": is_regex}
 
     @classmethod
     def get_element_value(cls, element, keys, is_regex=False):
         value = element
         for key in keys:
+            key = key.strip()
             if key == "type":
-                value = ifcopenshell.util.element.get_type(element)
-            elif key == "material":
-                value = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+                value = ifcopenshell.util.element.get_type(value)
+            elif key in ("material", "mat"):
+                value = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
+            elif key in ("item", "i"):
+                if value.is_a("IfcMaterialLayerSet"):
+                    value = value.MaterialLayers
+                elif value.is_a("IfcMaterialProfileSet"):
+                    value = value.MaterialProfiles
+                elif value.is_a("IfcMaterialConstituentSet"):
+                    value = value.MaterialConstituents
             elif key == "container":
                 value = ifcopenshell.util.element.get_container(element)
             elif isinstance(value, ifcopenshell.entity_instance):
@@ -287,7 +295,7 @@ class Selector:
                     value = results
                 else:
                     value = value.get(key, None)
-            elif isinstance(value, list): # If we use regex
+            elif isinstance(value, (list, tuple)): # If we use regex
                 results = []
                 for v in value:
                     subvalue = cls.get_element_value(v, [key], is_regex=is_regex)
