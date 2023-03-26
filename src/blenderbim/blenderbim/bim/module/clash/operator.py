@@ -102,8 +102,8 @@ class ImportClashSets(bpy.types.Operator):
 class AddClashSet(bpy.types.Operator):
     bl_idname = "bim.add_clash_set"
     bl_label = "Add Clash Set"
-    bl_description = "Add a clash set"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a clash set"
 
     def execute(self, context):
         new = context.scene.BIMClashProperties.clash_sets.add()
