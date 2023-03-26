@@ -664,35 +664,23 @@ class CopyMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        material = ifcopenshell.util.element.get_material(
-            self.file.by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
-        for obj in tool.Blender.get_selected_objects():
-            if obj == context.active_object:
-                continue
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "material.copy_material",
-                self.file,
-                **{
-                    "material": material,
-                    "element": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                },
-            )
-            self.set_default_material(obj, material)
+        blender_material = context.active_object.active_material
+        material = tool.Ifc.get_entity(blender_material)
+        copied_material = ifcopenshell.api.run("material.copy_material", tool.Ifc.get(), material=material)
+        copied_blender_material = bpy.data.materials.new(blender_material.name)
+        copied_style = self.get_style(copied_material)
+        tool.Ifc.link(copied_material, copied_blender_material)
+        if copied_style:
+            tool.Ifc.link(copied_style, copied_blender_material)
+        context.active_object.active_material = copied_blender_material
 
-    def set_default_material(self, obj, material):
-        object_material_ids = [
-            om.BIMObjectProperties.ifc_definition_id
-            for om in obj.data.materials
-            if om is not None and om.BIMObjectProperties.ifc_definition_id
-        ]
-
-        if material.id() in object_material_ids:
-            return
-        obj.data.materials.append(IfcStore.get_element(material.id()))
+    def get_style(self, material):
+        for material_representation in material.HasRepresentation:
+            for representation in material_representation.Representations:
+                for item in representation.Items:
+                    for style in item.Styles:
+                        if style.is_a("IfcSurfaceStyle"):
+                            return style
 
 
 class ExpandMaterialCategory(bpy.types.Operator):

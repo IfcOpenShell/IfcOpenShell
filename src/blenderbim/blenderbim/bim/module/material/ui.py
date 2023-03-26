@@ -92,6 +92,7 @@ class BIM_PT_material(Panel):
         material_id = context.active_object.active_material.BIMObjectProperties.ifc_definition_id
         if bool(material_id):
             row.operator("bim.remove_material", icon="X", text="Remove IFC Material").material = material_id
+            row.operator("bim.copy_material", icon="DUPLICATE", text="")
             row.operator("bim.unlink_material", icon="UNLINKED", text="")
         else:
             op = row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
@@ -158,8 +159,6 @@ class BIM_PT_object_material(Panel):
                 op.material_set_usage = ObjectMaterialData.data["material_id"]
             row.operator("bim.disable_editing_assigned_material", icon="CANCEL", text="")
         else:
-            if ObjectMaterialData.data["material_class"] == "IfcMaterial":
-                row.operator("bim.copy_material", icon="COPYDOWN", text="")
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
             row.operator("bim.unassign_material", icon="X", text="")
 
