@@ -548,6 +548,7 @@ class UnloadProject(bpy.types.Operator):
     bl_idname = "bim.unload_project"
     bl_label = "Unload Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Unload the IFC project"
 
     def execute(self, context):
         IfcStore.purge()
@@ -811,6 +812,7 @@ class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
     bl_label = "Export IFC"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Export the IFC project"
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
