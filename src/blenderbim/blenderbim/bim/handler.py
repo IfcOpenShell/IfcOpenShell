@@ -101,6 +101,10 @@ def active_object_callback():
     refresh_ui_data()
 
 
+def active_material_index_callback(obj, data):
+    refresh_ui_data()
+
+
 def subscribe_to(object, data_path, callback):
     try:
         subscribe_to = object.path_resolve(data_path, False)
