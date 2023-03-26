@@ -65,8 +65,10 @@ class SvgWriter:
         self.scale = 1 / 100  # 1:100
         self.camera_width = None
         self.camera_height = None
+        self.related_paths = None
 
     def create_blank_svg(self, output_path):
+        self.define_related_paths() # making sure all paths are defined
         self.calculate_scale()
         self.svg = svgwrite.Drawing(
             output_path,
@@ -92,11 +94,32 @@ class SvgWriter:
         )
         return self
 
-    def define_boilerplate(self, stylesheet=None, markers=None, symbols=None, patterns=None):
-        self.add_stylesheet(stylesheet)
-        self.add_markers(markers)
-        self.add_symbols(symbols)
-        self.add_patterns(patterns)
+    def define_related_paths(self, **related_paths):
+        if not self.related_paths:
+            self.related_paths = {}
+
+        if not related_paths:
+            related_paths = {
+                "Stylesheet": os.path.join(self.data_dir, "styles", f"default.css"),
+                "Markers": os.path.join(self.data_dir, "templates", "markers.svg"),
+                "Symbols": os.path.join(self.data_dir, "templates", "symbols.svg"),
+                "Patterns": os.path.join(self.data_dir, "templates", "patterns.svg"),
+            }
+            for path_name in list(related_paths.keys()):
+                if path_name in self.related_paths:
+                    del related_paths[path_name]
+
+        for path_name in related_paths:
+            uri = related_paths[path_name]
+            custom_path = tool.Ifc.resolve_uri(uri)
+            if custom_path:
+                self.related_paths[path_name] = custom_path
+
+    def define_boilerplate(self):
+        self.add_stylesheet()
+        self.add_markers()
+        self.add_symbols()
+        self.add_patterns()
         return self
 
     def calculate_scale(self):
@@ -108,25 +131,29 @@ class SvgWriter:
         self.width = self.raw_width * self.svg_scale
         self.height = self.raw_height * self.svg_scale
 
-    def add_stylesheet(self, uri):
-        default_stylesheet = os.path.join(self.data_dir, "styles", f"default.css")
-        with open(tool.Ifc.resolve_uri(uri) or default_stylesheet, "r") as stylesheet:
+    def add_stylesheet(self):
+        with open(self.related_paths["Stylesheet"], "r") as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
-    def add_markers(self, uri):
-        tree = ET.parse(tool.Ifc.resolve_uri(uri) or os.path.join(self.data_dir, "templates", "markers.svg"))
+    def add_markers(self):
+        tree = ET.parse(self.related_paths["Markers"])
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
 
-    def add_symbols(self, uri):
-        tree = ET.parse(tool.Ifc.resolve_uri(uri) or os.path.join(self.data_dir, "templates", "symbols.svg"))
+    def add_symbols(self):
+        tree = ET.parse(self.related_paths["Symbols"])
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
 
-    def add_patterns(self, uri):
-        tree = ET.parse(tool.Ifc.resolve_uri(uri) or os.path.join(self.data_dir, "templates", "patterns.svg"))
+    def find_xml_symbol_by_id(self, id):
+        tree = ET.parse(self.related_paths["Symbols"])
+        xml_symbol = tree.find(f'.//*[@id="{id}"]')
+        return External(xml_symbol) if xml_symbol else None
+
+    def add_patterns(self):
+        tree = ET.parse(self.related_paths["Patterns"])
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
@@ -530,7 +557,7 @@ class SvgWriter:
                 edge_verts_svg.append(symbol_position_svg)
 
             edge_dir = (edge_verts_svg[1] - edge_verts_svg[0]).normalized()
-            angle = degrees( edge_dir.xy.angle_signed( Vector([1,0]) ) )
+            angle = degrees(edge_dir.xy.angle_signed(Vector([1, 0])))
 
             for v_i, symbol_position_svg in zip(edge.vertices, edge_verts_svg):
                 current_marker_position = "start" if v_i == 0 else "end"
@@ -562,10 +589,7 @@ class SvgWriter:
                     )
                     self.svg.add(
                         self.svg.text(
-                            sheet_id, 
-                            insert=(text_position[0], text_position[1] + 2.5), 
-                            class_="SECTION", 
-                            **text_style
+                            sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="SECTION", **text_style
                         )
                     )
 
@@ -592,8 +616,14 @@ class SvgWriter:
             "alignment-baseline": "middle",
             "dominant-baseline": "middle",
         }
-        self.svg.add(self.svg.text(reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="ELEVATION", **text_style))
-        self.svg.add(self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="ELEVATION", **text_style))
+        self.svg.add(
+            self.svg.text(
+                reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="ELEVATION", **text_style
+            )
+        )
+        self.svg.add(
+            self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="ELEVATION", **text_style)
+        )
 
     def get_reference_and_sheet_id_from_annotation(self, element):
         reference_id = "-"
@@ -616,11 +646,12 @@ class SvgWriter:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         element = tool.Ifc.get_entity(text_obj)
-        rep = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
-        text_literal = [i for i in rep.Items if i.is_a("IfcTextLiteral")][0]
+        text_literals = tool.Drawing.get_text_literal(text_obj, return_list=True)
+        product = tool.Drawing.get_assigned_product(element)
 
         text_position = self.project_point_onto_camera(position)
         text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
+        text_position_svg = text_position * self.svg_scale
 
         local_x_axis = text_obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
         projected_x_axis = self.project_point_onto_camera(position + local_x_axis)
@@ -630,61 +661,82 @@ class SvgWriter:
             )
         )
 
-        transform = "rotate({}, {}, {})".format(
-            angle,
-            (text_position * self.svg_scale)[0],
-            (text_position * self.svg_scale)[1],
-        )
+        transform = "rotate({}, {}, {})".format(angle, *text_position_svg)
+        classes_str = " ".join(self.get_attribute_classes(text_obj))
 
         symbol = tool.Drawing.get_annotation_symbol(element)
+        template_text_fields = []
         if symbol:
-            self.svg.add(self.svg.use(f"#{symbol}", insert=tuple(text_position * self.svg_scale)))
+            symbol_svg = self.find_xml_symbol_by_id(symbol)
+            if symbol_svg:
+                symbol_xml = symbol_svg.get_xml()
+                template_text_fields = symbol_xml.findall('.//text[@data-type="text-template"]')
+                # if there is a symbol with template text fields
+                # then we just populate it's fields with the data from text literals
+                if template_text_fields:
+                    symbol_xml.attrib["transform"] = f"translate({', '.join(map(str, text_position_svg))})"
+                    symbol_xml.attrib.pop("id")
+                    # note: zip makes sure that we iterate over the shortest list
+                    for field, text_literal in zip(template_text_fields, text_literals):
+                        field.text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
+                        field.attrib["class"] = classes_str
+                    self.svg.add(symbol_svg)
+                    return None
 
-        box_alignment = text_literal.BoxAlignment
+            if not symbol_svg or not template_text_fields:
+                self.svg.add(self.svg.use(f"#{symbol}", insert=text_position_svg))
 
-        # reference for alignment values:
-        # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/text-anchor
-        # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/alignment-baseline
-        vertical_alignment = {
-            "top": "hanging",
-            "bottom": "baseline",
-            "center": "middle",
-            "middle": "middle",
-        }
-        alignment_baseline = vertical_alignment[ next(align for align in vertical_alignment if align in box_alignment) ]
-        horizontal_alignment = {
-            "left": "start",
-            "right": "end",
-            "center": "middle",
-            "middle": "middle",
-        }
-        text_anchor = horizontal_alignment[ next(align for align in horizontal_alignment if align in box_alignment) ]
+        def get_box_alignment_parameters(box_alignment):
+            # reference for alignment values:
+            # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/text-anchor
+            # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/alignment-baseline
+            vertical_alignment = {
+                "top": "hanging",
+                "bottom": "baseline",
+                "center": "middle",
+                "middle": "middle",
+            }
+            alignment_baseline = vertical_alignment[
+                next(align for align in vertical_alignment if align in box_alignment)
+            ]
+            horizontal_alignment = {
+                "left": "start",
+                "right": "end",
+                "center": "middle",
+                "middle": "middle",
+            }
+            text_anchor = horizontal_alignment[next(align for align in horizontal_alignment if align in box_alignment)]
 
-
-        # after pretty indentation some redundant spaces can occur in svg tags
-        # this is why we apply "font-size: 0;" to the text tag to remove those spaces
-        # and add clases to the tspan tags
-        # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
-        text = text_obj.BIMTextProperties.value
-        text_tag = self.svg.text(
-            "",
-            **{
-                "text-anchor": text_anchor,
-                # using dominant-baseline because we plan to use <tspan> subtags
-                # otherwise alignment-baseline would be sufficient
+            # using dominant-baseline because we plan to use <tspan> subtags
+            # otherwise alignment-baseline would be sufficient
+            return {
                 "dominant-baseline": alignment_baseline,
-                "transform": transform,
-                "style": "font-size: 0;",
-            },
-        )
-        self.svg.add(text_tag)
+                "text-anchor": text_anchor,
+            }
 
-        classes = " ".join(self.get_attribute_classes(text_obj))
-        for line_number, text_line in enumerate(text.replace("\\n", "\n").split("\n")):
-            t_span = self.svg.tspan(text_line, insert=(text_position * self.svg_scale), class_=classes)
-            # doing it here and not in tspan constructor because it adds unnecessary spaces
-            t_span.update({"dy": f"{line_number}em"})
-            text_tag.add(t_span)
+        for text_literal in text_literals:
+            # after pretty indentation some redundant spaces can occur in svg tags
+            # this is why we apply "font-size: 0;" to the text tag to remove those spaces
+            # and add clases to the tspan tags
+            # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
+
+            text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
+            text_tag = self.svg.text(
+                "",
+                **{
+                    "transform": transform,
+                    "style": "font-size: 0;",
+                },
+                **get_box_alignment_parameters(text_literal.BoxAlignment),
+            )
+            self.svg.add(text_tag)
+
+            for line_number, text_line in enumerate(text.replace("\\n", "\n").split("\n")):
+                # position has to be inserted at tspan to avoid x offset between tspans
+                t_span = self.svg.tspan(text_line, class_=classes_str, insert=text_position_svg)
+                # doing it here and not in tspan constructor because constructor adds unnecessary spaces
+                t_span.update({"dy": f"{line_number}em"})
+                text_tag.add(t_span)
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
@@ -762,7 +814,7 @@ class SvgWriter:
         points = obj.data.splines[0].points
         region = bpy.context.region
         region_3d = bpy.context.area.spaces.active.region_3d
-        points_chunked = [points[i:i+3] for i in range(len(points)-2)]
+        points_chunked = [points[i : i + 3] for i in range(len(points) - 2)]
 
         for points_chunk in points_chunked:
             points_2d = [view3d_utils.location_3d_to_region_2d(region, region_3d, p.co.xyz) for p in points_chunk]

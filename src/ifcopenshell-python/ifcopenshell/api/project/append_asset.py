@@ -183,20 +183,21 @@ class Usecase:
         existing_element = self.get_existing_element(element)
         if existing_element:
             return existing_element
-        # if element.id() in self.added_elements:
-        #    return self.added_elements[element.id()]
         new = self.file.add(element)
         self.added_elements[element.id()] = new
         self.check_inverses(element)
-        for subelement in self.settings["library"].traverse(element)[1:]:
+        subelement_queue = self.settings["library"].traverse(element, max_levels=1)[1:]
+        while subelement_queue:
+            subelement = subelement_queue.pop(0)
             existing_element = self.get_existing_element(subelement)
             if existing_element:
                 self.added_elements[subelement.id()] = existing_element
                 if not self.has_whitelisted_inverses(existing_element):
                     self.check_inverses(subelement)
-                break
-            self.added_elements[subelement.id()] = self.file.add(subelement)
-            self.check_inverses(subelement)
+            else:
+                self.added_elements[subelement.id()] = self.file.add(subelement)
+                self.check_inverses(subelement)
+                subelement_queue.extend(self.settings["library"].traverse(subelement, max_levels=1)[1:])
         return new
 
     def has_whitelisted_inverses(self, element):
@@ -256,6 +257,8 @@ class Usecase:
             # Feature elements match the target class but aren't considered "assets"
             return False
         elif element.is_a(self.target_class):
+            return True
+        elif self.target_class == "IfcProduct" and element.is_a("IfcTypeProduct"):
             return True
         return False
 

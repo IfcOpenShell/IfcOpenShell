@@ -24,7 +24,6 @@ import blenderbim.tool as tool
 
 def refresh():
     ProductAssignmentsData.is_loaded = False
-    TextData.is_loaded = False
     SheetsData.is_loaded = False
     SchedulesData.is_loaded = False
     DrawingsData.is_loaded = False
@@ -49,28 +48,6 @@ class ProductAssignmentsData:
             if rel.is_a("IfcRelAssignsToProduct"):
                 name = rel.RelatingProduct.Name or "Unnamed"
                 return f"{rel.RelatingProduct.is_a()}/{name}"
-
-
-class TextData:
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        cls.data = {"attributes": cls.attributes()}
-        cls.is_loaded = True
-
-    @classmethod
-    def attributes(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["TEXT", "TEXT_LEADER"]:
-            return []
-        rep = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
-        text_literal = [i for i in rep.Items if i.is_a("IfcTextLiteral")][0]
-        return [
-            {"name": "Literal", "value": text_literal.Literal},
-            {"name": "BoxAlignment", "value": text_literal.BoxAlignment},
-        ]
 
 
 class SheetsData:
@@ -200,8 +177,8 @@ class DecoratorData:
             return result
 
         element = tool.Ifc.get_entity(obj)
-        if not element:
-            return
+        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["TEXT", "TEXT_LEADER"]:
+            return None
 
         props = obj.BIMTextProperties
         # getting font size
@@ -218,10 +195,22 @@ class DecoratorData:
         font_size = FONT_SIZES[font_size_type]
 
         # other attributes
-        literal = tool.Drawing.get_text_literal(obj)
-        box_alignment = literal.BoxAlignment
-        text = props.value
+        props_literals = props.literals
+        props_literals_n = len(props.literals)
+        literals = tool.Drawing.get_text_literal(obj, return_list=True)
+        literals_data = []
+        for i, literal in enumerate(literals):
+            literal_data = {
+                "Literal": literal.Literal,
+                "BoxAlignment": literal.BoxAlignment,
+            }
+            if i < props_literals_n:
+                literal_data["CurrentValue"] = props_literals[i].value
+            else:
+                literal_data["CurrentValue"] = literal.Literal
 
-        text_data = {"text": text, "font_size": font_size, "box_alignment": box_alignment}
+            literals_data.append(literal_data)
+
+        text_data = {"Literals": literals_data, "FontSize": font_size}
         cls.data[obj.name] = text_data
         return text_data

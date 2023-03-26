@@ -39,12 +39,12 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
-from blenderbim.bim.module.drawing.data import DecoratorData, TextData
+from blenderbim.bim.module.drawing.data import DecoratorData
 import blenderbim.bim.export_ifc
 from lxml import etree
 from mathutils import Vector
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal
 from blenderbim.bim.ifc import IfcStore
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -157,28 +157,33 @@ class CreateDrawing(bpy.types.Operator):
         # printing all annotations on shift+click
         if event.type == "LEFTMOUSE" and event.shift:
             self.print_all = True
+        else:
+            # can't rely on default value since `self.print_all = True`
+            # will set the value to `True` for all future calls
+            self.print_all = False
         return self.execute(context)
 
     def execute(self, context):
-        if not self.print_all:
-            camera = context.scene.camera
-            cameras = [(camera, tool.Ifc.get_entity(camera))]
-        else:
-            cameras = []
-            for drawing_prop in bpy.context.scene.DocProperties.drawings:
-                camera_element = tool.Ifc.get().by_id(drawing_prop.ifc_definition_id)
-                camera = tool.Ifc.get_object(camera_element)
-                cameras.append((camera, camera_element))
+        self.props = context.scene.DocProperties
 
-        for camera, camera_element in cameras:
-            self.camera, self.camera_element = camera, camera_element
+        if self.print_all:
+            original_drawing_id = self.props.active_drawing_id
+            drawings_to_print = [drawing.ifc_definition_id for drawing in self.props.drawings]
+        else:
+            drawings_to_print = [self.props.active_drawing_id]
+
+        for drawing_id in drawings_to_print:
+            if self.print_all:
+                bpy.ops.bim.activate_view(drawing=drawing_id)
+
+            self.camera = context.scene.camera
+            self.camera_element = tool.Ifc.get_entity(self.camera)
             self.file = IfcStore.get_file()
 
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):
-                    self.props = context.scene.DocProperties
                     self.cprops = self.camera.data.BIMCameraProperties
-                    self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
+                    self.drawing_name = self.file.by_id(drawing_id).Name
                     self.get_scale()
                     if self.cprops.update_representation(self.camera):
                         bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
@@ -192,6 +197,14 @@ class CreateDrawing(bpy.types.Operator):
                     self.svg_writer.camera_projection = tuple(
                         self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
                     )
+                    pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
+                    related_paths = {
+                        "Stylesheet": pset.get("Stylesheet"),
+                        "Markers": pset.get("Markers"),
+                        "Symbols": pset.get("Symbols"),
+                        "Patterns": pset.get("Patterns"),
+                    }
+                    self.svg_writer.define_related_paths(**related_paths)
 
                 with profile("Generate underlay"):
                     underlay_svg = self.generate_underlay(context)
@@ -207,6 +220,8 @@ class CreateDrawing(bpy.types.Operator):
 
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
 
+        if self.print_all:
+            bpy.ops.bim.activate_view(drawing=original_drawing_id)
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -223,10 +238,7 @@ class CreateDrawing(bpy.types.Operator):
         # Hacky :)
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
-            pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
-            self.svg_writer.create_blank_svg(svg_path).define_boilerplate(
-                pset.get("Stylesheet"), pset.get("Markers"), pset.get("Symbols"), pset.get("Patterns")
-            )
+            self.svg_writer.create_blank_svg(svg_path).define_boilerplate()
             boilerplate = self.svg_writer.svg.tostring()
             outfile.write(boilerplate.replace("</svg>", ""))
             if underlay:
@@ -1195,170 +1207,6 @@ class CleanWireframes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CopyGrid(bpy.types.Operator):
-    bl_idname = "bim.add_grid"
-    bl_label = "Add Grid"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return helper.get_active_drawing(context.scene)[0] is not None
-
-    def execute(self, context):
-        drawing = tool.Ifc.get_entity(context.scene.camera)
-        target_view = tool.Drawing.get_drawing_target_view(drawing)
-        subcontext = ifcopenshell.util.representation.get_context(
-            IfcStore.get_file(), "Plan", "Annotation", target_view
-        )
-        if not subcontext:
-            return {"FINISHED"}
-
-        proj_coll = helper.get_project_collection(context.scene)
-        view_coll, camera = helper.get_active_drawing(context.scene)
-        is_ortho = camera.data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
-        clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
-        elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
-
-        def grep(coll):
-            results = []
-            for obj in coll.all_objects:
-                element = tool.Ifc.get_entity(obj)
-                if element and element.is_a("IfcAnnotation") and element.ObjectType == "GRID":
-                    results.append(obj)
-            return results
-
-        def clone(src):
-            dst = src.copy()
-            dst.data = dst.data.copy()
-            dst.name = dst.name.replace("IfcGridAxis/", "")
-            dst.BIMObjectProperties.ifc_definition_id = 0
-            dst.data.BIMMeshProperties.ifc_definition_id = 0
-            return dst
-
-        def disassemble(obj):
-            mesh = bmesh.new()
-            mesh.verts.ensure_lookup_table()
-            mesh.from_mesh(obj.data)
-            return obj, mesh
-
-        def assemble(obj, mesh):
-            mesh.to_mesh(obj.data)
-            return obj
-
-        def localize(obj, mesh):
-            # convert to camera coords
-            mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
-            obj.matrix_world = camera.matrix_world
-            return obj, mesh
-
-        def clip(mesh):
-            # clip segment against camera view bounds
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
-
-        def elev(mesh):
-            # put camera-perpendicular segments vertically
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.elevate_segment(bounds, points)
-            if points is None:
-                return None
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
-
-        for obj in grep(view_coll):
-            view_coll.objects.unlink(obj)
-
-        grids = []
-        for element in tool.Ifc.get().by_type("IfcGridAxis"):
-            obj = tool.Ifc.get_object(element)
-            if not obj:
-                continue
-            grids.append((*localize(*disassemble(clone(obj))), element))
-
-        if clipping:
-            grids = [(obj, clip(mesh), element) for obj, mesh, element in grids]
-        elif elevating:
-            grids = [(obj, elev(mesh), element) for obj, mesh, element in grids]
-
-        for obj, mesh, element in grids:
-            if mesh is not None:
-                view_coll.objects.link(assemble(obj, mesh))
-                bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcAnnotation", context_id=subcontext.id())
-                annotation = tool.Ifc.get_entity(obj)
-                annotation.Name = element.AxisTag
-                annotation.ObjectType = "GRID"
-        return {"FINISHED"}
-
-
-class AddSectionsAnnotations(bpy.types.Operator):
-    bl_idname = "bim.add_sections_annotations"
-    bl_label = "Add Sections"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        camera = helper.get_active_drawing(context.scene)[1]
-        return camera and camera.data.type == "ORTHO"
-
-    def execute(self, context):
-        scene = context.scene
-        view_coll, camera = helper.get_active_drawing(scene)
-        bounds = helper.ortho_view_frame(camera.data)
-
-        drawings = [
-            d
-            for d in scene.DocProperties.drawings
-            if (
-                d.camera is not camera
-                and d.camera.data.type == "ORTHO"
-                and d.camera.data.BIMCameraProperties.target_view == "SECTION_VIEW"
-            )
-        ]
-
-        def sideview(cam):
-            # leftmost and rightmost points of camera view area, local coords
-            xmin, xmax, _, _, _, _ = helper.ortho_view_frame(cam.data, margin=0)
-            proj = camera.matrix_world.inverted() @ cam.matrix_world
-            p_l = proj @ Vector((xmin, 0, 0))
-            p_r = proj @ Vector((xmax, 0, 0))
-            return helper.clip_segment(bounds, (p_l, p_r))
-
-        def annotation(drawing, points):
-            # object with path geometry
-            name = drawing.name
-            curve = bpy.data.curves.new(f"Section/{name}", "CURVE")
-            spline = curve.splines.new("POLY")  # has 1 initial point
-            spline.points.add(1)
-            p1, p2 = points
-            z = bounds[4] - 1e-5  # zmin
-            spline.points[0].co = (p1.x, p1.y, z, 1)
-            spline.points[1].co = (p2.x, p2.y, z, 1)
-            obj = bpy.data.objects.new(f"IfcAnnotation/Section/{name}", curve)
-            obj.matrix_world = camera.matrix_world
-            return obj
-
-        for d in drawings:
-            points = sideview(d.camera)
-            if points is None:
-                continue
-            obj = annotation(d, points)
-            view_coll.objects.link(obj)
-
-        return {"FINISHED"}
-
-
 class EditTextPopup(bpy.types.Operator):
     bl_idname = "bim.edit_text_popup"
     bl_label = "Edit Text"
@@ -1368,30 +1216,39 @@ class EditTextPopup(bpy.types.Operator):
         # shares most of the code with BIM_PT_text.draw()
         # need to keep them in sync or move to some common function
 
-        if not TextData.is_loaded:
-            TextData.load()
         props = context.active_object.BIMTextProperties
 
-        # skip BoxAlignment since we're going to format it ourselves
-        attributes = [a for a in props.attributes if a.name != "BoxAlignment"]
-        # set first attribute with text to be active by default
-        blenderbim.bim.helper.draw_attributes(attributes, self.layout, popup_active_attribute=attributes[0])
+        row = self.layout.row(align=True)
+        row.operator("bim.add_text_literal", icon="ADD", text="Add literal")
+
         row = self.layout.row(align=True)
         row.prop(props, "font_size")
 
-        # a bit hacky way to align box alignment widget
-        rows = [self.layout.row(align=True) for i in range(3)]
-        for i in range(9):
-            if i % 3 == 0:
-                split = rows[i // 3].split(factor=0.1, align=True)
-                split.column()
-            split.prop(props, "box_alignment", text="", index=i)
+        for i, literal_props in enumerate(props.literals):
+            box = self.layout.box()
+            row = self.layout.row(align=True)
 
-        text_lines = ["Text box alignment:", props.attributes["BoxAlignment"].string_value, ""]
-        for i in range(3):
-            split = rows[i].split(factor=0.1, align=False)
-            split.column()
-            split.label(text=text_lines[i])
+            row = box.row(align=True)
+            row.label(text=f"Literal[{i}]:")
+            row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
+
+            # skip BoxAlignment since we're going to format it ourselves
+            attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
+            blenderbim.bim.helper.draw_attributes(attributes, box)
+
+            # a bit hacky way to align box alignment widget
+            rows = [box.row(align=True) for i in range(3)]
+            for i in range(9):
+                if i % 3 == 0:
+                    split = rows[i // 3].split(factor=0.1, align=True)
+                    split.column()
+                split.prop(literal_props, "box_alignment", text="", index=i)
+
+            text_lines = ["Text box alignment:", literal_props.attributes["BoxAlignment"].string_value, ""]
+            for i in range(3):
+                split = rows[i].split(factor=0.1, align=False)
+                split.column()
+                split.label(text=text_lines[i])
 
     def cancel(self, context):
         # disable editing when dialog is closed
@@ -1416,7 +1273,7 @@ class EditText(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_text(tool.Ifc, tool.Drawing, obj=context.active_object)
+        core.edit_text(tool.Drawing, obj=context.active_object)
         tool.Blender.update_viewport()
 
 
@@ -1442,6 +1299,54 @@ class DisableEditingText(bpy.types.Operator, Operator):
         tool.Blender.update_viewport()
 
 
+class AddTextLiteral(bpy.types.Operator):
+    bl_idname = "bim.add_text_literal"
+    bl_label = "Add text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+
+        # similar to `tool.Drawing.import_text_attributes`
+        literal_props = obj.BIMTextProperties.literals.add()
+        literal_attributes = literal_props.attributes
+        literal_attr_values = {
+            "Literal": "Literal",
+            "Path": "RIGHT",
+            "BoxAlignment": "bottom_left",
+        }
+        # emulates `blenderbim.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)`
+        for attr_name in literal_attr_values:
+            attr = literal_attributes.add()
+            attr.name = attr_name
+            if attr_name == "Path":
+                attr.data_type = "enum"
+                attr.enum_items = '["DOWN", "LEFT", "RIGHT", "UP"]'
+                attr.enum_value = literal_attr_values[attr_name]
+
+            else:
+                attr.data_type = "string"
+                attr.string_value = literal_attr_values[attr_name]
+
+        box_alignment_mask = [False] * 9
+        box_alignment_mask[6] = True  # bottom_left box_alignment
+        literal_props.box_alignment = box_alignment_mask
+        return {"FINISHED"}
+
+
+class RemoveTextLiteral(bpy.types.Operator):
+    bl_idname = "bim.remove_text_literal"
+    bl_label = "Remove text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        obj.BIMTextProperties.literals.remove(self.literal_prop_id)
+        return {"FINISHED"}
+
+
 class EditAssignedProduct(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_assigned_product"
     bl_label = "Edit Text Product"
@@ -1452,6 +1357,7 @@ class EditAssignedProduct(bpy.types.Operator, Operator):
         if context.active_object.BIMAssignedProductProperties.relating_product:
             product = tool.Ifc.get_entity(context.active_object.BIMAssignedProductProperties.relating_product)
         core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
+        tool.Blender.update_viewport()
 
 
 class EnableEditingAssignedProduct(bpy.types.Operator, Operator):

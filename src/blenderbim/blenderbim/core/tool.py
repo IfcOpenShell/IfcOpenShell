@@ -257,6 +257,9 @@ class Drawing:
     def get_name(cls, element): pass
     def get_schedule_location(cls, schedule): pass
     def get_text_literal(cls, obj): pass
+    def remove_literal_from_annotation(cls, obj, literal): pass
+    def synchronise_ifc_and_text_attributes(cls, obj): pass
+    def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
     def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
     def import_schedules(cls): pass
@@ -298,7 +301,7 @@ class Geometry:
     def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
-    def import_representation(cls, obj, representation): pass
+    def import_representation(cls, obj, representation, apply_openings=True): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
@@ -518,6 +521,7 @@ class Qto:
     def add_product_base_qto(cls, product): pass
     def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
     def get_new_guessed_quantity(cls, object, qto_name, quantity_name, ): pass
+    def get_related_cost_item_quantities(cls, product): pass
 
 
 @interface
@@ -625,7 +629,7 @@ class Sequence:
     def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
     def get_recurrence_pattern_times(cls): pass
     def get_rel_sequence_attributes(cls): pass
-    
+
     def get_selected_resource(cls): pass
     def get_start_date(cls): pass
     def get_task_attribute_value(cls, attribute_name): pass

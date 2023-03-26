@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import struct
+import hashlib
 import logging
 import numpy as np
 import ifcopenshell
@@ -121,6 +123,27 @@ class Geometry(blenderbim.core.tool.Geometry):
         return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
     @classmethod
+    def get_mesh_checksum(cls, mesh):
+        # Get mesh data
+        vertices = mesh.vertices[:]
+        edges = mesh.edges[:]
+        faces = mesh.polygons[:]
+
+        # Convert mesh data to bytes
+        data_bytes = b''
+        for v in vertices:
+            data_bytes += struct.pack('3f', *v.co)
+        for e in edges:
+            data_bytes += struct.pack('2i', *e.vertices)
+        for f in faces:
+            data_bytes += struct.pack('%di' % len(f.vertices), *f.vertices)
+
+        # Generate hash of mesh data
+        hasher = hashlib.sha1()
+        hasher.update(data_bytes)
+        return hasher.hexdigest()
+
+    @classmethod
     def get_object_data(cls, obj):
         return obj.data
 
@@ -153,6 +176,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     def get_styles(cls, obj):
         return [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
 
+    # TODO: multiple Literals?
     @classmethod
     def get_text_literal(cls, representation):
         texts = [i for i in representation.Items if i.is_a("IfcTextLiteral")]
@@ -168,7 +192,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return data.users != 0
 
     @classmethod
-    def import_representation(cls, obj, representation):
+    def import_representation(cls, obj, representation, apply_openings=True):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
@@ -177,7 +201,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         context = representation.ContextOfItems
         if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
-            if element.is_a("IfcTypeProduct"):
+            if element.is_a("IfcTypeProduct") or not apply_openings:
                 shape = ifcopenshell.geom.create_shape(settings, representation)
             else:
                 shape = ifcopenshell.geom.create_shape(settings, element)

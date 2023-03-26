@@ -30,7 +30,7 @@ from math import acos, pi, atan, degrees
 from functools import reduce
 from itertools import chain
 from bpy.types import SpaceView3D
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, geometry
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
@@ -181,6 +181,11 @@ class BaseDecorator:
             defines=self.DEF_GLSL,
         )
 
+        self.font_id = blf.load(
+            os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
+        )
+
+    def get_camera_width_mm(self):
         # Horrific prototype code to ensure bgl draws at drawing scales
         # https://blender.stackexchange.com/questions/16493/is-there-a-way-to-fit-the-viewport-to-the-current-field-of-view
         def is_landscape(render):
@@ -200,11 +205,9 @@ class BaseDecorator:
             camera_width_model = camera.data.ortho_scale
         else:
             camera_width_model = camera.data.ortho_scale / render.resolution_y * render.resolution_x
-        self.camera_width_mm = get_scale(camera) * camera_width_model
 
-        self.font_id = blf.load(
-            os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
-        )
+        camera_width_mm = get_scale(camera) * camera_width_model
+        return camera_width_mm
 
     def camera_zoom_to_factor(self, zoom):
         return math.pow(((zoom / 50) + math.sqrt(2)) / 2, 2)
@@ -368,7 +371,7 @@ class BaseDecorator:
             # Horrific prototype code
             factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
             camera_width_px = factor * context.region.width
-            mm_to_px = camera_width_px / self.camera_width_mm
+            mm_to_px = camera_width_px / self.get_camera_width_mm()
             # 0.00025 is a magic constant number I visually discovered to get the right number.
             # It probably should be dynamically calculated using system.dpi or something.
             viewport_drawing_scale = 0.00025 * mm_to_px
@@ -384,7 +387,7 @@ class BaseDecorator:
         context,
         text,
         pos,
-        dir,
+        text_dir,
         gap=4,
         center=True,
         vcenter=False,
@@ -409,21 +412,22 @@ class BaseDecorator:
 
         color = context.scene.DocProperties.decorations_colour
 
-        ang = -Vector((1, 0)).angle_signed(dir)
+        ang = -Vector((1, 0)).angle_signed(text_dir)
         cos = math.cos(ang)
         sin = math.sin(ang)
+        rotation_matrix = Matrix.Rotation(-ang, 2)
 
         # Horrific prototype code
         factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
         camera_width_px = factor * context.region.width
-        mm_to_px = camera_width_px / self.camera_width_mm
+        mm_to_px = camera_width_px / self.get_camera_width_mm()
         # 0.004118616 is a magic constant number I visually discovered to get the right number.
         # In particular it works only for the OpenGOST font and produces a 2.5mm font size.
         # It probably should be dynamically calculated using system.dpi or something.
         # font_size = 16 <-- this is a good default
         # TODO: need to synchronize it better with svg
         font_size_px = int(0.004118616 * mm_to_px) * font_size_mm / 2.5
-        pos = pos - Vector((0, line_no * font_size_px))
+        pos = pos - line_no * font_size_px * rotation_matrix[1]
 
         blf.size(font_id, font_size_px, dpi)
 
@@ -431,20 +435,24 @@ class BaseDecorator:
             w, h = blf.dimensions(font_id, text)
 
         if box_alignment:
-            # TODO: need to work out the rotation too
+            box_alignment_offset = Vector((0, 0))
             if "bottom" in box_alignment:
                 pass
             elif "top" in box_alignment:
-                pos -= Vector((0, h))
+                box_alignment_offset += Vector((0, h))
             else:
-                pos -= Vector((0, h / 2))  # middle / center
+                # middle / center
+                box_alignment_offset += Vector((0, h / 2))  
 
             if "left" in box_alignment:
                 pass
             elif "right" in box_alignment:
-                pos -= Vector((w, 0))
+                box_alignment_offset += Vector((w, 0))
             else:
-                pos -= Vector((w / 2, 0))
+                # middle / center
+                box_alignment_offset += Vector((w / 2, 0))
+            
+            pos -= rotation_matrix.transposed() @ box_alignment_offset
         else:
             if center:
                 # horizontal centering
@@ -795,7 +803,12 @@ class LeaderDecorator(BaseDecorator):
         region3d = context.region_data
         dir = Vector((1, 0))
         pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
-        self.draw_label(context, obj.BIMTextProperties.value, pos, dir, gap=0, center=False, vcenter=False)
+
+        props = obj.BIMTextProperties
+        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
+        text = text_data["Literals"][0]['CurrentValue']
+
+        self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
 
 
 class RadiusDecorator(BaseDecorator):
@@ -2028,8 +2041,8 @@ class TextDecorator(BaseDecorator):
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
         + """
-        #define ARROW_ANGLE PI / 12.0
-        #define ARROW_SIZE 16.0
+        #define CIRCLE_SIZE 4.0
+        #define CIRCLE_SEGS_ASTERISK 6
     """
     )
 
@@ -2040,54 +2053,34 @@ class TextDecorator(BaseDecorator):
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
 
+    void circle_head_asterisk(in float size, out vec4 head[CIRCLE_SEGS_ASTERISK]) {
+        float angle_d = PI * 2 / CIRCLE_SEGS_ASTERISK;
+        for(int i = 0; i<CIRCLE_SEGS_ASTERISK; i++) {
+            float angle = angle_d * i;
+            head[i] = vec4(cos(angle), sin(angle), 0, 0) * size;
+        }
+    }
+
     void main() {
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
 
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-
+        vec4 p0 = gl_in[0].gl_Position;
+        vec4 p0w = CLIP2WIN(p0);
         vec4 p;
+        
+        vec4 head[CIRCLE_SEGS_ASTERISK];
+        circle_head_asterisk(viewportDrawingScale * CIRCLE_SIZE, head);
 
-        vec4 head[3];
-        arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
-
-        // start edge arrow
-        gl_Position = p0;
-        EmitVertex();
-        p = p0w + head[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        gl_Position = p0;
-        EmitVertex();
-        EndPrimitive();
-
-        // end edge arrow
-        gl_Position = p1;
-        EmitVertex();
-        p = p1w - head[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w - head[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        gl_Position = p1;
-        EmitVertex();
-        EndPrimitive();
-
-        // stem, with gaps for arrows
-        p = p0w + head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w - head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
+        for (int i=0; i < CIRCLE_SEGS_ASTERISK/2; i++) {
+            p = p0w + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p0w + head[i+CIRCLE_SEGS_ASTERISK/2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
     }
     """
 
@@ -2097,25 +2090,48 @@ class TextDecorator(BaseDecorator):
     def draw_labels(self, context, obj):
         region = context.region
         region3d = context.region_data
-        # TODO: support text rotation
-        dir = Vector((1, 0))
+
+        def matrix_only_rotation(m):
+            return m.to_3x3().normalized().to_4x4()
+
+        text_dir = Vector((1,0))
+        text_dir_world = matrix_only_rotation(region3d.perspective_matrix.inverted()) @ text_dir.to_3d()
+        text_dir_world_rotated = matrix_only_rotation(obj.matrix_world) @ text_dir_world
+        text_dir = (matrix_only_rotation(region3d.perspective_matrix) @ text_dir_world_rotated).to_2d().normalized()
+
         pos = location_3d_to_region_2d(region, region3d, obj.matrix_world.translation)
         props = obj.BIMTextProperties
         text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
-        box_alignment = text_data["box_alignment"]
-        for line_i, line in enumerate(text_data["text"].split("\\n")):
-            self.draw_label(
-                context,
-                line,
-                pos,
-                dir,
-                gap=0,
-                center=False,
-                vcenter=False,
-                font_size_mm=text_data["font_size"],
-                line_no=line_i,
-                box_alignment=box_alignment,
-            )
+        literals_data = text_data["Literals"]
+
+        # draw asterisk symbol to visually indicate that there are multiple literals
+        if len(literals_data) > 1:
+            verts = [obj.location]
+            idxs = [(0, 0)]
+            self.draw_lines(context, obj, verts, idxs)
+
+        box_alignment_used = []
+        for literal_data in literals_data:
+            box_alignment = literal_data["BoxAlignment"]
+            # Skip literals with the same box alignment to prevent visual clutter in viewport
+            # User is still indicated by the asterisk symbol
+            if box_alignment in box_alignment_used:
+                continue
+            box_alignment_used.append(box_alignment)
+
+            for line_i, line in enumerate(literal_data["CurrentValue"].split("\\n")):
+                self.draw_label(
+                    context,
+                    line,
+                    pos,
+                    text_dir,
+                    gap=0,
+                    center=False,
+                    vcenter=False,
+                    font_size_mm=text_data["FontSize"],
+                    line_no=line_i,
+                    box_alignment=box_alignment,
+                )
 
 
 class DecorationsHandler:

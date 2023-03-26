@@ -426,3 +426,4 @@ class BIMMeshProperties(PropertyGroup):
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
+    mesh_checksum: StringProperty(name="Mesh Checksum", default="")

@@ -139,7 +139,7 @@ class CadTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_Q")
-                row.operator("bim.hotkey", text="Apply Railing Path").hotkey = "S_Q"
+                row.operator("bim.cad_hotkey", text="Apply Railing Path").hotkey = "S_Q"
                 row.operator("bim.cancel_editing_railing_path", icon="CANCEL", text="")
 
             elif (
@@ -150,7 +150,7 @@ class CadTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_Q")
-                row.operator("bim.hotkey", text="Apply Roof Path").hotkey = "S_Q"
+                row.operator("bim.cad_hotkey", text="Apply Roof Path").hotkey = "S_Q"
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
 
             row = layout.row(align=True)

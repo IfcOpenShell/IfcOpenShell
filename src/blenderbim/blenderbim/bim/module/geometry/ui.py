@@ -58,7 +58,7 @@ class BIM_PT_representations(Panel):
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
-        prop_with_search(row, context.scene.BIMRootProperties, "contexts", text="")
+        prop_with_search(row, context.active_object.BIMGeometryProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         for representation in RepresentationsData.data["representations"]:
@@ -67,7 +67,7 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextIdentifier"])
             row.label(text=representation["TargetView"])
             row.label(text=representation["RepresentationType"])
-            op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
+            op = row.operator("bim.switch_representation", icon="FILE_REFRESH" if representation["is_active"] else "OUTLINER_DATA_MESH", text="")
             op.should_switch_all_meshes = True
             op.should_reload = True
             op.ifc_definition_id = representation["id"]

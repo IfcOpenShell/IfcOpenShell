@@ -27,6 +27,8 @@ classes = (
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
+    operator.OverrideModeSetEdit,
+    operator.OverrideModeSetObject,
     operator.OverrideOutlinerDelete,
     operator.OverridePasteBuffer,
     operator.RemoveConnection,
@@ -35,6 +37,7 @@ classes = (
     operator.SwitchRepresentation,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
     ui.BIM_PT_derived_placements,
     ui.BIM_PT_representations,
@@ -48,6 +51,7 @@ addon_keymaps = []
 
 
 def register():
+    bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
     bpy.types.OBJECT_PT_transform.append(ui.BIM_PT_transform)
     bpy.types.VIEW3D_MT_object.append(ui.object_menu)
@@ -57,9 +61,13 @@ def register():
         kmi = km.keymap_items.new("bim.override_object_duplicate_move", "D", "PRESS", shift=True)
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked", "D", "PRESS", alt=True)
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
+        kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")
         kmi = km.keymap_items.new("bim.override_object_delete", "X", "PRESS")
         kmi = km.keymap_items.new("bim.override_object_delete", "DEL", "PRESS")
         kmi.properties.confirm = False
+
+        km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
+        kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
 
         km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
@@ -71,6 +79,7 @@ def unregister():
     bpy.types.VIEW3D_MT_object.remove(ui.object_menu)
     bpy.types.OBJECT_PT_transform.remove(ui.BIM_PT_transform)
     del bpy.types.Scene.BIMGeometryProperties
+    del bpy.types.Object.BIMGeometryProperties
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:

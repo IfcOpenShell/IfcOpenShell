@@ -28,12 +28,12 @@ import ifcopenshell.api
 import blenderbim.core.geometry as core
 import blenderbim.core.style
 import blenderbim.core.root
+import blenderbim.core.drawing
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.root.prop import get_contexts
 
 
 class Operator:
@@ -59,27 +59,20 @@ class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-    context_id: bpy.props.IntProperty()
-    ifc_representation_class: bpy.props.StringProperty()
-    profile_set_usage: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifc_context = self.context_id
-        if not ifc_context and get_contexts(self, context):
-            ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
+        ifc_context = int(context.active_object.BIMGeometryProperties.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         core.add_representation(
             tool.Ifc,
             tool.Geometry,
             tool.Style,
             tool.Surveyor,
-            obj=obj,
+            obj=context.active_object,
             context=ifc_context,
-            ifc_representation_class=self.ifc_representation_class,
-            profile_set_usage=tool.Ifc.get().by_id(self.profile_set_usage) if self.profile_set_usage else None,
+            ifc_representation_class=None,
+            profile_set_usage=None,
         )
 
 
@@ -357,6 +350,8 @@ class OverrideDeleteTrait:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
         IfcStore.delete_element(element)
         if obj.users_collection and obj.users_collection[0].name == obj.name:
             parent = ifcopenshell.util.element.get_aggregate(element)
@@ -425,7 +420,11 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
     def _execute(self, context):
         for obj in context.selected_objects:
             self.delete_ifc_object(obj)
-            bpy.data.objects.remove(obj)
+            try:
+                obj.name
+                bpy.data.objects.remove(obj)
+            except:
+                pass
         # Required otherwise gizmos are still visible
         context.view_layer.objects.active = None
         return {"FINISHED"}
@@ -621,3 +620,134 @@ class OverridePasteBuffer(bpy.types.Operator):
             for obj in context.selected_objects:
                 blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         return {"FINISHED"}
+
+
+class OverrideModeSetEdit(bpy.types.Operator):
+    bl_idname = "bim.override_mode_set_edit"
+    bl_label = "IFC Mode Set Edit"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        objs = context.selected_objects or [context.active_object]
+        if context.active_object:
+            context.active_object.select_set(True)
+        edited_objs = []
+        for obj in objs:
+            if not obj:
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            # We are switching from OBJECT to EDIT mode.
+            usage_type = tool.Model.get_usage_type(element)
+            if usage_type:
+                # Parametric objects shall not be edited as meshes as they
+                # can be modified to be incompatible with the parametric
+                # constraints.
+                obj.select_set(False)
+                continue
+
+            if obj.data.BIMMeshProperties.ifc_definition_id:
+                representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                if representation.RepresentationType in ("Tessellation", "Brep"):
+                    if element.HasOpenings:
+                        # Mesh elements with openings must disable openings
+                        # so that you can edit the original topology.
+                        core.switch_representation(
+                            tool.Ifc,
+                            tool.Geometry,
+                            obj=obj,
+                            representation=representation,
+                            should_reload=True,
+                            is_global=True,
+                            should_sync_changes_first=False,
+                            apply_openings=False,
+                        )
+                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
+        if not context.selected_objects:
+            return {"FINISHED"}
+        bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        if not tool.Ifc.get():
+            return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        return self.execute(context)
+
+
+class OverrideModeSetObject(bpy.types.Operator):
+    bl_idname = "bim.override_mode_set_object"
+    bl_label = "IFC Mode Set Object"
+    bl_options = {"REGISTER", "UNDO"}
+    should_save: bpy.props.BoolProperty(name="Should Save", default=True)
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        for obj in self.edited_objs:
+            if self.should_save:
+                bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
+                if tool.Ifc.get_entity(obj).HasOpenings:
+                    self.reload_representation(obj)
+            else:
+                self.reload_representation(obj)
+
+        for obj in self.unchanged_objs_with_openings:
+            self.reload_representation(obj)
+        return {"FINISHED"}
+
+    def reload_representation(self, obj):
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        core.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+            apply_openings=True,
+        )
+
+    def draw(self, context):
+        row = self.layout.row(align=True)
+        row.prop(self, "should_save")
+
+    def invoke(self, context, event):
+        bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+
+        if not tool.Ifc.get():
+            return
+
+        objs = context.selected_objects or [context.active_object]
+
+        self.edited_objs = []
+        self.unchanged_objs_with_openings = []
+
+        for obj in objs:
+            if not obj:
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if obj.data.BIMMeshProperties.ifc_definition_id:
+                representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                if representation.RepresentationType in (
+                    "Tessellation",
+                    "Brep",
+                ) and obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    self.edited_objs.append(obj)
+                elif element.HasOpenings:
+                    self.unchanged_objs_with_openings.append(obj)
+
+        if self.edited_objs:
+            return context.window_manager.invoke_props_dialog(self)
+        return self.execute(context)

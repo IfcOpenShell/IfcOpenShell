@@ -25,7 +25,7 @@ import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
-from blenderbim.bim.module.drawing.data import TextData
+from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.module.model.prop import get_ifc_class
 
 
@@ -334,7 +334,8 @@ class BimToolUI:
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
             row.operator("bim.hotkey", text="Edit Roof Path").hotkey = "S_E"
-        elif (TextData.is_loaded or not TextData.load()) and TextData.data["attributes"]:
+
+        elif DecoratorData.get_ifc_text_data(bpy.context.object):
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
@@ -574,7 +575,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.object.select_set(True)
             bpy.ops.bim.enable_editing_roof_path()
 
-        elif (TextData.is_loaded or not TextData.load()) and TextData.data["attributes"]:
+        elif DecoratorData.get_ifc_text_data(bpy.context.object):
             bpy.context.object.select_set(True)
             bpy.ops.bim.edit_text_popup()
 

@@ -302,12 +302,12 @@ class IfcImporter:
         )
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
-        # Annotation is to accommodate broken Revit files
+        # Annotation ContextType is to accommodate broken Revit files
         # See https://github.com/Autodesk/revit-ifc/issues/187
         self.plan_contexts = [
             c.id()
             for c in self.file.by_type("IfcGeometricRepresentationContext")
-            if c.ContextType in ["Plan", "Annotation"]
+            if c.ContextType in ["Plan", "Annotation"] or c.ContextIdentifier == "Annotation"
         ]
         if self.plan_contexts:
             self.settings_2d.set_context_ids(self.plan_contexts)
@@ -625,36 +625,32 @@ class IfcImporter:
 
     def create_element_type(self, element):
         self.ifc_import_settings.logger.info("Creating object %s", element)
-        representation_map = self.get_type_product_body_representation_map(element)
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            representation = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
+        if not representation:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
         mesh = None
-        if representation_map:
-            representation = representation_map.MappedRepresentation
+        if representation:
             mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
+                shape = None
                 try:
-                    shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
+                    shape = ifcopenshell.geom.create_shape(self.settings, representation)
+                except:
+                    try:
+                        shape = ifcopenshell.geom.create_shape(self.settings_2d, representation)
+                    except:
+                        self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                if shape:
                     mesh = self.create_mesh(element, shape)
                     tool.Loader.link_mesh(shape, mesh)
                     self.meshes[mesh_name] = mesh
-                except:
-                    self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh)
         self.type_products[element.GlobalId] = obj
-
-    def get_type_product_body_representation_map(self, element):
-        if not element.RepresentationMaps:
-            return
-        for representation_map in element.RepresentationMaps:
-            context = representation_map.MappedRepresentation.ContextOfItems
-            if (
-                context.ContextType == "Model"
-                and context.ContextIdentifier == "Body"
-                and context.TargetView == "MODEL_VIEW"
-            ):
-                return representation_map
 
     def create_native_elements(self):
         progress = 0

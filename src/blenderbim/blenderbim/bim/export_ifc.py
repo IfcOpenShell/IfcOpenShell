@@ -154,10 +154,10 @@ class IfcExporter:
         return checksum != repr(np.array(obj.diffuse_color).tobytes())
 
     def sync_object_placement(self, obj):
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not tool.Ifc.is_moved(obj):
             return
         blender_matrix = np.array(obj.matrix_world)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
             bpy.ops.bim.update_representation(obj=obj.name)
             return element

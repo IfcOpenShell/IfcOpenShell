@@ -26,12 +26,8 @@ def disable_editing_text(drawing, obj=None):
     drawing.disable_editing_text(obj)
 
 
-def edit_text(ifc, drawing, obj=None):
-    ifc.run(
-        "drawing.edit_text_literal",
-        text_literal=drawing.get_text_literal(obj),
-        attributes=drawing.export_text_literal_attributes(obj),
-    )
+def edit_text(drawing, obj=None):
+    drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_value(obj)
     drawing.update_text_size_pset(obj)
     drawing.disable_editing_text(obj)
@@ -191,13 +187,13 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
 
 
 def remove_drawing(ifc, drawing_tool, drawing=None):
+    collection = drawing_tool.get_drawing_collection(drawing)
+    if collection:
+        drawing_tool.delete_collection(collection)
     group = drawing_tool.get_drawing_group(drawing)
     if group:
         drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
         ifc.run("group.remove_group", group=group)
-    collection = drawing_tool.get_drawing_collection(drawing)
-    if collection:
-        drawing_tool.delete_collection(collection)
     for reference in drawing_tool.get_drawing_references(drawing):
         reference_obj = ifc.get_object(reference)
         if reference_obj:

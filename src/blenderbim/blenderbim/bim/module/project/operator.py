@@ -35,6 +35,7 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
+from pathlib import Path
 
 
 class CreateProject(bpy.types.Operator):
@@ -830,7 +831,10 @@ class ExportIFC(bpy.types.Operator):
                 self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
             return self.execute(context)
         if not self.filepath:
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
+            if bpy.data.is_saved:
+                self.filepath = Path(bpy.data.filepath).with_suffix(".ifc").__str__()
+            else:
+                self.filepath = "untitled.ifc"
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}

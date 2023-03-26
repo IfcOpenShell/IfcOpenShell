@@ -204,11 +204,11 @@ class TestEnsureUniqueIdentification(NewFile):
 class TestExportTextLiteralAttributes(NewFile):
     def test_run(self):
         TestImportTextAttributes().test_run()
-        assert subject.export_text_literal_attributes(bpy.data.objects.get("Object")) == {
+        assert subject.export_text_literal_attributes(bpy.data.objects.get("Object")) == [{
             "Literal": "Literal",
             "Path": "RIGHT",
             "BoxAlignment": "bottom-left",
-        }
+        }]
 
 
 class TestGetAnnotationContext(NewFile):
@@ -217,8 +217,12 @@ class TestGetAnnotationContext(NewFile):
         context = ifc.createIfcGeometricRepresentationSubContext(
             ContextType="Plan", ContextIdentifier="Annotation", TargetView="PLAN_VIEW"
         )
+        context2 = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model", ContextIdentifier="Annotation", TargetView="ELEVATION_VIEW"
+        )
         tool.Ifc.set(ifc)
         assert subject.get_annotation_context("PLAN_VIEW") == context
+        assert subject.get_annotation_context("ELEVATION_VIEW") == context2
 
 
 class TestGetBodyContext(NewFile):
@@ -429,6 +433,7 @@ class TestGetTextLiteral(NewFile):
         item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item])
         element.Representation.Representations = [representation]
+        element.ObjectType = "TEXT"  # TODO: double check if it's valid to set this
         tool.Ifc.link(element, obj)
         assert subject.get_text_literal(obj) == item
 
@@ -516,12 +521,13 @@ class TestImportTextAttributes(NewFile):
         item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item])
         element.Representation.Representations = [representation]
+        element.ObjectType = "TEXT"  # TODO: double check if it's valid to set this
         tool.Ifc.link(element, obj)
         subject.import_text_attributes(obj)
-        props = obj.BIMTextProperties
-        assert props.attributes.get("Literal").string_value == "Literal"
-        assert props.attributes.get("Path").enum_value == "RIGHT"
-        assert props.attributes.get("BoxAlignment").string_value == "bottom-left"
+        literal_props = obj.BIMTextProperties.literals[0]
+        assert literal_props.attributes.get("Literal").string_value == "Literal"
+        assert literal_props.attributes.get("Path").enum_value == "RIGHT"
+        assert literal_props.attributes.get("BoxAlignment").string_value == "bottom-left"
 
 
 class TestImportAssignedProduct(NewFile):
@@ -592,7 +598,7 @@ class TestUpdateTextValue(NewFile):
         TestGetTextLiteral().test_run()
         obj = bpy.data.objects.get("Object")
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.value == "Literal"
+        assert obj.BIMTextProperties.literals[0].value == "Literal"
 
     def test_using_attribute_variables(self):
         TestGetTextLiteral().test_run()
@@ -606,7 +612,7 @@ class TestUpdateTextValue(NewFile):
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Name}} Bar"
 
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.value == "Foo Baz Bar"
+        assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"
 
     def test_using_property_variables(self):
         TestGetTextLiteral().test_run()
@@ -622,4 +628,4 @@ class TestUpdateTextValue(NewFile):
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Custom_Pset.Key}} Bar"
 
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.value == "Foo Baz Bar"
+        assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"
