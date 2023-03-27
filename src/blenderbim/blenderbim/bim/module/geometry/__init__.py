@@ -59,6 +59,7 @@ def register():
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_object_duplicate_move", "D", "PRESS", shift=True)
+        kmi.properties.is_interactive = True
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked", "D", "PRESS", alt=True)
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")

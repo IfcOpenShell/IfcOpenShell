@@ -398,6 +398,64 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.mirror_elements"
+    bl_label = "Mirror Elements"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Faux-mirrors the selected object by an active empty along a mirror plane."
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        # This is not a true mirror operation. In BIM, objects that are
+        # mirrored are not the same type. (i.e. a mirrored asymmetric desk is a
+        # completely different product). To preserve types, we calculate
+        # bounding box centroids, and mirror the position of the object.  The
+        # mirrored object performs the necessary rotation to preserve the
+        # mirrored intention, but never actually truly mirror anything (i.e.
+        # scale = -1).
+
+        # Objects are mirrored along the YZ plane of the mirror object.
+        # Mirrored objects have their relative local Y and Z axes preserved,
+        # and the new X axis is calculated.
+
+        # In theory, untyped objects may be truly mirrored, but this is not yet
+        # implemented.
+        mirror = context.active_object
+        reflection = Matrix()
+        reflection[0][0] = -1
+
+        mirror.select_set(False)
+
+        bpy.ops.bim.override_object_duplicate_move(is_interactive=False)
+
+        for obj in context.selected_objects:
+            if obj == mirror:
+                continue
+
+            objmat = mirror.matrix_world.inverted() @ obj.matrix_world.copy()
+            x, y, z = objmat.to_3x3().col
+            centroid = Vector(obj.bound_box[0]).lerp(Vector(obj.bound_box[6]), 0.5)
+            c = mirror.matrix_world.inverted() @ obj.matrix_world @ centroid
+            newy = mirror.matrix_world.to_quaternion() @ (y @ reflection)
+            newz = mirror.matrix_world.to_quaternion() @ (z @ reflection)
+            newx = newy.cross(newz)
+            newc = mirror.matrix_world @ (c @ reflection)
+
+            newmat = Matrix((newx.to_4d(), newy.to_4d(), newz.to_4d(), newc.to_4d())).transposed()
+            newmat.col[3][0:3] = Vector(newmat.col[3][0:3]) - (newmat.to_quaternion() @ centroid)
+
+            obj.matrix_world = newmat
+
+    def copy_obj(self, obj):
+        new = obj.copy()
+        new.data = wall2.data.copy()
+        wall1.users_collection[0].objects.link(wall2)
+        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
+
+
 def generate_box(usecase_path, ifc_file, settings):
     box_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Box", "MODEL_VIEW")
     if not box_context:

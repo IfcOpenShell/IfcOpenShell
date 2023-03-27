@@ -368,6 +368,8 @@ class BimToolUI:
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Align Interior", icon="EVENT_V")
         row = cls.layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Mirror", icon="EVENT_M")
 
         row = cls.layout.row(align=True)
         row.label(text="Mode")
@@ -606,6 +608,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.merge_wall()
+        else:
+            bpy.ops.bim.mirror_elements()
 
     def hotkey_S_R(self):
         if not bpy.context.selected_objects:

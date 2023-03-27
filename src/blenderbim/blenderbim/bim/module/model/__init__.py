@@ -52,6 +52,7 @@ classes = (
     product.AlignProduct,
     product.ChangeTypePage,
     product.LoadTypeThumbnails,
+    product.MirrorElements,
     workspace.Hotkey,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,
