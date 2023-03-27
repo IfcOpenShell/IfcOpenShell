@@ -502,6 +502,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
     bl_idname = "bim.override_object_duplicate_move"
     bl_label = "IFC Duplicate Objects"
     bl_options = {"REGISTER", "UNDO"}
+    is_interactive: bpy.props.BoolProperty(name="Is Interactive", default=True)
 
     @classmethod
     def poll(cls, context):
@@ -528,7 +529,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new_obj.select_set(True)
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
-        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        if self.is_interactive:
+            bpy.ops.transform.translate("INVOKE_DEFAULT")
         return {"FINISHED"}
 
     def _execute(self, context):
@@ -552,7 +554,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 old_to_new[tool.Ifc.get_entity(obj)] = [new]
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        if self.is_interactive:
+            bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
 
 
