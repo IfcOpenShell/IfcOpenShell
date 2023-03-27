@@ -200,6 +200,23 @@ namespace IfcParse {
 
 		const std::vector<std::string>& enumeration_items() const { return enumeration_items_; }
 
+		const char* lookup_enum_value(size_t i) const {
+			if (i >= enumeration_items_.size()) {
+				throw IfcParse::IfcException("Unable to find keyword in schema for index " + std::to_string(i));
+			}
+			return enumeration_items_[i].c_str();
+		}
+
+		size_t lookup_enum_offset(const std::string& s) const {
+			size_t i = 0;
+			for (auto it = enumeration_items_.begin(); it != enumeration_items_.end(); ++it, ++i) {
+				if (s == *it) {
+					return i;
+				}
+			}
+			throw IfcParse::IfcException("Unable to find keyword in schema: " + s);
+		}
+
 		virtual const enumeration_type* as_enumeration_type() const { return this; }
 	};
 
