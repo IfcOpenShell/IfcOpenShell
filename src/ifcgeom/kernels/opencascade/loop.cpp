@@ -228,7 +228,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop* loop, TopoDS_Wire& wire) {
 	*/
 	const bool force_close = false;
 
-	wire_builder bld(precision_, loop->instance->as<IfcUtil::IfcBaseEntity>());
+	wire_builder bld(precision_, loop->instance ? loop->instance->as<IfcUtil::IfcBaseEntity>() : nullptr);
 	shape_pair_enumerate(it, bld, force_close);
 	wire = bld.wire();
 
