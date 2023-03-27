@@ -25,12 +25,12 @@
 #include "../ifcparse/IfcEntityInstanceData.h"
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/utils.h"
-#include "../ifcparse/Argument.h"
 
 #include <boost/shared_ptr.hpp>
 
 #include <atomic>
 
+class Argument;
 class aggregate_of_instance;
 
 namespace IfcUtil {
