@@ -723,7 +723,7 @@ class OverrideModeSetObject(bpy.types.Operator):
         bpy.ops.object.mode_set(mode="EDIT", toggle=True)
 
         if not tool.Ifc.get():
-            return
+            return {"FINISHED"}
 
         objs = context.selected_objects or [context.active_object]
 
