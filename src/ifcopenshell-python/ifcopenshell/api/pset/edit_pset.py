@@ -171,7 +171,7 @@ class Usecase:
             self.pset_template = self.settings["pset_template"]
         else:
             # TODO: add IFC2X3 PsetQto template support
-            self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+            self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema)
             self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
     # TODO - Add support for changing property types?
@@ -198,16 +198,15 @@ class Usecase:
                 ].is_a()  # Only need the first enum type since all enums are of the same type
                 ifc_val = self.file.create_entity(primary_measure_type, val)
                 sel_vals.append(ifc_val)
-            prop.EnumerationValues = tuple(sel_vals)
-
+            prop.EnumerationValues = tuple(sel_vals) or None
         else:
             if value.EnumerationReference.EnumerationValues == ():
                 if self.settings["should_purge"]:
                     del self.settings["properties"][prop.Name]
                     self.file.remove(prop)
                     return
-                prop.EnumerationReference.EnumerationValues = ()
-                prop.EnumerationValues = ()
+                prop.EnumerationReference.EnumerationValues = None
+                prop.EnumerationValues = None
             elif isinstance(value, ifcopenshell.entity_instance):
                 prop.EnumerationReference.EnumerationValues = value.EnumerationReference.EnumerationValues
                 prop.EnumerationValues = value.EnumerationValues
@@ -257,7 +256,9 @@ class Usecase:
                     )
             # TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
             elif isinstance(value, list):
-                for pset_template in self.settings["pset_template"].HasPropertyTemplates:
+                if not value:
+                    continue
+                for pset_template in self.pset_template.HasPropertyTemplates:
                     if pset_template.Name == name:
                         prop_enum = self.file.create_entity(
                             "IFCPROPERTYENUMERATION",
