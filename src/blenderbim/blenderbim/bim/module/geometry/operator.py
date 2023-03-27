@@ -613,6 +613,93 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OverrideJoin(bpy.types.Operator, Operator):
+    bl_idname = "bim.override_object_join"
+    bl_label = "IFC Join"
+
+    def _execute(self, context):
+        if not tool.Ifc.get():
+            return bpy.ops.object.join()
+
+        if not context.active_object:
+            return
+
+        self.target = context.active_object
+        self.target_element = tool.Ifc.get_entity(self.target)
+        if self.target_element:
+            return self.join_ifc_obj()
+        return self.join_blender_obj()
+
+    def join_ifc_obj(self):
+        representation = tool.Ifc.get().by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
+        if representation.RepresentationType in ("Tessellation", "Brep"):
+            for obj in bpy.context.selected_objects:
+                if obj == self.target:
+                    continue
+                element = tool.Ifc.get_entity(obj)
+                if element:
+                    tool.Ifc.delete(element)
+            bpy.ops.object.join()
+            bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
+        elif representation.RepresentationType == "SweptSolid":
+            target_placement = np.array(self.target.matrix_world)
+            items = list(representation.Items)
+            for obj in bpy.context.selected_objects:
+                if obj == self.target:
+                    continue
+                element = tool.Ifc.get_entity(obj)
+
+                # Non IFC elements cannot be join since we cannot guarantee SweptSolid compliance
+                if not element:
+                    obj.select_set(False)
+                    continue
+
+                # Only objects of the same representation type can be joined
+                obj_rep = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                if obj_rep.RepresentationType != "SweptSolid":
+                    obj.select_set(False)
+                    continue
+
+                placement = np.array(obj.matrix_world)
+
+                for item in obj_rep.Items:
+                    copied_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+                    if copied_item.Position:
+                        position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
+                    else:
+                        position = np.eye(4)
+                    position = placement @ position
+                    position = np.linalg.inv(target_placement) @ position
+                    copied_item.Position = tool.Ifc.get().createIfcAxis2Placement3D(
+                        tool.Ifc.get().createIfcCartesianPoint([float(n) for n in position[:, 3][:3]]),
+                        tool.Ifc.get().createIfcDirection([float(n) for n in position[:, 2][:3]]),
+                        tool.Ifc.get().createIfcDirection([float(n) for n in position[:, 0][:3]]),
+                    )
+                    items.append(copied_item)
+                tool.Ifc.delete(element)
+            representation.Items = items
+            bpy.ops.object.join()
+            core.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=self.target,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+                apply_openings=True,
+            )
+
+    def join_blender_obj(self):
+        for obj in bpy.context.selected_objects:
+            if obj == self.target:
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                tool.Ifc.delete(element)
+        bpy.ops.object.join()
+
+
 class OverridePasteBuffer(bpy.types.Operator):
     bl_idname = "bim.override_paste_buffer"
     bl_label = "IFC Paste BIM Objects"
