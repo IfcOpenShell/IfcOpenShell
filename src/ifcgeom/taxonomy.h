@@ -29,6 +29,8 @@ public:
 
 enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, COLOUR, STYLE };
 
+const std::string& kind_to_string(kinds k);
+
 struct item {
 	const IfcUtil::IfcBaseInterface* instance;
 
@@ -453,7 +455,7 @@ struct collection : public geom_item {
 	}
 
 	void print(std::ostream& o, int indent = 0) const {
-		o << std::string(indent, ' ') << "collection" << std::endl;
+		o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;
 		if (!matrix.is_identity()) {
 			matrix.print(o, indent + 4);
 		}
@@ -620,6 +622,12 @@ struct boolean_result : public collection {
 	virtual item* clone() const { return new boolean_result(*this); }
 	virtual kinds kind() const { return BOOLEAN_RESULT; }
 	operation_t operation;
+
+	static const std::string& operation_str(operation_t op) {
+		using namespace std::string_literals;
+		static std::string s[] = { "union"s, "subtraction"s, "intersection"s };
+		return s[(size_t)op];
+	}
 };
 
 namespace impl {
