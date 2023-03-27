@@ -23,6 +23,11 @@ import ifcopenshell.util.selector as subject
 
 
 class TestGetElementValue(test.bootstrap.IFC4):
+    def test_selecting_an_elements_class_or_id_using_a_query(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        assert subject.get_element_value(element, "class") == "IfcWall"
+        assert subject.get_element_value(element, "id") == element.id()
+
     def test_selecting_an_elements_value_using_a_query(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element.Name = "Foobar"
