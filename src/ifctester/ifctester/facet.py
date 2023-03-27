@@ -555,6 +555,10 @@ class Property(Facet):
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
                     elif prop_entity.is_a("IfcPropertyEnumeratedValue"):
+                        if not prop_entity.EnumerationValues:
+                            is_pass = False
+                            reason = {"type": "NOVALUE"}
+                            break
                         data_type = prop_entity.EnumerationValues[0].is_a()
                         if data_type != self.measure:
                             is_pass = False
