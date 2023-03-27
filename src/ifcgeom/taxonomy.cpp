@@ -398,3 +398,13 @@ ifcopenshell::geometry::taxonomy::collection * ifcopenshell::geometry::flatten(c
 	});
 	return flat;
 }
+
+const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
+	using namespace std::string_literals;
+
+	static std::string values[] = {
+		"matrix4"s, "point3"s, "direction3"s, "line"s, "circle"s, "ellipse"s, "bspline_curve"s, "offset_curve"s, "plane"s, "cylinder"s, "bspline_surface"s, "edge"s, "loop"s, "face"s, "shell"s, "solid"s, "loft"s, "extrusion"s, "revolve"s, "surface_curve_sweep"s, "node"s, "collection"s, "boolean_result"s
+	};
+
+	return values[k];
+}
