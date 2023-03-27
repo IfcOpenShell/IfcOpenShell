@@ -100,7 +100,7 @@ struct eigen_base {
 		o << std::string(indent, ' ') << class_name;
 		if (this->components_) {
 			int n = T::RowsAtCompileTime * T::ColsAtCompileTime;
-			for (int i = 0; i < n; ++i) {
+			for (size_t i = 0; i < n; ++i) {
 				o << " " << (*components_)(i);
 			}
 		}
