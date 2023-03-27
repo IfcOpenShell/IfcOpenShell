@@ -267,7 +267,9 @@ class Selector:
                 elif value.is_a("IfcMaterialConstituentSet"):
                     value = value.MaterialConstituents
             elif key == "container":
-                value = ifcopenshell.util.element.get_container(element)
+                value = ifcopenshell.util.element.get_container(value)
+            elif key == "class":
+                value = value.is_a()
             elif isinstance(value, ifcopenshell.entity_instance):
                 attribute = value.get_info().get(key, None)
 
