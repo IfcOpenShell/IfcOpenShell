@@ -27,6 +27,7 @@ classes = (
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
+    operator.OverrideJoin,
     operator.OverrideModeSetEdit,
     operator.OverrideModeSetObject,
     operator.OverrideOutlinerDelete,
@@ -58,6 +59,7 @@ def register():
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
+        kmi = km.keymap_items.new("bim.override_object_join", "J", "PRESS", ctrl=True)
         kmi = km.keymap_items.new("bim.override_object_duplicate_move", "D", "PRESS", shift=True)
         kmi.properties.is_interactive = True
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked", "D", "PRESS", alt=True)
