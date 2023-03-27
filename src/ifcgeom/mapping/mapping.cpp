@@ -324,12 +324,19 @@ namespace {
 				continue;
 			}
 			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
-#else
+
+			// Only in case of 2x3 or old style IfcPresentationStyleAssignment
+			auto styles = style_assignment->Styles();
+#elif defined(SCHEMA_HAS_IfcPresentationStyleAssignment)
 		IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = si->Styles();
 		for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 			IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
+
+			// Only in case of 2x3 or old style IfcPresentationStyleAssignment
+			auto styles = style_assignment->Styles();
+#else
+		auto styles = si->Styles();
 #endif
-			aggregate_of_instance::ptr styles = style_assignment->Styles();
 			for (aggregate_of_instance::it lt = styles->begin(); lt != styles->end(); ++lt) {
 				IfcUtil::IfcBaseClass* style = *lt;
 				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
@@ -344,7 +351,9 @@ namespace {
 					}
 				}
 			}
+#if defined(SCHEMA_HAS_IfcStyleAssignmentSelect) || defined(SCHEMA_HAS_IfcPresentationStyleAssignment)
 		}
+#endif
 
 		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0, 0);
 	}
