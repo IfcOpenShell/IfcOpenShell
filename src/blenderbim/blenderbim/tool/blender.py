@@ -105,14 +105,60 @@ class Blender:
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         context_override = {"area": area}
         return context_override
-    
+
     @classmethod
-    def update_viewport(cls):        
+    def update_viewport(cls):
         # if it stops working in future Blender versions
         # there is an alternative:
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
-        tool.Blender.get_viewport_context()['area'].tag_redraw()
+        tool.Blender.get_viewport_context()["area"].tag_redraw()
+
+    @classmethod
+    def get_default_selection_keypmap(cls):
+        """keymap to replicate default blender selection behaviour with click and box selection"""
+        # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
+        # https://github.com/blender/blender/blob/master/release/scripts/presets/keyconfig/keymap_data/blender_default.py
+        # the code is the data from evaluating km_3d_view_tool_select() and km_3d_view_tool_select_box()
+        #
+        # You can run the snippet below in Blender console
+        # to regenerate those keybindings in case of errors in the future
+        # ```
+        # import os
+        # version = ".".join(bpy.app.version_string.split(".")[:2])
+        # fl = os.path.join(os.getcwd(), version, "scripts/presets/keyconfig/keymap_data/blender_default.py")
+        # def_keymap = bpy.utils.execfile(fl)
+        # params = def_keymap.Params
+        # box_keymap = def_keymap.km_3d_view_tool_select_box(def_keymap.Params(), fallback=None)[2]["items"]
+        # click_keymap = def_keymap.km_3d_view_tool_select(def_keymap.Params(select_mouse="LEFTMOUSE"), fallback=None)[2]["items"]
+        # ```
+        keymap = (
+            # box selection keymap
+            ("view3d.select_box", {"type": "LEFTMOUSE", "value": "CLICK_DRAG"}, None),
+            (
+                "view3d.select_box",
+                {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True},
+                {"properties": [("mode", "ADD")]},
+            ),
+            (
+                "view3d.select_box",
+                {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "ctrl": True},
+                {"properties": [("mode", "SUB")]},
+            ),
+            (
+                "view3d.select_box",
+                {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True, "ctrl": True},
+                {"properties": [("mode", "AND")]},
+            ),
+            # left-click selection keymap
+            ("view3d.select", {"type": "LEFTMOUSE", "value": "PRESS"}, {"properties": [("deselect_all", True)]}),
+            (
+                "view3d.select",
+                {"type": "LEFTMOUSE", "value": "PRESS", "shift": True},
+                {"properties": [("toggle", True)]},
+            ),
+        )
+        return keymap
 
     ## BMESH UTILS ##
     @classmethod
@@ -137,7 +183,7 @@ class Blender:
             # until you restart EDIT mode
             # which may result in errors when some other scripts will try to get bmesh
             bm.free()
-        
+
         mesh.update()
 
     @classmethod
