@@ -527,6 +527,31 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
+    bl_idname = "import_csv.bim"
+    bl_label = "Import CSV"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.csv4d2ifc import Csv2Ifc
+
+        self.file = tool.Ifc.get()
+        start = time.time()
+        csv2ifc = Csv2Ifc()
+        csv2ifc.csv = self.filepath
+        csv2ifc.file = self.file
+        csv2ifc.execute()
+        print("Imported in %s seconds" % (time.time() - start))
+        return {"FINISHED"}
+
+
 class ImportP6(bpy.types.Operator, ImportHelper):
     bl_idname = "import_p6.bim"
     bl_label = "Import P6"
