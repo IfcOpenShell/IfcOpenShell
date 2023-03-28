@@ -519,6 +519,14 @@ class LoadCostItemQuantities(bpy.types.Operator):
         core.load_cost_item_quantities(tool.Cost)
         return {"FINISHED"}
 
+class LoadCostItemElementQuantities(bpy.types.Operator):
+    bl_idname = "bim.load_cost_item_element_quantities"
+    bl_label = "Load Cost Item Element Quantities"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.load_cost_item_element_quantities(tool.Cost)
+        return {"FINISHED"}
 
 class LoadCostItemTypes(bpy.types.Operator):
     bl_idname = "bim.load_cost_item_types"
