@@ -42,12 +42,16 @@ class ProfileDecorator:
     installed = None
 
     @classmethod
-    def install(cls, context, get_custom_bmesh=None, draw_faces=False):
+    def install(cls, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
+        """Note that operators that change mesh in `exit_edit_mode_callback` can freeze blender.
+        The workaround is to move their code to function and use it for callback.
+
+        Example: https://devtalk.blender.org/t/calling-operator-that-saves-bmesh-freezes-blender-forever/28595"""
         if cls.installed:
             cls.uninstall()
         handler = cls()
         cls.installed = SpaceView3D.draw_handler_add(
-            handler, (context, get_custom_bmesh, draw_faces), "WINDOW", "POST_VIEW"
+            handler, (context, get_custom_bmesh, draw_faces, exit_edit_mode_callback), "WINDOW", "POST_VIEW"
         )
 
     @classmethod
@@ -76,10 +80,13 @@ class ProfileDecorator:
         face_indices = [[v.index for v in f.verts] for f in traingulated_bm.faces]
         self.create_batch("TRIS", vertices_coords, faces_color, face_indices)
 
-    def __call__(self, context, get_custom_bmesh=None, draw_faces=False):
+    def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
         obj = context.active_object
 
         if obj.mode != "EDIT":
+            if exit_edit_mode_callback:
+                ProfileDecorator.uninstall()
+                exit_edit_mode_callback()
             return
 
         if get_custom_bmesh:

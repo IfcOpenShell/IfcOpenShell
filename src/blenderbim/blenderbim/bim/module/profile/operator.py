@@ -23,6 +23,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.module.model.profile as model_profile
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
+from blenderbim.bim.module.profile.data import refresh
 
 
 class LoadProfiles(bpy.types.Operator):
@@ -138,8 +139,20 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.context.scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode="EDIT")
-        ProfileDecorator.install(context)
+        ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_arbitrary_profile(context))
         bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
+
+
+def disable_editing_arbitrary_profile(context):
+    obj = context.active_object
+    if obj and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
+        ProfileDecorator.uninstall()
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.data.objects.remove(obj)
+
+    # need to update profile manager ui
+    # if this was called from decorator
+    refresh()
 
 
 class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -148,11 +161,7 @@ class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        if obj and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
-            ProfileDecorator.uninstall()
-            bpy.ops.object.mode_set(mode="OBJECT")
-            bpy.data.objects.remove(obj)
+        return disable_editing_arbitrary_profile(context)
 
 
 class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -176,7 +185,9 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
                 self.layout.label(text="INVALID PROFILE: " + indices[1])
 
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-            ProfileDecorator.install(context)
+            ProfileDecorator.install(
+                context, exit_edit_mode_callback=lambda: disable_editing_arbitrary_profile(context)
+            )
             bpy.ops.object.mode_set(mode="EDIT")
             return
 

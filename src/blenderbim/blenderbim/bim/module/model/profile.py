@@ -938,10 +938,30 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
             tool.Model.import_axis([Vector((0, 0, 0)), direction * extrusion.Depth], obj=obj, position=position)
 
         bpy.ops.object.mode_set(mode="EDIT")
-        ProfileDecorator.install(context)
+        ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_axis(context))
         if not bpy.app.background:
             bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
         return {"FINISHED"}
+
+
+def disable_editing_extrusion_axis(context):
+    ProfileDecorator.uninstall()
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    obj = context.active_object
+    element = tool.Ifc.get_entity(obj)
+    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+
+    blenderbim.core.geometry.switch_representation(
+        tool.Ifc,
+        tool.Geometry,
+        obj=obj,
+        representation=body,
+        should_reload=True,
+        is_global=True,
+        should_sync_changes_first=False,
+    )
+    return {"FINISHED"}
 
 
 class DisableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
@@ -954,23 +974,7 @@ class DisableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        ProfileDecorator.uninstall()
-        bpy.ops.object.mode_set(mode="OBJECT")
-
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=body,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-        return {"FINISHED"}
+        return disable_editing_extrusion_axis()
 
 
 class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):

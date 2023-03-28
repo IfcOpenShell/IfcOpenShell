@@ -364,8 +364,21 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         if bpy.context.object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
         bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
-        ProfileDecorator.install(context)
+        ProfileDecorator.install(context, exit_edit_mode_callback=lambda: cancel_editing_railing_path(context))
         return {"FINISHED"}
+
+
+def cancel_editing_railing_path(context):
+    obj = context.active_object
+    props = obj.BIMRailingProperties
+
+    ProfileDecorator.uninstall()
+    props.is_editing_path = False
+
+    update_railing_modifier_bmesh(context)
+    if bpy.context.object.mode == "EDIT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    return {"FINISHED"}
 
 
 class CancelEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
@@ -374,16 +387,7 @@ class CancelEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
-        obj = context.active_object
-        props = obj.BIMRailingProperties
-
-        ProfileDecorator.uninstall()
-        props.is_editing_path = False
-
-        update_railing_modifier_bmesh(context)
-        if bpy.context.object.mode == "EDIT":
-            bpy.ops.object.mode_set(mode="OBJECT")
-        return {"FINISHED"}
+        return cancel_editing_railing_path(context)
 
 
 class FinishEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):

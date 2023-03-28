@@ -215,7 +215,7 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
 
     # find footprint edges
     for edge in bm.edges:
-        if all(float_is_zero(v.co.z-footprint_z) for v in edge.verts):
+        if all(float_is_zero(v.co.z - footprint_z) for v in edge.verts):
             footprint_edges.append(edge)
             footprint_verts.update(edge.verts)
 
@@ -557,8 +557,26 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.bmesh_join(main_bm, second_bm, callback=mark_preview_edges)
             return main_bm
 
-        ProfileDecorator.install(context, get_custom_bmesh, draw_faces=True)
+        ProfileDecorator.install(
+            context,
+            get_custom_bmesh,
+            draw_faces=True,
+            exit_edit_mode_callback=lambda: cancel_editing_roof_path(context),
+        )
         return {"FINISHED"}
+
+
+def cancel_editing_roof_path(context):
+    obj = context.active_object
+    props = obj.BIMRoofProperties
+
+    ProfileDecorator.uninstall()
+    props.is_editing_path = False
+
+    update_roof_modifier_bmesh(context)
+    if bpy.context.object.mode == "EDIT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    return {"FINISHED"}
 
 
 class CancelEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
@@ -567,16 +585,7 @@ class CancelEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
-        obj = context.active_object
-        props = obj.BIMRoofProperties
-
-        ProfileDecorator.uninstall()
-        props.is_editing_path = False
-
-        update_roof_modifier_bmesh(context)
-        if bpy.context.object.mode == "EDIT":
-            bpy.ops.object.mode_set(mode="OBJECT")
-        return {"FINISHED"}
+        return cancel_editing_roof_path(context)
 
 
 class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
