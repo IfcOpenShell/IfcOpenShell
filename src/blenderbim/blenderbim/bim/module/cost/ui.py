@@ -442,6 +442,9 @@ class BIM_PT_cost_item_quantities(Panel):
             op.prop_name = ""
 
         row2 = col.row()
+        row2.prop(self.props, "show_nested_resources", text="Show nested")
+
+        row2 = col.row()
         row2.template_list(
             "BIM_UL_cost_item_quantities",
             "",
