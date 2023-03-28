@@ -34,7 +34,7 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
-        array = {"children": [], "count": 1, "x": 0.0, "y": 0.0, "z": 0.0}
+        array = {"children": [], "count": 1, "x": 0.0, "y": 0.0, "z": 0.0, "use_local_space": True}
 
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
 
@@ -61,7 +61,27 @@ class DisableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
-        props = context.active_object.BIMArrayProperties.is_editing = -1
+        context.active_object.BIMArrayProperties.is_editing = -1
+        return {"FINISHED"}
+
+
+class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_array"
+    bl_label = "Enable Editing Array"
+    bl_options = {"REGISTER"}
+    item: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
+        props = obj.BIMArrayProperties
+        props.count = data["count"]
+        props.x = data["x"]
+        props.y = data["y"]
+        props.z = data["z"]
+        props.use_local_space = data.get("use_local_space", False)
+        props.is_editing = self.item
         return {"FINISHED"}
 
 
@@ -84,6 +104,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
             "x": props.x,
             "y": props.y,
             "z": props.z,
+            "use_local_space": props.use_local_space,
         }
 
         props.is_editing = -1
@@ -98,25 +119,6 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Ifc.get().by_id(pset["id"])
         data = json.dumps(data)
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
-        return {"FINISHED"}
-
-
-class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_array"
-    bl_label = "Enable Editing Array"
-    bl_options = {"REGISTER"}
-    item: bpy.props.IntProperty()
-
-    def _execute(self, context):
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
-        props = obj.BIMArrayProperties
-        props.count = data["count"]
-        props.x = data["x"]
-        props.y = data["y"]
-        props.z = data["z"]
-        props.is_editing = self.item
         return {"FINISHED"}
 
 
