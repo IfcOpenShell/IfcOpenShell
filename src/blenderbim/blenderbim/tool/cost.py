@@ -181,36 +181,45 @@ class Cost(blenderbim.core.tool.Cost):
                 new.name = related_object.Name or "Unnamed"
 
     @classmethod
-    def load_cost_item_quantities(cls, cost_item=None):
-        if not cost_item:
-            cost_item = cls.get_active_cost_item()
-        if not cost_item:
-            return
-        props = bpy.context.scene.BIMCostProperties
-        props.cost_item_products.clear()
-        props.cost_item_processes.clear()
-        props.cost_item_resources.clear()
+    def load_cost_item_quantity_assignments(cls, cost_item, related_object_type):
+        def create_list_items(collection, cost_item, is_deep):
+            products = cls.get_cost_item_assignments(cost_item, filter_by_type=related_object_type, is_deep=False)
+            for product in products:
+                new = collection.add()
+                new.ifc_definition_id = product.id()
+                new.name = product.Name or "Unnamed"
+                total_quantity = cls.calculate_parametric_quantity(cost_item, product)
+                new.total_quantity = total_quantity if total_quantity else 1
+            if is_deep:
+                for cost_item in ifcopenshell.util.cost.get_nested_cost_items(cost_item, is_deep):
+                    create_list_items(collection, cost_item, is_deep=False)
 
-        # for control_id, quantity_ids in cost_item.Controls.items() or {}:
-        for rel in cost_item.Controls or []:
-            # control_id, quantity_ids
-            for related_object in rel.RelatedObjects:
-                if related_object.is_a("IfcProduct"):
-                    new = props.cost_item_products.add()
-                elif related_object.is_a("IfcProcess"):
-                    new = props.cost_item_processes.add()
-                elif related_object.is_a("IfcResource"):
-                    new = props.cost_item_resources.add()
-                new.ifc_definition_id = related_object.id()
-                new.name = related_object.Name or "Unnamed"
-                total_quantity = 0
-                qtos = ifcopenshell.util.element.get_psets(related_object, qtos_only=True)
-                for qset_name, quantities in qtos.items():
-                    qto = tool.Ifc.get().by_id(quantities["id"])
-                    for quantity in qto.Quantities:
-                        if quantity in cost_item.CostQuantities:
-                            total_quantity += quantity[3]
-                new.total_quantity = total_quantity
+        props = bpy.context.scene.BIMCostProperties
+        if related_object_type == "PRODUCT":
+            props.cost_item_products.clear()
+            is_deep = bpy.context.scene.BIMCostProperties.show_nested_elements
+            create_list_items(props.cost_item_products, cost_item, is_deep)
+        elif related_object_type == "PROCESS":
+            props.cost_item_processes.clear()
+            is_deep = bpy.context.scene.BIMCostProperties.show_nested_tasks
+            create_list_items(props.cost_item_processes, cost_item, is_deep)
+        elif related_object_type == "RESOURCE":
+            props.cost_item_resources.clear()
+            is_deep = bpy.context.scene.BIMCostProperties.show_nested_resources
+            create_list_items(props.cost_item_resources, cost_item, is_deep)
+
+    @classmethod
+    def calculate_parametric_quantity(cls, cost_item=None, product=None):
+        if not cost_item.CostQuantities:
+            return
+        total_quantity = sum(
+            quantity[3]
+            for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values()
+            for qto in (tool.Ifc.get().by_id(quantities["id"]).Quantities or [])
+            for quantity in cost_item.CostQuantities
+            if quantity == qto
+        )
+        return total_quantity
 
     @classmethod
     def get_products(cls, related_object_type=None):
@@ -379,8 +388,10 @@ class Cost(blenderbim.core.tool.Cost):
         )
 
     @classmethod
-    def get_direct_cost_item_products(cls, cost_item):
-        return [related_object for r in cost_item.Controls or [] for related_object in r.RelatedObjects]
+    def get_cost_item_assignments(cls, cost_item, filter_by_type=None, is_deep=False):
+        return ifcopenshell.util.cost.get_cost_item_assignments(
+            cost_item, filter_by_type=filter_by_type, is_deep=is_deep
+        )
 
     @classmethod
     def get_cost_item_products(cls, cost_item, include_nested=False):

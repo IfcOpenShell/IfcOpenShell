@@ -114,6 +114,11 @@ def load_cost_item_quantities(cost):
     cost_item = cost.get_highlighted_cost_item()
     cost.load_cost_item_quantities(cost_item)
 
+def load_cost_item_element_quantities(cost):
+    cost_item = cost.get_highlighted_cost_item()
+    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
+
+
 
 def assign_cost_value(ifc, cost_item, cost_rate):
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
