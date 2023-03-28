@@ -444,8 +444,11 @@ class Model(blenderbim.core.tool.Model):
                         )
 
                     new_matrix = obj.matrix_world.copy()
-                    current_obj_offset = obj.matrix_world @ offset if array["use_local_space"] else offset
-                    new_matrix.col[3] = (obj.matrix_world.col[3].to_3d() + current_obj_offset).to_4d()
+                    if array["use_local_space"]:
+                        current_obj_translation = obj.matrix_world @ offset
+                    else:
+                        current_obj_translation = obj.matrix_world.col[3].to_3d() + offset
+                    new_matrix.col[3] = current_obj_translation.to_4d()
                     child_obj.matrix_world = new_matrix
                     children_objs.append(child_obj)
                     children_elements.append(child_element)
