@@ -30,6 +30,7 @@ classes = (
     operator.RemoveContainer,
     operator.SelectContainer,
     operator.SelectSimilarContainer,
+    operator.SelectProduct,
     prop.SpatialElement,
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,

@@ -160,3 +160,14 @@ class SelectSimilarContainer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.select_similar_container(tool.Ifc, tool.Spatial, obj=context.active_object)
+
+
+class SelectProduct(bpy.types.Operator):
+    bl_idname = "bim.select_product"
+    bl_label = "Select Product"
+    bl_options = {"REGISTER", "UNDO"}
+    product: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.select_product(tool.Spatial, product=tool.Ifc.get().by_id(self.product))
+        return {"FINISHED"}
