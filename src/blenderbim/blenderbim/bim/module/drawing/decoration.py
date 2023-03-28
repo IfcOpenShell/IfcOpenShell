@@ -2110,16 +2110,11 @@ class TextDecorator(BaseDecorator):
             idxs = [(0, 0)]
             self.draw_lines(context, obj, verts, idxs)
 
-        box_alignment_used = []
+        line_i = 0
         for literal_data in literals_data:
             box_alignment = literal_data["BoxAlignment"]
-            # Skip literals with the same box alignment to prevent visual clutter in viewport
-            # User is still indicated by the asterisk symbol
-            if box_alignment in box_alignment_used:
-                continue
-            box_alignment_used.append(box_alignment)
 
-            for line_i, line in enumerate(literal_data["CurrentValue"].split("\\n")):
+            for line in literal_data["CurrentValue"].split("\\n"):
                 self.draw_label(
                     context,
                     line,
@@ -2132,6 +2127,7 @@ class TextDecorator(BaseDecorator):
                     line_no=line_i,
                     box_alignment=box_alignment,
                 )
+                line_i += 1
 
 
 class DecorationsHandler:
