@@ -373,19 +373,21 @@ class BIM_PT_text(Panel):
                 attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
                 blenderbim.bim.helper.draw_attributes(attributes, box)
 
-                # a bit hacky way to align box alignment widget
-                rows = [box.row(align=True) for i in range(3)]
+                row = box.row(align=True)
+                cols = [row.column(align=True) for i in range(3)]
                 for i in range(9):
-                    if i % 3 == 0:
-                        split = rows[i // 3].split(factor=0.1, align=True)
-                        split.column()
-                    split.prop(literal_props, "box_alignment", text="", index=i)
+                    cols[i % 3].prop(
+                        literal_props,
+                        "box_alignment",
+                        text="",
+                        index=i,
+                        icon="RADIOBUT_ON" if literal_props.box_alignment[i] else "RADIOBUT_OFF",
+                    )
 
-                text_lines = ["Text box alignment:", literal_props.attributes["BoxAlignment"].string_value, ""]
-                for i in range(3):
-                    split = rows[i].split(factor=0.1, align=False)
-                    split.column()
-                    split.label(text=text_lines[i])
+                col = row.column(align=True)
+                col.label(text="    Text box alignment:")
+                col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
+
         else:
             text_data = DecoratorData.get_ifc_text_data(obj)
 
