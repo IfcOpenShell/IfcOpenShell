@@ -584,7 +584,9 @@ namespace IfcGeom {
 				// Increment the iterator over the list of products using the current
 				// shape representation
 				if (task_result_iterator_ == --all_processed_elements_.end()) {
-					return create();
+					if (!create()) {
+						return nullptr;
+					}
 				}
 				
 				task_result_iterator_++;
