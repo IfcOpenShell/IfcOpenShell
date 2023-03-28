@@ -29,23 +29,59 @@ from blenderbim.bim.module.model.data import RoofData, refresh
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 import json
-from math import tan, radians
+from math import tan, radians, degrees, atan
 from mathutils import Vector, Matrix
 from bpypolyskel import bpypolyskel
 import shapely
+from pprint import pprint
+from itertools import chain
+from math import pi
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoof.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoofType.htm
 
 
+# create read only property in blender operator
+
+
+def float_is_zero(f):
+    return 0.0001 >= f >= -0.0001
+
+
+def bm_mesh_clean_up(bm):
+    # remove internal edges and faces
+    # adding missing faces so we could rely on `e.is_boundary` later
+    bmesh.ops.contextual_create(bm, geom=bm.edges[:])
+    edges_to_dissolve = [e for e in bm.edges if not e.is_boundary]
+    bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
+    bmesh.ops.delete(bm, geom=bm.faces[:], context="FACES_ONLY")
+    bmesh.ops.dissolve_limit(
+        bm,
+        angle_limit=0.0872665,
+        use_dissolve_boundaries=False,
+        delimit={"NORMAL"},
+        edges=bm.edges[:],
+        verts=bm.verts[:],
+    )
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+
+
 class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.generate_hipped_roof"
     bl_label = "Generate Hipped Roof"
-    bl_options = {"REGISTER"}
-    mode: bpy.props.StringProperty(default="ANGLE")
-    height: bpy.props.FloatProperty(default=1)
-    angle: bpy.props.FloatProperty(default=10)
+    bl_options = {"REGISTER", "UNDO"}
+
+    roof_generation_methods = (
+        ("HEIGHT", "HEIGHT", ""),
+        ("ANGLE", "ANGLE", ""),
+    )
+
+    mode: bpy.props.EnumProperty(name="Roof Generation Method", items=roof_generation_methods, default="ANGLE")
+    height: bpy.props.FloatProperty(
+        name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
+    )
+    angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE")
 
     def _execute(self, context):
         obj = bpy.context.active_object
@@ -54,88 +90,188 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
-        # argument values are the defaults for `bpy.ops.mesh.dissolve_limited`
-        bmesh.ops.dissolve_limit(
-            bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, edges=bm.edges[:], verts=bm.verts[:]
-        )
+        generate_hiped_roof_bmesh(bm, self.mode, self.height, self.angle)
         tool.Blender.apply_bmesh(obj.data, bm)
-
-        generate_hipped_roof(obj, self.mode, self.height, self.angle)
         return {"FINISHED"}
 
 
-def generate_hipped_roof(obj, mode="ANGLE", height=1.0, angle=10):
+def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutate_current_bmesh=True):
+    """return bmesh with gable roof geometry
+
+    `mutate_current_bmesh` is a flag to indicate whether the input bmesh
+    should be mutated or a new bmesh should be created and returned.
+
+    If the object is in EDIT mode then it will be the only way to change it.
+
+    If roof bmesh needed only to supply into decorator then there is no reason to mutate it.
+    """
+
+    if not mutate_current_bmesh:
+        bm = bm.copy()
+
+    # CLEAN UP
+    bm_mesh_clean_up(bm)
+
     boundary_lines = []
 
-    for edge in obj.data.edges:
-        boundary_lines.append(
-            shapely.LineString([obj.data.vertices[edge.vertices[0]].co, obj.data.vertices[edge.vertices[1]].co])
-        )
-
-    unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-    closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
-
-    roof_polygon = None
-    biggest_area = 0
-    for polygon in closed_polygons.geoms:
-        area = polygon.area
-        if area > biggest_area:
-            roof_polygon = polygon
-            biggest_area = area
-
-    roof_polygon = shapely.force_3d(roof_polygon)
-
-    if not shapely.is_ccw(roof_polygon):
-        roof_polygon = roof_polygon.reverse()
-
-    # Define vertices for the base footprint of the building at height 0.0
-    # counterclockwise order
-    verts = [Vector(v) for v in roof_polygon.exterior.coords[0:-1]]
-    total_exterior_verts = len(verts)
-    next_index = total_exterior_verts
-
-    inner_loops = None
-    for interior in roof_polygon.interiors:
-        if inner_loops is None:
-            inner_loops = []
-        loop = interior.coords[0:-1]
-        total_verts = len(loop)
-        verts.extend([Vector(v) for v in loop])
-        inner_loops.append((next_index, total_verts))
-        next_index += total_verts
-
-    unit_vectors = None  # we have no unit vectors, let them computed by polygonize()
-    start_exterior_index = 0
-
-    faces = []
-
-    if mode == "HEIGHT":
-        height = height
-        angle = 0.0
+    original_geometry_data = dict()
+    angle_layer = bm.edges.layers.float.get("BBIM_gable_roof_angles")
+    if angle_layer:
+        original_geometry_data["edges"] = [(set(bm_get_indices(e.verts)), e[angle_layer]) for e in bm.edges]
     else:
-        angle = tan(radians(round(angle, 4)))
-        height = 0.0
+        original_geometry_data["edges"] = [(set(bm_get_indices(e.verts)), None) for e in bm.edges]
 
-    faces = bpypolyskel.polygonize(
-        verts, start_exterior_index, total_exterior_verts, inner_loops, height, angle, faces, unit_vectors
-    )
+    original_geometry_data["verts"] = {v.index: v.co.copy() for v in bm.verts}
+    footprint_z = bm.verts[:][0].co.z
 
-    edges = []
+    def calculate_hiped_roof():
+        for edge in bm.edges:
+            boundary_lines.append(shapely.LineString([v.co for v in edge.verts]))
 
-    bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
+        unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+        closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+
+        # find the polygon with the biggest area
+        roof_polygon = max(closed_polygons.geoms, key=lambda polygon: polygon.area)
+
+        # add z coordinate if not present
+        roof_polygon = shapely.force_3d(roof_polygon)
+
+        # make sure the polygon is counter-clockwise
+        if not shapely.is_ccw(roof_polygon):
+            roof_polygon = roof_polygon.reverse()
+
+        # Define vertices for the base footprint of the building at height 0.0
+        # counterclockwise order
+        verts = [Vector(v) for v in roof_polygon.exterior.coords[0:-1]]
+        total_exterior_verts = len(verts)
+        next_index = total_exterior_verts
+
+        inner_loops = None  # in case when there is no .interiors
+        for interior in roof_polygon.interiors:
+            if inner_loops is None:
+                inner_loops = []
+            loop = interior.coords[0:-1]
+            total_verts = len(loop)
+            verts.extend([Vector(v) for v in loop])
+            inner_loops.append((next_index, total_verts))
+            next_index += total_verts
+
+        unit_vectors = None  # we have no unit vectors, let them computed by polygonize()
+        start_exterior_index = 0
+
+        faces = []
+        nonlocal height, angle
+        if mode == "HEIGHT":
+            height = height
+            angle = 0.0
+        else:
+            angle = tan(angle)
+            height = 0.0
+
+        faces = bpypolyskel.polygonize(
+            verts, start_exterior_index, total_exterior_verts, inner_loops, height, angle, faces, unit_vectors
+        )
+        edges = []
+        return verts, edges, faces
+
+    verts, edges, faces = calculate_hiped_roof()
+    bm.clear()
+
     new_verts = [bm.verts.new(v) for v in verts]
     new_edges = [bm.edges.new([new_verts[vi] for vi in edge]) for edge in edges]
     new_faces = [bm.faces.new([new_verts[vi] for vi in face]) for face in faces]
+
+    def find_identical_new_vert(co):
+        for v in bm.verts:
+            if float_is_zero((co - v.co).length):
+                return v
+
+    def find_other_polygon_verts(edge):
+        polygon = edge.link_faces[0]
+        return [v for v in polygon.verts if v not in edge.verts]
+
+    def change_angle(projected_vert_co, edge_verts, new_angle):
+        A, B = [v.co for v in edge_verts]
+        P = projected_vert_co
+
+        AP = P - A
+        AB = B - A
+        AB_dir = AB.normalized()
+        proj_length = AP.dot(AB_dir)
+        C = A + AB_dir * proj_length
+        Pp = P * Vector([1, 1, 0]) + Vector([0, 0, C.z])
+
+        Pp = P * Vector([1, 1, 0]) + Vector([0, 0, C.z])
+        angle_tan = tan(new_angle)
+        dist = (P.z - Pp.z) / angle_tan
+        PPnew = C + (Pp - C).normalized() * dist
+        Pnew = PPnew * Vector([1, 1, 0]) + Vector([0, 0, P.z])
+        return Pnew
+
+    footprint_edges = []
+    footprint_verts = set()
+    verts_to_change = {}
+
+    # find footprint edges
+    for edge in bm.edges:
+        if all(float_is_zero(v.co.z-footprint_z) for v in edge.verts):
+            footprint_edges.append(edge)
+            footprint_verts.update(edge.verts)
+
+    old_verts_remap = {}
+    for old_vert in original_geometry_data["verts"]:
+        old_vert_co = original_geometry_data["verts"][old_vert]
+        old_verts_remap[old_vert] = find_identical_new_vert(old_vert_co)
+
+    # iterate over edges from original geometry
+    # if their angle was redefined by user - apply the changes to the related vertices
+    # to match the requested angle
+    for old_edge_verts, defined_angle in original_geometry_data["edges"]:
+        if not defined_angle:
+            continue
+
+        edge_verts_remaped = set(old_verts_remap[old_vert] for old_vert in old_edge_verts)
+
+        for edge in footprint_edges:
+            if set(edge.verts) == edge_verts_remaped:
+                identical_edge = edge
+                break
+
+        verts_to_move = find_other_polygon_verts(identical_edge)
+        for v in verts_to_move:
+            vert_co = verts_to_change.get(v, v.co)
+            new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
+            verts_to_change[v] = new_vert_co
+
+    # apply all changes once at the end
+    for v in verts_to_change:
+        v.co = verts_to_change[v]
 
     extrusion_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
     extruded_verts = bm_sort_out_geom(extrusion_geom)["verts"]
     bmesh.ops.translate(bm, vec=[0.0, 0.0, 0.1], verts=extruded_verts)
 
-    tool.Blender.apply_bmesh(obj.data, bm)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return bm
 
 
 def bm_get_indices(sequence):
     return [i.index for i in sequence]
+
+
+def roof_is_gabled():
+    if not RoofData.is_loaded:
+        RoofData.load()
+
+    path_data = RoofData.parameters()["data_dict"]["path_data"]
+    angle_layer = path_data.get("gable_roof_angles", None)
+    if not angle_layer:
+        return False
+    for edge_angle in angle_layer:
+        if float_is_zero(edge_angle - pi / 2):
+            return True
+    return False
 
 
 def update_roof_modifier_ifc_data(context):
@@ -147,7 +283,9 @@ def update_roof_modifier_ifc_data(context):
     element = tool.Ifc.get_entity(obj)
 
     # type attributes
-    element.PredefinedType = props.roof_type
+    if props.roof_type == "HIP/GABLE ROOF":
+        element.PredefinedType = "GABLE_ROOF" if roof_is_gabled() else "HIP_ROOF"
+
     # occurences attributes
     # occurences = tool.Ifc.get_all_element_occurences(element)
 
@@ -172,34 +310,34 @@ def update_roof_modifier_bmesh(context):
     if not RoofData.is_loaded:
         RoofData.load()
     path_data = RoofData.data["parameters"]["data_dict"]["path_data"]
+    angle_layer_data = path_data.get("gable_roof_angles", None)
 
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     # need to make sure we support edit mode
     # since users will probably be in edit mode when they'll be changing roof path
     bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
+    angle_layer = bm.edges.layers.float.new("BBIM_gable_roof_angles")
 
     # generating roof path
     new_verts = [bm.verts.new(Vector(v) * si_conversion) for v in path_data["verts"]]
-    new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in path_data["edges"]]
+    new_edges = []
+    for i in range(len(path_data["edges"])):
+        e = path_data["edges"][i]
+        edge = bm.edges.new((new_verts[e[0]], new_verts[e[1]]))
+        edge[angle_layer] = angle_layer_data[i] if angle_layer_data else 0
+        new_edges.append(edge)
 
     if props.is_editing_path:
         tool.Blender.apply_bmesh(obj.data, bm)
         return
 
-    # apply dissolve limit seems to get more correct results with `generate_hipped_roof`
-    # argument values are the defaults for `bpy.ops.mesh.dissolve_limited`
-    bmesh.ops.dissolve_limit(
-        bm, angle_limit=0.0872665, use_dissolve_boundaries=False, delimit={"NORMAL"}, edges=bm.edges[:], verts=bm.verts[:]
-    )
-    tool.Blender.apply_bmesh(obj.data, bm)
-
     height = props.height * si_conversion
-    angle = props.angle * si_conversion
-    generation_method = props.generation_method
-    generate_hipped_roof(obj, generation_method, height, angle)
+    generate_hiped_roof_bmesh(bm, props.generation_method, height, props.angle, mutate_current_bmesh=True)
+    tool.Blender.apply_bmesh(obj.data, bm)
 
 
 def get_path_data(obj):
+    """get path data for current mesh, path data is cleaned up"""
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     if obj.mode == "EDIT":
@@ -208,18 +346,15 @@ def get_path_data(obj):
         obj.update_from_editmode()
 
     bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+    bm_mesh_clean_up(bm)
 
-    # remove internal edges and faces
-    # adding missing faces so we could rely on `e.is_boundary` later
-    bmesh.ops.contextual_create(bm, geom=bm.edges[:])
-
-    edges_to_dissolve = [e for e in bm.edges if not e.is_boundary]
-    bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
-    bmesh.ops.delete(bm, geom=bm.faces[:], context="FACES_ONLY")
+    angle_layer = bm.edges.layers.float.get("BBIM_gable_roof_angles")
 
     path_data = dict()
     path_data["edges"] = [bm_get_indices(e.verts) for e in bm.edges]
     path_data["verts"] = [v.co / si_conversion for v in bm.verts]
+    if angle_layer:
+        path_data["gable_roof_angles"] = [e[angle_layer] for e in bm.edges]
 
     if not path_data["edges"] or not path_data["verts"]:
         return None
@@ -399,7 +534,30 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         if bpy.context.object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
         bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
-        ProfileDecorator.install(context)
+
+        def mark_preview_edges(bm, bew_verts, new_edges, new_faces):
+            preview_layer = bm.edges.layers.int["BBIM_preview"]
+            # can't create layer in callback because it kill all the bm edge references
+            for edge in new_edges:
+                edge[preview_layer] = 1
+
+        def get_custom_bmesh():
+            # copying to make sure not to mutate the edit mode bmesh
+            bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+            main_bm = bm.copy()
+            main_bm.edges.layers.int.new("BBIM_preview")
+
+            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            height = props.height * si_conversion
+            second_bm = generate_hiped_roof_bmesh(
+                bm, props.generation_method, height, props.angle, mutate_current_bmesh=False
+            )
+            bmesh.ops.translate(second_bm, verts=second_bm.verts, vec=Vector((0, 0, 1)))
+
+            tool.Blender.bmesh_join(main_bm, second_bm, callback=mark_preview_edges)
+            return main_bm
+
+        ProfileDecorator.install(context, get_custom_bmesh, draw_faces=True)
         return {"FINISHED"}
 
 
@@ -440,6 +598,7 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         update_bbim_roof_pset(element, roof_data)
         refresh()  # RoofData has to be updated before run update_roof_modifier_bmesh
         update_roof_modifier_bmesh(context)
+        update_roof_modifier_ifc_data(context)
         if bpy.context.object.mode == "EDIT":
             bpy.ops.object.mode_set(mode="OBJECT")
         update_roof_modifier_ifc_data(context)
@@ -460,6 +619,44 @@ class RemoveRoof(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
         props.roof_added_previously = True
+        return {"FINISHED"}
+
+
+class SetGableRoofEdgeAngle(bpy.types.Operator):
+    bl_idname = "bim.set_gable_roof_edge_angle"
+    bl_label = "Set gable roof edge angle"
+    bl_options = {"REGISTER", "UNDO"}
+    angle: bpy.props.FloatProperty(name="Angle", default=90)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj and obj.type == "MESH" and context.mode == "EDIT_MESH"
+
+    def draw(self, context):
+        layout = self.layout
+        for prop in self.__class__.__annotations__.keys():
+            layout.prop(self, prop)
+
+    def execute(self, context):
+        # tried to avoid bmesh with foreach_get and foreach_set
+        # but in EDIT mode it's only possible to change attributes by working with bmesh
+
+        me = context.object.data
+        bm = tool.Blender.get_bmesh_for_mesh(me)
+
+        # check if attribute exists or create one
+        if "BBIM_gable_roof_angles" not in me.attributes:
+            me.attributes.new("BBIM_gable_roof_angles", type="FLOAT", domain="EDGE")
+
+        angles_layer = bm.edges.layers.float["BBIM_gable_roof_angles"]
+
+        for e in bm.edges:
+            if not e.select:
+                continue
+            e[angles_layer] = self.angle
+
+        tool.Blender.apply_bmesh(me, bm)
         return {"FINISHED"}
 
 

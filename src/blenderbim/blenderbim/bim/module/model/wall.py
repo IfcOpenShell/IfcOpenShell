@@ -1234,14 +1234,7 @@ class DumbWallJoiner:
         tool.Geometry.record_object_materials(obj)
 
     def create_matrix(self, p, x, y, z):
-        return Matrix(
-            (
-                (x[0], y[0], z[0], p[0]),
-                (x[1], y[1], z[1], p[1]),
-                (x[2], y[2], z[2], p[2]),
-                (0.0, 0.0, 0.0, 1.0),
-            )
-        )
+        return Matrix([x, y, z, p]).to_4x4().transposed()
 
     def get_extrusion_data(self, representation):
         results = {"item": None, "height": 3.0, "x_angle": 0, "is_sloped": False, "direction": Vector((0, 0, 1))}
