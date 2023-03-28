@@ -23,6 +23,7 @@ from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
 from bpy.types import PropertyGroup, NodeTree
+from math import pi
 
 
 def get_ifc_class(self, context):
@@ -569,7 +570,7 @@ class BIMRailingProperties(PropertyGroup):
 
 
 class BIMRoofProperties(PropertyGroup):
-    roof_types = (("HIP_ROOF", "HIP_ROOF", ""),)
+    roof_types = (("HIP/GABLE ROOF", "HIP/GABLE ROOF", ""),)
     roof_generation_methods = (
         ("HEIGHT", "HEIGHT", ""),
         ("ANGLE", "ANGLE", ""),
@@ -579,12 +580,14 @@ class BIMRoofProperties(PropertyGroup):
     is_editing: bpy.props.IntProperty(default=-1)
     is_editing_path: bpy.props.BoolProperty(default=False)
 
-    roof_type: bpy.props.EnumProperty(name="Roof Type", items=roof_types, default="HIP_ROOF")
+    roof_type: bpy.props.EnumProperty(name="Roof Type", items=roof_types, default="HIP/GABLE ROOF")
     generation_method: bpy.props.EnumProperty(
-        name="Roof Generation Method", items=roof_generation_methods, default="HEIGHT"
+        name="Roof Generation Method", items=roof_generation_methods, default="ANGLE"
     )
-    height: bpy.props.FloatProperty(name="Height", default=1.0)
-    angle: bpy.props.FloatProperty(name="Slope Angle", default=10, description="In degrees")
+    height: bpy.props.FloatProperty(
+        name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
+    )
+    angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE")
 
     def get_general_kwargs(self):
         kwargs = {

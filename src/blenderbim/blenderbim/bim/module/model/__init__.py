@@ -163,6 +163,7 @@ classes = (
     roof.FinishEditingRoofPath,
     roof.EnableEditingRoofPath,
     roof.RemoveRoof,
+    roof.SetGableRoofEdgeAngle,
 )
 
 addon_keymaps = []

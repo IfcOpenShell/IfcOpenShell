@@ -800,14 +800,7 @@ class DumbProfileJoiner:
         return self.create_matrix(p, x_axis, y_axis, z_axis)
 
     def create_matrix(self, p, x, y, z):
-        return Matrix(
-            (
-                (x[0], y[0], z[0], p[0]),
-                (x[1], y[1], z[1], p[1]),
-                (x[2], y[2], z[2], p[2]),
-                (0.0, 0.0, 0.0, 1.0),
-            )
-        )
+        return Matrix([x, y, z, p]).to_4x4().transposed()
 
     def get_profile_axis(self, obj):
         z_values = [v[2] for v in obj.bound_box]

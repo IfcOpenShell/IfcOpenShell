@@ -94,6 +94,28 @@ class Blender:
         return False
 
     @classmethod
+    def get_viewport_context(cls):
+        """Get viewport area context for context overriding.
+
+        Useful for calling operators outside viewport context.
+
+        It's a bit naive since it's just taking the first available `VIEW_3D` area
+        when in real life you can have a couple of those but should work for the most cases.
+        """
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        context_override = {"area": area}
+        return context_override
+    
+    @classmethod
+    def update_viewport(cls):        
+        # if it stops working in future Blender versions
+        # there is an alternative:
+        # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
+        tool.Blender.get_viewport_context()['area'].tag_redraw()
+
+    ## BMESH UTILS ##
+    @classmethod
     def apply_bmesh(cls, mesh, bm):
         import bmesh
 
@@ -131,24 +153,18 @@ class Blender:
             if not clean:
                 bm.from_mesh(mesh)
         return bm
-    
+
     @classmethod
-    def get_viewport_context(cls):
-        """Get viewport area context for context overriding.
+    def bmesh_join(cls, bm_a, bm_b, callback=None):
+        """Join two meshes into single one, store it in `bm_a`"""
+        import bmesh
 
-        Useful for calling operators outside viewport context.
+        new_verts = [bm_a.verts.new(v.co) for v in bm_b.verts]
+        new_edges = [bm_a.edges.new([new_verts[v.index] for v in edge.verts]) for edge in bm_b.edges]
+        new_faces = [bm_a.faces.new([new_verts[v.index] for v in face.verts]) for face in bm_b.faces]
+        bmesh.ops.recalc_face_normals(bm_a, faces=bm_a.faces[:])
 
-        It's a bit naive since it's just taking the first available `VIEW_3D` area
-        when in real life you can have a couple of those but should work for the most cases.
-        """
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        context_override = {"area": area}
-        return context_override
-    
-    @classmethod
-    def update_viewport(cls):        
-        # if it stops working in future Blender versions
-        # there is an alternative:
-        # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        if callback:
+            callback(bm_a, new_verts, new_edges, new_faces)
 
-        tool.Blender.get_viewport_context()['area'].tag_redraw()
+        return bm_a

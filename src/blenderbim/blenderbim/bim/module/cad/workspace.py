@@ -153,6 +153,11 @@ class CadTool(WorkSpaceTool):
                 row.operator("bim.cad_hotkey", text="Apply Roof Path").hotkey = "S_Q"
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
 
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_R")
+                row.operator("bim.hotkey", text="Set gable roof angle").hotkey = "S_R"
+
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
@@ -200,20 +205,31 @@ class CadHotkey(bpy.types.Operator):
             if self.is_profile():
                 row = self.layout.row()
                 row.prop(props, "radius")
+
         elif self.hotkey == "S_F":
             if not self.is_profile():
                 row = self.layout.row()
                 row.prop(props, "resolution")
             row = self.layout.row()
             row.prop(props, "radius")
+
         elif self.hotkey == "S_O":
             row = self.layout.row()
             row.prop(props, "distance")
+
         elif self.hotkey == "S_R":
-            row = self.layout.row()
-            row.prop(props, "x")
-            row = self.layout.row()
-            row.prop(props, "y")
+            if self.is_profile():
+                row = self.layout.row()
+                row.prop(props, "x")
+                row = self.layout.row()
+                row.prop(props, "y")
+            elif (
+                (RoofData.is_loaded or not RoofData.load())
+                and RoofData.data["parameters"]
+                and bpy.context.active_object.BIMRoofProperties.is_editing_path
+            ):
+                self.layout.row().prop(props, "gable_roof_edge_angle")
+
         elif self.hotkey == "S_V":
             if not self.is_profile():
                 row = self.layout.row()
@@ -264,6 +280,12 @@ class CadHotkey(bpy.types.Operator):
     def hotkey_S_R(self):
         if self.is_profile():
             bpy.ops.bim.add_rectangle(x=self.props.x, y=self.props.y)
+        elif (
+            (RoofData.is_loaded or not RoofData.load())
+            and RoofData.data["parameters"]
+            and bpy.context.active_object.BIMRoofProperties.is_editing_path
+        ):
+            bpy.ops.bim.set_gable_roof_edge_angle(angle=self.props.gable_roof_edge_angle)
 
     def hotkey_S_T(self):
         bpy.ops.bim.cad_mitre()
