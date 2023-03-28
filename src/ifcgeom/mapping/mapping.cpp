@@ -337,7 +337,7 @@ namespace {
 #else
 		auto styles = si->Styles();
 #endif
-			for (aggregate_of_instance::it lt = styles->begin(); lt != styles->end(); ++lt) {
+			for (auto lt = styles->begin(); lt != styles->end(); ++lt) {
 				IfcUtil::IfcBaseClass* style = *lt;
 				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
 					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
