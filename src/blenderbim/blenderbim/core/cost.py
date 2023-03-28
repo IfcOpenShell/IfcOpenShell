@@ -118,6 +118,9 @@ def load_cost_item_element_quantities(cost):
     cost_item = cost.get_highlighted_cost_item()
     cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
 
+def load_cost_item_task_quantities(cost):
+    cost_item = cost.get_highlighted_cost_item()
+    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
 
 
 def assign_cost_value(ifc, cost_item, cost_rate):

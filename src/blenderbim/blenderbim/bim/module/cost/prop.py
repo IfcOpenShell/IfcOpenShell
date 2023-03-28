@@ -138,6 +138,10 @@ def update_active_cost_item_elements(self, context):
     bpy.ops.bim.load_cost_item_element_quantities()
 
 
+def update_active_cost_item_tasks(self, context):
+    bpy.ops.bim.load_cost_item_task_quantities()
+
+
 class BIMCostProperties(PropertyGroup):
     cost_schedule_predefined_types: EnumProperty(
         items=get_schedule_predefined_types, name="Predefined Type", default=None
@@ -189,6 +193,6 @@ class BIMCostProperties(PropertyGroup):
     cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
     active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
     contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")
-    show_nested_elements: BoolProperty(
-        name="Show Nested Tasks", default=False, update=update_active_cost_item_elements
+    show_nested_elements: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_elements)
+    show_nested_tasks: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_tasks)
     )
