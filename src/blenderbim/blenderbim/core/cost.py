@@ -198,8 +198,9 @@ def edit_cost_value(ifc, cost, cost_value):
 def copy_cost_item_values(ifc, cost, source, destination):
     ifc.run("cost.copy_cost_item_values", source=source, destination=destination)
 
-def select_cost_item_products(cost, spatial, cost_item, include_nested):
-    products = cost.get_cost_item_products(cost_item, include_nested)
+def select_cost_item_products(cost, spatial, cost_item):
+    is_deep = cost.show_nested_cost_item_elements()
+    products = cost.get_cost_item_products(cost_item, is_deep)
     spatial.select_products(products)
 
 def select_cost_schedule_products(cost, spatial, cost_schedule):

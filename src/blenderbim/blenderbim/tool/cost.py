@@ -123,7 +123,7 @@ class Cost(blenderbim.core.tool.Cost):
         if props.active_cost_item_index in cls.contracted_cost_items:
             cls.contracted_cost_items.remove(props.active_cost_item_index)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
-        bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
+        cls.enable_editing_cost_items(cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id))
 
     @classmethod
     def enable_editing_cost_item_attributes(cls, cost_item):
@@ -148,7 +148,7 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def get_active_cost_item(cls):
         props = bpy.context.scene.BIMCostProperties
-        if props.active_cost_item_id == 0:
+        if not props.active_cost_item_id:
             return None
         return tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_item_id)
 
@@ -394,47 +394,30 @@ class Cost(blenderbim.core.tool.Cost):
         )
 
     @classmethod
-    def get_cost_item_products(cls, cost_item, include_nested=False):
-        if not include_nested:
-            return cls.get_direct_cost_item_products(cost_item)
-        else:
-            return [
-                product
-                for nested_cost_item in cls.get_all_nested_cost_items(cost_item)
-                for product in cls.get_direct_cost_item_products(nested_cost_item)
-            ]
+    def show_nested_cost_item_elements(cls):
+        return bpy.context.scene.BIMCostProperties.show_nested_elements
 
     @classmethod
-    def get_all_nested_cost_items(cls, cost_item):
-        for cost_item in cls.get_nested_cost_items(cost_item):
-            yield cost_item
-            yield from cls.get_all_nested_cost_items(cost_item)
+    def get_cost_item_products(cls, cost_item, is_deep=False):
+        return cls.get_cost_item_assignments(cost_item, filter_by_type="PRODUCT", is_deep=is_deep)
 
     @classmethod
-    def get_nested_cost_items(cls, cost_item):
-        return [obj for rel in cost_item.IsNestedBy for obj in rel.RelatedObjects]
+    def get_cost_item_resources(cls, cost_item, is_deep=False):
+        return cls.get_cost_item_assignments(cost_item, filter_by_type="RESOURCE", is_deep=is_deep)
 
+    @classmethod
+    def get_cost_item_processes(cls, cost_item, is_deep=False):
+        return cls.get_cost_item_assignments(cost_item, filter_by_type="PROCESS", is_deep=is_deep)
 
     @classmethod
     def get_schedule_cost_items(cls, cost_schedule):
-        for cost_item in cls.get_root_cost_items(cost_schedule):
-            yield cost_item
-            yield from cls.get_all_nested_cost_items(cost_item)
-
-    @classmethod
-    def get_root_cost_items(cls, cost_schedule):
-        return [
-            related_object
-            for rel in cost_schedule.Controls or []
-            for related_object in rel.RelatedObjects
-            if related_object.is_a("IfcCostItem")
-        ]
+        return ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule)
 
     @classmethod
     def get_cost_schedule_products(cls, cost_schedule):
         products = []
-        for cost_item in cls.get_root_cost_items(cost_schedule):
-            products.extend(cls.get_cost_item_products(cost_item, include_nested=True))
+        for cost_item in ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule):
+            products.extend(cls.get_cost_item_products(cost_item))
         return products
 
     @classmethod
