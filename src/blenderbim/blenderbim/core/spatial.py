@@ -92,3 +92,7 @@ def select_similar_container(ifc, spatial, obj=None):
     element = ifc.get_entity(obj)
     if element:
         spatial.select_products(spatial.get_decomposed_elements(spatial.get_container(element)))
+
+
+def select_product(spatial, product):
+    spatial.select_products([product])

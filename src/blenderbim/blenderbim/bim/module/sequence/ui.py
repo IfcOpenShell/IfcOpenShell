@@ -503,6 +503,8 @@ class BIM_UL_task_inputs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
+            op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
+            op.product = item.ifc_definition_id
             row.prop(item, "name", emboss=False, text="")
             # row.operator("bim.remove_task_column", text="", icon="X").name = item.name
 
@@ -527,6 +529,8 @@ class BIM_UL_task_outputs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
+            op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
+            op.product = item.ifc_definition_id
             row.prop(item, "name", emboss=False, text="")
 
 
