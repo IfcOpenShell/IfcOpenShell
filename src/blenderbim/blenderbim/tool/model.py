@@ -153,10 +153,12 @@ class Model(blenderbim.core.tool.Model):
         cls.circles = []
 
         if isinstance(axis, list):
-            cls.vertices.extend([
-                position @ Vector(cls.convert_unit_to_si(axis[0])).to_3d(),
-                position @ Vector(cls.convert_unit_to_si(axis[1])).to_3d(),
-            ])
+            cls.vertices.extend(
+                [
+                    position @ Vector(cls.convert_unit_to_si(axis[0])).to_3d(),
+                    position @ Vector(cls.convert_unit_to_si(axis[1])).to_3d(),
+                ]
+            )
             cls.edges.append([0, 1])
         else:
             cls.import_curve(obj, position, axis)
@@ -405,6 +407,7 @@ class Model(blenderbim.core.tool.Model):
     def regenerate_array(cls, parent, data):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent]
+
         for array in data:
             child_i = 0
             existing_children = set(array["children"])
@@ -412,7 +415,7 @@ class Model(blenderbim.core.tool.Model):
             children_elements = []
             children_objs = []
             base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
-            for i in range(0, array["count"]):
+            for i in range(array["count"]):
                 if i == 0:
                     continue
                 offset = base_offset * i
@@ -441,7 +444,8 @@ class Model(blenderbim.core.tool.Model):
                         )
 
                     new_matrix = obj.matrix_world.copy()
-                    new_matrix.col[3] = (obj.matrix_world.col[3].to_3d() + offset).to_4d()
+                    current_obj_offset = obj.matrix_world @ offset if array["use_local_space"] else offset
+                    new_matrix.col[3] = (obj.matrix_world.col[3].to_3d() + current_obj_offset).to_4d()
                     child_obj.matrix_world = new_matrix
                     children_objs.append(child_obj)
                     children_elements.append(child_element)
