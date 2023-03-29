@@ -656,18 +656,19 @@ class LoadProductCostItems(bpy.types.Operator):
     bl_idname = "bim.load_product_cost_items"
     bl_label = "Get Product Cost Assignments"
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.IntProperty()
 
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get():
+            return False
+        if not context.active_object:
             return False
         if not context.active_object.BIMObjectProperties.ifc_definition_id:
             return False
         return True
 
     def execute(self, context):
-        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get().by_id(self.product))
+        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id))
         return {"FINISHED"}
 
 
