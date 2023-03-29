@@ -374,6 +374,11 @@ class BIM_PT_cost_item_quantities(Panel):
             "active_cost_item_product_index",
         )
 
+        row2 = col.row()
+        op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
+        op.cost_item = cost_item.ifc_definition_id
+        op.related_object_type = "IfcElement"
+
         if has_quantity_names:
             row2 = col.row()
             row2.prop(self.props, "product_quantity_names", text="")
@@ -413,6 +418,11 @@ class BIM_PT_cost_item_quantities(Panel):
             self.props,
             "active_cost_item_process_index",
         )
+
+        row2 = col.row()
+        op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
+        op.cost_item = cost_item.ifc_definition_id
+        op.related_object_type = "IfcProcess"
 
         if has_quantity_names:
             row2 = col.row()
@@ -456,6 +466,11 @@ class BIM_PT_cost_item_quantities(Panel):
             self.props,
             "active_cost_item_resource_index",
         )
+
+        row2 = col.row()
+        op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
+        op.cost_item = cost_item.ifc_definition_id
+        op.related_object_type = "IfcResource"
 
         if has_quantity_names:
             row2 = col.row()

@@ -107,8 +107,9 @@ def assign_cost_item_quantity(ifc, cost, cost_item, related_object_type, prop_na
     products = cost.get_products(related_object_type)
     if products:
         ifc.run("cost.assign_cost_item_quantity", cost_item=cost_item, products=products, prop_name=prop_name)
-        cost.load_cost_item_quantities(cost_item)
-
+        cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
+        cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
+        cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
 
 def load_cost_item_quantities(cost):
     cost_item = cost.get_highlighted_cost_item()
@@ -136,7 +137,9 @@ def load_schedule_of_rates(cost, schedule_of_rates):
 
 def unassign_cost_item_quantity(ifc, cost, cost_item, products):
     ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)
-    cost.load_cost_item_quantities(cost_item)
+    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
+    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
+    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
 
 def enable_editing_cost_item_quantities(cost, cost_item):
     cost.enable_editing_cost_item_quantities(cost_item)
@@ -161,7 +164,10 @@ def edit_cost_item_quantity(ifc, cost, physical_quantity):
     attributes = cost.get_cost_item_quantity_attributes()
     ifc.run("cost.edit_cost_item_quantity", physical_quantity=physical_quantity, attributes=attributes)
     cost.disable_editing_cost_item_quantity()
-    # cost.load_cost_item_quantities(cost.get_active_cost_item())
+    #TODO: REVIEW usefulness
+    cost.load_cost_item_quantity_assignments(cost.get_highlighted_cost_item(), related_object_type="PRODUCT")
+    cost.load_cost_item_quantity_assignments(cost.get_highlighted_cost_item(), related_object_type="PROCESS")
+    cost.load_cost_item_quantity_assignments(cost.get_highlighted_cost_item(), related_object_type="RESOURCE")
 
 def add_cost_value(ifc, cost, parent, cost_type, cost_category):
     value = ifc.run("cost.add_cost_value", parent=parent)
@@ -227,3 +233,10 @@ def calculate_cost_item_resource_value(ifc, cost_item):
 
 def export_cost_schedules(cost, format):
     cost.export_cost_schedules(format)
+
+def clear_cost_item_assignments(ifc, cost, cost_item, related_object_type):
+    products = cost.get_cost_item_assignments(cost_item, filter_by_type=related_object_type)
+    if products:
+        ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)
+    cost.load_cost_item_quantity_assignments(cost_item, related_object_type=related_object_type)
+    cost.load_cost_schedule_tree()
