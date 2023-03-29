@@ -562,6 +562,7 @@ def disable_editing_extrusion_profile(context):
     element = tool.Ifc.get_entity(obj)
     body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
+    profile_mesh = obj.data
     blenderbim.core.geometry.switch_representation(
         tool.Ifc,
         tool.Geometry,
@@ -571,6 +572,7 @@ def disable_editing_extrusion_profile(context):
         is_global=True,
         should_sync_changes_first=False,
     )
+    tool.Geometry.delete_data(profile_mesh)
     return {"FINISHED"}
 
 
@@ -663,6 +665,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
+        profile_mesh = obj.data
         blenderbim.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
@@ -672,6 +675,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
+        bpy.data.meshes.remove(profile_mesh)
 
         footprint_context = ifcopenshell.util.representation.get_context(
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
