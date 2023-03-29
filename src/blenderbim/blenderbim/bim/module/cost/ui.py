@@ -633,6 +633,8 @@ class BIM_UL_cost_item_quantities(UIList):
 
         if item:
             row = layout.row(align=True)
+            op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
+            op.product = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
             row.label(text="{0:.2f}".format(item.total_quantity))
