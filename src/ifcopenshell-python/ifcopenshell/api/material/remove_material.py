@@ -20,11 +20,31 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, material=None):
+        """Removes a material
+
+        If the material is used in a material set, the corresponding layer,
+        profile, or constituent is also removed. Note that this may result in a
+        material set with zero items in it, which is invalid, so the user must
+        take care of this situation themselves.
+
+        :param material: The IfcMaterial entity you want to remove
+        :type material: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Create a material
+            aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
+
+            # ... and remove it
+            ifcopenshell.api.run("material.remove_material", model, material=aluminium)
+        """
         self.file = file
-        self.settings = {"material": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"material": material}
 
     def execute(self):
         inverse_elements = self.file.get_inverse(self.settings["material"])

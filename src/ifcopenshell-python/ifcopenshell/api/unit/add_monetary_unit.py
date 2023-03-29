@@ -18,11 +18,31 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, currency="DOLLARYDOO"):
+        """Add a new currency
+
+        Currency units are useful in cost plans to know in what currency the
+        costs are calculated in. The currencies should follow ISO 4217, like
+        USD, GBP, AUD, MYR, etc.
+
+        :param currency: The currency code
+        :type currency: str
+        :return: The newly created IfcMonetaryUnit
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # If you do all your cost plans in Zimbabwean dollars then nobody
+            # knows how accurate the numbers are.
+            zwl = ifcopenshell.api.run("unit.add_monetary_unit", model, currency="ZWL")
+
+            # Make it our default currency
+            ifcopenshell.api.run("unit.assign_unit", model, units=[zwl])
+        """
         self.file = file
-        self.settings = {"currency": "DOLLARYDOO"}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"currency": currency}
 
     def execute(self):
         return self.file.create_entity("IfcMonetaryUnit", self.settings["currency"])

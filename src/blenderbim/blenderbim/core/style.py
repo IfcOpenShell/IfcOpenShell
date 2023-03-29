@@ -63,6 +63,8 @@ def update_style_colours(ifc, style, obj=None):
         else:
             ifc.run("style.add_surface_style", style=element, ifc_class="IfcSurfaceStyleShading", attributes=attributes)
 
+    style.record_shading(obj)
+
 
 def update_style_textures(ifc, style, obj=None, representation=None):
     element = style.get_style(obj)

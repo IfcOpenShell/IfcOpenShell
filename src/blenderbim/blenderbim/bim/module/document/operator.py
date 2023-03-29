@@ -23,7 +23,6 @@ import ifcopenshell.util.attribute
 import blenderbim.tool as tool
 import blenderbim.core.document as core
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.document.data import Data
 
 
 class LoadProjectDocuments(bpy.types.Operator, tool.Ifc.Operator):
@@ -129,7 +128,7 @@ class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         document = tool.Ifc.get().by_id(self.document)
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if element:
@@ -145,7 +144,7 @@ class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         document = tool.Ifc.get().by_id(self.document)
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if element:

@@ -151,6 +151,8 @@ actions = {
     "string_type": "StringType",
     "named_types": "NamedType",
     "simple_types": "SimpleType",
+    "function_decl": "FunctionDeclaration",
+    "rule_decl": "RuleDeclaration",
 }
 
 to_emit = set(id for id, expr in express)
@@ -192,7 +194,9 @@ for id in to_emit:
     if id in to_combine:
         stmt = "Suppress%s" % stmt
     if id not in no_action and not isinstance(expr.contents, Keyword):
-        node_type = "ListNode" if "ZeroOrMore" in stmt else "Node"
+        children = list(map(operator.attrgetter('contents'), reduce(lambda x, y: x | y, (find_bytype(e, Keyword) for e in [expr]))))
+        has_duplicates = len(children) > len(set(children))
+        node_type = "ListNode" if ("ZeroOrMore" in stmt or has_duplicates) else "Node"
         action = ".setParseAction(%s)" % (
             actions[id] if id in actions else 'lambda s, loc, t: %s(s, loc, t, rule="%s")' % (node_type, id)
         )

@@ -20,11 +20,33 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, style=None):
+        """Removes a presentation item from a presentation style
+
+        :param style: The IfcPresentationItem to remove.
+        :type style: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Create a new surface style
+            style = ifcopenshell.api.run("style.add_style", model)
+
+            # Create a simple shading colour and transparency.
+            shading = ifcopenshell.api.run("style.add_surface_style", model,
+                style=style, ifc_class="IfcSurfaceStyleShading", attributes={
+                    "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
+                    "Transparency": 0., # 0 is opaque, 1 is transparent
+                })
+
+            # Remove the shading item
+            ifcopenshell.api.run("style.remove_surface_style", model, style=shading)
+        """
         self.file = file
-        self.settings = {"style": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"style": style}
 
     def execute(self):
         to_delete = set()

@@ -15,3 +15,16 @@ section img {
     box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
     border-radius: 5px;
 }
+.py.class {
+    /* Make it clearer which signatures are part of a class */
+    border-left: 3px solid var(--color-brand-primary);
+}
+.py.function, .py.method {
+    /* Make it clearer which signatures are part of a method or function */
+    border-left: 3px solid var(--color-background-item);
+}
+.field-list > dt {
+    /* Clearly distinguish parameters otherwise it looks like a wall of text */
+    color: var(--color-brand-content);
+    font-style: italic;
+}

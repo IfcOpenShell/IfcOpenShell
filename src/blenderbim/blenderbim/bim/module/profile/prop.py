@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.module.profile.data import ProfileData
@@ -55,3 +56,36 @@ class BIMProfileProperties(PropertyGroup):
     active_profile_id: IntProperty(name="Active Profile Id")
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
+
+
+def generate_thumbnail_for_active_profile():
+    from PIL import Image, ImageDraw
+
+    if bpy.app.background:
+        return
+
+    props = bpy.context.scene.BIMProfileProperties
+    ifc_file = tool.Ifc.get()
+    preview_collection = ProfileData.preview_collection
+
+    if not props.profiles:
+        bpy.ops.bim.load_profiles()
+
+    profile_id = props.profiles[props.active_profile_index].ifc_definition_id
+    profile = ifc_file.by_id(profile_id)
+
+    # generate image
+    size = 128
+    img = Image.new("RGBA", (size, size))
+    draw = ImageDraw.Draw(img)
+    tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
+    pixels = [item for sublist in img.getdata() for item in sublist]
+
+    # save generated image to preview collection
+    profile_id_str = str(profile_id)
+    if profile_id_str in preview_collection:
+        preview_image = preview_collection[profile_id_str]
+    else:
+        preview_image = preview_collection.new(profile_id_str)
+    preview_image.image_size = size, size
+    preview_image.image_pixels_float = pixels

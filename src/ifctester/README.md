@@ -4,7 +4,11 @@ With **IfcTester**, you can author and read **Information Delivery Specification
 
 ## How to use it
 
-```
+```python
+import ifcopenshell
+from ifctester import ids, reporter
+
+
 # create new IDS
 my_ids = ids.Ids(title="My IDS")
 

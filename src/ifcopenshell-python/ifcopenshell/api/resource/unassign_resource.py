@@ -20,14 +20,46 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relating_resource=None, related_object=None):
+        """Removes the relationship between a resource and object
+
+        :param relating_resource: The IfcResource to assign the object to.
+        :type relating_resource: ifcopenshell.entity_instance.entity_instance
+        :param related_object: The IfcProduct or IfcActor to assign to the
+            object.
+        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created IfcRelAssignsToResource
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # Add our own crew
+            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+
+            # Add some a tower crane to our crew.
+            crane = ifcopenshell.api.run("resource.add_resource", model,
+                parent_resource=crew, ifc_class="IfcConstructionEquipmentResource", name="Tower Crane 01")
+
+            # Our tower crane will be placed via this physical product.
+            product = ifcopenshell.api.run("root.create_entity", model,
+                ifc_class="IfcBuildingElementProxy", predefined_type="CRANE")
+
+            # Let's assign our crane to the resource. The crane now represents
+            # the resource.
+            ifcopenshell.api.run("resource.assign_resource", model,
+                relating_resource=crane, related_object=product)
+
+            # Undo it.
+            ifcopenshell.api.run("resource.unassign_resource", model,
+                relating_resource=crane, related_object=product)
+        """
         self.file = file
         self.settings = {
-            "relating_resource": None,
-            "related_object": None,
+            "relating_resource": relating_resource,
+            "related_object": related_object,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         for rel in self.settings["related_object"].HasAssignments or []:

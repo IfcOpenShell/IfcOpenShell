@@ -154,15 +154,6 @@ class TestRunGeometryAddRepresntation(NewFile):
         pass
 
 
-class TestSetElementSpecificDisplaySettings(NewFile):
-    def test_opening_elements_display_as_wire(self):
-        ifc = ifcopenshell.file()
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        element = ifc.createIfcOpeningElement()
-        subject.set_element_specific_display_settings(obj, element)
-        assert obj.display_type == "WIRE"
-
-
 class TestSetObjectName(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

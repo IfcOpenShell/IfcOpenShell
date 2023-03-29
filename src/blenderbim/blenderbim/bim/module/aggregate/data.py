@@ -34,7 +34,6 @@ class AggregateData:
         cls.data = {
             "has_relating_object": cls.has_relating_object(),
             "relating_object_label": cls.get_relating_object_label(),
-            "relating_object_id": cls.get_relating_object_id(),
             "has_related_objects": cls.has_related_objects(),
             "related_objects_amount": cls.get_related_objects_amount(),
             "ifc_class": cls.ifc_class(),
@@ -54,12 +53,6 @@ class AggregateData:
         aggregate = cls.get_relating_object()
         if aggregate:
             return f"{aggregate.is_a()}/{aggregate.Name or ''}"
-
-    @classmethod
-    def get_relating_object_id(cls) -> int:
-        aggregate = cls.get_relating_object()
-        if aggregate:
-            return aggregate.id()
 
     @classmethod
     def get_related_objects(cls):

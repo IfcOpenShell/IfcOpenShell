@@ -24,19 +24,43 @@ using namespace ifcopenshell::geometry;
 #include "../profile_helper.h"
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
+	const bool doFillet1 = !!l->FilletRadius();
+#ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
+	const bool doFlangeEdgeRadius = !!l->FlangeEdgeRadius();
+	const bool hasSlope = !!l->FlangeSlope();
+#else
+	const bool doFlangeEdgeRadius = false;
+#endif
+
 	const double x1 = inst->OverallWidth() / 2.0f * length_unit_;
 	const double y = inst->OverallDepth() / 2.0f * length_unit_;
 	const double d1 = inst->WebThickness() / 2.0f  * length_unit_;
-	const double dy1 = inst->FlangeThickness() * length_unit_;
+	const double ft1 = inst->FlangeThickness() * length_unit_;
+#ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
+	const double slope = l->FlangeSlope().get_value_or(0.) * angle_unit_;
+#endif
 
-	bool doFillet1 = !!inst->FilletRadius();
+	double dy = 0.;
 	double f1 = 0.;
-	if ( doFillet1 ) {
+	double f2 = 0.;
+	double fe1 = 0.;
+	double fe2 = 0.;
+	double x2 = x1;
+	double ft2 = ft1;
+
+	if (doFillet1) {
 		f1 = *inst->FilletRadius() * length_unit_;
 	}
+#ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
+	if (doFlangeEdgeRadius) {
+		fe1 = *l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
+	}
+	if (hasSlope) {
+		dy = (x1 - d1) * tan(slope);
+	}
+#endif
 
 	bool doFillet2 = doFillet1;
-	double x2 = x1, dy2 = dy1, f2 = f1;
 
 	// @todo in IFC4 a IfcAsymmetricIShapeProfileDef is not a subtype anymore of IfcIShapeProfileDef!
 	if (inst->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
@@ -47,13 +71,16 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 			f2 = *assym->TopFlangeFilletRadius() * length_unit_;
 		}
 		if (assym->TopFlangeThickness()) {
-			dy2 = *assym->TopFlangeThickness() * length_unit_;
+			ft2 = *assym->TopFlangeThickness() * length_unit_;
 		}
+	} else {
+		f2 = f1;
+		fe2 = fe1;
 	}
 
 	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
 
-	if ( x1 < tol || x2 < tol || y < tol || d1 < tol || dy1 < tol || dy2 < tol) {
+	if (x1 < tol || x2 < tol || y < tol || d1 < tol || ft1 < tol || ft2 < tol) {
 		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
@@ -71,15 +98,15 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 	return profile_helper(m4, {
 		{{-x1,-y}},
 		{{x1,-y}},
-		{{x1,-y + dy1}},
-		{{d1,-y + dy1},{ f1} },
-		{{d1,y - dy2},{f2} },
-		{{x2,y - dy2}},
+		{{x1,-y + ft1}, {fe1}},
+		{{d1,-y + ft1 + dy},{ f1} },
+		{{d1,y - ft2 - dy},{f2} },
+		{{x2,y - ft2}, {fe2}},
 		{{x2,y}},
 		{{-x2,y}},
-		{{-x2,y - dy2}},
-		{{-d1,y - dy2},{f2} },
-		{{-d1,-y + dy1},{f1} },
-		{{-x1,-y + dy1}}
+		{{-x2,y - ft2}, {fe2}},
+		{{-d1,y - ft2 - dy},{f2} },
+		{{-d1,-y + ft1 + dy},{f1} },
+		{{-x1,-y + ft1}, {fe1}}
 	});
 }

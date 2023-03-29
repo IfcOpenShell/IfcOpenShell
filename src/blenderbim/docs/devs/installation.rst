@@ -153,6 +153,7 @@ Blender for the changes to take effect.
 The downside with this approach is that if a new dependency is added, or a
 compiled dependency version requirement has changed, or the build system
 changes, you'll need to fix your setup manually. But this is relatively rare.
+Reviewing the Makefile history, `here <https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.7.0/src/blenderbim/Makefile>`__, is one quick way to see if a dependency has changed.  
 
 .. seealso::
 
@@ -220,6 +221,7 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     dateutil
     isodate
     networkx
+    https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
     deepdiff
     jsonpickle
     ordered_set

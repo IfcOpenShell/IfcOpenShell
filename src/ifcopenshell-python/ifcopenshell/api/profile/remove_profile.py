@@ -18,11 +18,25 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, profile=None):
+        """Removes a profile
+
+        :param profile: The IfcProfileDef to remove.
+        :type profile: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
+                ifc_class="IfcCircleProfileDef")
+            circle = 1.
+            ifcopenshell.api.run("profile.remove_profile", model, profile=circle)
+        """
         self.file = file
-        self.settings = {"profile": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"profile": profile}
 
     def execute(self):
         self.file.remove(self.settings["profile"])

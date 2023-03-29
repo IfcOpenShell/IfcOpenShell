@@ -25,7 +25,7 @@ class TestReassignClass(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         new = ifcopenshell.api.run("root.reassign_class", self.file, product=element, ifc_class="IfcSlab")
         assert len([e for e in self.file]) == 1
-        assert new.id() == 2
+        assert new.id() == 1
         assert new.is_a("IfcSlab")
 
     def test_reassigning_a_predefined_type(self):

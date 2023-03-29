@@ -18,11 +18,21 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, structural_analysis_model=None, attributes=None):
+        """Edits the attributes of an IfcStructuralAnalysisModel
+
+        For more information about the attributes and data types of an
+        IfcStructuralAnalysisModel, consult the IFC documentation.
+
+        :param structural_analysis_model: The IfcStructuralAnalysisModel entity you want to edit
+        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"structural_analysis_model": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"structural_analysis_model": structural_analysis_model, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

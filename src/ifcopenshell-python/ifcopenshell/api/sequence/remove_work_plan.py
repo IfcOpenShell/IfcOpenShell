@@ -20,11 +20,29 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, work_plan=None):
+        """Removes a work plan
+
+        Note that schedules that are grouped under the work plan are not
+        removed.
+
+        :param work_plan: The IfcWorkPlan to remove.
+        :type work_plan: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # This will hold all our construction schedules
+            work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+
+            # And remove it immediately
+            ifcopenshell.api.run("sequence.remove_work_plan", model, work_plan=work_plan)
+        """
         self.file = file
-        self.settings = {"work_plan": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"work_plan": work_plan}
 
     def execute(self):
         # TODO: do a deep purge

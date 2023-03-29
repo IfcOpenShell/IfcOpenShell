@@ -1,0 +1,10 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2023-02-05T12:05:57',(),(),'IfcOpenShell v0.7.0-07ee62eb9','IfcOpenShell v0.7.0-07ee62eb9','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCTEXTSTYLEFONTMODEL('Comic Sans',('Comic Sans'),$,$,$,IFCPOSITIVELENGTHMEASURE(1.));
+ENDSEC;
+END-ISO-10303-21;

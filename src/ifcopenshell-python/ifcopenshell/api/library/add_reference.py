@@ -16,17 +16,43 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, library=None):
+        """Adds a new reference to a library
+
+        A library represents an external data source, such as a database,
+        spreadsheet, API, or something else that contains information related to
+        the IFC project. Within a library, there will be one or more references,
+        such as reference to a particular table or row in a database, or a sheet
+        and row or column in a spreadsheet, a URI in a linked data Brickschema
+        file, 32-bit decimal BACnetObjectIdentifier in a BACnet system, IP
+        address in a network, and so on.
+
+        These references can then be related to IFC elements. You cannot relate
+        an IFC element directly to a library, it must be related to one of the
+        library's references.
+
+        :param library: The IfcLibraryInformation element to add a reference to
+        :type library: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created IfcLibraryReference element
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+
+            # Let's create a reference to a single AHU in our Brickschema dataset
+            reference = ifcopenshell.api.run("library.add_reference", model, library=library)
+            ifcopenshell.api.run("library.edit_reference", model,
+                reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
+        """
         self.file = file
         self.settings = {
-            "library": None,
+            "library": library,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if self.file.schema == "IFC2X3":

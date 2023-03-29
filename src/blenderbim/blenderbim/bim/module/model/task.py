@@ -19,7 +19,6 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
-from ifcopenshell.api.pset.data import Data as PsetData
 
 
 def calculate_quantities(usecase_path, ifc_file, settings):
@@ -43,4 +42,3 @@ def calculate_quantities(usecase_path, ifc_file, settings):
             "StandardWork": ifcopenshell.util.date.ifc2datetime(element.ScheduleDuration).days,
         },
     )
-    PsetData.load(ifc_file, task.id())

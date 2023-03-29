@@ -23,18 +23,57 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, resource=None):
+        """Calculates the work that a resource is used for
+
+        This is an unofficial parametric calculation that may be done on a
+        resource based on careful analysis of the relationships between the
+        costing, scheduling, and resource domains in IFC.
+
+        A resource may store a productivity rate in a property set called
+        EPset_Productivity. This stores three properties:
+
+        * BaseQuantityConsumed - a duration that the resource is consumed for.
+        * BaseQuantityProducedName - what quantity the resource can produce,
+            such as area or volume.
+        * BaseQuantityProducedValue - what value of that quantity the resource
+            can produce during that duration.
+
+        For example, a labour or equipment resource might produce 100m3 of
+        NetVolume every day (i.e. 8 hours are consumed).
+
+        Then, if a resource is assigned to a construction task, and that
+        construction task is assigned to concrete slabs totalling 200m3, we can
+        calculate that the resource consumes 16 hours of work.
+
+        This calculated work is stored against the resource as scheduled work
+        under the resource time data.
+
+        :param resource: The IfcConstructionResource that you want to calculate
+            the work performed.
+        :type resource: ifcopenshell.entity_instance.entity_instance
+        :return None:
+        :rtype None:
+        """
         self.file = file
-        self.settings = {"resource": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"resource": resource}
 
     def execute(self):
         self.productivity = ifcopenshell.util.element.get_psets(
             self.settings["resource"]
         ).get("EPset_Productivity", None)
         if not self.productivity:
-            return
+            # Proposal for Schema - If instance doesn't have any productivity, use the parent's productivity - if any.
+            if not self.settings["resource"].Nests:
+                return
+            else:
+                parent_resource = self.settings["resource"].Nests[0].RelatingObject
+                self.productivity = ifcopenshell.util.element.get_psets(
+                    parent_resource
+                ).get("EPset_Productivity", None)
+                if not self.productivity:
+                    return
+
         unit_consumed = self.get_unit_consumed()
         self.unit_produced_name = self.productivity.get(
             "BaseQuantityProducedName", None

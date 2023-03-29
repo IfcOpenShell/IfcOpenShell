@@ -193,3 +193,52 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleDuration == "P0D"
         assert task_time.ScheduleStart == "2000-01-01T09:00:00"
         assert task_time.ScheduleFinish == "2000-01-01T09:00:00"
+
+    def test_editing_a_start_date_and_duration_with_a_calendar(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.run("sequence.add_work_calendar", self.file)
+        task = self.file.createIfcTask()
+        ifcopenshell.api.run("control.assign_control", self.file, relating_control=calendar, related_object=task)
+        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
+        ifcopenshell.api.run(
+            "sequence.edit_task_time",
+            self.file,
+            task_time=task_time,
+            attributes={
+                "DurationType": "WORKTIME",
+                "ScheduleDuration": "P7D",
+                "ScheduleStart": datetime.datetime(2020, 1, 1),
+            },
+        )
+        assert task_time.ScheduleStart == "2020-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2020-01-07T17:00:00"
+        assert task_time.ScheduleDuration == "P7D"
+
+        work_time = ifcopenshell.api.run(
+            "sequence.add_work_time", self.file, work_calendar=calendar, time_type="WorkingTimes"
+        )
+        pattern = ifcopenshell.api.run(
+            "sequence.assign_recurrence_pattern", self.file, parent=work_time, recurrence_type="WEEKLY"
+        )
+        ifcopenshell.api.run(
+            "sequence.edit_recurrence_pattern",
+            self.file,
+            recurrence_pattern=pattern,
+            attributes={"WeekdayComponent": [1, 2, 3, 4, 5]},
+        )
+        ifcopenshell.api.run(
+            "sequence.add_time_period", self.file, recurrence_pattern=pattern, start_time="09:00", end_time="17:00"
+        )
+        ifcopenshell.api.run(
+            "sequence.edit_task_time",
+            self.file,
+            task_time=task_time,
+            attributes={
+                "DurationType": "WORKTIME",
+                "ScheduleDuration": "P7D",
+                "ScheduleStart": datetime.datetime(2020, 1, 1),
+            },
+        )
+        assert task_time.ScheduleStart == "2020-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2020-01-09T17:00:00"
+        assert task_time.ScheduleDuration == "P7D"

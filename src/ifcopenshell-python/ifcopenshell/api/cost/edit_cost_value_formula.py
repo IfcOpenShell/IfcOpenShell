@@ -23,11 +23,35 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, cost_value=None, formula=None):
+        """Sets a cost value based on a formula, similar to formulas in spreadsheets
+
+        Costs may be made up of many components (e.g. labour, material, waste
+        factor, taxes, etc). This can be easily represented in the form of a
+        formula similar thta would be used in spreadsheet applications.
+
+        For more information, see ifcopenshell.util.cost
+
+        :param cost_value: The IfcCostValue to set the values of
+        :type cost_value: ifcopenshell.entity_instance.entity_instance
+        :param formula: The formula following the language of ifcopenshell.util.cost
+        :type formula: str
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+            item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+
+            value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
+            ifcopenshell.api.run("cost.edit_cost_value_formula", model, cost_value=value,
+                formula="5000 * 1.19")
+        """
         self.file = file
-        self.settings = {"cost_value": None, "formula": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"cost_value": cost_value, "formula": formula or {}}
 
     def execute(self):
         try:

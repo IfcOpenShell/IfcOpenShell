@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.attribute
+
 cobie_type_classes = [
     "IfcDoorStyle",
     "IfcBuildingElementProxyType",
@@ -138,10 +141,38 @@ def get_fmhem_types(ifc_file):
         fmhem_classes = fmhem_classes_ifc4
     for ifc_class in fmhem_classes:
         try:
-            if ifc_class == "IfcEnergyConversionDeviceType":
-                elements += [e for e in ifc_file.by_type(ifc_class) if not e.is_a("IfcCooledBeamType")]
-            else:
-                elements += ifc_file.by_type(ifc_class)
+            elements += [e for e in ifc_file.by_type(ifc_class) if e.is_a() not in fmhem_excluded_classes]
         except:
             pass
     return elements
+
+
+def get_fmhem_classes(schema="IFC4"):
+    results = {}
+
+    def get_fmhem_class(declaration):
+        if declaration.name() in fmhem_excluded_classes:
+            pass
+        elif declaration.is_abstract():
+            pass
+        else:
+            types = []
+            for attribute in declaration.all_attributes():
+                if attribute.name() == "PredefinedType":
+                    types = list(ifcopenshell.util.attribute.get_enum_items(attribute))
+                    if "NOTDEFINED" in types:
+                        types.remove("NOTDEFINED")
+            results[declaration.name()] = types
+
+        for subtype in declaration.subtypes():
+            get_fmhem_class(subtype)
+
+    if schema == "IFC4":
+        classes = fmhem_classes_ifc4
+    elif schema == "IFC2X3":
+        classes = fmhem_classes_ifc2x3
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema)
+    for ifc_class in classes:
+        declaration = schema.declaration_by_name(ifc_class)
+        get_fmhem_class(declaration)
+    return results

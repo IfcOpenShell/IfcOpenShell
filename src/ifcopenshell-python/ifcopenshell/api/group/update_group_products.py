@@ -21,14 +21,32 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, group=None, products=None):
+        """Sets a group products to be an explicit list of products
+
+        Any previous products assigned to that group will have their assignment
+        removed.
+
+        :param products: A list of IfcProduct elements to assign to the group
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :param group: The IfcGroup to assign the products to
+        :type group: ifcopenshell.entity_instance.entity_instance
+        :return: The IfcRelAssignsToGroup relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
+            ifcopenshell.api.run("group.update_group_products", model,
+                products=model.by_type("IfcFurniture"), group=group)
+        """
         self.file = file
         self.settings = {
-            "group": None,
-            "products": None,
+            "group": group,
+            "products": products,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if not self.settings["group"].IsGroupedBy:

@@ -18,6 +18,8 @@
 
 import math
 import numpy as np
+import ifcopenshell
+import ifcopenshell.util.unit
 
 
 def dms2dd(degrees, minutes, seconds, ms=0):
@@ -50,6 +52,45 @@ def xyz2enh(x, y, z, eastings, northings, orthogonal_height, x_axis_abscissa, x_
     northings = (b * x) + (a * y) + northings
     height = z + orthogonal_height
     return (eastings, northings, height)
+
+
+def auto_z2e(ifc_file, z):
+    """Convert a Z coordinate to an elevation using model georeferencing data
+
+    The necessary georeferencing map conversion is automatically detected from
+    the IFC map conversion parameters present in the IFC model. If no map
+    conversion is present, then the Z coordinate is returned unchanged.
+
+    :param ifc_file: The IFC file
+    :type ifc_file: ifcopenshell.file.file
+    :param z: The Z local engineering coordinate provided in project length units.
+    :type z: float
+    :return: The elevation in project length units.
+    :rtype: float
+    """
+    try:
+        conversion = ifc_file.by_type("IfcMapConversion")
+    except:
+        return z
+    if not conversion or not conversion[0].OrthogonalHeight:
+        return z
+    conversion = conversion[0]
+    h = conversion.OrthogonalHeight
+    map_unit = conversion.TargetCRS.MapUnit
+    if map_unit:
+        project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
+        h = ifcopenshell.util.unit.convert(
+            h,
+            getattr(map_unit, "Prefix", None),
+            map_unit.Name,
+            getattr(project_unit, "Prefix", None),
+            project_unit.Name,
+        )
+    return z2e(z, h)
+
+
+def z2e(z, h):
+    return z + h
 
 
 def enh2xyz(e, n, h, eastings, northings, orthogonal_height, x_axis_abscissa, x_axis_ordinate, scale=None):
@@ -125,3 +166,24 @@ def yaxis2angle(x, y):
     elif angle > 180:
         angle -= 360
     return angle
+
+
+def get_grid_north(ifc_file):
+    try:
+        conversion = ifc_file.by_type("IfcMapConversion")[0]
+    except:
+        return 0
+    if not conversion.XAxisAbscissa or not conversion.XAxisOrdinate:
+        return 0
+    return xaxis2angle(conversion.XAxisAbscissa, conversion.XAxisOrdinate)
+
+
+def get_true_north(ifc_file):
+    try:
+        for context in ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            if not context.TrueNorth:
+                continue
+            return yaxis2angle(*context.TrueNorth.DirectionRatios[0:2])
+    except:
+        return 0
+    return 0

@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcSverchok.
 #
@@ -24,9 +23,12 @@ import ifcsverchok.helper
 from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+import logging
+logger = logging.getLogger('sverchok.ifc')
 
 
 def update_usecase(self, context):
+    print("API - running update usecase!")
     module_usecase = self.get_module_usecase()
     if module_usecase:
         self.generate_node(*module_usecase)
@@ -98,8 +100,8 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
 
 
 def register():
-    bpy.utils.register_class(SvIfcTooltip)
     bpy.utils.register_class(SvIfcApi)
+    bpy.utils.register_class(SvIfcTooltip)
 
 
 def unregister():

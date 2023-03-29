@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcSverchok.
 #
@@ -20,30 +19,48 @@
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
+from sverchok.data_structure import updateNode, ensure_min_nesting, flatten_data
 
 
-class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+class SvIfcReadEntity(
+    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
+):
     bl_idname = "SvIfcReadEntity"
     bl_label = "IFC Read Entity"
-    file: StringProperty(name="file", update=updateNode)
-    entity: StringProperty(name="entity", update=updateNode)
+    entity: StringProperty(name="Entity Id", update=updateNode)
     current_ifc_class: StringProperty(name="current_ifc_class")
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "file").prop_name = "file"
         self.inputs.new("SvStringsSocket", "entity").prop_name = "entity"
         self.outputs.new("SvStringsSocket", "id")
         self.outputs.new("SvStringsSocket", "is_a")
 
+    def draw_buttons(self, context, layout):
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = (
+            "Decompose an IfcEntity into its attributes. Takes one entity id as input"
+        )
+
     def process(self):
-        self.sv_input_names = ["file", "entity"]
-        ifc_class = self.inputs["entity"].sv_get()[0][0]
-        if ifc_class:
-            ifc_class = ifc_class.is_a()
-            file = self.inputs["file"].sv_get()[0][0]
+        self.sv_input_names = ["entity"]
+        entity_id = flatten_data(self.inputs["entity"].sv_get(), target_level=1)
+        if not entity_id[0]:
+            return
+        if len(entity_id) > 1:
+            raise Exception("Only one entity can be read at a time")
+        self.file = SvIfcStore.get_file()
+        try:
+            entity = self.file.by_id(entity_id[0])
+        except Exception as e:
+            raise Exception("Instance with id {} not found".format(entity_id), e)
+
+        if entity:
+            ifc_class = entity.is_a()
+            file = SvIfcStore.get_file()
             if file:
                 schema_name = file.wrapped_data.schema
             else:
@@ -53,7 +70,12 @@ class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
 
             if ifc_class != self.current_ifc_class:
                 self.generate_outputs(ifc_class)
-        super().process()
+
+        self.outputs["id"].sv_set([entity.id()])
+        self.outputs["is_a"].sv_set([entity.is_a()])
+        for i in range(0, self.entity_schema.attribute_count()):
+            name = self.entity_schema.attribute_by_index(i).name()
+            self.outputs[name].sv_set([entity[i]])
 
     def generate_outputs(self, ifc_class):
         while len(self.outputs) > 2:
@@ -62,13 +84,6 @@ class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
             name = self.entity_schema.attribute_by_index(i).name()
             self.outputs.new("SvStringsSocket", name).prop_name = name
         self.current_ifc_class = ifc_class
-
-    def process_ifc(self, file, entity):
-        self.outputs["id"].sv_set([[entity.id()]])
-        self.outputs["is_a"].sv_set([[entity.is_a()]])
-        for i in range(0, self.entity_schema.attribute_count()):
-            name = self.entity_schema.attribute_by_index(i).name()
-            self.outputs[name].sv_set([[entity[i]]])
 
 
 def register():

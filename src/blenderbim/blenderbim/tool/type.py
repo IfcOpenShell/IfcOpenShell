@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.geometry
@@ -60,6 +61,10 @@ class Type(blenderbim.core.tool.Type):
                 return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
     @classmethod
+    def get_model_types(cls):
+        return tool.Ifc.get().by_type("IfcElementType")
+
+    @classmethod
     def get_object_data(cls, obj):
         return obj.data
 
@@ -75,11 +80,19 @@ class Type(blenderbim.core.tool.Type):
         return representation.ContextOfItems
 
     @classmethod
+    def get_type_occurrences(cls, element_type):
+        return ifcopenshell.util.element.get_types(element_type)
+
+    @classmethod
     def has_material_usage(cls, element):
         material = ifcopenshell.util.element.get_material(element)
         if material:
             return "Usage" in material.is_a()
         return False
+
+    @classmethod
+    def remove_object(cls, obj):
+        bpy.data.objects.remove(obj)
 
     @classmethod
     def run_geometry_add_representation(
@@ -101,6 +114,7 @@ class Type(blenderbim.core.tool.Type):
         cls, obj=None, representation=None, should_reload=None, is_global=None
     ):
         return blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,

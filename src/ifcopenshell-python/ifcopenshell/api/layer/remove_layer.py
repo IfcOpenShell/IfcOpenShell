@@ -18,11 +18,26 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, layer=None):
+        """Removes a layer
+
+        All representation items assigned to the layer will remain, but the
+        relationship to the layer will be removed.
+
+        :param layer: The IfcPresentationLayerAssignment entity to remove
+        :type layer: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
+            ifcopenshell.api.run("layer.remove_layer", model, layer=layer)
+        """
         self.file = file
-        self.settings = {"layer": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"layer": layer}
 
     def execute(self):
         self.file.remove(self.settings["layer"])

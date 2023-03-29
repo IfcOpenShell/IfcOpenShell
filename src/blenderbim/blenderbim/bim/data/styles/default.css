@@ -19,11 +19,12 @@
  */
 
 * { stroke-linecap: round; stroke-linejoin: round; }
-text { fill: black; stroke: none; }
+text, tspan { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT', 'DejaVu Sans Condensed', 'Liberation Sans', 'Arial Narrow', 'Arial'; font-size: 4.13px; }
 .cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; fill-rule: evenodd; }
 .projection { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
+.IfcGeographicElement { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 1; }
 .PredefinedType-LINEWORK { stroke: black; stroke-width: 0.25; }
 .PredefinedType-BACKGROUND { stroke: black; stroke-width: 0.18; }
 .PredefinedType-GRID { marker-start: url(#grid-marker); marker-end: url(#grid-marker); }
@@ -32,18 +33,27 @@ text { fill: black; stroke: none; }
 .PredefinedType-PLANLEVEL { marker-end: url(#plan-level-marker); }
 .PredefinedType-DIMENSION { marker-start: url(#dimension-marker-start); marker-end: url(#dimension-marker-end); }
 .PredefinedType-ANGLE { marker-start: url(#angle-marker-start); marker-end: url(#angle-marker-end); }
-.PredefinedType-RADIUS { marker-end: url(#radius-marker-end); }
+.PredefinedType-RADIUS { marker-end: url(#fall-marker-end); }
+.PredefinedType-FALL { marker-end: url(#radius-marker-end); }
+.PredefinedType-SLOPEANGLE { marker-end: url(#radius-marker-end); }
+.PredefinedType-SLOPEPERCENT { marker-end: url(#radius-marker-end); }
+.PredefinedType-SLOPEFRACTION { marker-end: url(#radius-marker-end); }
 .PredefinedType-DIAMETER { marker-start: url(#diameter-marker-start); marker-end: url(#diameter-marker-end); }
 .PredefinedType-HIDDENLINE { stroke-dasharray: 3, 2; }
 .PredefinedType-STAIRARROW { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
 .PredefinedType-BOUNDARY { fill: none; stroke: red; stroke-width: 1; stroke-dasharray: 12, 4, 3, 4, 3, 4; }
-.PredefinedType-BATTING { marker-start: url(#batting); stroke: none; }
 .PredefinedType-SEALANT { fill: url(#crosshatch1); stroke-width: 0.25; }
-.PredefinedType-FILLAREA { fill: white; stroke: none; }
+.PredefinedType-FILLAREA { fill: white; stroke: black; }
 .PredefinedType-BREAKLINE { fill: none; stroke: black; stroke-width: 0.25; marker-mid: url(#breakline-marker); }
 .PredefinedType-TEXT { fill: black; stroke: none; }
 path.PredefinedType-TEXTLEADER { marker-end: url(#leader-marker); }
-text.PredefinedType-TEXTLEADER { fill: black; stroke: none; }
+text.PredefinedType-TEXTLEADER, tspan.PredefinedType-TEXTLEADER { fill: black; stroke: none; }
+text.title, tspan.title { /* 7mm */ font-size: 11.55px; }
+text.header, tspan.header { /* 5mm */ font-size: 8.25px; }
+text.large, tspan.large { /* 3.5mm */ font-size: 5.78px; }
+text.regular, tspan.regular { /* 2.5mm */ font-size: 4.13px; }
+text.small, tspan.small { /* 1.8mm */ font-size: 2.97px; }
+text.GRID, tspan.GRID { /* 5mm */ font-size: 8.25px; }
 .material-blank { fill: white; }
 .material-diagonal1 { fill: url(#diagonal1); }
 .material-diagonal2 { fill: url(#diagonal2); }

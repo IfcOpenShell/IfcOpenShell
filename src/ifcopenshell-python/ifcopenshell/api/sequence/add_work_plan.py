@@ -22,15 +22,45 @@ from datetime import datetime
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, name=None, predefined_type="NOTDEFINED", start_time=None):
+        """Add a new work plan
+
+        A work plan is a group of work schedules. Since work schedules may have
+        different purposes, such as for maintenance or construction scheduling,
+        baseline comparison, or phasing, work plans can be used to group related
+        work schedules. At a minimum, it is recommended to use work plans to
+        indicate whether the work schedules are for facility management or for
+        construction scheduling.
+
+        :param name: The name of the work plan. Recommended to be "Maintenance"
+            or "Construction" for the two main purposes.
+        :type name: str, optional
+        :param predefined_type: The type of work plan, used for baselining.
+            Leave as "NOTDEFINED" if unsure.
+        :type predefined_type: str
+        :param start_time: The earliest start time when the schedules grouped
+            within the work plan are relevant.
+        :type start_time: str,datetime.time
+        :return: The newly created IfcWorkPlan
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # This will hold all our construction schedules
+            work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+
+            # This is one of our schedules in our work plan.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model,
+                name="Construction Schedule A", work_plan=work_plan)
+        """
         self.file = file
         self.settings = {
-            "name": None,
-            "predefined_type": "NOTDEFINED",
-            "start_time": datetime.now(),
+            "name": name,
+            "predefined_type": predefined_type,
+            "start_time": start_time or datetime.now(),
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         work_plan = ifcopenshell.api.run(

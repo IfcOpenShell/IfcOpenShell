@@ -20,11 +20,16 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, load_case=None):
+        """Removes a structural load case
+
+        :param load_case: The IfcStructuralLoadCase to remove.
+        :type load_case: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"load_case": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"load_case": load_case}
 
     def execute(self):
         # TODO: do a deep purge

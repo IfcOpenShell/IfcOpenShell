@@ -18,11 +18,32 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, work_calendar=None, attributes=None):
+        """Edits the attributes of an IfcWorkCalendar
+
+        For more information about the attributes and data types of an
+        IfcWorkCalendar, consult the IFC documentation.
+
+        :param work_calendar: The IfcWorkCalendar entity you want to edit
+        :type work_calendar: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's create a new calendar.
+            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model, name="5 Day Week")
+
+            # Let's give it a description
+            ifcopenshell.api.run("sequence.edit_work_calendar", model,
+                work_calendar=calendar, attributes={"Description": "Monday to Friday 8 hour days"})
+        """
         self.file = file
-        self.settings = {"work_calendar": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"work_calendar": work_calendar, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

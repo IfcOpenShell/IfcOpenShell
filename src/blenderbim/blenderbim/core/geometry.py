@@ -79,13 +79,16 @@ def add_representation(
 
 
 def switch_representation(
+    ifc,
     geometry,
     obj=None,
     representation=None,
     should_reload=True,
     is_global=True,
     should_sync_changes_first=False,
+    apply_openings=True,
 ):
+    """Function can switch to representation that wasn't yet assigned to that object. See #2766."""
     if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
         representation_id = geometry.get_representation_id(representation)
         geometry.run_geometry_update_representation(obj=obj)
@@ -96,7 +99,7 @@ def switch_representation(
     existing_data = geometry.get_representation_data(representation)
 
     if should_reload or not existing_data:
-        data = geometry.import_representation(obj, representation)
+        data = geometry.import_representation(obj, representation, apply_openings=apply_openings)
         geometry.rename_object(data, geometry.get_representation_name(representation))
         geometry.link(representation, data)
     else:
@@ -108,6 +111,7 @@ def switch_representation(
         geometry.delete_data(existing_data)
 
     geometry.clear_modifiers(obj)
+    geometry.clear_cache(ifc.get_entity(obj))
 
 
 def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_first=False):
@@ -115,8 +119,12 @@ def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_fi
 
 
 def remove_representation(ifc, geometry, obj=None, representation=None):
+    """Consider changing obj representation before using the function,
+    otherwise it will replace object with empty."""
+
     element = ifc.get_entity(obj)
     type = geometry.get_element_type(element)
+    data = None
     if type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
@@ -136,6 +144,8 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
             geometry.replace_object_with_empty(obj)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
         ifc.run("geometry.remove_representation", representation=representation)
+    if data:
+        geometry.delete_data(data)
 
 
 def select_connection(geometry, connection=None):

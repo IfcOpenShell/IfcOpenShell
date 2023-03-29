@@ -22,6 +22,7 @@ import ifcopenshell
 import ifcopenshell.api
 import blenderbim.bim.schema
 import blenderbim.bim.handler
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -223,7 +224,7 @@ class SavePsetTemplateFile(bpy.types.Operator):
     def execute(self, context):
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         blenderbim.bim.handler.purge_module_data()
-        blenderbim.bim.schema.reload()
+        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
         return {"FINISHED"}
 
 

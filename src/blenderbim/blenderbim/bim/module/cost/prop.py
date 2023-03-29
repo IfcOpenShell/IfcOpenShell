@@ -18,10 +18,10 @@
 
 import bpy
 import ifcopenshell.api
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.classification.data import CostClassificationsData
-from ifcopenshell.api.cost.data import Data
-from ifcopenshell.api.pset.data import Data as PsetData
+from blenderbim.bim.module.cost.data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -36,135 +36,46 @@ from bpy.props import (
 )
 
 
-quantitytypes_enum = []
-productquantitynames_enum = []
-productquantitynames_count = []
-processquantitynames_enum = []
-processquantitynames_id = 0
-resourcequantitynames_enum = []
-resourcequantitynames_id = 0
-scheduleofrates_enum = []
-
-
-def purge():
-    global quantitytypes_enum
-    global productquantitynames_enum
-    global productquantitynames_count
-    global processquantitynames_enum
-    global processquantitynames_id
-    global resourcequantitynames_enum
-    global resourcequantitynames_id
-    global scheduleofrates_enum
-    quantitytypes_enum = []
-    productquantitynames_enum = []
-    productquantitynames_count = []
-    processquantitynames_enum = []
-    processquantitynames_id = 0
-    resourcequantitynames_enum = []
-    resourcequantitynames_id = 0
-    scheduleofrates_enum = []
-
-
 def get_schedule_of_rates(self, context):
-    global scheduleofrates_enum
-    if len(scheduleofrates_enum) == 0:
-        scheduleofrates_enum.extend(
-            (str(ifc_definition_id), schedule["Name"] or "Unnamed", "")
-            for ifc_definition_id, schedule in Data.cost_schedules.items()
-            if schedule["PredefinedType"] == "SCHEDULEOFRATES"
-        )
-    return scheduleofrates_enum
+    if not CostItemRatesData.is_loaded:
+        CostItemRatesData.load()
+    return CostItemRatesData.data["schedule_of_rates"]
 
 
 def update_schedule_of_rates(self, context):
-    bpy.ops.bim.load_schedule_of_rates(cost_schedule=int(self.schedule_of_rates))
+    tool.Cost.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(self.schedule_of_rates)))
 
 
 def get_quantity_types(self, context):
-    global quantitytypes_enum
-    if len(quantitytypes_enum) == 0 and IfcStore.get_schema():
-        quantitytypes_enum.extend(
-            [
-                (t.name(), t.name(), "")
-                for t in IfcStore.get_schema().declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()
-            ]
-        )
-    return quantitytypes_enum
+    if not CostSchedulesData.is_loaded:
+        CostSchedulesData.load()
+    return CostSchedulesData.data["quantity_types"]
 
 
 def get_product_quantity_names(self, context):
-    global productquantitynames_enum
-    global productquantitynames_count
-    ifc_file = IfcStore.get_file()
-    total_selected_objects = len(context.selected_objects)
-    if total_selected_objects != productquantitynames_count or total_selected_objects == 1:
-        productquantitynames_enum = []
-        productquantitynames_count = total_selected_objects
-        names = set()
-        for obj in context.selected_objects:
-            element_id = obj.BIMObjectProperties.ifc_definition_id
-            if not element_id:
-                continue
-            potential_names = set()
-            if element_id not in PsetData.products:
-                PsetData.load(ifc_file, element_id)
-            for qto_id in PsetData.products[element_id]["qtos"]:
-                qto = PsetData.qtos[qto_id]
-                [potential_names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
-            names = names.intersection(potential_names) if names else potential_names
-        productquantitynames_enum.extend([(n, n, "") for n in names])
-    return productquantitynames_enum
+    if not CostItemQuantitiesData.is_loaded:
+        CostItemQuantitiesData.load()
+    return CostItemQuantitiesData.data["product_quantity_names"]
 
 
 def get_process_quantity_names(self, context):
-    global processquantitynames_enum
-    global processquantitynames_id
-    ifc_file = IfcStore.get_file()
-    active_task_index = context.scene.BIMWorkScheduleProperties.active_task_index
-    total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
-    if not total_tasks or active_task_index >= total_tasks:
-        return []
-    ifc_definition_id = context.scene.BIMTaskTreeProperties.tasks[active_task_index].ifc_definition_id
-    if processquantitynames_id != ifc_definition_id:
-        processquantitynames_enum = []
-        processquantitynames_id = ifc_definition_id
-        names = set()
-        if ifc_definition_id not in PsetData.products:
-            PsetData.load(ifc_file, ifc_definition_id)
-        for qto_id in PsetData.products[ifc_definition_id]["qtos"]:
-            qto = PsetData.qtos[qto_id]
-            [names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
-        processquantitynames_enum.extend([(n, n, "") for n in names])
-    return processquantitynames_enum
+    if not CostItemQuantitiesData.is_loaded:
+        CostItemQuantitiesData.load()
+    return CostItemQuantitiesData.data["process_quantity_names"]
 
 
 def get_resource_quantity_names(self, context):
-    global resourcequantitynames_enum
-    global resourcequantitynames_id
-    ifc_file = IfcStore.get_file()
-    active_resource_index = context.scene.BIMResourceProperties.active_resource_index
-    total_resources = len(context.scene.BIMResourceTreeProperties.resources)
-    if not total_resources or active_resource_index >= total_resources:
-        return []
-    ifc_definition_id = context.scene.BIMResourceTreeProperties.resources[active_resource_index].ifc_definition_id
-    if resourcequantitynames_id != ifc_definition_id:
-        resourcequantitynames_enum = []
-        resourcequantitynames_id = ifc_definition_id
-        names = set()
-        if ifc_definition_id not in PsetData.products:
-            PsetData.load(ifc_file, ifc_definition_id)
-        for qto_id in PsetData.products[ifc_definition_id]["qtos"]:
-            qto = PsetData.qtos[qto_id]
-            [names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
-        resourcequantitynames_enum.extend([(n, n, "") for n in names])
-    return resourcequantitynames_enum
+    if not CostItemQuantitiesData.is_loaded:
+        CostItemQuantitiesData.load()
+    return CostItemQuantitiesData.data["resource_quantity_names"]
 
 
 def update_active_cost_item_index(self, context):
-    if Data.cost_schedules[self.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
-        bpy.ops.bim.load_cost_item_types()
+    schedule = tool.Ifc.get().by_id(self.active_cost_schedule_id)
+    if schedule.PredefinedType == "SCHEDULEOFRATES":
+        tool.Cost.load_cost_item_types()
     else:
-        bpy.ops.bim.load_cost_item_quantities()
+        tool.Cost.load_cost_item_quantities()
     CostClassificationsData.load()
 
 
@@ -178,7 +89,6 @@ def update_cost_item_identification(self, context):
         self.file,
         **{"cost_item": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
     )
-    Data.load(self.file)
     if props.active_cost_item_id == self.ifc_definition_id:
         attribute = props.cost_item_attributes.get("Identification")
         attribute.string_value = self.identification
@@ -194,10 +104,15 @@ def update_cost_item_name(self, context):
         self.file,
         **{"cost_item": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
     )
-    Data.load(IfcStore.get_file())
     if props.active_cost_item_id == self.ifc_definition_id:
         attribute = props.cost_item_attributes.get("Name")
         attribute.string_value = self.name
+
+
+def get_schedule_predefined_types(self, context):
+    if not CostSchedulesData.is_loaded:
+        CostSchedulesData.load()
+    return CostSchedulesData.data["predefined_types"]
 
 
 class CostItem(PropertyGroup):
@@ -220,7 +135,27 @@ class CostItemType(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+def update_cost_item_parent(self, context):
+    cost_item = tool.Cost.get_highlighted_cost_item()
+    tool.Cost.toggle_cost_item_parent(cost_item=cost_item)
+
+
+def update_active_cost_item_elements(self, context):
+    bpy.ops.bim.load_cost_item_element_quantities()
+
+
+def update_active_cost_item_tasks(self, context):
+    bpy.ops.bim.load_cost_item_task_quantities()
+
+
+def update_active_cost_item_resources(self, context):
+    bpy.ops.bim.load_cost_item_resource_quantities()
+
+
 class BIMCostProperties(PropertyGroup):
+    cost_schedule_predefined_types: EnumProperty(
+        items=get_schedule_predefined_types, name="Predefined Type", default=None
+    )
     is_cost_update_enabled: BoolProperty(name="Is Cost Update Enabled", default=True)
     cost_schedule_attributes: CollectionProperty(name="Cost Schedule Attributes", type=Attribute)
     is_editing: StringProperty(name="Is Editing")
@@ -246,6 +181,7 @@ class BIMCostProperties(PropertyGroup):
         name="Cost Types",
     )
     cost_category: StringProperty(name="Cost Category")
+    fixed_cost_value: FloatProperty(name="Fixed Cost Value")
     active_cost_value_id: IntProperty(name="Active Cost Item Value Id")
     cost_value_editing_type: StringProperty(name="Cost Value Editing Type")
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
@@ -268,3 +204,12 @@ class BIMCostProperties(PropertyGroup):
     cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
     active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
     contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")
+    product_cost_items: CollectionProperty(name="Product Cost Items", type=CostItem)
+    active_product_cost_item_index: IntProperty(name="Active Product Cost Item Index")
+    enable_reorder: BoolProperty(name="Enable Reorder", default=False)
+    show_nested_elements: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_elements)
+    show_nested_tasks: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_tasks)
+    show_nested_resources: BoolProperty(
+        name="Show Nested Tasks", default=False, update=update_active_cost_item_resources
+    )
+    change_cost_item_parent: BoolProperty(name="Change Cost Item Parent", default=False, update=update_cost_item_parent)

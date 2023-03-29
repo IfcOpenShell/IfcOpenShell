@@ -18,11 +18,36 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, parent=None, cost_value=None):
+        """Removes a cost value
+
+        The cost value may be assigned either to a cost item, a construction
+        resource, or another cost value (i.e. it is a subcomponent of a cost)
+
+        :param parent: The IfcCostItem, IfcConstructionResource, or IfcCostValue
+            that the IfcCostValue is assigned to.
+        :type parent: ifcopenshell.entity_instance.entity_instance
+        :param cost_value: The IfcCostValue that you want to remove
+        :type parent: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+            item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+
+            # This cost item will have a unit cost of 5 and a volume of 3
+            value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
+            ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+                attributes={"AppliedValue": 5.0})
+
+            ifcopenshell.api.run("cost.remove_cost_value", model, parent=item, cost_value=value)
+        """
         self.file = file
-        self.settings = {"parent": None, "cost_value": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"parent": parent, "cost_value": cost_value}
 
     def execute(self):
         if len(self.file.get_inverse(self.settings["cost_value"])) == 1:

@@ -26,6 +26,7 @@ classes = (
     operator.AddSummaryTask,
     operator.AddTask,
     operator.AddTaskColumn,
+    operator.AddTaskBars,
     operator.AddTimePeriod,
     operator.AddWorkCalendar,
     operator.AddWorkPlan,
@@ -44,6 +45,7 @@ classes = (
     operator.CalculateTaskDuration,
     operator.ContractTask,
     operator.CopyTaskAttribute,
+    operator.CopyTask,
     operator.DisableEditingSequence,
     operator.DisableEditingTask,
     operator.DisableEditingTaskTime,
@@ -77,13 +79,14 @@ classes = (
     operator.ExportMSP,
     operator.ExportP6,
     operator.GenerateGanttChart,
+    operator.GuessDateRange,
     operator.ImportMSP,
+    operator.ImportCSV,
     operator.ImportP6,
     operator.ImportP6XER,
     operator.ImportPP,
     operator.LoadTaskInputs,
     operator.LoadTaskOutputs,
-    operator.LoadNestedTasksOutputs,
     operator.LoadTaskProperties,
     operator.LoadTaskResources,
     operator.RecalculateSchedule,
@@ -98,6 +101,7 @@ classes = (
     operator.SelectTaskRelatedProducts,
     operator.SelectTaskRelatedInputs,
     operator.SetTaskSortColumn,
+    operator.SetupDefaultTaskColumns,
     operator.UnassignLagTime,
     operator.UnassignPredecessor,
     operator.UnassignProcess,
@@ -107,19 +111,23 @@ classes = (
     operator.UnassignWorkSchedule,
     operator.VisualiseWorkScheduleDate,
     operator.VisualiseWorkScheduleDateRange,
+    operator.LoadTaskAnimationColors,
+    operator.DisableEditingTaskAnimationColors,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
     prop.TaskResource,
     prop.TaskProduct,
+    prop.ISODuration,
     prop.BIMWorkScheduleProperties,
     prop.BIMTaskTreeProperties,
+    prop.BIMTaskTypeColor,
+    prop.BIMAnimationProperties,
     prop.WorkCalendar,
     prop.RecurrenceComponent,
     prop.BIMWorkCalendarProperties,
     prop.DatePickerProperties,
     prop.BIMDateTextProperties,
-    prop.BIMDuration,
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
@@ -128,9 +136,10 @@ classes = (
     ui.BIM_UL_task_inputs,
     ui.BIM_UL_task_resources,
     ui.BIM_UL_task_outputs,
-    ui.BIM_UL_nested_task_outputs,
     ui.BIM_UL_tasks,
-    ui.BIM_PT_SequenceToolKit,
+    ui.BIM_PT_4D_Tools,
+    ui.BIM_PT_Task_Bar_Creator,
+    ui.BIM_UL_animation_colors,
 )
 
 
@@ -140,6 +149,7 @@ def menu_func_export(self, context):
 
 
 def menu_func_import(self, context):
+    self.layout.operator(operator.ImportCSV.bl_idname, text="Work Schedule (.csv)")
     self.layout.operator(operator.ImportP6.bl_idname, text="P6 (.xml)")
     self.layout.operator(operator.ImportP6XER.bl_idname, text="P6 (.xer)")
     self.layout.operator(operator.ImportPP.bl_idname, text="Powerproject (.pp)")
@@ -151,8 +161,8 @@ def register():
     bpy.types.Scene.BIMWorkScheduleProperties = bpy.props.PointerProperty(type=prop.BIMWorkScheduleProperties)
     bpy.types.Scene.BIMTaskTreeProperties = bpy.props.PointerProperty(type=prop.BIMTaskTreeProperties)
     bpy.types.Scene.BIMWorkCalendarProperties = bpy.props.PointerProperty(type=prop.BIMWorkCalendarProperties)
+    bpy.types.Scene.BIMAnimationProperties = bpy.props.PointerProperty(type=prop.BIMAnimationProperties)
     bpy.types.Scene.DatePickerProperties = bpy.props.PointerProperty(type=prop.DatePickerProperties)
-    bpy.types.Scene.BIMDuration = bpy.props.PointerProperty(type=prop.BIMDuration)
     bpy.types.TextCurve.BIMDateTextProperties = bpy.props.PointerProperty(type=prop.BIMDateTextProperties)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
@@ -164,7 +174,7 @@ def unregister():
     del bpy.types.Scene.BIMTaskTreeProperties
     del bpy.types.Scene.BIMWorkCalendarProperties
     del bpy.types.Scene.DatePickerProperties
-    del bpy.types.Scene.BIMDuration
+    del bpy.types.Scene.BIMAnimationProperties
     del bpy.types.TextCurve.BIMDateTextProperties
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)

@@ -1,0 +1,13 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2022-12-15T13:40:58',(),(),'IfcOpenShell v0.7.0-fa6bbf2d','IfcOpenShell v0.7.0-fa6bbf2d','');
+FILE_SCHEMA(('IFC2X3'));
+ENDSEC;
+DATA;
+#1=IFCCARTESIANPOINT((0.,0.,0.));
+#2=IFCCARTESIANPOINT((1.,0.,0.));
+#3=IFCCARTESIANPOINT((1.,1.));
+#4=IFCBSPLINECURVE(1,(#1,#2,#3),.POLYLINE_FORM.,.F.,.F.);
+ENDSEC;
+END-ISO-10303-21;

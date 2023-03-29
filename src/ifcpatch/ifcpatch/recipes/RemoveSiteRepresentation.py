@@ -18,11 +18,20 @@
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger):
+        """Removes any 3D geometry associated with a site or multiple sites
+
+        If no sites or no site geometry is present, nothing happens.
+
+        Example:
+
+        .. code:: python
+
+            ifcpatch.execute({"input": model, "recipe": "RemoveSiteRepresentation", "arguments": []})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
 
     def patch(self):
         project = self.file.by_type("IfcProject")[0]

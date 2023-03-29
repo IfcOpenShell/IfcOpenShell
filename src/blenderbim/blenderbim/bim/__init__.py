@@ -91,6 +91,7 @@ classes = [
     operator.RemoveIfcFile,
     operator.SelectDataDir,
     operator.SelectIfcFile,
+    operator.ReloadSelectedIfcFile,
     operator.SelectSchemaDir,
     operator.SelectURIAttribute,
     operator.EditBlenderCollection,
@@ -116,6 +117,7 @@ classes = [
     ui.BIM_PT_project_info,
     ui.BIM_PT_project_setup,
     ui.BIM_PT_collaboration,
+    ui.BIM_PT_selection,
     ui.BIM_PT_geometry,
     ui.BIM_PT_services,
     ui.BIM_PT_structural,
@@ -150,7 +152,7 @@ def register():
     bpy.app.handlers.redo_post.append(handler.redo_post)
     bpy.app.handlers.load_post.append(handler.setDefaultProperties)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
-    bpy.app.handlers.save_pre.append(handler.ensureIfcExported)
+    bpy.app.handlers.save_post.append(handler.ensureIfcExported)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
     bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
     bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
@@ -172,7 +174,7 @@ def unregister():
         bpy.utils.unregister_class(cls)
     bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
-    bpy.app.handlers.save_pre.remove(handler.ensureIfcExported)
+    bpy.app.handlers.save_post.remove(handler.ensureIfcExported)
     del bpy.types.Scene.BIMProperties
     del bpy.types.Object.BIMObjectProperties
     del bpy.types.Material.BIMObjectProperties

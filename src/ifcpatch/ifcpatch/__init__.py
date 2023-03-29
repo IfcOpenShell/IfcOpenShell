@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # IfcPatch - IFC patching utiliy
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2023 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcPatch.
 #
@@ -28,6 +28,44 @@ import importlib
 
 
 def execute(args):
+    """Execute a patch recipe
+
+    The details of how the patch recipe is executed depends on the definition of
+    the recipe, as well as the arguments passed to the recipe. See the
+    documentation for each patch recipe separately to understand more.
+
+    :param args: A dictionary of arguments, corresponding to the parameters
+        listed subsequent to this in this docstring.
+    :type args: dict
+    :param input: A filepath to the incoming IFC file.
+    :type input: str
+    :param file: An IFC model to apply the patch recipe to.
+    :type file: ifcopenshell.file.file
+    :param recipe: The name of the recipe. This is the same as the filename of
+        the recipe. E.g. "ExtractElements".
+    :type recipe: str
+    :param log: A filepath to a logfile.
+    :type log: str,optional
+    :param arguments: A list of zero or more positional arguments, depending on
+        the patch recipe. Some patch recipes will require you to specify
+        arguments, some won't.
+    :type arguments: list
+    :return: The result of the patch. This is typically a patched model, either
+        as an object or as a string.
+    :rtype: ifcopenshell.file.file,str
+
+    Example:
+
+    .. code:: python
+
+        output = ifcpatch.execute({
+            "input": "input.ifc",
+            "file": ifcopenshell.open("input.ifc"),
+            "recipe": "ExtractElements",
+            "arguments": [".IfcWall"],
+        })
+        ifcpatch.write(output, "output.ifc")
+    """
     if "log" in args:
         logging.basicConfig(filename=args["log"], filemode="a", level=logging.DEBUG)
     logger = logging.getLogger("IFCPatch")
@@ -35,18 +73,28 @@ def execute(args):
     recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
     recipe = getattr(recipes, args["recipe"])
     if recipe.Patcher.__init__.__doc__ is not None:
-        patcher = recipe.Patcher(args["input"], ifc_file, logger, *args["arguments"])
+        patcher = recipe.Patcher(args["input"], args["file"], logger, *args["arguments"])
     else:
-        patcher = recipe.Patcher(args["input"], ifc_file, logger, args["arguments"])
+        patcher = recipe.Patcher(args["input"], args["file"], logger, args["arguments"])
     patcher.patch()
     output = getattr(patcher, "file_patched", patcher.file)
-    if isinstance(output, str):
-        with open(args["output"], "w") as text_file:
-            text_file.write(output)
     return output
 
 
 def write(output, filepath):
+    """Write the output of an IFC patch to a file
+
+    Typically a patch output would be a patched IFC model file object, or as a
+    string. This function lets you agnostically write that output to a filepath.
+
+    :param output: The results from ifcpatch.execute()
+    :type output: ifcopenshell.file.file,str
+    :param filepath: A filepath to where the results of the patched model should
+        be written to.
+    :type filepath: str
+    :return: None
+    :rtype: None
+    """
     if isinstance(output, str):
         with open(filepath, "w") as text_file:
             text_file.write(output)

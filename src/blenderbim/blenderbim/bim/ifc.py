@@ -51,6 +51,7 @@ class IfcStore:
     history = []
     future = []
     schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
+    session_files = {}
 
     @staticmethod
     def purge():
@@ -71,6 +72,7 @@ class IfcStore:
         IfcStore.history = []
         IfcStore.future = []
         IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
+        IfcStore.session_files = {}
 
     @staticmethod
     def get_file():
@@ -96,7 +98,14 @@ class IfcStore:
             try:
                 IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
             except:
-                return
+                if os.path.exists(IfcStore.cache_path):
+                    os.remove(IfcStore.cache_path)
+                    try:
+                        IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
+                    except:
+                        return
+                else:
+                    return
         return IfcStore.cache
 
     @staticmethod
@@ -311,6 +320,7 @@ class IfcStore:
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
         elif isinstance(obj, bpy.types.Object):
             blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+            blenderbim.bim.handler.subscribe_to(obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback)
 
         for listener in IfcStore.element_listeners:
             listener(element, obj)

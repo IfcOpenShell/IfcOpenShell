@@ -26,13 +26,10 @@ def disable_editing_text(drawing, obj=None):
     drawing.disable_editing_text(obj)
 
 
-def edit_text(ifc, drawing, obj=None):
-    ifc.run(
-        "drawing.edit_text_literal",
-        text_literal=drawing.get_text_literal(obj),
-        attributes=drawing.export_text_literal_attributes(obj),
-    )
+def edit_text(drawing, obj=None):
+    drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_value(obj)
+    drawing.update_text_size_pset(obj)
     drawing.disable_editing_text(obj)
 
 
@@ -167,13 +164,41 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     drawing.import_drawings()
 
 
+def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotations=False):
+    drawing_name = drawing_tool.ensure_unique_drawing_name(drawing_tool.get_name(drawing))
+    new_drawing = ifc.run("root.copy_class", product=drawing)
+    drawing_tool.copy_representation(drawing, new_drawing)
+    drawing_tool.set_name(new_drawing, drawing_name)
+    group = drawing_tool.get_drawing_group(new_drawing)
+    ifc.run("group.unassign_group", group=group, product=new_drawing)
+    new_group = ifc.run("group.add_group")
+    ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
+    ifc.run("group.assign_group", group=new_group, products=[new_drawing])
+    if should_duplicate_annotations:
+        for annotation in drawing_tool.get_group_elements(group):
+            if annotation == drawing:
+                continue
+            new_annotation = ifc.run("root.copy_class", product=annotation)
+            drawing_tool.copy_representation(annotation, new_annotation)
+            ifc.run("group.unassign_group", group=group, product=new_annotation)
+            ifc.run("group.assign_group", group=new_group, products=[new_annotation])
+    drawing_tool.import_drawings()
+    return new_drawing
+
+
 def remove_drawing(ifc, drawing_tool, drawing=None):
     collection = drawing_tool.get_drawing_collection(drawing)
+    if collection:
+        drawing_tool.delete_collection(collection)
     group = drawing_tool.get_drawing_group(drawing)
     if group:
         drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
         ifc.run("group.remove_group", group=group)
-    drawing_tool.delete_collection(collection)
+    for reference in drawing_tool.get_drawing_references(drawing):
+        reference_obj = ifc.get_object(reference)
+        if reference_obj:
+            drawing_tool.delete_object(reference_obj)
+        ifc.run("root.remove_product", product=reference)
     ifc.run("root.remove_product", product=drawing)
     drawing_tool.import_drawings()
 
@@ -184,7 +209,9 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
     group = drawing_tool.get_drawing_group(drawing)
     if drawing_tool.get_name(group) != name:
         ifc.run("attribute.edit_attributes", product=group, attributes={"Name": name})
-    drawing_tool.set_drawing_collection_name(group, drawing_tool.get_drawing_collection(drawing))
+    collection = drawing_tool.get_drawing_collection(drawing)
+    if collection:
+        drawing_tool.set_drawing_collection_name(group, collection)
 
 
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
@@ -229,14 +256,13 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
         should_delete_existing_annotation = False
         should_create_annotation = False
 
-        if annotation and (
-            not reference_obj
-            or ifc.is_moved(reference_obj)
-            or ifc.is_edited(reference_obj)
-            or ifc.is_deleted(reference_element)
-            or ifc.is_deleted(annotation)
-        ):
-            should_delete_existing_annotation = True
+        if annotation:
+            if ifc.is_deleted(annotation):
+                should_delete_existing_annotation = True
+            elif reference_obj and (ifc.is_moved(reference_obj) or ifc.is_edited(reference_obj)):
+                should_delete_existing_annotation = True
+            elif not reference_obj and ifc.is_deleted(reference_element):
+                should_delete_existing_annotation = True
 
         if reference_obj and (should_delete_existing_annotation or not annotation):
             should_create_annotation = True
@@ -259,3 +285,15 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
 
         if reference_obj and ifc.is_edited(reference_obj):
             drawing_tool.sync_object_representation(reference_obj)
+
+
+def select_assigned_product(drawing):
+    drawing.select_assigned_product()
+
+
+def activate_drawing_view(ifc, drawing_tool, drawing):
+    camera = ifc.get_object(drawing)
+    if not camera:
+        camera = drawing_tool.import_drawing(drawing)
+        drawing_tool.import_annotations_in_group(drawing_tool.get_drawing_group(drawing))
+    drawing_tool.activate_view(camera)

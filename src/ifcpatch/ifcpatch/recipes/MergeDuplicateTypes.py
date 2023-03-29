@@ -21,17 +21,50 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger, attribute="Tag"):
+        """Merge duplicate element types via the Tag or another attribute
+
+        Revit is notorious for creating many duplicate element types. Element
+        types may be duplicated by being mirrored, such as doors, columns, etc,
+        or being certain MEP equipment. This means that even though you think
+        you might have only 3 door families and 3 door types in your door
+        schedule, your IFC might actually incorrectly store 6 or more door types.
+
+        Revit stores the Revit Element ID in the "Tag" attribute of all IFC
+        elements, so we can deduce that multiple IFC elements with the same Tag
+        attribute have been duplicated in IFC. This patch will merge them into a
+        single element type.
+
+        You may optionally specify your own attribute if you want to merge using
+        different criteria, such as "Name". For example, may Revit users
+        incorrectly have multiple types with the same name as workarounds to
+        overcome various Revit limitations. This is incorrect and this patch
+        will merge the types into a single type.
+
+        Occurrences of the type will be remapped to the merged type.
+
+        :param attribute: The name of the attribute to merge element types based
+            on. Typically this will be "Tag" as it stores the unique ID from the
+            proprietary BIM software.
+        :type attribute: str
+
+        Example:
+
+        .. code:: python
+
+            # Default behaviour of merging by Tag attribute
+            ifcpatch.execute({"input": model, "recipe": "MergeDuplicateTypes", "arguments": []})
+
+            # Explicitly say we want to merge based on the Name attribute
+            ifcpatch.execute({"input": model, "recipe": "MergeDuplicateTypes", "arguments": ["Name"]})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
+        self.attribute = attribute
 
     def patch(self):
-        if self.args:
-            key = self.args[0]
-        else:
-            key = "Tag"
+        key = self.attribute
         keys = {}
         for element_type in self.file.by_type("IfcTypeObject"):
             original_type = keys.get(getattr(element_type, key), None)

@@ -20,22 +20,91 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(
+        self,
+        file,
+        pset_template=None,
+        name="NewProperty",
+        description=None,
+        template_type="P_SINGLEVALUE",
+        primary_measure_type="IfcLabel",
+    ):
+        """Adds new property templates to a property set template
+
+        Assuming you first have a property set template, this allows you to add
+        templates for properties within that property set. A property template
+        lets you specify the name, description, and data type of a property.
+        When the template is provided to a model author, this gives them clear
+        instructions about the intention of the property and exactly which data
+        type to use.
+
+        Types of properties and quantities include:
+
+        * P_SINGLEVALUE - a single value, the most common type of property.
+        * P_ENUMERATEDVALUE	- the property value may one or more values chosen
+            from a preset list of values.
+        * P_BOUNDEDVALUE - the property has a minimum, maximum, and set value.
+        * P_LISTVALUE - the property has a list of values.
+        * P_TABLEVALUE - the property has a table of values.
+        * P_REFERENCEVALUE - the property is a parametric reference to another
+            value. This is only for advanced users.
+        * Q_LENGTH - the quantity is a length.
+        * Q_AREA - the quantity is an area.
+        * Q_VOLUME - the quantity is a volume.
+        * Q_COUNT - the quantity is counting a item.
+        * Q_WEIGHT - the quantity is a weight.
+        * Q_TIME - the quantity is a time duration.
+
+        :param pset_template: The property set template to add the property
+            template to.
+        :type pset_template: ifcopenshell.entity_instance.entity_instance
+        :param name: The name of the property
+        :type name: str,optional
+        :param description: A few words describing what the property stores.
+        :type description: str,optional
+        :param primary_measure_type: The data type of the property. Consult the
+            IFC documentation for the full list of data types.
+        :param primary_measure_type: str,optional
+        :return: The newly created IfcSimplePropertyTemplate.
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # Create a simple template that may be applied to all types
+            template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
+
+            # Here's one example property
+            ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
+                name="HighVoltage", description="Whether there is a risk of high voltage.",
+                primary_measure_type="IfcBoolean")
+
+            # Here's another
+            ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
+                name="ChemicalType", description="The class of chemical spillage.",
+                primary_measure_type="IfcLabel")
+        """
         self.file = file
-        self.settings = {"pset_template": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {
+            "pset_template": pset_template,
+            "name": name,
+            "description": description,
+            "template_type": template_type,
+            "primary_measure_type": primary_measure_type,
+        }
 
     def execute(self):
         prop_template = self.file.create_entity(
             "IfcSimplePropertyTemplate",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "Name": "NewProperty",
-                "PrimaryMeasureType": "IfcLabel",
-                "TemplateType": "P_SINGLEVALUE",
+                "Name": self.settings["name"],
+                "Description": self.settings["description"],
+                "PrimaryMeasureType": self.settings["primary_measure_type"],
+                "TemplateType": self.settings["template_type"],
                 "AccessState": "READWRITE",
-                "Enumerators": None
+                "Enumerators": None,
             }
         )
         has_property_templates = list(self.settings["pset_template"].HasPropertyTemplates or [])

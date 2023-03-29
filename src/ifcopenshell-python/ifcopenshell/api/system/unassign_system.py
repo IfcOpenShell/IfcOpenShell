@@ -21,14 +21,38 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, system=None):
+        """Unassigns a product from a system
+
+        :param product: The IfcDistributionElement to unassign from the system.
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :param system: The IfcSystem you want to unassign the element from.
+        :type system: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # A completely empty distribution system
+            system = ifcopenshell.api.run("system.add_system", model)
+
+            # Create a duct
+            duct = ifcopenshell.api.run("root.create_entity", model,
+                ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
+
+            # This duct is part of the system
+            ifcopenshell.api.run("system.assign_system", model, product=duct, system=system)
+
+            # Not anymore!
+            ifcopenshell.api.run("system.unassign_system", model, product=duct, system=system)
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "system": None,
+            "product": product,
+            "system": system,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if not self.settings["system"].IsGroupedBy:

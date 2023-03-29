@@ -20,14 +20,15 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.LoadLayers,
-    operator.DisableLayerEditingUI,
-    operator.EnableEditingLayer,
-    operator.DisableEditingLayer,
     operator.AddPresentationLayer,
-    operator.EditPresentationLayer,
-    operator.RemovePresentationLayer,
     operator.AssignPresentationLayer,
+    operator.DisableEditingLayer,
+    operator.DisableLayerEditingUI,
+    operator.EditPresentationLayer,
+    operator.EnableEditingLayer,
+    operator.LoadLayers,
+    operator.RemovePresentationLayer,
+    operator.SelectLayerProducts,
     operator.UnassignPresentationLayer,
     prop.Layer,
     prop.BIMLayerProperties,

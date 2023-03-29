@@ -79,7 +79,7 @@ def disable_editing_resource_time(resource_tool):
 
 
 def calculate_resource_work(ifc, resource_tool, resource):
-    ifc.run("calculate_resource_work", resource=resource)
+    ifc.run("resource.calculate_resource_work", resource=resource)
     resource_tool.load_resources()
     resource_tool.load_resource_properties()
 
@@ -158,15 +158,15 @@ def contract_resource(resource_tool, resource):
     resource_tool.load_resource_properties()
 
 
-def assign_resource(ifc, resource_tool, resource=None, products=None):
+def assign_resource(ifc, spatial, resource=None, products=None):
     if not products:
-        products = resource_tool.get_selected_products()
+        products = spatial.get_selected_products()
     for product in products:
         rel = ifc.run("resource.assign_resource", relating_resource=resource, related_object=product)
 
 
-def unassign_resource(ifc, resource_tool, resource=None, products=None):
+def unassign_resource(ifc, spatial, resource=None, products=None):
     if not products:
-        products = resource_tool.get_selected_products()
+        products = spatial.get_selected_products()
     for product in products:
         ifc.run("resource.unassign_resource", relating_resource=resource, related_object=product)

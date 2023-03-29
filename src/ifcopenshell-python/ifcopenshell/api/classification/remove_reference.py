@@ -18,11 +18,36 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, reference=None, product=None):
+        """Removes a classification reference from a product
+
+        If the classification reference is no longer associated to any products,
+        the classification reference itself is also removed.
+
+        :param reference: The IfcClassificationReference entity of the
+            relationship you want to remove.
+        :type reference: ifcopenshell.entity_instance.entity_instance
+        :param product: The object entity of the relationship you want to
+            remove.
+        :type reference: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            wall_type = model.by_type("IfcWallType")[0]
+            classification = ifcopenshell.api.run("classification.add_classification",
+                model, classification="MyCustomClassification")
+            reference = ifcopenshell.api.run("classification.add_reference", model,
+                product=wall_type, classification=classification,
+                identification="W_01", name="Interior Walls")
+            ifcopenshell.api.run("classification.remove_reference", model,
+                reference=reference, product=wall_type)
+        """
         self.file = file
-        self.settings = {"reference": None, "product": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"reference": reference, "product": product}
 
     def execute(self):
         if self.settings["product"].is_a("IfcRoot"):

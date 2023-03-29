@@ -22,14 +22,44 @@ import ifcopenshell.util.placement
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, element=None, port=None):
+        """Assigns a port to an element
+
+        If you have an orphaned port, you may assign it to a distribution
+        element using this function. Ports should typically not be orphaned, but
+        it may be useful when patching up models.
+
+        :param element: The IfcDistributionElement to assign the port to.
+        :type element: ifcopenshell.entity_instance.entity_instance
+        :param port: The IfcDistributionPort you want to assign.
+        :type port: ifcopenshell.entity_instance.entity_instance
+        :return: The IfcRelNests relationship, or the
+            IfcRelConnectsPortToElement for IFC2X3.
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # Create a duct
+            duct = ifcopenshell.api.run("root.create_entity", model,
+                ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
+
+            # Create 2 ports, one for either end.
+            port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
+            port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
+
+            # Unassign one port for some weird reason.
+            ifcopenshell.api.run("system.unassign_port", model, element=duct, port=port1)
+
+            # Reassign it back
+            ifcopenshell.api.run("system.assign_port", model, element=duct, port=port1)
+        """
         self.file = file
         self.settings = {
-            "element": None,
-            "port": None,
+            "element": element,
+            "port": port,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if self.file.schema == "IFC2X3":

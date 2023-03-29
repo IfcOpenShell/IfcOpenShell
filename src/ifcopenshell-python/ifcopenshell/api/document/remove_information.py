@@ -21,11 +21,27 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, information=None):
+        """Removes a document information
+
+        All references and associations are also removed.
+
+        :param information: The IfcDocumentInformation to remove
+        :type information: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Add a document
+            document = ifcopenshell.api.run("document.add_information", model)
+            # ... and remove it!
+            ifcopenshell.api.run("document.remove_information", model, information=document)
+        """
         self.file = file
-        self.settings = {"information": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"information": information}
 
     def execute(self):
         for reference in self.settings["information"].HasDocumentReferences or []:

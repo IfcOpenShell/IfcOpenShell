@@ -32,10 +32,9 @@ import blenderbim.core.root
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.pset.data import Data as PsetData
-from ifcopenshell.api.material.data import Data as MaterialData
 from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
+from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 
 
 def element_listener(element, obj):
@@ -56,11 +55,10 @@ def mode_callback(obj, data):
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
             return
         if obj.mode == "EDIT":
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
             bm = bmesh.from_edit_mesh(obj.data)
             bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
             bmesh.update_edit_mesh(obj.data)
-            bm.free()
         else:
             new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
             obj.data.transform(
@@ -96,6 +94,8 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
+        for obj in selected_objs:
+            tool.Geometry.clear_scale(obj)
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
@@ -108,12 +108,18 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         if self.join_type == "T":
             elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]
-            targets = [e for e in elements if e and e.is_a() in ("IfcSlab", "IfcSlabStandardCase", "IfcRoof")]
-            if targets:
-                target = tool.Ifc.get_object(targets[0])
-                for element in elements:
-                    if element.is_a("IfcWall"):
-                        joiner.join_Z(tool.Ifc.get_object(element), target)
+            layer2_elements = []
+            layer3_elements = []
+            for element in elements:
+                usage = tool.Model.get_usage_type(element)
+                if usage == "LAYER2":
+                    layer2_elements.append(element)
+                elif usage == "LAYER3":
+                    layer3_elements.append(element)
+            if layer3_elements:
+                target = tool.Ifc.get_object(layer3_elements[0])
+                for element in layer2_elements:
+                    joiner.join_Z(tool.Ifc.get_object(element), target)
             else:
                 for obj in selected_objs:
                     if obj == context.active_object:
@@ -149,7 +155,7 @@ class AlignWall(bpy.types.Operator):
                 aligner.align_first_layer()
             elif self.align_type == "INTERIOR":
                 aligner.align_last_layer()
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
         return {"FINISHED"}
 
 
@@ -193,6 +199,7 @@ class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
 class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_wall"
     bl_label = "Merge Wall"
+    bl_description = "Merge selected walls into one object"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -231,7 +238,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        wall_objs = []
+        layer2_objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -245,7 +252,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
             x, y, z = extrusion.ExtrudedDirection.DirectionRatios
             x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
             extrusion.Depth = self.depth * (1 / cos(x_angle))
-            if element.is_a("IfcWall"):
+            if tool.Model.get_usage_type(element) == "LAYER2":
                 for rel in element.ConnectedFrom:
                     if rel.is_a() == "IfcRelConnectsElements":
                         ifcopenshell.api.run(
@@ -254,9 +261,9 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
                             relating_element=rel.RelatingElement,
                             related_element=element,
                         )
-                wall_objs.append(obj)
-        if wall_objs:
-            DumbWallRecalculator().recalculate(wall_objs)
+                layer2_objs.append(obj)
+        if layer2_objs:
+            DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}
 
 
@@ -271,7 +278,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        wall_objs = []
+        layer2_objs = []
         other_objs = []
         x_angle = radians(self.x_angle)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -290,10 +297,11 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
             extrusion.Depth = perpendicular_depth * (1 / cos(x_angle))
             extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
-            if element.is_a("IfcWall"):
-                wall_objs.append(obj)
+            if tool.Model.get_usage_type(element) == "LAYER2":
+                layer2_objs.append(obj)
             else:
                 blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
                     tool.Geometry,
                     obj=obj,
                     representation=representation,
@@ -307,8 +315,8 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 new_matrix = euler.to_matrix().to_4x4()
                 new_matrix.col[3] = obj.matrix_world.col[3]
                 obj.matrix_world = new_matrix
-        if wall_objs:
-            DumbWallRecalculator().recalculate(wall_objs)
+        if layer2_objs:
+            DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}
 
 
@@ -344,28 +352,6 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
         child.matrix_parent_inverse = wall.matrix_world.inverted()
 
 
-class DumbWallFlipper:
-    def __init__(self, wall):
-        self.wall = wall
-
-    def flip(self):
-        if (
-            self.wall.matrix_world.translation - self.wall.matrix_world @ Vector(self.wall.bound_box[0])
-        ).length < 0.001:
-            recalculate_dumb_wall_origin(self.wall, self.wall.matrix_world @ Vector(self.wall.bound_box[7]))
-            self.rotate_wall_180()
-            bpy.context.view_layer.update()
-            for child in self.wall.children:
-                child.matrix_parent_inverse = self.wall.matrix_world.inverted()
-        else:
-            recalculate_dumb_wall_origin(self.wall)
-
-    def rotate_wall_180(self):
-        flip_matrix = Matrix.Rotation(pi, 4, "Z")
-        self.wall.data.transform(flip_matrix)
-        self.wall.rotation_euler.rotate(flip_matrix)
-
-
 class DumbWallAligner:
     # An alignment shifts the origin of all walls to the closest point on the
     # local X axis of the reference wall. In addition, the Z rotation is copied.
@@ -375,61 +361,58 @@ class DumbWallAligner:
         self.reference_wall = reference_wall
 
     def align_centerline(self):
-        recalculate_dumb_wall_origin(self.wall)
-        recalculate_dumb_wall_origin(self.reference_wall)
         self.align_rotation()
 
-        width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
-        reference_width = (Vector(self.reference_wall.bound_box[3]) - Vector(self.reference_wall.bound_box[0])).y
+        l_start = Vector(self.reference_wall.bound_box[0]).lerp(Vector(self.reference_wall.bound_box[3]), 0.5)
+        l_end = Vector(self.reference_wall.bound_box[4]).lerp(Vector(self.reference_wall.bound_box[7]), 0.5)
 
-        if self.is_rotation_flipped():
-            offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -(reference_width / 2) - (width / 2), 0))
-        else:
-            offset = self.wall.matrix_world.to_quaternion() @ Vector((0, (reference_width / 2) - (width / 2), 0))
+        start = self.reference_wall.matrix_world @ l_start
+        end = self.reference_wall.matrix_world @ l_end
 
-        self.align(
-            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0]),
-            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4]),
-            offset,
-        )
+        l_snap_point = Vector(self.wall.bound_box[0]).lerp(Vector(self.wall.bound_box[3]), 0.5)
+        snap_point = self.wall.matrix_world @ l_snap_point
+        offset = snap_point - self.wall.matrix_world.translation
+
+        point, _ = mathutils.geometry.intersect_point_line(snap_point, start, end)
+
+        new_origin = point - offset
+        self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
     def align_last_layer(self):
-        recalculate_dumb_wall_origin(self.wall)
-        recalculate_dumb_wall_origin(self.reference_wall)
         self.align_rotation()
 
         if self.is_rotation_flipped():
-            DumbWallFlipper(self.wall).flip()
+            DumbWallJoiner().flip(self.wall)
             bpy.context.view_layer.update()
+
         start = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[3])
         end = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[7])
 
-        wall_width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
+        snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[3])
+        offset = snap_point - self.wall.matrix_world.translation
 
-        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -wall_width, 0))
-        self.align(start, end, offset)
+        point, _ = mathutils.geometry.intersect_point_line(snap_point, start, end)
+
+        new_origin = point - offset
+        self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
     def align_first_layer(self):
-        recalculate_dumb_wall_origin(self.wall)
-        recalculate_dumb_wall_origin(self.reference_wall)
         self.align_rotation()
 
         if self.is_rotation_flipped():
-            DumbWallFlipper(self.wall).flip()
+            DumbWallJoiner().flip(self.wall)
             bpy.context.view_layer.update()
 
         start = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0])
         end = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4])
 
-        self.align(start, end)
+        snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[0])
+        offset = snap_point - self.wall.matrix_world.translation
 
-    def align(self, start, end, offset=None):
-        if offset is None:
-            offset = Vector((0, 0, 0))
-        point, distance = mathutils.geometry.intersect_point_line(self.wall.matrix_world.translation, start, end)
-        new_origin = point + offset
-        self.wall.matrix_world.translation[0] = new_origin[0]
-        self.wall.matrix_world.translation[1] = new_origin[1]
+        point, _ = mathutils.geometry.intersect_point_line(snap_point, start, end)
+
+        new_origin = point - offset
+        self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
     def align_rotation(self):
         reference = (self.reference_wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
@@ -462,7 +445,7 @@ class DumbWallRecalculator:
                 queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
         joiner = DumbWallJoiner()
         for element, wall in queue:
-            if element.is_a("IfcWall") and wall:
+            if tool.Model.get_usage_type(element) == "LAYER2" and wall:
                 joiner.recreate_wall(element, wall)
 
 
@@ -471,7 +454,7 @@ class DumbWallGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self, link_to_scene=True):
+    def generate(self):
         self.file = IfcStore.get_file()
         self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
@@ -490,15 +473,13 @@ class DumbWallGenerator:
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
 
-        if self.has_sketch():
-            return  # For now
-            return self.derive_from_sketch()
-        return self.derive_from_cursor(link_to_scene)
+        return self.derive_from_cursor()
 
     def has_sketch(self):
         return (
             bpy.context.scene.grease_pencil
             and len(bpy.context.scene.grease_pencil.layers) == 1
+            and bpy.context.scene.grease_pencil.layers[0].info == "Note"
             and bpy.context.scene.grease_pencil.layers[0].active_frame.strokes
         )
 
@@ -571,7 +552,7 @@ class DumbWallGenerator:
     def is_near(self, point1, point2):
         return (point1 - point2).length < 0.1
 
-    def derive_from_cursor(self, link_to_scene):
+    def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
         if self.collection:
             for sibling_obj in self.collection.objects:
@@ -597,21 +578,21 @@ class DumbWallGenerator:
                         normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
                         self.rotation = math.atan2(normal[1], normal[0])
                         break
-        return self.create_wall(link_to_scene)
+        return self.create_wall()
 
-    def create_wall(self, link_to_scene):
+    def create_wall(self):
         props = bpy.context.scene.BIMModelProperties
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-        if link_to_scene:
-            matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
-            matrix_world.col[3] = self.location.to_4d()
-            if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-                matrix_world[2][3] = self.collection_obj.location[2] + (props.rl1 * self.unit_scale)
-            obj.matrix_world = matrix_world
-            bpy.context.view_layer.update()
-            self.collection.objects.link(obj)
+
+        matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
+        matrix_world.col[3] = self.location.to_4d()
+        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+            matrix_world[2][3] = self.collection_obj.location[2] + (props.rl1 * self.unit_scale)
+        obj.matrix_world = matrix_world
+        bpy.context.view_layer.update()
+        self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -648,6 +629,7 @@ class DumbWallGenerator:
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
         )
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
@@ -657,7 +639,6 @@ class DumbWallGenerator:
         )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
-        MaterialData.load(self.file)
         obj.select_set(True)
         return obj
 
@@ -716,7 +697,6 @@ def calculate_quantities(usecase_path, ifc_file, settings):
             "NetVolume": round(net_volume, 2),
         },
     )
-    PsetData.load(ifc_file, obj.BIMObjectProperties.ifc_definition_id)
 
 
 class DumbWallPlaner:
@@ -780,17 +760,50 @@ class DumbWallJoiner:
             return
         axis1 = tool.Model.get_wall_axis(wall1)
         axis2 = copy.deepcopy(axis1)
-        intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
-        if connection < 0 or connection > 1 or tool.Cad.is_x(connection, (0, 1)):
+        intersect, cut_percentage = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
+        if cut_percentage < 0 or cut_percentage > 1 or tool.Cad.is_x(cut_percentage, (0, 1)):
             return
-        connection = "ATEND" if connection > 0.5 else "ATSTART"
+        connection = "ATEND" if cut_percentage > 0.5 else "ATSTART"
 
         wall2 = self.duplicate_wall(wall1)
-        MaterialData.load(tool.Ifc.get())
         element2 = tool.Ifc.get_entity(wall2)
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element2, connection_type="ATSTART")
+
+        # During the duplication process, unfilled voids are copied, so we need
+        # to check openings on both element1 and element2. Let's check element1
+        # first.
+        for opening in [
+            r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
+        ]:
+            opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_location = opening_matrix.col[3].to_3d()
+            _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
+            if opening_position > cut_percentage:
+                # The opening should be removed from element1.
+                ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
+
+        # Now let's check element2.
+        for opening in [
+            r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
+        ]:
+            opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_location = opening_matrix.col[3].to_3d()
+            _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
+            if opening_position < cut_percentage:
+                # The opening should be removed from element2.
+                ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
+
+        # During the duplication process, filled voids are not copied. So we
+        # only need to check fillings on the original element1.
+        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings if r.RelatedOpeningElement.HasFillings]:
+            filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
+            filling_location = filling_obj.matrix_world.translation
+            _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis1["reference"])
+            if filling_position > cut_percentage:
+                # The filling should be moved from element1 to element2.
+                FilledOpeningGenerator().generate(filling_obj, wall2, target=filling_obj.matrix_world.translation)
 
         axis1["reference"][1] = intersect
         axis2["reference"][0] = intersect
@@ -874,6 +887,7 @@ class DumbWallJoiner:
 
         body = ifcopenshell.util.representation.get_representation(element1, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=wall1,
             representation=body,
@@ -950,6 +964,15 @@ class DumbWallJoiner:
     def join_Z(self, wall1, slab2):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(slab2)
+
+        for rel in element1.ConnectedFrom:
+            if rel.is_a() == "IfcRelConnectsElements" and rel.Description == "TOP":
+                ifcopenshell.api.run(
+                    "geometry.disconnect_element",
+                    tool.Ifc.get(),
+                    relating_element=rel.RelatingElement,
+                    related_element=element1,
+                )
 
         ifcopenshell.api.run(
             "geometry.connect_element",
@@ -1165,10 +1188,13 @@ class DumbWallJoiner:
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
             )
 
-        if tool.Ifc.is_moved(obj):
+        wall_moved = tool.Ifc.is_moved(obj)
+        if wall_moved:
             # Openings should move with the host overall ...
             # ... except their position should stay the same along the local X axis of the wall
-            for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+            for opening in [
+                r.RelatedOpeningElement for r in element.HasOpenings if not r.RelatedOpeningElement.HasFillings
+            ]:
                 percent = tool.Cad.edge_percent(
                     self.body[0], (previous_origin, (previous_matrix @ Vector((1, 0, 0))).to_2d())
                 )
@@ -1181,9 +1207,23 @@ class DumbWallJoiner:
                 else:
                     coordinates[0] -= change_in_x
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
+
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
+        # If opening has filling then stick to the filling's position
+        # We're applying new openings position only after wall position is applied
+        for opening in [r.RelatedOpeningElement for r in element.HasOpenings if r.RelatedOpeningElement.HasFillings]:
+            filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
+            filling_moved = tool.Ifc.is_moved(filling_obj)
+            if filling_moved:
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
+            if filling_moved or wall_moved:
+                ifcopenshell.api.run(
+                    "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
+                )
+
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=new_body,
@@ -1194,14 +1234,7 @@ class DumbWallJoiner:
         tool.Geometry.record_object_materials(obj)
 
     def create_matrix(self, p, x, y, z):
-        return Matrix(
-            (
-                (x[0], y[0], z[0], p[0]),
-                (x[1], y[1], z[1], p[1]),
-                (x[2], y[2], z[2], p[2]),
-                (0.0, 0.0, 0.0, 1.0),
-            )
-        )
+        return Matrix([x, y, z, p]).to_4x4().transposed()
 
     def get_extrusion_data(self, representation):
         results = {"item": None, "height": 3.0, "x_angle": 0, "is_sloped": False, "direction": Vector((0, 0, 1))}

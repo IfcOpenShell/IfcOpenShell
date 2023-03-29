@@ -26,6 +26,7 @@ import ifcopenshell.api
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
+import blenderbim.bim.schema
 import blenderbim.tool as tool
 import blenderbim.core.project as core
 import blenderbim.core.context
@@ -34,7 +35,7 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
-from ifcopenshell.api.context.data import Data as ContextData
+from pathlib import Path
 
 
 class CreateProject(bpy.types.Operator):
@@ -55,6 +56,7 @@ class CreateProject(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMProjectProperties
         template = None if props.template_file == "0" else props.template_file
+        blenderbim.bim.schema.reload(props.export_schema)
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
 
     def rollback(self, data):
@@ -546,6 +548,7 @@ class UnloadProject(bpy.types.Operator):
     bl_idname = "bim.unload_project"
     bl_label = "Unload Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Unload the IFC project"
 
     def execute(self, context):
         IfcStore.purge()
@@ -562,6 +565,7 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
+        blenderbim.bim.schema.reload(self.file.schema)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
@@ -808,6 +812,7 @@ class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
     bl_label = "Export IFC"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Export the IFC project"
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -826,7 +831,10 @@ class ExportIFC(bpy.types.Operator):
                 self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
             return self.execute(context)
         if not self.filepath:
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
+            if bpy.data.is_saved:
+                self.filepath = Path(bpy.data.filepath).with_suffix(".ifc").__str__()
+            else:
+                self.filepath = "untitled.ifc"
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}

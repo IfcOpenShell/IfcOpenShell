@@ -18,11 +18,32 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, profile=None, attributes=None):
+        """Edits the attributes of an IfcProfileDef
+
+        For more information about the attributes and data types of an
+        IfcProfileDef, consult the IFC documentation.
+
+        :param profile: The IfcProfileDef entity you want to edit
+        :type profile: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
+                ifc_class="IfcCircleProfileDef")
+            circle = 1.
+
+            ifcopenshell.api.run("profile.edit_profile", model,
+                profile=circle, attributes={"ProfileName": "1000mm Dia"})
+        """
         self.file = file
-        self.settings = {"profile": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"profile": profile, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

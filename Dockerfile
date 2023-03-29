@@ -27,7 +27,7 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu focal-proposed main restricted" |
                     libboost-all-dev \
                     libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev \
                     libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
-                    libhdf5-serial-dev ; \
+                    libhdf5-serial-dev python3-pytest ; \
     rm -rf /var/lib/apt/lists/* ; 
 
 COPY . /home/IfcOpenShell/

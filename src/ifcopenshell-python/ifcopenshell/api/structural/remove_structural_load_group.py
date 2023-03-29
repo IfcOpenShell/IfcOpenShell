@@ -20,11 +20,16 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, load_group=None):
+        """Removes a structural load group
+
+        :param load_group: The IfcStructuralLoadGroup to remove.
+        :type load_group: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"load_group": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"load_group": load_group}
 
     def execute(self):
         # TODO: do a deep purge

@@ -21,14 +21,68 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, definition=None, relating_context=None):
+        """Declares an element to the project
+
+        All data in a model must be directly or indirectly related to the
+        project. Most data is indirectly related, existing instead within the
+        spatial decomposition tree. Other data, such as types, may be declared
+        at the top level.
+
+        Most of the time, the API handles declaration automatically for you.
+        There is one scenario where you might want to explicitly declare objects
+        to the project, and that's when you want to organise objects into
+        project libraries for future use (such as an assets library). Assigning
+        a declaration lets you say that an object belongs to a library.
+
+        :param definition: The object you want to declare. Typically an asset.
+        :type definition: ifcopenshell.entity_instance.entity_instance
+        :param relating_context: The IfcProject, or more commonly the
+            IfcProjectLibrary that you want the object to be part of.
+        :type relating_context: ifcopenshell.entity_instance.entity_instance
+        :return: The new IfcRelDeclares relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # Programmatically generate a library. You could do this visually too.
+            library = ifcopenshell.api.run("project.create_file")
+            root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
+            context = ifcopenshell.api.run("root.create_entity", library,
+                ifc_class="IfcProjectLibrary", name="Demo Library")
+
+            # It's necessary to say our library is part of our project.
+            ifcopenshell.api.run("project.assign_declaration", library, definition=context, relating_context=root)
+
+            # Assign units for our example library
+            unit = ifcopenshell.api.run("unit.add_si_unit", library,
+                unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+            ifcopenshell.api.run("unit.assign_unit", library, units=[unit])
+
+            # Let's create a single asset of a 200mm thick concrete wall
+            wall_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType", name="WAL01")
+            concrete = ifcopenshell.api.run("material.add_material", self.file, name="CON", category="concrete")
+            rel = ifcopenshell.api.run("material.assign_material", library,
+                product=wall_type, type="IfcMaterialLayerSet")
+            layer = ifcopenshell.api.run("material.add_layer", library,
+                layer_set=rel.RelatingMaterial, material=concrete)
+            layer.Name = "Structure"
+            layer.LayerThickness = 200
+
+            # Mark our wall type as a reusable asset in our library.
+            ifcopenshell.api.run("project.assign_declaration", library,
+                definition=wall_type, relating_context=context)
+
+            # All done, just for fun let's save our asset library to disk for later use.
+            library.write("/path/to/my-library.ifc")
+        """
         self.file = file
         self.settings = {
-            "definition": None,
-            "relating_context": None,
+            "definition": definition,
+            "relating_context": relating_context,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         declares = None

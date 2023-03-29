@@ -24,6 +24,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import blenderbim.core.geometry as geometry
 from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
@@ -140,6 +141,40 @@ class Model(blenderbim.core.tool.Model):
                 break
 
     @classmethod
+    def import_axis(cls, axis, obj=None, position=None):
+        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        if position is None:
+            position = Matrix()
+
+        cls.vertices = []
+        cls.edges = []
+        cls.arcs = []
+        cls.circles = []
+
+        if isinstance(axis, list):
+            cls.vertices.extend(
+                [
+                    position @ Vector(cls.convert_unit_to_si(axis[0])).to_3d(),
+                    position @ Vector(cls.convert_unit_to_si(axis[1])).to_3d(),
+                ]
+            )
+            cls.edges.append([0, 1])
+        else:
+            cls.import_curve(obj, position, axis)
+
+        mesh = bpy.data.meshes.new("Axis")
+        mesh.from_pydata(cls.vertices, cls.edges, [])
+        mesh.BIMMeshProperties.subshape_type = "AXIS"
+
+        if obj is None:
+            obj = bpy.data.objects.new("Axis", mesh)
+        else:
+            obj.data = mesh
+
+        return obj
+
+    @classmethod
     def import_profile(cls, profile, obj=None, position=None):
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -161,7 +196,7 @@ class Model(blenderbim.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.is_profile = True
+        mesh.BIMMeshProperties.subshape_type = "PROFILE"
 
         if obj is None:
             obj = bpy.data.objects.new("Profile", mesh)
@@ -194,6 +229,7 @@ class Model(blenderbim.core.tool.Model):
             cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
         elif curve.is_a("IfcIndexedPolyCurve"):
             is_arc = False
+            is_closed = False
             if curve.Segments:
                 for segment in curve.Segments:
                     if len(segment[0]) == 3:  # IfcArcIndex
@@ -212,15 +248,21 @@ class Model(blenderbim.core.tool.Model):
                         if is_arc:
                             cls.arcs[-1].append(len(cls.vertices) - 1)
                             is_arc = False
+
+                if curve.Segments[0][0][0] == curve.Segments[-1][0][-1]:
+                    is_closed = True
             else:
                 for local_point in curve.Points.CoordList:
                     global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
                     cls.vertices.append(global_point)
-                # Curves without segments are cls closing
-                del cls.vertices[-1]
 
-            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices))])
-            cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+                if cls.vertices[offset] == cls.vertices[-1]:
+                    is_closed = True
+                    del cls.vertices[-1]
+
+            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
+            if is_closed:
+                cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
         elif curve.is_a("IfcCircle"):
             center = cls.convert_unit_to_si(
                 Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
@@ -228,8 +270,8 @@ class Model(blenderbim.core.tool.Model):
             radius = cls.convert_unit_to_si(curve.Radius)
             cls.vertices.extend(
                 [
-                    position @ Vector((center[0], center[1] - curve.Radius, 0.0)),
-                    position @ Vector((center[0], center[1] + curve.Radius, 0.0)),
+                    position @ Vector((center[0], center[1] - radius, 0.0)),
+                    position @ Vector((center[0], center[1] + radius, 0.0)),
                 ]
             )
             cls.circles.append([offset, offset + 1])
@@ -330,6 +372,15 @@ class Model(blenderbim.core.tool.Model):
         return booleans
 
     @classmethod
+    def get_usage_type(cls, element):
+        material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+        if material:
+            if material.is_a("IfcMaterialLayerSetUsage"):
+                return f"LAYER{material.LayerSetDirection[-1]}"
+            elif material.is_a("IfcMaterialProfileSetUsage"):
+                return "PROFILE"
+
+    @classmethod
     def get_wall_axis(cls, obj, layers=None):
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
@@ -356,16 +407,18 @@ class Model(blenderbim.core.tool.Model):
     def regenerate_array(cls, parent, data):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent]
+
         for array in data:
             child_i = 0
             existing_children = set(array["children"])
             total_existing_children = len(array["children"])
             children_elements = []
             children_objs = []
-            for i in range(0, array["count"]):
+            base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
+            for i in range(array["count"]):
                 if i == 0:
                     continue
-                offset = Vector((i * array["x"] * unit_scale, i * array["y"] * unit_scale, i * array["z"] * unit_scale))
+                offset = base_offset * i
                 for obj in obj_stack:
                     if child_i >= total_existing_children:
                         child_obj = tool.Spatial.duplicate_object_and_data(obj)
@@ -386,13 +439,16 @@ class Model(blenderbim.core.tool.Model):
                         ifcopenshell.api.run(
                             "pset.edit_pset",
                             tool.Ifc.get(),
-                            product=child_element,
                             pset=tool.Ifc.get().by_id(child_pset["id"]),
                             properties={"Data": None},
                         )
 
                     new_matrix = obj.matrix_world.copy()
-                    new_matrix.col[3] = (obj.matrix_world.col[3].to_3d() + offset).to_4d()
+                    if array["use_local_space"]:
+                        current_obj_translation = obj.matrix_world @ offset
+                    else:
+                        current_obj_translation = obj.matrix_world.col[3].to_3d() + offset
+                    new_matrix.col[3] = current_obj_translation.to_4d()
                     child_obj.matrix_world = new_matrix
                     children_objs.append(child_obj)
                     children_elements.append(child_element)
@@ -409,3 +465,30 @@ class Model(blenderbim.core.tool.Model):
                 # TODO: Not sufficient, refactor OverrideDeleteTrait
 
             bpy.context.view_layer.update()
+
+    @classmethod
+    def replace_object_ifc_representation(cls, ifc_context, obj, new_representation):
+        ifc_file = tool.Ifc.get()
+        ifc_element = tool.Ifc.get_entity(obj)
+        old_representation = ifcopenshell.util.representation.get_representation(
+            ifc_element, ifc_context.ContextType, ifc_context.ContextIdentifier, ifc_context.TargetView
+        )
+
+        if old_representation:
+            old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
+            for inverse in ifc_file.get_inverse(old_representation):
+                ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
+        else:
+            ifcopenshell.api.run(
+                "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
+            )
+        geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )

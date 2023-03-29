@@ -18,11 +18,21 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, structural_load=None, attributes=None):
+        """Edits the attributes of an IfcStructuralLoad
+
+        For more information about the attributes and data types of an
+        IfcStructuralLoad, consult the IFC documentation.
+
+        :param structural_load: The IfcStructuralLoad entity you want to edit
+        :type structural_load: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"structural_load": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"structural_load": structural_load, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

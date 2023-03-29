@@ -27,8 +27,6 @@ from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
 from blenderbim.bim.module.model.data import AuthoringData
-from ifcopenshell.api.material.data import Data as MaterialData
-from ifcopenshell.api.type.data import Data as TypeData
 
 
 global_subscription_owner = object()
@@ -49,9 +47,9 @@ def mode_callback(obj, data):
         ):
             continue
         if obj.data.BIMMeshProperties.ifc_definition_id:
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
         elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
 
 
 def name_callback(obj, data):
@@ -67,7 +65,6 @@ def name_callback(obj, data):
     if isinstance(obj, bpy.types.Material):
         if obj.BIMObjectProperties.ifc_definition_id:
             IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).Name = obj.name
-            MaterialData.load_materials()
         if obj.BIMMaterialProperties.ifc_style_id:
             IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id).Name = obj.name
         refresh_ui_data()
@@ -91,18 +88,20 @@ def name_callback(obj, data):
                 break
         if grid_collection:
             grid_collection.name = obj.name
-    if element.is_a("IfcTypeProduct"):
-        TypeData.purge()
     element.Name = "/".join(obj.name.split("/")[1:])
     refresh_ui_data()
 
 
 def color_callback(obj, data):
     if obj.BIMMaterialProperties.ifc_style_id:
-        IfcStore.edited_objs.add(obj)
+        tool.Ifc.edit(obj)
 
 
 def active_object_callback():
+    refresh_ui_data()
+
+
+def active_material_index_callback(obj, data):
     refresh_ui_data()
 
 

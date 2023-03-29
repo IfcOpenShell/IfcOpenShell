@@ -20,14 +20,25 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, related_object=None, relating_type=None):
+        """Gets all the related occurrences of a type
+
+        Do not use this function. It will be removed. Use
+        ifcopenshell.util.element.get_type or
+        ifcopenshell.util.element.get_types instead.
+
+        :param related_object: The IfcElement occurrence.
+        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :param relating_type: The IfcElementType type.
+        :type relating_type: ifcopenshell.entity_instance.entity_instance
+        :return: A list of occurrences of the type.
+        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        """
         self.file = file
         self.settings = {
-            "related_object": None,
-            "relating_type": None,
+            "related_object": related_object,
+            "relating_type": relating_type,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if self.settings["related_object"]:

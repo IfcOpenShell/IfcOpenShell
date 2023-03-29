@@ -1,0 +1,16 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2023-02-03T21:16:13',(),(),'IfcOpenShell v0.7.0-07ee62eb9','IfcOpenShell v0.7.0-07ee62eb9','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCWALL('1SjOSKeDn8KOLFOaEVy$oN',$,$,$,$,$,$,$,$);
+#2=IFCPROPERTYSINGLEVALUE('LoadBearing',$,IFCBOOLEAN(.T.),$);
+#3=IFCPROPERTYSET('24PUuhvvDBAAfpODs9iLMq',$,'Pset_WallCommon',$,(#2));
+#4=IFCRELDEFINESBYPROPERTIES('2S0SlVqz53ngyujVI74cbR',$,$,$,(#1),#3);
+#5=IFCPROPERTYSINGLEVALUE('LoadBearing',$,IFCBOOLEAN(.T.),$);
+#6=IFCPROPERTYSET('3uhaYX0B968xG1PXbJ$VVN',$,'Pset_WallCommon',$,(#5));
+#7=IFCRELDEFINESBYPROPERTIES('1Q1amHTX1FCBA3duuSyAUM',$,$,$,(#1),#6);
+ENDSEC;
+END-ISO-10303-21;

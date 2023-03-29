@@ -146,6 +146,14 @@ class TestCopyClass(test.bootstrap.IFC4):
         new = ifcopenshell.api.run("root.copy_class", self.file, product=door)
         assert not new.FillsVoids
 
+    def test_retaining_a_single_material(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = self.file.createIfcMaterial()
+        self.file.createIfcRelAssociatesMaterial(RelatedObjects=[element], RelatingMaterial=material)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
+        assert new.HasAssociations[0].RelatingMaterial == element.HasAssociations[0].RelatingMaterial
+        assert new.HasAssociations[0].RelatingMaterial.is_a("IfcMaterial")
+
     def test_copying_material_set_usages(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = self.file.createIfcMaterialLayerSetUsage()
@@ -156,11 +164,15 @@ class TestCopyClass(test.bootstrap.IFC4):
 
     def test_copying_material_sets_for_type_elements_only(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        material = self.file.createIfcMaterialLayerSet()
+        single_material = self.file.createIfcMaterial()
+        layer = self.file.createIfcMaterialLayer(Material=single_material)
+        material = self.file.createIfcMaterialLayerSet(MaterialLayers=[layer])
         self.file.createIfcRelAssociatesMaterial(RelatedObjects=[element], RelatingMaterial=material)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
-        assert new.HasAssociations[0].RelatingMaterial != element.HasAssociations[0].RelatingMaterial
         assert new.HasAssociations[0].RelatingMaterial.is_a("IfcMaterialLayerSet")
+        assert new.HasAssociations[0].RelatingMaterial != element.HasAssociations[0].RelatingMaterial
+        assert new.HasAssociations[0].RelatingMaterial.MaterialLayers[0] != element.HasAssociations[0].RelatingMaterial.MaterialLayers[0]
+        assert new.HasAssociations[0].RelatingMaterial.MaterialLayers[0].Material == element.HasAssociations[0].RelatingMaterial.MaterialLayers[0].Material
 
     def test_copying_a_type_and_purging_type_relationships(self):
         type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
@@ -198,3 +210,11 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert element2.ConnectedFrom
         assert not new.ConnectedTo
         assert not new.ConnectedFrom
+
+    def test_maintaining_group_relationships(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        group = ifcopenshell.api.run("group.add_group", self.file)
+        ifcopenshell.api.run("group.assign_group", self.file, group=group, products=[element])
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
+        assert len(self.file.by_type("IfcRelAssignsToGroup")) == 1
+        assert new.HasAssignments[0].RelatingGroup == group

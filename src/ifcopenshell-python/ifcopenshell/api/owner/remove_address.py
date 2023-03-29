@@ -18,11 +18,30 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, address=None):
+        """Removes an address
+
+        Naturally, any organisations or people using that address will have the
+        relationship removed.
+
+        :param address: The IfcAddress to remove.
+        :type address: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            organisation = ifcopenshell.api.run("owner.add_organisation", model)
+            address = ifcopenshell.api.run("owner.add_address", model,
+                assigned_object=organisation, ifc_class="IfcPostalAddress")
+
+            # Change our mind and delete it
+            ifcopenshell.api.run("owner.remove_address", model, address=address)
+        """
         self.file = file
-        self.settings = {"address": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"address": address}
 
     def execute(self):
         for inverse in self.file.get_inverse(self.settings["address"]):

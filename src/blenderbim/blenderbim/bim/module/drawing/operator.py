@@ -23,6 +23,7 @@ import json
 import time
 import bmesh
 import shutil
+import shapely
 import subprocess
 import webbrowser
 import multiprocessing
@@ -38,14 +39,13 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
+from blenderbim.bim.module.drawing.data import DecoratorData
 import blenderbim.bim.export_ifc
 from lxml import etree
 from mathutils import Vector
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.group.data import Data as GroupData
-from ifcopenshell.api.pset.data import Data as PsetData
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -105,65 +105,123 @@ class AddDrawing(bpy.types.Operator, Operator):
             pass
 
 
+class DuplicateDrawing(bpy.types.Operator, Operator):
+    bl_idname = "bim.duplicate_drawing"
+    bl_label = "Duplicate Drawing"
+    bl_options = {"REGISTER", "UNDO"}
+    drawing: bpy.props.IntProperty()
+    should_duplicate_annotations: bpy.props.BoolProperty(name="Should Duplicate Annotations", default=False)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.prop(self, "should_duplicate_annotations")
+
+    def _execute(self, context):
+        self.props = context.scene.DocProperties
+        core.duplicate_drawing(
+            tool.Ifc,
+            tool.Drawing,
+            drawing=tool.Ifc.get().by_id(self.drawing),
+            should_duplicate_annotations=self.should_duplicate_annotations,
+        )
+        try:
+            drawing = tool.Ifc.get().by_id(self.props.active_drawing_id)
+            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
+        except:
+            pass
+
+
 class CreateDrawing(bpy.types.Operator):
-    """Creates a svg drawing
+    """Creates/refreshes a .svg drawing
 
     Only available if :
     - IFC file is created
-    - Camera is in Orthographic mode
-    """
+    - Camera is in Orthographic mode"""
 
     bl_idname = "bim.create_drawing"
     bl_label = "Create Drawing"
+    bl_description = (
+        "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
+        + "SHIFT+CLICK to print all annotations"
+    )
+    print_all: bpy.props.BoolProperty(name="Print all", default=False)
 
     @classmethod
     def poll(cls, context):
-        camera = context.scene.camera
-        return (
-            IfcStore.get_file()
-            and camera
-            and camera.type == "CAMERA"
-            and camera.data.type == "ORTHO"
-            and camera.BIMObjectProperties.ifc_definition_id
-        )
+        return bool(tool.Ifc.get() and tool.Drawing.is_camera_orthographic() and tool.Drawing.is_drawing_active())
+
+    def invoke(self, context, event):
+        # printing all annotations on shift+click
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.print_all = True
+        else:
+            # can't rely on default value since `self.print_all = True`
+            # will set the value to `True` for all future calls
+            self.print_all = False
+        return self.execute(context)
 
     def execute(self, context):
-        self.camera = context.scene.camera
-        self.camera_element = tool.Ifc.get_entity(self.camera)
-        self.file = IfcStore.get_file()
+        self.props = context.scene.DocProperties
 
-        with profile("Drawing generation process"):
+        if self.print_all:
+            original_drawing_id = self.props.active_drawing_id
+            drawings_to_print = [drawing.ifc_definition_id for drawing in self.props.drawings]
+        else:
+            drawings_to_print = [self.props.active_drawing_id]
 
-            with profile("Initialize drawing generation process"):
-                self.props = context.scene.DocProperties
-                self.cprops = self.camera.data.BIMCameraProperties
-                self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
-                self.get_scale()
-                if self.cprops.update_representation(self.camera):
-                    bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
+        for drawing_id in drawings_to_print:
+            if self.print_all:
+                bpy.ops.bim.activate_view(drawing=drawing_id)
 
-                self.svg_writer = svgwriter.SvgWriter()
-                self.svg_writer.human_scale = self.human_scale
-                self.svg_writer.scale = self.scale
-                self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
-                self.svg_writer.camera = self.camera
-                self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
-                self.svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
+            self.camera = context.scene.camera
+            self.camera_element = tool.Ifc.get_entity(self.camera)
+            self.file = IfcStore.get_file()
 
-            with profile("Generate underlay"):
-                underlay_svg = self.generate_underlay(context)
+            with profile("Drawing generation process"):
+                with profile("Initialize drawing generation process"):
+                    self.cprops = self.camera.data.BIMCameraProperties
+                    self.drawing_name = self.file.by_id(drawing_id).Name
+                    self.get_scale()
+                    if self.cprops.update_representation(self.camera):
+                        bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
 
-            with profile("Generate linework"):
-                linework_svg = self.generate_linework(context)
+                    self.svg_writer = svgwriter.SvgWriter()
+                    self.svg_writer.human_scale = self.human_scale
+                    self.svg_writer.scale = self.scale
+                    self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
+                    self.svg_writer.camera = self.camera
+                    self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
+                    self.svg_writer.camera_projection = tuple(
+                        self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+                    )
+                    pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
+                    related_paths = {
+                        "Stylesheet": pset.get("Stylesheet"),
+                        "Markers": pset.get("Markers"),
+                        "Symbols": pset.get("Symbols"),
+                        "Patterns": pset.get("Patterns"),
+                    }
+                    self.svg_writer.define_related_paths(**related_paths)
 
-            with profile("Generate annotation"):
-                annotation_svg = self.generate_annotation(context)
+                with profile("Generate underlay"):
+                    underlay_svg = self.generate_underlay(context)
 
-            with profile("Combine SVG layers"):
-                svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
+                with profile("Generate linework"):
+                    linework_svg = self.generate_linework(context)
 
-        open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
+                with profile("Generate annotation"):
+                    annotation_svg = self.generate_annotation(context)
 
+                with profile("Combine SVG layers"):
+                    svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
+
+            open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
+
+        if self.print_all:
+            bpy.ops.bim.activate_view(drawing=original_drawing_id)
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -180,10 +238,7 @@ class CreateDrawing(bpy.types.Operator):
         # Hacky :)
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
-            pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
-            self.svg_writer.create_blank_svg(svg_path).define_boilerplate(
-                pset.get("Stylesheet"), pset.get("Markers"), pset.get("Symbols"), pset.get("Patterns")
-            )
+            self.svg_writer.create_blank_svg(svg_path).define_boilerplate()
             boilerplate = self.svg_writer.svg.tostring()
             outfile.write(boilerplate.replace("</svg>", ""))
             if underlay:
@@ -305,54 +360,126 @@ class CreateDrawing(bpy.types.Operator):
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
             ifc_cache_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
 
-            # Get all representation contexts to see what we're dealing with
-            # A drawing prioritises a target view context first, followed by a body context as a fallback
-            body_contexts = []
-            target_view_contexts = []
+            # Get all representation contexts to see what we're dealing with.
+            # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
+            # A drawing prioritises a target view context first, followed by a model view context as a fallback.
+            # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
+
+            plan_body_target_contexts = []
+            plan_body_model_contexts = []
+            model_body_target_contexts = []
+            model_body_model_contexts = []
+
+            plan_annotation_target_contexts = []
+            plan_annotation_model_contexts = []
+            model_annotation_target_contexts = []
+            model_annotation_model_contexts = []
+
             target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
+
             for rep_context in ifc.by_type("IfcGeometricRepresentationContext"):
                 if rep_context.is_a("IfcGeometricRepresentationSubContext"):
-                    if rep_context.TargetView == target_view:
-                        target_view_contexts.append(rep_context.id())
-                        continue
-                if rep_context.ContextIdentifier in ["Body", "Facetation"]:
-                    body_contexts.append(rep_context.id())
-                    continue
-                if rep_context.is_a() == "IfcGeometricRepresentationContext" and rep_context.ContextType == "Model":
-                    body_contexts.append(rep_context.id())
+                    if rep_context.ContextType == "Plan":
+                        if rep_context.ContextIdentifier in ["Body", "Facetation"]:
+                            if rep_context.TargetView == target_view:
+                                plan_body_target_contexts.append(rep_context.id())
+                            elif rep_context.TargetView == "MODEL_VIEW":
+                                plan_body_model_contexts.append(rep_context.id())
+                        elif rep_context.ContextIdentifier == "Annotation":
+                            if rep_context.TargetView == target_view:
+                                plan_annotation_target_contexts.append(rep_context.id())
+                            elif rep_context.TargetView == "MODEL_VIEW":
+                                plan_annotation_model_contexts.append(rep_context.id())
+                    elif rep_context.ContextType == "Model":
+                        if rep_context.ContextIdentifier in ["Body", "Facetation"]:
+                            if rep_context.TargetView == target_view:
+                                model_body_target_contexts.append(rep_context.id())
+                            elif rep_context.TargetView == "MODEL_VIEW":
+                                model_body_model_contexts.append(rep_context.id())
+                        elif rep_context.ContextIdentifier == "Annotation":
+                            if rep_context.TargetView == target_view:
+                                model_annotation_target_contexts.append(rep_context.id())
+                            elif rep_context.TargetView == "MODEL_VIEW":
+                                model_annotation_model_contexts.append(rep_context.id())
+                elif rep_context.ContextType == "Model":
+                    # You should never purely assign to a "Model" context, but
+                    # if you do, this is what we assume your intention is.
+                    model_body_model_contexts.append(rep_context.id())
                     continue
 
-            elements = tool.Drawing.get_drawing_elements(self.camera_element)
+            body_contexts = (
+                [
+                    plan_body_target_contexts,
+                    plan_body_model_contexts,
+                    model_body_target_contexts,
+                    model_body_model_contexts,
+                ]
+                if target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]
+                else [
+                    model_body_target_contexts,
+                    model_body_model_contexts,
+                ]
+            )
+
+            annotation_contexts = (
+                [
+                    plan_annotation_target_contexts,
+                    plan_annotation_model_contexts,
+                    model_annotation_target_contexts,
+                    model_annotation_model_contexts,
+                ]
+                if target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]
+                else [
+                    model_annotation_target_contexts,
+                    model_annotation_model_contexts,
+                ]
+            )
+
+            drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
             self.setup_serialiser(ifc)
             cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
 
-            with profile("Processing target view context"):
-                if target_view_contexts and elements:
-                    geom_settings = ifcopenshell.geom.settings(
-                        DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
-                    )
-                    geom_settings.set_context_ids(target_view_contexts)
-                    it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
-                    it.set_cache(cache)
-                    processed = set()
-                    for elem in self.yield_from_iterator(it):
-                        processed.add(ifc.by_id(elem.id))
-                        self.serialiser.write(elem)
-                    elements -= processed
+            elements = drawing_elements.copy()
+            for body_context in body_contexts:
+                with profile("Processing body context"):
+                    if body_context and elements:
+                        geom_settings = ifcopenshell.geom.settings(
+                            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                        )
+                        geom_settings.set_context_ids(body_context)
+                        it = ifcopenshell.geom.iterator(
+                            geom_settings, ifc, multiprocessing.cpu_count(), include=elements
+                        )
+                        it.set_cache(cache)
+                        processed = set()
+                        for elem in self.yield_from_iterator(it):
+                            processed.add(ifc.by_id(elem.id))
+                            self.serialiser.write(elem)
+                        elements -= processed
 
-            with profile("Processing body context"):
-                if body_contexts and elements:
-                    geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
-                    geom_settings.set_context_ids(body_contexts)
-                    it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
-                    it.set_cache(cache)
-                    for elem in self.yield_from_iterator(it):
-                        self.serialiser.write(elem)
+            elements = drawing_elements.copy()
+            for annotation_context in annotation_contexts:
+                with profile("Processing annotation context"):
+                    if annotation_context and elements:
+                        geom_settings = ifcopenshell.geom.settings(
+                            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                        )
+                        geom_settings.set_context_ids(annotation_context)
+                        it = ifcopenshell.geom.iterator(
+                            geom_settings, ifc, multiprocessing.cpu_count(), include=elements
+                        )
+                        it.set_cache(cache)
+                        processed = set()
+                        for elem in self.yield_from_iterator(it):
+                            processed.add(ifc.by_id(elem.id))
+                            self.serialiser.write(elem)
+                        elements -= processed
 
             with profile("Camera element"):
                 # @todo tfk: is this needed?
+                # If the camera isn't serialised, then nothing gets serialised. Odd behaviour.
                 geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
                 it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
                 for elem in self.yield_from_iterator(it):
@@ -364,8 +491,8 @@ class CreateDrawing(bpy.types.Operator):
 
         with profile("Post processing"):
             root = etree.fromstring(results)
-            self.enrich_linework_with_metadata(root)
             self.move_projection_to_bottom(root)
+            self.merge_linework_and_add_metadata(root)
             with open(svg_path, "wb") as svg:
                 svg.write(etree.tostring(root))
 
@@ -381,7 +508,8 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setWithoutStoreys(True)
         self.serialiser.setPolygonal(True)
         self.serialiser.setUseHlrPoly(True)
-        self.serialiser.setProfileThreshold(64)
+        # Objects with more than these edges are rendered as wireframe instead of HLR for optimisation
+        self.serialiser.setProfileThreshold(1000)
         self.serialiser.setUseNamespace(True)
         self.serialiser.setAlwaysProject(True)
         self.serialiser.setAutoElevation(False)
@@ -405,30 +533,69 @@ class CreateDrawing(bpy.types.Operator):
                 if not it.next():
                     break
 
-    def enrich_linework_with_metadata(self, root):
+    def merge_linework_and_add_metadata(self, root):
+        joined_paths = {}
+
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             classes = ["cut"]
-            try:
-                element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
-            except:
-                # See #1861 - freshly created guids cannot be extracted unfortunately
-                continue
+            element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            material_name = ""
             if material:
                 if material.is_a("IfcMaterialLayerSet"):
-                    name = material.LayerSetName or "null"
+                    material_name = material.LayerSetName or "null"
                 else:
-                    name = getattr(material, "Name", "null") or "null"
-                name = self.canonicalise_class_name(name)
-                classes.append(f"material-{name}")
+                    material_name = getattr(material, "Name", "null") or "null"
+                material_name = self.canonicalise_class_name(material_name)
+                classes.append(f"material-{material_name}")
             el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
+
+            # Drawing convention states that objects with the same material are merged when cut.
+            if material_name != "null" and el.findall("{http://www.w3.org/2000/svg}path"):
+                joined_paths.setdefault(material_name, []).append(el)
+
+        for key, els in joined_paths.items():
+            polygons = []
+            classes = set()
+
+            for el in els:
+                classes.update(el.attrib["class"].split())
+                classes.add(el.attrib["{http://www.ifcopenshell.org/ns}guid"])
+                is_closed_polygon = False
+                for path in el.findall("{http://www.w3.org/2000/svg}path"):
+                    for subpath in path.attrib["d"].split("M")[1:]:
+                        subpath = "M" + subpath.strip()
+                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                        if len(coords) > 2 and coords[0] == coords[-1]:
+                            is_closed_polygon = True
+                            polygons.append(shapely.Polygon(coords))
+                if is_closed_polygon:
+                    el.getparent().remove(el)
+
+            merged_polygons = shapely.ops.unary_union(polygons)
+
+            if type(merged_polygons) == shapely.MultiPolygon:
+                merged_polygons = merged_polygons.geoms
+            elif type(merged_polygons) == shapely.Polygon:
+                merged_polygons = [merged_polygons]
+
+            root_g = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
+            for polygon in merged_polygons:
+                g = etree.SubElement(root, "g")
+                path = etree.SubElement(g, "path")
+                d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
+                for interior in polygon.interiors:
+                    d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                path.attrib["d"] = d
+                g.set("class", " ".join(list(classes)))
+                root_g.append(g)
 
     def move_projection_to_bottom(self, root):
         # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
         group = root.find("{http://www.w3.org/2000/svg}g")
         # group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
-        if group:
+        if group is not None:
             group[:] = reversed(group)
 
     def canonicalise_class_name(self, name):
@@ -480,7 +647,7 @@ class CreateDrawing(bpy.types.Operator):
             classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(material))))
         classes.append("globalid-{}".format(element.GlobalId))
         for attribute in svg_writer.annotations["attributes"]:
-            result = self.selector.get_element_value(element, attribute)
+            result = ifcopenshell.util.selector.get_element_value(element, attribute)
             if result:
                 classes.append(
                     "{}-{}".format(re.sub("[^0-9a-zA-Z]+", "", attribute), re.sub("[^0-9a-zA-Z]+", "", result))
@@ -686,39 +853,18 @@ class OpenView(bpy.types.Operator):
 
 
 class ActivateView(bpy.types.Operator):
+    """
+    Activates the selected drawing view
+    """
+
     bl_idname = "bim.activate_view"
     bl_label = "Activate View"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Activates the selected drawing view"
     drawing: bpy.props.IntProperty()
 
     def execute(self, context):
-        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(self.drawing))
-        if not camera:
-            return {"FINISHED"}
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        is_local_view = area.spaces[0].local_view is not None
-        if is_local_view:
-            bpy.ops.view3d.localview()
-            context.scene.camera = camera
-            bpy.ops.view3d.localview()
-        else:
-            context.scene.camera = camera
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
-        views_collection = bpy.data.collections.get("Views")
-        for collection in views_collection.children:
-            # We assume the project collection is at the top level
-            for project_collection in context.view_layer.layer_collection.children:
-                # We assume a convention that the 'Views' collection is directly
-                # in the project collection
-                if (
-                    "Views" in project_collection.children
-                    and collection.name in project_collection.children["Views"].children
-                ):
-                    project_collection.children["Views"].children[collection.name].hide_viewport = True
-                    bpy.data.collections.get(collection.name).hide_render = True
-
-                    project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
-        bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+        core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         bpy.context.scene.DocProperties.active_drawing_id = self.drawing
         bpy.ops.bim.activate_drawing_style()
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
@@ -849,7 +995,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 exec(f"{path} = {value}")
 
     def set_query(self, context):
-        self.selector = ifcopenshell.util.selector.Selector()
         self.include_global_ids = []
         self.exclude_global_ids = []
         for ifc_file in context.scene.DocProperties.ifc_files:
@@ -858,10 +1003,10 @@ class ActivateDrawingStyle(bpy.types.Operator):
             except:
                 continue
             if self.drawing_style.include_query:
-                results = self.selector.parse(ifc, self.drawing_style.include_query)
+                results = ifcopenshell.util.selector.Selector.parse(ifc, self.drawing_style.include_query)
                 self.include_global_ids.extend([e.GlobalId for e in results])
             if self.drawing_style.exclude_query:
-                results = self.selector.parse(ifc, self.drawing_style.exclude_query)
+                results = ifcopenshell.util.selector.Selector.parse(ifc, self.drawing_style.exclude_query)
                 self.exclude_global_ids.extend([e.GlobalId for e in results])
         if self.drawing_style.include_query:
             self.parse_filter_query("INCLUDE", context)
@@ -1062,168 +1207,65 @@ class CleanWireframes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CopyGrid(bpy.types.Operator):
-    bl_idname = "bim.add_grid"
-    bl_label = "Add Grid"
-    bl_options = {"REGISTER", "UNDO"}
+class EditTextPopup(bpy.types.Operator):
+    bl_idname = "bim.edit_text_popup"
+    bl_label = "Edit Text"
+    first_run: bpy.props.BoolProperty(default=True)
 
-    @classmethod
-    def poll(cls, context):
-        return helper.get_active_drawing(context.scene)[0] is not None
+    def draw(self, context):
+        # shares most of the code with BIM_PT_text.draw()
+        # need to keep them in sync or move to some common function
+
+        props = context.active_object.BIMTextProperties
+
+        row = self.layout.row(align=True)
+        row.operator("bim.add_text_literal", icon="ADD", text="Add literal")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "font_size")
+
+        for i, literal_props in enumerate(props.literals):
+            box = self.layout.box()
+            row = self.layout.row(align=True)
+
+            row = box.row(align=True)
+            row.label(text=f"Literal[{i}]:")
+            row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
+
+            # skip BoxAlignment since we're going to format it ourselves
+            attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
+            blenderbim.bim.helper.draw_attributes(attributes, box)
+
+            row = box.row(align=True)
+            cols = [row.column(align=True) for i in range(3)]
+            for i in range(9):
+                cols[i % 3].prop(
+                    literal_props,
+                    "box_alignment",
+                    text="",
+                    index=i,
+                    icon="RADIOBUT_ON" if literal_props.box_alignment[i] else "RADIOBUT_OFF",
+                )
+
+            col = row.column(align=True)
+            col.label(text="    Text box alignment:")
+            col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
+
+    def cancel(self, context):
+        # disable editing when dialog is closed
+        bpy.ops.bim.disable_editing_text()
 
     def execute(self, context):
-        drawing = tool.Ifc.get_entity(context.scene.camera)
-        target_view = tool.Drawing.get_drawing_target_view(drawing)
-        subcontext = ifcopenshell.util.representation.get_context(
-            IfcStore.get_file(), "Plan", "Annotation", target_view
-        )
-        if not subcontext:
+        # can't use invoke() because this operator
+        # will be run indirectly by hotkey
+        # so we use execute() and track whether it's the first run of the operator
+        if self.first_run:
+            bpy.ops.bim.enable_editing_text()
+            self.first_run = False
+            return context.window_manager.invoke_props_dialog(self)
+        else:
+            bpy.ops.bim.edit_text()
             return {"FINISHED"}
-
-        proj_coll = helper.get_project_collection(context.scene)
-        view_coll, camera = helper.get_active_drawing(context.scene)
-        is_ortho = camera.data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
-        clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
-        elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
-
-        def grep(coll):
-            results = []
-            for obj in coll.all_objects:
-                element = tool.Ifc.get_entity(obj)
-                if element and element.is_a("IfcAnnotation") and element.ObjectType == "GRID":
-                    results.append(obj)
-            return results
-
-        def clone(src):
-            dst = src.copy()
-            dst.data = dst.data.copy()
-            dst.name = dst.name.replace("IfcGridAxis/", "")
-            dst.BIMObjectProperties.ifc_definition_id = 0
-            dst.data.BIMMeshProperties.ifc_definition_id = 0
-            return dst
-
-        def disassemble(obj):
-            mesh = bmesh.new()
-            mesh.verts.ensure_lookup_table()
-            mesh.from_mesh(obj.data)
-            return obj, mesh
-
-        def assemble(obj, mesh):
-            mesh.to_mesh(obj.data)
-            return obj
-
-        def localize(obj, mesh):
-            # convert to camera coords
-            mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
-            obj.matrix_world = camera.matrix_world
-            return obj, mesh
-
-        def clip(mesh):
-            # clip segment against camera view bounds
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
-
-        def elev(mesh):
-            # put camera-perpendicular segments vertically
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.elevate_segment(bounds, points)
-            if points is None:
-                return None
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
-
-        for obj in grep(view_coll):
-            view_coll.objects.unlink(obj)
-
-        grids = []
-        for element in tool.Ifc.get().by_type("IfcGridAxis"):
-            obj = tool.Ifc.get_object(element)
-            if not obj:
-                continue
-            grids.append((*localize(*disassemble(clone(obj))), element))
-
-        if clipping:
-            grids = [(obj, clip(mesh), element) for obj, mesh, element in grids]
-        elif elevating:
-            grids = [(obj, elev(mesh), element) for obj, mesh, element in grids]
-
-        for obj, mesh, element in grids:
-            if mesh is not None:
-                view_coll.objects.link(assemble(obj, mesh))
-                bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcAnnotation", context_id=subcontext.id())
-                annotation = tool.Ifc.get_entity(obj)
-                annotation.Name = element.AxisTag
-                annotation.ObjectType = "GRID"
-        return {"FINISHED"}
-
-
-class AddSectionsAnnotations(bpy.types.Operator):
-    bl_idname = "bim.add_sections_annotations"
-    bl_label = "Add Sections"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        camera = helper.get_active_drawing(context.scene)[1]
-        return camera and camera.data.type == "ORTHO"
-
-    def execute(self, context):
-        scene = context.scene
-        view_coll, camera = helper.get_active_drawing(scene)
-        bounds = helper.ortho_view_frame(camera.data)
-
-        drawings = [
-            d
-            for d in scene.DocProperties.drawings
-            if (
-                d.camera is not camera
-                and d.camera.data.type == "ORTHO"
-                and d.camera.data.BIMCameraProperties.target_view == "SECTION_VIEW"
-            )
-        ]
-
-        def sideview(cam):
-            # leftmost and rightmost points of camera view area, local coords
-            xmin, xmax, _, _, _, _ = helper.ortho_view_frame(cam.data, margin=0)
-            proj = camera.matrix_world.inverted() @ cam.matrix_world
-            p_l = proj @ Vector((xmin, 0, 0))
-            p_r = proj @ Vector((xmax, 0, 0))
-            return helper.clip_segment(bounds, (p_l, p_r))
-
-        def annotation(drawing, points):
-            # object with path geometry
-            name = drawing.name
-            curve = bpy.data.curves.new(f"Section/{name}", "CURVE")
-            spline = curve.splines.new("POLY")  # has 1 initial point
-            spline.points.add(1)
-            p1, p2 = points
-            z = bounds[4] - 1e-5  # zmin
-            spline.points[0].co = (p1.x, p1.y, z, 1)
-            spline.points[1].co = (p2.x, p2.y, z, 1)
-            obj = bpy.data.objects.new(f"IfcAnnotation/Section/{name}", curve)
-            obj.matrix_world = camera.matrix_world
-            return obj
-
-        for d in drawings:
-            points = sideview(d.camera)
-            if points is None:
-                continue
-            obj = annotation(d, points)
-            view_coll.objects.link(obj)
-
-        return {"FINISHED"}
 
 
 class EditText(bpy.types.Operator, Operator):
@@ -1232,7 +1274,8 @@ class EditText(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_text(tool.Ifc, tool.Drawing, obj=context.active_object)
+        core.edit_text(tool.Drawing, obj=context.active_object)
+        tool.Blender.update_viewport()
 
 
 class EnableEditingText(bpy.types.Operator, Operator):
@@ -1252,6 +1295,58 @@ class DisableEditingText(bpy.types.Operator, Operator):
     def _execute(self, context):
         core.disable_editing_text(tool.Drawing, obj=context.active_object)
 
+        # force update this object's font size for viewport display
+        DecoratorData.data.pop(context.object.name, None)
+        tool.Blender.update_viewport()
+
+
+class AddTextLiteral(bpy.types.Operator):
+    bl_idname = "bim.add_text_literal"
+    bl_label = "Add text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+
+        # similar to `tool.Drawing.import_text_attributes`
+        literal_props = obj.BIMTextProperties.literals.add()
+        literal_attributes = literal_props.attributes
+        literal_attr_values = {
+            "Literal": "Literal",
+            "Path": "RIGHT",
+            "BoxAlignment": "bottom_left",
+        }
+        # emulates `blenderbim.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)`
+        for attr_name in literal_attr_values:
+            attr = literal_attributes.add()
+            attr.name = attr_name
+            if attr_name == "Path":
+                attr.data_type = "enum"
+                attr.enum_items = '["DOWN", "LEFT", "RIGHT", "UP"]'
+                attr.enum_value = literal_attr_values[attr_name]
+
+            else:
+                attr.data_type = "string"
+                attr.string_value = literal_attr_values[attr_name]
+
+        box_alignment_mask = [False] * 9
+        box_alignment_mask[6] = True  # bottom_left box_alignment
+        literal_props.box_alignment = box_alignment_mask
+        return {"FINISHED"}
+
+
+class RemoveTextLiteral(bpy.types.Operator):
+    bl_idname = "bim.remove_text_literal"
+    bl_label = "Remove text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        obj.BIMTextProperties.literals.remove(self.literal_prop_id)
+        return {"FINISHED"}
+
 
 class EditAssignedProduct(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_assigned_product"
@@ -1263,6 +1358,7 @@ class EditAssignedProduct(bpy.types.Operator, Operator):
         if context.active_object.BIMAssignedProductProperties.relating_product:
             product = tool.Ifc.get_entity(context.active_object.BIMAssignedProductProperties.relating_product)
         core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
+        tool.Blender.update_viewport()
 
 
 class EnableEditingAssignedProduct(bpy.types.Operator, Operator):
@@ -1363,3 +1459,12 @@ class ContractSheet(bpy.types.Operator):
             sheet.is_expanded = False
         core.load_sheets(tool.Drawing)
         return {"FINISHED"}
+
+
+class SelectAssignedProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.select_assigned_product"
+    bl_label = "Select Assigned Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.select_assigned_product(tool.Drawing)

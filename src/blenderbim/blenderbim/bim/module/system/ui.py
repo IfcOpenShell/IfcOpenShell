@@ -80,6 +80,7 @@ class BIM_PT_object_systems(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_services_object"
 
     @classmethod
@@ -114,6 +115,7 @@ class BIM_PT_object_systems(Panel):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcZone": "CUBE",
         }
         for system in ObjectSystemData.data["systems"]:
             row = self.layout.row(align=True)
@@ -134,6 +136,7 @@ class BIM_PT_ports(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_services_object"
 
     @classmethod
@@ -166,6 +169,7 @@ class BIM_PT_port(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_services_object"
 
     @classmethod
@@ -196,6 +200,7 @@ class BIM_UL_systems(UIList):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcZone": "CUBE",
         }
         if item:
             row = layout.row(align=True)
@@ -227,6 +232,7 @@ class BIM_UL_object_systems(UIList):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcZone": "CUBE",
         }
         if item:
             row = layout.row(align=True)

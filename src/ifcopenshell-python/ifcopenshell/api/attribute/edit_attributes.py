@@ -30,13 +30,15 @@ class Usecase:
 
         :param product: The product you want to edit. This may be any rooted IFC
             entity.
-        :type product: ifcopenshell.entity_instance
+        :type product: ifcopenshell.entity_instance.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None
         :rtype: None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
             ifcopenshell.api.run("attribute.edit_attributes", model,

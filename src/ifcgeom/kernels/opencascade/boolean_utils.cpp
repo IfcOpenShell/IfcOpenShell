@@ -620,18 +620,6 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 		}
 	}
 
-	{
-		TopoDS_Compound C;
-		BRep_Builder BB;
-		BB.MakeCompound(C);
-		
-		for (auto& w : wires) {
-			BB.Add(C, w);
-		}
-
-		BRepTools::Write(C, "debug.brep");
-	}
-
 	shape_index = 0;
 	edge_index = 0;
 
@@ -1104,6 +1092,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	if (builder->IsDone()) {
 		if (builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
 			Logger::Notice("Builder reports self-intersection in output");
+			success = false;
+		} else if(builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
+			Logger::Notice("Builder reports bad positioning and result is empty");
 			success = false;
 		} else {
 			TopoDS_Shape r = *builder;

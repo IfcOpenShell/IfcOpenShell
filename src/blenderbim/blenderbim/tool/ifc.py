@@ -56,6 +56,9 @@ class Ifc(blenderbim.core.tool.Ifc):
 
     @classmethod
     def is_moved(cls, obj):
+        element = cls.get_entity(obj)
+        if not element or element.is_a("IfcTypeProduct") or element.is_a("IfcProject"):
+            return False
         if not obj.BIMObjectProperties.location_checksum:
             return True  # Let's be conservative
         loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
@@ -89,6 +92,10 @@ class Ifc(blenderbim.core.tool.Ifc):
         IfcStore.link_element(element, obj)
 
     @classmethod
+    def edit(cls, obj):
+        IfcStore.edited_objs.add(obj)
+
+    @classmethod
     def delete(cls, element):
         IfcStore.delete_element(element)
 
@@ -99,6 +106,19 @@ class Ifc(blenderbim.core.tool.Ifc):
     @classmethod
     def unlink(cls, element=None, obj=None):
         IfcStore.unlink_element(element, obj)
+
+    @classmethod
+    def get_all_element_occurences(cls, element):
+        if element.is_a("IfcElementType"):
+            element_type = element
+            occurences = ifcopenshell.util.element.get_types(element_type)
+        else:
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type:
+                occurences = ifcopenshell.util.element.get_types(element_type)
+            else:
+                occurences = [element]
+        return occurences
 
     class Operator:
         def execute(self, context):

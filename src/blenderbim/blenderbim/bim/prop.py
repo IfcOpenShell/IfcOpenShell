@@ -412,6 +412,7 @@ class BIMMaterialProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
+    shading_checksum: StringProperty(name="Shading Checksum")
 
 
 class BIMMeshProperties(PropertyGroup):
@@ -421,7 +422,8 @@ class BIMMeshProperties(PropertyGroup):
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    is_profile: BoolProperty(name="Is Profile", default=False)
+    subshape_type: StringProperty(name="Subshape Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
+    mesh_checksum: StringProperty(name="Mesh Checksum", default="")

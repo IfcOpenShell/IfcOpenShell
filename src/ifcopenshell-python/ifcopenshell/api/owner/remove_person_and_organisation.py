@@ -20,11 +20,33 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, person_and_organisation=None):
+        """Removes a person and organisation
+
+        Note that the underlying person and organisation is not removed, only
+        the "person and organisation" group.
+
+        :param person_and_organisation: The IfcPersonAndOrganization to remove.
+        :type person_and_organisation: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            person = ifcopenshell.api.run("owner.add_person", model,
+                identification="lecorbycorbycorb", family_name="Curbosiar", given_name="Le")
+            organisation = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="AWB", name="Architects Without Ballpens")
+
+            user = ifcopenshell.api.run("owner.add_person_and_organisation", model,
+                person=person, organisation=organisation)
+
+            ifcopenshell.api.run("owner.remove_person_and_organisation", model, person_and_organisation=user)
+        """
         self.file = file
-        self.settings = {"person_and_organisation": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"person_and_organisation": person_and_organisation}
 
     def execute(self):
         for inverse in self.file.get_inverse(self.settings["person_and_organisation"]):

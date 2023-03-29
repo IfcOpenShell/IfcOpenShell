@@ -18,19 +18,48 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.system
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, system=None):
+        """Assigns a distribution element to a system
+
+        Note that it is not necessary to assign distribution ports to a system.
+
+        :param product: The IfcDistributionElement to assign to the system.
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :param system: The IfcSystem you want to assign the element to.
+        :type system: ifcopenshell.entity_instance.entity_instance
+        :return: The IfcRelAssignsToGroup relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # A completely empty distribution system
+            system = ifcopenshell.api.run("system.add_system", model)
+
+            # Create a duct
+            duct = ifcopenshell.api.run("root.create_entity", model,
+                ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
+
+            # This duct is part of the system
+            ifcopenshell.api.run("system.assign_system", model, product=duct, system=system)
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "system": None,
+            "product": product,
+            "system": system,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
+        system = self.settings["system"]
+        product = self.settings["product"]
+        if not ifcopenshell.util.system.is_assignable(product, system):
+            raise TypeError(f"You cannot assign an {product.is_a()} to an {system.is_a()}")
+
         if not self.settings["system"].IsGroupedBy:
             return self.file.create_entity(
                 "IfcRelAssignsToGroup",
@@ -39,7 +68,7 @@ class Usecase:
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                     "RelatedObjects": [self.settings["product"]],
                     "RelatingGroup": self.settings["system"],
-                }
+                },
             )
         rel = self.settings["system"].IsGroupedBy[0]
         related_objects = set(rel.RelatedObjects) or set()

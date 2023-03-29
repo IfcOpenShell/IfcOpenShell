@@ -1,0 +1,81 @@
+diff --git a/COLLADABaseUtils/include/COLLADABUhash_map.h b/COLLADABaseUtils/include/COLLADABUhash_map.h
+index 8ab0fb9b..12503bfb 100644
+--- a/COLLADABaseUtils/include/COLLADABUhash_map.h
++++ b/COLLADABaseUtils/include/COLLADABUhash_map.h
+@@ -32,9 +32,9 @@
+             #include <unordered_map>
+             #include <unordered_set>
+ 
+-            #define COLLADABU_HASH_MAP std::tr1::unordered_map
+-			#define COLLADABU_HASH_MULTIMAP std::tr1::unordered_multimap
+-            #define COLLADABU_HASH_SET std::tr1::unordered_set
++            #define COLLADABU_HASH_MAP std::unordered_map
++			#define COLLADABU_HASH_MULTIMAP std::unordered_multimap
++            #define COLLADABU_HASH_SET std::unordered_set
+             #define COLLADABU_HASH_NAMESPACE_OPEN std { namespace tr1
+             #define COLLADABU_HASH_NAMESPACE_CLOSE }
+             #define COLLADABU_HASH_FUN hash
+@@ -50,12 +50,12 @@
+             #define COLLADABU_HASH_FUN hash
+         #endif
+     #elif defined(__MINGW32__) || defined(__MINGW64__)
+-        #include <tr1/unordered_map>
+-        #include <tr1/unordered_set>
++        #include <unordered_map>
++        #include <unordered_set>
+ 
+-        #define COLLADABU_HASH_MAP std::tr1::unordered_map
+-        #define COLLADABU_HASH_MULTIMAP std::tr1::unordered_multimap
+-        #define COLLADABU_HASH_SET std::tr1::unordered_set
++        #define COLLADABU_HASH_MAP std::unordered_map
++        #define COLLADABU_HASH_MULTIMAP std::unordered_multimap
++        #define COLLADABU_HASH_SET std::unordered_set
+         #define COLLADABU_HASH_NAMESPACE_OPEN std { namespace tr1
+         #define COLLADABU_HASH_NAMESPACE_CLOSE }
+         #define COLLADABU_HASH_FUN hash
+@@ -107,12 +107,12 @@
+         #define COLLADABU_HASH_NAMESPACE_CLOSE
+         #define COLLADABU_HASH_FUN hash
+     #else
+-        #include <tr1/unordered_map>
+-        #include <tr1/unordered_set>
++        #include <unordered_map>
++        #include <unordered_set>
+ 
+-		#define COLLADABU_HASH_MAP std::tr1::unordered_map
+-		#define COLLADABU_HASH_MULTIMAP std::tr1::unordered_multimap
+-        #define COLLADABU_HASH_SET std::tr1::unordered_set
++		#define COLLADABU_HASH_MAP std::unordered_map
++		#define COLLADABU_HASH_MULTIMAP std::unordered_multimap
++        #define COLLADABU_HASH_SET std::unordered_set
+         #define COLLADABU_HASH_NAMESPACE_OPEN std { namespace tr1
+         #define COLLADABU_HASH_NAMESPACE_CLOSE }
+         #define COLLADABU_HASH_FUN hash
+diff --git a/common/libBuffer/include/CommonFWriteBufferFlusher.h b/common/libBuffer/include/CommonFWriteBufferFlusher.h
+index c7af45b2..fac4f133 100644
+--- a/common/libBuffer/include/CommonFWriteBufferFlusher.h
++++ b/common/libBuffer/include/CommonFWriteBufferFlusher.h
+@@ -15,12 +15,12 @@
+ 
+ #if (defined(WIN64) || defined(_WIN64) || defined(__WIN64__)) || (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__) || defined(__APPLE__))
+ #if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
+-#	include <tr1/unordered_map>
++#	include <unordered_map>
+ #else
+ #	include <unordered_map>
+ #endif
+ #else
+-#	include <tr1/unordered_map>
++#	include <unordered_map>
+ #endif
+ 
+ #ifdef _LIBCPP_VERSION
+@@ -58,7 +58,7 @@ namespace Common
+ #else
+ 		typedef __int64 FilePosType;
+ #endif
+-	typedef std::tr1::unordered_map<MarkId, FilePosType > MarkIdToFilePos;
++	typedef std::unordered_map<MarkId, FilePosType > MarkIdToFilePos;
+ 
+ 	public:
+ 		static const size_t DEFAUL_BUFFER_SIZE = 64*1024;

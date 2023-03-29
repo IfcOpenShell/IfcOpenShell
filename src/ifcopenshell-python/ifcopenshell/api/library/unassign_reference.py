@@ -18,11 +18,42 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, reference=None, product=None):
+        """Unassigns a product from a reference
+
+        If the product isn't assigned to the reference, nothing will happen.
+
+        :param reference: The IfcLibraryReference to unassign from
+        :type reference: ifcopenshell.entity_instance.entity_instance
+        :param product: A IfcProduct element to unassign from the reference
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+
+            # Let's create a reference to a single AHU in our Brickschema dataset
+            reference = ifcopenshell.api.run("library.add_reference", model, library=library)
+            ifcopenshell.api.run("library.edit_reference", model,
+                reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
+
+            # Let's assume we have an AHU in our model.
+            ahu = ifcopenshell.api.run("root.create_entity", model,
+                ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
+
+            # And now assign the IFC model's AHU with its Brickschema counterpart
+            ifcopenshell.api.run("library.assign_reference", model, reference=reference, product=ahu)
+
+            # Let's change our mind and unassign it.
+            ifcopenshell.api.run("library.unassign_reference", model, reference=reference, product=ahu)
+        """
+
         self.file = file
-        self.settings = {"reference": None, "product": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"reference": reference, "product": product}
 
     def execute(self):
         rels = self.settings["reference"].LibraryRefForObjects

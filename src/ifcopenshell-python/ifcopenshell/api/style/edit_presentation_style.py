@@ -18,11 +18,31 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, style=None, attributes=None):
+        """Edits the attributes of an IfcPresentationStyle
+
+        For more information about the attributes and data types of an
+        IfcPresentationStyle, consult the IFC documentation.
+
+        :param style: The IfcPresentationStyle entity you want to edit
+        :type style: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Create a new surface style
+            style = ifcopenshell.api.run("style.add_style", model)
+
+            # Change the name of the style to "Foo"
+            ifcopenshell.api.run("style.edit_presentation_style", model, style=style, attributes={"Name": "Foo"})
+        """
         self.file = file
-        self.settings = {"style": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"style": style, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

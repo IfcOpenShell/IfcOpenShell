@@ -985,6 +985,7 @@ EntityArgument::~EntityArgument() {
 	// For that purpose when parsed, the simple type instance is explicitly added to the
 	// file. The reason is we want parsed simply types to behave the same as constructed
 	// simple types.
+
 	// delete entity;
 }
 
@@ -1877,8 +1878,13 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 	// See whether the instance is already part of a file
 	if (entity->data().file != 0) {
 		if (entity->data().file == this) {
+			if (!entity->declaration().as_entity()) {
+				// While not a mapping that can be queried, we do need to free the instance later on
+				byidentity[new_entity->identity()] = new_entity;
+			}
+
 			// If it is part of this file
-			// nothing needs to be done.
+			// nothing else needs to be done.
 			return entity;
 		}
 
@@ -2082,6 +2088,9 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 		// pointer has to be set, so that actual copies are created in subsequent
 		// times.
 		new_entity->data().file = this;
+
+		// While not a mapping that can be queried, we do need to free the instance
+		byidentity[new_entity->identity()] = new_entity;
 	}
 
 	if (parsing_complete_ && ty->as_entity()) {
@@ -2371,7 +2380,7 @@ IfcFile::~IfcFile() {
 	for (const auto& pair : byid) {
 		entities_to_delete.insert(pair.second);
 	}
-	for (const auto& pair : entity_file_map) {
+	for (const auto& pair : byidentity) {
 		entities_to_delete.insert(pair.second);
 	}
 	for (auto entity : entities_to_delete) {

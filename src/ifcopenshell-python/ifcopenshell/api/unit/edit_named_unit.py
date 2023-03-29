@@ -18,11 +18,34 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, unit=None, attributes=None):
+        """Edits the attributes of an IfcNamedUnit
+
+        Named units include SI units, conversion based units (imperial units),
+        and context dependent units.
+
+        For more information about the attributes and data types of an
+        IfcNamedUnit, consult the IFC documentation.
+
+        :param unit: The IfcNamedUnit entity you want to edit
+        :type unit: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Boxes of things
+            unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="BOXES")
+
+            # Uh, crates? Boxes? Whatever.
+            ifcopenshell.api.run("unit.edit_named_unit", model, unit=unit, attibutes={"Name": "CRATES"})
+        """
         self.file = file
-        self.settings = {"unit": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"unit": unit, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

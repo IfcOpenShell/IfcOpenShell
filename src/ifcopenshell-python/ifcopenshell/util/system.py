@@ -17,6 +17,34 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+group_types = {
+    "IfcZone": ("IfcZone", "IfcSpace", "IfcSpatialZone"),
+    "IfcBuiltSystem": (
+        "IfcBuiltElement",
+        "IfcFurnishingElement",
+        "IfcElementAssembly",
+        "IfcTransportElement",
+    ),
+    "IfcBuildingSystem": (
+        "IfcBuildingElement",
+        "IfcFurnishingElement",
+        "IfcElementAssembly",
+        "IfcTransportElement",
+    ),
+    "IfcDistributionSystem": ("IfcDistributionElement",),
+    "IfcStructuralAnalysisModel": ("IfcStructuralMember", "IfcStructuralConnection"),
+    "IfcSystem": ("IfcProduct",),
+    "IfcGroup": ("IfcObjectDefinition",),
+}
+
+
+def is_assignable(product, system) -> bool:
+    for assignable in group_types.get(system.is_a(), ()):
+        if product.is_a(assignable):
+            return True
+    return False
+
+
 def get_system_elements(system):
     results = []
     for rel in system.IsGroupedBy:
@@ -27,11 +55,12 @@ def get_system_elements(system):
 def get_element_systems(element):
     results = []
     for rel in element.HasAssignments:
-        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in [
+        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in (
             "IfcSystem",
             "IfcDistributionSystem",
             "IfcBuildingSystem",
-        ]:
+            "IfcZone",
+        ):
             results.append(rel.RelatingGroup)
     return results
 

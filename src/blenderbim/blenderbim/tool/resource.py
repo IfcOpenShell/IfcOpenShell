@@ -30,7 +30,6 @@ from datetime import datetime
 from dateutil import parser
 import ifcopenshell.util.date as ifcdateutils
 import ifcopenshell.util.cost
-from ifcopenshell.api.unit.data import Data as UnitData
 
 
 class Resource(blenderbim.core.tool.Resource):
@@ -68,7 +67,8 @@ class Resource(blenderbim.core.tool.Resource):
         props.is_resource_update_enabled = False
         for item in tprops.resources:
             resource = tool.Ifc.get().by_id(item.ifc_definition_id)
-            item.name = resource.Name if resource else "Unnamed"
+            item.name = resource.Name if resource.Name else "Unnamed"
+            item.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
         props.is_resource_update_enabled = True
 
     @classmethod
@@ -189,10 +189,8 @@ class Resource(blenderbim.core.tool.Resource):
                 prop.data_type = "enum"
                 prop.is_null = prop.is_optional = False
                 units = {}
-                if not UnitData.is_loaded:
-                    UnitData.load(tool.Ifc.get())
-                for unit_id, unit in UnitData.units.items():
-                    if unit.get("UnitType", None) in [
+                for unit in tool.Ifc.get().by_type("IfcNamedUnit"):
+                    if getattr(unit, "UnitType", None) in [
                         "AREAUNIT",
                         "LENGTHUNIT",
                         "TIMEUNIT",
@@ -200,13 +198,13 @@ class Resource(blenderbim.core.tool.Resource):
                         "MASSUNIT",
                         "USERDEFINED",
                     ]:
-                        if unit["type"] == "IfcContextDependentUnit":
-                            units[unit_id] = f"{unit['UnitType']} / {unit['Name']}"
+                        if unit.is_a("IfcContextDependentUnit"):
+                            units[unit.id()] = f"{unit.is_a()} / {unit.Name}"
                         else:
-                            name = unit["Name"]
-                            if unit.get("Prefix", None):
-                                name = f"(unit['Prefix']) {name}"
-                            units[unit_id] = f"{unit['UnitType']} / {name}"
+                            name = unit.Name
+                            if getattr(unit, "Prefix", None):
+                                name = f"(unit.Prefix) {name}"
+                            units[unit.id()] = f"{unit.UnitType} / {name}"
                 prop.enum_items = json.dumps(units)
                 if data["UnitBasis"] and data["UnitBasis"].UnitComponent:
                     name = data["UnitBasis"].UnitComponent.Name
@@ -289,14 +287,6 @@ class Resource(blenderbim.core.tool.Resource):
         props.contracted_resources = json.dumps(contracted_resources)
 
     @classmethod
-    def get_selected_products(cls):
-        return [
-            tool.Ifc.get_entity(obj)
-            for obj in bpy.context.selected_objects
-            if obj.BIMObjectProperties.ifc_definition_id
-        ] or []
-
-    @classmethod
     def import_resources(cls, file_path):
         from ifc4d.csv2ifc import Csv2Ifc
 
@@ -306,3 +296,11 @@ class Resource(blenderbim.core.tool.Resource):
         p62ifc.file = tool.Ifc.get()
         p62ifc.execute()
         print("Importing Resources CSV finished in {:.2f} seconds".format(time.time() - start))
+
+    @classmethod
+    def get_highlighted_resource(cls):
+        return tool.Ifc.get().by_id(
+            bpy.context.scene.BIMResourceTreeProperties.resources[
+                bpy.context.scene.BIMResourceProperties.active_resource_index
+                ].ifc_definition_id
+            )

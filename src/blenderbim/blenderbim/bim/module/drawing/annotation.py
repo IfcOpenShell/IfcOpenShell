@@ -24,17 +24,6 @@ from mathutils import Vector
 
 class Annotator:
     @staticmethod
-    def get_svg_text_size(size):
-        sizes = {
-            "1.8": "2.97",
-            "2.5": "4.13",
-            "3.5": "5.78",
-            "5.0": "8.25",
-            "7.0": "11.55",
-        }
-        return float(sizes[str(size)])
-
-    @staticmethod
     def add_text(related_element=None):
         curve = bpy.data.curves.new(type="FONT", name="Text")
         curve.body = "TEXT"
@@ -43,7 +32,7 @@ class Annotator:
         if related_element is None:
             location, _, _, _ = Annotator.get_placeholder_coords(bpy.context)
         else:
-            obj.data.BIMTextProperties.related_element = related_element
+            obj.data.BIMAssignedProductProperties.related_element = related_element
             location = related_element.location
         obj.location = location
         obj.hide_render = True
@@ -175,7 +164,7 @@ class Annotator:
         if object_type != "ANGLE":
             for obj in collection.objects:
                 element = tool.Ifc.get_entity(obj)
-                if element and element.ObjectType == object_type:
+                if element and element.ObjectType == object_type and obj.type == object_type.upper():
                     return obj
         if data_type == "mesh":
             data = bpy.data.meshes.new(object_type)

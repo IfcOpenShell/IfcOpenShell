@@ -55,6 +55,7 @@ Scenario: Disable editing system
 Scenario: Assign system
     Given an empty IFC project
     And I press "bim.load_systems"
+    And I set "scene.BIMSystemProperties.system_class" to "IfcDistributionSystem"
     And I press "bim.add_system"
     And the variable "system" is "{ifc}.by_type('IfcSystem')[0].id()"
     And I press "bim.enable_editing_system(system={system})"
@@ -69,6 +70,7 @@ Scenario: Assign system
 Scenario: Unassign system
     Given an empty IFC project
     And I press "bim.load_systems"
+    And I set "scene.BIMSystemProperties.system_class" to "IfcDistributionSystem"
     And I press "bim.add_system"
     And the variable "system" is "{ifc}.by_type('IfcSystem')[0].id()"
     And I press "bim.enable_editing_system(system={system})"
@@ -84,6 +86,7 @@ Scenario: Unassign system
 Scenario: Select system products
     Given an empty IFC project
     And I press "bim.load_systems"
+    And I set "scene.BIMSystemProperties.system_class" to "IfcDistributionSystem"
     And I press "bim.add_system"
     And the variable "system" is "{ifc}.by_type('IfcSystem')[0].id()"
     And I press "bim.enable_editing_system(system={system})"

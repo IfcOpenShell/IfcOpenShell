@@ -84,10 +84,6 @@ class Unit(blenderbim.core.tool.Unit):
         return props.length_unit.replace("METERS", "")
 
     @classmethod
-    def get_si_name_from_unit_type(cls, unit_type):
-        return ifcopenshell.util.unit.si_type_names.get(unit_type, None)
-
-    @classmethod
     def import_unit_attributes(cls, unit):
         def callback(name, prop, data):
             if name == "Dimensions" and data["type"] != "IfcSIUnit":

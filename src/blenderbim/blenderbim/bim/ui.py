@@ -121,20 +121,25 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
-    lock_grids_on_import: BoolProperty(name="Will lock grids upon import", default=True)
+    lock_grids_on_import: BoolProperty(name="Should Lock Grids By Default", default=True)
 
     def draw(self, context):
         layout = self.layout
-        row = layout.row()
+
+        box = layout.box()
+        row = box.row()
+        row.label(
+            text="To uninstall: 1) Disable the add-on 2) Restart Blender 3) Press the 'Remove' button.",
+            icon="ERROR",
+        )
+        row = box.row()
         row.label(
             text="To upgrade, first uninstall your current BlenderBIM Add-on, then install the new version.",
             icon="ERROR",
         )
+
         row = layout.row()
-        row.label(
-            text="To uninstall, first disable the add-on. Then restart Blender before pressing the 'Remove' button.",
-            icon="ERROR",
-        )
+        row.operator("bim.open_upstream", text="Help Donate to Fund Development!", icon="FUND").page = "fund"
         row = layout.row()
         row.operator("bim.open_upstream", text="Visit Homepage").page = "home"
         row.operator("bim.open_upstream", text="Visit Documentation").page = "docs"
@@ -233,6 +238,21 @@ class BIM_PT_collaboration(Panel):
         pass
 
 
+class BIM_PT_selection(Panel):
+    bl_label = "IFC Selection"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_geometry(Panel):
     bl_label = "IFC Geometry"
     bl_space_type = "PROPERTIES"
@@ -321,6 +341,7 @@ class BIM_PT_object_metadata(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
@@ -335,6 +356,7 @@ class BIM_PT_geometry_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -350,6 +372,7 @@ class BIM_PT_services_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -365,6 +388,7 @@ class BIM_PT_utilities_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -380,6 +404,7 @@ class BIM_PT_misc_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod

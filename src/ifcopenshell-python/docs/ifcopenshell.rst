@@ -16,6 +16,7 @@ compile-time when using C++ and at run-time when using Python.
    ifcopenshell/installation
    ifcopenshell/geometry_iterator
    ifcopenshell/geometry_settings
+   ifcopenshell/boolean_process
 
 Indices and tables
 ------------------

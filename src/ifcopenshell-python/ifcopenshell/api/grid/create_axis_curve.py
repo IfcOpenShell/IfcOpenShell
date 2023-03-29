@@ -23,14 +23,44 @@ from mathutils import Matrix  # For now, we depend on Blender
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, axis_curve=None, grid_axis=None):
+        """Adds curve geometry to a grid axis to represent the axis extents
+
+        This currently depends on the Blender geometry kernel to function.
+
+        An IFC grid will have a minimum of two axes (typically perpendicular). Each
+        axis will then have a line which represents the extents of the axis.
+
+        :param axis_curve: The Blender object that contains a mesh data block with a
+            single edge.
+        :type axis_curve: bpy.types.Object
+        :param grid_axis: The IfcGridAxis element to add geometry to.
+        :type grid_axis: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # A pretty standard rectangular grid, with only two axes.
+            grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")
+            axis_a = ifcopenshell.api.run("grid.create_grid_axis", model,
+                axis_tag="A", uvw_axes="UAxes", grid=grid)
+            axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
+                axis_tag="1", uvw_axes="VAxes", grid=grid)
+
+            # Assume you have these Blender objects in your active Blender session
+            obj1 = bpy.data.objects.get("AxisA")
+            obj2 = bpy.data.objects.get("Axis1")
+            ifcopenshell.api.run("grid.create_axis_curve", model, axis_curve=obj1, grid_axis=axis_a)
+            ifcopenshell.api.run("grid.create_axis_curve", model, axis_curve=obj2, grid_axis=axis_1)
+        """
         self.file = file
         self.settings = {
-            "axis_curve": None,  # A Blender object
-            "grid_axis": None,
+            "axis_curve": axis_curve,  # A Blender object
+            "grid_axis": grid_axis,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         existing_curve = self.settings["grid_axis"].AxisCurve

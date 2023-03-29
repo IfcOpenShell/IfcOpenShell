@@ -20,18 +20,21 @@ import bpy
 from . import ui, operator, prop
 
 classes = (
+    operator.ColourByRelatedBuildingElement,
+    operator.DisableEditingBoundary,
+    operator.EditBoundaryAttributes,
+    operator.EnableEditingBoundary,
     operator.LoadProjectSpaceBoundaries,
     operator.LoadSpaceBoundaries,
     operator.LoadBoundary,
+    operator.SelectRelatedElementBoundaries,
     operator.SelectProjectBoundaries,
-    operator.ColourByRelatedBuildingElement,
-    operator.EnableEditingBoundary,
-    operator.DisableEditingBoundary,
-    operator.EditBoundaryAttributes,
+    operator.SelectRelatedElementTypeBoundaries,
+    operator.SelectSpaceBoundaries,
     operator.UpdateBoundaryGeometry,
     ui.BIM_PT_Boundary,
-    ui.BIM_PT_SpaceBoundaries,
     ui.BIM_PT_SceneBoundaries,
+    ui.BIM_PT_SpaceBoundaries,
     prop.BIMBoundaryProperties,
 )
 

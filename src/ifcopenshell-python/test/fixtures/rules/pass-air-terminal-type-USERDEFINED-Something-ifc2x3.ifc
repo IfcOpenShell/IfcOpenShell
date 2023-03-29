@@ -1,0 +1,15 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2022-12-25T10:35:38',(),(),'IfcOpenShell v0.7.0-fa6bbf2d','IfcOpenShell v0.7.0-fa6bbf2d','');
+FILE_SCHEMA(('IFC2X3'));
+ENDSEC;
+DATA;
+#1=IFCPERSON('tfk',$,'Thomas',$,$,$,$,$);
+#2=IFCORGANIZATION($,'AECgeeks',$,$,$);
+#3=IFCPERSONANDORGANIZATION(#1,#2,$);
+#4=IFCAPPLICATION(#2,'v0.7.0-fa6bbf2d','IfcOpenShell','IfcOpenShell v0.7.0-fa6bbf2d');
+#5=IFCOWNERHISTORY(#3,#4,$,.ADDED.,$,$,$,1671960938);
+#6=IFCAIRTERMINALTYPE('0Nu5JE1uH6vP6UyfTvg9tu',#5,'My Type',$,$,$,$,$,'Something',.USERDEFINED.);
+ENDSEC;
+END-ISO-10303-21;

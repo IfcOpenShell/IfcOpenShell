@@ -18,11 +18,29 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, text_literal=None, attributes=None):
+        """Edits the attributes of an IfcTextLiteral
+
+        For more information about the attributes and data types of an
+        IfcTextLiteral, consult the IFC documentation.
+
+        :param reference: The IfcTextLiteral entity you want to edit
+        :type reference: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            text = model.createIfcTextLiteral()
+            ifcopenshell.api.run("drawing.edit_text_literal", model,
+                text_literal=text, attributes={"Literal": "MY ANNOTATION"})
+        """
         self.file = file
-        self.settings = {"text_literal": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"text_literal": text_literal, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

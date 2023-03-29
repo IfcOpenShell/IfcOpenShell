@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bpy.utils
+import bpy.utils.previews
 import ifcopenshell.util.doc
 import blenderbim.tool as tool
 
@@ -27,6 +29,7 @@ def refresh():
 
 class ProfileData:
     data = {}
+    preview_collection = bpy.utils.previews.new()
     is_loaded = False
 
     @classmethod
@@ -69,4 +72,4 @@ class ProfileData:
     @classmethod
     def is_editing_arbitrary_profile(cls):
         obj = bpy.context.active_object
-        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile
+        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "PROFILE"
