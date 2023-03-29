@@ -61,12 +61,11 @@ class BIM_PT_cost_schedules(Panel):
         row.label(text=cost_schedule["name"], icon="LINENUMBERS_ON")
 
         if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule["id"]:
-            op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
+            op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="Assigned")
             op.cost_schedule = cost_schedule["id"]
-            row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
-
             row.operator("bim.select_unassigned_products", icon="RESTRICT_SELECT_OFF", text="Unassigned")
 
+            row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":
