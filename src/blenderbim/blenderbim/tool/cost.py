@@ -542,3 +542,18 @@ class Cost(blenderbim.core.tool.Cost):
             if unit.get_info().get("Prefix", None):
                 name = f"{unit.Prefix} {name}"
             return f"{unit.UnitType} / {name}"
+
+    @classmethod
+    def get_active_cost_schedule(cls):
+        if not bpy.context.scene.BIMCostProperties.active_cost_schedule_id:
+            return None
+        return tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id)
+
+    @classmethod
+    def has_cost_assignments(cls, product, cost_schedule=None):
+        cost_items = ifcopenshell.util.cost.get_cost_items_for_product(product)
+        if cost_schedule:
+            cost_items = [
+                cost_item for cost_item in cost_items or [] if cls.get_cost_schedule(cost_item) == cost_schedule
+            ]
+        return bool(cost_items)

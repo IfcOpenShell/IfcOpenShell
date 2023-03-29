@@ -652,3 +652,13 @@ class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
             related_object_type=self.related_object_type,
         )
         return {"FINISHED"}
+
+
+class SelectUnassignedProducts(bpy.types.Operator):
+    bl_idname = "bim.select_unassigned_products"
+    bl_label = "Select Unassigned Products"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.select_unassigned_products(tool.Ifc, tool.Cost, tool.Spatial)
+        return {"FINISHED"}

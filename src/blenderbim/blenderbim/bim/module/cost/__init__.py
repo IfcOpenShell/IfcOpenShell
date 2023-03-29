@@ -68,6 +68,7 @@ classes = (
     operator.ContractCostItemRate,
     operator.CalculateCostItemResourceValue,
     operator.ClearCostItemAssignments,
+    operator.SelectUnassignedProducts,
     operator.LoadCostItemElementQuantities,
     operator.LoadCostItemTaskQuantities,
     operator.LoadCostItemResourceQuantities,
