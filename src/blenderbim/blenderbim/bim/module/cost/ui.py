@@ -64,6 +64,9 @@ class BIM_PT_cost_schedules(Panel):
             op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
             op.cost_schedule = cost_schedule["id"]
             row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
+
+            row.operator("bim.select_unassigned_products", icon="RESTRICT_SELECT_OFF", text="Unassigned")
+
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":
@@ -377,7 +380,7 @@ class BIM_PT_cost_item_quantities(Panel):
         row2 = col.row()
         op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
         op.cost_item = cost_item.ifc_definition_id
-        op.related_object_type = "IfcElement"
+        op.related_object_type = "PRODUCT"
 
         if has_quantity_names:
             row2 = col.row()
@@ -422,7 +425,7 @@ class BIM_PT_cost_item_quantities(Panel):
         row2 = col.row()
         op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
         op.cost_item = cost_item.ifc_definition_id
-        op.related_object_type = "IfcProcess"
+        op.related_object_type = "PROCESS"
 
         if has_quantity_names:
             row2 = col.row()
@@ -470,7 +473,7 @@ class BIM_PT_cost_item_quantities(Panel):
         row2 = col.row()
         op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
         op.cost_item = cost_item.ifc_definition_id
-        op.related_object_type = "IfcResource"
+        op.related_object_type = "RESOURCE"
 
         if has_quantity_names:
             row2 = col.row()
@@ -636,3 +639,41 @@ class BIM_UL_cost_item_quantities(UIList):
             op = row.operator("bim.unassign_cost_item_quantity", text="", icon="X")
             op.cost_item = cost_item.ifc_definition_id
             op.related_object = item.ifc_definition_id
+
+
+class BIM_UL_product_cost_items(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMCostProperties
+        oprops = context.active_object.BIMObjectProperties
+        cost_item = props.cost_items[props.active_cost_item_index]
+
+        if item:
+            row = layout.row(align=True)
+            op = row.operator("bim.highlight_product_cost_item", text="", icon="STYLUS_PRESSURE")
+            op.cost_item = item.ifc_definition_id
+            row.split(factor=0.8)
+            row.label(text=item.name)
+
+
+class BIM_PT_Costing_Tools(Panel):
+    bl_label = "5D Tools"
+    bl_idname = "BIM_PT_Costing_Tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "4D/5D Toolkit"
+
+    def draw(self, context):
+        self.props = context.scene.BIMCostProperties
+        row = self.layout.row()
+        row.operator(
+            "bim.load_product_cost_items", icon="FILE_REFRESH"
+        ).product = context.active_object.BIMObjectProperties.ifc_definition_id
+        row = self.layout.row()
+        row.template_list(
+            "BIM_UL_product_cost_items",
+            "",
+            self.props,
+            "product_cost_items",
+            self.props,
+            "active_product_cost_item_index",
+        )

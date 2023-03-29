@@ -456,9 +456,7 @@ class SelectCostItemProducts(bpy.types.Operator, tool.Ifc.Operator):
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.select_cost_item_products(
-            tool.Cost, tool.Spatial, cost_item=tool.Ifc.get().by_id(self.cost_item), include_nested=False
-        )
+        core.select_cost_item_products(tool.Cost, tool.Spatial, cost_item=tool.Ifc.get().by_id(self.cost_item))
         return {"FINISHED"}
 
 
@@ -651,6 +649,38 @@ class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
             cost_item=tool.Ifc.get().by_id(self.cost_item),
             related_object_type=self.related_object_type,
         )
+        return {"FINISHED"}
+
+
+class LoadProductCostItems(bpy.types.Operator):
+    bl_idname = "bim.load_product_cost_items"
+    bl_label = "Get Product Cost Assignments"
+    bl_options = {"REGISTER", "UNDO"}
+    product: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        if not context.active_object.BIMObjectProperties.ifc_definition_id:
+            return False
+        return True
+
+    def execute(self, context):
+        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get().by_id(self.product))
+        return {"FINISHED"}
+
+
+class HighlightProductCostItem(bpy.types.Operator):
+    bl_idname = "bim.highlight_product_cost_item"
+    bl_label = "Highlight Product Cost Items"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        r = core.highlight_product_cost_item(tool.Spatial, tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
         return {"FINISHED"}
 
 

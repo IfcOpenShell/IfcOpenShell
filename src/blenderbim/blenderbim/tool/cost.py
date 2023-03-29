@@ -543,11 +543,46 @@ class Cost(blenderbim.core.tool.Cost):
                 name = f"{unit.Prefix} {name}"
             return f"{unit.UnitType} / {name}"
 
+
+    @classmethod
+    def get_cost_schedule(cls, cost_item):
+        for rel in cost_item.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
+                return rel.RelatingControl
+        for rel in cost_item.Nests or []:
+            return cls.get_cost_schedule(rel.RelatingObject)
+
+    @classmethod
+    def is_cost_schedule_active(cls, cost_schedule):
+        return True if cost_schedule.id() == bpy.context.scene.BIMCostProperties.active_cost_schedule_id else False
+
     @classmethod
     def get_active_cost_schedule(cls):
         if not bpy.context.scene.BIMCostProperties.active_cost_schedule_id:
             return None
         return tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id)
+
+    @classmethod
+    def highlight_cost_item(cls, cost_item):
+        def expand_ancestors(cost_item):
+            cls.expand_cost_item(cost_item)
+            for rel in cost_item.Nests or []:
+                parent_cost = rel.RelatingObject if rel.RelatingObject.is_a("IfcCostItem") else None
+                if parent_cost:
+                    expand_ancestors(parent_cost)
+            cls.load_cost_schedule_tree()
+
+        cost_props = bpy.context.scene.BIMCostProperties
+        if not cost_item.id() in [item.ifc_definition_id for item in cost_props.cost_items]:
+            expand_ancestors(cost_item)
+        cost_item_index = [item.ifc_definition_id for item in bpy.context.scene.BIMCostProperties.cost_items].index(
+            cost_item.id()
+        ) or 0
+        bpy.context.scene.BIMCostProperties.active_cost_item_index = cost_item_index
+
+    @classmethod
+    def get_cost_items_for_product(cls, product):
+        return ifcopenshell.util.cost.get_cost_items_for_product(product)
 
     @classmethod
     def has_cost_assignments(cls, product, cost_schedule=None):
@@ -557,3 +592,23 @@ class Cost(blenderbim.core.tool.Cost):
                 cost_item for cost_item in cost_items or [] if cls.get_cost_schedule(cost_item) == cost_schedule
             ]
         return bool(cost_items)
+
+    @classmethod
+    def load_product_cost_items(cls, product):
+        props = bpy.context.scene.BIMCostProperties
+        props.is_cost_update_enabled = False
+        props.product_cost_items.clear()
+        cost_items = ifcopenshell.util.cost.get_cost_items_for_product(product)
+        if cost_items:
+            for cost_item in cost_items:
+                new = props.product_cost_items.add()
+                new.name = cost_item.Name or "Unnamed"
+                new.ifc_definition_id = cost_item.id()
+
+    @classmethod
+    def is_root_cost_item(cls, cost_item):
+        if cost_item.HasAssignments:
+            for rel in cost_item.HasAssignments:
+                if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
+                    return True
+

@@ -68,6 +68,8 @@ classes = (
     operator.ContractCostItemRate,
     operator.CalculateCostItemResourceValue,
     operator.ClearCostItemAssignments,
+    operator.HighlightProductCostItem,
+    operator.LoadProductCostItems,
     operator.SelectUnassignedProducts,
     operator.LoadCostItemElementQuantities,
     operator.LoadCostItemTaskQuantities,
@@ -85,6 +87,8 @@ classes = (
     ui.BIM_UL_cost_item_quantities,
     ui.BIM_UL_cost_item_types,
     ui.BIM_UL_cost_item_rates,
+    ui.BIM_UL_product_cost_items,
+    ui.BIM_PT_Costing_Tools,
 )
 
 
