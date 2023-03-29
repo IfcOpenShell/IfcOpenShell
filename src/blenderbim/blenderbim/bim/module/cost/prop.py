@@ -175,6 +175,7 @@ class BIMCostProperties(PropertyGroup):
         name="Cost Types",
     )
     cost_category: StringProperty(name="Cost Category")
+    fixed_cost_value: FloatProperty(name="Fixed Cost Value")
     active_cost_value_id: IntProperty(name="Active Cost Item Value Id")
     cost_value_editing_type: StringProperty(name="Cost Value Editing Type")
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
