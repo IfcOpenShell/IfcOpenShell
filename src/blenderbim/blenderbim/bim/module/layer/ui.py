@@ -18,7 +18,7 @@
 
 from bpy.types import Panel, UIList, Mesh
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.layer.data import Data
+from blenderbim.bim.module.layer.data import LayersData
 
 
 class BIM_PT_layers(Panel):
@@ -35,13 +35,13 @@ class BIM_PT_layers(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not LayersData.is_loaded:
+            LayersData.load()
 
         self.props = context.scene.BIMLayerProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Layers Found".format(len(Data.layers.keys())))
+        row.label(text=f"{LayersData.data['total_layers']} Layers Found")
         if self.props.is_editing:
             row.operator("bim.add_presentation_layer", text="", icon="ADD")
             row.operator("bim.disable_layer_editing_ui", text="", icon="CANCEL")
@@ -77,10 +77,7 @@ class BIM_UL_layers(UIList):
 
             if context.active_object and isinstance(context.active_object.data, Mesh):
                 mprops = context.active_object.data.BIMMeshProperties
-                if (
-                    mprops.ifc_definition_id in Data.items
-                    and item.ifc_definition_id in Data.items[mprops.ifc_definition_id]
-                ):
+                if item.ifc_definition_id in LayersData.data["active_layers"]:
                     op = row.operator("bim.unassign_presentation_layer", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.layer = item.ifc_definition_id
                 else:
@@ -91,11 +88,17 @@ class BIM_UL_layers(UIList):
             row.operator("bim.disable_editing_layer", text="", icon="FREEZE", emboss=False)
 
             if context.scene.BIMLayerProperties.active_layer_id == item.ifc_definition_id:
+                op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.layer = item.ifc_definition_id
                 row.operator("bim.edit_presentation_layer", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_layer", text="", icon="CANCEL")
             elif context.scene.BIMLayerProperties.active_layer_id:
+                op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.layer = item.ifc_definition_id
                 row.operator("bim.remove_presentation_layer", text="", icon="X").layer = item.ifc_definition_id
             else:
+                op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.layer = item.ifc_definition_id
                 op = row.operator("bim.enable_editing_layer", text="", icon="GREASEPENCIL")
                 op.layer = item.ifc_definition_id
                 row.operator("bim.remove_presentation_layer", text="", icon="X").layer = item.ifc_definition_id

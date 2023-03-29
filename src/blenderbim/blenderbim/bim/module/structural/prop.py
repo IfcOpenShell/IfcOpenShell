@@ -18,11 +18,10 @@
 
 from math import radians
 import bpy
-from ifcopenshell.api.structural.data import Data
-from ifcopenshell.util.doc import get_entity_doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.module.structural.data import StructuralLoadCasesData, StructuralLoadsData, BoundaryConditionsData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -35,83 +34,35 @@ from bpy.props import (
     CollectionProperty,
 )
 
-structuralloadtypes_enum = []
-applicablestructuralloads_enum = []
 
-
-def purge():
-    global structuralloadtypes_enum
-    global applicablestructuralloads_enum
-    structuralloadtypes_enum = []
-    applicablestructuralloads_enum = []
-
-
-def getApplicableStructuralLoadTypes(self, context):
-    ifc_file = IfcStore.get_file()
-    element_classes = set(
-        [
-            ifc_file.by_id(o.BIMObjectProperties.ifc_definition_id).is_a()
-            for o in context.selected_objects
-            if o.BIMObjectProperties.ifc_definition_id
-        ]
-    )
-    types = [("IfcStructuralLoadTemperature", "IfcStructuralLoadTemperature", "")]
-    if "IfcStructuralPointConnection" in element_classes:
-        types.extend(
-            [
-                ("IfcStructuralLoadSingleForce", "IfcStructuralLoadSingleForce", ""),
-                ("IfcStructuralLoadSingleDisplacement", "IfcStructuralLoadSingleDisplacement", ""),
-            ]
-        )
-    if "IfcStructuralCurveMember" in element_classes:
-        types.append(("IfcStructuralLoadLinearForce", "IfcStructuralLoadLinearForce", ""))
-    if "IfcStructuralSurfaceMember" in element_classes:
-        types.append(("IfcStructuralLoadPlanarForce", "IfcStructuralLoadPlanarForce", ""))
-    return types
+def get_applicable_structural_load_types(self, context):
+    if not StructuralLoadCasesData.is_loaded:
+        StructuralLoadCasesData.load()
+    return StructuralLoadCasesData.data["applicable_structural_load_types"]
 
 
 def updateApplicableStructuralLoadTypes(self, context):
-    global applicablestructuralloads_enum
-    applicablestructuralloads_enum.clear()
+    StructuralLoadCasesData.data[
+        "applicable_structural_load_types"
+    ] = StructuralLoadCasesData.applicable_structural_load_types()
 
 
-def getApplicableStructuralLoads(self, context):
-    global applicablestructuralloads_enum
-    file = IfcStore.get_file()
-    if len(applicablestructuralloads_enum) < 1 and file:
-        for ifc_definition_id, load in Data.structural_loads.items():
-            if not load["Name"] or load["type"] != self.applicable_structural_load_types:
-                continue
-            applicablestructuralloads_enum.append((str(ifc_definition_id), load["Name"], ""))
-    return applicablestructuralloads_enum
+def get_applicable_structural_loads(self, context):
+    if not StructuralLoadCasesData.is_loaded:
+        StructuralLoadCasesData.load()
+    return StructuralLoadCasesData.data["applicable_structural_loads"]
 
 
 def get_structural_load_types(self, context):
-    global structuralloadtypes_enum
-    file = IfcStore.get_file()
-    if len(structuralloadtypes_enum) < 1 and file:
-        declaration = IfcStore.get_schema().declaration_by_name("IfcStructuralLoadStatic")
-        version = tool.Ifc.get_schema()
-        structuralloadtypes_enum.extend(
-            [
-                (d.name(), d.name(), get_entity_doc(version, d.name()).get("description", ""))
-                for d in declaration.subtypes()
-            ]
-        )
-    return structuralloadtypes_enum
+    if not StructuralLoadsData.is_loaded:
+        StructuralLoadsData.load()
+    return StructuralLoadsData.data["structural_load_types"]
 
 
 def get_boundary_condition_types(self, context):
-    file = IfcStore.get_file()
-    if file:
-        declaration = IfcStore.get_schema().declaration_by_name("IfcBoundaryCondition")
-        version = tool.Ifc.get_schema()
-        boundaryconditiontypes_enum = [
-            (d.name(), d.name(), get_entity_doc(version, d.name()).get("description", ""))
-            for d in declaration.subtypes()
-        ]
-        return boundaryconditiontypes_enum
-    return []
+    if not BoundaryConditionsData.is_loaded:
+        BoundaryConditionsData.load()
+    return BoundaryConditionsData.data["boundary_condition_types"]
 
 
 def updateAxisAngle(self, context):
@@ -177,11 +128,11 @@ class BIMStructuralProperties(PropertyGroup):
     # load_group_attributes: CollectionProperty(name="Load Group Attributes", type=Attribute)
     active_load_group_id: IntProperty(name="Active Load Group Id")
     applicable_structural_load_types: EnumProperty(
-        items=getApplicableStructuralLoadTypes,
+        items=get_applicable_structural_load_types,
         name="Applicable Structural Load Types",
         update=updateApplicableStructuralLoadTypes,
     )
-    applicable_structural_loads: EnumProperty(items=getApplicableStructuralLoads, name="Applicable Structural Loads")
+    applicable_structural_loads: EnumProperty(items=get_applicable_structural_loads, name="Applicable Structural Loads")
     load_group_activities: CollectionProperty(name="Load Group Activities", type=StructuralActivity)
     active_load_group_activity_index: IntProperty(name="Active Load Group Activity Index")
 

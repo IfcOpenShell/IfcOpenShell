@@ -20,11 +20,27 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, organisation=None):
+        """Remove an organisation
+
+        All roles and addresses assigned to the organisation will also be
+        removed.
+
+        :param organisation: The IfcOrganization to remove
+        :type organisation: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            organisation = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="AWB", name="Architects Without Ballpens")
+            ifcopenshell.api.run("owner.remove_organisation", model, organisation=organisation)
+        """
         self.file = file
-        self.settings = {"organisation": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"organisation": organisation}
 
     def execute(self):
         for role in self.settings["organisation"].Roles or []:

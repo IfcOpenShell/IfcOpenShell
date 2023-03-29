@@ -10,6 +10,7 @@ Scenario: Parse express
     Given an empty Blender session
     And I press "bim.select_express_file(filepath='{cwd}/test/files/test.exp')"
     When I press "bim.parse_express"
+    And I evaluate expression "os.remove('{cwd}/test/files/test.exp.cache.dat')"
     Then nothing happens
 
 Scenario: Use the inspector - inspect from STEP ID

@@ -23,6 +23,12 @@ from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.geometry.data import RepresentationsData, ConnectionsData, DerivedPlacementsData
 
 
+def object_menu(self, context):
+    self.layout.operator("bim.override_object_duplicate_move", icon="PLUGIN")
+    self.layout.operator("bim.override_object_delete", icon="PLUGIN")
+    self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
+
+
 class BIM_PT_representations(Panel):
     bl_label = "IFC Representations"
     bl_idname = "BIM_PT_representations"
@@ -30,6 +36,7 @@ class BIM_PT_representations(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
@@ -51,7 +58,7 @@ class BIM_PT_representations(Panel):
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
-        prop_with_search(row, context.scene.BIMRootProperties, "contexts", text="")
+        prop_with_search(row, context.active_object.BIMGeometryProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         for representation in RepresentationsData.data["representations"]:
@@ -60,7 +67,7 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextIdentifier"])
             row.label(text=representation["TargetView"])
             row.label(text=representation["RepresentationType"])
-            op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
+            op = row.operator("bim.switch_representation", icon="FILE_REFRESH" if representation["is_active"] else "OUTLINER_DATA_MESH", text="")
             op.should_switch_all_meshes = True
             op.should_reload = True
             op.ifc_definition_id = representation["id"]
@@ -75,6 +82,7 @@ class BIM_PT_connections(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
@@ -179,6 +187,7 @@ class BIM_PT_derived_placements(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "OBJECT_PT_transform"
 
     def draw(self, context):

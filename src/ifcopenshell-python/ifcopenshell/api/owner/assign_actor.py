@@ -21,14 +21,62 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relating_actor=None, related_object=None):
+        """Assigns an actor to an object
+
+        An actor may be assigned to objects which implies that the actor is
+        responsible for. This is most commonly used in facility management for
+        indicating the manufacturers, suppliers, and warrantors for product
+        types.
+
+        Here are a list of objects you may assign an actor to:
+
+        * IfcControl: Indicates project directives issued by the actor.
+        * IfcGroup: Indicates groups for which the actor is responsible.
+        * IfcProduct: Indicates products for which the actor is responsible.
+        * IfcProcess: Indicates processes for which the actor is responsible.
+        * IfcResource: Indicates resources for which the actor is responsible to
+            allocate, manage, or delegate. This is not the actor actually using
+            the resource or performing the work. For that type of actor, see
+            ifcopenshell.api.resource.assign_resource.
+
+        :param relating_actor: The IfcActor who is responsible for the object.
+        :type relating_actor: ifcopenshell.entity_instance.entity_instance
+        :param related_object: The object the actor is responsible for.
+        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created IfcRelAssignsToActor relationship.
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # We need to procure and install 2 of this particular pump type in our facility.
+            pump_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcPumpType")
+
+            # Define who the manufacturer is
+            manufacturer = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="PWP", name="Pumps With Power")
+            ifcopenshell.api.run("owner.add_role", model, assigned_object=manufacturer, role="MANUFACTURER")
+
+            # To help our facility manager, it's nice to provide contact details
+            # of the manufacturer so they know how to call when the pump breaks.
+            telecom = ifcopenshell.api.run("owner.add_address", model,
+                assigned_object=organisation, ifc_class="IfcTelecomAddress")
+            ifcopenshell.api.run("owner.edit_address", model, address=telecom,
+                attributes={"Purpose": "OFFICE", "TelephoneNumbers": ["+61432466949"],
+                "ElectronicMailAddresses": ["contact@example.com"],
+                "WWWHomePageURL": "https://example.com"})
+
+            # Make the manufacturer responsible for that pump type.
+            ifcopenshell.api.run("owner.assign_actor", model,
+                relating_actor=manufacturer, related_object=pump_type)
+        """
         self.file = file
         self.settings = {
-            "relating_actor": None,
-            "related_object": None,
+            "relating_actor": relating_actor,
+            "related_object": related_object,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if self.settings["related_object"].HasAssignments:

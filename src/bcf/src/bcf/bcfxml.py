@@ -23,8 +23,9 @@ from pathlib import Path
 from typing import Optional, Union
 
 from bcf.v2.bcfxml import BcfXml as BcfXml2
+from bcf.v2.model import Version as Version2
 from bcf.v3.bcfxml import BcfXml as BcfXml3
-from bcf.v3.model import Version
+from bcf.v3.model import Version as Version3
 from bcf.xml_parser import AbstractXmlParserSerializer, XmlParserSerializer
 
 
@@ -65,5 +66,8 @@ def _get_version(filepath: Union[str, Path], xml_handler: Optional[AbstractXmlPa
     """
     xml_handler = xml_handler or XmlParserSerializer()
     with zipfile.ZipFile(filepath) as bcf_zip:
-        version = xml_handler.parse(bcf_zip.read("bcf.version"), Version)
+        try:
+            version = xml_handler.parse(bcf_zip.read("bcf.version"), Version3)
+        except:
+            version = xml_handler.parse(bcf_zip.read("bcf.version"), Version2)
         return version.version_id

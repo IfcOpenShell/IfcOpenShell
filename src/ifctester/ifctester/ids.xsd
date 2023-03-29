@@ -92,7 +92,7 @@
 		</xs:sequence>
 		<xs:attribute name="measure" type="xs:string">
 			<xs:annotation>
-				<xs:documentation>This is the name of an IFC Defined Types. See the documentation and default units on https://github.com/buildingSMART/IDS/blob/master/Documentation/Physical_Quantities_and_Units.md</xs:documentation>
+				<xs:documentation>This is the name of an IFC Defined Types. See the documentation and default units on https://github.com/buildingSMART/IDS/blob/master/Documentation/units.md</xs:documentation>
 			</xs:annotation>
 			<!-- there is a request to make this an ids:value -->
 		</xs:attribute>

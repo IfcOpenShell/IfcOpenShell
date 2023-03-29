@@ -48,7 +48,7 @@ class Usecase:
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
-            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points))
+            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points))
         if self.settings["x_angle"]:
             extrusion_direction = self.file.createIfcDirection(
                 (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))

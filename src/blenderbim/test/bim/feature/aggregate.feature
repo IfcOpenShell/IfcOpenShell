@@ -34,10 +34,29 @@ Scenario: Unassign object
     And the variable "related_object" is "tool.Ifc.get().by_type('IfcBuildingStorey')[0].id()"
     And I press "bim.assign_object(relating_object={relating_object}, related_object={related_object})"
     And the object "IfcBuildingStorey/My Storey" is selected
-    When I press "bim.unassign_object(relating_object={relating_object}, related_object={related_object})"
+    When I press "bim.unassign_object"
     Then the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
     And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcProject/My Project"
+
+Scenario: Unassign object - multiple objects are contained again to their indirect container
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcMember"
+    And I press "bim.assign_class"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcCovering"
+    And I press "bim.assign_class"
+    And the object "IfcMember/Cube" is selected
+    And additionally the object "IfcCovering/Cube" is selected
+    And I press "bim.add_aggregate(ifc_class='IfcWall')"
+    And the object "IfcMember/Cube" is selected
+    And additionally the object "IfcCovering/Cube" is selected
+    When I press "bim.unassign_object"
+    Then the object "IfcMember/Cube" is in the collection "IfcBuildingStorey/My Storey"
+    And the object "IfcCovering/Cube" is in the collection "IfcBuildingStorey/My Storey"
 
 Scenario: Add aggregate
     Given an empty IFC project
@@ -79,3 +98,21 @@ Scenario: Add aggregate - add a nested aggregate
     And the object "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly.001"
     And the collection "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly"
     And the collection "IfcElementAssembly/Assembly" is in the collection "IfcBuildingStorey/My Storey"
+
+Scenario: Add aggregate - add multiple elements to a custom aggregate class
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcMember"
+    And I press "bim.assign_class"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcCovering"
+    And I press "bim.assign_class"
+    And the object "IfcMember/Cube" is selected
+    And additionally the object "IfcCovering/Cube" is selected
+    When I press "bim.add_aggregate(ifc_class='IfcWall')"
+    Then the object "IfcMember/Cube" is in the collection "IfcWall/Assembly"
+    And the object "IfcCovering/Cube" is in the collection "IfcWall/Assembly"
+    And the object "IfcWall/Assembly" is in the collection "IfcWall/Assembly"
+    And the collection "IfcWall/Assembly" is in the collection "IfcBuildingStorey/My Storey"

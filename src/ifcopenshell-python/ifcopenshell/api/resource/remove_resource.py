@@ -20,11 +20,21 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, resource=None):
+        """Removes a resource and all relationships
+
+        Example:
+
+        .. code:: python
+
+            # Add our own crew
+            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+
+            # Fire our crew
+            ifcopenshell.api.run("resource.remove_resource", model, resource=crew)
+        """
         self.file = file
-        self.settings = {"resource": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"resource": resource}
 
     def execute(self):
         # TODO: review deep purge

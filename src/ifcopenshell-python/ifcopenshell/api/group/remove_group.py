@@ -16,15 +16,48 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.api
+
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, group=None):
+        """Removes a group
+
+        All products assigned to the group will remain, but the relationship to
+        the group will be removed.
+
+        :param group: The IfcGroup entity you want to remove
+        :type group: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+            ifcopenshell.api.run("group.remove_group", model, group=group)
+        """
         self.file = file
-        self.settings = {"group": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"group": group}
 
     def execute(self):
-        for rel in self.settings["group"].IsGroupedBy or []:
-            self.file.remove(rel)
+        for inverse_id in [i.id() for i in self.file.get_inverse(self.settings["group"])]:
+            try:
+                inverse = self.file.by_id(inverse_id)
+            except:
+                continue
+            if inverse.is_a("IfcRelDefinesByProperties"):
+                ifcopenshell.api.run(
+                    "pset.remove_pset",
+                    self.file,
+                    product=self.settings["group"],
+                    pset=inverse.RelatingPropertyDefinition,
+                )
+            elif inverse.is_a("IfcRelAssignsToGroup"):
+                if inverse.RelatingGroup == self.settings["group"]:
+                    self.file.remove(inverse)
+                elif len(inverse.RelatedObjects) == 1:
+                    self.file.remove(inverse)
         self.file.remove(self.settings["group"])

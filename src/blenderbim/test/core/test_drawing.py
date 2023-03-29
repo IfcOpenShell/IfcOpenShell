@@ -35,12 +35,11 @@ class TestDisableEditingText:
 
 class TestEditText:
     def test_run(self, ifc, drawing):
-        drawing.get_text_literal("obj").should_be_called().will_return("text")
-        drawing.export_text_literal_attributes("obj").should_be_called().will_return("attributes")
-        ifc.run("drawing.edit_text_literal", text_literal="text", attributes="attributes").should_be_called()
+        drawing.synchronise_ifc_and_text_attributes("obj").should_be_called()
         drawing.update_text_value("obj").should_be_called()
+        drawing.update_text_size_pset("obj").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
-        subject.edit_text(ifc, drawing, obj="obj")
+        subject.edit_text(drawing, obj="obj")
 
 
 class TestEnableEditingAssignedProduct:
@@ -243,6 +242,29 @@ class TestAddDrawing:
         subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")
 
 
+class TestDuplicateDrawing:
+    def test_run(self, ifc, drawing):
+        drawing.get_name("drawing").should_be_called().will_return("name")
+        drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
+        ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
+        drawing.copy_representation("drawing", "new_drawing").should_be_called()
+        drawing.set_name("new_drawing", "unique_name").should_be_called()
+        drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")
+        ifc.run("group.unassign_group", group="group", product="new_drawing").should_be_called()
+        ifc.run("group.add_group").should_be_called().will_return("new_group")
+        ifc.run(
+            "group.edit_group", group="new_group", attributes={"Name": "unique_name", "ObjectType": "DRAWING"}
+        ).should_be_called()
+        ifc.run("group.assign_group", group="new_group", products=["new_drawing"]).should_be_called()
+        drawing.get_group_elements("group").should_be_called().will_return(["drawing", "annotation"])
+        ifc.run("root.copy_class", product="annotation").should_be_called().will_return("new_annotation")
+        drawing.copy_representation("annotation", "new_annotation").should_be_called()
+        ifc.run("group.unassign_group", group="group", product="new_annotation").should_be_called()
+        ifc.run("group.assign_group", group="new_group", products=["new_annotation"]).should_be_called()
+        drawing.import_drawings().should_be_called()
+        subject.duplicate_drawing(ifc, drawing, drawing="drawing", should_duplicate_annotations=True)
+
+
 class TestRemoveDrawing:
     def test_run(self, ifc, drawing):
         drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
@@ -251,6 +273,10 @@ class TestRemoveDrawing:
         drawing.delete_drawing_elements("elements").should_be_called()
         ifc.run("group.remove_group", group="group").should_be_called()
         drawing.delete_collection("collection").should_be_called()
+        drawing.get_drawing_references("drawing").should_be_called().will_return(["reference"])
+        ifc.get_object("reference").should_be_called().will_return("reference_obj")
+        drawing.delete_object("reference_obj").should_be_called()
+        ifc.run("root.remove_product", product="reference").should_be_called()
         ifc.run("root.remove_product", product="drawing").should_be_called()
         drawing.import_drawings().should_be_called()
         subject.remove_drawing(ifc, drawing, drawing="drawing")

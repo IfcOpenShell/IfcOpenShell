@@ -65,6 +65,26 @@ class PurgeIfcLinks(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ConvertToBlender(bpy.types.Operator):
+    bl_idname = "bim.converttoblender"
+    bl_label = "Convert To Blender File"
+    bl_description = "Removes all IFC data, and converts the file to a simple Blender file."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        for o in bpy.data.objects:
+            if o.type in {'MESH', 'EMPTY'}:
+                o.BIMObjectProperties.ifc_definition_id = 0
+                if o.data:
+                    o.data.BIMMeshProperties.ifc_definition_id = 0
+        for m in bpy.data.materials:
+            m.BIMMaterialProperties.ifc_style_id = False
+        bpy.context.scene.BIMProperties.ifc_file = ""
+        IfcStore.purge()
+        blenderbim.bim.handler.purge_module_data()
+        return {"FINISHED"}
+
+
 class ValidateIfcFile(bpy.types.Operator):
     bl_idname = "bim.validate_ifc_file"
     bl_label = "Validate IFC File"
@@ -78,7 +98,7 @@ class ValidateIfcFile(bpy.types.Operator):
 
         logger = logging.getLogger("validate")
         logger.setLevel(logging.DEBUG)
-        ifcopenshell.validate.validate(IfcStore.get_file(), logger)
+        ifcopenshell.validate.validate(IfcStore.get_file(), logger, express_rules=True)
         return {"FINISHED"}
 
 

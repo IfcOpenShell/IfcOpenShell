@@ -120,6 +120,64 @@ class QtoCalculator:
             length += self.get_edge_distance(o, e)
         return length
 
+    def get_stair_length(self, obj):
+        length = self.get_length(obj)
+        height = self.get_height(obj)
+        stair_length = math.sqrt(pow(length, 2) + pow(height, 2))
+        return stair_length
+
+    def get_net_stair_area(self, obj):
+        OBB_obj = self.get_OBB_object(obj)
+        OBB_net_footprint_area = self.get_net_footprint_area(OBB_obj)
+        return OBB_net_footprint_area
+
+    def get_gross_stair_area(self, obj):
+        OBB_obj = self.get_OBB_object(obj)
+        OBB_gross_footprint_area = self.get_gross_footprint_area(OBB_obj)
+        return OBB_gross_footprint_area
+
+    def get_parametric_axis(self, obj):
+        relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(obj))
+        if relating_type:
+            parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
+            if parametric:
+                layer_set_direction = None
+                layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
+                if layer_set_direction == "AXIS2":
+                    return "AXIS2"
+                elif layer_set_direction == "AXIS3":
+                    return "AXIS3"
+                else:
+                    return None
+        return None
+
+    def get_covering_gross_area(self, obj):
+        get_parametric_axis = self.get_parametric_axis(obj)
+        if not get_parametric_axis:
+            return self.get_gross_footprint_area(obj)
+        elif get_parametric_axis == "AXIS2":
+            return self.get_gross_side_area(obj)
+        elif get_parametric_axis == "AXIS3":
+            return self.get_gross_footprint_area(obj)
+
+    def get_covering_net_area(self, obj):
+        get_parametric_axis = self.get_parametric_axis(obj)
+        if not get_parametric_axis:
+            return self.get_net_footprint_area(obj)
+        elif get_parametric_axis == "AXIS2":
+            return self.get_net_side_area(obj)
+        elif get_parametric_axis == "AXIS3":
+            return self.get_net_footprint_area(obj)
+
+    def get_covering_width(self, obj):
+        get_parametric_axis = self.get_parametric_axis(obj)
+        if not get_parametric_axis:
+            return self.get_height(obj)
+        elif get_parametric_axis == "AXIS2":
+            return self.get_width(obj)
+        elif get_parametric_axis == "AXIS3":
+            return self.get_height(obj)
+
     def get_width(self, o):
         """_summary_: Returns the width of the object bounding box
 
@@ -137,6 +195,59 @@ class QtoCalculator:
         :return float: height
         """
         return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+
+    def get_opening_height(self, obj):
+        if self.is_opening_horizontal(obj):
+            return self.get_width(obj)
+        else:
+            return self.get_height(obj)
+
+    def get_opening_depth(self, obj):
+        if self.is_opening_horizontal(obj):
+            return self.get_height(obj)
+        else:
+            return self.get_width(obj)
+
+    def get_opening_mapping_area(self, obj):
+        if self.is_opening_horizontal(obj):
+            return self.get_net_footprint_area(obj)
+        else:
+            return self.get_net_side_area(obj)
+
+    def get_finish_ceiling_height(self, obj):
+        space_height = self.get_height(obj)
+        floor_height = self.get_finish_floor_height(obj)
+        ceiling_height = self.get_ceiling_height(obj)
+        finish_ceiling_height = space_height - floor_height - ceiling_height
+        return finish_ceiling_height
+
+    def get_finish_floor_height(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        decompositions = ifcopenshell.util.element.get_decomposition(element)
+        finish_floor_height = 0
+        for decomposition in decompositions:
+            if decomposition.get_info()['PredefinedType'] == 'FLOORING' and decomposition.get_info()['type'] == 'IfcCovering' :
+                floor_obj = tool.Ifc.get_object(decomposition)
+                new_finish_floor_height = self.get_height(floor_obj)
+                if new_finish_floor_height > finish_floor_height:
+                    finish_floor_height = new_finish_floor_height
+
+        return finish_floor_height
+
+    def get_ceiling_height(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        decompositions = ifcopenshell.util.element.get_decomposition(element)
+        finish_ceiling_height = 0
+        for decomposition in decompositions:
+            if decomposition.get_info()['PredefinedType'] == 'CEILING' and decomposition.get_info()['type'] == 'IfcCovering' :
+                ceiling_obj = tool.Ifc.get_object(decomposition)
+                new_finish_ceiling_height = self.get_height(ceiling_obj)
+                if new_finish_ceiling_height > finish_ceiling_height:
+                    finish_ceiling_height = new_finish_ceiling_height
+
+        return finish_ceiling_height
+
+
 
     def get_net_perimeter(self, o):
         parsed_edges = []
@@ -160,6 +271,14 @@ class QtoCalculator:
         gross_perimeter = self.get_net_perimeter(gross_obj)
         self.delete_obj(gross_obj)
         return gross_perimeter
+
+    def get_space_net_perimeter(self, obj):
+        pass
+
+    def get_rectangular_perimeter(self, obj):
+        length = self.get_length(obj, main_axis='x')
+        height = self.get_height(obj)
+        return (length+height)*2
 
     def get_lowest_polygons(self, o):
         lowest_polygons = []
@@ -199,6 +318,73 @@ class QtoCalculator:
 
     def get_edge_distance(self, obj, edge):
         return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
+
+    def get_net_floor_area(self, obj):
+        decompositions = self.get_obj_decompositions(obj)
+        if not decompositions:
+            return self.get_gross_footprint_area(obj)
+
+        total_net_floor_area = self.get_net_footprint_area(obj)
+
+        for decomposition in decompositions:
+            decomposition_type = decomposition.get_info()['type']
+            if  decomposition_type == 'IfcColumn' or decomposition_type == 'IfcColumn':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                net_footprint_obj_area = self.get_net_footprint_area(decomposition_obj)
+                total_net_floor_area -= net_footprint_obj_area
+
+        return total_net_floor_area
+
+    def get_gross_ceiling_area(self, obj):
+        decompositions = self.get_obj_decompositions(obj)
+        if not decompositions:
+            return self.get_gross_top_area(obj)
+
+        total_gross_ceiling_area = 0
+
+        for decomposition in decompositions:
+            decomposition_type = decomposition.get_info()['type']
+            decomposition_predefined_type = decomposition.get_info()['PredefinedType']
+            if  decomposition_type == 'IfcCovering' and decomposition_predefined_type == 'CEILING':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                total_gross_ceiling_area += self.get_gross_footprint_area(decomposition_obj)
+
+        return total_gross_ceiling_area
+
+    def get_net_ceiling_area(self, obj):
+        decompositions = self.get_obj_decompositions(obj)
+        if not decompositions:
+            return self.get_net_top_area(obj)
+
+        total_net_ceiling_area = 0
+
+        for decomposition in decompositions:
+            decomposition_type = decomposition.get_info()['type']
+            decomposition_predefined_type = decomposition.get_info()['PredefinedType']
+            if  decomposition_type == 'IfcCovering' and decomposition_predefined_type == 'CEILING':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                total_net_ceiling_area += self.get_net_footprint_area(decomposition_obj)
+
+            if  decomposition_type == 'IfcWall' or decomposition_type == 'IfcColumn':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                total_net_ceiling_area -= self.get_net_roofprint_area(decomposition_obj)
+
+        return total_net_ceiling_area
+
+    def get_space_net_volume(self, obj):
+        decompositions = self.get_obj_decompositions(obj)
+        if not decompositions:
+            return self.get_gross_volume(obj)
+
+        total_space_net_volume = self.get_gross_volume(obj)
+
+        for decomposition in decompositions:
+            decomposition_type = decomposition.get_info()['type']
+            if  decomposition_type == 'IfcWall' or decomposition_type == 'IfcColumn':
+                decomposition_obj = tool.Ifc.get_object(decomposition)
+                total_space_net_volume -= self.get_net_volume(decomposition_obj)
+
+        return total_space_net_volume
 
     def get_net_footprint_area(self, o):
         """_summary_: Returns the area of the footprint of the object, excluding any holes
@@ -260,7 +446,7 @@ class QtoCalculator:
             elif item.is_a("IfcBooleanClippingResult"):
                 item = item.FirstOperand
             else:
-                area = self.get_end_area(obj, exclude_side_areas = True)
+                area = self.get_end_area(obj)
                 return area
         # TODO handle other types of sections, and then fall back to mesh parsing
 
@@ -269,6 +455,7 @@ class QtoCalculator:
             if not self.has_openings(o):
                 return self.get_net_surface_area(o)
 
+            element = tool.Ifc.get_entity(o)
             mesh = self.get_gross_element_mesh(element)
             area = self.get_mesh_area(mesh)
             bpy.data.meshes.remove(mesh)
@@ -322,6 +509,68 @@ class QtoCalculator:
         element = tool.Ifc.get_entity(obj)
         return element and getattr(element, "HasOpenings", [])
 
+    def get_obj_decompositions(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        decompositions = ifcopenshell.util.element.get_decomposition(element)
+        return decompositions
+
+    def get_gross_weight(self, obj):
+        obj_mass_density = self.get_obj_mass_density(obj)
+        if not obj_mass_density:
+            return
+        gross_volume = self.get_gross_volume(obj)
+        gross_weight = obj_mass_density * gross_volume
+        return gross_weight
+
+    def get_net_weight(self, obj):
+        obj_mass_density = self.get_obj_mass_density(obj)
+        if not obj_mass_density:
+            return
+        net_volume = self.get_net_volume(obj)
+        net_weight = obj_mass_density * net_volume
+        return net_weight
+
+    def get_obj_mass_density(self, obj):
+        entity = tool.Ifc.get_entity(obj)
+        material = ifcopenshell.util.element.get_material(entity)
+        if material is None:
+            return
+
+        if (
+            material.is_a("IfcMaterialLayerSet")
+            or material.is_a("IfcMaterialProfileSet")
+            or material.is_a("IfcMaterialConstituentSet")
+        ):
+                return
+
+        if material.is_a('IfcMaterial'):
+            material_mass_density = ifcopenshell.util.element.get_pset(material, "Pset_MaterialCommon", "MassDensity")
+            return material_mass_density
+
+        if material.is_a('IfcMaterialLayerSetUsage'):
+            material_layers = material.ForLayerSet.MaterialLayers
+            densities = []
+            thicknesses = []
+            obj_mass_density = 0
+            for material_layer in material_layers:
+                material_mass_density = ifcopenshell.util.element.get_pset(material_layer.Material, "Pset_MaterialCommon", "MassDensity")
+                if material_mass_density is None:
+                    return
+                densities.append(material_mass_density)
+                thickness = material_layer.LayerThickness
+                thicknesses.append(thickness)
+                obj_mass_density = obj_mass_density + (material_mass_density* thickness)
+            total_thickness = sum(thicknesses)
+            obj_mass_density = obj_mass_density/total_thickness
+            return obj_mass_density
+
+        if material.is_a('IfcMaterialProfileSetUsage'):
+            material_profiles = material.ForProfileSet.MaterialProfiles
+            if len(material_profiles) == 1:
+                material_mass_density = ifcopenshell.util.element.get_pset(material_profiles[0].Material, "Pset_MaterialCommon", "MassDensity")
+                return material_mass_density
+            else:
+                return
 
     # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
 
@@ -408,7 +657,7 @@ class QtoCalculator:
                 bl_OBB_opening_object = self.get_OBB_object(bl_opening_obj)
                 opening_area = self.get_lateral_area(
                     #self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
-                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True,
+                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True, main_axis = 'x',
                 )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
@@ -525,7 +774,8 @@ class QtoCalculator:
         ifc = tool.Ifc.get()
         ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
-        if len(openings := ifc_element.HasOpenings) != 0:
+#        if len(openings := ifc_element.HasOpenings) != 0:
+        if len(openings := self.has_openings(obj)) != 0:
             for opening in openings:
                 if opening.RelatedOpeningElement.PredefinedType == "OPENING":
                     opening_id = opening.RelatedOpeningElement.GlobalId
@@ -946,6 +1196,13 @@ class QtoCalculator:
             return "z"
         else:
             return "x"
+
+    def is_opening_horizontal(self, o):
+        x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
+        y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
+        z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+
+        return z < x and z < y
 
     def delete_mesh(self, mesh):
         mesh.user_clear()

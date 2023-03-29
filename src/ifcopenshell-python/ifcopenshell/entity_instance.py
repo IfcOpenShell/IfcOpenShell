@@ -22,10 +22,14 @@ from __future__ import division
 from __future__ import print_function
 
 import functools
+import importlib
 import numbers
 import itertools
+import operator
+import functools
 
 from . import ifcopenshell_wrapper
+from . import settings
 
 try:
     import logging
@@ -33,7 +37,7 @@ except ImportError as e:
     logging = type("logger", (object,), {"exception": staticmethod(lambda s: print(s))})
 
 
-def set_derived_atribute(*args):
+def set_derived_attribute(*args):
     raise TypeError("Unable to set derived attribute")
 
 
@@ -73,7 +77,7 @@ def register_schema_attributes(schema):
 
             # resolve to actual functions in wrapper
             functions = [
-                set_derived_atribute
+                set_derived_attribute
                 if mname == "setArgumentAsDerived"
                 else getattr(ifcopenshell_wrapper.entity_instance, mname)
                 for mname in fn_names
@@ -92,7 +96,9 @@ class entity_instance(object):
 
     An instantiated entity_instance will have methods of Python and the IFC class itself.
 
-    Example::
+    Example:
+
+    .. code:: python
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
@@ -123,17 +129,47 @@ class entity_instance(object):
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
-            return entity_instance.wrap_value(
-                self.wrapped_data.get_argument(
-                    self.wrapped_data.get_argument_index(name)
-                ),
-                self.wrapped_data.file,
-            )
+            idx = self.wrapped_data.get_argument_index(name)
+            if _method_dict[self.is_a(True)][idx] != set_derived_attribute:
+                # A bit ugly, but we fall through to derived attribute handling below
+                return entity_instance.wrap_value(
+                    self.wrapped_data.get_argument(idx), self.wrapped_data.file
+                )
         elif attr_cat == INVERSE:
-            return entity_instance.wrap_value(
+            vs = entity_instance.wrap_value(
                 self.wrapped_data.get_inverse(name), self.wrapped_data.file
             )
-        else:
+            if settings.unpack_non_aggregate_inverses:
+                schema_name = self.wrapped_data.is_a(True).split(".")[0]
+                ent = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(
+                    self.is_a()
+                )
+                inv = [i for i in ent.all_inverse_attributes() if i.name() == name][0]
+                if (inv.bound1(), inv.bound2()) == (-1, -1):
+                    if vs:
+                        vs = vs[0]
+                    else:
+                        vs = None
+            return vs
+
+        # derived attribute perhaps?
+        schema_name = self.wrapped_data.is_a(True).split(".")[0]
+        rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
+
+        def yield_supertypes():
+            decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(
+                self.is_a()
+            )
+            while decl:
+                yield decl.name()
+                decl = decl.supertype()
+
+        for sty in yield_supertypes():
+            fn = getattr(rules, f"calc_{sty}_{name}", None)
+            if fn:
+                return fn(self)
+
+        if attr_cat != FORWARD:
             raise AttributeError(
                 "entity instance of type '%s' has no attribute '%s'"
                 % (self.wrapped_data.is_a(True), name)
@@ -218,7 +254,7 @@ class entity_instance(object):
         method = self.method_list[idx]
 
         if value is None:
-            if method is not set_derived_atribute:
+            if method is not set_derived_attribute:
                 self.wrapped_data.setArgumentAsNull(idx)
         else:
             self.method_list[idx](
@@ -232,7 +268,7 @@ class entity_instance(object):
 
     def __repr__(self):
         return repr(self.wrapped_data)
-        
+
     def to_string(self, valid_spf=True):
         """Returns a string representation of the current entity instance.
         Equal to str(self) when valid_spf=False. When valid_spf is True
@@ -241,7 +277,7 @@ class entity_instance(object):
         case and string attribute values with unicode values encoded per
         the specific control directives.
         """
-        
+
         return self.wrapped_data.to_string(valid_spf)
 
     def is_a(self, *args):
@@ -254,7 +290,9 @@ class entity_instance(object):
         :returns: Either the name of the class, or a boolean if it passes the check
         :rtype: string|bool
 
-        Example::
+        Example:
+
+        .. code:: python
 
             f = ifcopenshell.file()
             f.create_entity('IfcPerson')
@@ -275,17 +313,101 @@ class entity_instance(object):
     def __eq__(self, other):
         if not isinstance(self, type(other)):
             return False
-        # Proper entity instances have a stable identity by means of the numeric
-        # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
-        # always have id=0, so we compare <type, value, file pointer>
-        if self.id():
-            return self.wrapped_data == other.wrapped_data
+        elif None in (self.wrapped_data.file, other.wrapped_data.file):
+            # when not added to a file, we can only compare attribute values
+            # and we need this for where rule evaluation
+            return self.get_info(
+                recursive=True, include_identifier=False
+            ) == other.get_info(recursive=True, include_identifier=False)
         else:
-            return (self.is_a(), self[0], self.wrapped_data.file_pointer()) == (
-                other.is_a(),
-                other[0],
-                other.wrapped_data.file_pointer(),
-            )
+            # Proper entity instances have a stable identity by means of the numeric
+            # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
+            # always have id=0, so we compare <type, value, file pointer>
+            if self.id():
+                return self.wrapped_data == other.wrapped_data
+            else:
+                return (self.is_a(), self[0], self.wrapped_data.file_pointer()) == (
+                    other.is_a(),
+                    other[0],
+                    other.wrapped_data.file_pointer(),
+                )
+
+    def is_entity(self):
+        """Tests whether the instance is an entity type as opposed to a simple data type.
+
+        Returns:
+            bool: True if the instance is an entity
+        """
+        schema_name = self.wrapped_data.is_a(True).split(".")[0]
+        decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(
+            self.is_a()
+        )
+        return isinstance(decl, ifcopenshell_wrapper.entity)
+
+    def compare(self, other, op, reverse=False):
+        """Compares with another instance.
+
+        For simple types the declaration name is not taken into account:
+
+        >>> f = ifcopenshell.file()
+        >>> f.createIfcInteger(0) < f.createIfcPositiveInteger(1)
+        True
+
+        For entity types the declaration name is taken into account:
+
+        >>> f.createIfcWall('a') < f.createIfcWall('b')
+        True
+
+        >>> f.createIfcWallStandardCase('a') < f.createIfcWall('b')
+        False
+
+        Comparing simple types with different underlying types throws an exception:
+
+        >>> f.createIfcInteger(0) < f.createIfcLabel('x')
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "entity_instance.py", line 371, in compare
+            return op(a, b)
+        TypeError: '<' not supported between instances of 'int' and 'str'
+
+        Args:
+            other (_type_): Right hand side (or lhs when reverse = True)
+            op (_type_): The comparison operator (likely from the operator module)
+            reverse (bool, optional): When true swaps lhs and rhs. Defaults to False.
+
+        Returns:
+            bool: The comparison predicate applied to self and other
+        """
+
+        if isinstance(other, entity_instance):
+            a, b = map(tuple, (self, other))
+            if any(map(entity_instance.is_entity, (self, other))):
+                a = (self.is_a(),) + a
+                b = (other.is_a(),) + b
+        elif self.is_entity():
+            a = tuple(self)
+            b = other
+            if isinstance(b, list):
+                b = tuple(b)
+            if not isinstance(b, tuple):
+                b = (b,)
+        else:
+            a = self[0]
+            b = other
+
+        if reverse:
+            a, b = b, a
+
+        return op(a, b)
+
+    __le__ = functools.partialmethod(compare, op=operator.le)
+    __lt__ = functools.partialmethod(compare, op=operator.lt)
+    __ge__ = functools.partialmethod(compare, op=operator.ge)
+    __gt__ = functools.partialmethod(compare, op=operator.gt)
+    __rle__ = functools.partialmethod(compare, op=operator.le, reverse=True)
+    __rlt__ = functools.partialmethod(compare, op=operator.lt, reverse=True)
+    __rge__ = functools.partialmethod(compare, op=operator.ge, reverse=True)
+    __rgt__ = functools.partialmethod(compare, op=operator.gt, reverse=True)
 
     def __hash__(self):
         # Proper entity instances have a stable identity by means of the numeric
@@ -308,7 +430,7 @@ class entity_instance(object):
         )
 
     def get_info(
-        self, include_identifier=True, recursive=False, return_type=dict, ignore=()
+        self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False
     ):
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
 
@@ -320,10 +442,14 @@ class entity_instance(object):
         :type return_type: dict|list|other
         :param ignore: A list of attribute names to ignore
         :type ignore: set|list
+        :param scalar_only: Filters out all values that are IFC instances
+        :type scalar_only: bool
         :returns: A dictionary of properties and their corresponding values
         :rtype: dict
 
-        Example::
+        Example:
+
+        .. code:: python
 
             ifc_file = ifcopenshell.open(file_path)
             products = ifc_file.by_type("IfcProduct")
@@ -349,15 +475,15 @@ class entity_instance(object):
                     if self.wrapped_data.get_attribute_names()[i] in ignore:
                         continue
                     attr_value = self[i]
-                    if recursive:
+
+                    to_include = {'v': True}
+
+                    if recursive or scalar_only:
 
                         def is_instance(e):
                             return isinstance(e, entity_instance)
 
                         def get_info_(inst):
-                            # for ty in ignore:
-                            #     if inst.is_a(ty):
-                            #         return None
                             return entity_instance.get_info(
                                 inst,
                                 include_identifier=include_identifier,
@@ -366,10 +492,16 @@ class entity_instance(object):
                                 ignore=ignore,
                             )
 
+                        def do_ignore(inst):
+                            to_include['v'] = False
+                            return None
+
                         attr_value = entity_instance.walk(
-                            is_instance, get_info_, attr_value
+                            is_instance, get_info_ if recursive else do_ignore, attr_value
                         )
-                    yield self.attribute_name(i), attr_value
+
+                    if to_include['v']:
+                        yield self.attribute_name(i), attr_value
                 except BaseException:
                     logging.exception(
                         "unhandled exception occurred setting attribute name for {}".format(

@@ -9,7 +9,10 @@ from ifcopenshell.util import placement
 from numpy.typing import NDArray
 
 import bcf.v3.model as mdl
-from bcf.geometry import calc_camera_vectors
+from bcf.geometry import (
+    camera_vectors_from_element_placement,
+    camera_vectors_from_target_position,
+)
 from bcf.inmemory_zipfile import ZipFileInterface
 from bcf.xml_parser import AbstractXmlParserSerializer, XmlParserSerializer
 
@@ -169,6 +172,29 @@ class VisualizationInfoHandler:
         xml_handler = xml_handler or XmlParserSerializer()
         return cls(visualization_info=build_viewpoint(element), xml_handler=xml_handler)
 
+    @classmethod
+    def create_from_point_and_guids(
+        cls,
+        position: NDArray[np.float_],
+        *guids: str,
+        xml_handler: Optional[AbstractXmlParserSerializer] = None,
+    ) -> "VisualizationInfoHandler":
+        """
+        Create a new VisualizationInfoHandler object from an IFC element.
+
+        Args:
+            position: target point coordinates.
+            *guids: One or more IFC element GUID.
+            xml_handler: The XML handler to use.
+
+        Returns:
+            The VisualizationInfoHandler object.
+        """
+        xml_handler = xml_handler or XmlParserSerializer()
+        return cls(
+            visualization_info=build_viewpoint_from_position_and_guids(position, *guids), xml_handler=xml_handler
+        )
+
 
 @lru_cache(maxsize=None)
 def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
@@ -192,18 +218,39 @@ def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
     )
 
 
-def build_components(guid: str) -> mdl.Components:
+def build_viewpoint_from_position_and_guids(position: NDArray[np.float_], *guids: str) -> mdl.VisualizationInfo:
+    """
+    Return a BCF viewpoint of an IFC element.
+
+    This function is cached to speedudp the creation of multiple BCF topics regarding the same element.
+
+    Args:
+        position: target point coordinates.
+        *guids: One or more IFC element GUID.
+
+    Returns:
+        The BCF viewpoint definition.
+    """
+    return mdl.VisualizationInfo(
+        guid=str(uuid.uuid4()),
+        components=build_components(*guids),
+        perspective_camera=build_camera_from_vectors(*camera_vectors_from_target_position(position)),
+    )
+
+
+def build_components(*guids: str) -> mdl.Components:
     """
     Return the BCF components from an IFC element GUID.
 
     Args:
-        guid: The IFC element GUID.
+        *guids: One or more IFC element GUID.
 
     Returns:
         The BCF components definition.
     """
+    components = [mdl.Component(ifc_guid=guid) for guid in guids]
     return mdl.Components(
-        selection=mdl.ComponentSelection(component=[mdl.Component(ifc_guid=guid)]),
+        selection=mdl.ComponentSelection(component=components),
         visibility=mdl.ComponentVisibility(default_visibility=True),
     )
 
@@ -218,7 +265,7 @@ def build_camera(elem_placement: NDArray[np.float_]) -> mdl.PerspectiveCamera:
     Returns:
         The BCF camera definition.
     """
-    return build_camera_from_vectors(*calc_camera_vectors(elem_placement))
+    return build_camera_from_vectors(*camera_vectors_from_element_placement(elem_placement))
 
 
 def build_camera_from_vectors(

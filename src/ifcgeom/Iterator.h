@@ -130,7 +130,11 @@ namespace IfcGeom {
 		bool owns_ifc_file;
 		int num_threads_;
 
+		// When single-threaded
 		Converter* converter_;
+		
+		// When multi-threaded
+		std::vector<Converter*> kernel_pool;
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		TriangulationElement* current_triangulation;
@@ -270,7 +274,6 @@ namespace IfcGeom {
 				conc_threads = tasks_.size();
 			}
 
-			std::vector<Converter*> kernel_pool;
 			kernel_pool.reserve(conc_threads);
 			for (unsigned i = 0; i < conc_threads; ++i) {
 				kernel_pool.push_back(new Converter(geometry_library_, ifc_file, settings_));
@@ -768,8 +771,12 @@ namespace IfcGeom {
 					delete p;
 				}
 			}
-
-			for (auto& p : all_processed_elements_) {
+			
+			for (auto& k : kernel_pool) {
+				delete k;
+			}
+			
+		    for (auto& p : all_processed_elements_) {
 				delete p;
 			}
 		}

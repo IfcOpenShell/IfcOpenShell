@@ -22,6 +22,7 @@ import json
 import bmesh
 import logging
 import numpy as np
+import ifcopenshell
 from mathutils import Matrix
 from math import radians
 from blenderbim.bim.ifc import IfcStore
@@ -30,8 +31,10 @@ from blenderbim.bim.ifc import IfcStore
 class ExportClashSets(bpy.types.Operator):
     bl_idname = "bim.export_clash_sets"
     bl_label = "Export Clash Sets"
+    bl_description = "Export clash sets to a selected file"
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
@@ -62,8 +65,10 @@ class ImportClashSets(bpy.types.Operator):
     bl_idname = "bim.import_clash_sets"
     bl_label = "Import Clash Sets"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Import clash sets from a selected file"
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
@@ -98,6 +103,7 @@ class AddClashSet(bpy.types.Operator):
     bl_idname = "bim.add_clash_set"
     bl_label = "Add Clash Set"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a clash set"
 
     def execute(self, context):
         new = context.scene.BIMClashProperties.clash_sets.add()
@@ -110,6 +116,7 @@ class RemoveClashSet(bpy.types.Operator):
     bl_idname = "bim.remove_clash_set"
     bl_label = "Remove Clash Set"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove the selected clash set"
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -121,6 +128,7 @@ class AddClashSource(bpy.types.Operator):
     bl_idname = "bim.add_clash_source"
     bl_label = "Add Clash Source"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a clash source to this group"
     group: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -133,6 +141,7 @@ class RemoveClashSource(bpy.types.Operator):
     bl_idname = "bim.remove_clash_source"
     bl_label = "Remove Clash Source"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove this clash source"
     index: bpy.props.IntProperty()
     group: bpy.props.StringProperty()
 
@@ -146,6 +155,7 @@ class SelectClashSource(bpy.types.Operator):
     bl_idname = "bim.select_clash_source"
     bl_label = "Select Clash Source"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select an IFC file to add as a clash source"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     index: bpy.props.IntProperty()
@@ -194,11 +204,13 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator):
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
-    filename_ext = ".bcf"
+    bl_description = "Execute clash detection and save the information to a .bcf or .json file"
+    filter_glob: bpy.props.StringProperty(default="*.bcf;*.json", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
-        if ".json" not in bpy.data.filepath:
+        _, extension = os.path.splitext(self.filepath)
+        if extension != ".json":
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
@@ -207,9 +219,10 @@ class ExecuteIfcClash(bpy.types.Operator):
     def execute(self, context):
         from ifcclash import ifcclash
 
-        settings = ifcclash.ClashSettings()
-        if ".json" not in self.filepath:
+        _, extension = os.path.splitext(self.filepath)
+        if extension != ".json":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
+        settings = ifcclash.ClashSettings()
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
@@ -261,6 +274,7 @@ class SelectIfcClashResults(bpy.types.Operator):
     bl_idname = "bim.select_ifc_clash_results"
     bl_label = "Select IFC Clash Results"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the clashing IFC geometry stored in a file"
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -271,6 +285,7 @@ class SelectIfcClashResults(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         with open(self.filepath) as f:
             clash_sets = json.load(f)
@@ -284,10 +299,26 @@ class SelectIfcClashResults(bpy.types.Operator):
                 return {"CANCELLED"}
             for clash in clash_set["clashes"].values():
                 global_ids.extend([clash["a_global_id"], clash["b_global_id"]])
+
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+
+            ifc_file = ""
+            for scene in obj.users_scene:
+                if scene.BIMProperties.ifc_file:
+                    ifc_file = scene.BIMProperties.ifc_file
+                    if scene.library:
+                        break
+
+            if ifc_file:
+                if ifc_file not in IfcStore.session_files:
+                    IfcStore.session_files[ifc_file] = ifcopenshell.open(ifc_file)
+                element_file = IfcStore.session_files[ifc_file]
+            else:
+                element_file = self.file
+
+            element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             if element.GlobalId in global_ids:
                 obj.select_set(True)
         return {"FINISHED"}
@@ -304,14 +335,14 @@ class SmartClashGroup(bpy.types.Operator):
         return context.scene.BIMClashProperties.clash_results_path
 
     def execute(self, context):
-        import ifcclash
+        from ifcclash import ifcclash
 
-        settings = ifcclash.IfcClashSettings()
+        settings = ifcclash.ClashSettings()
         self.filepath = bpy.path.ensure_ext(context.scene.BIMClashProperties.clash_results_path, ".json")
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
-        ifc_clasher = ifcclash.IfcClasher(settings)
+        ifc_clasher = ifcclash.Clasher(settings)
 
         with open(self.filepath) as f:
             clash_sets = json.load(f)

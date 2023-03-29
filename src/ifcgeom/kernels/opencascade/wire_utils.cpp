@@ -81,7 +81,11 @@ bool IfcGeom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_P
 	}
 
 	gp_Vec v(x, y, z);
-	if (v.SquareMagnitude() < eps_ * eps_) {
+	// @todo the epsilon passed to us here is the maximum allowed deviation of
+	// the given points to the constructed plane. When doing triangulation and
+	// obtaining a 2d points for the Delaunay, infinity is passed here, so this
+	// can't for assessing degenerativeness.
+	if (v.SquareMagnitude() < 1.e-7) {
 		Logger::Warning("Degenerate face boundary in normal estimation");
 		return false;
 	}

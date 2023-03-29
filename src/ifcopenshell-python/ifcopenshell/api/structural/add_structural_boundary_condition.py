@@ -18,11 +18,35 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, name=None, connection=None, ifc_class="IfcBoundaryNodeCondition"):
+        """Adds a new structural boundary condition to a structural connection
+
+        The type of boundary condition depends on the connection. Point
+        connections will have a node condition, curve connections will have an
+        edge condition, and surface connections will have a face condition.
+
+        :param name: The name of the boundary condition.
+        :type name: str,optional
+        :param connection: The IfcStructuralConnection to apply the boundary
+            condition to. This will determine the type of condition that is
+            created. If no connection is supplied, an orphan boundary condition
+            will be created using the ifc_class that you specify.
+        :type connection: ifcopenshell.entity_instance.entity_instance,optional
+        :param ifc_class: The class of IfcBoundaryCondition to create, only
+            relevant if you do not specify a connection and want to create an
+            orphaned boundary condition.
+        :type ifc_class: str,optional
+        :return: The newly created IfcBoundaryCondition
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            ifcopenshell.api.run("structural.add_structural_boundary_condition", model, connection=connection)
+        """
         self.file = file
-        self.settings = {"name": None, "connection": None, "ifc_class": "IfcBoundaryNodeCondition"}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"name": name, "connection": connection, "ifc_class": ifc_class}
 
     def execute(self):
         if self.settings["connection"]:

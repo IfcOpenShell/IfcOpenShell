@@ -22,18 +22,46 @@ def calculate_circle_radius(qto, obj=None):
     qto.set_qto_result(result)
     return result
 
-def assign_pset_qto(qto, selected_objects):
+
+def assign_objects_base_qto(ifc, qto, selected_objects):
     for obj in selected_objects:
-        qto.assign_pset_qto_to_selected_object(obj)
+        assign_object_base_qto(ifc, qto, obj)
 
-def calculate_all_qtos(qto, selected_objects):
-    for obj in selected_objects:
-        if not qto.get_pset_qto_object_ifc_info(obj):
-            print(f"There is no pset qto instance associated to object {obj.name}")
-            continue
 
-        pset_qto_properties = qto.get_pset_qto_properties(obj)
+def assign_object_base_qto(ifc, qto, obj):
+    product = ifc.get_entity(obj)
+    if not product:
+        return
+    base_quantity_name = qto.get_applicable_base_quantity_name(product)
+    if not base_quantity_name:
+        return
+    ifc.run(
+        "pset.add_qto",
+        product=product,
+        name=base_quantity_name,
+    )
 
-        calculated_quantities = qto.get_calculated_quantities(obj, pset_qto_properties)
 
-        qto.edit_qto(obj, calculated_quantities)
+def calculate_objects_base_quantities(ifc, qto, calculator, selected_objects):
+    if selected_objects:
+        for obj in selected_objects:
+            calculate_object_base_quantities(ifc, qto, calculator, obj)
+
+
+def calculate_object_base_quantities(ifc, qto, calculator, obj):
+    product = ifc.get_entity(obj)
+    if not product:
+        return
+    base_quantity_name = qto.get_applicable_base_quantity_name(product)
+    if not base_quantity_name:
+        print(f"There is no base quantity")
+        return
+    base_qto = qto.get_base_qto(product)
+    if not base_qto:
+        base_qto = ifc.run(
+            "pset.add_qto",
+            product=product,
+            name=base_quantity_name,
+        )
+    calculated_quantities = qto.get_calculated_object_quantities(calculator, base_quantity_name, obj)
+    ifc.run("pset.edit_qto", qto=base_qto, properties=calculated_quantities)

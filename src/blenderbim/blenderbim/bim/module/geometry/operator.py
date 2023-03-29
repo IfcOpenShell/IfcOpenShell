@@ -28,15 +28,12 @@ import ifcopenshell.api
 import blenderbim.core.geometry as core
 import blenderbim.core.style
 import blenderbim.core.root
+import blenderbim.core.drawing
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector
-from ifcopenshell.api.geometry.data import Data
-from ifcopenshell.api.context.data import Data as ContextData
-from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.root.prop import get_contexts
 
 
 class Operator:
@@ -62,27 +59,20 @@ class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-    context_id: bpy.props.IntProperty()
-    ifc_representation_class: bpy.props.StringProperty()
-    profile_set_usage: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifc_context = self.context_id
-        if not ifc_context and get_contexts(self, context):
-            ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
+        ifc_context = int(context.active_object.BIMGeometryProperties.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         core.add_representation(
             tool.Ifc,
             tool.Geometry,
             tool.Style,
             tool.Surveyor,
-            obj=obj,
+            obj=context.active_object,
             context=ifc_context,
-            ifc_representation_class=self.ifc_representation_class,
-            profile_set_usage=tool.Ifc.get().by_id(self.profile_set_usage) if self.profile_set_usage else None,
+            ifc_representation_class=None,
+            profile_set_usage=None,
         )
 
 
@@ -119,7 +109,7 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
     def _execute(self, context):
         target = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
         is_subcontext = target.is_a("IfcGeometricRepresentationSubContext")
-        for obj in context.selected_objects:
+        for obj in set(context.selected_objects + [context.active_object]):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -132,6 +122,7 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
             if not representation:
                 continue
             core.switch_representation(
+                tool.Ifc,
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
@@ -156,20 +147,14 @@ class RemoveRepresentation(bpy.types.Operator, Operator):
         )
 
 
-class UpdateRepresentation(bpy.types.Operator):
+class UpdateRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        if not ContextData.is_loaded:
-            ContextData.load(IfcStore.get_file())
-
         if context.active_object and context.active_object.mode != "OBJECT":
             # Ensure mode is object to prevent invalid mesh data causing CTD
             bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
@@ -203,11 +188,12 @@ class UpdateRepresentation(bpy.types.Operator):
             settings = tool.Boundary.get_assign_connection_geometry_settings(obj)
             ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
             return
-        elif material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
-            # These objects are parametrically based on an axis and should not be modified as a mesh
-            return
 
         core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+        if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
+            # These objects are parametrically based on an axis and should not be modified as a mesh
+            return
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
@@ -265,7 +251,6 @@ class UpdateRepresentation(bpy.types.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
-        Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         if obj.data.BIMMeshProperties.ifc_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
 
@@ -288,6 +273,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         self.file.by_id(parameter.step_id)[parameter.index] = parameter.value
         show_representation_parameters = bool(props.ifc_parameters)
         core.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=tool.Ifc.get().by_id(props.ifc_definition_id),
@@ -362,23 +348,37 @@ class CopyRepresentation(bpy.types.Operator, Operator):
 class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
         element = tool.Ifc.get_entity(obj)
-        if element:
-            IfcStore.delete_element(element)
-            if getattr(element, "FillsVoids", None):
-                self.remove_filling(element)
-            if element.is_a("IfcOpeningElement"):
-                if element.HasFillings:
-                    for rel in element.HasFillings:
-                        self.remove_filling(rel.RelatedBuildingElement)
-                else:
-                    if element.VoidsElements:
-                        self.delete_opening_element(element)
+        if not element:
+            return
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+        IfcStore.delete_element(element)
+        if obj.users_collection and obj.users_collection[0].name == obj.name:
+            parent = ifcopenshell.util.element.get_aggregate(element)
+            if not parent:
+                parent = ifcopenshell.util.element.get_container(element)
+            if parent:
+                parent_obj = tool.Ifc.get_object(parent)
+                if parent_obj:
+                    parent_collection = bpy.data.collections.get(parent_obj.name)
+                    for child in obj.users_collection[0].children:
+                        parent_collection.children.link(child)
+            bpy.data.collections.remove(obj.users_collection[0])
+        if getattr(element, "FillsVoids", None):
+            self.remove_filling(element)
+        if element.is_a("IfcOpeningElement"):
+            if element.HasFillings:
+                for rel in element.HasFillings:
+                    self.remove_filling(rel.RelatedBuildingElement)
             else:
-                if getattr(element, "HasOpenings", None):
-                    for rel in element.HasOpenings:
-                        self.delete_opening_element(rel.RelatedOpeningElement)
-                for port in ifcopenshell.util.system.get_ports(element):
-                    self.remove_port(port)
+                if element.VoidsElements:
+                    self.delete_opening_element(element)
+        else:
+            if getattr(element, "HasOpenings", None):
+                for rel in element.HasOpenings:
+                    self.delete_opening_element(rel.RelatedOpeningElement)
+            for port in ifcopenshell.util.system.get_ports(element):
+                self.remove_port(port)
 
     def delete_opening_element(self, element):
         bpy.ops.bim.remove_opening(opening_id=element.id())
@@ -391,8 +391,8 @@ class OverrideDeleteTrait:
 
 
 class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
-    bl_idname = "object.delete"
-    bl_label = "Delete"
+    bl_idname = "bim.override_object_delete"
+    bl_label = "IFC Delete"
     bl_options = {"REGISTER", "UNDO"}
     use_global: bpy.props.BoolProperty(default=False)
     confirm: bpy.props.BoolProperty(default=True)
@@ -420,15 +420,19 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
     def _execute(self, context):
         for obj in context.selected_objects:
             self.delete_ifc_object(obj)
-            bpy.data.objects.remove(obj)
+            try:
+                obj.name
+                bpy.data.objects.remove(obj)
+            except:
+                pass
         # Required otherwise gizmos are still visible
         context.view_layer.objects.active = None
         return {"FINISHED"}
 
 
 class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
-    bl_idname = "outliner.delete"
-    bl_label = "Delete"
+    bl_idname = "bim.override_outliner_delete"
+    bl_label = "IFC Delete"
     bl_options = {"REGISTER", "UNDO"}
     hierarchy: bpy.props.BoolProperty(default=False)
 
@@ -479,8 +483,6 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
             # This is the only difference
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
-        for collection in collections_to_delete:
-            bpy.data.collections.remove(collection)
         return {"FINISHED"}
 
     def get_collection_objects_and_children(self, collection):
@@ -497,9 +499,10 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
 
 
 class OverrideDuplicateMove(bpy.types.Operator):
-    bl_idname = "object.duplicate_move"
-    bl_label = "Duplicate Objects"
+    bl_idname = "bim.override_object_duplicate_move"
+    bl_label = "IFC Duplicate Objects"
     bl_options = {"REGISTER", "UNDO"}
+    is_interactive: bpy.props.BoolProperty(name="Is Interactive", default=True)
 
     @classmethod
     def poll(cls, context):
@@ -526,7 +529,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new_obj.select_set(True)
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
-        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        if self.is_interactive:
+            bpy.ops.transform.translate("INVOKE_DEFAULT")
         return {"FINISHED"}
 
     def _execute(self, context):
@@ -550,13 +554,14 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 old_to_new[tool.Ifc.get_entity(obj)] = [new]
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        if self.is_interactive:
+            bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
 
 
 class OverrideDuplicateMoveLinked(bpy.types.Operator):
-    bl_idname = "object.duplicate_move_linked"
-    bl_label = "Duplicate Linked"
+    bl_idname = "bim.override_object_duplicate_move_linked"
+    bl_label = "IFC Duplicate Linked"
 
     @classmethod
     def poll(cls, context):
@@ -608,9 +613,96 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OverrideJoin(bpy.types.Operator, Operator):
+    bl_idname = "bim.override_object_join"
+    bl_label = "IFC Join"
+
+    def _execute(self, context):
+        if not tool.Ifc.get():
+            return bpy.ops.object.join()
+
+        if not context.active_object:
+            return
+
+        self.target = context.active_object
+        self.target_element = tool.Ifc.get_entity(self.target)
+        if self.target_element:
+            return self.join_ifc_obj()
+        return self.join_blender_obj()
+
+    def join_ifc_obj(self):
+        representation = tool.Ifc.get().by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
+        if representation.RepresentationType in ("Tessellation", "Brep"):
+            for obj in bpy.context.selected_objects:
+                if obj == self.target:
+                    continue
+                element = tool.Ifc.get_entity(obj)
+                if element:
+                    tool.Ifc.delete(element)
+            bpy.ops.object.join()
+            bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
+        elif representation.RepresentationType == "SweptSolid":
+            target_placement = np.array(self.target.matrix_world)
+            items = list(representation.Items)
+            for obj in bpy.context.selected_objects:
+                if obj == self.target:
+                    continue
+                element = tool.Ifc.get_entity(obj)
+
+                # Non IFC elements cannot be join since we cannot guarantee SweptSolid compliance
+                if not element:
+                    obj.select_set(False)
+                    continue
+
+                # Only objects of the same representation type can be joined
+                obj_rep = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                if obj_rep.RepresentationType != "SweptSolid":
+                    obj.select_set(False)
+                    continue
+
+                placement = np.array(obj.matrix_world)
+
+                for item in obj_rep.Items:
+                    copied_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+                    if copied_item.Position:
+                        position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
+                    else:
+                        position = np.eye(4)
+                    position = placement @ position
+                    position = np.linalg.inv(target_placement) @ position
+                    copied_item.Position = tool.Ifc.get().createIfcAxis2Placement3D(
+                        tool.Ifc.get().createIfcCartesianPoint([float(n) for n in position[:, 3][:3]]),
+                        tool.Ifc.get().createIfcDirection([float(n) for n in position[:, 2][:3]]),
+                        tool.Ifc.get().createIfcDirection([float(n) for n in position[:, 0][:3]]),
+                    )
+                    items.append(copied_item)
+                tool.Ifc.delete(element)
+            representation.Items = items
+            bpy.ops.object.join()
+            core.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=self.target,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+                apply_openings=True,
+            )
+
+    def join_blender_obj(self):
+        for obj in bpy.context.selected_objects:
+            if obj == self.target:
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                tool.Ifc.delete(element)
+        bpy.ops.object.join()
+
+
 class OverridePasteBuffer(bpy.types.Operator):
     bl_idname = "bim.override_paste_buffer"
-    bl_label = "Paste BIM Objects"
+    bl_label = "IFC Paste BIM Objects"
 
     def execute(self, context):
         bpy.ops.view3d.pastebuffer()
@@ -618,3 +710,134 @@ class OverridePasteBuffer(bpy.types.Operator):
             for obj in context.selected_objects:
                 blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         return {"FINISHED"}
+
+
+class OverrideModeSetEdit(bpy.types.Operator):
+    bl_idname = "bim.override_mode_set_edit"
+    bl_label = "IFC Mode Set Edit"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        objs = context.selected_objects or [context.active_object]
+        if context.active_object:
+            context.active_object.select_set(True)
+        edited_objs = []
+        for obj in objs:
+            if not obj:
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            # We are switching from OBJECT to EDIT mode.
+            usage_type = tool.Model.get_usage_type(element)
+            if usage_type:
+                # Parametric objects shall not be edited as meshes as they
+                # can be modified to be incompatible with the parametric
+                # constraints.
+                obj.select_set(False)
+                continue
+
+            if obj.data.BIMMeshProperties.ifc_definition_id:
+                representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                if representation.RepresentationType in ("Tessellation", "Brep"):
+                    if element.HasOpenings:
+                        # Mesh elements with openings must disable openings
+                        # so that you can edit the original topology.
+                        core.switch_representation(
+                            tool.Ifc,
+                            tool.Geometry,
+                            obj=obj,
+                            representation=representation,
+                            should_reload=True,
+                            is_global=True,
+                            should_sync_changes_first=False,
+                            apply_openings=False,
+                        )
+                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
+        if not context.selected_objects:
+            return {"FINISHED"}
+        bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        if not tool.Ifc.get():
+            return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        return self.execute(context)
+
+
+class OverrideModeSetObject(bpy.types.Operator):
+    bl_idname = "bim.override_mode_set_object"
+    bl_label = "IFC Mode Set Object"
+    bl_options = {"REGISTER", "UNDO"}
+    should_save: bpy.props.BoolProperty(name="Should Save", default=True)
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        for obj in self.edited_objs:
+            if self.should_save:
+                bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
+                if tool.Ifc.get_entity(obj).HasOpenings:
+                    self.reload_representation(obj)
+            else:
+                self.reload_representation(obj)
+
+        for obj in self.unchanged_objs_with_openings:
+            self.reload_representation(obj)
+        return {"FINISHED"}
+
+    def reload_representation(self, obj):
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        core.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+            apply_openings=True,
+        )
+
+    def draw(self, context):
+        row = self.layout.row(align=True)
+        row.prop(self, "should_save")
+
+    def invoke(self, context, event):
+        bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+
+        if not tool.Ifc.get():
+            return {"FINISHED"}
+
+        objs = context.selected_objects or [context.active_object]
+
+        self.edited_objs = []
+        self.unchanged_objs_with_openings = []
+
+        for obj in objs:
+            if not obj:
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if obj.data.BIMMeshProperties.ifc_definition_id:
+                representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                if representation.RepresentationType in (
+                    "Tessellation",
+                    "Brep",
+                ) and obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    self.edited_objs.append(obj)
+                elif element.HasOpenings:
+                    self.unchanged_objs_with_openings.append(obj)
+
+        if self.edited_objs:
+            return context.window_manager.invoke_props_dialog(self)
+        return self.execute(context)

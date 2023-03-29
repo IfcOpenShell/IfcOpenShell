@@ -20,11 +20,32 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, opening=None):
+        """Remove an opening
+
+        Fillings are retained as orphans. Voided elements remain. Openings
+        cannot exist by themselves, so not only is the opening relationship
+        removed, the opening is also removed.
+
+        :param opening: The IfcOpeningElement to remove.
+        :type opening: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Create an oprhaned opening. Note that an orphaned opening is
+            # invalid, as an opening can only exist when voiding another
+            # element.
+            opening = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcOpeningElement")
+
+            # Remove it. This brings us back to a valid model.
+            ifcopenshell.api.run("void.remove_opening", model, opening=opening)
+        """
         self.file = file
-        self.settings = {"opening": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"opening": opening}
 
     def execute(self):
         for rel in self.settings["opening"].VoidsElements:

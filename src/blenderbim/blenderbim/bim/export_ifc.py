@@ -126,7 +126,8 @@ class IfcExporter:
                 continue
             try:
                 if isinstance(obj, bpy.types.Material):
-                    blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=obj)
+                    if self.has_changed_shading(obj):
+                        blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=obj)
                 else:
                     element = tool.Ifc.get_entity(obj)
                     if element:
@@ -148,11 +149,15 @@ class IfcExporter:
         checksum = obj.data.BIMMeshProperties.material_checksum
         return checksum != str([s.id() for s in tool.Geometry.get_styles(obj) if s])
 
+    def has_changed_shading(self, obj):
+        checksum = obj.BIMMaterialProperties.shading_checksum
+        return checksum != repr(np.array(obj.diffuse_color).tobytes())
+
     def sync_object_placement(self, obj):
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not tool.Ifc.is_moved(obj):
             return
         blender_matrix = np.array(obj.matrix_world)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
             bpy.ops.bim.update_representation(obj=obj.name)
             return element

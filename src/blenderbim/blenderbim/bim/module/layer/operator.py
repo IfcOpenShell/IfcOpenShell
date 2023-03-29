@@ -18,11 +18,12 @@
 
 import bpy
 import json
-import ifcopenshell.util.attribute
 import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.attribute
 import blenderbim.bim.helper
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.layer.data import Data
 
 
 class LoadLayers(bpy.types.Operator):
@@ -34,10 +35,10 @@ class LoadLayers(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMLayerProperties
         props.layers.clear()
-        for layer_id, layer in Data.layers.items():
+        for layer in tool.Ifc.get().by_type("IfcPresentationLayerAssignment"):
             new = props.layers.add()
-            new.name = layer["Name"] or "Unnamed"
-            new.ifc_definition_id = layer_id
+            new.name = layer.Name or "Unnamed"
+            new.ifc_definition_id = layer.id()
         props.is_editing = True
         bpy.ops.bim.disable_editing_layer()
         return {"FINISHED"}
@@ -62,11 +63,7 @@ class EnableEditingLayer(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMLayerProperties
         props.layer_attributes.clear()
-
-        blenderbim.bim.helper.import_attributes(
-            "IfcPresentationLayerAssignment", props.layer_attributes, Data.layers[self.layer]
-        )
-
+        blenderbim.bim.helper.import_attributes(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
         props.active_layer_id = self.layer
         return {"FINISHED"}
 
@@ -91,7 +88,6 @@ class AddPresentationLayer(bpy.types.Operator):
 
     def _execute(self, context):
         result = ifcopenshell.api.run("layer.add_layer", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_layers()
         bpy.ops.bim.enable_editing_layer(layer=result.id())
         return {"FINISHED"}
@@ -117,7 +113,6 @@ class EditPresentationLayer(bpy.types.Operator):
         ifcopenshell.api.run(
             "layer.edit_layer", self.file, **{"layer": self.file.by_id(props.active_layer_id), "attributes": attributes}
         )
-        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_layers()
         return {"FINISHED"}
 
@@ -135,7 +130,6 @@ class RemovePresentationLayer(bpy.types.Operator):
         props = context.scene.BIMLayerProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("layer.remove_layer", self.file, **{"layer": self.file.by_id(self.layer)})
-        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_layers()
         return {"FINISHED"}
 
@@ -158,7 +152,6 @@ class AssignPresentationLayer(bpy.types.Operator):
             self.file,
             **{"item": self.file.by_id(item.BIMMeshProperties.ifc_definition_id), "layer": self.file.by_id(self.layer)}
         )
-        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -180,5 +173,20 @@ class UnassignPresentationLayer(bpy.types.Operator):
             self.file,
             **{"item": self.file.by_id(item.BIMMeshProperties.ifc_definition_id), "layer": self.file.by_id(self.layer)}
         )
-        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class SelectLayerProducts(bpy.types.Operator):
+    bl_idname = "bim.select_layer_products"
+    bl_label = "Select Layer Products"
+    bl_options = {"REGISTER", "UNDO"}
+    layer: bpy.props.IntProperty()
+
+    def execute(self, context):
+        elements = ifcopenshell.util.element.get_elements_by_layer(tool.Ifc.get(), tool.Ifc.get().by_id(self.layer))
+        for obj in context.visible_objects:
+            obj.select_set(False)
+            element = tool.Ifc.get_entity(obj)
+            if element and element in elements:
+                obj.select_set(True)
         return {"FINISHED"}

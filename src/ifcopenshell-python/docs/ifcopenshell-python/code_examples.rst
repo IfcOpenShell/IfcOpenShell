@@ -148,9 +148,14 @@ Convert to and from SI units and project units
 
     import ifcopenshell.util.unit
 
+    # Note: ifc_project_length is a value you have extracted from the project,
+    # just as from a quantity set.
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(model)
+    # Convert to SI unit:
     si_meters = ifc_project_length * unit_scale
+    # Convert from SI unit:
     ifc_project_length = si_meters / unit_scale
+
 
 Get the distribution system of an element
 -----------------------------------------
@@ -169,25 +174,25 @@ Get the distribution system of an element
 Copy an entity instance
 -----------------------------------------
 
-Copy an entity instance is possible in different ways, depending on the task. 
+Copy an entity instance is possible in different ways, depending on the task.
 
 .. code-block:: python
 
-    ifcopenshell.api.run("root.copy_class", ifc_file, product = entity_instance_to_copy)
+    wall_copy_class = ifcopenshell.api.run("root.copy_class", model, product = wall)
 
-This is high level and makes sensible assumptions about copying things like properties, quantities, openings, and other relationships.
-
-.. code-block:: python
-
-    ifcopenshell.util.element.copy(ifc_file, element)
-
-This is for shallow copies.
+This is high level and makes sensible assumptions about copying things like properties and quantities. It does not copy the element's representation, however.
 
 .. code-block:: python
 
-    ifcopenshell.util.element.copy_deep(ifc_file, element, exclude = None)
+    wall_shallow_copy = ifcopenshell.util.element.copy(model, wall)
 
-This is for deep graph copy.
+This is for shallow copies.  That is, associated things like the element's type, materials, and properties are not copied.  The new element, however, has the same representation and placement as the original.
+
+.. code-block:: python
+
+    wall_deepgraph_copy = ifcopenshell.util.element.copy_deep(model, wall, exclude = None)
+
+This is for deep graph copy.  Like shallow copy, it does not copy over things like associated type/properties/quantities, but it does copy the representation and placement.
 
 Also note that ifcopenshell.file.add() can be used to copy instances from one file to the other.
 
@@ -197,7 +202,7 @@ Also note that ifcopenshell.file.add() can be used to copy instances from one fi
     g = ifcopenshell.file(schema=f.schema)
     g.add(f.by_type(...)[0])
 
-Note that, in this case, it does copy over recursively, factor in length unit conversion if both files f and g have project length unit defined, but it does not make any other attempts at resulting in a valid file.
+Note that, in this case, it does copy over recursively, however, it does not make any other attempts at resulting in a valid file. Factor in things like length unit conversion if both files (f and g) have project length unit defined.
 
 Create a simple model from scratch
 ----------------------------------
@@ -219,11 +224,10 @@ Create a simple model from scratch
 
     # Let's create a modeling geometry context, so we can store 3D geometry (note: IFC supports 2D too!)
     context = run("context.add_context", model, context_type="Model")
+
     # In particular, in this example we want to store the 3D "body" geometry of objects, i.e. the body shape
-    body = run(
-        "context.add_context", model,
-        context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
-    )
+    body = run("context.add_context", model, context_type="Model",
+        context_identifier="Body", target_view="MODEL_VIEW", parent=context)
 
     # Create a site, building, and storey. Many hierarchies are possible.
     site = run("root.create_entity", model, ifc_class="IfcSite", name="My Site")
@@ -252,3 +256,73 @@ Create a simple model from scratch
 Here is the result:
 
 .. image:: images/simple-model.png
+
+
+Create a work schedule constructing a building floor by floor
+-------------------------------------------------------------
+
+.. code-block:: python
+
+    import datetime
+    import ifcopenshell
+    from ifcopenshell.api import run
+    from ifcopenshell.util.element import get_decomposition
+    from ifcopenshell.util.placement import get_storey_elevation
+
+    # Define a convenience function to add a task chained to a predecessor
+    def add_task(model, name, predecessor, work_schedule):
+        # Add a construction task
+        task = run("sequence.add_task", model,
+            work_schedule=work_schedule, name=name, predefined_type="CONSTRUCTION")
+
+        # Give it a time
+        task_time = run("sequence.add_task_time", model, task=task)
+
+        # Arbitrarily set the task's scheduled time duration to be 1 week
+        run("sequence.edit_task_time", model, task_time=task_time,
+            attributes={"ScheduleStart": datetime.date(2000, 1, 1), "ScheduleDuration": "P1W"})
+
+        # If a predecessor exists, create a finish to start relationship
+        if predecessor:
+            run("sequence.assign_sequence", model, relating_process=predecessor, related_process=task)
+
+        return task
+
+    # Open an existing IFC4 model you have of a building
+    model = ifcopenshell.open("/path/to/existing/model.ifc")
+
+    # Create a new construction schedule
+    schedule = run("sequence.add_work_schedule", model, name="Construction")
+
+    # Let's imagine a starting task for site establishment.
+    task = add_task(model, "Site establishment", None, schedule)
+    start_task = task
+
+    # Get all our storeys sorted by elevation ascending.
+    storeys = sorted(model.by_type("IfcBuildingStorey"), key=lambda s: get_storey_elevation(s))
+
+    # For each storey ...
+    for storey in storeys:
+
+        # Add a construction task to construct that storey, using our convenience function
+        task = add_task(model, f"Construct {storey.Name}", task, schedule)
+
+        # Assign all the products in that storey to the task as construction outputs.
+        for product in get_decomposition(storey):
+            run("sequence.assign_product", model, relating_product=product, related_object=task)
+
+    # Ask the computer to calculate all the dates for us from the start task.
+    # For example, if the first task started on the 1st of January and took a
+    # week, the next task will start on the 8th of January. This saves us
+    # manually doing date calculations.
+    run("sequence.cascade_schedule", model, task=start_task)
+
+    # Calculate the critical path and floats.
+    run("sequence.recalculate_schedule", model, work_schedule=schedule)
+
+    # Write out to a file
+    model.write("/home/dion/model.ifc")
+
+Here is the result:
+
+.. image:: images/simple-work-schedule.png

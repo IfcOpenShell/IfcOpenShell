@@ -20,11 +20,43 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, material=None):
+        """Removes a material set
+
+        All set items, such as layers, profiles, or constituents will also be
+        removed. However, the materials and profile curves used by the layers,
+        profiles and constituents will not be removed.
+
+        :param material: The IfcMaterialLayerSet, IfcMaterialConstituentSet,
+            IfcMaterialProfileSet entity you want to remove.
+        :type material: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Create a material set
+            material_set = ifcopenshell.api.run("material.add_material_set", model,
+                name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
+
+            # Create some materials
+            gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
+            steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+
+            # Add some layers
+            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
+            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+
+            # Completely delete the set and all layers. The gypsum and steel
+            # material still exist, though.
+            ifcopenshell.api.run("material.remove_material_set", model, material=material_set)
+        """
+
         self.file = file
-        self.settings = {"material": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"material": material}
 
     def execute(self):
         inverse_elements = self.file.get_inverse(self.settings["material"])

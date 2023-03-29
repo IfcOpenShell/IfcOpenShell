@@ -18,11 +18,51 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, profile=None):
+        """Removes a profile item from a profile set
+
+        Note that it is invalid to have zero items in a set, so you should leave
+        at least one profile to ensure a valid IFC dataset.
+
+        :param profile: The IfcMaterialProfile entity you want to remove
+        :type profile: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # First, let's create a material set.
+            material_set = ifcopenshell.api.run("material.add_profile_set", model,
+                name="B1", set_type="IfcMaterialProfileSet")
+
+            # Create a steel material.
+            steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+
+            # Create an I-beam profile curve. Notice how we name our profiles
+            # based on standardised steel profile names.
+            hea100 = self.file.create_entity(
+                "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
+                OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
+            )
+
+            # Define that steel material and cross section as a single profile item.
+            ifcopenshell.api.run("material.add_profile", model,
+                profile_set=material_set, material=steel, profile=hea100)
+
+            # Imagine a welded square along the length of the profile.
+            welded_square = ifcopenshell.api.run("profile.add_arbitrary_profile", model,
+                profile=[(.0025, .0025), (.0325, .0025), (.0325, -.0025), (.0025, -.0025), (.0025, .0025)])
+            weld_profile = ifcopenshell.api.run("material.add_profile", model,
+                profile_set=material_set, material=steel, profile=welded_square)
+
+            # Let's remove our welded square.
+            ifcopenshell.api.run("material.remove_profile", model, profile=weld_profile)
+        """
+
         self.file = file
-        self.settings = {"profile": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"profile": profile}
 
     def execute(self):
         self.file.remove(self.settings["profile"])

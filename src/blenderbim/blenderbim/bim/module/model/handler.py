@@ -51,6 +51,10 @@ def load_post(*args):
         )
 
     ifcopenshell.api.add_post_listener(
+        "material.unassign_material", "BlenderBIM.Product.EnsureMaterialUnassigned", product.ensure_material_unassigned
+    )
+
+    ifcopenshell.api.add_post_listener(
         "material.edit_profile_usage",
         "BlenderBIM.Product.RegenerateProfileUsage",
         product.regenerate_profile_usage,
@@ -88,4 +92,10 @@ def load_post(*args):
         "type.assign_type",
         "BlenderBIM.DumbProfile.RegenerateFromType",
         profile.DumbProfileRegenerator().regenerate_from_type,
+    )
+
+    ifcopenshell.api.add_post_listener(
+        "type.assign_type",
+        "BlenderBIM.Opening.RegenerateFromType",
+        opening.FilledOpeningGenerator().regenerate_from_type,
     )

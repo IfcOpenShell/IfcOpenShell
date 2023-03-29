@@ -25,7 +25,8 @@ import blenderbim.tool as tool
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
-from blenderbim.bim.module.drawing.data import DrawingsData
+from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData
+from blenderbim.bim.module.drawing.data import refresh as refresh_drawing_data
 from pathlib import Path
 from blenderbim.bim.prop import Attribute, StrProperty
 from bpy.types import PropertyGroup
@@ -38,6 +39,7 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     CollectionProperty,
+    BoolVectorProperty,
 )
 
 
@@ -75,8 +77,14 @@ def update_diagram_scale(self, context):
     if "|" not in scale:
         return
     human_scale, scale = scale.split("|")
-    element = tool.Ifc.get_entity(context.active_object)
-    if not element:
+    try:
+        element = (
+            tool.Ifc.get()
+            .by_id(self.id_data.BIMMeshProperties.ifc_definition_id)
+            .OfProductRepresentation[0]
+            .ShapeOfProduct[0]
+        )
+    except:
         return
     pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
     if pset:
@@ -206,6 +214,7 @@ def toggleDecorations(self, context):
         collection = context.scene.camera.users_collection[0]
         for obj in collection.objects:
             tool.Drawing.update_text_value(obj)
+        refresh_drawing_data()
         decoration.DecorationsHandler.install(context)
     else:
         decoration.DecorationsHandler.uninstall()
@@ -219,10 +228,6 @@ def getVectorStyles(self, context):
             f = str(filename.stem)
             vector_styles_enum.append((f, f, ""))
     return vector_styles_enum
-
-
-def refreshFontSize(self, context):
-    annotation.Annotator.resize_text(context.active_object)
 
 
 class Variable(PropertyGroup):
@@ -375,10 +380,66 @@ class BIMCameraProperties(PropertyGroup):
         return False
 
 
+DEFAULT_BOX_ALIGNMENT = [False] * 6 + [True] + [False] * 2
+BOX_ALIGNMENT_POSITIONS = [
+    "top-left",
+    "top-middle",
+    "top-right",
+    "middle-left",
+    "center",
+    "middle-right",
+    "bottom-left",
+    "bottom-middle",
+    "bottom-right",
+]
+
+
+class Literal(PropertyGroup):
+    def set_box_alignment(self, new_value):
+        markers = new_value.count(True)
+        if not markers:
+            return
+
+        if markers > 1:
+            prev_value = self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
+            # looking for the first value changed to positive
+            first_changed_value = next((i for i in range(9) if new_value[i] and new_value[i] != prev_value[i]), None)
+
+            # if nothing have changed we just keep the previous value
+            if first_changed_value is None:
+                return
+            new_value = [False] * 9
+            new_value[first_changed_value] = True
+
+        self["box_alignment"] = new_value
+        position_string = BOX_ALIGNMENT_POSITIONS[next(i for i in range(9) if new_value[i])]
+        self.attributes["BoxAlignment"].set_value(position_string)
+
+    def get_box_alignment(self):
+        return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
+
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+    # Current text value with evaluated experessions stored in `value`.
+    # The original (Literal) value stored in `attributes['Literal']`
+    # and can be accessed with `get_text()`
+    value: StringProperty(name="Value", default="TEXT")
+    box_alignment: BoolVectorProperty(
+        name="Box alignment", size=9, set=set_box_alignment, get=get_box_alignment, default=DEFAULT_BOX_ALIGNMENT
+    )
+    ifc_definition_id: IntProperty(name="IFC definition ID", default=0)
+
+    def get_literal_edited_data(self):
+        text_data = {
+            "CurrentValue": self.attributes["Literal"].string_value,
+            "Literal": self.attributes["Literal"].string_value,
+            "BoxAlignment": self.attributes["BoxAlignment"].string_value,
+        }
+        return text_data
+
+
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
-    attributes: CollectionProperty(name="Attributes", type=Attribute)
-    value: StringProperty(name="Value", default="TEXT")
+    literals: CollectionProperty(name="Literals", type=Literal)
     font_size: EnumProperty(
         items=[
             ("1.8", "1.8 - Small", ""),
@@ -388,9 +449,23 @@ class BIMTextProperties(PropertyGroup):
             ("7.0", "7.0 - Title", ""),
         ],
         default="2.5",
-        update=refreshFontSize,
         name="Font Size",
     )
+
+    def get_text_edited_data(self):
+        """should be called only if `is_editing`
+        otherwise should use `DecoratorData.get_ifc_text_data(obj)` instead
+        because this data could be out of date
+        """
+        literals_data = []
+        for literal in self.literals:
+            literal_data = literal.get_literal_edited_data()
+            literals_data.append(literal_data)
+        text_data = {
+            "Literals": literals_data,
+            "FontSize": float(self.font_size),
+        }
+        return text_data
 
 
 class BIMAssignedProductProperties(PropertyGroup):

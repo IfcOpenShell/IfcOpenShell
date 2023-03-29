@@ -29,6 +29,7 @@ class BIM_PT_voids(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod

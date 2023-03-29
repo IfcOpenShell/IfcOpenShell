@@ -18,11 +18,38 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, actor=None, attributes=None):
+        """Edits the attributes of an IfcActor
+
+        For more information about the attributes and data types of an
+        IfcActor, consult the IFC documentation.
+
+        :param actor: The IfcActor entity you want to edit
+        :type actor: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Setup an organisation with a single role
+            organisation = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="AWB", name="Architects Without Ballpens")
+            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation)
+            ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "ARCHITECT"})
+
+            # Assign that organisation to a newly created actor
+            actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
+
+            # Edit the description of the attribute.
+            ifcopenshell.api.run("actor.edit_actor", model,
+                actor=actor, attributes={"Description": "Responsible for buildings A, B, and C."})
+        """
         self.file = file
-        self.settings = {"actor": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"actor": actor, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

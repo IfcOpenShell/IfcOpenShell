@@ -21,12 +21,14 @@ import gpu
 import bgl
 import bmesh
 import logging
-import blenderbim.bim.handler
+import numpy as np
 import ifcopenshell
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.bim.import_ifc as import_ifc
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from math import pi
 from mathutils import Vector, Matrix
@@ -46,66 +48,165 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
     filling_obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
+        FilledOpeningGenerator().generate(bpy.data.objects.get(self.filling_obj), bpy.data.objects.get(self.voided_obj))
+        return {"FINISHED"}
+
+
+class FilledOpeningGenerator:
+    def generate(self, filling_obj, voided_obj, target=None):
+        props = bpy.context.scene.BIMModelProperties
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-        voided_obj = bpy.data.objects.get(self.voided_obj)
-        filling_obj = bpy.data.objects.get(self.filling_obj)
         filling = tool.Ifc.get_entity(filling_obj)
+        element = tool.Ifc.get_entity(voided_obj)
 
         if not voided_obj or not filling_obj:
-            return {"FINISHED"}
+            return
 
-        element = tool.Ifc.get_entity(voided_obj)
-        target = context.scene.cursor.location
-        raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
-        if not raycast[0]:
-            target = filling_obj.matrix_world.col[3].to_3d().copy()
-            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+        if filling.FillsVoids:
+            ifcopenshell.api.run(
+                "void.remove_opening", tool.Ifc.get(), opening=filling.FillsVoids[0].RelatingOpeningElement
+            )
+
+        if target is None:
+            target = bpy.context.scene.cursor.location
+
+        # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
+        if voided_obj.data:
+            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
             if not raycast[0]:
-                return {"FINISHED"}
+                target = filling_obj.matrix_world.col[3].to_3d().copy()
+                raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+                if not raycast[0]:
+                    return
 
-        # In this prototype, we assume openings are only added to axis-based elements
-        layers = tool.Model.get_material_layer_parameters(element)
-        axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+            # In this prototype, we assume openings are only added to axis-based elements
+            layers = tool.Model.get_material_layer_parameters(element)
+            axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
 
-        new_matrix = voided_obj.matrix_world.copy()
-        new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
+            new_matrix = voided_obj.matrix_world.copy()
+            new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
 
-        if filling.is_a("IfcDoor"):
-            new_matrix[2][3] = voided_obj.matrix_world[2][3]
-        else:
-            new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
+            if filling.is_a("IfcDoor"):
+                new_matrix[2][3] = voided_obj.matrix_world[2][3]
+            else:
+                new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
 
-        filling_obj.matrix_world = new_matrix
-        bpy.context.view_layer.update()
+            filling_obj.matrix_world = new_matrix
+            bpy.context.view_layer.update()
 
-        opening_obj = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
-
-        # Still prototyping, for now duplicating code from bpy.ops.bim.add_opening
         if tool.Ifc.is_moved(voided_obj):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj)
 
-        has_visible_openings = False
-        for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
-            if tool.Ifc.get_object(opening):
-                has_visible_openings = True
-                break
+        existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
-        body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
-        opening = blenderbim.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=opening_obj,
-            ifc_class="IfcOpeningElement",
-            should_add_representation=True,
-            context=body_context,
-        )
+        if existing_opening_occurrence:
+            opening = ifcopenshell.api.run(
+                "root.create_entity",
+                tool.Ifc.get(),
+                ifc_class="IfcOpeningElement",
+                predefined_type="OPENING",
+                name="Opening",
+            )
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
+            )
+
+            representation = ifcopenshell.util.representation.get_representation(
+                existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
+            )
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            mapped_representation = ifcopenshell.api.run(
+                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            )
+        else:
+            representation = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
+            opening = ifcopenshell.api.run(
+                "root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement", predefined_type="OPENING"
+            )
+
+            matrix = np.array(filling_obj.matrix_world)
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=matrix, is_si=True
+            )
+            mapped_representation = ifcopenshell.api.run(
+                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            )
+
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
+        ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
+
+        voided_objs = [voided_obj]
+        # Openings affect all subelements of an aggregate
+        for subelement in ifcopenshell.util.element.get_decomposition(element):
+            subobj = tool.Ifc.get_object(subelement)
+            if subobj:
+                voided_objs.append(subobj)
+
+        for voided_obj in voided_objs:
+            if voided_obj.data:
+                representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=voided_obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
+
+    def regenerate_from_type(self, usecase_path, ifc_file, settings):
+        filling = settings["related_object"]
+        if not getattr(filling, "FillsVoids", None):
+            return
+
+        opening = filling.FillsVoids[0].RelatingOpeningElement
+        voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
+
+        opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+        ifcopenshell.api.run(
+            "geometry.unassign_representation", tool.Ifc.get(), product=opening, representation=opening_rep
+        )
+        ifcopenshell.api.run("geometry.remove_representation", tool.Ifc.get(), representation=opening_rep)
+
+        existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
+
+        if existing_opening_occurrence:
+            representation = ifcopenshell.util.representation.get_representation(
+                existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
+            )
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            mapped_representation = ifcopenshell.api.run(
+                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            )
+        else:
+            opening_obj = tool.Ifc.get_object(opening)
+            if opening_obj:
+                tool.Ifc.unlink(obj=opening_obj)
+                bpy.data.objects.remove(opening_obj)
+
+            filling_obj = tool.Ifc.get_object(filling)
+            representation = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
+            mapped_representation = ifcopenshell.api.run(
+                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            )
 
         representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=voided_obj,
             representation=representation,
@@ -114,104 +215,76 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
 
-        bpy.ops.bim.add_filling(opening=opening_obj.name, obj=filling_obj.name)
-
-        if not has_visible_openings:
-            tool.Ifc.unlink(obj=opening_obj)
-            bpy.data.objects.remove(opening_obj)
-        return {"FINISHED"}
-
     def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
-        profile = ifcopenshell.util.representation.get_representation(filling, "Model", "Profile", "ELEVATION_VIEW")
+        thickness = voided_obj.dimensions[1] + 0.1 + 0.1
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+
+        profile = None
+        filling_type = ifcopenshell.util.element.get_type(filling)
+        if filling_type:
+            profile = ifcopenshell.util.representation.get_representation(
+                filling_type, "Model", "Profile", "ELEVATION_VIEW"
+            )
+            filling_obj = tool.Ifc.get_object(filling_type)
+        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
         if profile:
-            return self.generate_opening_from_filling_profile(filling_obj, voided_obj, profile)
-        return self.generate_opening_from_filling_box(filling_obj, voided_obj)
+            extrusion = shape_builder.extrude(
+                ifcopenshell.util.representation.resolve_representation(profile).Items[0],
+                magnitude=thickness / unit_scale,
+                position=Vector([0.0, -0.1 / unit_scale, 0.0]),
+                extrusion_vector=Vector([0.0, 1.0, 0.0]),
+            )
+            return shape_builder.get_representation(context, [extrusion])
 
-    def generate_opening_from_filling_profile(self, filling_obj, voided_obj, profile):
-        settings = ifcopenshell.geom.settings()
-        settings.set(settings.INCLUDE_CURVES, True)
-        shape = ifcopenshell.geom.create_shape(settings, profile)
-        verts = shape.verts
-        edges = shape.edges
-        grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
-        grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
-
-        bm = bmesh.new()
-        bm.verts.index_update()
-        bm.edges.index_update()
-        new_verts = [bm.verts.new(v) for v in grouped_verts]
-        new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in grouped_edges]
-
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
-        bmesh.ops.triangle_fill(bm, edges=bm.edges)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi, verts=bm.verts, edges=bm.edges)
-
-        bmesh.ops.translate(bm, vec=[0., -0.1, 0.], verts=bm.verts)
-        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0., voided_obj.dimensions[1] + 0.1 + 0.1, 0.], verts=extruded_verts)
-
-        mesh = bpy.data.meshes.new(name="Opening")
-        bm.to_mesh(mesh)
-        bm.free()
-
-        obj = bpy.data.objects.new("Opening", mesh)
-        obj.matrix_world = filling_obj.matrix_world
-        return obj
-
-    def generate_opening_from_filling_box(self, filling_obj, voided_obj):
         x, y, z = filling_obj.dimensions
-        dimension = min(voided_obj.dimensions)
-        if dimension == voided_obj.dimensions[0]:
-            verts = [
-                Vector((-0.1, 0, 0)),
-                Vector((-0.1, 0, z)),
-                Vector((-0.1, y, 0)),
-                Vector((-0.1, y, z)),
-                Vector((dimension + 0.1, 0, 0)),
-                Vector((dimension + 0.1, 0, z)),
-                Vector((dimension + 0.1, y, 0)),
-                Vector((dimension + 0.1, y, z)),
-            ]
-        elif dimension == voided_obj.dimensions[1]:
-            verts = [
-                Vector((0, -0.1, 0)),
-                Vector((0, -0.1, z)),
-                Vector((0, dimension + 0.1, 0)),
-                Vector((0, dimension + 0.1, z)),
-                Vector((x, -0.1, 0)),
-                Vector((x, -0.1, z)),
-                Vector((x, dimension + 0.1, 0)),
-                Vector((x, dimension + 0.1, z)),
-            ]
-        elif dimension == voided_obj.dimensions[2]:
-            verts = [
-                Vector((0, 0, -0.1)),
-                Vector((0, 0, dimension + 0.1)),
-                Vector((0, y, -0.1)),
-                Vector((0, y, dimension + 0.1)),
-                Vector((x, 0, -0.1)),
-                Vector((x, 0, dimension + 0.1)),
-                Vector((x, y, -0.1)),
-                Vector((x, y, dimension + 0.1)),
-            ]
-        edges = []
-        faces = [
-            [0, 1, 3, 2],
-            [2, 3, 7, 6],
-            [6, 7, 5, 4],
-            [4, 5, 1, 0],
-            [2, 6, 4, 0],
-            [7, 3, 1, 5],
-        ]
-        mesh = bpy.data.meshes.new(name="Opening")
-        mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Opening", mesh)
-        obj.matrix_world = filling_obj.matrix_world
-        return obj
+        opening_position = Vector([0.0, -0.1 / unit_scale, 0.0])
+        opening_size = Vector([x, 0, z]) / unit_scale
+
+        # Windows and doors can have a casing that overlaps the wall
+        # but shouldn't affect the size of the opening.
+        # So we shouldn't use object dimensions in that case. More: #2784
+        # Just keeping it for windows and doors for now to be safe
+        x_redefined, z_redefined = False, False
+        if filling.is_a() in ["IfcWindow", "IfcDoor"]:
+            if filling.OverallWidth:
+                opening_size.x = filling.OverallWidth
+                x_redefined = True
+            if filling.OverallHeight:
+                opening_size.z = filling.OverallHeight
+                z_redefined = True
+
+        # making sure if min_x or min_z != 0 to shift the opening accordingly
+        # to prevent something like #2784
+        if not x_redefined:
+            opening_position.x = min(v[0] for v in filling_obj.bound_box)
+
+        if not z_redefined:
+            opening_position.z = min(v[2] for v in filling_obj.bound_box)
+
+        extrusion = shape_builder.extrude(
+            shape_builder.rectangle(size=opening_size),
+            magnitude=thickness / unit_scale,
+            position=opening_position,
+            extrusion_vector=Vector([0.0, 1.0, 0.0]),
+        )
+
+        return shape_builder.get_representation(context, [extrusion])
+
+    def has_visible_openings(self, element):
+        for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+            if tool.Ifc.get_object(opening):
+                return True
+        return False
+
+    def get_existing_opening_occurrence_if_any(self, filling):
+        filling_type = ifcopenshell.util.element.get_type(filling)
+        if filling_type:
+            filling_occurrences = ifcopenshell.util.element.get_types(filling_type)
+            for filling_occurrence in filling_occurrences:
+                if filling_occurrence != filling and filling_occurrence.FillsVoids:
+                    return filling_occurrence.FillsVoids[0].RelatingOpeningElement
 
 
 class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
@@ -235,26 +308,36 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
             for building_element in building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
                 if tool.Ifc.is_moved(building_obj):
-                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj)
+                    blenderbim.core.geometry.edit_object_placement(
+                        tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj
+                    )
             for opening in openings:
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 ifcopenshell.api.run(
                     "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
                 )
+
+            decomposed_building_elements = set()
             for building_element in building_elements:
+                decomposed_building_elements.add(building_element)
+                decomposed_building_elements.update(ifcopenshell.util.element.get_decomposition(building_element))
+
+            for building_element in decomposed_building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
-                body = ifcopenshell.util.representation.get_representation(
-                    building_element, "Model", "Body", "MODEL_VIEW"
-                )
-                if body:
-                    blenderbim.core.geometry.switch_representation(
-                        tool.Geometry,
-                        obj=building_obj,
-                        representation=body,
-                        should_reload=True,
-                        is_global=True,
-                        should_sync_changes_first=False,
+                if building_obj and building_obj.data:
+                    body = ifcopenshell.util.representation.get_representation(
+                        building_element, "Model", "Body", "MODEL_VIEW"
                     )
+                    if body:
+                        blenderbim.core.geometry.switch_representation(
+                            tool.Ifc,
+                            tool.Geometry,
+                            obj=building_obj,
+                            representation=body,
+                            should_reload=True,
+                            is_global=True,
+                            should_sync_changes_first=False,
+                        )
         return {"FINISHED"}
 
 
@@ -400,22 +483,19 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
 
-        if not obj2.data or len(obj2.data.polygons) <= 4: # It takes 4 faces to create a closed solid
+        if not obj2.data or len(obj2.data.polygons) <= 4:  # It takes 4 faces to create a closed solid
             mesh_data = {"type": "IfcHalfSpaceSolid", "matrix": obj1.matrix_world.inverted() @ obj2.matrix_world}
         elif obj2.data:
             mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
 
         ifcopenshell.api.run(
-            "geometry.add_boolean",
-            tool.Ifc.get(),
-            representation=representation,
-            operator="DIFFERENCE",
-            **mesh_data
+            "geometry.add_boolean", tool.Ifc.get(), representation=representation, operator="DIFFERENCE", **mesh_data
         )
 
         tool.Model.clear_scene_openings()
 
         blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj1,
             representation=representation,
@@ -442,6 +522,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             or not obj.data.BIMMeshProperties.ifc_definition_id
         ):
             return {"FINISHED"}
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         booleans = []
         for item in representation.Items:
@@ -458,6 +539,9 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     boolean_obj = self.create_half_space_solid()
                     position = boolean.BaseSurface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+                    position[0][3] *= unit_scale
+                    position[1][3] *= unit_scale
+                    position[2][3] *= unit_scale
                     boolean_obj.matrix_world = obj.matrix_world @ position
             else:
                 settings = ifcopenshell.geom.settings()
@@ -543,6 +627,7 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body:
                     blenderbim.core.geometry.switch_representation(
+                        tool.Ifc,
                         tool.Geometry,
                         obj=upstream_obj,
                         representation=body,
@@ -567,7 +652,14 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
                 continue
             if tool.Ifc.is_moved(obj):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-            openings = tool.Model.load_openings(element, [r.RelatedOpeningElement for r in element.HasOpenings])
+            openings = tool.Model.load_openings(
+                element,
+                [
+                    r.RelatedOpeningElement
+                    for r in element.HasOpenings
+                    if not tool.Ifc.get_object(r.RelatedOpeningElement)
+                ],
+            )
             for opening in openings:
                 new = props.openings.add()
                 new.obj = opening
@@ -606,6 +698,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
+        building_objs = set()
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -616,23 +709,54 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                        building_objs.add(obj)
+                        building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     elif tool.Ifc.is_moved(opening_obj):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
+                        building_objs.add(obj)
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
-            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            blenderbim.core.geometry.switch_representation(
-                tool.Geometry,
-                obj=obj,
-                representation=body,
-                should_reload=True,
-                is_global=True,
-                should_sync_changes_first=False,
-            )
+        decomposed_building_objs = set()
+        for obj in building_objs:
+            decomposed_building_objs.add(obj)
+            for subelement in ifcopenshell.util.element.get_decomposition(tool.Ifc.get_entity(obj)):
+                subobj = tool.Ifc.get_object(subelement)
+                if subobj:
+                    decomposed_building_objs.add(subobj)
+
+        for obj in decomposed_building_objs:
+            if obj.data:
+                element = tool.Ifc.get_entity(obj)
+                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=body,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
         return {"FINISHED"}
+
+    def get_all_building_objects_of_similar_openings(self, opening):
+        if not opening.HasFillings:
+            return []
+        results = set()
+        for rel in opening.HasFillings:
+            filling_type = ifcopenshell.util.element.get_type(rel.RelatedBuildingElement)
+            if not filling_type:
+                continue
+            for occurrence in ifcopenshell.util.element.get_types(filling_type):
+                for rel2 in occurrence.FillsVoids:
+                    for rel3 in rel2.RelatingOpeningElement.VoidsElements:
+                        obj = tool.Ifc.get_object(rel3.RelatingBuildingElement)
+                        if obj:
+                            results.add(obj)
+        return results
 
 
 class DecorationsHandler:

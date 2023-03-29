@@ -116,7 +116,6 @@ class TestAssignClass:
         root.run_geometry_add_representation(
             obj="obj", context="context", ifc_representation_class="ifc_representation_class", profile_set_usage=None
         ).should_be_called()
-        root.set_element_specific_display_settings("obj", "element").should_be_called()
         collector.sync("obj").should_be_called()
         collector.assign("obj").should_be_called()
         subject.assign_class(
@@ -139,7 +138,6 @@ class TestAssignClass:
         ).should_be_called().will_return("element")
         root.set_object_name("obj", "element").should_be_called()
         ifc.link("element", "obj").should_be_called()
-        root.set_element_specific_display_settings("obj", "element").should_be_called()
         collector.sync("obj").should_be_called()
         collector.assign("obj").should_be_called()
         subject.assign_class(

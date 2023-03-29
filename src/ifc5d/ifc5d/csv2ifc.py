@@ -20,6 +20,7 @@ import csv
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.unit
+import locale
 
 
 class Csv2Ifc:
@@ -38,7 +39,8 @@ class Csv2Ifc:
     def parse_csv(self):
         self.parents = {}
         self.headers = {}
-        with open(self.csv, "r") as csv_file:
+        locale.setlocale(locale.LC_ALL, "")  # set the system locale
+        with open(self.csv, "r", encoding="ISO-8859-1") as csv_file:
             reader = csv.reader(csv_file)
             for row in reader:
                 if not row[0]:
@@ -67,7 +69,7 @@ class Csv2Ifc:
         unit = row[self.headers["Unit"]]
         if self.has_categories:
             cost_values = {
-                k: float(row[v])
+                k: locale.atof(row[v])
                 for k, v in self.headers.items()
                 if k not in ["Hierarchy", "Identification", "Name", "Quantity", "Unit", "Subtotal"] and row[v]
             }

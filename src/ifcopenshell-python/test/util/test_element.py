@@ -441,9 +441,7 @@ class TestGetElementsByRepresentation(test.bootstrap.IFC4):
                 self.file.createIfcShapeRepresentation(
                     Items=[
                         self.file.createIfcMappedItem(
-                            MappingSource=self.file.createIfcRepresentationMap(
-                                MappedRepresentation=representation
-                            )
+                            MappingSource=self.file.createIfcRepresentationMap(MappedRepresentation=representation)
                         )
                     ]
                 )
@@ -456,6 +454,16 @@ class TestGetElementsByRepresentation(test.bootstrap.IFC4):
         representation = self.file.createIfcShapeRepresentation()
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
         assert subject.get_elements_by_representation(self.file, representation) == {element}
+
+
+class TestGetElementsByLayer(test.bootstrap.IFC4):
+    def test_getting_the_elements_of_a_layer(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        layer = ifcopenshell.api.run("layer.add_layer", self.file)
+        representation = self.file.createIfcShapeRepresentation()
+        element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
+        ifcopenshell.api.run("layer.assign_layer", self.file, item=representation, layer=layer)
+        assert list(subject.get_elements_by_layer(self.file, layer)) == [element]
 
 
 class TestGetlayers(test.bootstrap.IFC4):
@@ -692,3 +700,26 @@ class TestCopyDeepIFC4(test.bootstrap.IFC4):
         rel.RelatedObjects = [element]
         rel2 = subject.copy_deep(self.file, rel, exclude=["IfcWall"])
         assert rel.RelatedObjects == rel2.RelatedObjects
+
+    def test_copying_an_element_recursively_with_aggregates_with_an_exclude_callback(self):
+        element = self.file.createIfcWall(Name="name")
+        rel = self.file.createIfcRelAggregates()
+        rel.RelatedObjects = [element]
+        rel2 = subject.copy_deep(self.file, rel, exclude_callback=lambda x: x.is_a("IfcWall"))
+        assert rel.RelatedObjects == rel2.RelatedObjects
+
+    def test_copying_and_reusing_element_references(self):
+        points = self.file.createIfcCartesianPointList2D()
+        subelement1 = self.file.createIfcIndexedPolyCurve(points)
+        subelement2 = self.file.createIfcIndexedPolyCurve(points)
+        element = self.file.createIfcGeometricCurveSet([subelement1, subelement2])
+        element2 = subject.copy_deep(self.file, element)
+        assert element2.Elements[0].Points.id() == element2.Elements[1].Points.id()
+
+    def test_copying_primitive_entities(self):
+        element = self.file.createIfcIndexedPolyCurve(
+            Segments=(self.file.createIfcLineIndex((1, 2)), self.file.createIfcLineIndex((3, 4)))
+        )
+        element2 = subject.copy_deep(self.file, element)
+        assert element2.Segments[0][0] == (1, 2)
+        assert element2.Segments[1][0] == (3, 4)

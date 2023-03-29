@@ -33,16 +33,21 @@ class TestImplementsTool(NewFile):
 
 class TestAddSchemaIdentifier(NewFile):
     def test_run(self):
-        subject.add_schema_identifier(TestLoadExpress().test_run())
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        schema_path = os.path.join(cwd, "..", "files", "test.exp")
+        schema = subject.load_express(schema_path)
+        subject.add_schema_identifier(schema)
         assert IfcStore.schema_identifiers[-1] == "IFCROGUE"
+        os.remove(schema_path + ".cache.dat")
 
 
 class TestLoadExpress(NewFile):
     def test_run(self):
         cwd = os.path.dirname(os.path.realpath(__file__))
-        schema = subject.load_express(os.path.join(cwd, "..", "files", "test.exp"))
+        schema_path = os.path.join(cwd, "..", "files", "test.exp")
+        schema = subject.load_express(schema_path)
         assert schema.schema_name == "IFCROGUE"
-        return schema
+        os.remove(schema_path + ".cache.dat")
 
 
 class TestPurgeHdf5Cache(NewFile):

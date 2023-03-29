@@ -34,7 +34,7 @@ class SelectIfcPatchInput(bpy.types.Operator):
     bl_idname = "bim.select_ifc_patch_input"
     bl_label = "Select IFC Patch Input"
     bl_options = {"REGISTER", "UNDO"}
-    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifcZIP;*.ifcXML", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -71,7 +71,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         input_file = context.scene.BIMPatchProperties.ifc_patch_input
-        return os.path.isfile(input_file) and "ifc" in os.path.splitext(input_file)[1].lower()
+        return input_file or context.scene.BIMPatchProperties.should_load_from_memory
 
     def execute(self, context):
         props = context.scene.BIMPatchProperties
@@ -80,9 +80,17 @@ class ExecuteIfcPatch(bpy.types.Operator):
         else:
             arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
 
+        if props.should_load_from_memory and tool.Ifc.get():
+            input_file = props.ifc_patch_input
+            file = tool.Ifc.get()
+        else:
+            input_file = props.ifc_patch_input
+            file = ifcopenshell.open(props.ifc_patch_input)
+
         output = ifcpatch.execute(
             {
-                "input": ifcopenshell.open(props.ifc_patch_input),
+                "input": input_file,
+                "file": file,
                 "recipe": props.ifc_patch_recipes,
                 "arguments": arguments,
                 "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),

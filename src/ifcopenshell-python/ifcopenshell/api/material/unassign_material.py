@@ -21,16 +21,44 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None):
+        """Removes any material relationship with a product
+
+        A product can only have one material assigned to it, which is why it is
+        not necessary to specify the material to unassign. The material is not
+        removed, only the relationship is removed.
+
+        If the product does not have a material, nothing happens.
+
+        :param product: The IfcProduct that may or may not have a material
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
+
+            # Let's imagine a concrete bench made out of concrete.
+            bench_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurnitureType")
+            ifcopenshell.api.run("material.assign_material", model,
+                product=bench_type, type="IfcMaterial", material=concrete)
+
+            # Let's change our mind and remove the concrete assignment. The
+            # concrete material still exists, but the bench is no longer made
+            # out of concrete now.
+            ifcopenshell.api.run("material.unassign_material", model, product=bench_type)
+        """
         self.file = file
-        self.settings = {"product": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"product": product}
 
     def execute(self):
         if self.settings["product"].is_a("IfcTypeObject"):
             material = ifcopenshell.util.element.get_material(self.settings["product"])
             if material.is_a() in ["IfcMaterialLayerSet", "IfcMaterialProfileSet"]:
+                # Remove set usages
                 for inverse in self.file.get_inverse(material):
                     if self.file.schema == "IFC2X3":
                         if not inverse.is_a("IfcMaterialLayerSetUsage"):
@@ -48,7 +76,9 @@ class Usecase:
         for rel in self.settings["product"].HasAssociations:
             if rel.is_a("IfcRelAssociatesMaterial"):
                 if rel.RelatingMaterial.is_a() in ["IfcMaterialLayerSetUsage", "IfcMaterialProfileSetUsage"]:
-                    self.file.remove(rel.RelatingMaterial)
+                    # Warning: this may leave the model in a non-compliant state.
+                    if self.file.get_total_inverses(rel.RelatingMaterial) == 1 and len(rel.RelatedObjects) == 1:
+                        self.file.remove(rel.RelatingMaterial)
                 if len(rel.RelatedObjects) == 1:
                     self.file.remove(rel)
                     continue

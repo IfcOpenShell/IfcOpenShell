@@ -21,39 +21,42 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes, prop_with_search
-from ifcopenshell.api.structural.data import Data
-from blenderbim.bim.module.structural.data import StructuralData
+from blenderbim.bim.module.structural.data import (
+    StructuralBoundaryConditionsData,
+    ConnectedStructuralMembersData,
+    StructuralMemberData,
+    StructuralAnalysisModelsData,
+    StructuralLoadCasesData,
+    StructuralLoadsData,
+    StructuralConnectionData,
+    BoundaryConditionsData,
+)
 
 
-def draw_boundary_condition_ui(layout, boundary_condition_id, connection_id, props):
-    data = (
-        Data.boundary_conditions[boundary_condition_id]
-        if boundary_condition_id and boundary_condition_id in Data.boundary_conditions.keys()
-        else {}
-    )
+def draw_boundary_condition_ui(layout, boundary_condition, connection_id, props):
     row = layout.row(align=True)
-    if not data:
+    if not boundary_condition:
         row.label(text="No Boundary Condition Found", icon="CON_TRACKTO")
         row.operator("bim.add_structural_boundary_condition", text="", icon="ADD").connection = connection_id
         return
 
-    if props.active_boundary_condition and props.active_boundary_condition == boundary_condition_id:
-        row.label(text=data["type"], icon="CON_TRACKTO")
+    if props.active_boundary_condition and props.active_boundary_condition == boundary_condition["id"]:
+        row.label(text=boundary_condition["type"], icon="CON_TRACKTO")
         row.operator("bim.edit_structural_boundary_condition", text="", icon="CHECKMARK").connection = connection_id
         row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="CANCEL")
-    elif props.active_boundary_condition and props.active_boundary_condition != boundary_condition_id:
-        row.label(text=data["type"], icon="CON_TRACKTO")
+    elif props.active_boundary_condition and props.active_boundary_condition != boundary_condition["id"]:
+        row.label(text=boundary_condition["type"], icon="CON_TRACKTO")
         row.operator("bim.remove_structural_boundary_condition", text="", icon="X").connection = connection_id
     else:
-        row.label(text=data["type"], icon="CON_TRACKTO")
+        row.label(text=boundary_condition["type"], icon="CON_TRACKTO")
         op = row.operator("bim.enable_editing_structural_boundary_condition", text="", icon="GREASEPENCIL")
-        op.boundary_condition = data["id"]
+        op.boundary_condition = boundary_condition["id"]
         row.operator("bim.remove_structural_boundary_condition", text="", icon="X").connection = connection_id
 
-    if props.active_boundary_condition and props.active_boundary_condition == boundary_condition_id:
+    if props.active_boundary_condition and props.active_boundary_condition == boundary_condition["id"]:
         draw_boundary_condition_editable_ui(layout, props)
     else:
-        draw_boundary_condition_read_only_ui(layout, data)
+        draw_boundary_condition_read_only_ui(layout, boundary_condition)
 
 
 def draw_boundary_condition_editable_ui(layout, props):
@@ -72,16 +75,14 @@ def draw_boundary_condition_editable_ui(layout, props):
             row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
 
-def draw_boundary_condition_read_only_ui(layout, boundary_condition_data):
-    for key, value in boundary_condition_data.items():
-        if key == "id" or key == "type" or value == None:
-            continue
+def draw_boundary_condition_read_only_ui(layout, boundary_condition):
+    for attribute in boundary_condition["attributes"]:
         row = layout.row(align=True)
-        row.label(text=key)
-        if isinstance(value, bool):
-            row.label(text="", icon="CHECKBOX_HLT" if value else "CHECKBOX_DEHLT")
+        row.label(text=attribute["name"])
+        if attribute["is_bool"]:
+            row.label(text="", icon="CHECKBOX_HLT" if attribute["value"] else "CHECKBOX_DEHLT")
         else:
-            row.label(text=str(value))
+            row.label(text=str(attribute["value"]))
 
 
 class BIM_PT_structural_boundary_conditions(Panel):
@@ -91,7 +92,7 @@ class BIM_PT_structural_boundary_conditions(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    # bl_parent_id = "BIM_PT_structural_connection"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
@@ -108,13 +109,15 @@ class BIM_PT_structural_boundary_conditions(Panel):
         return True
 
     def draw(self, context):
-        self.oprops = context.active_object.BIMObjectProperties
-        self.props = context.active_object.BIMStructuralProperties
-        if self.oprops.ifc_definition_id not in Data.connections:
-            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
+        if not StructuralBoundaryConditionsData.is_loaded:
+            StructuralBoundaryConditionsData.load()
 
-        applied_condition_id = Data.connections[self.oprops.ifc_definition_id]["AppliedCondition"]
-        draw_boundary_condition_ui(self.layout, applied_condition_id, self.oprops.ifc_definition_id, self.props)
+        draw_boundary_condition_ui(
+            self.layout,
+            StructuralBoundaryConditionsData.data["boundary_condition"],
+            StructuralBoundaryConditionsData.data["connection_id"],
+            context.active_object.BIMStructuralProperties,
+        )
 
 
 class BIM_PT_connected_structural_members(Panel):
@@ -124,7 +127,7 @@ class BIM_PT_connected_structural_members(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    # bl_parent_id = "BIM_PT_structural_connection"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
@@ -141,38 +144,33 @@ class BIM_PT_connected_structural_members(Panel):
         return True
 
     def draw(self, context):
-        self.oprops = context.active_object.BIMObjectProperties
-        self.props = context.active_object.BIMStructuralProperties
-        if self.oprops.ifc_definition_id not in Data.connections:
-            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
+        if not ConnectedStructuralMembersData.is_loaded:
+            ConnectedStructuralMembersData.load()
 
-        rel_ids = Data.connections[self.oprops.ifc_definition_id]["ConnectsStructuralMembers"]
+        self.props = context.active_object.BIMStructuralProperties
 
         row = self.layout.row(align=True)
         row.prop(self.props, "relating_structural_member", text="", icon="CON_TRACKTO")
         row.operator("bim.add_structural_member_connection", text="", icon="ADD")
 
-        for rel_id in rel_ids:
-            rel = Data.connects_structural_members[rel_id]
+        for connection in ConnectedStructuralMembersData.data["connections"]:
             row = self.layout.row(align=True)
-            row.label(text=f"To Member #{IfcStore.get_file().by_id(rel['RelatingStructuralMember']).Name}")
-            if self.props.active_connects_structural_member and self.props.active_connects_structural_member == rel_id:
+            row.label(text=f"To Member #{connection['member_name']}")
+            if (
+                self.props.active_connects_structural_member
+                and self.props.active_connects_structural_member == connection["id"]
+            ):
                 row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CANCEL")
-                row.enabled = self.props.active_boundary_condition != rel["AppliedCondition"]
-                self.draw_editable_ui(context, self.layout, rel)
+                row.enabled = connection["is_active_condition"]
+                draw_boundary_condition_ui(self.layout.box(), connection["condition"], connection["id"], self.props)
             elif self.props.active_connects_structural_member:
                 op = row.operator("bim.remove_structural_connection_condition", text="", icon="X")
-                op.connects_structural_member = rel_id
+                op.connects_structural_member = connection["id"]
             else:
                 op = row.operator("bim.enable_editing_structural_connection_condition", text="", icon="GREASEPENCIL")
-                op.connects_structural_member = rel_id
+                op.connects_structural_member = connection["id"]
                 op = row.operator("bim.remove_structural_connection_condition", text="", icon="X")
-                op.connects_structural_member = rel_id
-
-    def draw_editable_ui(self, context, layout, data):
-        box = layout.box()
-        row = box.row(align=True)
-        draw_boundary_condition_ui(box, data["AppliedCondition"], data["id"], self.props)
+                op.connects_structural_member = connection["id"]
 
 
 class BIM_PT_structural_member(Panel):
@@ -182,6 +180,7 @@ class BIM_PT_structural_member(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
@@ -198,11 +197,12 @@ class BIM_PT_structural_member(Panel):
         return True
 
     def draw(self, context):
-        self.oprops = context.active_object.BIMObjectProperties
-        self.props = context.active_object.BIMStructuralProperties
-        self.file = IfcStore.get_file()
+        if not StructuralMemberData.is_loaded:
+            StructuralMemberData.load()
 
-        if self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralCurveMember"):
+        self.props = context.active_object.BIMStructuralProperties
+
+        if StructuralMemberData.data["active_object_class"] == "IfcStructuralCurveMember":
             if self.props.is_editing_axis:
                 row = self.layout.row(align=True)
                 row.prop(self.props, "axis_angle")
@@ -223,6 +223,7 @@ class BIM_PT_structural_connection(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
@@ -239,11 +240,12 @@ class BIM_PT_structural_connection(Panel):
         return True
 
     def draw(self, context):
-        self.oprops = context.active_object.BIMObjectProperties
-        self.props = context.active_object.BIMStructuralProperties
-        self.file = IfcStore.get_file()
+        if not StructuralConnectionData.is_loaded:
+            StructuralConnectionData.load()
 
-        if self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralCurveConnection"):
+        self.props = context.active_object.BIMStructuralProperties
+
+        if StructuralConnectionData.data["active_object_class"] == "IfcStructuralCurveConnection":
             if self.props.is_editing_axis:
                 row = self.layout.row(align=True)
                 row.prop(self.props, "axis_angle")
@@ -252,8 +254,7 @@ class BIM_PT_structural_connection(Panel):
             else:
                 row = self.layout.row()
                 row.operator("bim.enable_editing_structural_item_axis", text="Edit Axis", icon="GREASEPENCIL")
-
-        elif self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralPointConnection"):
+        elif StructuralConnectionData.data["active_object_class"] == "IfcStructuralPointConnection":
             if self.props.is_editing_connection_cs:
                 row = self.layout.row(align=True)
                 row.label(text="Editing Connection CS")
@@ -290,13 +291,14 @@ class BIM_PT_structural_analysis_models(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not StructuralData.is_loaded:
-            StructuralData.load()
+        if not StructuralAnalysisModelsData.is_loaded:
+            StructuralAnalysisModelsData.load()
+
         self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row(align=True)
         row.label(
-            text="{} Structural Analysis Models Found".format(StructuralData.number_of_structural_analysis_models),
+            text=f"{StructuralAnalysisModelsData.data['total_models']} Structural Analysis Models Found",
             icon="MOD_SIMPLIFY",
         )
         if self.props.is_editing:
@@ -316,10 +318,7 @@ class BIM_PT_structural_analysis_models(Panel):
             )
 
         if self.props.active_structural_analysis_model_id:
-            self.draw_editable_ui(context)
-
-    def draw_editable_ui(self, context):
-        draw_attributes(self.props.structural_analysis_model_attributes, self.layout)
+            draw_attributes(self.props.structural_analysis_model_attributes, self.layout)
 
 
 class BIM_UL_structural_analysis_models(UIList):
@@ -330,10 +329,7 @@ class BIM_UL_structural_analysis_models(UIList):
 
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
-                if (
-                    oprops.ifc_definition_id in StructuralData.products
-                    and item.ifc_definition_id in StructuralData.products[oprops.ifc_definition_id]
-                ):
+                if item.ifc_definition_id in StructuralAnalysisModelsData.data["active_model_ids"]:
                     op = row.operator(
                         "bim.unassign_structural_analysis_model", text="", icon="KEYFRAME_HLT", emboss=False
                     )
@@ -370,39 +366,39 @@ class BIM_PT_structural_load_cases(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
-        self.props = context.scene.BIMStructuralProperties
+        if not StructuralLoadCasesData.is_loaded:
+            StructuralLoadCasesData.load()
 
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row()
         row.operator("bim.add_structural_load_case", icon="ADD")
 
-        for load_case_id, load_case in Data.load_cases.items():
-            self.draw_load_case_ui(load_case_id, load_case)
+        for load_case in StructuralLoadCasesData.data["load_cases"]:
+            self.draw_load_case_ui(load_case)
 
-    def draw_load_case_ui(self, load_case_id, load_case):
+    def draw_load_case_ui(self, load_case):
         row = self.layout.row(align=True)
-        row.label(text=load_case["Name"] or "Unnamed", icon="CON_CLAMPTO")
+        row.label(text=load_case["name"], icon="CON_CLAMPTO")
 
-        if self.props.active_load_case_id and self.props.active_load_case_id == load_case_id:
+        if self.props.active_load_case_id and self.props.active_load_case_id == load_case["id"]:
             if self.props.load_case_editing_type == "ATTRIBUTES":
                 row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")
             elif self.props.load_case_editing_type == "GROUPS":
-                row.operator("bim.add_structural_load_group", text="", icon="ADD").load_case = load_case_id
+                row.operator("bim.add_structural_load_group", text="", icon="ADD").load_case = load_case["id"]
             row.operator("bim.disable_editing_structural_load_case", text="", icon="CANCEL")
         elif self.props.active_load_case_id:
-            row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
+            row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case["id"]
         else:
             row.operator(
                 "bim.enable_editing_structural_load_case_groups", text="", icon="GHOST_ENABLED"
-            ).load_case = load_case_id
-            row.operator(
-                "bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL"
-            ).load_case = load_case_id
-            row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
+            ).load_case = load_case["id"]
+            row.operator("bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL").load_case = load_case[
+                "id"
+            ]
+            row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case["id"]
 
-        if self.props.active_load_case_id == load_case_id:
+        if self.props.active_load_case_id == load_case["id"]:
             if self.props.load_case_editing_type == "ATTRIBUTES":
                 self.draw_editable_load_case_ui()
             elif self.props.load_case_editing_type == "GROUPS":
@@ -413,18 +409,17 @@ class BIM_PT_structural_load_cases(Panel):
 
     def draw_editable_load_case_group_ui(self, load_case):
         box = self.layout.box()
-        if not len(load_case["IsGroupedBy"]):
+        if not load_case["load_groups"]:
             row = box.row(align=True)
             row.label(text="No Load Groups Found")
-        for load_group_id in load_case["IsGroupedBy"]:
-            load_group = Data.load_groups[load_group_id]
+        for load_group in load_case["load_groups"]:
             row = box.row(align=True)
-            row.label(text=load_group["Name"] or "Unnamed", icon="GHOST_ENABLED")
+            row.label(text=load_group["name"], icon="GHOST_ENABLED")
             op = row.operator("bim.enable_editing_structural_load_group_activities", text="", icon="GHOST_ENABLED")
-            op.load_group = load_group_id
-            row.operator("bim.remove_structural_load_group", text="", icon="X").load_group = load_group_id
+            op.load_group = load_group["id"]
+            row.operator("bim.remove_structural_load_group", text="", icon="X").load_group = load_group["id"]
 
-            if self.props.active_load_group_id == load_group_id:
+            if self.props.active_load_group_id == load_group["id"]:
                 if self.props.load_group_editing_type == "ACTIVITY":
                     self.draw_editable_load_group_activities_ui(box, load_group)
 
@@ -467,12 +462,13 @@ class BIM_PT_structural_loads(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not StructuralLoadsData.is_loaded:
+            StructuralLoadsData.load()
+
         self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Structural Loads Found".format(len(Data.structural_loads)), icon="ANIM_DATA")
+        row.label(text=f"{StructuralLoadsData.data['total_loads']} Structural Loads Found", icon="ANIM_DATA")
         if self.props.is_editing_loads:
             row.operator(
                 "bim.toggle_filter_structural_loads",
@@ -506,7 +502,7 @@ class BIM_UL_structural_loads(UIList):
         if item:
             row = layout.row(align=True)
             row.label(text=f"{item.name} ({item.number_of_inverse_references})")
-            row.label(text=Data.structural_loads[item.ifc_definition_id]["type"])
+            row.label(text=StructuralLoadsData.data["load_classes"][item.ifc_definition_id])
 
             if context.scene.BIMStructuralProperties.active_structural_load_id == item.ifc_definition_id:
                 row.operator("bim.edit_structural_load", text="", icon="CHECKMARK")
@@ -536,12 +532,15 @@ class BIM_PT_boundary_conditions(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not BoundaryConditionsData.is_loaded:
+            BoundaryConditionsData.load()
+
         self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Boundary Conditions Found".format(len(Data.boundary_conditions)), icon="CON_TRACKTO")
+        row.label(
+            text=f"{BoundaryConditionsData.data['total_conditions']} Boundary Conditions Found", icon="CON_TRACKTO"
+        )
         if self.props.is_editing_boundary_conditions:
             row.operator(
                 "bim.toggle_filter_boundary_conditions",
@@ -578,7 +577,7 @@ class BIM_UL_boundary_conditions(UIList):
         if item:
             row = layout.row(align=True)
             row.label(text=f"{item.name} ({item.number_of_inverse_references})")
-            row.label(text=Data.boundary_conditions[item.ifc_definition_id]["type"])
+            row.label(text=BoundaryConditionsData.data["condition_classes"][item.ifc_definition_id])
 
             if context.scene.BIMStructuralProperties.active_boundary_condition_id == item.ifc_definition_id:
                 row.operator("bim.edit_boundary_condition", text="", icon="CHECKMARK")

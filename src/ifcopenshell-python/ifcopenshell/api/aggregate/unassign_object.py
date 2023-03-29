@@ -38,12 +38,14 @@ class Usecase:
 
         :param product: The part of the aggregate, typically an IfcElement or
             IfcSpatialStructureElement subclass
-        :type product: ifcopenshell.entity_instance
+        :type product: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelAggregate relationship instance, only returned if the
             whole still contains any other parts.
         :rtype: ifcopenshell.entity_instance.entity_instance, None
 
-        Example::
+        Example:
+
+        .. code:: python
 
             element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
             subelement1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")

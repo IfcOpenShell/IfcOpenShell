@@ -482,7 +482,11 @@ class IDSFacet extends HTMLElement {
         }
 
         var parameters = {};
+        this.parseEntityName(this.idsElement, parameters);
+        this.innerHTML = this.renderTemplate(templates, parameters);
+    }
 
+    parseEntityName(idsElement, parameters) {
         var name = this.idsElement.getElementsByTagNameNS(ns, 'name')[0];
         var value = this.getIdsValue(name);
         if (value.type == 'simpleValue' || value.type == 'enumeration') {
@@ -502,7 +506,6 @@ class IDSFacet extends HTMLElement {
             }
         }
 
-        this.innerHTML = this.renderTemplate(templates, parameters);
     }
 
     loadAttribute() {
@@ -682,13 +685,17 @@ class IDSFacet extends HTMLElement {
     }
 
     loadPartOf() {
-        var templates = ['Must be part of a {entity}']
+        var templates = [
+            'Must be part of a {relation} relationship',
+            'Must be part of a {name} with a {relation} relationship',
+            'Must be part of a {name} of type {type} with a {relation} relationship',
+        ]
 
         var parameters = {};
 
-        var content = this.capitalise(this.idsElement.attributes['entity'].value.toLowerCase().replace('ifc', ''))
-        parameters.entity = '<ids-param filter="entityName">' + content + '</ids-param>';
-        this.params.push(this.idsElement);
+        document.asdf = this.idsElement;
+        parameters.relation = '<ids-param>' + this.sentence(this.idsElement.attributes['relation'].value.replace('Ifc', '').replace('Rel', '')) + '</ids-param>';
+        this.parseEntityName(this.idsElement, parameters);
 
         this.innerHTML = this.renderTemplate(templates, parameters);
     }

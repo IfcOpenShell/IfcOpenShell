@@ -17,11 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import uuid
 import ntpath
 import pystache
 import urllib.parse
 import xml.etree.ElementTree as ET
 import blenderbim.tool as tool
+import ifcopenshell.util.geolocation
 from shutil import copy
 from xml.dom import minidom
 
@@ -127,6 +129,8 @@ class SheetBuilder:
 
     def add_schedule(self, reference, schedule, sheet):
         view_path = tool.Drawing.get_document_uri(schedule)
+        if not os.path.exists(view_path):
+            tool.Drawing.create_svg_schedule(schedule)
         schedule_name = os.path.splitext(os.path.basename(view_path))[0]
         sheet_path = tool.Drawing.get_document_uri(sheet)
 
@@ -180,6 +184,9 @@ class SheetBuilder:
         tree = ET.parse(sheet_path)
         root = tree.getroot()
 
+        self.defs = ET.Element("defs")
+        root.append(self.defs)
+
         self.build_titleblock(root, sheet)
         self.build_drawings(root, sheet)
         self.build_schedules(root)
@@ -190,7 +197,14 @@ class SheetBuilder:
     def build_titleblock(self, root, sheet):
         titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
         image = titleblock.findall("{http://www.w3.org/2000/svg}image")[0]
-        titleblock.append(self.parse_embedded_svg(image, sheet.get_info()))
+        g = self.parse_embedded_svg(image, sheet.get_info())
+        grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
+        true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
+        for north in g.iterfind('.//{http://www.w3.org/2000/svg}g[@data-type="grid-north"]'):
+            north.attrib["transform"] = f"rotate({grid_north})"
+        for north in g.iterfind('.//{http://www.w3.org/2000/svg}g[@data-type="true-north"]'):
+            north.attrib["transform"] = f"rotate({true_north})"
+        titleblock.append(g)
         titleblock.remove(image)
 
     def build_drawings(self, root, sheet):
@@ -269,6 +283,20 @@ class SheetBuilder:
         group.attrib["transform"] = "translate({},{})".format(
             self.convert_to_mm(image.attrib.get("x")), self.convert_to_mm(image.attrib.get("y"))
         )
+
+        # Convert viewBox into a clip path
+        clip_id = str(uuid.uuid4())
+        group.attrib["clip-path"] = f"url(#{clip_id})"
+        clip_path = ET.Element("clipPath")
+        clip_path.attrib["id"] = clip_id
+        rect = ET.Element("rect")
+        rect.attrib["x"] = "0"
+        rect.attrib["y"] = "0"
+        rect.attrib["width"] = str(self.convert_to_mm(image.attrib.get("width")))
+        rect.attrib["height"] = str(self.convert_to_mm(image.attrib.get("height")))
+        clip_path.append(rect)
+        self.defs.append(clip_path)
+
         svg_path = self.get_href(image)
         with open(os.path.join(self.data_dir, "sheets", svg_path), "r") as template:
             embedded = ET.fromstring(pystache.render(template.read(), data))
@@ -280,7 +308,10 @@ class SheetBuilder:
             for image in images:
                 new_href = ntpath.basename(image.attrib.get("{http://www.w3.org/1999/xlink}href"))
                 image.attrib["{http://www.w3.org/1999/xlink}href"] = new_href
-        group.append(embedded)
+        for child in embedded:
+            if "namedview" in child.tag:
+                continue
+            group.append(child)
         return group
 
     def convert_to_mm(self, value):

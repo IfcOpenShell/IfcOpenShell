@@ -32,6 +32,11 @@ def refresh():
     AuthoringData.is_loaded = False
     ArrayData.is_loaded = False
     StairData.is_loaded = False
+    SverchokData.is_loaded = False
+    WindowData.is_loaded = False
+    DoorData.is_loaded = False
+    RailingData.is_loaded = False
+    RoofData.is_loaded = False
 
 
 class AuthoringData:
@@ -58,13 +63,21 @@ class AuthoringData:
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["active_class"] = cls.active_class()
+        cls.data["active_material_usage"] = cls.active_material_usage()
 
     @classmethod
     def type_class(cls):
         declaration = tool.Ifc.schema().declaration_by_name("IfcElementType")
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
-        names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+
+        declaration = tool.Ifc.schema().declaration_by_name("IfcSpatialElementType")
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        names.extend([d.name() for d in declarations])
+
+        if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
+            names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+
         version = tool.Ifc.get_schema()
         return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
@@ -86,7 +99,7 @@ class AuthoringData:
 
     @classmethod
     def type_thumbnail(cls):
-        if not cls.props.relating_type_id:
+        if not cls.data["relating_types_ids"]:
             return 0
         element = tool.Ifc.get().by_id(int(cls.props.relating_type_id))
         return cls.type_thumbnails.get(element.id(), None) or 0
@@ -169,6 +182,12 @@ class AuthoringData:
             return element.is_a()
 
     @classmethod
+    def active_material_usage(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            return tool.Model.get_usage_type(element)
+
+    @classmethod
     def ifc_classes(cls):
         results = []
         classes = {
@@ -176,6 +195,7 @@ class AuthoringData:
             for e in tool.Ifc.get().by_type("IfcElementType")
             + tool.Ifc.get().by_type("IfcDoorStyle")
             + tool.Ifc.get().by_type("IfcWindowStyle")
+            + tool.Ifc.get().by_type("IfcSpaceType")
         }
         results.extend([(c, c, "") for c in sorted(classes)])
         return results
@@ -205,7 +225,8 @@ class AuthoringData:
 
     @classmethod
     def relating_types_browser(cls):
-        return cls.relating_types(ifc_class=cls.props.ifc_class_browser)
+        if cls.data["ifc_classes"]:
+            return cls.relating_types(ifc_class=cls.props.ifc_class_browser)
 
     @classmethod
     def new_constr_class_info(cls, ifc_class):
@@ -305,14 +326,14 @@ class AuthoringData:
     def new_relating_type(cls, ifc_class=None, relating_type_id=None):
         if ifc_class is None:
             bpy.ops.bim.add_constr_type_instance(
-                ifc_class=cls.props.ifc_class, relating_type_id=int(cls.props.relating_type_id), link_to_scene=True
+                ifc_class=cls.props.ifc_class, relating_type_id=int(cls.props.relating_type_id)
             )
         else:
             cls.props.updating = True
             cls.props.ifc_class = ifc_class
             cls.props.relating_type_id = str(relating_type_id)
             cls.props.updating = False
-            bpy.ops.bim.add_constr_type_instance(link_to_scene=True)
+            bpy.ops.bim.add_constr_type_instance()
         return bpy.context.selected_objects[-1]
 
     @staticmethod
@@ -350,7 +371,7 @@ class ArrayData:
                     parent = tool.Ifc.get().by_guid(parameters["Parent"])
                     parameters["has_parent"] = True
                     parameters["parent_name"] = parent.Name or "Unnamed"
-                    parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                    parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 except:
                     parameters["has_parent"] = False
                 return parameters
@@ -372,5 +393,114 @@ class StairData:
             psets = ifcopenshell.util.element.get_psets(element)
             parameters = psets.get("BBIM_Stair", None)
             if parameters:
-                parameters["data"] = json.loads(parameters.get("Data", "[]") or "[]")
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
+                return parameters
+
+
+class SverchokData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters(), "has_sverchok": cls.has_sverchok()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Sverchok", None)
+            if parameters:
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
+                return parameters
+
+    @classmethod
+    def has_sverchok(cls):
+        try:
+            import sverchok
+
+            return True
+        except:
+            return False
+
+
+class WindowData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Window", None)
+            if parameters:
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
+                return parameters
+
+
+class DoorData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Door", None)
+            if parameters:
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
+                return parameters
+
+
+class RailingData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Railing", None)
+            if parameters:
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
+                return parameters
+
+
+class RoofData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"parameters": cls.parameters()}
+
+    @classmethod
+    def parameters(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            psets = ifcopenshell.util.element.get_psets(element)
+            parameters = psets.get("BBIM_Roof", None)
+            if parameters:
+                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
                 return parameters

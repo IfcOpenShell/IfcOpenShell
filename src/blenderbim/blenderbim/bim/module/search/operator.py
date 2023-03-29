@@ -20,12 +20,12 @@ import re
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
-from ifcopenshell.api.group.data import Data
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import close_operator_panel
 from blenderbim.bim.module.group import ui
+import blenderbim.core.search as core
 from itertools import cycle
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (
@@ -452,17 +452,17 @@ class ActivateIfcBuildingStoreyFilter(Operator):
         row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
 
-class UnhideAllElements(Operator):
-    """Filter model elements based on selection"""
+class ShowAllElements(Operator):
+    """Show all Physical objects in the 3D View.
+    Warning: Pressing this button will not work if collections are excluded in the outliner Panel.
+    """
 
-    bl_idname = "bim.reset_3d_view"
-    bl_label = "Reset 3D View"
-    bl_idname = "bim.unhide_all_elements"
-    bl_label = "Unhide All Elements"
+    bl_idname = "bim.show_scene_elements"
+    bl_label = "Shows All Elements"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        for obj in bpy.data.scenes["Scene"].objects:
-            obj.hide_set(False)
+        core.show_scene_elements(tool.Spatial)
         return {"FINISHED"}
 
 
@@ -474,13 +474,15 @@ class FilterModelElements(Operator):
     option: StringProperty("select|isolate|hide")
 
     def execute(self, context):
-        selector = context.scene.IfcSelectorProperties
-        selection = selector.selector_query_syntax if selector.manual_override else self.add_groups(selector)
-        selector.selector_query_syntax = selection
-        self.update_model_view(context, selection)
+        selection_props = context.scene.IfcSelectorProperties
+        selection = selection_props.selector_query_syntax if selection_props.manual_override else self.add_groups(selection_props)
+        selection_props.selector_query_syntax = selection
+        r = core.search(tool.Search, tool.Spatial, query=selection, action=self.option)
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
         return {"FINISHED"}
 
-    def add_groups(self, selector):
+    def add_groups(self, selector:str) -> str:
         selection = ""
         for group_index, group in enumerate(selector.groups):
             if group_index != 0:
@@ -491,7 +493,7 @@ class FilterModelElements(Operator):
             selection += ")" if len(selector.groups) > 1 else ""
         return selection
 
-    def add_queries(self, selection, group):
+    def add_queries(self, selection: str, group: str) -> str:
         for query_index, query in enumerate(group.queries):
             if query_index != 0:
                 selection += " & " if query.and_or == "and" else " | "
@@ -513,41 +515,31 @@ class FilterModelElements(Operator):
                 selection += f"@ #{query.sub_options[index].global_id}"
         return selection
 
-    def add_filters(self, selection, query):
+    def add_filters(self, selection: str, query: str) -> str:
         for f_index, f in enumerate(query.filters):
 
             if f_index != 0:
                 selection += " & " if f.and_or == "and" else " | "
                 selection += f".{query.active_option}"
 
+            if f.value in ("True", "False"):
+                value = f.value
+            elif f.value.isnumeric() and str(float(f.value))[0] == f.value[0]:
+                value = f.value
+            else:
+                value = f'"{f.value}"'
+
             selection += "["
 
             if f.selector == "IfcPropertySet":
-                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}="{f.value}"'
+                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}{f.comparison} {value}'
             elif f.selector == "Attribute":
-                selection += f'{f.attribute} {"!" if f.negation else ""}= "{f.value}"'
-
+                # we're using the prop_search functionality in blender which returns the index of the option.  Sometimes the user can override this and enter a value that doesn't exist in the list.  In this case there is no index and we need to handle it. @vulevukusej
+                pattern = re.compile(r'^[0-9]+:')
+                match = pattern.search(f.active_option)
+                selection += f'{f.active_option.split(": ")[1] if match else f.active_option} {"!" if f.negation else ""}{f.comparison} {value}'
             selection += "]"
         return selection
-
-    def update_model_view(self, context, selection):
-        query = Selector.parse(IfcStore.file, selection)
-        sel_element_ids = [e.id() for e in query]
-        bpy.ops.object.select_all(action="DESELECT")
-
-        for obj in bpy.data.scenes["Scene"].objects:
-            obj.hide_set(False)  # reset 3d view
-
-            if self.option == "select":
-                if obj.BIMObjectProperties.ifc_definition_id in sel_element_ids:
-                    obj.select_set(True)
-            elif self.option == "isolate":
-                if obj.BIMObjectProperties.ifc_definition_id not in sel_element_ids:
-                    obj.hide_set(True)
-            elif self.option == "hide":
-                if obj.BIMObjectProperties.ifc_definition_id in sel_element_ids:
-                    obj.hide_set(True)
-
 
 # This needs to be moved into ui code, I know ;) - vulevukusej
 class IfcSelector(Operator):

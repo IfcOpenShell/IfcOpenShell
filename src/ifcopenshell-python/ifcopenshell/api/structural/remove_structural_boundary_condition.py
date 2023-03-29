@@ -18,11 +18,19 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, connection=None, boundary_condition=None):
+        """Removes a condition from a connection, or an orphased boundary condition
+
+        :param connection: The IfcStructuralConnection to remove the condition
+            from. If omitted, it is assumed to be an orphaned condition.
+        :type connection: ifcopenshell.entity_instance.entity_instance,optional
+        :param boundary_condition: The IfcBoundaryCondition to remove.
+        :type boundary_condition: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"connection": None, "boundary_condition": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"connection": connection, "boundary_condition": boundary_condition}
 
     def execute(self):
         if self.settings["connection"]:

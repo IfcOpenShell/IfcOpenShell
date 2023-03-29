@@ -18,11 +18,30 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, role=None):
+        """Removes a role
+
+        People and organisations using the role will be untouched. This may
+        leave some of them without roles.
+
+        :param role: The IfcActorRole to remove.
+        :type role: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            organisation = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="AWB", name="Architects Without Ballpens")
+            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
+
+            # After running this, the organisation will have no role again
+            ifcopenshell.api.run("owner.remove_role", model, role=role)
+        """
         self.file = file
-        self.settings = {"role": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"role": role}
 
     def execute(self):
         for inverse in self.file.get_inverse(self.settings["role"]):

@@ -19,9 +19,10 @@
 import os
 import bpy
 import json
-import textwrap
 import time
 import logging
+import textwrap
+import tempfile
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
@@ -100,6 +101,18 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
+    bl_idname = "bim.reload_selected_ifc_file"
+    bl_label = "Reload selected IFC File"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload currently selected IFC file"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        self.filepath = context.scene.BIMProperties.ifc_file
+        if self.is_existing_ifc_file():
+            context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
+        return {"FINISHED"}
 
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
@@ -147,6 +160,8 @@ class OpenUpstream(bpy.types.Operator):
             webbrowser.open("https://wiki.osarch.org/index.php?title=Category:BlenderBIM_Add-on")
         elif self.page == "community":
             webbrowser.open("https://community.osarch.org/")
+        elif self.page == "fund":
+            webbrowser.open("https://opencollective.com/opensourcebim")
         return {"FINISHED"}
 
 

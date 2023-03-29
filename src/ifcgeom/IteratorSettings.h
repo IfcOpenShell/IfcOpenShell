@@ -124,7 +124,8 @@ namespace IfcGeom
         IteratorSettings()
             : settings_(WELD_VERTICES | BOOLEAN_ATTEMPT_2D) // OR options that default to true here
             , deflection_tolerance_(1.e-3)
-			, angular_tolerance_(0.5)
+            , angular_tolerance_(0.5)
+            , force_space_transparency_(-1.0)
         {
         }
 

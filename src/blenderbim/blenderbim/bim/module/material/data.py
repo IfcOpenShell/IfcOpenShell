@@ -73,7 +73,11 @@ class MaterialsData:
 
     @classmethod
     def profiles(cls):
-        return [(str(p.id()), p.ProfileName or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcProfileDef")]
+        return [
+            (str(p.id()), p.ProfileName or "Unnamed", "")
+            for p in tool.Ifc.get().by_type("IfcProfileDef")
+            if p.ProfileName
+        ]
 
 
 class ObjectMaterialData:
@@ -178,9 +182,12 @@ class ObjectMaterialData:
                 icon = "POINTCLOUD_DATA"
 
             for item in items or []:
-                data = {"id": item.id(), "name": item.Name or "Unnamed", "icon": icon}
+                data = {"id": item.id(), "name": getattr(item, "Name", None) or "Unnamed", "icon": icon}
                 if item.is_a("IfcMaterialProfile") and not item.Name:
-                    data["name"] = item.Profile.ProfileName or "Unnamed"
+                    if item.Profile:
+                        data["name"] = item.Profile.ProfileName or "Unnamed"
+                    else:
+                        data["name"] = "No Profile"
                 if item.is_a("IfcMaterialLayer"):
                     data["name"] += f" ({item.LayerThickness})"
                 if not item.is_a("IfcMaterialList"):

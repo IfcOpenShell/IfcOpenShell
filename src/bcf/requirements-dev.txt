@@ -3,5 +3,4 @@ mypy
 pylint
 isort
 xsdata
-tox
-tox-conda
+tox==3.27.1

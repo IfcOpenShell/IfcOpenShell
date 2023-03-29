@@ -45,8 +45,8 @@ void InitDefaultMaterials() {
 	default_materials["IfcPlate"].diffuse = ifcopenshell::geometry::taxonomy::colour(0.8, 0.8, 0.8);
 
 	default_materials.insert(std::make_pair("IfcSpace", ifcopenshell::geometry::taxonomy::style("IfcSpace")));
-	default_materials["IfcWindow"].diffuse = ifcopenshell::geometry::taxonomy::colour(0.65, 0.75, 0.8);
-	default_materials["IfcWindow"].transparency = 0.8;
+	default_materials["IfcSpace"].diffuse = ifcopenshell::geometry::taxonomy::colour(0.65, 0.75, 0.8);
+	default_materials["IfcSpace"].transparency = 0.8;
 
 	default_material = ifcopenshell::geometry::taxonomy::style("DefaultMaterial");
 	default_material.diffuse = ifcopenshell::geometry::taxonomy::colour(0.7, 0.7, 0.7);

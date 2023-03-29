@@ -23,7 +23,6 @@ import blenderbim.tool as tool
 import blenderbim.core.qto as core
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.qto import helper
-from ifcopenshell.api.pset.data import Data as PsetData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
@@ -169,33 +168,32 @@ class QuantifyObjects(bpy.types.Operator):
                 name=props.qto_name,
             )
             ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={props.prop_name: result})
-            PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
-class AssignPsetQto(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.assign_pset_qto"
-    bl_label = "Assign Pset Qto"
+class AssignBaseQto(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_objects_base_qto"
+    bl_label = "Assign IFC Object Quantity Set"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Assign pset qto to selected object"
+    bl_description = "Assign IFC quantity set to selected object"
 
     @classmethod
     def poll(cls, context):
-        return context.active_object and context.selected_objects
+        return tool.Ifc.get() and context.selected_objects
 
     def _execute(self, context):
-        core.assign_pset_qto(tool.Qto, selected_objects = context.selected_objects)
+        core.assign_objects_base_qto(tool.Ifc, tool.Qto, selected_objects = context.selected_objects)
         return {"FINISHED"}
 
-class CalculateAllQtos(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.calculate_all_qtos"
-    bl_label = "Calculate All Qtos"
+class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_all_quantities"
+    bl_label = "Calculate all quantities"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Calculate all pset qtos properties of objects assigned pset qto"
+    bl_description = "Calculate all possible quantities and assign them to selected object"
 
     @classmethod
     def poll(cls, context):
-        return context.active_object and context.selected_objects
+        return tool.Ifc.get() and context.selected_objects
 
     def _execute(self, context):
-        core.calculate_all_qtos(tool.Qto, selected_objects = context.selected_objects)
+        core.calculate_objects_base_quantities(tool.Ifc, tool.Qto, QtoCalculator(), selected_objects = context.selected_objects)
         return {"FINISHED"}
