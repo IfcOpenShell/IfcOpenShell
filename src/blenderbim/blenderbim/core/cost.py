@@ -106,15 +106,10 @@ def assign_cost_item_quantity(ifc, cost, cost_item, related_object_type, prop_na
     products = cost.get_products(related_object_type)
     if products:
         ifc.run("cost.assign_cost_item_quantity", cost_item=cost_item, products=products, prop_name=prop_name)
-        cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
-        cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
-        cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
+        cost.load_cost_item_quantity_assignments(cost_item, related_object_type=related_object_type)
 
 def load_cost_item_quantities(cost):
-    cost_item = cost.get_highlighted_cost_item()
-    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
-    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
-    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
+    cost.load_cost_item_quantities()
 
 def load_cost_item_element_quantities(cost):
     cost_item = cost.get_highlighted_cost_item()
@@ -136,9 +131,7 @@ def load_schedule_of_rates(cost, schedule_of_rates):
 
 def unassign_cost_item_quantity(ifc, cost, cost_item, products):
     ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)
-    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
-    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
-    cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
+    cost.load_cost_item_quantities()
 
 def enable_editing_cost_item_quantities(cost, cost_item):
     cost.enable_editing_cost_item_quantities(cost_item)
@@ -163,10 +156,7 @@ def edit_cost_item_quantity(ifc, cost, physical_quantity):
     attributes = cost.get_cost_item_quantity_attributes()
     ifc.run("cost.edit_cost_item_quantity", physical_quantity=physical_quantity, attributes=attributes)
     cost.disable_editing_cost_item_quantity()
-    #TODO: REVIEW usefulness
-    cost.load_cost_item_quantity_assignments(cost.get_highlighted_cost_item(), related_object_type="PRODUCT")
-    cost.load_cost_item_quantity_assignments(cost.get_highlighted_cost_item(), related_object_type="PROCESS")
-    cost.load_cost_item_quantity_assignments(cost.get_highlighted_cost_item(), related_object_type="RESOURCE")
+    cost.load_cost_item_quantities()
 
 def add_cost_value(ifc, cost, parent, cost_type, cost_category):
     value = ifc.run("cost.add_cost_value", parent=parent)

@@ -82,14 +82,14 @@ class Cost(blenderbim.core.tool.Cost):
         props = bpy.context.scene.BIMCostProperties
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        cls.contracted_cost_items.remove(cost_item.id())
-        props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
+        if cost_item.id() in cls.contracted_cost_items:
+            cls.contracted_cost_items.remove(cost_item.id())
+            props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
     def expand_cost_items(cls):
         props = bpy.context.scene.BIMCostProperties
-        if not hasattr(cls, "contracted_cost_items"):
-            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         for cost_item in props.cost_items:
             if cost_item.ifc_definition_id in cls.contracted_cost_items:
                 cls.contracted_cost_items.remove(cost_item.ifc_definition_id)
@@ -630,3 +630,11 @@ class Cost(blenderbim.core.tool.Cost):
     def disable_editing_cost_item_parent(cls):
         bpy.context.scene.BIMCostProperties.active_cost_item_id = 0
         bpy.context.scene.BIMCostProperties.change_cost_item_parent = False
+
+    @classmethod
+    def load_cost_item_quantities(cls, cost_item=None):
+        if not cost_item:
+            cost_item = tool.Cost.get_highlighted_cost_item()
+        tool.Cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
+        tool.Cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
+        tool.Cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")

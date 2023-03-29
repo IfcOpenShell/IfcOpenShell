@@ -75,7 +75,7 @@ def update_active_cost_item_index(self, context):
     if schedule.PredefinedType == "SCHEDULEOFRATES":
         tool.Cost.load_cost_item_types()
     else:
-        tool.Cost.load_cost_item_quantities(cost_item=tool.Cost.get_highlighted_cost_item())
+        tool.Cost.load_cost_item_quantities()
     CostClassificationsData.load()
 
 
