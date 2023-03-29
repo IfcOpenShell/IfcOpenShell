@@ -341,7 +341,8 @@ class BIM_PT_cost_item_quantities(Panel):
         has_quantity_names = CostProp.get_product_quantity_names(self, context)
 
         row2 = col.row(align=True)
-        row2.label(text="Elements")
+        total_cost_item_products = len(self.props.cost_item_products)
+        row2.label(text="Elements ({})".format(total_cost_item_products))
         op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
         op.cost_item = cost_item.ifc_definition_id
 
@@ -383,7 +384,8 @@ class BIM_PT_cost_item_quantities(Panel):
         has_quantity_names = CostProp.get_process_quantity_names(self, context)
 
         row2 = col.row(align=True)
-        row2.label(text="Tasks")
+        total_cost_item_processes = len(self.props.cost_item_processes)
+        row2.label(text="Tasks ({})".format(total_cost_item_processes))
 
         tprops = context.scene.BIMTaskTreeProperties
         wprops = context.scene.BIMWorkScheduleProperties
@@ -422,7 +424,8 @@ class BIM_PT_cost_item_quantities(Panel):
         has_quantity_names = CostProp.get_resource_quantity_names(self, context)
 
         row2 = col.row(align=True)
-        row2.label(text="Resources")
+        total_cost_item_resources = len(self.props.cost_item_resources)
+        row2.label(text="Resources ({})".format(total_cost_item_resources))
 
         op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
         op.cost_item = cost_item.ifc_definition_id
