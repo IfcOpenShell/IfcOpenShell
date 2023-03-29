@@ -137,7 +137,7 @@ classes = (
     ui.BIM_UL_task_resources,
     ui.BIM_UL_task_outputs,
     ui.BIM_UL_tasks,
-    ui.BIM_PT_Task_Tools,
+    ui.BIM_PT_4D_Tools,
     ui.BIM_PT_Task_Bar_Creator,
     ui.BIM_UL_animation_colors,
 )

@@ -790,12 +790,31 @@ class BIM_PT_work_calendars(Panel):
         draw_attributes(self.props.work_calendar_attributes, self.layout)
 
 
-class BIM_PT_Task_Tools(Panel):
+class BIM_PT_4D_Tools(Panel):
+    bl_label = "4D Tools"
+    bl_idname = "BIM_PT_4D_Tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "4D/5D Toolkit"
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.operator(
+            "bim.highlight_product_related_task", text="Find Input-related Task ", icon="STYLUS_PRESSURE"
+        ).product_type = "Input"
+        row = self.layout.row()
+        row.operator(
+            "bim.highlight_product_related_task", text="Go to Output-related Task ", icon="STYLUS_PRESSURE"
+        ).product_type = "Output"
+
+
+class BIM_PT_Task_Bar_Creator(Panel):
     bl_label = "Task Bar Creator"
     bl_idname = "BIM_PT_Task_Bar_Creator"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Sequence Toolkit"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_4D_Tools"
 
     def draw(self, context):
         self.animation_props = context.scene.BIMAnimationProperties
@@ -813,21 +832,3 @@ class BIM_PT_Task_Tools(Panel):
 
         row3 = col.row(align=True)
         row3.prop(self.animation_props, "color_full")
-
-
-class BIM_PT_Task_Bar_Creator(Panel):
-    bl_label = "Task Tools"
-    bl_idname = "BIM_PT_Task_Tools"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Sequence Toolkit"
-
-    def draw(self, context):
-        row = self.layout.row()
-        row.operator(
-            "bim.highlight_product_related_task", text="Find Input-related Task ", icon="STYLUS_PRESSURE"
-        ).product_type = "Input"
-        row = self.layout.row()
-        row.operator(
-            "bim.highlight_product_related_task", text="Go to Output-related Task ", icon="STYLUS_PRESSURE"
-        ).product_type = "Output"

@@ -197,6 +197,8 @@ class BIMCostProperties(PropertyGroup):
     cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
     active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
     contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")
+    product_cost_items: CollectionProperty(name="Product Cost Items", type=CostItem)
+    active_product_cost_item_index: IntProperty(name="Active Product Cost Item Index")
     show_nested_elements: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_elements)
     show_nested_tasks: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_tasks)
     show_nested_resources: BoolProperty(

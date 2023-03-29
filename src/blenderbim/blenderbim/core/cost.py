@@ -247,3 +247,14 @@ def select_unassigned_products(ifc, cost, spatial):
     cost_schedule = cost.get_active_cost_schedule()
     selection = [product for product in products if not cost.has_cost_assignments(product, cost_schedule)]
     spatial.select_products(selection)
+
+def load_product_cost_items(cost, product):
+    cost.load_product_cost_items(product)
+
+def highlight_product_cost_item(spatial, cost, cost_item):
+    cost_schedule = cost.get_cost_schedule(cost_item)
+    is_cost_schedule_active = cost.is_cost_schedule_active(cost_schedule)
+    if is_cost_schedule_active:
+        cost.highlight_cost_item(cost_item)
+    else:
+        return "Cost schedule is not active"
