@@ -18,6 +18,7 @@
 
 import datetime
 from re import findall
+from dateutil import parser
 
 try:
     import isodate
@@ -104,3 +105,34 @@ def datetime2ifc(dt, ifc_type):
     elif ifc_type == "IfcLocalTime":
         # TODO implement timezones
         return {"HourComponent": dt.hour, "MinuteComponent": dt.minute, "SecondComponent": dt.second}
+
+def string_to_date(string):
+    if not string:
+        return None
+    try:
+        return parser.isoparse(string)
+    except:
+        try:
+            return parser.parse(string, dayfirst=True, fuzzy=True)
+        except:
+            return None
+
+def string_to_duration(duration_string):
+    # TODO support years, months, weeks aswell
+    days = 0
+    hours = 0
+    minutes = 0
+    seconds = 0
+    match = findall(r"(\d+\.?\d*)d", duration_string)
+    if match:
+        days = float(match[0])
+    match = findall(r"(\d+\.?\d*)h", duration_string)
+    if match:
+        hours = float(match[0])
+    match = findall(r"(\d+\.?\d*)m", duration_string)
+    if match:
+        minutes = float(match[0])
+    match = findall(r"(\d+\.?\d*)s", duration_string)
+    if match:
+        seconds = float(match[0])
+    return isodate.duration_isoformat(datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds))
