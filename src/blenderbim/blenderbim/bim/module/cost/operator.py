@@ -635,3 +635,20 @@ class ExportCostSchedules(bpy.types.Operator):
     def draw(self, context):
         self.layout.label(text="Choose a format")
         self.layout.prop(self, "format")
+
+
+class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.clear_cost_item_assignments"
+    bl_label = "Clear Cost Item Product Assignments"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+    related_object_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.clear_cost_item_assignments(
+            tool.Ifc,
+            tool.Cost,
+            cost_item=tool.Ifc.get().by_id(self.cost_item),
+            related_object_type=self.related_object_type,
+        )
+        return {"FINISHED"}
