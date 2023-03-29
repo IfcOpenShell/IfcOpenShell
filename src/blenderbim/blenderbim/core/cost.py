@@ -240,3 +240,10 @@ def clear_cost_item_assignments(ifc, cost, cost_item, related_object_type):
         ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)
     cost.load_cost_item_quantity_assignments(cost_item, related_object_type=related_object_type)
     cost.load_cost_schedule_tree()
+
+def select_unassigned_products(ifc, cost, spatial):
+    spatial.deselect_all()
+    products = ifc.get().by_type("IfcElement")
+    cost_schedule = cost.get_active_cost_schedule()
+    selection = [product for product in products if not cost.has_cost_assignments(product, cost_schedule)]
+    spatial.select_products(selection)

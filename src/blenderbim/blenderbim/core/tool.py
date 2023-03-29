@@ -160,7 +160,7 @@ class Cost:
     def expand_cost_items(cls): pass
     def export_cost_schedules(cls, format): pass
     def get_active_cost_item(cls): pass
-    def get_all_nested_cost_items(cls, cost_item): pass
+    def get_active_cost_schedule(cls): pass
     def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
     def get_cost_item_attributes(cls, cost_item): pass
     def get_cost_item_products(cls): pass
@@ -172,11 +172,13 @@ class Cost:
     def get_cost_value_unit_component(cls): pass
     def get_direct_cost_item_products(cls): pass
     def get_highlighted_cost_item(cls): pass
+    def get_highlighted_cost_item(cls): pass
     def get_nested_cost_items(cls, cost_item): pass
     def get_products(cls, related_object_type): pass
     def get_root_cost_items(cls, cost_schedule): pass
     def get_schedule_cost_items(cls, cost_schedule): pass
     def get_units(cls):pass
+    def has_cost_assignments(cls, cost_item): pass
     def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
     def is_active_schedule_of_rates(cls): pass
     def load_cost_item_attributes(cls): pass
