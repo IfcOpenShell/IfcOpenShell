@@ -176,6 +176,11 @@ class Model(blenderbim.core.tool.Model):
 
     @classmethod
     def import_profile(cls, profile, obj=None, position=None):
+        """Creates new profile mesh and assigns it to `obj`,
+        if `obj` is `None` then new "Profile" object will be created.
+
+        Need to make sure to remove temporary mesh/object after use to avoid orphan data.
+        """
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if position is None:

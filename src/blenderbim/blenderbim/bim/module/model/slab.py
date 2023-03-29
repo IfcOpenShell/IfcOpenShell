@@ -562,6 +562,7 @@ def disable_editing_extrusion_profile(context):
     element = tool.Ifc.get_entity(obj)
     body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
+    profile_mesh = obj.data
     blenderbim.core.geometry.switch_representation(
         tool.Ifc,
         tool.Geometry,
@@ -571,6 +572,7 @@ def disable_editing_extrusion_profile(context):
         is_global=True,
         should_sync_changes_first=False,
     )
+    tool.Geometry.delete_data(profile_mesh)
     return {"FINISHED"}
 
 
@@ -663,6 +665,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
+        profile_mesh = obj.data
         blenderbim.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
@@ -672,6 +675,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
+        bpy.data.meshes.remove(profile_mesh)
 
         footprint_context = ifcopenshell.util.representation.get_context(
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
@@ -734,15 +738,20 @@ class SetArcIndex(bpy.types.Operator):
         return bool(obj) and obj.type == "MESH"
 
     def cancel_message(self, msg):
-        self.report({"WARNING"}, msg)
+        self.report({"ERROR"}, msg)
         return {"CANCELLED"}
 
     def execute(self, context):
         # NOTE: undo won't remove new verex group
         # because of jumping between modes
         obj = context.active_object
+
+        bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+        selected_vertices = [v.index for v in bm.verts if v.select]
+        if len(selected_vertices) != 3:
+            return self.cancel_message("Select 3 vertices.")
+
         bpy.ops.object.mode_set(mode="OBJECT")
-        selected_vertices = [v.index for v in obj.data.vertices if v.select]
         in_group = any([bool(obj.data.vertices[v].groups) for v in selected_vertices])
         for group in obj.vertex_groups:
             group.remove(selected_vertices)

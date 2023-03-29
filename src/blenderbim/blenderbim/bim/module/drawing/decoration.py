@@ -442,7 +442,7 @@ class BaseDecorator:
                 box_alignment_offset += Vector((0, h))
             else:
                 # middle / center
-                box_alignment_offset += Vector((0, h / 2))  
+                box_alignment_offset += Vector((0, h / 2))
 
             if "left" in box_alignment:
                 pass
@@ -451,7 +451,7 @@ class BaseDecorator:
             else:
                 # middle / center
                 box_alignment_offset += Vector((w / 2, 0))
-            
+
             pos -= rotation_matrix.transposed() @ box_alignment_offset
         else:
             if center:
@@ -506,6 +506,10 @@ class DimensionDecorator(BaseDecorator):
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
         + """
+        #define OBLIQUE_SYMBOL_ANGLE PI / 4.0
+        #define OLBIQUE_SYMBOL_SIZE 10.0
+        #define OBLIQUE_HEAD_VERTS 7
+
         #define ARROW_ANGLE PI / 12.0
         #define ARROW_SIZE 16.0
     """
@@ -514,9 +518,22 @@ class DimensionDecorator(BaseDecorator):
     GEOM_GLSL = """
     uniform vec2 winsize;
     uniform float viewportDrawingScale;
+    uniform float use_oblique_style;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void oblique_dimension_head(in vec4 dir, in float size, in float angle, out vec4 head[OBLIQUE_HEAD_VERTS]) {
+        float c = cos(angle), s = sin(angle);
+        vec4 ortho = vec4(-dir.y, dir.x, 0, 0);
+        head[0] = -dir * size*0.66;
+        head[1] = vec4(0);
+        head[2] = ortho * size;
+        head[3] = -ortho * size;
+        head[4] = vec4(0);
+        head[5] = vec4((mat2(c, +s, -s, c) * dir.xy) * size * 0.47, 0, 0);
+        head[6] = -head[5];
+    }
 
     void main() {
         vec4 clip2win = matCLIP2WIN();
@@ -529,49 +546,78 @@ class DimensionDecorator(BaseDecorator):
 
         vec4 p;
 
-        vec4 head[3];
-        arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
+        if (use_oblique_style > 0) {
+            vec4 head[OBLIQUE_HEAD_VERTS];
+            oblique_dimension_head(dir, viewportDrawingScale * OLBIQUE_SYMBOL_SIZE, OBLIQUE_SYMBOL_ANGLE, head);
 
-        // start edge arrow
-        gl_Position = p0;
-        EmitVertex();
-        p = p0w + head[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        gl_Position = p0;
-        EmitVertex();
-        EndPrimitive();
+            // start edge arrow
+            for (int i = 0; i < OBLIQUE_HEAD_VERTS; i++) {
+                gl_Position = WIN2CLIP((p0w + head[i]));
+                EmitVertex();
+            }
+            EndPrimitive();
 
-        // end edge arrow
-        gl_Position = p1;
-        EmitVertex();
-        p = p1w - head[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w - head[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        gl_Position = p1;
-        EmitVertex();
-        EndPrimitive();
+            // end edge arrow
+            for (int i = 0; i < OBLIQUE_HEAD_VERTS; i++) {
+                gl_Position = WIN2CLIP((p1w - head[i]));
+                EmitVertex();
+            }
+            EndPrimitive();
 
-        // stem, with gaps for arrows
-        p = p0w + head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w - head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        EndPrimitive();
+            // stem
+            gl_Position = p0;
+            EmitVertex();
+            gl_Position = p1;
+            EmitVertex();
+            EndPrimitive();
+        } else {
+            vec4 head[3];
+            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
+
+            // start edge arrow
+            gl_Position = p0;
+            EmitVertex();
+            p = p0w + head[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p0w + head[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            gl_Position = p0;
+            EmitVertex();
+            EndPrimitive();
+
+            // end edge arrow
+            gl_Position = p1;
+            EmitVertex();
+            p = p1w - head[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w - head[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            gl_Position = p1;
+            EmitVertex();
+            EndPrimitive();
+
+            // stem, with gaps for arrows
+            p = p0w + head[0];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w - head[0];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
     }
     """
 
     def decorate(self, context, obj):
         verts, idxs, _ = self.get_path_geom(obj, topo=False)
-        self.draw_lines(context, obj, verts, idxs)
+        dimension_style = DecoratorData.get_dimension_style(obj)
+        self.draw_lines(
+            context, obj, verts, idxs, extra_float_kwargs={"use_oblique_style": float(dimension_style == "oblique")}
+        )
         self.draw_labels(context, obj, verts, idxs)
 
     def draw_labels(self, context, obj, vertices, indices):
@@ -806,7 +852,7 @@ class LeaderDecorator(BaseDecorator):
 
         props = obj.BIMTextProperties
         text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
-        text = text_data["Literals"][0]['CurrentValue']
+        text = text_data["Literals"][0]["CurrentValue"]
 
         self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
 
@@ -1332,18 +1378,22 @@ class PlanLevelDecorator(LevelDecorator):
         region = context.region
         region3d = context.region_data
         for verts in splines:
-            v0 = verts[0]
-            v1 = verts[1]
-            p0 = location_3d_to_region_2d(region, region3d, v0)
-            p1 = location_3d_to_region_2d(region, region3d, v1)
+            p0, p1 = [location_3d_to_region_2d(region, region3d, v) for v in verts[:2]]
             dir = p1 - p0
             if dir.length < 1:
                 continue
+
+            if dir.x > 0:
+                box_alignment = "bottom-left"
+            else:
+                box_alignment = "bottom-right"
+                dir *= -1
+
             z = verts[-1].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
             text = "RL " + self.format_value(context, z)
-            self.draw_label(context, text, p0, dir, gap=8, center=False)
+            self.draw_label(context, text, p0, dir, gap=8, center=False, box_alignment=box_alignment)
 
 
 class SectionLevelDecorator(LevelDecorator):
@@ -2094,7 +2144,7 @@ class TextDecorator(BaseDecorator):
         def matrix_only_rotation(m):
             return m.to_3x3().normalized().to_4x4()
 
-        text_dir = Vector((1,0))
+        text_dir = Vector((1, 0))
         text_dir_world = matrix_only_rotation(region3d.perspective_matrix.inverted()) @ text_dir.to_3d()
         text_dir_world_rotated = matrix_only_rotation(obj.matrix_world) @ text_dir_world
         text_dir = (matrix_only_rotation(region3d.perspective_matrix) @ text_dir_world_rotated).to_2d().normalized()
