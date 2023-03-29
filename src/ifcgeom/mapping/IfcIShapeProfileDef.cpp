@@ -24,10 +24,10 @@ using namespace ifcopenshell::geometry;
 #include "../profile_helper.h"
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
-	const bool doFillet1 = !!l->FilletRadius();
+	const bool doFillet1 = !!inst->FilletRadius();
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
-	const bool doFlangeEdgeRadius = !!l->FlangeEdgeRadius();
-	const bool hasSlope = !!l->FlangeSlope();
+	const bool doFlangeEdgeRadius = !!inst->FlangeEdgeRadius();
+	const bool hasSlope = !!inst->FlangeSlope();
 #else
 	const bool doFlangeEdgeRadius = false;
 #endif
@@ -37,7 +37,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 	const double d1 = inst->WebThickness() / 2.0f  * length_unit_;
 	const double ft1 = inst->FlangeThickness() * length_unit_;
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
-	const double slope = l->FlangeSlope().get_value_or(0.) * angle_unit_;
+	const double slope = inst->FlangeSlope().get_value_or(0.) * angle_unit_;
 #endif
 
 	double dy = 0.;
@@ -53,7 +53,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 	}
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
 	if (doFlangeEdgeRadius) {
-		fe1 = *l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
+		fe1 = *inst->FlangeEdgeRadius() * length_unit_;
 	}
 	if (hasSlope) {
 		dy = (x1 - d1) * tan(slope);
