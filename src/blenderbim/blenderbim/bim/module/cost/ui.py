@@ -105,7 +105,8 @@ class BIM_PT_cost_schedules(Panel):
         if self.props.cost_items and self.props.active_cost_item_index < len(self.props.cost_items):
             ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         if ifc_definition_id:
-
+            row.prop(self.props, "change_cost_item_parent", text="", icon="LINKED")
+            row.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
             if not CostSchedulesData.data["is_editing_rates"]:
                 op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
                 op.cost_item = ifc_definition_id
@@ -549,7 +550,22 @@ class BIM_UL_cost_items_trait:
                 split2.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))
 
             self.draw_total_cost_column(split2, cost_item)
+            if self.props.enable_reorder:
+                self.draw_order_operator(row, item.ifc_definition_id, cost_item)
+
+            if self.props.change_cost_item_parent:
+                self.draw_parent_operator(row, item.ifc_definition_id)
+
             # TODO: reimplement "bim.copy_cost_item_values" somewhere with better UX
+
+    def draw_parent_operator(self, row, cost_item_id):
+        if self.props.active_cost_item_id:
+            if self.props.active_cost_item_id != cost_item_id:
+                op = row.operator(
+                    "bim.change_parent_cost_item", text="", icon="LINKED", emboss=False
+                ).new_parent = cost_item_id
+            else:
+                row.label(text="", icon="BLANK1")
 
     def draw_hierarchy(self, row, item):
         for i in range(0, item.level_index):
@@ -580,6 +596,17 @@ class BIM_UL_cost_items_trait:
 
     def draw_uom_column(self, layout, cost_item):
         layout.label(text=cost_item["UnitBasisUnitSymbol"] or "?" if cost_item["UnitBasisValueComponent"] else "-")
+
+    def draw_order_operator(self, row, ifc_definition_id, cost_item):
+        if cost_item["NestingIndex"] is not None:
+            if cost_item["NestingIndex"] == 0:
+                op = row.operator("bim.reorder_cost_item_nesting", icon="TRIA_DOWN", text="")
+                op.cost_item = ifc_definition_id
+                op.new_index = cost_item["NestingIndex"] + 1
+            elif cost_item["NestingIndex"] > 0:
+                op = row.operator("bim.reorder_cost_item_nesting", icon="TRIA_UP", text="")
+                op.cost_item = ifc_definition_id
+                op.new_index = cost_item["NestingIndex"] - 1
 
     def draw_total_quantity_column(self, layout, cost_item):
         layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '?'}")

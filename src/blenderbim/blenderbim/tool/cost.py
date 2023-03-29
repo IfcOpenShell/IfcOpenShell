@@ -139,6 +139,7 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def disable_editing_cost_item(cls):
         bpy.context.scene.BIMCostProperties.active_cost_item_id = 0
+        bpy.context.scene.BIMCostProperties.change_cost_item_parent = False
 
     @classmethod
     def get_cost_item_attributes(cls):
@@ -612,3 +613,20 @@ class Cost(blenderbim.core.tool.Cost):
                 if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
                     return True
 
+    @classmethod
+    def toggle_cost_item_parent(cls, cost_item=None):
+        props = bpy.context.scene.BIMCostProperties
+        if props.change_cost_item_parent:
+            props.active_cost_item_id = cost_item.id()
+            props.cost_item_editing_type = "PARENT"
+        else:
+            cls.disable_editing_cost_item_parent()
+
+    @classmethod
+    def change_parent_cost_item(cls, cost_item, new_parent):
+        ifcopenshell.api.run("nest.change_nest", tool.Ifc.get(), item=cost_item, new_parent=new_parent)
+
+    @classmethod
+    def disable_editing_cost_item_parent(cls):
+        bpy.context.scene.BIMCostProperties.active_cost_item_id = 0
+        bpy.context.scene.BIMCostProperties.change_cost_item_parent = False

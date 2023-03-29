@@ -19,7 +19,6 @@ def remove_cost_schedule(ifc, cost_schedule):
 def enable_editing_cost_schedule_attributes(cost, cost_schedule):
     cost.load_cost_schedule_attributes(cost_schedule)
     cost.enable_editing_cost_schedule_attributes(cost_schedule)
-    cost.play_sound()
 
 def enable_editing_cost_items(cost, cost_schedule):
     cost.enable_editing_cost_items(cost_schedule)
@@ -258,3 +257,15 @@ def highlight_product_cost_item(spatial, cost, cost_item):
         cost.highlight_cost_item(cost_item)
     else:
         return "Cost schedule is not active"
+
+def toggle_cost_item_parent(cost, cost_item):
+    cost.toggle_cost_item_parent(cost_item)
+
+def change_parent_cost_item(ifc, cost, new_parent):
+    cost_item = cost.get_active_cost_item()
+    if cost_item and cost.is_root_cost_item(cost_item):
+        return "Cannot change root cost item"
+    if cost_item :
+        ifc.run("nest.change_nest", item=cost_item, new_parent=new_parent)
+        cost.disable_editing_cost_item_parent()
+        cost.load_cost_schedule_tree()

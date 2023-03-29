@@ -134,6 +134,12 @@ class CostItemType(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+
+def update_cost_item_parent(self, context):
+    cost_item = tool.Cost.get_highlighted_cost_item()
+    tool.Cost.toggle_cost_item_parent(cost_item=cost_item)
+
+
 def update_active_cost_item_elements(self, context):
     bpy.ops.bim.load_cost_item_element_quantities()
 
@@ -200,8 +206,10 @@ class BIMCostProperties(PropertyGroup):
     contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")
     product_cost_items: CollectionProperty(name="Product Cost Items", type=CostItem)
     active_product_cost_item_index: IntProperty(name="Active Product Cost Item Index")
+    enable_reorder: BoolProperty(name="Enable Reorder", default=False)
     show_nested_elements: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_elements)
     show_nested_tasks: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_tasks)
     show_nested_resources: BoolProperty(
         name="Show Nested Tasks", default=False, update=update_active_cost_item_resources
     )
+    change_cost_item_parent: BoolProperty(name="Change Cost Item Parent", default=False, update=update_cost_item_parent)
