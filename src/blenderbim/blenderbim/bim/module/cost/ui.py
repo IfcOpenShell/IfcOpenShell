@@ -643,10 +643,6 @@ class BIM_UL_cost_item_quantities(UIList):
 
 class BIM_UL_product_cost_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMCostProperties
-        oprops = context.active_object.BIMObjectProperties
-        cost_item = props.cost_items[props.active_cost_item_index]
-
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.highlight_product_cost_item", text="", icon="STYLUS_PRESSURE")
@@ -667,7 +663,7 @@ class BIM_PT_Costing_Tools(Panel):
         row = self.layout.row()
         row.operator(
             "bim.load_product_cost_items", icon="FILE_REFRESH"
-        ).product = context.active_object.BIMObjectProperties.ifc_definition_id
+        )
         row = self.layout.row()
         row.template_list(
             "BIM_UL_product_cost_items",
