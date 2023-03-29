@@ -38,6 +38,15 @@ faces_color = (0.494, 0.540, 0.593, 1)
 preview_edges_color = (0.130, 0.141, 0.371, 1)
 
 
+def bm_check_vertex_in_groups(vertex, deform_layer, groups):
+    """returns tuple boolean (whether vertex is in any of the groups)
+    and related group index"""
+    for group_index in vertex[deform_layer].keys():
+        if group_index in groups:
+            return True, group_index
+    return False, None
+
+
 class ProfileDecorator:
     installed = None
 
@@ -146,25 +155,19 @@ class ProfileDecorator:
             if vertex.hide:
                 continue
 
-            # TODO: iterate over deform layers instead of all vertex groups?
-            # move to separate function `bm_check_vertex_in_groups`
-            is_arc = False
-            for group_index in arc_groups:
-                if group_index in vertex[deform_layer]:
-                    is_arc = True
-                    break
-            if is_arc:
-                arcs.setdefault(group_index, []).append(vertex)
-                special_vertex_indices[vertex.index] = group_index
+            is_arc, is_circle = False, False
+            # deform_layer is None if there are no verts assigned to vertex groups
+            # even if there are vertex groups in the obj.vertex_groups
+            if deform_layer:
+                is_arc, group_index = bm_check_vertex_in_groups(vertex, deform_layer, arc_groups)
+                if is_arc:
+                    arcs.setdefault(group_index, []).append(vertex)
+                    special_vertex_indices[vertex.index] = group_index
 
-            is_circle = False
-            for group_index in circle_groups:
-                if group_index in vertex[deform_layer]:
-                    is_circle = True
-                    break
-            if is_circle:
-                circles.setdefault(group_index, []).append(vertex)
-                special_vertex_indices[vertex.index] = group_index
+                is_circle, group_index = bm_check_vertex_in_groups(vertex, deform_layer, circle_groups)
+                if is_circle:
+                    circles.setdefault(group_index, []).append(vertex)
+                    special_vertex_indices[vertex.index] = group_index
 
             if vertex.select:
                 selected_vertices.append(co)

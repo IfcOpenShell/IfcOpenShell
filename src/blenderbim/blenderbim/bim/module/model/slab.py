@@ -702,6 +702,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 class ResetVertex(bpy.types.Operator):
     bl_idname = "bim.reset_vertex"
     bl_label = "Reset Vertex"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -725,6 +726,7 @@ class ResetVertex(bpy.types.Operator):
 class SetArcIndex(bpy.types.Operator):
     bl_idname = "bim.set_arc_index"
     bl_label = "Set Arc Index"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -736,6 +738,8 @@ class SetArcIndex(bpy.types.Operator):
         return {"CANCELLED"}
 
     def execute(self, context):
+        # NOTE: undo won't remove new verex group
+        # because of jumping between modes
         obj = context.active_object
         bpy.ops.object.mode_set(mode="OBJECT")
         selected_vertices = [v.index for v in obj.data.vertices if v.select]
