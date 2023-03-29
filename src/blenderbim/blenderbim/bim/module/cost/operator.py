@@ -23,7 +23,6 @@ import time
 import ifcopenshell.api
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 import blenderbim.tool as tool
 import blenderbim.core.cost as core
@@ -36,7 +35,7 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add a new cost schedule"
 
     def _execute(self, context):
-        core.add_cost_schedule(tool.Ifc, predefined_type = context.scene.BIMCostProperties.cost_schedule_predefined_types)
+        core.add_cost_schedule(tool.Ifc, predefined_type=context.scene.BIMCostProperties.cost_schedule_predefined_types)
 
 
 class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -685,6 +684,25 @@ class HighlightProductCostItem(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ReorderCostItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reorder_cost_item_nesting"
+    bl_label = "Reorder Nesting"
+    bl_options = {"REGISTER", "UNDO"}
+    new_index: bpy.props.IntProperty()
+    cost_item: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        ifcopenshell.api.run(
+            "nest.reorder_nesting",
+            tool.Ifc.get(),
+            **{
+                "item": tool.Ifc.get().by_id(self.cost_item),
+                "new_index": self.new_index,
+            },
+        )
+        tool.Cost.load_cost_schedule_tree()
+
+
 class SelectUnassignedProducts(bpy.types.Operator):
     bl_idname = "bim.select_unassigned_products"
     bl_label = "Select Unassigned Products"
@@ -692,4 +710,17 @@ class SelectUnassignedProducts(bpy.types.Operator):
 
     def execute(self, context):
         core.select_unassigned_products(tool.Ifc, tool.Cost, tool.Spatial)
+        return {"FINISHED"}
+
+
+class ChangeParentCostItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.change_parent_cost_item"
+    bl_label = "Change Parent Cost Item"
+    bl_options = {"REGISTER", "UNDO"}
+    new_parent: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        r = core.change_parent_cost_item(tool.Ifc, tool.Cost, new_parent=tool.Ifc.get().by_id(self.new_parent))
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
         return {"FINISHED"}
