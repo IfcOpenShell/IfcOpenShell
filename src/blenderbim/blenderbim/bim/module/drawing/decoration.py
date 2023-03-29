@@ -1332,18 +1332,22 @@ class PlanLevelDecorator(LevelDecorator):
         region = context.region
         region3d = context.region_data
         for verts in splines:
-            v0 = verts[0]
-            v1 = verts[1]
-            p0 = location_3d_to_region_2d(region, region3d, v0)
-            p1 = location_3d_to_region_2d(region, region3d, v1)
+            p0, p1 = [location_3d_to_region_2d(region, region3d, v) for v in verts[:2]]
             dir = p1 - p0
             if dir.length < 1:
                 continue
+            
+            if dir.x > 0:
+                box_alignment = "bottom-left"
+            else:
+                box_alignment = 'bottom-right'
+                dir *= -1
+
             z = verts[-1].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
             text = "RL " + self.format_value(context, z)
-            self.draw_label(context, text, p0, dir, gap=8, center=False)
+            self.draw_label(context, text, p0, dir, gap=8, center=False, box_alignment=box_alignment)
 
 
 class SectionLevelDecorator(LevelDecorator):
