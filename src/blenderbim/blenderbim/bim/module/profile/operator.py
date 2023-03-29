@@ -148,7 +148,9 @@ def disable_editing_arbitrary_profile(context):
     if obj and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
         ProfileDecorator.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
+        profile_mesh = obj.data
         bpy.data.objects.remove(obj)
+        bpy.data.meshes.remove(profile_mesh)
 
     # need to update profile manager ui
     # if this was called from decorator
@@ -191,7 +193,10 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.object.mode_set(mode="EDIT")
             return
 
+        profile_mesh = obj.data
         bpy.data.objects.remove(obj)
+        bpy.data.meshes.remove(profile_mesh)
+
         profile.ProfileType = old_profile.ProfileType
         profile.ProfileName = old_profile.ProfileName
         for inverse in tool.Ifc.get().get_inverse(old_profile):

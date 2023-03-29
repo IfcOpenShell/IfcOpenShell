@@ -115,6 +115,7 @@ class DecoratorData:
     # stores 1 type of data per object
     data = {}
 
+    # used by Ifc Annotations with ObjectType = "BATTING"
     @classmethod
     def get_batting_thickness(cls, obj):
         result = cls.data.get(obj.name, None)
@@ -128,6 +129,7 @@ class DecoratorData:
             cls.data[obj.name] = thickness
             return thickness
 
+    # used by Ifc Annotations with ObjectType = "SECTION"
     @classmethod
     def get_section_markers_display_data(cls, obj):
         result = cls.data.get(obj.name, None)
@@ -169,6 +171,7 @@ class DecoratorData:
         cls.data[obj.name] = display_data
         return display_data
 
+    # used by Ifc Annotations with ObjectType = "TEXT"
     @classmethod
     def get_ifc_text_data(cls, obj):
         """returns font size in mm for current ifc text object"""
@@ -214,3 +217,22 @@ class DecoratorData:
         text_data = {"Literals": literals_data, "FontSize": font_size}
         cls.data[obj.name] = text_data
         return text_data
+
+    # used by Ifc Annotations with ObjectType = "DIMENSION"
+    @classmethod
+    def get_dimension_style(cls, obj):
+        result = cls.data.get(obj.name, None)
+        if result is not None:
+            return result
+
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation") or element.ObjectType != "DIMENSION":
+            return None
+
+        dimension_style = "arrow"
+        classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+        if classes and "oblique" in classes.lower().split():
+            dimension_style = "oblique"
+
+        cls.data[obj.name] = dimension_style
+        return dimension_style
