@@ -267,7 +267,7 @@ class Cost(blenderbim.core.tool.Cost):
     def get_attributes_for_cost_value(cls, cost_type, cost_category):
         if cost_type == "FIXED":
             category = None
-            attributes = {"AppliedValue": 0.0}
+            attributes = {"AppliedValue": bpy.context.scene.BIMCostProperties.fixed_cost_value}
         elif cost_type == "SUM":
             category = "*"
             attributes = {"Category": category}

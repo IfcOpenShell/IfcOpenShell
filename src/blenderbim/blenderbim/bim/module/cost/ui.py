@@ -176,6 +176,8 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_item_values_ui(self):
         row = self.layout.row(align=True)
         row.prop(self.props, "cost_types", text="")
+        if self.props.cost_types == "FIXED":
+            row.prop(self.props, "fixed_cost_value", text="")
         if self.props.cost_types == "CATEGORY":
             row.prop(self.props, "cost_category", text="")
         op = row.operator("bim.add_cost_value", text="Add Value", icon="ADD")
