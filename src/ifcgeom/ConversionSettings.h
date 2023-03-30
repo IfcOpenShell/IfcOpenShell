@@ -3,6 +3,7 @@
 
 #include <array>
 #include <limits>
+#include <string>
 
 #include "ifc_geom_api.h"
 
