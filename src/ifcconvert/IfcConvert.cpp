@@ -41,6 +41,10 @@
 
 #include "../ifcparse/utils.h"
 
+#ifdef IFOPSH_WITH_CGAL
+#include "./cityjson/geobim.h"
+#endif
+
 #ifdef IFOPSH_WITH_OPENCASCADE
 
 #include <Standard_Version.hxx>
@@ -116,6 +120,9 @@ void print_usage(bool suggest_help = true)
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 #ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
+#endif
+#ifdef IFOPSH_WITH_CGAL
+		<< "  .city.json            City JSON format for geospatial data\n"
 #endif
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
@@ -730,6 +737,7 @@ int main(int argc, char** argv) {
 		CACHE = IfcUtil::path::from_utf8(".cache"),
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
+		CITY_JSON = IfcUtil::path::from_utf8(".cityjson"),
 		IFC = IfcUtil::path::from_utf8(".ifc");
 
 	// @todo clean up serializer selection
@@ -779,6 +787,36 @@ int main(int argc, char** argv) {
 		write_log(!quiet);
 		return exit_code;
 	}
+#ifdef IFOPSH_WITH_CGAL
+	else if (output_extension == CITY_JSON) {
+		geobim_settings settings;
+		settings.input_filenames = { IfcUtil::path::to_utf8(input_filename) };
+		settings.cityjson_output_filename = IfcUtil::path::to_utf8(output_filename);
+		// @todo
+		settings.radii = { "0.05" };
+		settings.apply_openings = false;
+		settings.apply_openings_posthoc = true;
+		settings.debug = false;
+		settings.exact_segmentation = false;
+		settings.minkowski_triangles = false;
+		settings.no_erosion = false;
+		settings.spherical_padding = false;
+		
+		settings.settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+		settings.settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+		settings.settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
+		settings.settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
+		settings.settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+		settings.settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, !settings.apply_openings);
+
+		settings.entity_names = include_filter.values;
+		settings.entity_names_included = true;
+		
+		perform(settings);
+		
+		return 0;
+	}
+#endif
 
     /// @todo Clean up this filter code further.
     std::vector<geom_filter> used_filters;
