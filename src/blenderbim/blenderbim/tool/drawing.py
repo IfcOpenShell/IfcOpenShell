@@ -38,6 +38,8 @@ import blenderbim.bim.module.drawing.helper as helper
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS
 
+from mathutils import Vector
+
 
 class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
@@ -74,7 +76,26 @@ class Drawing(blenderbim.core.tool.Drawing):
             obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
+
         return obj
+
+    @classmethod
+    def setup_annotation_object(cls, obj, object_type):
+        """Finish object's adjustments after both object and entity are created"""
+        if object_type == "STAIR_ARROW":
+            stair = bpy.context.active_object
+            stair_entity = tool.Ifc.get_entity(stair)
+            if stair_entity and stair_entity.is_a("IfcStairFlight"):
+                arrow = obj
+                arrow_element = tool.Ifc.get_entity(arrow)
+                arrow.parent = stair
+
+                # place the arrow
+                bbox = tool.Blender.get_object_bounding_box(stair)
+                arrow.location = Vector((bbox["min_x"], (bbox["max_y"] - bbox["min_y"]) / 2, bbox["max_z"]))
+                arrow.data.splines[0].points[1].co = Vector((bbox["max_x"], 0, 0, 1))
+
+                tool.Ifc.run("drawing.assign_product", relating_product=stair_entity, related_object=arrow_element)
 
     @classmethod
     def create_camera(cls, name, matrix):

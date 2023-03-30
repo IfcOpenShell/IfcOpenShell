@@ -286,6 +286,7 @@ def update_ifc_stair_props(obj):
         },
     )
     tool.Ifc.edit(obj)
+    # TODO: update related STAIR_ARROW products
 
 
 class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):

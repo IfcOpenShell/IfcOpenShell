@@ -160,6 +160,24 @@ class Blender:
         )
         return keymap
 
+    @classmethod
+    def get_object_bounding_box(cls, obj):
+        """Returns dict with local min and max x, y, z values for the object.
+
+        Careful with using this method for objects in EDIT mode because
+        it requires all EDIT mode changes to be applied.
+        """
+        bound_box = obj.bound_box
+        bbox_dict = {
+            "min_x": bound_box[0][0],
+            "max_x": bound_box[6][0],
+            "min_y": bound_box[0][1],
+            "max_y": bound_box[6][1],
+            "min_z": bound_box[0][2],
+            "max_z": bound_box[6][2],
+        }
+        return bbox_dict
+
     ## BMESH UTILS ##
     @classmethod
     def apply_bmesh(cls, mesh, bm):

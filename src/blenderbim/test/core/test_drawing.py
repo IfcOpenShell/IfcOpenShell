@@ -321,6 +321,7 @@ class TestAddAnnotation:
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
         ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
         collector.assign("obj").should_be_called()
+        drawing.setup_annotation_object("obj", "object_type").should_be_called()
         drawing.enable_editing("obj").should_be_called()
         subject.add_annotation(ifc, collector, drawing, drawing="drawing", object_type="object_type")
 
