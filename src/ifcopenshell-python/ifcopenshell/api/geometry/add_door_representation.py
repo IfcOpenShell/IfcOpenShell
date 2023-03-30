@@ -31,6 +31,9 @@ SUPPORTED_DOOR_TYPES = (
     "DOUBLE_SWING_LEFT",
     "DOUBLE_DOOR_SINGLE_SWING",
     "DOUBLE_DOOR_DOUBLE_SWING",
+    "SLIDING_TO_LEFT",
+    "SLIDING_TO_RIGHT",
+    "DOUBLE_DOOR_SLIDING",
 )
 
 
@@ -146,6 +149,7 @@ class Usecase:
         door_type = self.settings["operation_type"]
         double_swing_door = "DOUBLE_SWING" in door_type
         double_door = "DOUBLE_DOOR" in door_type
+        sliding_door = "SLIDING" in door_type
 
         if door_type not in SUPPORTED_DOOR_TYPES:
             raise NotImplementedError(f'Door type "{door_type}" is not currently supported.')
@@ -162,8 +166,11 @@ class Usecase:
         lining_depth = lining_props["LiningDepth"]
         lining_thickness_default = lining_props["LiningThickness"]
         lining_offset = lining_props["LiningOffset"]
-        lining_to_panel_offset_x = lining_props["LiningToPanelOffsetX"]
-        lining_to_panel_offset_y_full = lining_props["LiningToPanelOffsetY"]
+        lining_to_panel_offset_x = (
+            lining_props["LiningToPanelOffsetX"] if not sliding_door else lining_thickness_default
+        )
+        panel_depth = panel_props["PanelDepth"]
+        lining_to_panel_offset_y_full = lining_props["LiningToPanelOffsetY"] if not sliding_door else -panel_depth
 
         transom_thickness = lining_props["TransomThickness"] / 2
         transfom_offset = lining_props["TransomOffset"]
@@ -172,10 +179,10 @@ class Usecase:
         window_lining_height = overall_height - transfom_offset - transom_thickness
 
         side_lining_thickness = lining_thickness_default
-        panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0)
+        panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0) if not sliding_door else 0
 
         top_lining_thickness = transom_thickness or lining_thickness_default
-        panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0)
+        panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0) if not sliding_door else 0
         door_opening_width = overall_width - lining_to_panel_offset_x * 2
         if double_swing_door:
             side_lining_thickness = side_lining_thickness - panel_lining_overlap_x
@@ -190,7 +197,6 @@ class Usecase:
         casing_depth = lining_props["CasingDepth"]
 
         # panel params
-        panel_depth = panel_props["PanelDepth"]
         panel_width = door_opening_width * panel_props["PanelWidth"]
         frame_depth = panel_props["FrameDepth"]
         frame_thickness = panel_props["FrameThickness"]
@@ -243,7 +249,10 @@ class Usecase:
             )
 
             # TODO: make second swing lines dashed
-            def create_ifc_door_panel_2d(panel_size, panel_position, door_swing_type):
+            def create_ifc_door_panel_2d(panel_size, panel_position, door_swing_type, sliding=False):
+                if sliding:
+                    return create_ifc_door_sliding_panel_2d(panel_size, panel_position, door_swing_type)
+
                 door_items = []
                 panel_size = panel_size.yx
                 # create semi-semi-circle
@@ -274,13 +283,33 @@ class Usecase:
                     builder.mirror(door_items, mirror_axes=V(1, 0), mirror_point=mirror_point)
                 return door_items
 
+            def create_ifc_door_sliding_panel_2d(panel_size, panel_position, door_swing_type):
+                door_items = []
+                # create door
+                door_items.append(
+                    builder.polyline(points=(V(0, 0), V(panel_size.x, 0)), position_offset=V(0, panel_size.y * 0.5))
+                )
+                door_items.append(builder.polyline(points=(V(0, 0), V(panel_size.x * 0.3, 0))))
+                door_items.append(
+                    builder.rectangle(size=handle_size.zz, position=V(panel_size.x * 0.1, -handle_size.z * 0.5))
+                )
+                builder.translate(door_items, panel_position - V(panel_size.x * 0.2, 0))
+
+                if door_swing_type == "RIGHT":
+                    mirror_point = panel_position + V(panel_size.x / 2, 0)
+                    builder.mirror(door_items, mirror_axes=V(1, 0), mirror_point=mirror_point)
+                return door_items
+
             door_items = []
             panel_size = V(panel_width, panel_depth)
-            panel_position = V(lining_to_panel_offset_x, lining_depth)
+            if not sliding_door:
+                panel_position = V(lining_to_panel_offset_x, lining_depth)
+            else:
+                panel_position = V(lining_to_panel_offset_x, -panel_size.y)
 
             if double_door:
                 panel_size.x = panel_size.x / 2
-                door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, "LEFT"))
+                door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, "LEFT", sliding_door))
 
                 mirror_point = panel_position + V(door_opening_width / 2, 0)
                 door_items.extend(
@@ -288,7 +317,7 @@ class Usecase:
                 )
             else:
                 door_swing_type = "LEFT" if door_type.endswith("LEFT") else "RIGHT"
-                door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, door_swing_type))
+                door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, door_swing_type, sliding_door))
             items_2d.extend(door_items)
 
             builder.translate(items_2d, V(0, lining_offset))
@@ -383,7 +412,7 @@ class Usecase:
         panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full, threshold_thickness)
 
         if double_door:
-            # TODO: keep a little space between doors for readibility?
+            # keeping a little space between doors for readibility
             double_door_offset = self.convert_si_to_unit(0.001)
             panel_size.x = panel_size.x / 2 - double_door_offset
             door_items.extend(create_ifc_door_panel(panel_size, panel_position, "LEFT"))
