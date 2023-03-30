@@ -263,13 +263,17 @@ def update_door_modifier_bmesh(context):
     door_type = props.door_type
     double_swing_door = "DOUBLE_SWING" in door_type
     double_door = "DOUBLE_DOOR" in door_type
+    sliding_door = "SLIDING" in door_type
 
     # lining params
     lining_depth = props.lining_depth * si_conversion
     lining_thickness_default = props.lining_thickness * si_conversion
     lining_offset = props.lining_offset * si_conversion
-    lining_to_panel_offset_x = props.lining_to_panel_offset_x * si_conversion
-    lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion
+    lining_to_panel_offset_x = (
+        props.lining_to_panel_offset_x * si_conversion if not sliding_door else lining_thickness_default
+    )
+    panel_depth = props.panel_depth * si_conversion
+    lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion if not sliding_door else -panel_depth
 
     transom_thickness = props.transom_thickness * si_conversion / 2
     transfom_offset = props.transom_offset * si_conversion
@@ -278,10 +282,10 @@ def update_door_modifier_bmesh(context):
     window_lining_height = overall_height - transfom_offset - transom_thickness
 
     side_lining_thickness = lining_thickness_default
-    panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0)
+    panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0) if not sliding_door else 0
 
     top_lining_thickness = transom_thickness or lining_thickness_default
-    panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0)
+    panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0) if not sliding_door else 0
     door_opening_width = overall_width - lining_to_panel_offset_x * 2
     if double_swing_door:
         side_lining_thickness = side_lining_thickness - panel_lining_overlap_x
@@ -296,7 +300,6 @@ def update_door_modifier_bmesh(context):
     casing_depth = props.casing_depth * si_conversion
 
     # panel params
-    panel_depth = props.panel_depth * si_conversion
     panel_width = door_opening_width * props.panel_width_ratio
     frame_depth = props.frame_depth * si_conversion
     frame_thickness = props.frame_thickness * si_conversion
@@ -389,7 +392,7 @@ def update_door_modifier_bmesh(context):
     panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y, threshold_thickness)
 
     if double_door:
-        # TODO: keep a little space between doors for readibility?
+        # keeping a little space between doors for readibility
         double_door_offset = 0.001 * si_conversion
         panel_size.x = panel_size.x / 2 - double_door_offset
         door_verts.extend(create_bm_door_panel(panel_size, panel_position, "LEFT"))
