@@ -455,7 +455,9 @@ class BIMDoorProperties(PropertyGroup):
         ("DOUBLE_SWING_LEFT", "DOUBLE_SWING_LEFT", ""),
         ("DOUBLE_SWING_RIGHT", "DOUBLE_SWING_RIGHT", ""),
         ("DOUBLE_DOOR_SINGLE_SWING", "DOUBLE_DOOR_SINGLE_SWING", ""),
-        ("DOUBLE_DOOR_DOUBLE_SWING", "DOUBLE_DOOR_DOUBLE_SWING", ""),
+        ("SLIDING_TO_LEFT", "SLIDING_TO_LEFT", ""),
+        ("SLIDING_TO_RIGHT", "SLIDING_TO_RIGHT", ""),
+        ("DOUBLE_DOOR_SLIDING", "DOUBLE_DOOR_SLIDING", ""),
     )
 
     door_added_previously: bpy.props.BoolProperty(default=False)
@@ -525,9 +527,11 @@ class BIMDoorProperties(PropertyGroup):
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
             "lining_offset": self.lining_offset,
-            "lining_to_panel_offset_x": self.lining_to_panel_offset_x,
-            "lining_to_panel_offset_y": self.lining_to_panel_offset_y,
         }
+
+        if "SLIDING" not in self.door_type:
+            kwargs["lining_to_panel_offset_x"] = self.lining_to_panel_offset_x
+            kwargs["lining_to_panel_offset_y"] = self.lining_to_panel_offset_y
 
         kwargs["transom_thickness"] = self.transom_thickness
         if self.transom_thickness:
