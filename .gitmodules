@@ -11,3 +11,6 @@
 [submodule "src/ifcopenshell-python/test/Sample-BIM-Files"]
 	path = src/ifcopenshell-python/test/Sample-BIM-Files
 	url = https://github.com/IfcOpenShell/ids-test-files
+[submodule "src/ifcconvert/cityjson"]
+	path = src/ifcconvert/cityjson
+	url = https://github.com/IfcOpenShell/ifc-to-cityjson
