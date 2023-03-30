@@ -60,8 +60,8 @@ jobs:
                -DOCC_INCLUDE_DIR=/usr/include/opencascade \
                -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
                -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
-               -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
-               -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
+               -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.10 \
+               -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.10.so \
                -DCOLLADA_SUPPORT=Off \
                "-DSCHEMA_VERSIONS=2x3;4;4x3_add1" \
                -DBUILD_CONVERT=Off \
