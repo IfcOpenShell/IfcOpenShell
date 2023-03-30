@@ -191,12 +191,13 @@ class AuthoringData:
     def ifc_classes(cls):
         results = []
         classes = {
-            e.is_a()
-            for e in tool.Ifc.get().by_type("IfcElementType")
-            + tool.Ifc.get().by_type("IfcDoorStyle")
-            + tool.Ifc.get().by_type("IfcWindowStyle")
-            + tool.Ifc.get().by_type("IfcSpaceType")
+            e.is_a() for e in (tool.Ifc.get().by_type("IfcElementType") + tool.Ifc.get().by_type("IfcSpaceType"))
         }
+
+        if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
+            classes.update(
+                {e.is_a() for e in (tool.Ifc.get().by_type("IfcDoorStyle") + tool.Ifc.get().by_type("IfcWindowStyle"))}
+            )
         results.extend([(c, c, "") for c in sorted(classes)])
         return results
 
