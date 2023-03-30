@@ -20,6 +20,7 @@ import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from ifcopenshell.api.geometry.add_window_representation import create_ifc_window
 from mathutils import Vector
+from math import cos, radians
 
 import collections
 
@@ -207,6 +208,7 @@ class Usecase:
         handle_size = self.convert_si_to_unit(V(120, 40, 20) * 0.001)
         handle_offset = self.convert_si_to_unit(V(60, 0, 1000) * 0.001)  # to the handle center
         handle_center_offset = V(handle_size.y / 2, 0, handle_size.z) / 2
+        slider_arrow_symbol_size = self.convert_si_to_unit(30 * 0.001)
 
         if transfom_offset:
             panel_height = transfom_offset + transom_thickness - lining_to_panel_offset_x - threshold_thickness
@@ -293,7 +295,30 @@ class Usecase:
                 door_items.append(
                     builder.rectangle(size=handle_size.zz, position=V(panel_size.x * 0.1, -handle_size.z * 0.5))
                 )
+
+                # arrow symbol
+                arrow_symbol = []
+                arrow_offset = slider_arrow_symbol_size / cos(radians(15))
+                arrow_symbol.append(
+                    builder.polyline(
+                        points=(V(0.35 * panel_size.x, 0), V(0.65 * panel_size.x, 0)),
+                    )
+                )
+                arrow_symbol.append(
+                    builder.polyline(
+                        points=(
+                            V(slider_arrow_symbol_size, arrow_offset),
+                            V(0, 0),
+                            V(slider_arrow_symbol_size, -arrow_offset),
+                        ),
+                        position_offset=V(0.35 * panel_size.x, 0),
+                    )
+                )
+
+                builder.translate(arrow_symbol, panel_position + V(0, -arrow_offset * 1.5))
+
                 builder.translate(door_items, panel_position - V(panel_size.x * 0.2, 0))
+                door_items.extend(arrow_symbol)
 
                 if door_swing_type == "RIGHT":
                     mirror_point = panel_position + V(panel_size.x / 2, 0)
