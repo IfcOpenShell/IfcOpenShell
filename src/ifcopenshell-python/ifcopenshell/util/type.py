@@ -27,7 +27,7 @@ type_to_entity_map = {}
 mapped_schemas = {
     "IFC2X3": "entity_to_type_map_2x3.json",
     "IFC4": "entity_to_type_map_4.json",
-    "IFC4x3": "entity_to_type_map_4x3.json",
+    "IFC4X3": "entity_to_type_map_4x3.json",
 }
 for schema in mapped_schemas:
     # load entity maps from json
