@@ -71,16 +71,21 @@ class Aggregate:
 
 
 @interface
-class Blender: pass
-def create_ifc_object(cls, ifc_class, name, data): pass
-def get_name(cls, ifc_class, name): pass
-def get_obj_ifc_definition_id(cls, obj, obj_type): pass
-def get_selected_objects(cls): pass
-def set_active_object(cls, obj): pass
-def apply_bmesh(cls, mesh, bm): pass
-def get_bmesh_for_mesh(cls, mesh, clean=False): pass
-def get_viewport_context(cls): pass
-def update_viewport(cls): pass
+class Blender:
+    def set_active_object(cls, obj): pass
+    def get_name(cls, ifc_class, name): pass
+    def get_selected_objects(cls): pass
+    def create_ifc_object(cls, ifc_class: str, name: str = None, data=None): pass
+    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None): pass
+    def is_ifc_object(cls, obj): pass
+    def is_ifc_class_active(cls, ifc_class): pass
+    def get_viewport_context(cls): pass
+    def update_viewport(cls): pass
+    def get_default_selection_keypmap(cls): pass
+    def get_object_bounding_box(cls, obj): pass
+    def apply_bmesh(cls, mesh, bm): pass
+    def get_bmesh_for_mesh(cls, mesh, clean=False): pass
+    def bmesh_join(cls, bm_a, bm_b, callback=None): pass
 
 
 @interface
@@ -223,6 +228,7 @@ class Drawing:
     def activate_view(cls, camera): pass
     def copy_representation(cls, source, dest): pass
     def create_annotation_object(cls, drawing, object_type): pass
+    def setup_annotation_object(cls, obj, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_schedule(cls, schedule): pass
     def create_svg_sheet(cls, document, titleblock): pass
