@@ -2,6 +2,8 @@
 #define CONVERSIONSETTINGS_H
 
 #include <array>
+#include <limits>
+
 #include "ifc_geom_api.h"
 
 namespace ifcopenshell {
