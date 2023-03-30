@@ -335,23 +335,7 @@ class IfcImporter:
         if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
-            if self.file.schema == "IFC2X3":
-                self.element_types = set(
-                    self.file.by_type("IfcElementType")
-                    + self.file.by_type("IfcDoorStyle")
-                    + self.file.by_type("IfcWindowStyle")
-                )
-            elif self.file.schema == "IFC4":
-                self.element_types = set(
-                    self.file.by_type("IfcElementType")
-                    + self.file.by_type("IfcDoorStyle")
-                    + self.file.by_type("IfcWindowStyle")
-                    + self.file.by_type("IfcSpatialElementType")
-                )
-            else:
-                self.element_types = set(
-                    self.file.by_type("IfcElementType") + self.file.by_type("IfcSpatialElementType")
-                )
+            self.element_types = set(self.file.by_type("IfcTypeProduct"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
