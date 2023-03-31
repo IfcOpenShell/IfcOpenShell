@@ -678,6 +678,8 @@ class AddAnnotation(bpy.types.Operator, Operator):
         if not drawing:
             self.report({"WARNING"}, "Not a BIM camera")
             return
+        # TODO: support adding multiple annotations if there are multiple selected objects
+        # that can be used as annotations references
         r = core.add_annotation(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing, object_type=self.object_type)
         if isinstance(r, str):
             self.report({"WARNING"}, r)
