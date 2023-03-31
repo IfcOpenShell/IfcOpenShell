@@ -286,7 +286,22 @@ def update_ifc_stair_props(obj):
         },
     )
     tool.Ifc.edit(obj)
-    # TODO: update related STAIR_ARROW products
+
+    # update related annotation objects
+    def get_elements_from_product(product):
+        elements = []
+        for rel in product.ReferencedBy:
+            if not rel.is_a("IfcRelAssignsToProduct"):
+                continue
+            elements.extend(rel.RelatedObjects)
+        return elements
+
+    stair_obj = obj
+    for rel_element in get_elements_from_product(element):
+        if not rel_element.is_a("IfcAnnotation") or rel_element.ObjectType != "STAIR_ARROW":
+            continue
+        if annotation_obj := tool.Ifc.get_object(rel_element):
+            tool.Drawing.setup_annotation_object(annotation_obj, "STAIR_ARROW", stair_obj)
 
 
 class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
