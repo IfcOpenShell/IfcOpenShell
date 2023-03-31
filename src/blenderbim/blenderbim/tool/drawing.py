@@ -79,13 +79,19 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         return obj
 
+    # TODO: add a way for users to run this method to readjust the annotations
+    # based on non-modifier stairs
     @classmethod
-    def setup_annotation_object(cls, obj, object_type):
+    def setup_annotation_object(cls, obj, object_type, related_object=None):
         """Finish object's adjustments after both object and entity are created"""
+
+        if not related_object:
+            related_object = bpy.context.active_object
+        related_entity = tool.Ifc.get_entity(related_object)
+
         if object_type == "STAIR_ARROW":
-            stair = bpy.context.active_object
-            stair_entity = tool.Ifc.get_entity(stair)
-            if stair_entity and stair_entity.is_a("IfcStairFlight"):
+            if related_entity and related_entity.is_a("IfcStairFlight"):
+                stair, stair_entity = related_object, related_entity
                 arrow = obj
                 arrow_element = tool.Ifc.get_entity(arrow)
                 arrow.parent = stair
@@ -93,9 +99,11 @@ class Drawing(blenderbim.core.tool.Drawing):
                 # place the arrow
                 bbox = tool.Blender.get_object_bounding_box(stair)
                 arrow.location = Vector((bbox["min_x"], (bbox["max_y"] - bbox["min_y"]) / 2, bbox["max_z"]))
+                arrow.data.splines[0].points[0].co = Vector((0, 0, 0, 1))
                 arrow.data.splines[0].points[1].co = Vector((bbox["max_x"], 0, 0, 1))
 
-                tool.Ifc.run("drawing.assign_product", relating_product=stair_entity, related_object=arrow_element)
+                if not cls.get_assigned_product(arrow_element):
+                    tool.Ifc.run("drawing.assign_product", relating_product=stair_entity, related_object=arrow_element)
 
     @classmethod
     def create_camera(cls, name, matrix):
