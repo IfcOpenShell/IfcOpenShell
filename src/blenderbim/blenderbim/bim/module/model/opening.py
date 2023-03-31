@@ -18,7 +18,6 @@
 
 import bpy
 import gpu
-import bgl
 import bmesh
 import logging
 import numpy as np
@@ -36,7 +35,6 @@ from bpy.types import Operator
 from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
 
 
@@ -758,7 +756,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                             results.add(obj)
         return results
 
-
+# TODO: merge with ProfileDecorator?
 class DecorationsHandler:
     installed = None
 
@@ -777,11 +775,15 @@ class DecorationsHandler:
             pass
         cls.installed = None
 
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
     def __call__(self, context):
-        bgl.glLineWidth(2)
-        bgl.glPointSize(6)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+        gpu.state.point_size_set(6)
+        gpu.state.blend_set("ALPHA")
 
         for opening in context.scene.BIMModelProperties.openings:
             obj = opening.obj
@@ -790,7 +792,7 @@ class DecorationsHandler:
                 continue
 
             white = (1, 1, 1, 1)
-            white_t = (1, 1, 1, 0.1)
+            white_t = (1, 1, 1, 0.5)
             green = (0.545, 0.863, 0, 1)
             red = (1, 0.2, 0.322, 1)
             red_t = (1, 0.2, 0.322, 0.1)
@@ -798,6 +800,13 @@ class DecorationsHandler:
             blue_t = (0.157, 0.565, 1, 0.1)
             grey = (0.2, 0.2, 0.2, 1)
 
+            self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+            self.line_shader.bind() # required to be able to change uniforms of the shader
+            # POLYLINE_UNIFORM_COLOR specific uniforms
+            self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+            self.line_shader.uniform_float("lineWidth", 2.0)
+
+            # general shader
             self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
 
             verts = []
@@ -829,41 +838,21 @@ class DecorationsHandler:
                     else:
                         unselected_edges.append(edge_indices)
 
-                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=unselected_edges)
-                self.shader.bind()
-                self.shader.uniform_float("color", white)
-                batch.draw(self.shader)
-
-                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=selected_edges)
-                self.shader.uniform_float("color", green)
-                batch.draw(self.shader)
-
-                batch = batch_for_shader(self.shader, "POINTS", {"pos": unselected_vertices})
-                self.shader.uniform_float("color", white)
-                batch.draw(self.shader)
-
-                batch = batch_for_shader(self.shader, "POINTS", {"pos": selected_vertices})
-                self.shader.uniform_float("color", green)
-                batch.draw(self.shader)
+                self.draw_batch("LINES", verts, white_t, unselected_edges)
+                self.draw_batch("LINES", verts, green, selected_edges)
+                self.draw_batch("POINTS", unselected_vertices, white)
+                self.draw_batch("POINTS", selected_vertices, green)
             else:
                 bm = bmesh.new()
                 bm.from_mesh(obj.data)
 
                 verts = [tuple(obj.matrix_world @ v.co) for v in bm.verts]
                 edges = [tuple([v.index for v in e.verts]) for e in bm.edges]
-
-                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
-                self.shader.bind()
-                self.shader.uniform_float("color", green if obj in context.selected_objects else blue)
-                batch.draw(self.shader)
+                self.draw_batch("LINES", verts, green if obj in context.selected_objects else blue, edges)
 
             obj.data.calc_loop_triangles()
             tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
-
-            batch = batch_for_shader(self.shader, "TRIS", {"pos": verts}, indices=tris)
-            self.shader.bind()
-            self.shader.uniform_float("color", blue_t)
-            batch.draw(self.shader)
+            self.draw_batch("TRIS", verts, blue_t, tris)
 
             if "HalfSpaceSolid" in obj.name:
                 # Arrow shape
@@ -876,10 +865,7 @@ class DecorationsHandler:
                     tuple(obj.matrix_world @ Vector((0, -0.05, 0.45))),
                 ]
                 edges = [(0, 1), (1, 2), (1, 3), (1, 4), (1, 5)]
-                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
-                self.shader.bind()
-                self.shader.uniform_float("color", green if obj in context.selected_objects else blue)
-                batch.draw(self.shader)
+                self.draw_batch("LINES", verts, green if obj in context.selected_objects else blue, edges)
 
             if obj.mode != "EDIT":
                 bm.free()
