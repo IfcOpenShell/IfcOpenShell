@@ -761,7 +761,7 @@ cmake_args = [
     "-DBOOST_ROOT="                    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
-    "-DEIGEN_DIR="                     f"{DEPS_DIR}/install/eigen-3.3.7",
+    "-DEIGEN_DIR="                     f"{DEPS_DIR}/install/eigen-3.3.9",
     "-DBoost_NO_BOOST_CMAKE="          "On",
     "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off")
 ]
