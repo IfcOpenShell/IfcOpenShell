@@ -20,21 +20,18 @@ import os
 import gpu
 import bpy
 import blf
-import bgl
 import math
 import bmesh
 import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 from math import acos, pi, atan, degrees
-from functools import reduce
-from itertools import chain
 from bpy.types import SpaceView3D
-from mathutils import Vector, Matrix, geometry
+from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
-from gpu_extras.batch import batch_for_shader
 from blenderbim.bim.module.drawing.data import DecoratorData
+from blenderbim.bim.module.drawing.shaders import BASE_LIB_GLSL, BASE_DEF_GLSL
 
 
 def ccw(A, B, C):
@@ -46,78 +43,8 @@ class BaseDecorator:
     # base name of objects to decorate
     objecttype = "NOTDEFINED"
 
-    DEF_GLSL = """
-        #define PI 3.141592653589793
-        #define MAX_POINTS 64
-        #define CIRCLE_SEGS 12
-    """
-
-    LIB_GLSL = """
-    #define matCLIP2WIN() vec4(winsize.x/2, winsize.y/2, 1, 1)
-    #define matWIN2CLIP() vec4(2/winsize.x, 2/winsize.y, 1, 1)
-    #define CLIP2WIN(v) (clip2win * v / v.w)
-    #define WIN2CLIP(v) (win2clip * v * v.w)
-
-    void arrow_head(in vec4 dir, in float size, in float angle, out vec4 head[3]) {
-        vec4 nose = dir * size;
-        float c = cos(angle), s = sin(angle);
-        head[0] = nose;
-        head[1] = vec4(mat2(c, -s, +s, c) * nose.xy, 0, 0);
-        head[2] = vec4(mat2(c, +s, -s, c) * nose.xy, 0, 0);
-    }
-
-    void circle_head(in float size, out vec4 head[CIRCLE_SEGS]) {
-        float angle_d = PI * 2 / CIRCLE_SEGS;
-        for(int i = 0; i<CIRCLE_SEGS; i++) {
-            float angle = angle_d * i;
-            head[i] = vec4(cos(angle), sin(angle), 0, 0) * size;
-        }
-    }
-
-    bool check_counterclockwise(in vec4 A, in vec4 B, in vec4 C) {
-        return (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x);
-    }
-
-    void angle_circle_head(
-        in vec4 circle_start, in float circle_angle,
-        in bool counterclockwise,
-        out vec4 head[CIRCLE_SEGS+1], out float angle_segs) {
-        
-        // 1 added to CIRCLE_SEGS because we're number of vertices
-        // for n segments is n+1
-        
-        float angle_d;
-        angle_d = PI * 2 / CIRCLE_SEGS; // 30d
-        // need to bottom clamp it to 1, otherwise it causes Blender crash at extruding the curve
-        angle_segs = max(1, ceil(circle_angle / angle_d));
-        angle_d = circle_angle / angle_segs;
-        
-        for(int i = 0; i < (angle_segs + 1); i++) {
-            float angle = angle_d * i;
-            if (counterclockwise) {
-                head[i] = vec4(
-                    circle_start.x *  cos(-angle) + circle_start.y * sin(-angle),
-                    circle_start.x * -sin(-angle) + circle_start.y * cos(-angle),
-                    0, 0
-                );
-            } else {
-                 head[i] = vec4(
-                    circle_start.x *  cos(angle) + circle_start.y * sin(angle),
-                    circle_start.x * -sin(angle) + circle_start.y * cos(angle),
-                    0, 0
-                );
-            }
-        }
-    }
-
-    void cross_head(in vec4 dir, in float size, out vec4 head[3]) {
-        vec4 nose = dir * size;
-        float c = cos(PI/2), s = sin(PI/2);
-        head[0] = nose;
-        head[1] = vec4(mat2(c, -s, +s, c) * nose.xy, 0, 0);
-        head[2] = vec4(mat2(c, +s, -s, c) * nose.xy, 0, 0);
-    }
-    """
+    DEF_GLSL = BASE_DEF_GLSL
+    LIB_GLSL = BASE_LIB_GLSL
 
     VERT_GLSL = """
     uniform mat4 viewMatrix;
@@ -135,40 +62,36 @@ class BaseDecorator:
     """
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=2) out;
+    layout(triangle_strip, max_vertices = 4) out;
 
     void main() {
+        // default setup for macro to work
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
+        vec2 EDGE_DIR;
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * 16.0;
-
-        vec4 p;
-
-        p = p0w + gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w - gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_edge_verts(p0, p1);
         EndPrimitive();
     }
     """
 
     FRAG_GLSL = """
     uniform vec4 color;
-    out vec4 fragColor;
+    uniform float lineWidth;
 
+    in float smoothline;
+    out vec4 fragColor;
     void main() {
+        vec2 co = gl_FragCoord.xy;
+
         fragColor = color;
+        if (lineSmooth) {
+            fragColor.a *= clamp((lineWidth + SMOOTH_WIDTH) * 0.5 - abs(smoothline), 0.0, 1.0); //test
+        }
     }
     """
 
@@ -219,6 +142,8 @@ class BaseDecorator:
         returns: iterable of blender objects
         """
         results = []
+        # NOTE: if the ObjectType is not on the list
+        # it will be also drawn with MiscDecorator
         decoration_presets = (
             "DIMENSION",
             "TEXT_LEADER",
@@ -231,6 +156,7 @@ class BaseDecorator:
             "ELEVATION",
             "SECTION",
             "TEXT",
+            "BATTING",
         )
         for obj in collection.all_objects:
             element = tool.Ifc.get_entity(obj)
@@ -307,7 +233,6 @@ class BaseDecorator:
 
     def get_editmesh_geom(self, obj):
         """Parses editmode mesh geometry into line segments"""
-        # TODO: avoid bmesh here?
         bm = bmesh.from_edit_mesh(obj.data)
         indices = [[v.index for v in edge.verts] for edge in bm.edges]
         vertices = [obj.matrix_world @ v.co for v in bm.verts]
@@ -327,10 +252,12 @@ class BaseDecorator:
         is_scale_dependant=True,
         fill_next_vertices=False,
         extra_float_kwargs={},
+        smoothing=True,
     ):
-        # use is_scale_dependant = False if shader is not using uniform viewportDrawingScale
-        # otherwise uniform will be discarded during the optimization process
-        # and you will get "ValueError: GPUShader.uniform_float: uniform viewportDrawingScale not found"
+        """use `is_scale_dependant` = `False` if shader is not using uniform viewportDrawingScale
+        otherwise uniform will be discarded during the optimization process
+        and you will get `ValueError: GPUShader.uniform_float: uniform viewportDrawingScale not found`
+        """
 
         region = context.region
         region3d = context.region_data
@@ -356,16 +283,12 @@ class BaseDecorator:
 
         batch = GPUBatch(type="LINES", buf=vbo, elem=ibo)
 
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
         self.shader.bind()
-        self.shader.uniform_float
         self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
         self.shader.uniform_float("winsize", (region.width, region.height))
         self.shader.uniform_float("color", color)
+        if smoothing:
+            self.shader.uniform_float("lineWidth", 1.0)
 
         if is_scale_dependant:
             # Horrific prototype code
@@ -380,6 +303,7 @@ class BaseDecorator:
         for kwarg, value in extra_float_kwargs.items():
             self.shader.uniform_float(kwarg, value)
 
+        gpu.state.blend_set("ALPHA")
         batch.draw(self.shader)
 
     def draw_label(
@@ -516,14 +440,14 @@ class DimensionDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
     uniform float use_oblique_style;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
 
-    void oblique_dimension_head(in vec4 dir, in float size, in float angle, out vec4 head[OBLIQUE_HEAD_VERTS]) {
+    void oblique_dimension_head(in vec4 dir, in float size, 
+        in float angle, out vec4 head[OBLIQUE_HEAD_VERTS]) {
         float c = cos(angle), s = sin(angle);
         vec4 ortho = vec4(-dir.y, dir.x, 0, 0);
         head[0] = -dir * size*0.66;
@@ -544,69 +468,49 @@ class DimensionDecorator(BaseDecorator):
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
         vec4 edge = p1w - p0w, dir = normalize(edge);
 
-        vec4 p;
+        vec4 p, p_next;
+        vec2 EDGE_DIR;
 
         if (use_oblique_style > 0) {
             vec4 head[OBLIQUE_HEAD_VERTS];
             oblique_dimension_head(dir, viewportDrawingScale * OLBIQUE_SYMBOL_SIZE, OBLIQUE_SYMBOL_ANGLE, head);
 
             // start edge arrow
-            for (int i = 0; i < OBLIQUE_HEAD_VERTS; i++) {
-                gl_Position = WIN2CLIP((p0w + head[i]));
-                EmitVertex();
+            p_next = WIN2CLIP( (p0w + head[0]) );
+            for (int i = 0; i < OBLIQUE_HEAD_VERTS-1; i++) {
+                do_edge_verts_win( (p0w + head[i]),  (p0w + head[i+1]) );
             }
             EndPrimitive();
 
             // end edge arrow
-            for (int i = 0; i < OBLIQUE_HEAD_VERTS; i++) {
-                gl_Position = WIN2CLIP((p1w - head[i]));
-                EmitVertex();
+            p_next = WIN2CLIP( (p1w + head[0]) );
+            for (int i = 0; i < OBLIQUE_HEAD_VERTS-1; i++) {
+                do_edge_verts_win( (p1w + head[i]),  (p1w + head[i+1]) );
             }
             EndPrimitive();
 
             // stem
-            gl_Position = p0;
-            EmitVertex();
-            gl_Position = p1;
-            EmitVertex();
-            EndPrimitive();
+            do_edge_verts(p0, p1);
+            EndPrimitive();      
+
         } else {
             vec4 head[3];
             arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
             // start edge arrow
-            gl_Position = p0;
-            EmitVertex();
-            p = p0w + head[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p0w + head[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            gl_Position = p0;
-            EmitVertex();
+            do_edge_verts( p0, WIN2CLIP( (p0w + head[1]) ) ); 
+            do_edge_verts_win( p0w + head[1], p0w + head[2] ); 
+            do_edge_verts( WIN2CLIP( p0w + head[2] ), p0 ); 
             EndPrimitive();
 
             // end edge arrow
-            gl_Position = p1;
-            EmitVertex();
-            p = p1w - head[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w - head[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            gl_Position = p1;
-            EmitVertex();
+            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) ); 
+            do_edge_verts_win( p1w - head[1], p1w - head[2] ); 
+            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 ); 
             EndPrimitive();
 
             // stem, with gaps for arrows
-            p = p0w + head[0];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w - head[0];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_edge_verts_win( p0w + head[0], p1w - head[0] );
             EndPrimitive();
         }
     }
@@ -655,18 +559,19 @@ class AngleDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
     in uint type[];
     in vec4 v_next_vert[];
     
     // per edge shader
     void main() {
+        // default setup for macro to work
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
+        vec2 EDGE_DIR;
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         vec4 p2 = v_next_vert[1];
@@ -675,15 +580,10 @@ class AngleDecorator(BaseDecorator):
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
         vec4 p2w = CLIP2WIN(p2);
         vec4 edge0 = p1w - p0w, dir = normalize(edge0);
-
         vec4 p;
+
         // draw a segment line
-        p = p0w;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p1w;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_edge_verts(p0, p1);
         EndPrimitive();
 
         // end edge with angle circle for the non-last segment
@@ -710,9 +610,8 @@ class AngleDecorator(BaseDecorator):
                 circle_head_data,
                 angle_segs);
 
-            for(int i=0; i<angle_segs+1; i++) {
-                p = p1w + circle_head_data[i];
-                gl_Position = WIN2CLIP(p);
+            for(int i=0; i<angle_segs; i++) {
+                do_edge_verts_win( p1w + circle_head_data[i], p1w + circle_head_data[i+1] );
                 EmitVertex();
             }
             EndPrimitive();
@@ -782,16 +681,16 @@ class LeaderDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
     in uint type[];
 
     void main() {
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
+        vec2 EDGE_DIR;
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
@@ -807,27 +706,16 @@ class LeaderDecorator(BaseDecorator):
             vec4 head[3];
             arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
-            gl_Position = p1;
-            EmitVertex();
-            p = p1w - head[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w - head[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            gl_Position = p1;
-            EmitVertex();
+            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) );
+            do_edge_verts_win( p1w - head[1], p1w - head[2] );
+            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 );
             EndPrimitive();
 
             gap1 = dir * viewportDrawingScale * ARROW_SIZE;
         }
 
-        // stem, adjusted for and arrow
-        gl_Position = p0;
-        EmitVertex();
-        p = p1w - gap1;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        // stem, adjusted for an arrow
+        do_edge_verts_win( p0w, p1w - gap1 );
         EndPrimitive();
     }
     """
@@ -873,16 +761,16 @@ class RadiusDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
     in uint type[];
 
     void main() {
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
+        vec2 EDGE_DIR;
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
@@ -898,27 +786,16 @@ class RadiusDecorator(BaseDecorator):
             vec4 head[3];
             arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
-            gl_Position = p1;
-            EmitVertex();
-            p = p1w - head[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w - head[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            gl_Position = p1;
-            EmitVertex();
+            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) );
+            do_edge_verts_win( p1w - head[1], p1w - head[2] );
+            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 );
             EndPrimitive();
 
             gap1 = dir * viewportDrawingScale * ARROW_SIZE;
         }
 
-        // stem, adjusted for and arrow
-        gl_Position = p0;
-        EmitVertex();
-        p = p1w - gap1;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        // stem, adjusted for an arrow
+        do_edge_verts_win( p0w, p1w - gap1 );
         EndPrimitive();
     }
     """
@@ -965,16 +842,16 @@ class FallDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
     in uint type[];
 
     void main() {
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
+        vec2 EDGE_DIR;
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
@@ -990,27 +867,16 @@ class FallDecorator(BaseDecorator):
             vec4 head[3];
             arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
-            gl_Position = p1;
-            EmitVertex();
-            p = p1w - head[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w - head[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            gl_Position = p1;
-            EmitVertex();
+            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) );
+            do_edge_verts_win( p1w - head[1], p1w - head[2] );
+            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 );
             EndPrimitive();
 
             gap1 = dir * viewportDrawingScale * ARROW_SIZE;
         }
 
-        // stem, adjusted for and arrow
-        gl_Position = p0;
-        EmitVertex();
-        p = p1w - gap1;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        // stem, adjusted for an arrow
+        do_edge_verts_win( p0w, p1w - gap1 );
         EndPrimitive();
     }
     """
@@ -1087,16 +953,16 @@ class StairDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
     in uint type[];
 
     void main() {
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
+        vec2 EDGE_DIR;
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
@@ -1111,15 +977,11 @@ class StairDecorator(BaseDecorator):
         if (t0 == 1u) {
             vec4 head[CIRCLE_SEGS];
             circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
-
-            for(int i=0; i<CIRCLE_SEGS; i++) {
-                p = p0w + head[i];
-                gl_Position = WIN2CLIP(p);
-                EmitVertex();
+        
+            for(int i=0; i<CIRCLE_SEGS-1; i++) {
+                do_edge_verts_win(p0w + head[i], p0w + head[i+1]);
             }
-            p = p0w + head[0];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_edge_verts_win( p0w + head[CIRCLE_SEGS-1], p0w + head[0] );
             EndPrimitive();
 
             gap0 = dir * viewportDrawingScale * CIRCLE_SIZE;
@@ -1130,25 +992,13 @@ class StairDecorator(BaseDecorator):
             vec4 head[3];
             arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
-            p = p1w - head[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-
-            gl_Position = p1;
-            EmitVertex();
-
-            p = p1w - head[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_edge_verts( WIN2CLIP( p1w - head[1] ), p1 );
+            do_edge_verts( p1, WIN2CLIP( p1w - head[2] ) );
             EndPrimitive();
         }
 
         // stem, with gaps for edge decoration
-        p = p0w + gap0;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        gl_Position = p1;
-        EmitVertex();
+        do_edge_verts( p0, p1 );
         EndPrimitive();
     }
     """
@@ -1170,17 +1020,17 @@ class HiddenDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
 
     out float dist; // distance from starging point along segment
 
     void main() {
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
+        vec2 EDGE_DIR;
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
@@ -1193,13 +1043,10 @@ class HiddenDecorator(BaseDecorator):
         // NB: something should be used to affect position, otherwise compiler eliminates winsize
 
         dist = 0;
-        p = p0w + gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_vertex_win( p0w + gap, dir.xy);
+        
         dist = length(edge);
-        p = p1w - gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_vertex_win( p1w - gap, dir.xy);
         EndPrimitive();
     }
     """
@@ -1207,13 +1054,20 @@ class HiddenDecorator(BaseDecorator):
     FRAG_GLSL = """
     uniform float viewportDrawingScale;
     uniform vec4 color;
+    uniform float lineWidth;
+
     in float dist;
+    in float smoothline;
     out vec4 fragColor;
 
     void main() {
         uint bit = uint(fract(dist / (viewportDrawingScale * DASH_SIZE)) * 32);
         if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
+
         fragColor = color;
+        if (lineSmooth) {
+            fragColor.a *= clamp((lineWidth + SMOOTH_WIDTH) * 0.5 - abs(smoothline), 0.0, 1.0);
+        }
     }
     """
 
@@ -1229,17 +1083,15 @@ class MiscDecorator(BaseDecorator):
     objecttype = "MISC"
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
 
     out float dist; // distance from starging point along segment
-
+    
     void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
+        DEFAULT_SETUP();
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
@@ -1250,26 +1102,29 @@ class MiscDecorator(BaseDecorator):
         vec4 p;
 
         // NB: something should be used to affect position, otherwise compiler eliminates winsize
-
+        
         dist = 0;
-        p = p0w + gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_vertex_win( p0w + gap, dir.xy);
+        
         dist = length(edge);
-        p = p1w - gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_vertex_win( p1w - gap, dir.xy);
         EndPrimitive();
     }
     """
 
     FRAG_GLSL = """
     uniform vec4 color;
+    uniform float lineWidth;
+
     in float dist;
+    in float smoothline;
     out vec4 fragColor;
 
     void main() {
         fragColor = color;
+        if (lineSmooth) {
+            fragColor.a *= clamp((lineWidth + SMOOTH_WIDTH) * 0.5 - abs(smoothline), 0.0, 1.0);
+        }
     }
     """
 
@@ -1281,6 +1136,7 @@ class MiscDecorator(BaseDecorator):
         self.draw_lines(context, obj, verts, idxs, is_scale_dependant=False)
 
 
+# TODO: outdated code?
 class LevelDecorator(BaseDecorator):
     def get_splines(self, obj):
         """Iterates through splines
@@ -1314,16 +1170,14 @@ class PlanLevelDecorator(LevelDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
     in uint type[];
 
     void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
+        DEFAULT_SETUP();
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
@@ -1339,36 +1193,23 @@ class PlanLevelDecorator(LevelDecorator):
             vec4 head_o[CIRCLE_SEGS];
             circle_head(viewportDrawingScale * CIRCLE_SIZE, head_o);
 
-            for(int i=0; i<CIRCLE_SEGS; i++) {
-                p = p1w + head_o[i];
-                gl_Position = WIN2CLIP(p);
-                EmitVertex();
+            for(int i=0; i<CIRCLE_SEGS-1; i++) {
+                do_edge_verts_win(p1w + head_o[i], p1w + head_o[i+1]);
             }
-            p = p1w + head_o[0];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_edge_verts_win( p1w + head_o[CIRCLE_SEGS-1], p1w + head_o[0] );
             EndPrimitive();
 
             vec4 head_x[3];
             cross_head(dir, viewportDrawingScale * CROSS_SIZE, head_x);
 
-            p = p1w + head_x[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w + head_x[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_edge_verts_win( p1w + head_x[1], p1w + head_x[2] );
             EndPrimitive();
 
             gap1 = head_x[0];
         }
 
-        // stem, adjusted for and arrow
-        gl_Position = p0;
-        EmitVertex();
-        p = p1w + gap1;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        // stem, adjusted for an arrow
+        do_edge_verts_win( p0w, p1w + gap1 );
         EndPrimitive();
     }
     """
@@ -1408,11 +1249,10 @@ class SectionLevelDecorator(LevelDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
     in uint type[];
     out float dist; // distance from starging point along segment
 
@@ -1428,8 +1268,7 @@ class SectionLevelDecorator(LevelDecorator):
     }
 
     void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
+        DEFAULT_SETUP();
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
@@ -1445,21 +1284,18 @@ class SectionLevelDecorator(LevelDecorator):
             vec4 head[4];
             callout_head(dir, head);
 
-            for(int i=0; i<4; i++) {
-                p = p0w + head[i];
-                gl_Position = WIN2CLIP(p);
-                EmitVertex();
+            for(int i=0; i<3; i++) {
+                do_edge_verts_win( p0w + head[i], p0w + head[i+1] );
             }
             EndPrimitive();
         }
 
         // stem
         dist = 0;
-        gl_Position = p0;
-        EmitVertex();
-        dist = length(p1w - p0w);
-        gl_Position = p1;
-        EmitVertex();
+        do_vertex_win( p0w + gap, dir.xy);
+        
+        dist = length(edge);
+        do_vertex_win( p1w - gap, dir.xy);
         EndPrimitive();
     }
     """
@@ -1522,16 +1358,13 @@ class BreakDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
 
     void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-
+        DEFAULT_SETUP();
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1), pmw = (p0w + p1w) * .5;
@@ -1545,27 +1378,11 @@ class BreakDecorator(BaseDecorator):
 
         // TODO: check if there's enough length for zigzag
 
-        gl_Position = p0;
-        EmitVertex();
-
-        p = pmw;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-
-        p = pmw + quart - side;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-
-        p = pmw + quart * 3 + side;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-
-        p = pmw + quart * 4;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-
-        gl_Position = p1;
-        EmitVertex();
+        do_edge_verts( p0, WIN2CLIP(pmw) );
+        do_edge_verts_win ( pmw, pmw + quart - side );
+        do_edge_verts_win ( pmw + quart - side, pmw + quart * 3 + side );
+        do_edge_verts_win ( pmw + quart * 3 + side, pmw + quart * 4 );
+        do_edge_verts( WIN2CLIP(pmw + quart * 4), p1 );
         EndPrimitive();
     }
     """
@@ -1590,16 +1407,16 @@ class BattingDecorator(BaseDecorator):
         BaseDecorator.DEF_GLSL
         + """
         #define PATTERN_SEGMENT_LENGTH 2
+        #define vert_batting_space(ref, vert) (ref) + vec4(m_edge_space * ( (vert) * batting_dimensions ), 0, 0)
     """
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
     uniform float batting_thickness_winspace;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=256) out;
+    layout(triangle_strip, max_vertices=256) out;
 
     void place_vert(vec4 ref_point, vec2 win_space_vert) {
         vec4 win2clip = matWIN2CLIP();
@@ -1609,16 +1426,12 @@ class BattingDecorator(BaseDecorator):
     }
 
     void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-
+        DEFAULT_SETUP();
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1), pmw = (p0w + p1w) * .5;
         vec4 edge = p1w - p0w, dir = normalize(edge);
-        
-        vec4 gap = dir * 16.0; // TODO: never used?
-        
+                
         float segment_width = batting_thickness_winspace / 2.5;
         vec2 batting_dimensions = vec2(segment_width, batting_thickness_winspace);
         // need to multiply by viewportDrawingScale
@@ -1626,20 +1439,17 @@ class BattingDecorator(BaseDecorator):
         // but since we use winspace batting dimensions we skip it
         mat2 m_edge_space = mat2( dir.xy, dir.yx*vec2(1,-1) );
         
-        // simplied rectangle + cross version to indicate batting
-        place_vert(p0w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
-        place_vert(p0w, m_edge_space * ( -vec2(0, 0.5) * batting_dimensions ) );
-        place_vert(p1w, m_edge_space * ( -vec2(0, 0.5) * batting_dimensions ) );
-        place_vert(p1w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
-        place_vert(p0w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
+        // simplified rectangle + cross version to indicate batting
+        vec4 off_y = vec4(m_edge_space * ( vec2(0, 0.5) * batting_dimensions ), 0, 0);
+        do_edge_verts_win( p0w + off_y, p0w - off_y );
+        do_edge_verts_win( p0w - off_y, p1w - off_y );
+        do_edge_verts_win( p1w - off_y, p1w + off_y );
+        do_edge_verts_win( p1w + off_y, p0w + off_y );
         EndPrimitive();
-        place_vert(p0w, m_edge_space * ( -vec2(0, 0.5) * batting_dimensions ) );
-        place_vert(p1w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
+        do_edge_verts_win( p0w - off_y, p1w + off_y );
         EndPrimitive();
-        place_vert(p0w, m_edge_space * ( vec2(0, 0.5) * batting_dimensions ) );
-        place_vert(p1w, m_edge_space * ( -vec2(0, 0.5) * batting_dimensions ) );
+        do_edge_verts_win( p0w + off_y, p1w - off_y );
         EndPrimitive();
-
 
         // TODO: more fancy pattern? possibly use of frag shader?
         // we're not using complicated patterns because of the
@@ -1713,75 +1523,56 @@ class GridDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=256) out;
 
     out float dist; // distance from starging point along segment
 
     void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-
+        DEFAULT_SETUP();
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
         vec4 edge = p1w - p0w, dir = normalize(edge);
         vec4 gap = dir * CIRCLE_SIZE * viewportDrawingScale;
 
-        vec4 p;
-
         vec4 head[CIRCLE_SEGS];
         circle_head(CIRCLE_SIZE * viewportDrawingScale, head);
 
-        dist = 0;
-
         // start edge circle
-        for(int i=0; i<CIRCLE_SEGS; i++) {
-            p = p0w + head[i];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-        }
-        p = p0w + head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_circle_head(p0w, head);
         EndPrimitive();
 
         // end edge circle
-        for(int i=0; i<CIRCLE_SEGS; i++) {
-            p = p1w + head[i];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-        }
-        p = p1w + head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_circle_head(p1w, head);
         EndPrimitive();
 
         // stem
         dist = 0;
-        p = p0w + gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_vertex_win( p0w + gap, dir.xy);
         dist = length(edge);
-        p = p1w - gap;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_vertex_win( p1w - gap, dir.xy);
         EndPrimitive();
     }
     """
 
     FRAG_GLSL = """
     uniform vec4 color;
+    uniform float lineWidth;
+    in float smoothline;
     in float dist;
     out vec4 fragColor;
 
     void main() {
         uint bit = uint(fract(dist / DASH_SIZE) * 32);
         if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
+
         fragColor = color;
+        if (lineSmooth) {
+            fragColor.a *= clamp((lineWidth + SMOOTH_WIDTH) * 0.5 - abs(smoothline), 0.0, 1.0);
+        }
     }
     """
 
@@ -1801,7 +1592,7 @@ class GridDecorator(BaseDecorator):
             verts = self.get_editmesh_geom(obj)
         else:
             verts = self.get_mesh_geom(obj)
-        self.draw_lines(context, obj, verts, [(0, 1)])
+        self.draw_lines(context, obj, verts, [(0, 1)], smoothing=True)
         self.draw_labels(context, obj, verts)
 
     def draw_labels(self, context, obj, vertices):
@@ -1830,25 +1621,13 @@ class ElevationDecorator(LevelDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
-
-    void triangle_head(in vec4 side, in vec4 dir, in float length, in float width, in float radius, out vec4 head[5]) {
-        vec4 nose = side * length;
-        vec4 ear = dir * width;
-        head[0] = side * -radius;
-        head[1] = nose * -.5;
-        head[2] = vec4(0) + ear;
-        head[3] = nose * .5;
-        head[4] = side * radius;
-    }
+    layout(triangle_strip, max_vertices=128) out;
 
     void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
+        DEFAULT_SETUP();
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
@@ -1863,42 +1642,17 @@ class ElevationDecorator(LevelDecorator):
         vec4 head5[5];
 
         // start edge circle
-        for(int i=0; i<CIRCLE_SEGS; i++) {
-            p = p0w + head[i];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-        }
-        p = p0w + head[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_circle_head(p0w, head);
         EndPrimitive();
 
         // edge triangle
         triangle_head(side, dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
-        p = p0w + head5[0];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head5[1];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head5[2];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head5[3];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + head5[4];
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        do_triangle_head(p0w, head5);
         EndPrimitive();
 
         // reference divider
-        p = p0w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-        p = p0w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
+        vec4 offset = vec4(1, 0, 0, 0) * viewportDrawingScale * CIRCLE_SIZE;
+        do_edge_verts_win( p0w + offset, p0w - offset );
         EndPrimitive();
     }
     """
@@ -1923,7 +1677,6 @@ class SectionDecorator(LevelDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
     uniform float connect_markers;
     uniform float display_start_symbol;
@@ -1932,27 +1685,14 @@ class SectionDecorator(LevelDecorator):
     uniform float display_end_circle;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
-
-    void triangle_head(in vec4 side, in vec4 dir, in float length, in float width, in float radius, out vec4 head[5]) {
-        vec4 nose = side * length;
-        vec4 ear = dir * width;
-        head[0] = side * -radius;
-        head[1] = nose * -.5;
-        head[2] = vec4(0) + ear;
-        head[3] = nose * .5;
-        head[4] = side * radius;
-    }
+    layout(triangle_strip, max_vertices=256) out;
 
     void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
+        DEFAULT_SETUP();
 
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
         vec4 edge = p1w - p0w, side = normalize(edge);
-        vec4 gap = side * viewportDrawingScale * CIRCLE_SIZE;
         vec4 edge_ortho_dir = -vec4(cross(vec3(side.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
         vec4 p;
 
@@ -1960,80 +1700,37 @@ class SectionDecorator(LevelDecorator):
         circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
 
         vec4 head5[5];
+        triangle_head(side, edge_ortho_dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
 
         // start edge circle
         if (display_start_circle > 0) {
-            for(int i=0; i<CIRCLE_SEGS; i++) {
-                p = p0w + head[i];
-                gl_Position = WIN2CLIP(p);
-                EmitVertex();
-            }
-            p = p0w + head[0];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_circle_head(p0w, head);
             EndPrimitive();
         }
 
         if (display_start_symbol > 0) {
             // start edge triangle
-            triangle_head(side, edge_ortho_dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
-            p = p0w + head5[0];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p0w + head5[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p0w + head5[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p0w + head5[3];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p0w + head5[4];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_triangle_head(p0w, head5);
             EndPrimitive();
         }
 
         // end edge circle
         if (display_end_circle > 0) {
-            for(int i=0; i<CIRCLE_SEGS; i++) {
-                p = p1w - head[i];
-                gl_Position = WIN2CLIP(p);
-                EmitVertex();
-            }
-            p = p1w - head[0];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_circle_head(p1w, head);
             EndPrimitive();
         }
 
         // end edge triangle
         if (display_end_symbol > 0) {
-            triangle_head(side, edge_ortho_dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
-            p = p1w + head5[0];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w + head5[1];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w + head5[2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w + head5[3];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w + head5[4];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_triangle_head(p1w, head5);
             EndPrimitive();
         }
 
-        float divider_line_size;
-        if (connect_markers > 0) {
-            divider_line_size = CIRCLE_SIZE;
-        } else {
-            divider_line_size = CIRCLE_SIZE * 3;
+        vec4 divider_line_size[2];
+        divider_line_size[0] = side * viewportDrawingScale * CIRCLE_SIZE;
+        divider_line_size[1] = side * viewportDrawingScale * CIRCLE_SIZE;
+        if (connect_markers == 0) {
+            divider_line_size[0] = divider_line_size[0] * 3;
         }
 
         // NOTE: basically we consider first vertex to be
@@ -2041,36 +1738,25 @@ class SectionDecorator(LevelDecorator):
         // which is a bit inconsistent with svg
         // but not that anyone will use multiple edge section annotation
 
+        vec4 gap[2];
+
         // start reference divider
         if (display_start_symbol > 0) {
-            p = p0w + side * viewportDrawingScale * divider_line_size;
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p0w - side * viewportDrawingScale * CIRCLE_SIZE;
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_edge_verts_win( p0w + divider_line_size[0], p0w - divider_line_size[1] );
             EndPrimitive();
         }
 
         // end reference divider
         if (display_end_symbol > 0) {
-            p = p1w + side * viewportDrawingScale * CIRCLE_SIZE;
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w - side * viewportDrawingScale * divider_line_size;
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_edge_verts_win( p1w + divider_line_size[1], p1w - divider_line_size[0] );
             EndPrimitive();
         }
 
         // stem
         if (connect_markers > 0) {
-            p = p0w + (display_start_symbol > 0 ? gap : vec4(0));
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p1w - (display_end_symbol > 0 ? gap : vec4(0));
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            gap[0] = (display_start_symbol > 0 ? (side * viewportDrawingScale * CIRCLE_SIZE) : vec4(0));
+            gap[1] = (display_end_symbol > 0 ? (side * viewportDrawingScale * CIRCLE_SIZE) : vec4(0));
+            do_edge_verts_win( p0w + gap[0], p1w - gap[1] );
             EndPrimitive();
         }
     }
@@ -2082,9 +1768,7 @@ class SectionDecorator(LevelDecorator):
         else:
             verts, idxs = self.get_mesh_geom(obj)
 
-        # TODO: add dashed line to shader
-        # mind the vertices limit
-        # ref: https://docs.blender.org/api/main/gpu.html#custom-shader-for-dotted-3d-line
+        # TODO: add dashed line to shader with frag shader
         display_data = DecoratorData.get_section_markers_display_data(obj)
         self.draw_lines(
             context,
@@ -2117,11 +1801,10 @@ class TextDecorator(BaseDecorator):
     )
 
     GEOM_GLSL = """
-    uniform vec2 winsize;
     uniform float viewportDrawingScale;
 
     layout(lines) in;
-    layout(line_strip, max_vertices=MAX_POINTS) out;
+    layout(triangle_strip, max_vertices=MAX_POINTS) out;
 
     void circle_head_asterisk(in float size, out vec4 head[CIRCLE_SEGS_ASTERISK]) {
         float angle_d = PI * 2 / CIRCLE_SEGS_ASTERISK;
@@ -2132,8 +1815,10 @@ class TextDecorator(BaseDecorator):
     }
 
     void main() {
+        // default setup for macro to work
         vec4 clip2win = matCLIP2WIN();
         vec4 win2clip = matWIN2CLIP();
+        vec2 EDGE_DIR;
 
         vec4 p0 = gl_in[0].gl_Position;
         vec4 p0w = CLIP2WIN(p0);
@@ -2143,12 +1828,7 @@ class TextDecorator(BaseDecorator):
         circle_head_asterisk(viewportDrawingScale * CIRCLE_SIZE, head);
 
         for (int i=0; i < CIRCLE_SEGS_ASTERISK/2; i++) {
-            p = p0w + head[i];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
-            p = p0w + head[i+CIRCLE_SEGS_ASTERISK/2];
-            gl_Position = WIN2CLIP(p);
-            EmitVertex();
+            do_edge_verts_win( p0w + head[i], p0w + head[i+CIRCLE_SEGS_ASTERISK/2] );
             EndPrimitive();
         }
     }
