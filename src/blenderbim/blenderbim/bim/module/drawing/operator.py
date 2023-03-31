@@ -668,10 +668,15 @@ class AddAnnotation(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
     object_type: bpy.props.StringProperty()
     data_type: bpy.props.StringProperty()
+    description: bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file() and context.scene.camera
+
+    @classmethod
+    def description(cls, context, operator):
+        return operator.description or ""
 
     def _execute(self, context):
         drawing = tool.Ifc.get_entity(context.scene.camera)

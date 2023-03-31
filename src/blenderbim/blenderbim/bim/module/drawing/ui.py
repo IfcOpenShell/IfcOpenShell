@@ -446,6 +446,7 @@ class BIM_PT_annotation_utilities(Panel):
         op = row.operator("bim.add_annotation", text="Stair Arrow", icon="SCREEN_BACK")
         op.object_type = "STAIR_ARROW"
         op.data_type = "curve"
+        op.description = "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation"
         op = row.operator("bim.add_annotation", text="Hidden", icon="CON_TRACKTO")
         op.object_type = "HIDDEN_LINE"
         op.data_type = "mesh"
@@ -470,6 +471,7 @@ class BIM_PT_annotation_utilities(Panel):
         op = row.operator("bim.add_annotation", text="Batting", icon="FORCE_FORCE")
         op.object_type = "BATTING"
         op.data_type = "mesh"
+        op.description = "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set"
         op = row.operator("bim.add_annotation", text="Fill Area", icon="NODE_TEXTURE")
         op.object_type = "FILL_AREA"
 
