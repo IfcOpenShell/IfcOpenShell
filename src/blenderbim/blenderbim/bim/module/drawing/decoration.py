@@ -358,7 +358,7 @@ class BaseDecorator:
 
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glEnable(bgl.GL_BLEND)
+        gpu.state.blend_set("ALPHA")
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
 
         self.shader.bind()
@@ -2065,6 +2065,7 @@ class SectionDecorator(LevelDecorator):
 
         # TODO: add dashed line to shader
         # mind the vertices limit
+        # ref: https://docs.blender.org/api/main/gpu.html#custom-shader-for-dotted-3d-line
         display_data = DecoratorData.get_section_markers_display_data(obj)
         self.draw_lines(
             context,
