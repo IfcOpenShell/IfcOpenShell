@@ -122,7 +122,7 @@ void print_usage(bool suggest_help = true)
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
 #endif
 #ifdef IFOPSH_WITH_CGAL
-		<< "  .city.json            City JSON format for geospatial data\n"
+		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
@@ -791,6 +791,7 @@ int main(int argc, char** argv) {
 	else if (output_extension == CITY_JSON) {
 		geobim_settings settings;
 		settings.input_filenames = { IfcUtil::path::to_utf8(input_filename) };
+		settings.file = { new IfcParse::IfcFile(IfcUtil::path::to_utf8(input_filename)) };
 		settings.cityjson_output_filename = IfcUtil::path::to_utf8(output_filename);
 		// @todo
 		settings.radii = { "0.05" };
@@ -801,7 +802,7 @@ int main(int argc, char** argv) {
 		settings.minkowski_triangles = false;
 		settings.no_erosion = false;
 		settings.spherical_padding = false;
-		
+
 		settings.settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
 		settings.settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
 		settings.settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
@@ -809,8 +810,16 @@ int main(int argc, char** argv) {
 		settings.settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		settings.settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, !settings.apply_openings);
 
-		settings.entity_names = include_filter.values;
-		settings.entity_names_included = true;
+		if (include_filter.type != geom_filter::UNUSED) {
+			settings.entity_names = include_filter.values;
+			settings.entity_names_included = true;
+		} else if (exclude_filter.type != geom_filter::UNUSED) {
+			settings.entity_names = exclude_filter.values;
+			settings.entity_names_included = false;
+		} else {
+			settings.entity_names = { { "IfcSpace", "IfcOpeningElement" } };
+			settings.entity_names_included = false;
+		}
 		
 		perform(settings);
 		
