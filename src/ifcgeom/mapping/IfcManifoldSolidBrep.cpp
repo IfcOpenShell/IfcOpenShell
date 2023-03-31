@@ -32,7 +32,12 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcManifoldSolidBrep* inst) {
 	}
 #endif
 
-	auto solid = map_to_collection<taxonomy::solid>(this, voids);
+	taxonomy::solid* solid;
+	if (voids->size()) {
+		solid = map_to_collection<taxonomy::solid>(this, voids);
+	} else {
+		solid = new taxonomy::solid;
+	}
 	solid->children.insert(solid->children.begin(), map(inst->Outer()));
 
 	return solid;
