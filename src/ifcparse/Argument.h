@@ -27,32 +27,15 @@
 #include <algorithm>
 
 #include "ifc_parse_api.h"
-
-#include "../ifcparse/aggregate_of_instance.h"
+#include "ArgumentType.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/logic/tribool.hpp>
 
-/*
-namespace boost {
-	namespace logic {
-		class tribool {
-
-		};
-	}
-}
-*/
-
-class Argument;
-
 class aggregate_of_instance;
 class aggregate_of_aggregate_of_instance;
 
-class IfcEntityInstanceData;
-namespace IfcParse {
-	class IfcFile;
-}
 namespace IfcUtil {
 	class IfcBaseClass;
 
@@ -76,11 +59,11 @@ public:
 	virtual operator std::vector<double>() const;
 	virtual operator std::vector<std::string>() const;
 	virtual operator std::vector<boost::dynamic_bitset<> >() const;
-	virtual operator aggregate_of_instance::ptr() const;
+	virtual operator boost::shared_ptr<aggregate_of_instance>() const;
 
 	virtual operator std::vector< std::vector<int> >() const;
 	virtual operator std::vector< std::vector<double> >() const;
-	virtual operator aggregate_of_aggregate_of_instance::ptr() const;
+	virtual operator boost::shared_ptr<aggregate_of_aggregate_of_instance>() const;
 
 	virtual bool isNull() const = 0;
 	virtual unsigned int size() const = 0;
