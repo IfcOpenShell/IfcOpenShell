@@ -92,51 +92,17 @@ class Annotator:
 
     @staticmethod
     def add_plane_to_annotation(obj):
-        co1, co2, co3, co4 = Annotator.get_placeholder_coords()
-        co1 = obj.matrix_world.inverted() @ co1  # bot left
-        co2 = obj.matrix_world.inverted() @ co2  # top left
-        co3 = obj.matrix_world.inverted() @ co3  # bot right
-        co4 = obj.matrix_world.inverted() @ co4  # top right
+        # default order = bot left, top left, bot right, top right
+        # therefore we redefine the order
+        face_verts = [0, 2, 3, 1]
 
-        obj.data.vertices.add(4)
-        v1 = obj.data.vertices[-4]
-        v2 = obj.data.vertices[-3]
-        v3 = obj.data.vertices[-2]
-        v4 = obj.data.vertices[-1]
-        v1.co = co4
-        v2.co = co2
-        v3.co = co1
-        v4.co = co3
+        verts_world_space = Annotator.get_placeholder_coords()
+        verts_local = [obj.matrix_world.inverted() @ v for v in verts_world_space]
+        bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
+        new_verts = [bm.verts.new(v) for v in verts_local]
 
-        obj.data.edges.add(4)
-        e1 = obj.data.edges[-4]
-        e2 = obj.data.edges[-3]
-        e3 = obj.data.edges[-2]
-        e4 = obj.data.edges[-1]
-        e1.vertices = (v1.index, v2.index)
-        e2.vertices = (v2.index, v3.index)
-        e3.vertices = (v3.index, v4.index)
-        e4.vertices = (v4.index, v1.index)
-
-        obj.data.loops.add(4)
-        l1 = obj.data.loops[-4]
-        l2 = obj.data.loops[-3]
-        l3 = obj.data.loops[-2]
-        l4 = obj.data.loops[-1]
-        l1.vertex_index = v1.index
-        l1.edge_index = e1.index
-        l2.vertex_index = v2.index
-        l2.edge_index = e2.index
-        l3.vertex_index = v3.index
-        l3.edge_index = e3.index
-        l4.vertex_index = v4.index
-        l4.edge_index = e4.index
-
-        obj.data.polygons.add(1)
-        p1 = obj.data.polygons[-1]
-        p1.vertices = (v1.index, v2.index, v3.index, v4.index)
-        p1.loop_start = l1.index
-        p1.loop_total = 4
+        bm.faces.new([new_verts[i] for i in face_verts])
+        tool.Blender.apply_bmesh(obj.data, bm)
         return obj
 
     @staticmethod
