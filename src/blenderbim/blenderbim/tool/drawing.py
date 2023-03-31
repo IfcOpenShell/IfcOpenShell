@@ -97,13 +97,18 @@ class Drawing(blenderbim.core.tool.Drawing):
                 arrow.parent = stair
 
                 # place the arrow
+                # NOTE: may not work correctly in EDIT mode
                 bbox = tool.Blender.get_object_bounding_box(stair)
+                float_is_zero = lambda f: 0.0001 >= f >= -0.0001
                 arrow.location = Vector((bbox["min_x"], (bbox["max_y"] - bbox["min_y"]) / 2, bbox["max_z"]))
+                last_step_x = max(v.co.x for v in stair.data.vertices if float_is_zero(v.co.z - bbox["max_z"]))
+
                 arrow.data.splines[0].points[0].co = Vector((0, 0, 0, 1))
-                arrow.data.splines[0].points[1].co = Vector((bbox["max_x"], 0, 0, 1))
+                arrow.data.splines[0].points[1].co = Vector((last_step_x, 0, 0, 1))
 
                 if not cls.get_assigned_product(arrow_element):
                     tool.Ifc.run("drawing.assign_product", relating_product=stair_entity, related_object=arrow_element)
+                pass
 
     @classmethod
     def create_camera(cls, name, matrix):
