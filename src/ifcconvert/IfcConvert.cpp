@@ -384,6 +384,7 @@ int main(int argc, char** argv) {
 		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
 		("no-wire-intersection-check", "Skip wire intersection check.")
 		("no-wire-intersection-tolerance", "Set wire intersection tolerance to 0.")
+		("exterior-only", "Uses the same geometric procedures for writing CityJSON but then for applied geometry formats.")
 		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
 						 "times increase for more permissive edge curves and fewer artifacts after "
 						 "boolean operations at the expense of geometric detail "
@@ -788,11 +789,15 @@ int main(int argc, char** argv) {
 		return exit_code;
 	}
 #ifdef IFOPSH_WITH_CGAL
-	else if (output_extension == CITY_JSON) {
+	else if (output_extension == CITY_JSON || output_extension == OBJ && vmap.count("exterior-only")) {
 		geobim_settings settings;
 		settings.input_filenames = { IfcUtil::path::to_utf8(input_filename) };
 		settings.file = { new IfcParse::IfcFile(IfcUtil::path::to_utf8(input_filename)) };
-		settings.cityjson_output_filename = IfcUtil::path::to_utf8(output_filename);
+		if (output_extension == OBJ) {
+			settings.obj_output_filename = IfcUtil::path::to_utf8(output_filename);
+		} else {
+			settings.cityjson_output_filename = IfcUtil::path::to_utf8(output_filename);
+		}
 		// @todo
 		settings.radii = { "0.05" };
 		settings.apply_openings = false;
