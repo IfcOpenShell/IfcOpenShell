@@ -602,10 +602,7 @@ namespace IfcGeom {
         /// Gets the representation of the current geometrical entity.
         Element* get()
         {
-            // TODO: Test settings and throw
-            Element* ret = 0;
-
-			ret = *task_result_iterator_;
+            auto ret = *task_result_iterator_;
 			
 			// If we want to organize the element considering their hierarchy
 			if (settings_.get(IteratorSettings::ELEMENT_HIERARCHY))
@@ -656,15 +653,10 @@ namespace IfcGeom {
             return ret;
         }
 
-		/// Gets the native (Open Cascade) representation of the current geometrical entity.
+		/// Gets the native (Open Cascade or CGAL) representation of the current geometrical entity.
 		BRepElement* get_native()
 		{
-			// TODO: Test settings and throw
-			if (num_threads_ != 1) {
-				return *native_task_result_iterator_;
-			} else {
-				return current_shape_model;
-			}
+			return *native_task_result_iterator_;
 		}
 
 		const Element* get_object(int id) {
