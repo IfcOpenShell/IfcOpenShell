@@ -1078,6 +1078,14 @@ IfcUtil::IfcBaseEntity* mapping::representation_of(const IfcUtil::IfcBaseEntity*
 		}
 	}
 
+	if (intersection->size() == 0 && settings_.context_ids().empty() && settings_.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) && settings_.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
+		for (auto& r : *of_product) {
+			if (r->RepresentationIdentifier() && *r->RepresentationIdentifier() == "Axis") {
+				intersection->push(r);
+			}
+		}
+	}
+
 	if (intersection->size() == 0) {
 		return nullptr;
 	} else {
@@ -1087,8 +1095,8 @@ IfcUtil::IfcBaseEntity* mapping::representation_of(const IfcUtil::IfcBaseEntity*
 			}
 			intersection_no_box->push(r);
 		}
-		if (intersection->size() > 1) {
-			Logger::Warning("Multiple applicable representations found for opening, selecting arbitrary");
+		if (intersection_no_box->size() > 1) {
+			Logger::Warning("Multiple applicable representations found for element, selecting arbitrary");
 		}
 		if (intersection_no_box->size()) {
 			return (*intersection_no_box->begin())->as<IfcUtil::IfcBaseEntity>();
