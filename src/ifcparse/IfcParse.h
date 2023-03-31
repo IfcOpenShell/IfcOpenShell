@@ -52,6 +52,7 @@
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcLogger.h"
 #include "../ifcparse/Argument.h"
+#include "../ifcparse/aggregate_of_instance.h"
 
 #include "../ifcparse/IfcSpfStream.h"
 

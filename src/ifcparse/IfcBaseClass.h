@@ -129,19 +129,10 @@ namespace IfcUtil {
 		Argument* get(const std::string& name) const;
 		
 		template <typename T>
-		T get_value(const std::string& name) const {
-			auto attr = get(name);
-			return (T)*attr;
-		}
+		T get_value(const std::string& name) const;
 		
 		template <typename T>
-		T get_value(const std::string& name, const T& default_value) const {
-			auto attr = get(name);
-			if (attr->isNull()) {
-				return default_value;
-			}
-			return (T)*attr;
-		}
+		T get_value(const std::string& name, const T& default_value) const;
 
 		boost::shared_ptr<aggregate_of_instance> get_inverse(const std::string& a) const;
 	};
@@ -155,6 +146,25 @@ namespace IfcUtil {
 		virtual const IfcParse::declaration& declaration() const = 0;
 	};
 
+}
+
+#include "../ifcparse/Argument.h"
+
+namespace IfcUtil {
+	template <typename T>
+	T IfcBaseEntity::get_value(const std::string& name) const {
+		auto attr = get(name);
+		return (T)*attr;
+	}
+	
+	template <typename T>
+	T IfcBaseEntity::get_value(const std::string& name, const T& default_value) const {
+		auto attr = get(name);
+		if (attr->isNull()) {
+			return default_value;
+		}
+		return (T)*attr;
+	}
 }
 
 #endif

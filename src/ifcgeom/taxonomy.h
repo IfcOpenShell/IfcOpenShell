@@ -11,7 +11,6 @@
 #include <string>
 #include <tuple>
 #include <exception>
-#include <cstdalign>
 
 // @todo don't do std::less but use hashing and cache hash values.
 
