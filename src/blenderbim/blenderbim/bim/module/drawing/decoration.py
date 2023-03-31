@@ -358,7 +358,7 @@ class BaseDecorator:
 
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        gpu.state.blend_set("ALPHA")
+        bgl.glEnable(bgl.GL_BLEND)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
 
         self.shader.bind()
