@@ -20,6 +20,7 @@ import bgl
 from mathutils import Matrix
 from gpu.types import GPUShader
 from gpu_extras.batch import batch_for_shader
+import gpu
 
 
 class BaseShader:
@@ -120,12 +121,11 @@ class BaseShader:
         self.prog.bind()
 
     def glenable(self):
-        bgl.glEnable(bgl.GL_BLEND)
+        gpu.state.blend_set("ALPHA")
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
         bgl.glBlendEquation(bgl.GL_FUNC_ADD)
 
-        # bgl.glEnable(bgl.GL_DEPTH_TEST)
-        # bgl.glDepthFunc(bgl.GL_LEQUAL)
+        # gpu.state.depth_test_set('LESS_EQUAL')
         # bgl.glDepthMask(True)
 
     def uniform_region(self, ctx):

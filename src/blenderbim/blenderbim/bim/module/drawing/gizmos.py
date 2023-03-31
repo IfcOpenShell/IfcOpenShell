@@ -273,7 +273,7 @@ class CustomGizmo:
             gpu.matrix.multiply_matrix(self.matrix_world)
             batch.draw()
 
-        bgl.glDisable(bgl.GL_BLEND)
+        gpu.state.blend_set("NONE")
 
 
 class OffsetHandle:
