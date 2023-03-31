@@ -298,6 +298,7 @@ class EditPset(bpy.types.Operator, Operator):
             bpy.ops.bim.load_cost_item_quantities()
 
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
+        tool.Blender.update_viewport()
 
 
 class RemovePset(bpy.types.Operator, Operator):
