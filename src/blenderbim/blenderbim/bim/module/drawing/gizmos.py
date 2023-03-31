@@ -18,10 +18,9 @@
 
 import bpy
 import blf
-import math
-import gpu, bgl
+import gpu
 from bpy import types
-from mathutils import Vector, Matrix
+from mathutils import Vector
 from mathutils import geometry
 from bpy_extras import view3d_utils
 from blenderbim.bim.module.drawing.shaders import DotsGizmoShader, ExtrusionGuidesShader, BaseLinesShader
@@ -500,7 +499,7 @@ class ExtrusionWidget(types.GizmoGroup):
         gz = self.guides = self.gizmos.new("BIM_GT_extrusion_guides")
         gz.matrix_basis = basis
         gz.color = gz.color_highlight = tuple(theme.gizmo_secondary)
-        gz.alpha = gz.alpha_highlight = 0.5
+        gz.alpha = gz.alpha_highlight = 0.75
         gz.use_draw_modal = True
         gz.target_set_prop("depth", prop, "value")
         gz.scale_value = scale_value
