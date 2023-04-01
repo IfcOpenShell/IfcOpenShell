@@ -709,13 +709,12 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
-                        building_objs.add(obj)
-                        building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     elif tool.Ifc.is_moved(opening_obj):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
-                        building_objs.add(obj)
+                    building_objs.add(obj)
+                    building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
