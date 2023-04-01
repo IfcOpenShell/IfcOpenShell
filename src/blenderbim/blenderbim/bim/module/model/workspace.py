@@ -190,12 +190,10 @@ class BimToolUI:
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
-            # unnecessary check because BIM Tool is not available in EDIT mode?
-            if context.active_object.mode == "OBJECT":
-                row = cls.layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_E")
-                row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="X Angle")
@@ -240,6 +238,11 @@ class BimToolUI:
             row.label(text="", icon="EVENT_G")
             add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
+        elif AuthoringData.data["active_representation_type"] == "SweptSolid":
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
 
         elif AuthoringData.data["active_class"] in (
             "IfcWindow",
@@ -483,8 +486,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             usage = tool.Model.get_usage_type(element)
             if not usage:
-                obj.select_set(False)
-                continue
+                representation = tool.Geometry.get_active_representation(obj)
+                if representation and representation.RepresentationType == "SweptSolid":
+                    usage = "SWEPTSOLID"
+                else:
+                    obj.select_set(False)
+                    continue
             selected_usages.setdefault(usage, []).append(obj)
 
         if len(bpy.context.selected_objects) == 1:
@@ -498,7 +505,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             elif self.active_material_usage == "PROFILE":
                 # Extend PROFILE to cursor
                 bpy.ops.bim.extend_profile(join_type="T")
-
+            else:
+                # Edit SWEPTSOLID profile (assuming single profile for now)
+                bpy.ops.bim.enable_editing_extrusion_profile()
         elif self.active_material_usage == "LAYER2" and selected_usages.get("PROFILE", []):
             # Extend PROFILEs to LAYER2
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]

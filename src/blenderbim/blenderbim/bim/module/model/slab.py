@@ -604,6 +604,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        body = ifcopenshell.util.representation.resolve_representation(body)
         extrusion = tool.Model.get_extrusion(body)
 
         if extrusion.Position:
@@ -636,8 +637,9 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        extrusion = tool.Model.get_extrusion(representation)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        body = ifcopenshell.util.representation.resolve_representation(body)
+        extrusion = tool.Model.get_extrusion(body)
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position[0][3] *= self.unit_scale
@@ -670,12 +672,16 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc,
             tool.Geometry,
             obj=obj,
-            representation=representation,
+            representation=body,
             should_reload=True,
             is_global=True,
             should_sync_changes_first=False,
         )
         bpy.data.meshes.remove(profile_mesh)
+
+        # Only certain classes should have a footprint
+        if element.is_a() not in ("IfcSlab", "IfcRamp"):
+            return {"FINISHED"}
 
         footprint_context = ifcopenshell.util.representation.get_context(
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"

@@ -78,6 +78,11 @@ class Geometry(blenderbim.core.tool.Geometry):
             return obj.data.copy()
 
     @classmethod
+    def get_active_representation(cls, obj):
+        if obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
+            return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+
+    @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":

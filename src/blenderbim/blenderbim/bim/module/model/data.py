@@ -64,6 +64,7 @@ class AuthoringData:
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
+        cls.data["active_representation_type"] = cls.active_representation_type()
 
     @classmethod
     def type_class(cls):
@@ -186,6 +187,12 @@ class AuthoringData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if element:
             return tool.Model.get_usage_type(element)
+
+    @classmethod
+    def active_representation_type(cls):
+        representation = tool.Geometry.get_active_representation(bpy.context.active_object)
+        if representation:
+            return representation.RepresentationType
 
     @classmethod
     def ifc_classes(cls):
