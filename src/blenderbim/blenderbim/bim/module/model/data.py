@@ -190,9 +190,10 @@ class AuthoringData:
 
     @classmethod
     def active_representation_type(cls):
-        representation = tool.Geometry.get_active_representation(bpy.context.active_object)
-        if representation:
-            return representation.RepresentationType
+        if bpy.context.active_object:
+            representation = tool.Geometry.get_active_representation(bpy.context.active_object)
+            if representation:
+                return representation.RepresentationType
 
     @classmethod
     def ifc_classes(cls):
