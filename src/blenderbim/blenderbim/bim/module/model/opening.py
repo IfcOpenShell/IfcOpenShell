@@ -238,34 +238,36 @@ class FilledOpeningGenerator:
 
         x, y, z = filling_obj.dimensions
         opening_position = Vector([0.0, -0.1 / unit_scale, 0.0])
-        opening_size = Vector([x, 0, z]) / unit_scale
+        opening_size = Vector([x, z]) / unit_scale
 
         # Windows and doors can have a casing that overlaps the wall
         # but shouldn't affect the size of the opening.
         # So we shouldn't use object dimensions in that case. More: #2784
         # Just keeping it for windows and doors for now to be safe
-        x_redefined, z_redefined = False, False
+        has_width_attribute, has_height_attribute = False, False
         if filling.is_a() in ["IfcWindow", "IfcDoor"]:
             if filling.OverallWidth:
                 opening_size.x = filling.OverallWidth
-                x_redefined = True
+                has_width_attribute = True
             if filling.OverallHeight:
-                opening_size.z = filling.OverallHeight
-                z_redefined = True
+                opening_size.y = filling.OverallHeight
+                has_height_attribute = True
 
         # making sure if min_x or min_z != 0 to shift the opening accordingly
         # to prevent something like #2784
-        if not x_redefined:
+        if not has_width_attribute:
             opening_position.x = min(v[0] for v in filling_obj.bound_box)
 
-        if not z_redefined:
+        if not has_height_attribute:
             opening_position.z = min(v[2] for v in filling_obj.bound_box)
 
         extrusion = shape_builder.extrude(
             shape_builder.rectangle(size=opening_size),
             magnitude=thickness / unit_scale,
             position=opening_position,
-            extrusion_vector=Vector([0.0, 1.0, 0.0]),
+            position_z_axis=Vector((0.0, -1.0, 0.0)),
+            position_x_axis=Vector((1.0, 0.0, 0.0)),
+            extrusion_vector=Vector((0.0, 0.0, -1.0)),
         )
 
         return shape_builder.get_representation(context, [extrusion])
