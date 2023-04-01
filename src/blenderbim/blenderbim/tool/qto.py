@@ -157,10 +157,11 @@ class Qto(blenderbim.core.tool.Qto):
             print(f"RELATING COST QUANTITY NAME: {relating_cost_item["quantity_name"]}")
             ...
         """
-        quantities = cls.get_base_qto(product).Quantities
         model = tool.Ifc.get()
         cost_items = model.by_type("IfcCostItem")
         result = []
+        base_qto = cls.get_base_qto(product)
+        quantities = base_qto.Quantities if base_qto else []
 
         for cost_item in cost_items:
             cost_item_quantities = cost_item.CostQuantities if cost_item.CostQuantities is not None else []
