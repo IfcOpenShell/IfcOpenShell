@@ -825,7 +825,7 @@ class OverrideModeSetObject(bpy.types.Operator):
                 continue
 
             element = tool.Ifc.get_entity(obj)
-            if not element:
+            if not element or element.is_a("IfcAnnotation"):
                 continue
 
             if obj.data.BIMMeshProperties.ifc_definition_id:
