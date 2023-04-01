@@ -742,23 +742,30 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 obj.select_set(False)
                 continue
 
-            if obj.data.BIMMeshProperties.ifc_definition_id:
-                representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-                if representation.RepresentationType in ("Tessellation", "Brep"):
-                    if element.HasOpenings:
-                        # Mesh elements with openings must disable openings
-                        # so that you can edit the original topology.
-                        core.switch_representation(
-                            tool.Ifc,
-                            tool.Geometry,
-                            obj=obj,
-                            representation=representation,
-                            should_reload=True,
-                            is_global=True,
-                            should_sync_changes_first=False,
-                            apply_openings=False,
-                        )
-                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                obj.select_set(False)
+                continue
+
+            if representation.RepresentationType in ("Tessellation", "Brep"):
+                if element.HasOpenings:
+                    # Mesh elements with openings must disable openings
+                    # so that you can edit the original topology.
+                    core.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=representation,
+                        should_reload=True,
+                        is_global=True,
+                        should_sync_changes_first=False,
+                        apply_openings=False,
+                    )
+                obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
+            else:
+                obj.select_set(False)
+                continue
+
         if not context.selected_objects:
             return {"FINISHED"}
         bpy.ops.object.mode_set(mode="EDIT", toggle=True)
