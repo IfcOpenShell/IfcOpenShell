@@ -208,7 +208,7 @@ class Blender:
     def get_bmesh_for_mesh(cls, mesh, clean=False):
         import bmesh
 
-        if bpy.context.object.mode == "EDIT":
+        if mesh.is_editmode:
             bm = bmesh.from_edit_mesh(mesh)
             if clean:
                 bm.clear()
