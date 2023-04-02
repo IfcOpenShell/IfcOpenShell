@@ -135,13 +135,13 @@ class Geometry(blenderbim.core.tool.Geometry):
         faces = mesh.polygons[:]
 
         # Convert mesh data to bytes
-        data_bytes = b''
+        data_bytes = b""
         for v in vertices:
-            data_bytes += struct.pack('3f', *v.co)
+            data_bytes += struct.pack("3f", *v.co)
         for e in edges:
-            data_bytes += struct.pack('2i', *e.vertices)
+            data_bytes += struct.pack("2i", *e.vertices)
         for f in faces:
-            data_bytes += struct.pack('%di' % len(f.vertices), *f.vertices)
+            data_bytes += struct.pack("%di" % len(f.vertices), *f.vertices)
 
         # Generate hash of mesh data
         hasher = hashlib.sha1()
@@ -260,6 +260,30 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def is_mapped_representation(cls, representation):
         return representation.RepresentationType == "MappedRepresentation"
+
+    @classmethod
+    def is_meshlike(cls, representation):
+        if representation.RepresentationType in (
+            "AdvancedBrep",
+            "Annotation2D",
+            "BoundingBox",
+            "Brep",
+            "Curve",
+            "Curve2D",
+            "Curve3D",
+            "FillArea",
+            "GeometricCurveSet",
+            "GeometricSet",
+            "Point",
+            "PointCloud",
+            "Surface",
+            "Surface2D",
+            "Surface3D",
+            "SurfaceModel",
+            "Tessellation",
+        ):
+            return True
+        return False
 
     @classmethod
     def is_type_product(cls, element):
