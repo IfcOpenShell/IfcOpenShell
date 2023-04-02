@@ -1075,11 +1075,20 @@ class Drawing(blenderbim.core.tool.Drawing):
     def replace_text_literal_variables(cls, text, product):
         if not product:
             return text
+
+        for command in re.findall("``.*?``", text):
+            original_command = command
+            for variable in re.findall("{{.*?}}", command):
+                value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
+                command = command.replace(variable, repr(value))
+            text = text.replace(original_command, str(eval(command[2:-2])))
+
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
             if isinstance(value, (list, tuple)):
                 value = ", ".join(str(v) for v in value)
             text = text.replace(variable, str(value))
+
         return text
 
     @classmethod
