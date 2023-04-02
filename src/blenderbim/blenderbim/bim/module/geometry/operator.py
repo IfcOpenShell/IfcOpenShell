@@ -747,7 +747,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 obj.select_set(False)
                 continue
 
-            if representation.RepresentationType in ("Tessellation", "Brep"):
+            if tool.Geometry.is_meshlike(representation):
                 if element.HasOpenings:
                     # Mesh elements with openings must disable openings
                     # so that you can edit the original topology.
@@ -837,9 +837,8 @@ class OverrideModeSetObject(bpy.types.Operator):
 
             if obj.data.BIMMeshProperties.ifc_definition_id:
                 representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-                if representation.RepresentationType in (
-                    "Tessellation",
-                    "Brep",
+                if tool.Geometry.is_meshlike(
+                    representation
                 ) and obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
                     self.edited_objs.append(obj)
                 elif element.HasOpenings:
