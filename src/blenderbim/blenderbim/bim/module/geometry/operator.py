@@ -748,7 +748,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 continue
 
             if tool.Geometry.is_meshlike(representation):
-                if element.HasOpenings:
+                if getattr(element, "HasOpenings", None):
                     # Mesh elements with openings must disable openings
                     # so that you can edit the original topology.
                     core.switch_representation(
