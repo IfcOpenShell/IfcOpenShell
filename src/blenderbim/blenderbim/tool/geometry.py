@@ -129,21 +129,32 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def get_mesh_checksum(cls, mesh):
-        # Get mesh data
-        vertices = mesh.vertices[:]
-        edges = mesh.edges[:]
-        faces = mesh.polygons[:]
-
-        # Convert mesh data to bytes
         data_bytes = b""
-        for v in vertices:
-            data_bytes += struct.pack("3f", *v.co)
-        for e in edges:
-            data_bytes += struct.pack("2i", *e.vertices)
-        for f in faces:
-            data_bytes += struct.pack("%di" % len(f.vertices), *f.vertices)
+        if isinstance(mesh, bpy.types.Mesh):
+            vertices = mesh.vertices[:]
+            edges = mesh.edges[:]
+            faces = mesh.polygons[:]
 
-        # Generate hash of mesh data
+            # Convert mesh data to bytes
+            for v in vertices:
+                data_bytes += struct.pack("3f", *v.co)
+            for e in edges:
+                data_bytes += struct.pack("2i", *e.vertices)
+            for f in faces:
+                data_bytes += struct.pack("%di" % len(f.vertices), *f.vertices)
+        elif isinstance(mesh, bpy.types.Curve):
+            splines = mesh.splines[:]
+
+            for spline in splines:
+                if spline.type == "BEZIER":
+                    for bezier_point in spline.bezier_points:
+                        data_bytes += struct.pack("3f", *bezier_point.co)
+                        data_bytes += struct.pack("3f", *bezier_point.handle_left)
+                        data_bytes += struct.pack("3f", *bezier_point.handle_right)
+                else:
+                    for point in spline.points:
+                        data_bytes += struct.pack("4f", *point.co)
+
         hasher = hashlib.sha1()
         hasher.update(data_bytes)
         return hasher.hexdigest()
