@@ -2,23 +2,32 @@ class Patcher:
     def __init__(self, src, file, logger):
         """Fix missing or spot-coordinate bugged TINs loading in Revit
 
-        TINs exported from 12D may contain dense or highly obtuse triangles.
-        Although these will load in Revit, you will not be able to use Revit's
-        Spot Coordinate or Spot Elevation tool.
+        TINs exported from 12D or Civil 3D may contain dense or highly obtuse
+        triangles.  Although these will load in Revit, you will not be able to
+        use Revit's Spot Coordinate or Spot Elevation tool.
 
         See bug: https://github.com/Autodesk/revit-ifc/issues/511
 
-        The solution will merge vertices closer than 10mm to prevent dense
+        The solution will delete any faces with a Z normal less than 0.5. In
+        case the mesh has any side faces or thickness, this should leave only
+        the top surface which is relevant for spot coordinates and elevations.
+        (e.g. I have come across surfaces which are extruded by 1mm from Civil
+        3D).  Vertices closer than 10mm will also be merged to prevent dense
         portions of the TIN at a minor sacrifice of surveying accuracy. It will
-        also triangulate all meshes to prevent non-coplanar surfaces, and delete
-        any obtuse triangles where one of their XY angles is less than 0.3
-        degrees. Therefore the result will contain some minor "holes" in the
-        TIN, but these holes will only be in dense triangles that Revit can't
-        handle anyway and won't affect most coordination tasks.
+        also triangulate all meshes to prevent non-coplanar surfaces, and
+        delete any obtuse triangles where one of their XY angles is less than
+        0.3 degrees.  Therefore the result will contain some minor "holes" in
+        the TIN, but these holes will only be in dense triangles that Revit
+        can't handle anyway and won't affect most coordination tasks.
 
-        This patch is designed to only work on 12D IFC exports. It also requires
-        you to run it using Blender, as the geometric modification uses the
-        Blender geometry engine.
+        Note that you may may want to run other tools like
+        OffsetObjectPlacements or ResetAbsoluteCoordinates to fix large
+        coordinates as these can also cause issues in Revit (such as inaccuracy
+        or inability to use the Spot Coordinate / Elevation tool).
+
+        This patch is designed to work on any TIN-like export, typically coming
+        from civil software. It also requires you to run it using Blender, as
+        the geometric modification uses the Blender geometry engine.
 
         Example:
 
@@ -36,6 +45,7 @@ class Patcher:
         import blenderbim.tool as tool
         from math import degrees
 
+        bpy.context.scene.BIMProjectProperties.should_use_native_meshes = True
         bpy.ops.bim.load_project(filepath=self.src)
 
         old_history_size = tool.Ifc.get().history_size
@@ -51,6 +61,14 @@ class Patcher:
             data = obj.data
             bm = bmesh.new()
             bm.from_mesh(data)
+
+            bm.faces.ensure_lookup_table()
+            faces_to_delete = []
+            for face in bm.faces:
+                if face.normal.z < 0.5:
+                    faces_to_delete.append(face)
+            bmesh.ops.delete(bm, geom=faces_to_delete, context='FACES_ONLY')
+
             bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.01)
             bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method="BEAUTY", ngon_method="BEAUTY")
             bm.faces.ensure_lookup_table()
