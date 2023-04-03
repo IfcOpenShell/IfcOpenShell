@@ -652,7 +652,7 @@ class TestAttribute:
             expected=True,
         )
 
-        restriction = Restriction(options={"minInclusive": 42, "maxInclusive": 42},  base="decimal")
+        restriction = Restriction(options={"minInclusive": 42, "maxInclusive": 42}, base="decimal")
         facet = Attribute(name="RefractionIndex", value=restriction)
         ifc = ifcopenshell.file()
         run(
@@ -1231,14 +1231,10 @@ class TestProperty:
         ifc = ifcopenshell.file()
         ifc.createIfcProject()
         # Milli prefix used to check measurement conversions
-        lengthunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
-        areaunit = ifcopenshell.api.run(
-            "unit.add_si_unit", ifc, unit_type="AREAUNIT", name="SQUARE_METRE", prefix="MILLI"
-        )
-        volumeunit = ifcopenshell.api.run(
-            "unit.add_si_unit", ifc, unit_type="VOLUMEUNIT", name="CUBIC_METRE", prefix="MILLI"
-        )
-        timeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="TIMEUNIT", name="SECOND")
+        lengthunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        areaunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="AREAUNIT", prefix="MILLI")
+        volumeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="VOLUMEUNIT", prefix="MILLI")
+        timeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="TIMEUNIT")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[lengthunit, areaunit, volumeunit, timeunit])
         return ifc
 
@@ -1455,9 +1451,16 @@ class TestPartOf:
 
         element.PredefinedType = "BASESLAB"
         facet = PartOf(entity="IFCSLAB", predefinedType="BASESLAB", relation="IfcRelAggregates")
-        run("An aggregate may specify the predefined type of the whole 1/2", facet=facet, inst=subelement, expected=True)
+        run(
+            "An aggregate may specify the predefined type of the whole 1/2", facet=facet, inst=subelement, expected=True
+        )
         facet = PartOf(entity="IFCSLAB", predefinedType="SLABRADOR", relation="IfcRelAggregates")
-        run("An aggregate may specify the predefined type of the whole 2/2", facet=facet, inst=subelement, expected=False)
+        run(
+            "An aggregate may specify the predefined type of the whole 2/2",
+            facet=facet,
+            inst=subelement,
+            expected=False,
+        )
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")

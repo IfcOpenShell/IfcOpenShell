@@ -52,10 +52,9 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         self.process_ifc(file, project_name)
 
     def process_ifc(self, file, project_name):
-
         # create project
         project = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcProject", name=str(project_name))
-        lengthunit = ifcopenshell.api.run("unit.add_si_unit", file, unit_type="LENGTHUNIT", name="METRE")
+        lengthunit = ifcopenshell.api.run("unit.add_si_unit", file, unit_type="LENGTHUNIT")
         ifcopenshell.api.run("unit.assign_unit", file, units=[lengthunit])
         model = ifcopenshell.api.run("context.add_context", file, context_type="Model")
         context = ifcopenshell.api.run(
