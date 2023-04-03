@@ -4,6 +4,7 @@ from mathutils import Vector
 
 V = lambda *x: Vector([float(i) for i in x])
 
+
 # TODO: move examples to more suitable place
 def simple_uses():
     ifc_file = ifcopenshell.file()
@@ -91,7 +92,7 @@ def mirror_placement_test():
         "root.create_entity", ifc_file, ifc_class="IfcProjectLibrary", name=f"Non-structural assets library"
     )
     ifcopenshell.api.run("project.assign_declaration", ifc_file, definition=library, relating_context=project)
-    unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+    unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
     ifcopenshell.api.run("unit.assign_unit", ifc_file, units=[unit])
     model = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Model")
     plan = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Plan")
@@ -165,7 +166,7 @@ def curve_between_two_points_test():
         "root.create_entity", ifc_file, ifc_class="IfcProjectLibrary", name=f"Non-structural assets library"
     )
     ifcopenshell.api.run("project.assign_declaration", ifc_file, definition=library, relating_context=project)
-    unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+    unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
     ifcopenshell.api.run("unit.assign_unit", ifc_file, units=[unit])
     model = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Model")
     plan = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Plan")

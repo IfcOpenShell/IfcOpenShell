@@ -56,7 +56,6 @@ def get_simple_2dcurve_data(coords, fillets=[], fillet_radius=[], closed=True, i
     for co_i, co in enumerate(coords, 0):
         current_point = len(points)
         if co_i in fillets:
-
             r = fillets[co_i]
             rsb = r * cos(pi / 4)  # radius shift big
             rss = r - rsb  # radius shift small
@@ -230,7 +229,7 @@ class LibraryGenerator:
         ifcopenshell.api.run(
             "project.assign_declaration", self.file, definition=self.library, relating_context=self.project
         )
-        unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+        unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
 
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
