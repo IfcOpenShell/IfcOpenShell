@@ -180,10 +180,12 @@ class Blender:
 
     ## BMESH UTILS ##
     @classmethod
-    def apply_bmesh(cls, mesh, bm):
+    def apply_bmesh(cls, mesh, bm, obj=None):
+        """`obj` argument is not optional if you plan to update mesh in EDIT mode
+        and it's possible that that mesh object won't be currenly active."""
         import bmesh
 
-        if bpy.context.object and bpy.context.object.mode == "EDIT":
+        if mesh.is_editmode:
             # better to be safe because otherwise mesh won't be updated
             # and you won't get any errors
             if not bm.is_wrapped or hash(bmesh.from_edit_mesh(mesh)) != hash(bm):
@@ -192,7 +194,13 @@ class Blender:
                     "For applying bmesh in edit mode bmesh should be acquired with `bmesh.from_edit_mesh(me)`."
                 )
             bmesh.update_edit_mesh(mesh)
-            bpy.context.object.update_from_editmode()
+            if not obj:
+                if not bpy.context.object and bpy.context.object.data != mesh:
+                    raise Exception(
+                        "Error applying bmesh in EDIT object - object is "
+                        "not provided and can't be acquired from the context. "
+                    )
+            obj.update_from_editmode()
         else:
             bm.to_mesh(mesh)
             # only freeing bmesh if object is in OBJECT mode
