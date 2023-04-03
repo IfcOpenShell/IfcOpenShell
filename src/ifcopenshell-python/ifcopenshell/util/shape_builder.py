@@ -490,6 +490,12 @@ class ShapeBuilder:
         # > position_y_axis - optional, could be used to calculate Z-axis based on Y-axis
         # < IfcExtrudedAreaSolid
 
+        if not magnitude:
+            raise Exception(
+                "Extrusion magnitude must be greater than 0 to be valid.\n"
+                "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPositiveLengthMeasure.htm#8.11.2.71.3-Formal-representation"
+            )
+
         if profile_or_curve.is_a() not in ("IfcArbitraryClosedProfileDef", "IfcArbitraryProfileDefWithVoids"):
             profile_or_curve = self.profile(profile_or_curve)
 
