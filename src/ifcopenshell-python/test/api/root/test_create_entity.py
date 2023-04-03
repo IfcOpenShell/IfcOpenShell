@@ -32,7 +32,7 @@ class TestCreateEntity(test.bootstrap.IFC4):
 
     def test_handling_predefined_types(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall", name="Foo")
-        assert element.PredefinedType == "NOTDEFINED"
+        assert element.PredefinedType is None
         element = ifcopenshell.api.run(
             "root.create_entity", self.file, ifc_class="IfcWall", predefined_type="SHEAR", name="Foo"
         )
@@ -54,6 +54,8 @@ class TestCreateEntity(test.bootstrap.IFC4):
         assert element.ProcessType == "Foobar"
 
     def test_setting_default_values_for_validity(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType", name="Foo")
+        assert element.PredefinedType == "NOTDEFINED"
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDoorStyle", name="Foo")
         assert element.OperationType == "NOTDEFINED"
         assert element.ConstructionType == "NOTDEFINED"

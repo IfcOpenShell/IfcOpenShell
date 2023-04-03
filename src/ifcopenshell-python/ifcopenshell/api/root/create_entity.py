@@ -100,7 +100,7 @@ class Usecase:
         return element
 
     def handle_2x3_defaults(self, element):
-        if element.is_a("IfcElement") or element.is_a("IfcElementType"):
+        if element.is_a("IfcElementType"):
             if hasattr(element, "PredefinedType") and not element.PredefinedType:
                 element.PredefinedType = "NOTDEFINED"
 
@@ -117,7 +117,7 @@ class Usecase:
             element.Sizeable = False
 
     def handle_4_defaults(self, element):
-        if element.is_a("IfcElement") or element.is_a("IfcElementType"):
+        if element.is_a("IfcElementType"):
             if hasattr(element, "PredefinedType") and not element.PredefinedType:
                 element.PredefinedType = "NOTDEFINED"
 
