@@ -69,12 +69,10 @@ def update_simple_openings(element, opening_width, opening_height):
         context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
 
         extrusion = shape_builder.extrude(
-            shape_builder.rectangle(size=Vector([opening_width, 0.0, opening_height]).xz),
+            shape_builder.rectangle(size=Vector([opening_width, 0.0, opening_height])),
             magnitude=thickness / unit_scale,
             position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-            position_x_axis=V(1, 0, 0),
-            position_z_axis=V(0, -1, 0),
-            extrusion_vector=V(0, 0, -1),
+            extrusion_vector=Vector([0.0, 1.0, 0.0]),
         )
 
         new_representation = shape_builder.get_representation(context, extrusion)
