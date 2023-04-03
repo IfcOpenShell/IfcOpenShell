@@ -24,6 +24,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import blenderbim.bim.helper
 import blenderbim.tool as tool
+import blenderbim.core.style
 import blenderbim.core.material as core
 import blenderbim.bim.module.model.profile as model_profile
 from blenderbim.bim.module.material.prop import purge as material_prop_purge
@@ -666,8 +667,12 @@ class CopyMaterial(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         blender_material = context.active_object.active_material
         material = tool.Ifc.get_entity(blender_material)
+
+        if tool.Ifc.has_changed_shading(blender_material):
+            blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=blender_material)
+
         copied_material = ifcopenshell.api.run("material.copy_material", tool.Ifc.get(), material=material)
-        copied_blender_material = bpy.data.materials.new(blender_material.name)
+        copied_blender_material = blender_material.copy()
         copied_style = self.get_style(copied_material)
         tool.Ifc.link(copied_material, copied_blender_material)
         if copied_style:

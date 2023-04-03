@@ -47,6 +47,11 @@ class Ifc(blenderbim.core.tool.Ifc):
             return IfcStore.get_file().schema
 
     @classmethod
+    def has_changed_shading(cls, obj):
+        checksum = obj.BIMMaterialProperties.shading_checksum
+        return checksum != repr(np.array(obj.diffuse_color).tobytes())
+
+    @classmethod
     def is_deleted(cls, element):
         return element.id() in IfcStore.deleted_ids
 

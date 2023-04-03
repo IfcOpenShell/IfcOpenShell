@@ -126,7 +126,7 @@ class IfcExporter:
                 continue
             try:
                 if isinstance(obj, bpy.types.Material):
-                    if self.has_changed_shading(obj):
+                    if tool.Ifc.has_changed_shading(obj):
                         blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=obj)
                 else:
                     element = tool.Ifc.get_entity(obj)
@@ -148,10 +148,6 @@ class IfcExporter:
     def has_changed_materials(self, obj):
         checksum = obj.data.BIMMeshProperties.material_checksum
         return checksum != str([s.id() for s in tool.Geometry.get_styles(obj) if s])
-
-    def has_changed_shading(self, obj):
-        checksum = obj.BIMMaterialProperties.shading_checksum
-        return checksum != repr(np.array(obj.diffuse_color).tobytes())
 
     def sync_object_placement(self, obj):
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
