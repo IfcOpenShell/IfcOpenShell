@@ -724,7 +724,6 @@ class OverrideModeSetEdit(bpy.types.Operator):
         objs = context.selected_objects or [context.active_object]
         if context.active_object:
             context.active_object.select_set(True)
-        edited_objs = []
         for obj in objs:
             if not obj:
                 continue
@@ -766,9 +765,15 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 obj.select_set(False)
                 continue
 
-        if not context.selected_objects:
-            return {"FINISHED"}
-        bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        if not context.selected_objects or len(context.selected_objects) != len(objs):
+            # We are trying to edit at least one non-mesh-like object : Display a hint to the user
+            self.report({"INFO"}, "Only mesh-like objects can be edited")
+
+        if context.active_object not in context.selected_objects:
+            # The active object is non-mesh-like. Set a valid object (or None) as active
+            context.view_layer.objects.active = context.selected_objects[0] if context.selected_objects else None
+        if context.active_object:
+            bpy.ops.object.mode_set(mode="EDIT", toggle=True)
         return {"FINISHED"}
 
     def invoke(self, context, event):
