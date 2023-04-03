@@ -102,7 +102,7 @@ class Annotator:
         new_verts = [bm.verts.new(v) for v in verts_local]
 
         bm.faces.new([new_verts[i] for i in face_verts])
-        tool.Blender.apply_bmesh(obj.data, bm)
+        tool.Blender.apply_bmesh(obj.data, bm, obj)
         return obj
 
     @staticmethod
