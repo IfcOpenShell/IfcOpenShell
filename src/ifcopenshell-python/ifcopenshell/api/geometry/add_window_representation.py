@@ -30,15 +30,15 @@ import collections
 # - order of rows is from top of the window to bottom
 
 DEFAULT_PANEL_SCHEMAS = {
-    "SINGLE_PANEL":            [[0]],
-    "DOUBLE_PANEL_HORIZONTAL": [[0],    [1]],
-    "DOUBLE_PANEL_VERTICAL":   [[0, 1]],
-    "TRIPLE_PANEL_BOTTOM":     [[0, 1], [2, 2]],
-    "TRIPLE_PANEL_TOP":        [[0, 0], [1, 2]],
-    "TRIPLE_PANEL_LEFT":       [[0, 1], [0, 2]],
-    "TRIPLE_PANEL_RIGHT":      [[0, 1], [2, 1]],
-    "TRIPLE_PANEL_HORIZONTAL": [[0],    [1],   [2]],
-    "TRIPLE_PANEL_VERTICAL":   [[0, 1, 2]],
+    "SINGLE_PANEL": [[0]],
+    "DOUBLE_PANEL_HORIZONTAL": [[0], [1]],
+    "DOUBLE_PANEL_VERTICAL": [[0, 1]],
+    "TRIPLE_PANEL_BOTTOM": [[0, 1], [2, 2]],
+    "TRIPLE_PANEL_TOP": [[0, 0], [1, 2]],
+    "TRIPLE_PANEL_LEFT": [[0, 1], [0, 2]],
+    "TRIPLE_PANEL_RIGHT": [[0, 1], [2, 1]],
+    "TRIPLE_PANEL_HORIZONTAL": [[0], [1], [2]],
+    "TRIPLE_PANEL_VERTICAL": [[0, 1, 2]],
 }
 
 
@@ -54,13 +54,20 @@ def create_ifc_window_frame_simple(builder, size: Vector, thickness: list, posit
 
     th_left, th_up, th_right, th_bottom = thickness
 
-    panel_rect = builder.rectangle(size=size * V(1, 0, 1))
+    panel_rect = builder.rectangle(size=size.xz)
 
     inner_rect_size = size - V(th_left + th_right, 0, th_bottom + th_up)
-    inner_rect = builder.rectangle(size=inner_rect_size * V(1, 0, 1), position=V(th_left, 0, th_bottom))
+    inner_rect = builder.rectangle(size=inner_rect_size.xz, position=V(th_left, th_bottom))
 
     panel_profile = builder.profile(panel_rect, inner_curves=inner_rect)
-    panel_extruded = builder.extrude(panel_profile, size.y, extrusion_vector=V(0, 1, 0), position=position)
+    panel_extruded = builder.extrude(
+        panel_profile,
+        size.y,
+        position_x_axis=V(1, 0, 0),
+        position_z_axis=V(0, -1, 0),
+        extrusion_vector=V(0, 0, -1),
+        position=position,
+    )
     return panel_extruded
 
 
@@ -133,7 +140,9 @@ def create_ifc_window(
     glass = builder.extrude(
         glass_rect,
         glass_thickness,
-        extrusion_vector=V(0, 1, 0),
+        position_x_axis=V(1, 0, 0),
+        position_z_axis=V(0, -1, 0),
+        extrusion_vector=V(0, 0, -1),
         position=glass_position,
     )
 
