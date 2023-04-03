@@ -44,10 +44,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 
 	int max_index = (int) points.size();
 
-	taxonomy::loop* loop;
-
-	// ignored, just for capturing the curve parameters on the null check
-	double u, v;
+	auto loop = new taxonomy::loop;
 
 	if(inst->Segments()) {
 		aggregate_of_instance::ptr segments = *inst->Segments();

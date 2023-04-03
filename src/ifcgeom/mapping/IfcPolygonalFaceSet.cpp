@@ -61,6 +61,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
 				}
 				previous = current;
 			}
+			if (!indices.empty()) {
+				const taxonomy::point3& current = points[indices.front() - 1];
+				loop->children.push_back(new taxonomy::edge(previous, current));
+			}
 		}
 
 		if (f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()) {
@@ -81,6 +85,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
 						loop->children.push_back(new taxonomy::edge(previous, current));
 					}
 					previous = current;
+				}
+				if (!indices.empty()) {
+					const taxonomy::point3& current = points[indices.front() - 1];
+					loop->children.push_back(new taxonomy::edge(previous, current));
 				}
 			}
 		}
