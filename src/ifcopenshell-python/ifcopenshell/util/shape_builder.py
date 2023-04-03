@@ -191,6 +191,7 @@ class ShapeBuilder:
                 "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
             )
             import traceback
+
             traceback.print_stack()
 
         if inner_curves:
@@ -204,6 +205,7 @@ class ShapeBuilder:
                         "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
                     )
                     import traceback
+
                     traceback.print_stack()
 
             profile = self.file.createIfcArbitraryProfileDefWithVoids(
@@ -510,10 +512,18 @@ class ShapeBuilder:
         # < IfcShapeRepresentation
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
+
+        if items[0].is_a("IfcExtrudedAreaSolid"):
+            representation_type = "SweptSolid"
+        elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
+            representation_type = "Curve3D"
+        else:
+            representation_type = "Curve2D"
+
         representation = self.file.createIfcShapeRepresentation(
             ContextOfItems=context,
             RepresentationIdentifier=context.ContextIdentifier,
-            RepresentationType="SweptSolid" if items[0].is_a("IfcExtrudedAreaSolid") else "Curve2D",
+            RepresentationType=representation_type,
             Items=items,
         )
         return representation
