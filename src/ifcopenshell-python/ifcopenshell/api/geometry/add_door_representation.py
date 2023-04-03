@@ -61,8 +61,15 @@ def create_ifc_door_lining(
         V(th_side, 0.0, 0.0),
     ]
 
+    points = [p.xz for p in points]
     door_lining = builder.polyline(points, closed=True)
-    door_lining = builder.extrude(door_lining, size.y, extrusion_vector=V(0, 1, 0))
+    door_lining = builder.extrude(
+        door_lining,
+        size.y,
+        position_x_axis=V(1, 0, 0),
+        position_z_axis=V(0, -1, 0),
+        extrusion_vector=V(0, 0, -1),
+    )
     builder.translate(door_lining, position)
 
     return door_lining

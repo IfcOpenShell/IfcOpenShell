@@ -55,7 +55,6 @@ class ShapeBuilder:
         return ifc_curve
 
     def get_rectangle_coords(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None):
-
         dimensions = len(size)
 
         if not position:
@@ -184,9 +183,28 @@ class ShapeBuilder:
         # because of that you can't create bool edges of outer_curve this way
 
         # < returns IfcArbitraryClosedProfileDef or IfcArbitraryProfileDefWithVoids
+
+        if outer_curve.Dim != 2:
+            # TODO: replace with exception
+            print(
+                f"WARNING. Outer curve for IfcArbitraryClosedProfileDef/IfcIfcArbitraryProfileDefWithVoid should be 2D to be valid, currently it has {outer_curve.Dim} dimensions.\n"
+                "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
+            )
+            import traceback
+            traceback.print_stack()
+
         if inner_curves:
             if not isinstance(inner_curves, collections.abc.Iterable):
                 inner_curves = [inner_curves]
+                # TODO: replace with exception
+                if any(curve.Dim != 2 for curve in inner_curves):
+                    print(
+                        "WARNING. InnerCurve for IfcIfcArbitraryProfileDefWithVoid sould be 2D to be valid, "
+                        "currently on one of the inner curves is using different amount of dimensions.\n"
+                        "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
+                    )
+                    import traceback
+                    traceback.print_stack()
 
             profile = self.file.createIfcArbitraryProfileDefWithVoids(
                 ProfileName=name, ProfileType=profile_type, OuterCurve=outer_curve, InnerCurves=inner_curves
@@ -241,7 +259,6 @@ class ShapeBuilder:
     def rotate_2d_point(
         self, point_2d: Vector, angle=90, pivot_point: Vector = Vector((0.0, 0.0)).freeze(), counter_clockwise=False
     ):
-
         # > angle - in degrees
         # < rotated Vector
 
@@ -407,9 +424,9 @@ class ShapeBuilder:
 
                     if hasattr(c.SweptArea, "InnerCurves"):
                         for inner_curve in c.SweptArea.InnerCurves:
-                            self.translate(inner_curve, base_position)
+                            self.translate(inner_curve, base_position.to_2d())
                             self.mirror(inner_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix)
-                            self.translate(inner_curve, -new_position)
+                            self.translate(inner_curve, -new_position.to_2d())
 
                     # extrusion converted to world space
                     base_extruded_direction = Vector(c.ExtrudedDirection.DirectionRatios)
