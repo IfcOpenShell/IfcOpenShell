@@ -83,7 +83,7 @@ class Blender:
     def update_viewport(cls): pass
     def get_default_selection_keypmap(cls): pass
     def get_object_bounding_box(cls, obj): pass
-    def apply_bmesh(cls, mesh, bm): pass
+    def apply_bmesh(cls, mesh, bm, obj=None): pass
     def get_bmesh_for_mesh(cls, mesh, clean=False): pass
     def bmesh_join(cls, bm_a, bm_b, callback=None): pass
 
