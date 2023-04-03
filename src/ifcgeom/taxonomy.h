@@ -31,6 +31,11 @@ enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, 
 const std::string& kind_to_string(kinds k);
 
 struct item {
+private:
+	uint32_t identity_;
+	static std::atomic_uint32_t counter_;
+
+public:
 	const IfcUtil::IfcBaseInterface* instance;
 
 	boost::optional<bool> orientation;
@@ -40,9 +45,11 @@ struct item {
 	virtual void print(std::ostream&, int indent=0) const = 0;
 	virtual void reverse() { throw taxonomy::topology_error(); }
 
-	item(const IfcUtil::IfcBaseInterface* instance = nullptr) : instance(instance) {}
+	item(const IfcUtil::IfcBaseInterface* instance = nullptr) : identity_(counter_++), instance(instance) {}
 
 	virtual ~item() {}
+
+	uint32_t identity() const { return identity_; }
 };
 
 bool less(const item*, const item*);
