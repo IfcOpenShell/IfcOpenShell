@@ -62,6 +62,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet* inst)
 			}
 		}
 	}
+
+	return shell;
 }
 
 #endif
