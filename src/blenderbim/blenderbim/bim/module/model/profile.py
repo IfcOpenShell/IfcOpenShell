@@ -31,6 +31,7 @@ import blenderbim.core.geometry
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
+from blenderbim.bim.module.model.wall import DumbWallRecalculator
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
@@ -892,15 +893,24 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        objs = []
+        profile_objs = []
+        layer2_objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
+            usage = tool.Model.get_usage_type(element)
+            if usage == "PROFILE":
+                profile_objs.append(obj)
+            elif usage == "LAYER2":
+                layer2_objs.append(obj)
             if element.ConnectedTo or element.ConnectedFrom:
-                objs.append(obj)
+                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATSTART")
+                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATEND")
+                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATPATH")
             rotate_matrix = Matrix.Rotation(pi / 2, 4, self.axis)
             obj.matrix_world @= rotate_matrix
         bpy.context.view_layer.update()
-        DumbProfileRecalculator().recalculate(objs)
+        DumbProfileRecalculator().recalculate(profile_objs)
+        DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}
 
 
