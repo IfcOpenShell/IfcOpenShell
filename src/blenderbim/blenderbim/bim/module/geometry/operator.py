@@ -617,6 +617,11 @@ class OverrideJoin(bpy.types.Operator, Operator):
     bl_idname = "bim.override_object_join"
     bl_label = "IFC Join"
 
+    def invoke(self, context, event):
+        if not tool.Ifc.get():
+            return bpy.ops.object.join()
+        return self.execute(context)
+
     def _execute(self, context):
         if not tool.Ifc.get():
             return bpy.ops.object.join()
