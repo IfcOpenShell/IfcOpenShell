@@ -49,6 +49,8 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element, "material.MaterialLayers.Name") == ["L1", "L2"]
         # Allow to use "item" to generically select an item in a material set
         assert subject.get_element_value(element, "material.item.Name") == ["L1", "L2"]
+        assert subject.get_element_value(element, "material.item.Name.0") == "L1"
+        assert subject.get_element_value(element, "material.item.Name.1") == "L2"
         assert subject.get_element_value(element, '"material"."item"."Name"') == ["L1", "L2"]
         assert subject.get_element_value(element, 'r"material"."item"."Name"') == ["L1", "L2"]
         # Provide shortform for convenience
