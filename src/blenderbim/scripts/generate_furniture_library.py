@@ -385,23 +385,40 @@ class LibraryGenerator:
             mirror_axis = V(0, 1)
             output = []
 
-            seat = builder.rectangle(size=V(width, depth))
-            chair_back = builder.rectangle(size=V(width, thickness))
+            items_to_adjust = []
+            items_3d = []
+            chair_back = None
+            items_to_adjust.append(seat := builder.rectangle(size=V(width, depth)))
+
             leg = builder.rectangle(size=V(thickness, thickness))
             legs = [leg] + builder.mirror(
                 leg, mirror_axes=[V(1, 0), V(0, 1), V(1, 1)], mirror_point=V(width / 2, depth / 2), create_copy=True
             )
-            builder.translate([seat, chair_back] + legs, shift_to_center)
-            builder.mirror([seat, chair_back] + legs, mirror_axis)
-            seat = builder.extrude(
-                builder.profile(seat), thickness, position=V(0, 0, seat_level), extrusion_vector=V(0, 0, -1)
-            )
-            chair_back = builder.extrude(
-                builder.profile(chair_back), height - seat_level, position=V(0, 0, height), extrusion_vector=V(0, 0, -1)
-            )
-            legs = [builder.extrude(leg, seat_level - thickness) for leg in legs]
+            items_to_adjust.extend(legs)
 
-            items_3d = [seat, chair_back] + legs
+            if height > seat_level:
+                items_to_adjust.append(chair_back := builder.rectangle(size=V(width, thickness)))
+
+            builder.translate(items_to_adjust, shift_to_center)
+            builder.mirror(items_to_adjust, mirror_axis)
+
+            items_3d.append(
+                builder.extrude(
+                    builder.profile(seat), thickness, position=V(0, 0, seat_level), extrusion_vector=V(0, 0, -1)
+                )
+            )
+
+            if chair_back:
+                items_3d.append(
+                    builder.extrude(
+                        builder.profile(chair_back),
+                        height - seat_level,
+                        position=V(0, 0, height),
+                        extrusion_vector=V(0, 0, -1),
+                    )
+                )
+
+            items_3d.extend([builder.extrude(leg, seat_level - thickness) for leg in legs])
             if return_representations:
                 representation_3d = builder.get_representation(
                     context=self.representations["model_body"], items=items_3d
@@ -1285,8 +1302,6 @@ class LibraryGenerator:
             shift_to_center = V(-width / 2, 0)
             mirror_axis = V(0, 1)
 
-            representation_3d, representation_2d = create_box_objects(width, depth, height, return_representations=True)
-
             back_wall_depth = depth * 0.1
             back_wall_border_mask_height = height * 0.1
             back_wall_border_mask_depth = depth * 0.1
@@ -1954,12 +1969,17 @@ class LibraryGenerator:
             representation_3d, representation_2d = create_box_objects(
                 overall_width, overall_depth, overall_height, return_representations=True
             )
-            self.create_explicit_type("IfcSpaceType", parking_lot_name, representation_3d, representation_2d)
+            self.create_explicit_type(
+                "IfcSpaceType", parking_lot_name, representation_3d, representation_2d, PredefinedType="PARKING"
+            )
 
         self.file.write(output_filename)
 
-    def create_explicit_type(self, ifc_class, name, representation_3d, representation_2d):
+    def create_explicit_type(self, ifc_class, name, representation_3d, representation_2d, **params):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
+        for param, value in params.items():
+            setattr(element, param, value)
+
         ifcopenshell.api.run(
             "geometry.assign_representation", self.file, product=element, representation=representation_3d
         )
