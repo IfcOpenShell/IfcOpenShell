@@ -120,7 +120,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 					// NB: insert() ignores duplicate keys
 					// v-1?
 					// @todo this reliable also in case of tesselations?
-					vertex_mapping_.insert({ pt.instance->data().id(), pnt_i });
+					vertex_mapping_.insert({ pt.identity(), pnt_i });
 				}
 			}
 		}
@@ -156,7 +156,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 			if (edge_sets.find(segment_set) != edge_sets.end()) {
 				duplicate_faces++;
 				// @todo does this work with tesselated face sets, will they have an associated instance? Guess not.
-				duplicates_.insert(loop->instance->data().id());
+				duplicates_.insert(loop->identity());
 				continue;
 			}
 			edge_sets.insert(segment_set);
@@ -197,10 +197,10 @@ void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const taxonomy::loop* ps,
 		return;
 	}
 
-	auto a = boost::get<taxonomy::point3>(((taxonomy::edge*) ps->children.back())->start).instance;
-	auto A = a->data().id();
+	auto a = boost::get<taxonomy::point3>(((taxonomy::edge*) ps->children.back())->start);
+	auto A = a.identity();
 	for (auto& b : ps->children) {
-		auto B = boost::get<taxonomy::point3>(((taxonomy::edge*) b)->start).instance->data().id();
+		auto B = boost::get<taxonomy::point3>(((taxonomy::edge*) b)->start).identity();
 		auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 		bool fwd = C < D;
 		if (!fwd) {
@@ -232,7 +232,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const taxonomy::loop* loop
 }
 
 bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const taxonomy::loop* loop, TopTools_ListOfShape& wires) {
-	if (duplicates_.find(loop->instance->data().id()) != duplicates_.end()) {
+	if (duplicates_.find(loop->identity()) != duplicates_.end()) {
 		return false;
 	}
 	TopoDS_Wire wire;
