@@ -47,6 +47,17 @@ void CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon) {
 	}
 }
 
+namespace {
+	struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
+	private:
+		std::list<cgal_face_t> *face_list;
+	public:
+		boost::optional<cgal_shape_t> from_soup;
+		PolyhedronBuilder(std::list<cgal_face_t> *face_list);
+		void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds);
+	};
+}
+
 CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders) {
 
 	// Naive creation
@@ -91,6 +102,7 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 	return polyhedron;
 }
 
+#ifndef IFOPSH_SIMPLE_KERNEL
 CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_>& nef_polyhedron) {
 	if (nef_polyhedron.is_simple()) {
 		try {
@@ -137,6 +149,7 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 		return CGAL::Nef_polyhedron_3<Kernel_>();
 	}
 }
+#endif
 
 bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 	auto faces = l->children_as<taxonomy::face>();
@@ -789,6 +802,9 @@ namespace {
 
 bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil::IfcBaseEntity * entity, const std::vector<std::pair<taxonomy::item*, ifcopenshell::geometry::taxonomy::matrix4>>& openings, const IfcGeom::ConversionResults & entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4 & entity_trsf, IfcGeom::ConversionResults & cut_shapes)
 {
+#ifdef IFOPSH_SIMPLE_KERNEL
+	return false;
+#else
 	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<Kernel_>> second_operand_collector;
 	size_t second_operand_collector_size = 0;
 	
@@ -860,6 +876,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 	}
 
 	return true;
+#endif
 }
 
 
@@ -1161,6 +1178,8 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(const Ker
 	return create_polyhedron(face_list);
 }
 
+#ifndef IFOPSH_SIMPLE_KERNEL
+
 bool CgalKernel::thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result) {
 	// @todo this should be possible as a minkowski sum of facet & cube. rather than a set of boolean ops.
 
@@ -1248,6 +1267,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 }
 
 #include <CGAL/Nef_nary_union_3.h>
+
+#endif
 
 bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1) {
 	// @todo can also be for other boolean operations, just depth/matrix operands are different
@@ -1616,6 +1637,9 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ConversionResu
 	}
 
 
+#ifdef IFOPSH_SIMPLE_KERNEL
+	return false;
+#else
 	bool first = true;
 
 	CGAL::Nef_polyhedron_3<Kernel_> a;
@@ -1816,6 +1840,8 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ConversionResu
 		br->surface_style ? br->surface_style : first_item_style
 	));
 	return true;
+
+#endif
 }
 
 PolyhedronBuilder::PolyhedronBuilder(std::list<cgal_face_t>* face_list) {

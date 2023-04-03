@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("kernel", po::value<std::string>(&geometry_kernel)->default_value(default_kernel),
-			"Geometry kernel to use (opencascade or cgal).")
+			"Geometry kernel to use (opencascade, cgal, cgal-simple).")
 		("threads,j", po::value<int>(&num_threads)->default_value(1),
 			"Number of parallel processing threads for geometry interpretation.")
 		("plan",

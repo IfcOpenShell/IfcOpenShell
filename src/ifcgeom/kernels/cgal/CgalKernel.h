@@ -35,7 +35,11 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #endif
 */
 
-#include <cmath>
+#ifdef IFOPSH_SIMPLE_KERNEL
+#define CgalKernel SimpleCgalKernel
+#define create_cube create_cube_simple
+#define create_polyhedron create_polyhedron_simple
+#endif
 
 #include "../../../ifcparse/macros.h"
 
@@ -44,14 +48,9 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include "../../../ifcgeom/IfcGeomElement.h"
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
 
-struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
-private:
-	std::list<cgal_face_t> *face_list;
-public:
-	boost::optional<cgal_shape_t> from_soup;
-	PolyhedronBuilder(std::list<cgal_face_t> *face_list);
-	void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds);
-};
+#include <CGAL/Polygon_2.h>
+
+#include <cmath>
 
 namespace ifcopenshell {
 	namespace geometry {
@@ -59,9 +58,12 @@ namespace ifcopenshell {
 			IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_cube(double d);
 			IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper);
 			IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false);
+
+#ifndef IFOPSH_SIMPLE_KERNEL
 			IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
 			IFC_GEOM_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
 			IFC_GEOM_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
+#endif
 		}
 
 		namespace kernels {
@@ -69,15 +71,17 @@ namespace ifcopenshell {
 			class IFC_GEOM_API CgalKernel : public AbstractKernel {
 			private:
 				size_t circle_segments_;
-				// CGAL::Nef_polyhedron_3<Kernel_> precision_cube_;
 
+#ifndef IFOPSH_SIMPLE_KERNEL
 				bool preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate);
+
 				bool thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result);
 
 				CGAL::Nef_polyhedron_3<Kernel_> create_precision_cube_() const {
 					auto cc = utils::create_cube(conv_settings_.getValue(ConversionSettings::GV_PRECISION));
 					return CGAL::Nef_polyhedron_3<Kernel_>(cc);
 				}
+#endif
 			public:
 
 				CgalKernel(const ConversionSettings& settings)
@@ -105,7 +109,9 @@ namespace ifcopenshell {
 				virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::item*, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 					const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
 
+#ifndef IFOPSH_SIMPLE_KERNEL
 				CGAL::Nef_polyhedron_3<Kernel_> precision_cube() const { return create_precision_cube_(); }
+#endif
 			};
 
 		}
