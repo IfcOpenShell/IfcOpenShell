@@ -266,11 +266,13 @@ class Classification(Facet):
             "Data having a {system} reference of {value}",
             "Data classified using {system}",
             "Data classified as {value}",
+            "Classified data",
         ]
         self.requirement_templates = [
             "Shall have a {system} reference of {value}",
             "Shall be classified using {system}",
             "Shall be classified as {value}",
+            "Shall be classified",
         ]
         super().__init__(value, system, uri, minOccurs, maxOccurs, instructions)
 
