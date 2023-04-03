@@ -232,7 +232,9 @@ class FilledOpeningGenerator:
                 ifcopenshell.util.representation.resolve_representation(profile).Items[0],
                 magnitude=thickness / unit_scale,
                 position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-                extrusion_vector=Vector([0.0, 1.0, 0.0]),
+                position_x_axis=Vector((1, 0, 0)),
+                position_z_axis=Vector((0, -1, 0)),
+                extrusion_vector=Vector((0, 0, -1)),
             )
             return shape_builder.get_representation(context, [extrusion])
 
