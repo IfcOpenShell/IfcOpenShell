@@ -298,14 +298,17 @@ class Selector:
                 else:
                     value = value.get(key, None)
             elif isinstance(value, (list, tuple)): # If we use regex
-                results = []
-                for v in value:
-                    subvalue = cls.get_element_value(v, [key], is_regex=is_regex)
-                    if isinstance(subvalue, list):
-                        results.extend(subvalue)
-                    else:
-                        results.append(subvalue)
-                value = results
+                if key.isnumeric():
+                    value = value[int(key)]
+                else:
+                    results = []
+                    for v in value:
+                        subvalue = cls.get_element_value(v, [key], is_regex=is_regex)
+                        if isinstance(subvalue, list):
+                            results.extend(subvalue)
+                        else:
+                            results.append(subvalue)
+                    value = results
         return value
 
     @classmethod
