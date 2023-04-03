@@ -10,6 +10,10 @@
 
 #ifdef IFOPSH_WITH_CGAL
 #include "../ifcgeom/kernels/cgal/CgalKernel.h"
+#undef CGAL_KERNEL_H
+#undef CGALCONVERSIONRESULT_H
+#define IFOPSH_SIMPLE_KERNEL
+#include "../ifcgeom/kernels/cgal/CgalKernel.h"
 #endif
 
 using namespace ifcopenshell::geometry;
@@ -45,6 +49,10 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 #ifdef IFOPSH_WITH_CGAL
 	if (geometry_library_lower == "cgal") {
 		return new CgalKernel(conv_settings);
+	}
+
+	if (geometry_library_lower == "cgal-simple") {
+		return new SimpleCgalKernel(conv_settings);
 	}
 #endif
 	

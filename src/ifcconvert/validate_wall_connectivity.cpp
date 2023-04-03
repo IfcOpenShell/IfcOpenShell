@@ -98,7 +98,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 		auto dza = a.bbox().zmax() - a.bbox().zmin();
 		auto dzb = b.bbox().zmax() - b.bbox().zmin();
-		auto bb = CGAL::Polygon_mesh_processing::bbox_3(x_poly);
+		auto bb = CGAL::Polygon_mesh_processing::bbox(x_poly);
 		if (bb.zmax() - bb.zmin() < std::min(dza, dzb) / 3.) {
 			return;
 		}

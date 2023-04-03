@@ -859,6 +859,16 @@ set_target_properties(geometry_kernel_${kernel} PROPERTIES COMPILE_FLAGS "-DIFC_
 target_link_libraries(geometry_kernel_${kernel} ${${KERNEL_UPPER}_LIBRARIES})
 list(APPEND kernel_libraries geometry_kernel_${kernel})
 
+if (${kernel} STREQUAL "cgal")
+add_library(geometry_kernel_${kernel}_simple ${IFCGEOM_FILES})
+set_target_properties(geometry_kernel_${kernel}_simple PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL")
+# needed?
+# if (NOT WASM_BUILD)
+# endif()
+target_link_libraries(geometry_kernel_${kernel}_simple ${${KERNEL_UPPER}_LIBRARIES})
+list(APPEND kernel_libraries geometry_kernel_${kernel}_simple)
+endif()
+
 endforeach()
 
 foreach(schema ${SCHEMA_VERSIONS})
@@ -919,6 +929,12 @@ set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS $
 
 TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
+endif()
+
+if (MSVC)
+# @todo still needs to be understood better, but the cgal and cgal-simple kernel cause multiply defined boost lambda placeholders _1 ... _3
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /FORCE:MULTIPLE") 
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /FORCE:MULTIPLE") 
 endif()
 
 if (BUILD_CONVERT)

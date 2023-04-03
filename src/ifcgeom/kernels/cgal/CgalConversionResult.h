@@ -24,8 +24,9 @@
 
 #undef Handle
 
+#define CGAL_NO_DEPRECATED_CODE
+
 #include <boost/property_map/property_map.hpp>
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
 #include <CGAL/Polygon_mesh_processing/stitch_borders.h>
@@ -33,9 +34,34 @@
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
-#include <CGAL/Nef_polyhedron_3.h>
 
+#ifdef IFOPSH_SIMPLE_KERNEL
+
+#include <CGAL/Simple_cartesian.h>
+
+#define Kernel_ SimpleKernel_
+#define CgalShape SimpleCgalShape
+#define cgal_placement_t cgal_simple_placement_t
+#define cgal_point_t cgal_simple_point_t
+#define cgal_direction_t cgal_simple_direction_t
+#define cgal_vector_t cgal_simple_vector_t
+#define cgal_plane_t cgal_simple_plane_t
+#define cgal_curve_t cgal_simple_curve_t
+#define cgal_wire_t cgal_simple_wire_t
+#define cgal_face_t cgal_simple_face_t
+#define cgal_shape_t cgal_simple_shape_t
+#define cgal_vertex_descriptor_t cgal_simple_vertex_descriptor_t
+#define cgal_face_descriptor_t cgal_simple_face_descriptor_t
+
+typedef CGAL::Simple_cartesian<double> Kernel_; 
+
+#else
+
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Nef_polyhedron_3.h>
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel_;
+
+#endif
 
 typedef Kernel_::Aff_transformation_3 cgal_placement_t;
 typedef Kernel_::Point_3 cgal_point_t;
@@ -45,10 +71,12 @@ typedef Kernel_::Plane_3 cgal_plane_t;
 typedef std::vector<Kernel_::Point_3> cgal_curve_t;
 typedef std::vector<Kernel_::Point_3> cgal_wire_t;
 
-struct cgal_face_t {
-  cgal_wire_t outer;
-  std::vector<cgal_wire_t> inner;
-};
+namespace {
+	struct cgal_face_t {
+		cgal_wire_t outer;
+		std::vector<cgal_wire_t> inner;
+	};
+}
 
 typedef CGAL::Polyhedron_3<Kernel_> cgal_shape_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::vertex_descriptor cgal_vertex_descriptor_t;
@@ -60,9 +88,8 @@ namespace ifcopenshell { namespace geometry {
 
 	class CgalShape : public IfcGeom::ConversionResultShape {
     public:
-        CgalShape(const cgal_shape_t& shape)
-            : shape_(shape)
-        {}
+		CgalShape(const cgal_shape_t& shape)
+			: shape_(shape) {}
 
 		const cgal_shape_t& shape() const { return shape_; }
 		operator const cgal_shape_t& () { return shape_; }
