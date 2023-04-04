@@ -96,7 +96,10 @@ class MaterialPsetsData(Data):
 
     @classmethod
     def load(cls):
-        cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object.active_material))}
+        cls.data = {
+            "ifc_definition_id": bpy.context.active_object.active_material.BIMObjectProperties.ifc_definition_id,
+            "psets": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object.active_material)),
+        }
         cls.is_loaded = True
 
 

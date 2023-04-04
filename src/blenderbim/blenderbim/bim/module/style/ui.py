@@ -115,6 +115,11 @@ class BIM_PT_style_attributes(Panel):
     def draw(self, context):
         if not StyleAttributesData.is_loaded:
             StyleAttributesData.load()
+        elif (
+            context.active_object.active_material.BIMMaterialProperties.ifc_style_id
+            != StyleAttributesData.data["ifc_style_id"]
+        ):
+            StyleAttributesData.load()
 
         obj = context.active_object.active_material
         mprops = obj.BIMMaterialProperties

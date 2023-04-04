@@ -94,4 +94,10 @@ class BIM_PT_material_attributes(Panel):
     def draw(self, context):
         if not MaterialAttributesData.is_loaded:
             MaterialAttributesData.load()
+        elif (
+            context.active_object.active_material.BIMObjectProperties.ifc_definition_id
+            != MaterialAttributesData.data["ifc_definition_id"]
+        ):
+            MaterialAttributesData.load()
+
         draw_ui(context, self.layout, "Material", MaterialAttributesData.data["attributes"])
