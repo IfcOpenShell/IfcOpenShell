@@ -43,6 +43,7 @@ def update_door_modifier_representation(context):
     props = obj.BIMDoorProperties
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
+    sliding_door = "SLIDING" in props.door_type
 
     representation_data = {
         "operation_type": props.door_type,
@@ -87,13 +88,37 @@ def update_door_modifier_representation(context):
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
-    # PLAN_VIEW representation
-    plan = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
-    if plan:
-        representation_data["context"] = plan
+    # Body/PLAN_VIEW representation
+    plan_body = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
+    if plan_body:
+        representation_data["context"] = plan_body
         plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-        tool.Model.replace_object_ifc_representation(plan, obj, plan_representation)
+        tool.Model.replace_object_ifc_representation(plan_body, obj, plan_representation)
 
+    # Annotation/PLAN_VIEW representation
+    plan_annotation = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Annotation", "PLAN_VIEW")
+    if plan_annotation:
+        if not sliding_door:
+            # only sliding doors have Annotation/PLAN_VIEW
+            # for other types we just check for old representation and remove it if it's there
+            old_representation = ifcopenshell.util.representation.get_representation(
+                element, "Plan", "Annotation", "PLAN_VIEW"
+            )
+            if old_representation:
+                core.remove_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=old_representation,
+                )
+        else:
+            representation_data["context"] = plan_annotation
+            plan_representation = ifcopenshell.api.run(
+                "geometry.add_door_representation", ifc_file, **representation_data
+            )
+            tool.Model.replace_object_ifc_representation(plan_annotation, obj, plan_representation)
+
+    if plan_body or plan_annotation:
         # adding switch representation at the end instead of changing order of representations
         # to prevent #2744
         core.switch_representation(
