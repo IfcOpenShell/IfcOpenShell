@@ -45,13 +45,13 @@ def disable_editing_assigned_product(drawing, obj=None):
 def edit_assigned_product(ifc, drawing, obj=None, product=None):
     element = ifc.get_entity(obj)
     existing_product = drawing.get_assigned_product(element)
-    if existing_product == product:
-        return
-    if existing_product:
-        ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
-    if product:
-        ifc.run("drawing.assign_product", relating_product=product, related_object=element)
-    drawing.update_text_value(obj)
+    if existing_product != product:
+        if existing_product:
+            ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
+        if product:
+            ifc.run("drawing.assign_product", relating_product=product, related_object=element)
+        drawing.update_text_value(obj)
+
     drawing.disable_editing_assigned_product(obj)
 
 
