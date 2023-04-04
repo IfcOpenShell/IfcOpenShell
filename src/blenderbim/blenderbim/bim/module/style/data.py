@@ -56,8 +56,12 @@ class StyleAttributesData:
 
     @classmethod
     def load(cls):
-        cls.data = {"attributes": cls.get_attributes()}
+        cls.data = {"ifc_style_id": cls.ifc_style_id(), "attributes": cls.get_attributes()}
         cls.is_loaded = True
+
+    @classmethod
+    def ifc_style_id(cls):
+        return bpy.context.active_object.active_material.BIMMaterialProperties.ifc_style_id
 
     @classmethod
     def get_attributes(cls):

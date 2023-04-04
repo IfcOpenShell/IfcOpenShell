@@ -268,6 +268,11 @@ class BIM_PT_material_psets(Panel):
     def draw(self, context):
         if not MaterialPsetsData.is_loaded:
             MaterialPsetsData.load()
+        elif (
+            context.active_object.active_material.BIMObjectProperties.ifc_definition_id
+            != MaterialPsetsData.data["ifc_definition_id"]
+        ):
+            MaterialPsetsData.load()
 
         props = context.active_object.active_material.PsetProperties
         row = self.layout.row(align=True)

@@ -59,8 +59,12 @@ class MaterialAttributesData:
 
     @classmethod
     def load(cls):
-        cls.data = {"attributes": cls.attributes()}
+        cls.data = {"ifc_definition_id": cls.ifc_definition_id(), "attributes": cls.attributes()}
         cls.is_loaded = True
+
+    @classmethod
+    def ifc_definition_id(cls):
+        return bpy.context.active_object.active_material.BIMObjectProperties.ifc_definition_id
 
     @classmethod
     def attributes(cls):
