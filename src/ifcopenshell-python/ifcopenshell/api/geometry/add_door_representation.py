@@ -329,21 +329,12 @@ class Usecase:
                 return door_items
 
             def create_ifc_door_sliding_panel_2d(panel_size, panel_position, door_swing_type):
-                door_items = []
-                # create door
-                door_items.append(
-                    builder.polyline(points=(V(0, 0), V(panel_size.x, 0)), position_offset=V(0, panel_size.y * 0.5))
-                )
-                door_items.append(builder.polyline(points=(V(0, 0), V(panel_size.x * 0.3, 0))))
-                door_items.append(
-                    builder.rectangle(size=handle_size.zz, position=V(panel_size.x * 0.1, -handle_size.z * 0.5))
-                )
-                builder.translate(door_items, panel_position - V(panel_size.x * 0.2, 0))
+                door = builder.rectangle(panel_size, position=panel_position - V(panel_size.x * 0.5, 0))
 
                 if door_swing_type == "RIGHT":
                     mirror_point = panel_position + V(panel_size.x / 2, 0)
-                    builder.mirror(door_items, mirror_axes=V(1, 0), mirror_point=mirror_point)
-                return door_items
+                    builder.mirror(door, mirror_axes=V(1, 0), mirror_point=mirror_point)
+                return [door]
 
             door_items = []
             if double_door:
