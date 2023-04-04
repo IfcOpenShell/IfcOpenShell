@@ -236,8 +236,44 @@ class Usecase:
         # create 2d representation
         if self.settings["context"].TargetView == "PLAN_VIEW":
             items_2d = []
-            door_items = []
+            panel_size = V(panel_width, panel_depth)
+            if not sliding_door:
+                panel_position = V(lining_to_panel_offset_x, lining_depth)
+            else:
+                panel_position = V(lining_to_panel_offset_x, -panel_size.y)
 
+            if self.settings["context"].ContextIdentifier == "Annotation":
+                # only sliding door has annotation representation
+                if not sliding_door:
+                    return None
+
+                # arrow symbol
+                arrow_symbol = []
+                arrow_offset = slider_arrow_symbol_size / cos(radians(15))
+                arrow_symbol.append(
+                    builder.polyline(
+                        points=(V(0.35 * panel_size.x, 0), V(0.65 * panel_size.x, 0)),
+                    )
+                )
+                arrow_symbol.append(
+                    builder.polyline(
+                        points=(
+                            V(slider_arrow_symbol_size, arrow_offset),
+                            V(0, 0),
+                            V(slider_arrow_symbol_size, -arrow_offset),
+                        ),
+                        position_offset=V(0.35 * panel_size.x, 0),
+                    )
+                )
+
+                builder.translate(arrow_symbol, panel_position + V(0, -arrow_offset * 1.5))
+
+                items_2d.extend(arrow_symbol)
+
+                representation_2d = builder.get_representation(self.settings["context"], items_2d, "Curve2D")
+                return representation_2d
+
+            door_items = []
             # create lining
             if l_shape_check([side_lining_thickness]):
                 lining_points = [
@@ -302,30 +338,7 @@ class Usecase:
                 door_items.append(
                     builder.rectangle(size=handle_size.zz, position=V(panel_size.x * 0.1, -handle_size.z * 0.5))
                 )
-
-                # arrow symbol
-                arrow_symbol = []
-                arrow_offset = slider_arrow_symbol_size / cos(radians(15))
-                arrow_symbol.append(
-                    builder.polyline(
-                        points=(V(0.35 * panel_size.x, 0), V(0.65 * panel_size.x, 0)),
-                    )
-                )
-                arrow_symbol.append(
-                    builder.polyline(
-                        points=(
-                            V(slider_arrow_symbol_size, arrow_offset),
-                            V(0, 0),
-                            V(slider_arrow_symbol_size, -arrow_offset),
-                        ),
-                        position_offset=V(0.35 * panel_size.x, 0),
-                    )
-                )
-
-                builder.translate(arrow_symbol, panel_position + V(0, -arrow_offset * 1.5))
-
                 builder.translate(door_items, panel_position - V(panel_size.x * 0.2, 0))
-                door_items.extend(arrow_symbol)
 
                 if door_swing_type == "RIGHT":
                     mirror_point = panel_position + V(panel_size.x / 2, 0)
@@ -333,12 +346,6 @@ class Usecase:
                 return door_items
 
             door_items = []
-            panel_size = V(panel_width, panel_depth)
-            if not sliding_door:
-                panel_position = V(lining_to_panel_offset_x, lining_depth)
-            else:
-                panel_position = V(lining_to_panel_offset_x, -panel_size.y)
-
             if double_door:
                 panel_size.x = panel_size.x / 2
                 door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, "LEFT", sliding_door))
