@@ -35,61 +35,6 @@ from blenderbim.bim.module.model.wall import DumbWallRecalculator
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
-def element_listener(element, obj):
-    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
-
-
-def mode_callback(obj, data):
-    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
-        if (
-            not obj.data
-            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
-            or not obj.BIMObjectProperties.ifc_definition_id
-            or not bpy.context.scene.BIMProjectProperties.is_authoring
-        ):
-            return
-        product = tool.Ifc.get().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbProfile":
-            return
-        if obj.mode == "EDIT":
-            tool.Ifc.edit(obj)
-            bm = bmesh.from_edit_mesh(obj.data)
-            bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-            bmesh.update_edit_mesh(obj.data)
-        else:
-            material_usage = ifcopenshell.util.element.get_material(product)
-            x, y = obj.dimensions[0:2]
-            if not material_usage.CardinalPoint:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[0]) + (Vector((x, y, 0)) / 2))
-            elif material_usage.CardinalPoint == 1:
-                new_origin = obj.matrix_world @ Vector(obj.bound_box[4])
-            elif material_usage.CardinalPoint == 2:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[0]) + (Vector((x, 0, 0)) / 2))
-            elif material_usage.CardinalPoint == 3:
-                new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
-            elif material_usage.CardinalPoint == 4:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[4]) + (Vector((0, y, 0)) / 2))
-            elif material_usage.CardinalPoint == 5:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[0]) + (Vector((x, y, 0)) / 2))
-            elif material_usage.CardinalPoint == 6:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[0]) + (Vector((0, y, 0)) / 2))
-            elif material_usage.CardinalPoint == 7:
-                new_origin = obj.matrix_world @ Vector(obj.bound_box[7])
-            elif material_usage.CardinalPoint == 8:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[3]) + (Vector((x, 0, 0)) / 2))
-            elif material_usage.CardinalPoint == 9:
-                new_origin = obj.matrix_world @ Vector(obj.bound_box[3])
-            if (obj.matrix_world.translation - new_origin).length < 0.001:
-                return
-            obj.data.transform(
-                Matrix.Translation(
-                    (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
-                )
-            )
-            obj.matrix_world.translation = new_origin
-
-
 class DumbProfileGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type

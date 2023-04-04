@@ -37,38 +37,6 @@ from mathutils import Vector, Matrix
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 
 
-def element_listener(element, obj):
-    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
-
-
-def mode_callback(obj, data):
-    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
-        if (
-            not obj.data
-            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
-            or not obj.BIMObjectProperties.ifc_definition_id
-            or not bpy.context.scene.BIMProjectProperties.is_authoring
-        ):
-            return
-        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
-            return
-        if obj.mode == "EDIT":
-            tool.Ifc.edit(obj)
-            bm = bmesh.from_edit_mesh(obj.data)
-            bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-            bmesh.update_edit_mesh(obj.data)
-        else:
-            new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
-            obj.data.transform(
-                Matrix.Translation(
-                    (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
-                )
-            )
-            obj.matrix_world.translation = new_origin
-
-
 class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.join_wall"
     bl_label = "Join Wall"
