@@ -215,8 +215,9 @@ class FilledOpeningGenerator:
 
     def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
         thickness = voided_obj.dimensions[1] + 0.1 + 0.1
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
 
         profile = None
         filling_type = ifcopenshell.util.element.get_type(filling)
@@ -225,14 +226,24 @@ class FilledOpeningGenerator:
                 filling_type, "Model", "Profile", "ELEVATION_VIEW"
             )
             filling_obj = tool.Ifc.get_object(filling_type)
-        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
 
         if profile:
+            curve_3d = ifcopenshell.util.representation.resolve_representation(profile).Items[0]
+
+            def get_curve_2d_from_3d(curve_3d):
+                ifc_segments = [shape_builder.deep_copy(s) for s in curve_3d.Segments]
+                ifc_points = ifc_file.createIfcCartesianPointList2D([Vector(p).xz for p in curve_3d.Points.CoordList])
+                ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
+                return ifc_curve
+
             extrusion = shape_builder.extrude(
-                ifcopenshell.util.representation.resolve_representation(profile).Items[0],
+                get_curve_2d_from_3d(curve_3d),
                 magnitude=thickness / unit_scale,
                 position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-                extrusion_vector=Vector([0.0, 1.0, 0.0]),
+                position_x_axis=Vector((1, 0, 0)),
+                position_z_axis=Vector((0, -1, 0)),
+                extrusion_vector=Vector((0, 0, -1)),
             )
             return shape_builder.get_representation(context, [extrusion])
 
