@@ -513,18 +513,19 @@ class ShapeBuilder:
         )
         return extruded_area
 
-    def get_representation(self, context, items):
+    def get_representation(self, context, items, representation_type=None):
         # > items - could be a list or single curve/IfcExtrudedAreaSolid
         # < IfcShapeRepresentation
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
 
-        if items[0].is_a("IfcExtrudedAreaSolid"):
-            representation_type = "SweptSolid"
-        elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
-            representation_type = "Curve3D"
-        else:
-            representation_type = "Curve2D"
+        if not representation_type:
+            if items[0].is_a("IfcExtrudedAreaSolid"):
+                representation_type = "SweptSolid"
+            elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
+                representation_type = "Curve3D"
+            else:
+                representation_type = "Curve2D"
 
         representation = self.file.createIfcShapeRepresentation(
             ContextOfItems=context,
