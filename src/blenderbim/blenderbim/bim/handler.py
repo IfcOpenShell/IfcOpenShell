@@ -105,16 +105,16 @@ def active_material_index_callback(obj, data):
     refresh_ui_data()
 
 
-def subscribe_to(object, data_path, callback):
+def subscribe_to(obj, data_path, callback):
     try:
-        subscribe_to = object.path_resolve(data_path, False)
+        subscribe_to = obj.path_resolve(data_path, False)
     except:
         return
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
-        owner=object,
+        owner=obj,
         args=(
-            object,
+            obj,
             data_path,
         ),
         notify=callback,

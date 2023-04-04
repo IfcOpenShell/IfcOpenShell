@@ -60,9 +60,6 @@ def load_post(*args):
         product.regenerate_profile_usage,
     )
 
-    IfcStore.add_element_listener(wall.element_listener)
-    IfcStore.add_element_listener(profile.element_listener)
-
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.DumbWall.CalculateQuantities", wall.calculate_quantities
     )
