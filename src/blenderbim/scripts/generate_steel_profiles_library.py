@@ -155,27 +155,6 @@ class LibraryGenerator:
         unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
 
-        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
-        plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
-        self.representations = {
-            "body": ifcopenshell.api.run(
-                "context.add_context",
-                self.file,
-                context_type="Model",
-                context_identifier="Body",
-                target_view="MODEL_VIEW",
-                parent=model,
-            ),
-            "annotation": ifcopenshell.api.run(
-                "context.add_context",
-                self.file,
-                context_type="Plan",
-                context_identifier="Annotation",
-                target_view="PLAN_VIEW",
-                parent=plan,
-            ),
-        }
-
         self.material = ifcopenshell.api.run("material.add_material", self.file, name="Unknown")
 
         # parameters could be optional (example: welded i-beams don't have FilletRadius)
@@ -245,29 +224,6 @@ class LibraryGenerator:
 
         self.file.write(output_filename)
 
-    def create_layer_set_type(self, name, data):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=data["type"], name=name)
-        element.Description = data["Description"]
-        rel = ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialLayerSet")
-        layer_set = rel.RelatingMaterial
-        for layer_data in data["Layers"]:
-            layer = ifcopenshell.api.run(
-                "material.add_layer", self.file, layer_set=layer_set, material=self.materials[layer_data[1]]["ifc"]
-            )
-            layer.Name = layer_data[0]
-            layer.LayerThickness = layer_data[2]
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
-        return element
-
-    def create_layer_type(self, ifc_class, name, thickness):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialLayerSet")
-        layer_set = rel.RelatingMaterial
-        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=layer_set, material=self.materials["TBD"]["ifc"])
-        layer.LayerThickness = thickness
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
-        return element
-
     def create_profile_type(self, ifc_class, name, profile):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
         rel = ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialProfileSet")
@@ -277,38 +233,6 @@ class LibraryGenerator:
             # material=self.materials["TBD"]["ifc"]
         )
         ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
-
-    def create_type(self, ifc_class, name, representations):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        for rep_name, obj_name in representations.items():
-            obj = bpy.data.objects.get(obj_name)
-            representation = ifcopenshell.api.run(
-                "geometry.add_representation",
-                self.file,
-                context=self.representations[rep_name],
-                blender_object=obj,
-                geometry=obj.data,
-                total_items=max(1, len(obj.material_slots)),
-            )
-            styles = []
-            for slot in obj.material_slots:
-                style = ifcopenshell.api.run("style.add_style", self.file, name=slot.material.name)
-                ifcopenshell.api.run(
-                    "style.add_surface_style",
-                    self.file,
-                    style=style,
-                    ifc_class="IfcSurfaceStyleRendering",
-                    attributes=tool.Style.get_surface_rendering_attributes(slot.material),
-                )
-                styles.append(style)
-            if styles:
-                ifcopenshell.api.run(
-                    "style.assign_representation_styles", self.file, shape_representation=representation, styles=styles
-                )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", self.file, product=element, representation=representation
-            )
         ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
 
 
