@@ -498,6 +498,12 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
         return {"objects": objects, "children": children}
 
 
+class OverrideDuplicateMoveMacro(bpy.types.Macro):
+    bl_idname = "bim.override_object_duplicate_move_macro"
+    bl_label = "IFC Duplicate Objects"
+    bl_options = {"REGISTER", "UNDO"}
+
+
 class OverrideDuplicateMove(bpy.types.Operator):
     bl_idname = "bim.override_object_duplicate_move"
     bl_label = "IFC Duplicate Objects"
@@ -529,8 +535,6 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new_obj.select_set(True)
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
-        if self.is_interactive:
-            bpy.ops.transform.translate("INVOKE_DEFAULT")
         return {"FINISHED"}
 
     def _execute(self, context):
@@ -554,14 +558,19 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 old_to_new[tool.Ifc.get_entity(obj)] = [new]
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        if self.is_interactive:
-            bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
+
+
+class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
+    bl_idname = "bim.override_object_duplicate_move_linked_macro"
+    bl_label = "IFC Duplicate Linked"
+    bl_options = {"REGISTER", "UNDO"}
 
 
 class OverrideDuplicateMoveLinked(bpy.types.Operator):
     bl_idname = "bim.override_object_duplicate_move_linked"
     bl_label = "IFC Duplicate Linked"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -586,7 +595,6 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
             new_obj.select_set(True)
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
-        bpy.ops.transform.translate("INVOKE_DEFAULT")
         return {"FINISHED"}
 
     def _execute(self, context):
@@ -596,6 +604,8 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         old_to_new = {}
         for obj in context.selected_objects:
             new_obj = obj.copy()
+            if obj.data:
+                new_obj.data = obj.data.copy()
             if obj == context.active_object:
                 self.new_active_obj = new_obj
             for collection in obj.users_collection:
@@ -608,7 +618,6 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
                 old_to_new[tool.Ifc.get_entity(obj)] = new
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
@@ -616,6 +625,7 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
 class OverrideJoin(bpy.types.Operator, Operator):
     bl_idname = "bim.override_object_join"
     bl_label = "IFC Join"
+    bl_options = {"REGISTER", "UNDO"}
 
     def invoke(self, context, event):
         if not tool.Ifc.get():
@@ -708,6 +718,7 @@ class OverrideJoin(bpy.types.Operator, Operator):
 class OverridePasteBuffer(bpy.types.Operator):
     bl_idname = "bim.override_paste_buffer"
     bl_label = "IFC Paste BIM Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.ops.view3d.pastebuffer()
