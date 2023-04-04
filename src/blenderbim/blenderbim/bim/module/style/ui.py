@@ -23,8 +23,6 @@ from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
 from bl_ui.properties_material import MaterialButtonsPanel
 
 
-
-
 class BIM_PT_styles(Panel):
     bl_label = "IFC Styles"
     bl_idname = "BIM_PT_styles"
@@ -93,7 +91,7 @@ class BIM_PT_style(MaterialButtonsPanel, Panel):
             row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
             row = self.layout.row(align=True)
             row.prop(mat, "diffuse_color", text="Color")
-            
+
         else:
             row.operator("bim.add_style", icon="ADD")
 

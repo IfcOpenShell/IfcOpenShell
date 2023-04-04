@@ -34,6 +34,7 @@ class StylesData:
     @classmethod
     def load(cls):
         cls.data = {"style_types": cls.style_types(), "total_styles": cls.total_styles()}
+        cls.is_loaded = True
 
     @classmethod
     def style_types(cls):
@@ -56,6 +57,7 @@ class StyleAttributesData:
     @classmethod
     def load(cls):
         cls.data = {"attributes": cls.get_attributes()}
+        cls.is_loaded = True
 
     @classmethod
     def get_attributes(cls):
