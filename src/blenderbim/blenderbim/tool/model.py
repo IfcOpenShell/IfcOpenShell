@@ -420,7 +420,7 @@ class Model(blenderbim.core.tool.Model):
             children_elements = []
             children_objs = []
             if array['dimension_input_type'] == "Total":
-                divider = array["count"] -1
+                divider = 1 if ((array["count"] - 1) == 0) else (array["count"] - 1)
                 base_offset = Vector([array["x"] / divider, array["y"] / divider, array["z"] / divider]) * unit_scale
             else:
                 base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
