@@ -732,7 +732,6 @@ class SvgWriter:
             )
             self.svg.add(text_tag)
 
-            tspans = []
             text_lines = text.replace("\\n", "\n").split("\n")
 
             # adding fill background tspan
@@ -750,7 +749,6 @@ class SvgWriter:
                 tspan = self.svg.tspan(text_line, class_=classes_str, insert=text_position_svg)
                 # doing it here and not in tspan constructor because constructor adds unnecessary spaces
                 tspan.update({"dy": f"{line_number}em"})
-                tspans.append(tspan)
                 text_tag.add(tspan)
 
     def draw_break_annotations(self, obj):
