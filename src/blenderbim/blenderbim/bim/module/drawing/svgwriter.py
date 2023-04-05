@@ -68,7 +68,7 @@ class SvgWriter:
         self.related_paths = None
 
     def create_blank_svg(self, output_path):
-        self.define_related_paths() # making sure all paths are defined
+        self.define_related_paths()  # making sure all paths are defined
         self.calculate_scale()
         self.svg = svgwrite.Drawing(
             output_path,
@@ -662,7 +662,8 @@ class SvgWriter:
         )
 
         transform = "rotate({}, {}, {})".format(angle, *text_position_svg)
-        classes_str = " ".join(self.get_attribute_classes(text_obj))
+        classes = self.get_attribute_classes(text_obj)
+        classes_str = " ".join(classes)
 
         symbol = tool.Drawing.get_annotation_symbol(element)
         template_text_fields = []
@@ -731,12 +732,26 @@ class SvgWriter:
             )
             self.svg.add(text_tag)
 
-            for line_number, text_line in enumerate(text.replace("\\n", "\n").split("\n")):
+            tspans = []
+            text_lines = text.replace("\\n", "\n").split("\n")
+
+            # adding fill background tspan
+            # tspans and text doesn't support setting up "background-color"
+            # so we add a filter, we do it in separate span because otherwise it will produce blurry image
+            # adding just 1 tspan seems to work
+            if "fill-bg" in classes:
+                tspan = self.svg.tspan(
+                    text_lines[0], class_=classes_str, insert=text_position_svg, filter="url(#fill-background)"
+                )
+                text_tag.add(tspan)
+
+            for line_number, text_line in enumerate(text_lines):
                 # position has to be inserted at tspan to avoid x offset between tspans
-                t_span = self.svg.tspan(text_line, class_=classes_str, insert=text_position_svg)
+                tspan = self.svg.tspan(text_line, class_=classes_str, insert=text_position_svg)
                 # doing it here and not in tspan constructor because constructor adds unnecessary spaces
-                t_span.update({"dy": f"{line_number}em"})
-                text_tag.add(t_span)
+                tspan.update({"dy": f"{line_number}em"})
+                tspans.append(tspan)
+                text_tag.add(tspan)
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
