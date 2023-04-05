@@ -175,3 +175,42 @@ class SelectArrayParent(bpy.types.Operator):
             context.view_layer.objects.active = obj
             obj.select_set(True)
         return {"FINISHED"}
+
+class Input3DCursorXArray(bpy.types.Operator):
+    bl_idname = "bim.input_cursor_x_array"
+    bl_label = "Get 3d Cursor X Input for Array"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        #element = tool.Ifc.get_entity(obj)
+        props = obj.BIMArrayProperties
+        cursor_location = context.scene.cursor.location
+        props.x = cursor_location.x - obj.location.x
+        return {"FINISHED"}
+
+class Input3DCursorYArray(bpy.types.Operator):
+    bl_idname = "bim.input_cursor_y_array"
+    bl_label = "Get 3d Cursor Y Input for Array"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        #element = tool.Ifc.get_entity(obj)
+        props = obj.BIMArrayProperties
+        cursor_location = context.scene.cursor.location
+        props.y = cursor_location.y - obj.location.y
+        return {"FINISHED"}
+
+class Input3DCursorZArray(bpy.types.Operator):
+    bl_idname = "bim.input_cursor_z_array"
+    bl_label = "Get 3d Cursor Z Input for Array"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        #element = tool.Ifc.get_entity(obj)
+        props = obj.BIMArrayProperties
+        cursor_location = context.scene.cursor.location
+        props.z = cursor_location.z - obj.location.z
+        return {"FINISHED"}
