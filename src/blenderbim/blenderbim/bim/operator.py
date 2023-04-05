@@ -210,12 +210,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         return bpy.data.node_groups.get("Section Override")
 
     def create_section_compare_node(self):
-        # Add a new socket to group input / output https://blender.stackexchange.com/a/5446/86891
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
         group.inputs.new("NodeSocketFloat", "Value")
         group.inputs["Value"].default_value = 1.0  # Mandatory multiplier for the last node group
         group.inputs.new("NodeSocketVector", "Vector")
         group.outputs.new("NodeSocketFloat", "Value")
+        group.outputs.new("NodeSocketFloat", "Line Decorator")
         group_input = group.nodes.new(type="NodeGroupInput")
         group_input.location = 0, 50
 
@@ -226,6 +226,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         greater.operation = "GREATER_THAN"
         greater.inputs[1].default_value = 0
         greater.location = 400, 0
+
+        compare = group.nodes.new(type="ShaderNodeMath")
+        compare.operation = "COMPARE"
+        compare.inputs[1].default_value = 0
+        compare.inputs[2].default_value = 0.04
+        compare.location = 400, -200
 
         multiply = group.nodes.new(type="ShaderNodeMath")
         multiply.operation = "MULTIPLY"
@@ -240,6 +246,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         group.links.new(separate_xyz.outputs[2], greater.inputs[0])
         group.links.new(greater.outputs[0], multiply.inputs[1])
         group.links.new(multiply.outputs[0], group_output.inputs["Value"])
+        group.links.new(separate_xyz.outputs[2], compare.inputs[0])
+        group.links.new(compare.outputs[0], group_output.inputs["Line Decorator"])
 
     def create_section_override_node(self, obj, context):
         # Add a new socket to group input / output https://blender.stackexchange.com/a/5446/86891
