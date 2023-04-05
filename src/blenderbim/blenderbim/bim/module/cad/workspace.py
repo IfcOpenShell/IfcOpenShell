@@ -156,7 +156,7 @@ class CadTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_R")
-                row.operator("bim.cad_hotkey", text="Set gable roof angle").hotkey = "S_R"
+                row.operator("bim.cad_hotkey", text="Set Gable Roof Angle").hotkey = "S_R"
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")

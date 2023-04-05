@@ -299,7 +299,7 @@ class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
 
 class CancelEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_railing"
-    bl_label = "Cancel editing Railing"
+    bl_label = "Cancel Editing Railing"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -328,7 +328,7 @@ class CancelEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
 
 class FinishEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_railing"
-    bl_label = "Finish editing railing"
+    bl_label = "Finish Editing Railing"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
