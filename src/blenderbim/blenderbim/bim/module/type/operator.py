@@ -64,19 +64,51 @@ class UnassignType(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        def exclude_callback(attribute):
+            return attribute.is_a("IfcProfileDef") and attribute.ProfileName
+
         self.file = IfcStore.get_file()
-        related_objects = (
+        objs = (
             [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
-        for related_object in related_objects:
-            oprops = related_object.BIMObjectProperties
-            ifcopenshell.api.run(
-                "type.unassign_type",
-                self.file,
-                **{
-                    "related_object": self.file.by_id(oprops.ifc_definition_id),
-                },
-            )
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element or element.is_a("IfcElementType"):
+                continue
+            ifcopenshell.api.run("type.unassign_type", self.file, related_object=element)
+
+            active_representation = tool.Geometry.get_active_representation(obj)
+            active_context = active_representation.ContextOfItems
+            new_active_representation = None
+
+            if element.Representation:
+                representations = []
+                for representation in element.Representation.Representations:
+                    resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
+                    if representation == resolved_representation:
+                        print('appending', representation)
+                        representations.append(representation)
+                    else:
+                        print('copying', representation)
+                        # We must unmap representations.
+                        copied_representation = ifcopenshell.util.element.copy_deep(
+                            tool.Ifc.get(), resolved_representation, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback
+                        )
+                        representations.append(copied_representation)
+                        if representation.ContextOfItems == active_context:
+                            new_active_representation = copied_representation
+                element.Representation.Representations = representations
+
+            if new_active_representation:
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=new_active_representation,
+                    should_reload=False,
+                    is_global=False,
+                    should_sync_changes_first=False,
+                )
         return {"FINISHED"}
 
 
