@@ -1468,6 +1468,11 @@ class SectionLevelDecorator(LevelDecorator):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         region = context.region
         region3d = context.region_data
+
+        element = tool.Ifc.get_entity(obj)
+        storey = tool.Drawing.get_annotation_element(element)
+        tag = storey.Name if storey else element.Description
+
         for verts in splines:
             v0 = verts[0]
             v1 = verts[1]
@@ -1475,14 +1480,28 @@ class SectionLevelDecorator(LevelDecorator):
             p1 = location_3d_to_region_2d(region, region3d, v1)
             if not p0 or not p1:
                 continue
-            dir = p1 - p0
-            if dir.length < 1:
+            text_dir = p1 - p0
+            if text_dir.length < 1:
                 continue
             z = verts[-1].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
-            text = "RL " + self.format_value(context, z)
-            self.draw_label(context, text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
+
+            text_lines = ["RL " + self.format_value(context, z)]
+            if tag:
+                text_lines.append(tag)
+
+            for line_i, line in zip((0, -1), text_lines):
+                self.draw_label(
+                    context,
+                    line,
+                    p0 + text_dir.normalized() * 16,
+                    -text_dir,
+                    gap=16,
+                    center=False,
+                    vcenter=False,
+                    line_no=line_i,
+                )
 
 
 class BreakDecorator(BaseDecorator):
