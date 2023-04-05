@@ -227,10 +227,17 @@ class BIM_PT_array(bpy.types.Panel):
                     row.prop(props, "dimension_input_type")
                     row = box.row(align=True)
                     row.prop(props, "use_local_space")
-                    row = box.row(align=True)
+                    #row = box.row(align=True)
+                    col = box.column()
+                    row = col.row(align=True)
                     row.prop(props, "x")
+                    row.operator("bim.input_cursor_x_array", icon="CURSOR", text="")
+                    row = col.row(align=True)
                     row.prop(props, "y")
+                    row.operator("bim.input_cursor_y_array", icon="CURSOR", text="")
+                    row = col.row(align=True)
                     row.prop(props, "z")
+                    row.operator("bim.input_cursor_z_array", icon="CURSOR", text="")
 
                 else:
                     row = box.row(align=True)
