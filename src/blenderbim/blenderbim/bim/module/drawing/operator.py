@@ -46,6 +46,7 @@ from mathutils import Vector
 from timeit import default_timer as timer
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal
 from blenderbim.bim.ifc import IfcStore
+from pathlib import Path
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -147,7 +148,7 @@ class CreateDrawing(bpy.types.Operator):
         "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
         + "SHIFT+CLICK to print all annotations"
     )
-    print_all: bpy.props.BoolProperty(name="Print all", default=False)
+    print_all: bpy.props.BoolProperty(name="Print All", default=False)
 
     @classmethod
     def poll(cls, context):
@@ -850,12 +851,50 @@ class OpenView(bpy.types.Operator):
     bl_idname = "bim.open_view"
     bl_label = "Open View"
     view: bpy.props.StringProperty()
+    bl_description = (
+        "Opens a .svg drawing based on currently active camera with default system viewer\n"
+        + 'or using "svg_command" from the BlenderBIM preferences (if provided).\n\n'
+        + "SHIFT+CLICK to open all drawings"
+    )
+    open_all: bpy.props.BoolProperty(name="Open All", default=False)
+
+    def invoke(self, context, event):
+        # opening all annotations on shift+click
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.open_all = True
+        else:
+            # can't rely on default value since `self.open_all = True`
+            # will set the value to `True` for all future calls
+            self.open_all = False
+        return self.execute(context)
 
     def execute(self, context):
-        open_with_user_command(
-            context.preferences.addons["blenderbim"].preferences.svg_command,
-            os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.view + ".svg"),
-        )
+        if not self.open_all:
+            view_list = [self.view]
+        else:
+            view_list = [d.name for d in context.scene.DocProperties.drawings]
+
+        data_dir = Path(context.scene.BIMProperties.data_dir)
+        diagrams = []
+        drawings_not_found = []
+        for view_name in view_list.copy():
+            path = data_dir / "diagrams" / (view_name + ".svg")
+            if not path.is_file():
+                drawings_not_found.append(view_name)
+            diagrams.append(path)
+
+        if drawings_not_found:
+            msg = "Some drawings .svg files were not found, need to print them first: \n{}.".format(
+                "\n".join(drawings_not_found)
+            )
+            self.report({"ERROR"}, msg)
+            return {"CANCELLED"}
+
+        for diagram_path in diagrams:
+            open_with_user_command(
+                context.preferences.addons["blenderbim"].preferences.svg_command,
+                str(diagram_path),
+            )
         return {"FINISHED"}
 
 
