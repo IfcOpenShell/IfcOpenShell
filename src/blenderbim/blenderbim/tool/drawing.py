@@ -1240,3 +1240,13 @@ class Drawing(blenderbim.core.tool.Drawing):
                     project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
         tool.Spatial.set_active_object(camera)
+
+        # sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
+        drawing_elements = cls.get_drawing_elements(tool.Ifc.get_entity(camera))
+        for element in tool.Ifc.get().by_type("IfcElement"):
+            if element.is_a() in ("IfcOpeningElement", ):
+                continue
+
+            obj = tool.Ifc.get_object(element)
+            obj.hide_viewport = element not in drawing_elements
+            obj.hide_render = element not in drawing_elements
