@@ -102,7 +102,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
 class UpdateIfcPatchArguments(bpy.types.Operator):
     bl_idname = "bim.update_ifc_patch_arguments"
-    bl_label = "Update IFC Patch arguments"
+    bl_label = "Update IFC Patch Arguments"
     recipe: bpy.props.StringProperty()
 
     def execute(self, context):

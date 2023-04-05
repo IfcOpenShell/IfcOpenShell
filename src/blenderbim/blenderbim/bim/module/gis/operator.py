@@ -49,7 +49,7 @@ class BIM_OT_cityjson2ifc(Operator):
 
 class BIM_OT_find_cityjson_lod(Operator):
     bl_idname = "bim.find_cityjson_lod"
-    bl_label = "Find LODs in CityJSON file"
+    bl_label = "Find LODs in CityJSON File"
     bl_context = "scene"
 
     def execute(self, context):

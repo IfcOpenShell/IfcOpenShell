@@ -469,7 +469,7 @@ class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
 
 class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_roof"
-    bl_label = "Cancel editing Roof"
+    bl_label = "Cancel Editing Roof"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -498,7 +498,7 @@ class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
 
 class FinishEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_roof"
-    bl_label = "Finish editing roof"
+    bl_label = "Finish Editing Roof"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -633,7 +633,7 @@ class RemoveRoof(bpy.types.Operator, tool.Ifc.Operator):
 
 class SetGableRoofEdgeAngle(bpy.types.Operator):
     bl_idname = "bim.set_gable_roof_edge_angle"
-    bl_label = "Set gable roof edge angle"
+    bl_label = "Set Gable Roof Edge Angle"
     bl_options = {"REGISTER", "UNDO"}
     angle: bpy.props.FloatProperty(name="Angle", default=90)
 

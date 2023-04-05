@@ -149,7 +149,7 @@ class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
 
 class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_item"
-    bl_label = "Remove Cost item"
+    bl_label = "Remove Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
