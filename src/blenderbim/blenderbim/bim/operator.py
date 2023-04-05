@@ -101,6 +101,7 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+
 class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.reload_selected_ifc_file"
     bl_label = "Reload selected IFC File"
@@ -113,6 +114,7 @@ class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
         if self.is_existing_ifc_file():
             context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
         return {"FINISHED"}
+
 
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
@@ -250,7 +252,6 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         group.links.new(compare.outputs[0], group_output.inputs["Line Decorator"])
 
     def create_section_override_node(self, obj, context):
-        # Add a new socket to group input / output https://blender.stackexchange.com/a/5446/86891
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
         group.inputs.new("NodeSocketShader", "Shader")
         group.outputs.new("NodeSocketShader", "Shader")
@@ -259,44 +260,51 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
         group_input = nodes.new(type="NodeGroupInput")
         group_output = nodes.new(type="NodeGroupOutput")
-        group_output.location = 600, 250
+        group_output.location = 800, 250
 
-        backfacing_mix = nodes.new(type="ShaderNodeMixShader")
-        backfacing_mix.location = group_output.location - Vector((400, 350))
+        mix_decorator = group.nodes.new(type="ShaderNodeMixShader")
+        mix_decorator.name = "Line Decorator Mix"
+        mix_decorator.location = group_output.location - Vector((200, 0))
+
+        mix_section = group.nodes.new(type="ShaderNodeMixShader")
+        mix_section.name = "Section Mix"
+        mix_section.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
+        mix_section.location = mix_decorator.location - Vector((200, 200))
+
+        transparent = nodes.new(type="ShaderNodeBsdfTransparent")
+        transparent.location = mix_section.location - Vector((200, 100))
+
+        mix_backfacing = nodes.new(type="ShaderNodeMixShader")
+        mix_backfacing.location = mix_section.location - Vector((200, 0))
+
+        group_input.location = mix_backfacing.location - Vector((200, 50))
 
         backfacing = nodes.new(type="ShaderNodeNewGeometry")
-        backfacing.location = backfacing_mix.location + Vector((-200, 200))
-        group_input.location = backfacing_mix.location - Vector((200, 50))
+        backfacing.location = mix_backfacing.location + Vector((-200, 200))
 
         emission = nodes.new(type="ShaderNodeEmission")
         emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
-        emission.location = backfacing_mix.location - Vector((200, 150))
-
-        transparent = nodes.new(type="ShaderNodeBsdfTransparent")
-        transparent.location = group_output.location - Vector((400, 100))
-
-        section_mix = group.nodes.new(type="ShaderNodeMixShader")
-        section_mix.name = "Section Mix"
-        section_mix.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
-        section_mix.location = group_output.location - Vector((200, 0))
+        emission.location = mix_backfacing.location - Vector((200, 150))
 
         cut_obj = nodes.new(type="ShaderNodeTexCoord")
         cut_obj.object = obj
-        cut_obj.location = group_output.location - Vector((800, 150))
+        cut_obj.location = backfacing.location - Vector((200, 200))
 
         section_compare = nodes.new(type="ShaderNodeGroup")
         section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
         section_compare.name = "Last Section Compare"
-        section_compare.location = group_output.location - Vector((600, 0))
+        section_compare.location = backfacing.location + Vector((0, 200))
 
         links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
-        links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
-        links.new(group_input.outputs["Shader"], backfacing_mix.inputs[1])
-        links.new(emission.outputs["Emission"], backfacing_mix.inputs[2])
-        links.new(section_compare.outputs[0], section_mix.inputs[0])
-        links.new(transparent.outputs["BSDF"], section_mix.inputs[1])
-        links.new(backfacing_mix.outputs["Shader"], section_mix.inputs[2])
-        links.new(section_mix.outputs["Shader"], group_output.inputs["Shader"])
+        links.new(backfacing.outputs["Backfacing"], mix_backfacing.inputs[0])
+        links.new(group_input.outputs["Shader"], mix_backfacing.inputs[1])
+        links.new(emission.outputs["Emission"], mix_backfacing.inputs[2])
+        links.new(section_compare.outputs["Value"], mix_section.inputs[0])
+        links.new(transparent.outputs[0], mix_section.inputs[1])
+        links.new(mix_backfacing.outputs["Shader"], mix_section.inputs[2])
+        links.new(section_compare.outputs["Line Decorator"], mix_decorator.inputs[0])
+        links.new(mix_section.outputs["Shader"], mix_decorator.inputs[1])
+        links.new(mix_decorator.outputs["Shader"], group_output.inputs["Shader"])
 
     def append_obj_to_section_override_node(self, obj):
         group = bpy.data.node_groups.get("Section Override")
