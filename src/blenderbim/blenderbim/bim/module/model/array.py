@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import blenderbim.tool as tool
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 
 class AddArray(bpy.types.Operator, tool.Ifc.Operator):
@@ -183,10 +183,12 @@ class Input3DCursorXArray(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        #element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
-        cursor_location = context.scene.cursor.location
-        props.x = cursor_location.x - obj.location.x
+        cursor = context.scene.cursor
+        if props.use_local_space:
+            props.x = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).x
+        else:
+            props.x = cursor.location.x - obj.location.x
         return {"FINISHED"}
 
 class Input3DCursorYArray(bpy.types.Operator):
@@ -196,10 +198,12 @@ class Input3DCursorYArray(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        #element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
-        cursor_location = context.scene.cursor.location
-        props.y = cursor_location.y - obj.location.y
+        cursor = context.scene.cursor
+        if props.use_local_space:
+            props.y = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).y
+        else:
+            props.y = cursor.location.y - obj.location.y
         return {"FINISHED"}
 
 class Input3DCursorZArray(bpy.types.Operator):
@@ -209,8 +213,10 @@ class Input3DCursorZArray(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        #element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
-        cursor_location = context.scene.cursor.location
-        props.z = cursor_location.z - obj.location.z
+        cursor = context.scene.cursor
+        if props.use_local_space:
+            props.z = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).z
+        else:
+            props.z = cursor.location.z - obj.location.z
         return {"FINISHED"}
