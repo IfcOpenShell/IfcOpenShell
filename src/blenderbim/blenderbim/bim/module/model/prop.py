@@ -261,6 +261,14 @@ class BIMArrayProperties(PropertyGroup):
         description="Use local space for array items offset instead of world space",
         default=True,
     )
+    dimension_input_type: bpy.props.EnumProperty(
+        items=(
+            ("Increment", "Increment", ""),
+            ("Total", "Total", ""),
+        ),
+        name="Type of input dimension",
+        default="Increment",
+    )
 
 
 class BIMStairProperties(PropertyGroup):
