@@ -186,7 +186,7 @@ class AssignBaseQto(bpy.types.Operator, tool.Ifc.Operator):
 
 class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_all_quantities"
-    bl_label = "Calculate all quantities"
+    bl_label = "Calculate All Quantities"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Calculate all possible quantities and assign them to selected object"
 

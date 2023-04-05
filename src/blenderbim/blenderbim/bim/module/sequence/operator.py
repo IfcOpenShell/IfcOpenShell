@@ -1106,7 +1106,7 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
 
 
 class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
-    bl_label = "set date"
+    bl_label = "Set Date"
     bl_idname = "bim.datepicker_setdate"
     bl_options = {"REGISTER", "UNDO"}
     selected_date: bpy.props.StringProperty()
@@ -1117,7 +1117,7 @@ class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
 
 
 class BlenderBIM_RedrawDatePicker(bpy.types.Operator):
-    bl_label = "redraw datepicker window"
+    bl_label = "Redraw Datepicker Window"
     bl_idname = "bim.redraw_datepicker"
     bl_options = {"REGISTER", "UNDO"}
     action: bpy.props.StringProperty()
@@ -1232,7 +1232,7 @@ class CalculateTaskDuration(bpy.types.Operator, tool.Ifc.Operator):
 
 class HighlightProductRelatedTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.highlight_product_related_task"
-    bl_label = "Highlights the related task"
+    bl_label = "Highlights the Related Task"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Finds the related Task"
     product_type: bpy.props.StringProperty()
@@ -1243,7 +1243,7 @@ class HighlightProductRelatedTask(bpy.types.Operator, tool.Ifc.Operator):
 
 class ExpandAllTasks(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.expand_all_tasks"
-    bl_label = "Expands all tasks"
+    bl_label = "Expands All Tasks"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Finds the related Task"
     product_type: bpy.props.StringProperty()
@@ -1254,7 +1254,7 @@ class ExpandAllTasks(bpy.types.Operator, tool.Ifc.Operator):
 
 class ContractAllTasks(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.contract_all_tasks"
-    bl_label = "Expands all tasks"
+    bl_label = "Expands All Tasks"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Finds the related Task"
     product_type: bpy.props.StringProperty()
