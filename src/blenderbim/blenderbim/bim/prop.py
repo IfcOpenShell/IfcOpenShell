@@ -173,6 +173,18 @@ def update_section_color(self, context):
         pass
 
 
+def update_section_line_decorator(self, context):
+    compare_node_group = bpy.data.node_groups.get("Section Compare")
+    if compare_node_group is None:
+        return
+    for node in compare_node_group.nodes:
+        if not hasattr(node, "operation"):
+            continue
+        if node.operation == "COMPARE":
+            node.inputs[2].default_value = self.section_line_decorator_width
+            break
+
+
 class StrProperty(PropertyGroup):
     pass
 
@@ -313,12 +325,19 @@ class BIMProperties(PropertyGroup):
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
-        name="Temporary Section Cutaway Colour",
+        name="Cutaway Colour",
         subtype="COLOR",
         default=(1, 0, 0),
         min=0.0,
         max=1.0,
         update=update_section_color,
+    )
+    section_line_decorator_width: FloatProperty(
+        name="Line Decorator Width",
+        default=0.04,
+        min=0.0,
+        soft_max=1.0,
+        update=update_section_line_decorator,
     )
     area_unit: EnumProperty(
         default="SQUARE_METRE",

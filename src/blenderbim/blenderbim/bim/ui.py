@@ -78,11 +78,9 @@ class BIM_PT_section_plane(Panel):
         layout.use_property_split = True
         props = context.scene.BIMProperties
 
-        row = layout.row()
-        row.prop(props, "should_section_selected_objects")
-
-        row = layout.row()
-        row.prop(props, "section_plane_colour")
+        layout.prop(props, "should_section_selected_objects")
+        layout.prop(props, "section_plane_colour")
+        layout.prop(props, "section_line_decorator_width")
 
         row = layout.row(align=True)
         row.operator("bim.add_section_plane")
