@@ -703,7 +703,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
 
 class EditBlenderCollection(bpy.types.Operator):
     bl_idname = "bim.edit_blender_collection"
-    bl_label = "Add or Remove blender collection item"
+    bl_label = "Add or Remove Blender Collection Item"
     bl_options = {"REGISTER", "UNDO"}
     option: bpy.props.StringProperty(description="add or remove item from collection")
     collection: bpy.props.StringProperty(description="collection to be edited")

@@ -495,7 +495,7 @@ class BIM_OT_add_property_to_edit(bpy.types.Operator):
 
 
 class BIM_OT_remove_property_to_edit(bpy.types.Operator):
-    bl_label = "Remove property to be renamed"
+    bl_label = "Remove Property to Be Renamed"
     bl_idname = "bim.remove_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
@@ -511,7 +511,7 @@ class BIM_OT_remove_property_to_edit(bpy.types.Operator):
 
 
 class BIM_OT_clear_list(bpy.types.Operator):
-    bl_label = "Clear list of properties"
+    bl_label = "Clear List of Properties"
     bl_idname = "bim.clear_list"
     bl_options = {"REGISTER", "UNDO"}
     option: bpy.props.StringProperty()
@@ -559,7 +559,7 @@ class BIM_OT_rename_parameters(bpy.types.Operator):
 
 
 class BIM_OT_add_edit_custom_property(bpy.types.Operator):
-    bl_label = "Add or edit a custom property"
+    bl_label = "Add or Edit a Custom Property"
     bl_idname = "bim.add_edit_custom_property"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
@@ -616,7 +616,7 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
 
 
 class BIM_OT_bulk_remove_psets(bpy.types.Operator):
-    bl_label = "Bulk remove psets from selected objects"
+    bl_label = "Bulk Remove Psets from Selected Objects"
     bl_idname = "bim.bulk_remove_psets"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Bulk remove psets from selected objects"

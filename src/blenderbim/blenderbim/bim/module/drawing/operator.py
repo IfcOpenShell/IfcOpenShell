@@ -1226,7 +1226,7 @@ class EditTextPopup(bpy.types.Operator):
         props = context.active_object.BIMTextProperties
 
         row = self.layout.row(align=True)
-        row.operator("bim.add_text_literal", icon="ADD", text="Add literal")
+        row.operator("bim.add_text_literal", icon="ADD", text="Add Literal")
 
         row = self.layout.row(align=True)
         row.prop(props, "font_size")
@@ -1309,7 +1309,7 @@ class DisableEditingText(bpy.types.Operator, Operator):
 
 class AddTextLiteral(bpy.types.Operator):
     bl_idname = "bim.add_text_literal"
-    bl_label = "Add text literal"
+    bl_label = "Add Text Literal"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -1344,7 +1344,7 @@ class AddTextLiteral(bpy.types.Operator):
 
 class RemoveTextLiteral(bpy.types.Operator):
     bl_idname = "bim.remove_text_literal"
-    bl_label = "Remove text literal"
+    bl_label = "Remove Text Literal"
     bl_options = {"REGISTER", "UNDO"}
 
     literal_prop_id: bpy.props.IntProperty()

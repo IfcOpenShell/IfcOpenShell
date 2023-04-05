@@ -320,7 +320,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
 
 class ImportIFC(bpy.types.Operator, ImportHelper):
     bl_idname = "import_scene.ifc"
-    bl_label = "Import .ifc file"
+    bl_label = "Import .ifc File"
 
     filename_ext = ".ifc"
     filter_glob: StringProperty(default="*.ifc", options={"HIDDEN"})

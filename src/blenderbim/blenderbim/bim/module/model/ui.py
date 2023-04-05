@@ -273,7 +273,7 @@ class BIM_PT_stair(bpy.types.Panel):
             stair_data = StairData.data["parameters"]["data_dict"]
             if props.is_editing != -1:
                 row = self.layout.row(align=True)
-                row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish editing")
+                row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
                 row = self.layout.row(align=True)
                 for prop_name in props.get_props_kwargs():
@@ -373,7 +373,7 @@ class BIM_PT_window(bpy.types.Panel):
 
             if props.is_editing != -1:
                 row = self.layout.row(align=True)
-                row.operator("bim.finish_editing_window", icon="CHECKMARK", text="Finish editing")
+                row.operator("bim.finish_editing_window", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_window", icon="CANCEL", text="")
 
                 general_props = props.get_general_kwargs()
@@ -488,7 +488,7 @@ class BIM_PT_door(bpy.types.Panel):
 
             if props.is_editing != -1:
                 row = self.layout.row(align=True)
-                row.operator("bim.finish_editing_door", icon="CHECKMARK", text="Finish editing")
+                row.operator("bim.finish_editing_door", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_door", icon="CANCEL", text="")
 
                 general_props = props.get_general_kwargs()
@@ -572,7 +572,7 @@ class BIM_PT_railing(bpy.types.Panel):
 
             if props.is_editing != -1:
                 row = self.layout.row(align=True)
-                row.operator("bim.finish_editing_railing", icon="CHECKMARK", text="Finish editing")
+                row.operator("bim.finish_editing_railing", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_railing", icon="CANCEL", text="")
 
                 general_props = props.get_general_kwargs()
@@ -631,7 +631,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
             if props.is_editing != -1:
                 row = self.layout.row(align=True)
-                row.operator("bim.finish_editing_roof", icon="CHECKMARK", text="Finish editing")
+                row.operator("bim.finish_editing_roof", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_roof", icon="CANCEL", text="")
 
                 general_props = props.get_general_kwargs()

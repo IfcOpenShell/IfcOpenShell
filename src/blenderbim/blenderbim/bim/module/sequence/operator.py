@@ -606,7 +606,7 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
 
 class ImportPP(bpy.types.Operator, ImportHelper):
     bl_idname = "import_pp.bim"
-    bl_label = "Import Powerproject pp"
+    bl_label = "Import Powerproject .pp"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".pp"
     filter_glob: bpy.props.StringProperty(default="*.pp", options={"HIDDEN"})

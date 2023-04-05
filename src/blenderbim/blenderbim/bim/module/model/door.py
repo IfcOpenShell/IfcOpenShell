@@ -544,7 +544,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
 
 class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_door"
-    bl_label = "Cancel editing Door"
+    bl_label = "Cancel Editing Door"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -573,7 +573,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
 class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_door"
-    bl_label = "Finish editing door"
+    bl_label = "Finish Editing Door"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):

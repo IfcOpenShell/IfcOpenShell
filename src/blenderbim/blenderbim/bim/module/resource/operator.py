@@ -47,7 +47,7 @@ class LoadResourceProperties(bpy.types.Operator):
 
 class AddResource(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_resource"
-    bl_label = "Add resource"
+    bl_label = "Add Resource"
     bl_options = {"REGISTER", "UNDO"}
     ifc_class: bpy.props.StringProperty()
     parent_resource: bpy.props.IntProperty()

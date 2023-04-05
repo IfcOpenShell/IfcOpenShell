@@ -384,7 +384,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
 
 class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_stair"
-    bl_label = "Cancel editing Stair"
+    bl_label = "Cancel Editing Stair"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -404,7 +404,7 @@ class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
 class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_stair"
-    bl_label = "Finish editing stair"
+    bl_label = "Finish Editing Stair"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):

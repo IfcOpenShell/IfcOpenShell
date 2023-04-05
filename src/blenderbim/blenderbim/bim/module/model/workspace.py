@@ -306,7 +306,7 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Edit text").hotkey = "S_E"
+            row.operator("bim.hotkey", text="Edit Text").hotkey = "S_E"
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
