@@ -224,6 +224,8 @@ class BIM_PT_array(bpy.types.Panel):
                     row.operator("bim.edit_array", icon="CHECKMARK", text="").item = i
                     row.operator("bim.disable_editing_array", icon="CANCEL", text="")
                     row = box.row(align=True)
+                    row.prop(props, "dimension_input_type")
+                    row = box.row(align=True)
                     row.prop(props, "use_local_space")
                     row = box.row(align=True)
                     row.prop(props, "x")
@@ -235,6 +237,8 @@ class BIM_PT_array(bpy.types.Panel):
                     row.label(text=f"{array['count']} Items", icon="MOD_ARRAY")
                     row.operator("bim.enable_editing_array", icon="GREASEPENCIL", text="").item = i
                     row.operator("bim.remove_array", icon="X", text="").item = i
+                    row = box.row(align=True)
+                    row.label(text=f"Dimension input type: {array.get('dimension_input_type', 'Increment')}")
                     row = box.row(align=True)
                     row.label(text=f"Use Local Space: {array.get('use_local_space', False)}")
                     row = box.row(align=True)
