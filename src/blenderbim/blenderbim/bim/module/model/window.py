@@ -482,7 +482,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
 
 class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_window"
-    bl_label = "Cancel editing Window"
+    bl_label = "Cancel Editing Window"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -510,7 +510,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
 class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_window"
-    bl_label = "Finish editing window"
+    bl_label = "Finish Editing Window"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):

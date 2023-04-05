@@ -119,7 +119,7 @@ class Loader:
 
 class LoadProjectSpaceBoundaries(bpy.types.Operator):
     bl_idname = "bim.load_project_space_boundaries"
-    bl_label = "Load all project space boundaries"
+    bl_label = "Load All Project Space Boundaries"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -131,7 +131,7 @@ class LoadProjectSpaceBoundaries(bpy.types.Operator):
 
 class LoadBoundary(bpy.types.Operator):
     bl_idname = "bim.load_boundary"
-    bl_label = "Load boundary"
+    bl_label = "Load Boundary"
     bl_options = {"REGISTER", "UNDO"}
     boundary_id: bpy.props.IntProperty()
 
@@ -147,7 +147,7 @@ class LoadBoundary(bpy.types.Operator):
 
 class LoadSpaceBoundaries(bpy.types.Operator):
     bl_idname = "bim.load_space_boundaries"
-    bl_label = "Load selected space boundaries"
+    bl_label = "Load Selected Space Boundaries"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -168,7 +168,7 @@ def get_element_boundaries(element):
 
 class SelectRelatedElementBoundaries(bpy.types.Operator):
     bl_idname = "bim.select_related_element_boundaries"
-    bl_label = "Select related element space boundaries"
+    bl_label = "Select Related Element Space Boundaries"
     bl_options = {"REGISTER", "UNDO"}
     related_element: bpy.props.IntProperty()
 
@@ -185,7 +185,7 @@ class SelectRelatedElementBoundaries(bpy.types.Operator):
 
 class SelectRelatedElementTypeBoundaries(bpy.types.Operator):
     bl_idname = "bim.select_related_element_type_boundaries"
-    bl_label = "Select related element type space boundaries"
+    bl_label = "Select Related Element Type Space Boundaries"
     bl_options = {"REGISTER", "UNDO"}
     related_element: bpy.props.IntProperty()
 
@@ -208,7 +208,7 @@ class SelectRelatedElementTypeBoundaries(bpy.types.Operator):
 
 class SelectSpaceBoundaries(bpy.types.Operator):
     bl_idname = "bim.select_space_boundaries"
-    bl_label = "Select all space boundaries"
+    bl_label = "Select All Space Boundaries"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -224,7 +224,7 @@ class SelectSpaceBoundaries(bpy.types.Operator):
 
 class SelectProjectBoundaries(bpy.types.Operator):
     bl_idname = "bim.select_project_space_boundaries"
-    bl_label = "Select all project space boundaries"
+    bl_label = "Select All Project Space Boundaries"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -260,7 +260,7 @@ def get_colour(ifc_boundary):
 
 class ColourByRelatedBuildingElement(bpy.types.Operator):
     bl_idname = "bim.colour_by_related_building_element"
-    bl_label = "Apply colour based on related building elements"
+    bl_label = "Apply Colour Based on Related Building Elements"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -308,7 +308,7 @@ EDITABLE_ATTRIBUTES = {
 
 class EnableEditingBoundary(bpy.types.Operator):
     bl_idname = "bim.enable_editing_boundary"
-    bl_label = "Edit boundary relations"
+    bl_label = "Edit Boundary Relations"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -327,7 +327,7 @@ class EnableEditingBoundary(bpy.types.Operator):
 
 class DisableEditingBoundary(bpy.types.Operator):
     bl_idname = "bim.disable_editing_boundary"
-    bl_label = "Disable editing boundary relations"
+    bl_label = "Disable Editing Boundary Relations"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -340,7 +340,7 @@ class DisableEditingBoundary(bpy.types.Operator):
 
 class EditBoundaryAttributes(bpy.types.Operator):
     bl_idname = "bim.edit_boundary_attributes"
-    bl_label = "Disable editing boundary relations"
+    bl_label = "Disable Editing Boundary Relations"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -361,7 +361,7 @@ class EditBoundaryAttributes(bpy.types.Operator):
 
 class UpdateBoundaryGeometry(bpy.types.Operator):
     bl_idname = "bim.update_boundary_geometry"
-    bl_label = "Update boundary geometry"
+    bl_label = "Update Boundary Geometry"
     bl_description = """
     Update boundary connection geometry from mesh.
     Mesh must lie on a single plane. It should look like a face or a face with holes.

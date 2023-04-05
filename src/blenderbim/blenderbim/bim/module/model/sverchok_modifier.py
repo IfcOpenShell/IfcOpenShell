@@ -182,7 +182,7 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
 # removed the part that was relying on node graph to be opened at execution
 class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_sverchok_graph"
-    bl_label = "Import sverchok graph"
+    bl_label = "Import Sverchok Graph"
     bl_options = {"REGISTER"}
 
     filepath: bpy.props.StringProperty(
@@ -224,7 +224,7 @@ class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
 # removed the part that was relying on node graph to be opened at execution
 class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.export_sverchok_graph"
-    bl_label = "Export sverchok graph"
+    bl_label = "Export Sverchok Graph"
     bl_options = {"REGISTER"}
 
     filepath: bpy.props.StringProperty(
