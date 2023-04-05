@@ -168,6 +168,8 @@ class UnlinkObject(bpy.types.Operator):
             objects = context.selected_objects
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
+                if obj in IfcStore.edited_objs:
+                    IfcStore.edited_objs.remove(obj)
                 IfcStore.unlink_element(obj=obj)
                 if obj.data:
                     obj.data = obj.data.copy()
