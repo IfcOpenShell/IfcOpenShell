@@ -210,7 +210,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         return bpy.data.node_groups.get("Section Override")
 
     def create_section_compare_node(self):
+        # Add a new socket to group input / output https://blender.stackexchange.com/a/5446/86891
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
+        group.inputs.new("NodeSocketFloat", "Value")
+        group.inputs["Value"].default_value = 1.0  # Mandatory multiplier for the last node group
+        group.inputs.new("NodeSocketVector", "Vector")
+        group.outputs.new("NodeSocketFloat", "Value")
         group_input = group.nodes.new(type="NodeGroupInput")
         group_input.location = 0, 50
 
@@ -230,14 +235,17 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         group_output = group.nodes.new(type="NodeGroupOutput")
         group_output.location = 800, 0
 
-        group.links.new(group_input.outputs[""], multiply.inputs[0])
-        group.links.new(group_input.outputs[""], separate_xyz.inputs[0])
+        group.links.new(group_input.outputs["Value"], multiply.inputs[0])
+        group.links.new(group_input.outputs["Vector"], separate_xyz.inputs[0])
         group.links.new(separate_xyz.outputs[2], greater.inputs[0])
         group.links.new(greater.outputs[0], multiply.inputs[1])
-        group.links.new(multiply.outputs[0], group_output.inputs[""])
+        group.links.new(multiply.outputs[0], group_output.inputs["Value"])
 
     def create_section_override_node(self, obj, context):
+        # Add a new socket to group input / output https://blender.stackexchange.com/a/5446/86891
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
+        group.inputs.new("NodeSocketShader", "Shader")
+        group.outputs.new("NodeSocketShader", "Shader")
         links = group.links
         nodes = group.nodes
 
@@ -275,12 +283,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
         links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
         links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
-        links.new(group_input.outputs[""], backfacing_mix.inputs[1])
+        links.new(group_input.outputs["Shader"], backfacing_mix.inputs[1])
         links.new(emission.outputs["Emission"], backfacing_mix.inputs[2])
         links.new(section_compare.outputs[0], section_mix.inputs[0])
         links.new(transparent.outputs["BSDF"], section_mix.inputs[1])
         links.new(backfacing_mix.outputs["Shader"], section_mix.inputs[2])
-        links.new(section_mix.outputs["Shader"], group_output.inputs[""])
+        links.new(section_mix.outputs["Shader"], group_output.inputs["Shader"])
 
     def append_obj_to_section_override_node(self, obj):
         group = bpy.data.node_groups.get("Section Override")
