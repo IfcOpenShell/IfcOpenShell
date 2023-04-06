@@ -36,7 +36,7 @@ requirements:
   run:
     - python
     - boost-cpp
-    - occt
+    - {{ pin_compatible('occt', max_pin='x.x.x') }}
     - libxml2
     - cgal-cpp
     - hdf5
