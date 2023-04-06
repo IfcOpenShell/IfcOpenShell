@@ -847,6 +847,27 @@ class CreateSheets(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ChangeSheetTitleBlock(bpy.types.Operator):
+    bl_idname = "bim.change_sheet_title_block"
+    bl_label = "Change Sheet Title Block"
+    bl_description = "Change the title block of the active sheet"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        props = scene.DocProperties
+        active_sheet = props.sheets[props.active_sheet_index]
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = scene.BIMProperties.data_dir
+        titleblock = scene.DocProperties.titleblock
+        sheet_builder.change_titleblock(sheet, titleblock)
+
+        self.report({"INFO"}, 'Title block changed for sheet "{}" to {}'.format(sheet.Name, titleblock))
+        return {"FINISHED"}
+
+
 class OpenView(bpy.types.Operator):
     bl_idname = "bim.open_view"
     bl_label = "Open View"

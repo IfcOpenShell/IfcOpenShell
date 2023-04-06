@@ -48,7 +48,7 @@ class SheetBuilder:
         view = ET.SubElement(root, "g")
         view.attrib["data-type"] = "titleblock"
         titleblock = ET.SubElement(view, "image")
-        titleblock.attrib["xlink:href"] = "../templates/titleblocks/" + titleblock_name + ".svg"
+        titleblock.attrib["xlink:href"] = f"../templates/titleblocks/{titleblock_name}.svg"
         titleblock.attrib["x"] = "0"
         titleblock.attrib["y"] = "0"
         titleblock.attrib["width"] = str(view_width)
@@ -313,6 +313,33 @@ class SheetBuilder:
                 continue
             group.append(child)
         return group
+
+    def change_titleblock(self, sheet, titleblock_name):
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
+
+        titleblock_svg_path = os.path.join(self.data_dir, "templates", "titleblocks", f"{titleblock_name}.svg")
+        view_root = ET.parse(titleblock_svg_path).getroot()
+        view_width = self.convert_to_mm(view_root.attrib.get("width"))
+        view_height = self.convert_to_mm(view_root.attrib.get("height"))
+
+        sheet_dir = os.path.join(self.data_dir, "sheets")
+        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
+        sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
+        sheet_tree = ET.parse(sheet_path)
+        root = sheet_tree.getroot()
+
+        titleblock = sheet_tree.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
+        image = titleblock.findall("{http://www.w3.org/2000/svg}image[@{http://www.w3.org/1999/xlink}href]")[0]
+        image.attrib["{http://www.w3.org/1999/xlink}href"] = f"../templates/titleblocks/{titleblock_name}.svg"
+        image.attrib["width"] = str(view_width)
+        image.attrib["height"] = str(view_height)
+
+        root.attrib["width"] = "{}mm".format(view_width)
+        root.attrib["height"] = "{}mm".format(view_height)
+        root.attrib["viewBox"] = "0 0 {} {}".format(view_width, view_height)
+
+        sheet_tree.write(sheet_path)
 
     def convert_to_mm(self, value):
         # CSS is what defines these possibilities
