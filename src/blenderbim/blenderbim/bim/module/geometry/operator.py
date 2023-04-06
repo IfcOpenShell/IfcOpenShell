@@ -555,6 +555,10 @@ class OverrideDuplicateMove(bpy.types.Operator):
             # Copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             if new:
+                array_pset = ifcopenshell.util.element.get_pset(new, "BBIM_Array")
+                if array_pset:
+                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
+                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new, pset=array_pset)
                 old_to_new[tool.Ifc.get_entity(obj)] = [new]
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
@@ -615,6 +619,10 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
             # Copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             if new:
+                array_pset = ifcopenshell.util.element.get_pset(new, "BBIM_Array")
+                if array_pset:
+                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
+                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new, pset=array_pset)
                 old_to_new[tool.Ifc.get_entity(obj)] = new
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
