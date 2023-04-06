@@ -1454,6 +1454,23 @@ class LoadSheets(bpy.types.Operator, Operator):
     def _execute(self, context):
         core.load_sheets(tool.Drawing)
 
+        props = context.scene.DocProperties
+        sheets_not_found = []
+        for sheet_prop in props.sheets:
+            if not sheet_prop.is_sheet:
+                continue
+
+            sheet = tool.Ifc.get().by_id(sheet_prop.ifc_definition_id)
+            document_uri = tool.Drawing.get_document_uri(sheet)
+
+            filepath = Path(document_uri)
+            if not filepath.is_file():
+                sheet_name = f"{sheet_prop.identification} - {sheet_prop.name}"
+                sheets_not_found.append(f'"{sheet_name}" - {document_uri}')
+
+        if sheets_not_found:
+            self.report({"ERROR"}, "Some sheets svg files are missing:\n" + "\n".join(sheets_not_found))
+
 
 class DisableEditingSheets(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_sheets"
