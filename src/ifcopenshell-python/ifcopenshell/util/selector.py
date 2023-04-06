@@ -293,7 +293,10 @@ class Selector:
                     results = []
                     for prop_name, prop_value in value.items():
                         if re.match(key, prop_name):
-                            results.append(prop_value)
+                            if isinstance(prop_value, (list, tuple)):
+                                results.extend(prop_value)
+                            else:
+                                results.append(prop_value)
                     value = results
                 else:
                     value = value.get(key, None)
