@@ -86,10 +86,8 @@ class UnassignType(bpy.types.Operator):
                 for representation in element.Representation.Representations:
                     resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
                     if representation == resolved_representation:
-                        print('appending', representation)
                         representations.append(representation)
                     else:
-                        print('copying', representation)
                         # We must unmap representations.
                         copied_representation = ifcopenshell.util.element.copy_deep(
                             tool.Ifc.get(), resolved_representation, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback

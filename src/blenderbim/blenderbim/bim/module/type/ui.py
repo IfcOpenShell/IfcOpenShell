@@ -20,6 +20,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.type.data import TypeData
 
 
@@ -69,7 +70,7 @@ class BIM_PT_type(Panel):
 
             row.prop(props, "relating_type_class", text="")
             if type_prop.get_relating_type(None, context):
-                row.prop(props, "relating_type", text="")
+                prop_with_search(row, props, "relating_type", text="")
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
             else:
                 row.label(text="No Types Found")
