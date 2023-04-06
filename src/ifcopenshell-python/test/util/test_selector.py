@@ -88,6 +88,7 @@ class TestSelector(test.bootstrap.IFC4):
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
         assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo]") == [element]
         assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Fox]") == []
+        assert subject.Selector.parse(self.file, '.IfcElement[r"Foo.*ar"."Fo.*"]') == [element]
 
     def test_selecting_by_string_property(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
