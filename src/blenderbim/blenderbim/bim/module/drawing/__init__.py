@@ -55,6 +55,7 @@ classes = (
     operator.LoadSheets,
     operator.OpenSchedule,
     operator.OpenSheet,
+    operator.ChangeSheetTitleBlock,
     operator.OpenView,
     operator.RemoveDrawing,
     operator.RemoveDrawingFromSheet,
