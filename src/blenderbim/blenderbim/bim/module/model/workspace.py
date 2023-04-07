@@ -582,7 +582,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.merge_wall()
         else:
-            bpy.ops.bim.mirror_elements()
+            if len(bpy.context.selected_objects) == 1:
+                self.report(
+                    {"INFO"},
+                    "At least two objects must be selected: an object to be mirrored, and a mirror axis as the active object.",
+                )
+            else:
+                bpy.ops.bim.mirror_elements()
 
     def hotkey_S_R(self):
         if not bpy.context.selected_objects:
