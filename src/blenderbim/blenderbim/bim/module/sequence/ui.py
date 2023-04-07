@@ -434,6 +434,8 @@ class BIM_PT_task_icom(Panel):
         op.task = task.ifc_definition_id
 
         row2 = col.row()
+        row2.prop(self.props, "show_nested_inputs", text="Show Nested")
+        row2 = col.row()
         row2.template_list("BIM_UL_task_inputs", "", self.props, "task_inputs", self.props, "active_task_input_index")
 
         # Column2
@@ -455,6 +457,9 @@ class BIM_PT_task_icom(Panel):
             op.task = task.ifc_definition_id
             op.related_object_type = "RESOURCE"
             op.resource = self.props.task_resources[self.props.active_task_resource_index].ifc_definition_id
+
+        row2 = col.row()
+        row2.prop(self.props, "show_nested_resources", text="Show Nested")
 
         row2 = col.row()
         row2.template_list(
@@ -481,7 +486,7 @@ class BIM_PT_task_icom(Panel):
         op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
         op.task = task.ifc_definition_id
         row2 = col.row()
-        row2.prop(self.props, "is_nested_task_outputs", text="Show Nested")
+        row2.prop(self.props, "show_nested_outputs", text="Show Nested")
         row2 = col.row()
         row2.template_list(
             "BIM_UL_task_outputs", "", self.props, "task_outputs", self.props, "active_task_output_index"
@@ -532,6 +537,26 @@ class BIM_UL_task_outputs(UIList):
             op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
             op.product = item.ifc_definition_id
             row.prop(item, "name", emboss=False, text="")
+
+
+class BIM_UL_product_input_tasks(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            op = row.operator("bim.highlight_task", text="", icon="STYLUS_PRESSURE")
+            op.task = item.ifc_definition_id
+            row.split(factor=0.8)
+            row.label(text=item.name)
+
+
+class BIM_UL_product_output_tasks(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            op = row.operator("bim.highlight_task", text="", icon="STYLUS_PRESSURE")
+            op.task = item.ifc_definition_id
+            row.split(factor=0.8)
+            row.label(text=item.name)
 
 
 class BIM_UL_tasks(UIList):
@@ -798,14 +823,32 @@ class BIM_PT_4D_Tools(Panel):
     bl_category = "4D/5D Toolkit"
 
     def draw(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
         row = self.layout.row()
-        row.operator(
-            "bim.highlight_product_related_task", text="Find Input-related Task ", icon="STYLUS_PRESSURE"
-        ).product_type = "Input"
-        row = self.layout.row()
-        row.operator(
-            "bim.highlight_product_related_task", text="Go to Output-related Task ", icon="STYLUS_PRESSURE"
-        ).product_type = "Output"
+        row.operator("bim.load_product_tasks", text="Load Tasks", icon="FILE_REFRESH")
+
+        grid = self.layout.grid_flow(columns=2, even_columns=True)
+        col1 = grid.column()
+        col1.label(text="Product Input Tasks")
+        col1.template_list(
+            "BIM_UL_product_input_tasks",
+            "",
+            self.props,
+            "product_input_tasks",
+            self.props,
+            "active_product_input_task_index",
+        )
+
+        col2 = grid.column()
+        col2.label(text="Product Output Tasks")
+        col2.template_list(
+            "BIM_UL_product_output_tasks",
+            "",
+            self.props,
+            "product_output_tasks",
+            self.props,
+            "active_product_output_task_index",
+        )
 
 
 class BIM_PT_Task_Bar_Creator(Panel):

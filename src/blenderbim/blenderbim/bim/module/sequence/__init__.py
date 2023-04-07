@@ -20,7 +20,6 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.HighlightProductRelatedTask,
     operator.ExpandAllTasks,
     operator.ContractAllTasks,
     operator.AddSummaryTask,
@@ -113,6 +112,8 @@ classes = (
     operator.VisualiseWorkScheduleDateRange,
     operator.LoadTaskAnimationColors,
     operator.DisableEditingTaskAnimationColors,
+    operator.LoadProductTasks,
+    operator.HighlightTask,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
@@ -140,6 +141,8 @@ classes = (
     ui.BIM_PT_4D_Tools,
     ui.BIM_PT_Task_Bar_Creator,
     ui.BIM_UL_animation_colors,
+    ui.BIM_UL_product_input_tasks,
+    ui.BIM_UL_product_output_tasks,
 )
 
 

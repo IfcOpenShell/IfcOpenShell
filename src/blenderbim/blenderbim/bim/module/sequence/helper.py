@@ -53,7 +53,7 @@ def parse_duration_as_blender_props(dt, simplify=True):
         seconds = getattr(dt, "seconds", 0)
         hours, seconds = divmod(seconds, 3600)
         minutes, seconds = divmod(seconds, 60)
-        days = getattr(dt, "days",0)
+        days = getattr(dt, "days", 0)
         months = int(getattr(dt, "months", 0))
         years = int(getattr(dt, "years", 0))
         return {

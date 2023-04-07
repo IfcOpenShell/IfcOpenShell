@@ -454,6 +454,13 @@ def calculate_task_duration(ifc, sequence, task=None):
         sequence.load_task_properties()
 
 
+def highlight_task(sequence, task=None):
+    work_schedule = sequence.get_work_schedule(task)
+    is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
+    if is_work_schedule_active:
+        sequence.highlight_task(task)
+
+
 def highlight_product_related_task(sequence, spatial, product_type=None):
     products = spatial.get_selected_products()
     if products:
@@ -514,3 +521,6 @@ def visualise_work_schedule_date(sequence, work_schedule=None):
 def generate_gantt_chart(sequence, work_schedule):
     json = sequence.create_tasks_json(work_schedule)
     sequence.generate_gantt_browser_chart(json)
+
+def load_product_tasks(sequence, product=None):
+    sequence.load_product_tasks(product)
