@@ -454,11 +454,8 @@ class UnassignProcess(bpy.types.Operator):
                 )
             else:
                 core.unassign_input_products(
-                    tool.Ifc,
-                    tool.Sequence,
-                    tool.Spatial,
-                    task=tool.Ifc.get().by_id(self.task)
-                    )
+                    tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task)
+                )
         elif self.related_object_type == "CONTROL":
             pass  # TODO
         return {"FINISHED"}
@@ -1006,6 +1003,7 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
         core.visualise_work_schedule_date(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
         return {"FINISHED"}
 
+
 class GuessDateRange(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.guess_date_range"
     bl_label = "Guess Work Schedule Date Range"
@@ -1024,7 +1022,10 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        has_start, has_finish = bpy.context.scene.BIMWorkScheduleProperties.visualisation_start, bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish
+        has_start, has_finish = (
+            bpy.context.scene.BIMWorkScheduleProperties.visualisation_start,
+            bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish,
+        )
         return bool(has_start and has_finish) and not "-" in (has_start, has_finish)
 
     def execute(self, context):
@@ -1230,17 +1231,6 @@ class CalculateTaskDuration(bpy.types.Operator, tool.Ifc.Operator):
         core.calculate_task_duration(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class HighlightProductRelatedTask(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.highlight_product_related_task"
-    bl_label = "Highlights the Related Task"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Finds the related Task"
-    product_type: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        core.highlight_product_related_task(tool.Sequence, tool.Spatial, product_type=self.product_type)
-
-
 class ExpandAllTasks(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.expand_all_tasks"
     bl_label = "Expands All Tasks"
@@ -1293,6 +1283,7 @@ class DisableEditingTaskAnimationColors(bpy.types.Operator):
         core.disable_editing_task_animation_colors(tool.Sequence)
         return {"FINISHED"}
 
+
 class CopyTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_task"
     bl_label = "Copy Task"
@@ -1301,3 +1292,38 @@ class CopyTask(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.duplicate_task(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+
+
+class LoadProductTasks(bpy.types.Operator):
+    bl_idname = "bim.load_product_tasks"
+    bl_label = "Load Product Tasks"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        if not context.active_object:
+            return False
+        if not context.active_object.BIMObjectProperties.ifc_definition_id:
+            return False
+        return True
+
+    def execute(self, context):
+        core.load_product_tasks(
+            tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
+        )
+        return {"FINISHED"}
+
+
+class HighlightTask(bpy.types.Operator):
+    bl_idname = "bim.highlight_task"
+    bl_label = "Highlight Task"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        r = core.highlight_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+        return {"FINISHED"}

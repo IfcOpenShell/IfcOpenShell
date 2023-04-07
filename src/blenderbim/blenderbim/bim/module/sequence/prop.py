@@ -96,6 +96,14 @@ def update_active_task_outputs(self, context):
     bpy.ops.bim.load_task_outputs()
 
 
+def update_active_task_resources(self, context):
+    bpy.ops.bim.load_task_resources()
+
+
+def update_active_task_inputs(self, context):
+    bpy.ops.bim.load_task_inputs()
+
+
 def updateTaskName(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled or self.name == "Unnamed":
@@ -389,9 +397,13 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_input_index: IntProperty(name="Active Task Input Index")
     task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
     active_task_output_index: IntProperty(name="Active Task Output Index")
-    is_nested_task_outputs: BoolProperty(
-        name="Is Nested Task Outputs", default=False, update=update_active_task_outputs
-    )
+    show_nested_outputs: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_outputs)
+    show_nested_resources: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_resources)
+    show_nested_inputs: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_inputs)
+    product_input_tasks: CollectionProperty(name="Product Task Inputs", type=TaskProduct)
+    product_output_tasks: CollectionProperty(name="Product Task Outputs", type=TaskProduct)
+    active_product_output_task_index: IntProperty(name="Active Product Output Task Index")
+    active_product_input_task_index: IntProperty(name="Active Product Input Task Index")
 
 
 class BIMTaskTreeProperties(PropertyGroup):

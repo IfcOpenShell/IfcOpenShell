@@ -326,26 +326,45 @@ def get_task_outputs(task, is_deep=False):
     if not is_deep:
         return get_direct_task_outputs(task)
     else:
-        nested_tasks = get_all_nested_tasks(task)
         return [
             output
-            for nested_task in nested_tasks
+            for nested_task in get_all_nested_tasks(task)
             for output in get_direct_task_outputs(nested_task)
         ]
 
+def get_task_inputs(task, is_deep=False):
+    if not is_deep:
+        return [object for rel in task.OperatesOn if rel.is_a("IfcRelAssignsToProcess")  for object in rel.RelatedObjects if object.is_a("IfcProduct")]
+    else:
+        return [
+            output
+            for nested_task in get_all_nested_tasks(task)
+            for output in [object for rel in nested_task.OperatesOn if rel.is_a("IfcRelAssignsToProcess") for object in rel.RelatedObjects if object.is_a("IfcProduct")]
+        ]
 
-def get_task_inputs(task):
-    inputs = []
-    for rel in task.OperatesOn:
-        for object in rel.RelatedObjects:
-            if object.is_a("IfcProduct"):
-                inputs.append(object)
-    return inputs
-
+def get_task_resources(task, is_deep=False):
+    if not is_deep:
+        return [object for rel in task.OperatesOn if rel.is_a("IfcRelAssignsToProcess")  for object in rel.RelatedObjects if object.is_a("IfcResource")]
+    else:
+        return [
+            output
+            for nested_task in get_all_nested_tasks(task)
+            for output in [object for rel in nested_task.OperatesOn if rel.is_a("IfcRelAssignsToProcess") for object in rel.RelatedObjects if object.is_a("IfcResource")]
+        ]
 
 def has_task_outputs(task):
     return len(get_task_outputs(task)) > 0
 
-
 def has_task_inputs(task):
     return len(get_task_inputs(task)) > 0
+
+def get_tasks_for_product(product):
+    inputs = []
+    outputs = []
+    for assignment in product.HasAssignments:
+        if assignment.is_a("IfcRelAssignsToProcess") and assignment.RelatingProcess.is_a("IfcTask"):
+            inputs.append(assignment.RelatingProcess)
+    for reference in product.ReferencedBy:
+        if reference.is_a("IfcRelAssignsToProduct") and reference.RelatedObjects[0].is_a("IfcTask"):
+            outputs.extend([obj for obj in reference.RelatedObjects if obj.is_a("IfcTask")])
+    return inputs, outputs
