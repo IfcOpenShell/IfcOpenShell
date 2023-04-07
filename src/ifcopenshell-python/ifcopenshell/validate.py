@@ -200,14 +200,14 @@ def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
     elif isinstance(attr_type, aggregation_type):
         b1, b2 = attr_type.bound1(), attr_type.bound2()
         ty = attr_type.type_of_element()
-        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2) or not all(assert_valid(ty, v, schema) for v in val)
+        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2) or not all(assert_valid(ty, v, schema, attr=attr) for v in val)
     else:
         raise NotImplementedError("Not impl %s %s" % (type(attr_type), attr_type))
 
     if no_throw:
         return not invalid
     elif invalid:
-        raise ValidationError(f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n", (attr or attr_type).name())
+        raise ValidationError(f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n", *([attr.name()] if attr else []))
     else:
         return True
 
