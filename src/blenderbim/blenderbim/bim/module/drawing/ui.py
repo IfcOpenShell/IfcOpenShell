@@ -506,26 +506,27 @@ class BIM_UL_drawinglist(bpy.types.UIList):
 
 class BIM_UL_sheets(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
+        if not item:
+            layout.label(text="", translate=False)
+            return
 
-            if item.is_sheet:
-                if item.is_expanded:
-                    row.operator(
-                        "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                    ).sheet = item.ifc_definition_id
-                else:
-                    row.operator(
-                        "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                    ).sheet = item.ifc_definition_id
+        row = layout.row()
+        if item.is_sheet:
+            if item.is_expanded:
+                row.operator(
+                    "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                ).sheet = item.ifc_definition_id
             else:
-                row.label(text="", icon="BLANK1")
-                if item.reference_type == "DRAWING":
-                    row.label(text="", icon="IMAGE_DATA")
-                elif item.reference_type == "SCHEDULE":
-                    row.label(text="", icon="LONGDISPLAY")
-
+                row.operator(
+                    "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                ).sheet = item.ifc_definition_id
+            name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
+            row.prop(item, "name", text=item.identification or "X", emboss=False)
+        else:
+            row.label(text="", icon="BLANK1")
+            if item.reference_type == "DRAWING":
+                row.label(text="", icon="IMAGE_DATA")
+            elif item.reference_type == "SCHEDULE":
+                row.label(text="", icon="LONGDISPLAY")
             name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
             row.label(text=name)
-        else:
-            layout.label(text="", translate=False)

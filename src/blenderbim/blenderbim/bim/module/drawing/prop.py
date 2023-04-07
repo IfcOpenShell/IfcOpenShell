@@ -250,10 +250,17 @@ class Schedule(PropertyGroup):
 class Sheet(PropertyGroup):
     def set_name(self, new):
         old = self.get("name")
-        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets")
-        if old and os.path.isfile(os.path.join(path, old + ".svg")):
-            os.rename(os.path.join(path, old + ".svg"), os.path.join(path, new + ".svg"))
+
+        if new == old:
+            return
+        sheet = tool.Ifc.get().by_id(self.ifc_definition_id)
+        old_path = Path(tool.Drawing.get_document_uri(sheet))
+        core.update_sheet_name(tool.Ifc, tool.Drawing, sheet=sheet, name=new)
         self["name"] = new
+
+        new_path = Path(tool.Drawing.get_document_uri(sheet))
+        if old and old_path.is_file():
+            old_path.rename(new_path)
 
     def get_name(self):
         return self.get("name")
