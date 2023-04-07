@@ -422,7 +422,18 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_task_inputs(cls, task):
-        return ifcopenshell.util.sequence.get_task_inputs(task)
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_inputs
+        return ifcopenshell.util.sequence.get_task_inputs(task, is_deep)
+
+    @classmethod
+    def get_task_outputs(cls, task):
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
+        return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
+
+    @classmethod
+    def get_task_resources(cls, task):
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_resources
+        return ifcopenshell.util.sequence.get_task_resource(task, is_deep)
 
     @classmethod
     def load_task_inputs(cls, inputs):
@@ -459,7 +470,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_task_outputs(cls, task):
-        is_deep = bpy.context.scene.BIMWorkScheduleProperties.is_nested_task_outputs
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
         return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
 
     @classmethod
@@ -777,7 +788,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         displayed_tasks = [item.ifc_definition_id for item in task_props.tasks]
         if not task.id() in displayed_tasks:
             expand_ancestors(task)
-        task_index = [item.ifc_definition_id for item in task_props.tasks].index(task.id()) or 0
+        task_index = displayed_tasks.index(task.id()) or 0
         bpy.context.scene.BIMWorkScheduleProperties.active_task_index = task_index
 
     @classmethod
@@ -1500,3 +1511,18 @@ class Sequence(blenderbim.core.tool.Sequence):
                 f.write(pystache.render(t.read(), {"json_data": json.dumps(task_json)}))
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
+    @classmethod
+    def load_product_tasks(cls, product):
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        props.is_task_update_enabled = False
+        props.product_input_tasks.clear()
+        props.product_output_tasks.clear()
+        task_inputs, task_ouputs = ifcopenshell.util.sequence.get_tasks_for_product(product)
+        for task in task_inputs or []:
+            new = props.product_input_tasks.add()
+            new.name = task.Name or "Unnamed"
+            new.ifc_definition_id = task.id()
+        for task in task_ouputs or []:
+            new = props.product_output_tasks.add()
+            new.name = task.Name or "Unnamed"
+            new.ifc_definition_id = task.id()
