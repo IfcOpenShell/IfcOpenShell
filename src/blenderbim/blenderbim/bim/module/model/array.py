@@ -34,7 +34,16 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
-        array = {"children": [], "count": 1, "x": 0.0, "y": 0.0, "z": 0.0, "use_local_space": True, "dimension_input_type": "Increment"}
+        array = {
+            "children": [],
+            "count": 1,
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0,
+            "use_local_space": True,
+            "sync_children": False,
+            "dimension_input_type": "Increment",
+        }
 
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
 
@@ -81,6 +90,7 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         props.y = data["y"]
         props.z = data["z"]
         props.use_local_space = data.get("use_local_space", False)
+        props.sync_children = data.get("sync_children", False)
         props.dimension_input_type = data.get("dimension_input_type", "Increment")
         props.is_editing = self.item
         return {"FINISHED"}
@@ -106,6 +116,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
             "y": props.y,
             "z": props.z,
             "use_local_space": props.use_local_space,
+            "sync_children": props.sync_children,
             "dimension_input_type": props.dimension_input_type,
         }
 

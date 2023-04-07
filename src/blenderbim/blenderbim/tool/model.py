@@ -414,6 +414,14 @@ class Model(blenderbim.core.tool.Model):
         obj_stack = [parent]
 
         for array in data:
+            if array["sync_children"]:
+                removed_children = set(array["children"])
+                for removed_child in removed_children:
+                    element = tool.Ifc.get().by_guid(removed_child)
+                    obj = tool.Ifc.get_object(element)
+                    if obj:
+                        bpy.data.objects.remove(obj)
+                
             child_i = 0
             existing_children = set(array["children"])
             total_existing_children = len(array["children"])

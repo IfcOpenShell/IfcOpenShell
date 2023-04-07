@@ -269,6 +269,11 @@ class BIMArrayProperties(PropertyGroup):
         name="Type of input dimension",
         default="Increment",
     )
+    sync_children: bpy.props.BoolProperty(
+        name="Sync Children",
+        description="Keep children objects in sync with parent object",
+        default = False,
+    )
 
 
 class BIMStairProperties(PropertyGroup):
