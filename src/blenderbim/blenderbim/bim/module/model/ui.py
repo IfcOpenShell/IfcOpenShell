@@ -227,7 +227,7 @@ class BIM_PT_array(bpy.types.Panel):
                     row.prop(props, "dimension_input_type")
                     row = box.row(align=True)
                     row.prop(props, "use_local_space")
-                    #row = box.row(align=True)
+                    row.prop(props, "sync_children")
                     col = box.column()
                     row = col.row(align=True)
                     row.prop(props, "x")
