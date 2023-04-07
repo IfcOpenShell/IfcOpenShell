@@ -856,6 +856,10 @@ class ChangeSheetTitleBlock(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         props = scene.DocProperties
+
+        if not len(props.sheets):
+            return {"CANCELLED"}
+
         active_sheet = props.sheets[props.active_sheet_index]
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
 

@@ -86,6 +86,11 @@ def remove_sheet(ifc, drawing, sheet=None):
     drawing.import_sheets()
 
 
+def update_sheet_name(ifc, drawing, sheet=None, name=None):
+    if drawing.get_name(sheet) != name:
+        ifc.run("document.edit_information", information=sheet, attributes={"Name": name})
+
+
 def load_schedules(drawing):
     drawing.import_schedules()
     drawing.enable_editing_schedules()
