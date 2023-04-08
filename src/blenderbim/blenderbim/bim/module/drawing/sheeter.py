@@ -17,14 +17,15 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import bpy
 import uuid
+import shutil
 import ntpath
 import pystache
 import urllib.parse
 import xml.etree.ElementTree as ET
 import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
-from shutil import copy
 from xml.dom import minidom
 
 
@@ -40,15 +41,14 @@ class SheetBuilder:
         root.attrib["id"] = "root"
         root.attrib["version"] = "1.1"
 
-        view_root = ET.parse(
-            os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
-        ).getroot()
+        titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
+        view_root = ET.parse(titleblock_path).getroot()
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
         view = ET.SubElement(root, "g")
         view.attrib["data-type"] = "titleblock"
         titleblock = ET.SubElement(view, "image")
-        titleblock.attrib["xlink:href"] = f"../templates/titleblocks/{titleblock_name}.svg"
+        titleblock.attrib["xlink:href"] = f"./titleblocks/{titleblock_name}.svg"
         titleblock.attrib["x"] = "0"
         titleblock.attrib["y"] = "0"
         titleblock.attrib["width"] = str(view_width)
@@ -58,17 +58,24 @@ class SheetBuilder:
         root.attrib["height"] = "{}mm".format(view_height)
         root.attrib["viewBox"] = "0 0 {} {}".format(view_width, view_height)
 
+        sheet_dir = os.path.dirname(sheet_path)
+        os.makedirs(sheet_dir, exist_ok=True)
+        os.makedirs(os.path.join(sheet_dir, "titleblocks"), exist_ok=True)
+        sheet_titleblock_path = os.path.join(sheet_dir, "titleblocks", titleblock_name + ".svg")
+        if not os.path.exists(sheet_titleblock_path):
+            shutil.copy(titleblock_path, sheet_titleblock_path)
         with open(sheet_path, "w") as f:
             f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="    "))
 
     def add_drawing(self, reference, drawing, sheet):
         filename = drawing.Name
-        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
-        sheet_dir = os.path.join(self.data_dir, "sheets")
-        drawing_dir = os.path.join(self.data_dir, "diagrams")
-        sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
-        drawing_path = os.path.join(drawing_dir, filename + ".svg")
-        underlay_path = os.path.join(drawing_dir, filename + "-underlay.png")
+        sheet_path = tool.Drawing.get_document_uri(sheet)
+        sheet_name = os.path.splitext(os.path.basename(sheet_path))[0]
+        sheet_dir = os.path.dirname(sheet_path)
+
+        drawing_path = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_reference(drawing))
+        drawing_path = tool.Ifc.resolve_uri(drawing_path)
+        underlay_path = os.path.splitext(drawing_path)[0] + "-underlay.png"
 
         if not os.path.isfile(sheet_path):
             raise FileNotFoundError
@@ -110,7 +117,7 @@ class SheetBuilder:
             foreground.attrib["width"] = str(view_width)
             foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(30, view_height + 35, view)
+        self.add_view_title(30, view_height + 35, view, sheet_dir)
         sheet_tree.write(sheet_path)
 
     def remove_drawing(self, reference, sheet):
@@ -128,11 +135,12 @@ class SheetBuilder:
         sheet_tree.write(sheet_path)
 
     def add_schedule(self, reference, schedule, sheet):
-        view_path = tool.Drawing.get_document_uri(schedule)
+        view_path = tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(schedule), "svg")
         if not os.path.exists(view_path):
             tool.Drawing.create_svg_schedule(schedule)
         schedule_name = os.path.splitext(os.path.basename(view_path))[0]
         sheet_path = tool.Drawing.get_document_uri(sheet)
+        sheet_dir = os.path.dirname(sheet_path)
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
@@ -152,31 +160,40 @@ class SheetBuilder:
 
         foreground = ET.SubElement(view, "image")
         foreground.attrib["data-type"] = "table"
-        foreground.attrib["xlink:href"] = "../schedules/{}.svg".format(schedule_name)
+        foreground.attrib["xlink:href"] = os.path.relpath(view_path, sheet_dir)
         foreground.attrib["x"] = "30"
         foreground.attrib["y"] = "30"
         foreground.attrib["width"] = str(view_width)
         foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(30, view_height + 35, view)
+        self.add_view_title(30, view_height + 35, view, sheet_dir)
         sheet_tree.write(sheet_path)
 
-    def add_view_title(self, x, y, parent):
-        title_tree = ET.parse(os.path.join(self.data_dir, "templates", "view-title.svg"))
+    def add_view_title(self, x, y, parent, sheet_dir):
+        title_path = os.path.join(sheet_dir, "assets", "view-title.svg")
+        os.makedirs(os.path.dirname(title_path), exist_ok=True)
+        if not os.path.exists(title_path):
+            ootb_title = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "view-title.svg")
+            shutil.copy(ootb_title, title_path)
+
+        title_tree = ET.parse(title_path)
         title_root = title_tree.getroot()
         title = ET.SubElement(parent, "image")
         title.attrib["data-type"] = "view-title"
-        title.attrib["xlink:href"] = "../templates/view-title.svg"
+        title.attrib["xlink:href"] = os.path.relpath(title_path, sheet_dir)
         title.attrib["x"] = str(x)
         title.attrib["y"] = str(y)
         title.attrib["width"] = str(self.convert_to_mm(title_root.attrib.get("width")))
         title.attrib["height"] = str(self.convert_to_mm(title_root.attrib.get("height")))
 
     def build(self, sheet):
-        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
-        os.makedirs(os.path.join(self.data_dir, "build", sheet_name), exist_ok=True)
+        sheet_path = tool.Drawing.get_document_uri(sheet)
+        sheet_name = os.path.splitext(os.path.basename(sheet_path))[0]
+        self.sheet_dir = os.path.dirname(sheet_path)
 
-        sheet_path = os.path.join(self.data_dir, "sheets", f"{sheet_name}.svg")
+        docs_dir = tool.Ifc.resolve_uri(os.path.join(bpy.context.scene.DocProperties.docs_dir, sheet_name))
+
+        os.makedirs(docs_dir, exist_ok=True)
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
@@ -191,8 +208,12 @@ class SheetBuilder:
         self.build_drawings(root, sheet)
         self.build_schedules(root)
 
-        with open(os.path.join(self.data_dir, "build", sheet_name, f"{sheet_name}.svg"), "wb") as output:
+        output_filename = os.path.join(docs_dir, f"{sheet_name}.svg")
+
+        with open(output_filename, "wb") as output:
             tree.write(output)
+
+        return output_filename
 
     def build_titleblock(self, root, sheet):
         titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
@@ -233,7 +254,7 @@ class SheetBuilder:
 
             if background is not None:
                 background_path = os.path.join(self.data_dir, "sheets", self.get_href(background))
-                copy(background_path, os.path.join(self.data_dir, "build", sheet_name))
+                shutil.copy(background_path, os.path.join(self.data_dir, "build", sheet_name))
 
             if view_title is not None:
                 foreground_path = self.get_href(foreground)
@@ -298,7 +319,7 @@ class SheetBuilder:
         self.defs.append(clip_path)
 
         svg_path = self.get_href(image)
-        with open(os.path.join(self.data_dir, "sheets", svg_path), "r") as template:
+        with open(os.path.join(self.sheet_dir, svg_path), "r") as template:
             embedded = ET.fromstring(pystache.render(template.read(), data))
             # viewBox should not be nested
             embedded.attrib["viewBox"] = ""
