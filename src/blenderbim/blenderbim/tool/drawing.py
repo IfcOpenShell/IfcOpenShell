@@ -146,7 +146,20 @@ class Drawing(blenderbim.core.tool.Drawing):
             tool.Ifc.delete(element)
             obj = tool.Ifc.get_object(element)
             if obj:
+                obj_data = obj.data
                 bpy.data.objects.remove(obj)
+                if obj_data.users == 0:  # in case we have drawing element types
+                    cls.remove_object_data(obj_data)
+
+    @classmethod
+    def remove_object_data(cls, data):
+        """also removes all related objects"""
+        if isinstance(data, bpy.types.Camera):
+            bpy.data.cameras.remove(data)
+        elif isinstance(data, bpy.types.Mesh):
+            bpy.data.meshes.remove(data)
+        elif isinstance(data, bpy.types.Curve):
+            bpy.data.curves.remove(C.object.data)
 
     @classmethod
     def delete_object(cls, obj):
@@ -1244,7 +1257,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         # sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing_elements = cls.get_drawing_elements(tool.Ifc.get_entity(camera))
         for element in tool.Ifc.get().by_type("IfcElement"):
-            if element.is_a() in ("IfcOpeningElement", ):
+            if element.is_a() in ("IfcOpeningElement",):
                 continue
 
             obj = tool.Ifc.get_object(element)
