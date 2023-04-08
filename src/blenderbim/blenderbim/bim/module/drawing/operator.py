@@ -179,6 +179,7 @@ class CreateDrawing(bpy.types.Operator):
 
             self.camera = context.scene.camera
             self.camera_element = tool.Ifc.get_entity(self.camera)
+            self.camera_document = tool.Drawing.get_drawing_document(self.camera_element)
             self.file = IfcStore.get_file()
 
             with profile("Drawing generation process"):
@@ -198,14 +199,8 @@ class CreateDrawing(bpy.types.Operator):
                     self.svg_writer.camera_projection = tuple(
                         self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
                     )
-                    pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
-                    related_paths = {
-                        "Stylesheet": pset.get("Stylesheet"),
-                        "Markers": pset.get("Markers"),
-                        "Symbols": pset.get("Symbols"),
-                        "Patterns": pset.get("Patterns"),
-                    }
-                    self.svg_writer.define_related_paths(**related_paths)
+
+                    self.svg_writer.setup_drawing_resource_paths(self.camera_element)
 
                 with profile("Generate underlay"):
                     underlay_svg = self.generate_underlay(context)
@@ -237,7 +232,7 @@ class CreateDrawing(bpy.types.Operator):
 
     def combine_svgs(self, context, underlay, linework, annotation):
         # Hacky :)
-        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
+        svg_path = self.get_svg_path()
         with open(svg_path, "w") as outfile:
             self.svg_writer.create_blank_svg(svg_path).define_boilerplate()
             boilerplate = self.svg_writer.svg.tostring()
@@ -282,7 +277,7 @@ class CreateDrawing(bpy.types.Operator):
     def generate_underlay(self, context):
         if not self.cprops.has_underlay:
             return
-        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-underlay.svg")
+        svg_path = self.get_svg_path(cache_type="underlay")
         context.scene.render.filepath = svg_path[0:-4] + ".png"
         drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
 
@@ -322,7 +317,7 @@ class CreateDrawing(bpy.types.Operator):
     def generate_linework(self, context):
         if not self.cprops.has_linework:
             return
-        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-linework.svg")
+        svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
@@ -605,7 +600,7 @@ class CreateDrawing(bpy.types.Operator):
     def generate_annotation(self, context):
         if not self.cprops.has_annotation:
             return
-        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-annotation.svg")
+        svg_path = self.get_svg_path(cache_type="annotation")
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
             return svg_path
 
@@ -662,6 +657,17 @@ class CreateDrawing(bpy.types.Operator):
             return element.LayerSetName
         return "mat-" + str(element.id())
 
+    def get_svg_path(self, cache_type=None):
+        drawing_path = tool.Drawing.get_document_uri(self.camera_document)
+        drawings_dir = os.path.dirname(drawing_path)
+
+        if cache_type:
+            drawings_dir = os.path.join(drawings_dir, "cache")
+            os.makedirs(drawings_dir, exist_ok=True)
+            return os.path.join(drawings_dir, f"{self.drawing_name}-{cache_type}.svg")
+        os.makedirs(drawings_dir, exist_ok=True)
+        return drawing_path
+
 
 class AddAnnotation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_annotation"
@@ -711,7 +717,7 @@ class OpenSheet(bpy.types.Operator, Operator):
         core.open_sheet(tool.Drawing, sheet=sheet)
 
 
-class AddDrawingToSheet(bpy.types.Operator):
+class AddDrawingToSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.add_drawing_to_sheet"
     bl_label = "Add Drawing To Sheet"
     bl_options = {"REGISTER", "UNDO"}
@@ -721,11 +727,13 @@ class AddDrawingToSheet(bpy.types.Operator):
         props = context.scene.DocProperties
         return props.drawings and props.sheets and context.scene.BIMProperties.data_dir
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.DocProperties
         active_drawing = props.drawings[props.active_drawing_index]
         active_sheet = props.sheets[props.active_sheet_index]
         drawing = tool.Ifc.get().by_id(active_drawing.ifc_definition_id)
+        drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(drawing))
+
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
         if not sheet.is_a("IfcDocumentInformation"):
             return {"FINISHED"}
@@ -737,13 +745,7 @@ class AddDrawingToSheet(bpy.types.Operator):
 
         has_drawing = False
         for reference in references:
-            if tool.Ifc.get_schema() == "IFC2X3":
-                element = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
-                    0
-                ].RelatedObjects[0]
-            else:
-                element = reference.DocumentRefForObjects[0].RelatedObjects[0]
-            if element == drawing:
+            if reference.Location == drawing_uri:
                 has_drawing = True
                 break
 
@@ -756,7 +758,6 @@ class AddDrawingToSheet(bpy.types.Operator):
         else:
             attributes = {"Identification": str(len(sheet.HasDocumentReferences or []))}
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
-        tool.Ifc.run("document.assign_document", product=drawing, document=reference)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         sheet_builder.add_drawing(reference, drawing, sheet)
@@ -810,15 +811,19 @@ class CreateSheets(bpy.types.Operator):
         name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
-        sheet_builder.build(sheet)
+
+        # These variables will be made available to the evaluated commands
+        svg = sheet_builder.build(sheet)
+        basename = os.path.basename(svg)
+        path = os.path.dirname(svg)
+        pdf = os.path.splitext(svg)[0] + ".pdf"
+        eps = os.path.splitext(svg)[0] + ".eps"
+        dxf = os.path.splitext(svg)[0] + ".dxf"
 
         svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
         svg2dxf_command = context.preferences.addons["blenderbim"].preferences.svg2dxf_command
 
         if svg2pdf_command:
-            path = os.path.join(scene.BIMProperties.data_dir, "build", name)
-            svg = os.path.join(path, name + ".svg")
-            pdf = os.path.join(path, name + ".pdf")
             # With great power comes great responsibility. Example:
             # [['inkscape', svg, '-o', pdf]]
             commands = eval(svg2pdf_command)
@@ -826,11 +831,6 @@ class CreateSheets(bpy.types.Operator):
                 subprocess.run(command)
 
         if svg2dxf_command:
-            path = os.path.join(scene.BIMProperties.data_dir, "build", name)
-            svg = os.path.join(path, name + ".svg")
-            eps = os.path.join(path, name + ".eps")
-            dxf = os.path.join(path, name + ".dxf")
-            base = os.path.join(path, name)
             # With great power comes great responsibility. Example:
             # [['inkscape', svg, '-o', eps], ['pstoedit', '-dt', '-f', 'dxf:-polyaslines -mm', eps, dxf, '-psarg', '-dNOSAFER']]
             commands = eval(svg2dxf_command)
@@ -840,10 +840,7 @@ class CreateSheets(bpy.types.Operator):
         if svg2pdf_command:
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.pdf_command, pdf)
         else:
-            open_with_user_command(
-                context.preferences.addons["blenderbim"].preferences.svg_command,
-                os.path.join(scene.BIMProperties.data_dir, "build", name, name + ".svg"),
-            )
+            open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg)
         return {"FINISHED"}
 
 
@@ -894,19 +891,19 @@ class OpenView(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        if not self.open_all:
-            view_list = [self.view]
+        if self.open_all:
+            drawings = [tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings]
         else:
-            view_list = [d.name for d in context.scene.DocProperties.drawings]
+            drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]
 
-        data_dir = Path(context.scene.BIMProperties.data_dir)
-        diagrams = []
+        drawing_uris = []
         drawings_not_found = []
-        for view_name in view_list.copy():
-            path = data_dir / "diagrams" / (view_name + ".svg")
-            if not path.is_file():
-                drawings_not_found.append(view_name)
-            diagrams.append(path)
+
+        for drawing in drawings:
+            drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(drawing))
+            drawing_uris.append(drawing_uri)
+            if not os.path.exists(drawing_uri):
+                drawings_not_found.append(drawing.Name)
 
         if drawings_not_found:
             msg = "Some drawings .svg files were not found, need to print them first: \n{}.".format(
@@ -915,11 +912,8 @@ class OpenView(bpy.types.Operator):
             self.report({"ERROR"}, msg)
             return {"CANCELLED"}
 
-        for diagram_path in diagrams:
-            open_with_user_command(
-                context.preferences.addons["blenderbim"].preferences.svg_command,
-                str(diagram_path),
-            )
+        for drawing_uri in drawing_uris:
+            open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, drawing_uri)
         return {"FINISHED"}
 
 
@@ -1143,12 +1137,15 @@ class AddSchedule(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     def _execute(self, context):
         filepath = self.filepath
         if self.use_relative_path:
-            filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
+            ifc_path = tool.Ifc.get_path()
+            if os.path.isfile(ifc_path):
+                ifc_path = os.path.dirname(ifc_path)
+            filepath = os.path.relpath(filepath, ifc_path)
         core.add_schedule(
             tool.Ifc,
             tool.Drawing,
@@ -1216,7 +1213,7 @@ class AddScheduleToSheet(bpy.types.Operator):
 
         has_schedule = False
         for reference in references:
-            if reference.Location == tool.Drawing.get_schedule_location(schedule):
+            if reference.Location == tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(schedule), "svg"):
                 has_schedule = True
                 break
 

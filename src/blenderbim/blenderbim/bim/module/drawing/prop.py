@@ -354,6 +354,13 @@ class DocProperties(PropertyGroup):
     decorations_colour: FloatVectorProperty(
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
+    docs_dir: StringProperty(default=os.path.join(".", "docs") + os.path.sep, name="Default Docs Directory")
+    sheets_dir: StringProperty(default=os.path.join(".", "sheets") + os.path.sep, name="Default Sheets Directory")
+    drawings_dir: StringProperty(default=os.path.join(".", "drawings") + os.path.sep, name="Default Drawings Directory")
+    stylesheet_path: StringProperty(default=os.path.join(".", "drawings", "assets", "default.css"), name="Default Stylesheet")
+    markers_path: StringProperty(default=os.path.join(".", "drawings", "assets", "markers.svg"), name="Default Markers")
+    symbols_path: StringProperty(default=os.path.join(".", "drawings", "assets", "symbols.svg"), name="Default Symbols")
+    patterns_path: StringProperty(default=os.path.join(".", "drawings", "assets", "patterns.svg"), name="Default Patterns")
 
 
 class BIMCameraProperties(PropertyGroup):

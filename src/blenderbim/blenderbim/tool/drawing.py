@@ -128,13 +128,17 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def create_svg_schedule(cls, schedule):
         schedule_creator = scheduler.Scheduler()
-        schedule_creator.schedule(cls.get_schedule_location(schedule), cls.get_document_uri(schedule))
+        schedule_creator.schedule(
+            cls.get_document_uri(schedule), cls.get_path_with_ext(cls.get_document_uri(schedule), "svg")
+        )
 
     @classmethod
     def create_svg_sheet(cls, document, titleblock):
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.create(cls.get_document_uri(document), titleblock)
+        uri = cls.get_document_uri(document)
+        sheet_builder.create(uri, titleblock)
+        return uri
 
     @classmethod
     def delete_collection(cls, collection):
@@ -252,17 +256,28 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_document_uri(cls, document):
-        if hasattr(document, "Identification"):
-            name = document.Identification or "X"
-        else:
-            name = document.DocumentId or "X"
-        name += " - " + (document.Name or "Unnamed")
-        if not hasattr(document, "Scope"):
-            return
-        if document.Scope == "DOCUMENTATION":
-            return os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", name + ".svg")
-        elif document.Scope == "SCHEDULE":
-            return os.path.join(bpy.context.scene.BIMProperties.data_dir, "schedules", name + ".svg")
+        if getattr(document, "Location", None):
+            ifc_path = tool.Ifc.get_path()
+            if os.path.isfile(ifc_path):
+                ifc_path = os.path.dirname(ifc_path)
+            return os.path.abspath(os.path.join(ifc_path, document.Location))
+        if document.is_a("IfcDocumentInformation"):
+            if tool.Ifc.get_schema() == "IFC2X3":
+                references = document.DocumentReferences
+            else:
+                references = document.HasDocumentReferences
+            for reference in references:
+                location = cls.get_document_uri(reference)
+                if location:
+                    return location
+
+    @classmethod
+    def get_path_filename(cls, path):
+        return os.path.splitext(os.path.basename(path))[0]
+
+    @classmethod
+    def get_path_with_ext(cls, path, ext):
+        return os.path.splitext(path)[0] + f".{ext}"
 
     @classmethod
     def get_drawing_collection(cls, drawing):
@@ -275,6 +290,12 @@ class Drawing(blenderbim.core.tool.Drawing):
         for rel in drawing.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToGroup"):
                 return rel.RelatingGroup
+
+    @classmethod
+    def get_drawing_document(cls, drawing):
+        for rel in drawing.HasAssociations:
+            if rel.is_a("IfcRelAssociatesDocument"):
+                return rel.RelatingDocument
 
     @classmethod
     def get_drawing_references(cls, drawing):
@@ -304,12 +325,6 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_name(cls, element):
         return element.Name
-
-    @classmethod
-    def get_schedule_location(cls, schedule):
-        if tool.Ifc.get_schema() == "IFC2X3":
-            return schedule.DocumentReferences[0].Location
-        return schedule.Location
 
     @classmethod
     def generate_drawing_matrix(cls, target_view, location_hint):
@@ -720,6 +735,18 @@ class Drawing(blenderbim.core.tool.Drawing):
         elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
             return location_hint + " " + target_view.split("_")[0]
         return target_view
+
+    @classmethod
+    def get_default_sheet_path(cls, identification, name):
+        return os.path.join(bpy.context.scene.DocProperties.sheets_dir, f"{identification} - {name}.svg")
+
+    @classmethod
+    def get_default_drawing_path(cls, name):
+        return os.path.join(bpy.context.scene.DocProperties.drawings_dir, f"{name}.svg")
+
+    @classmethod
+    def get_default_drawing_resource_path(cls, resource):
+        return getattr(bpy.context.scene.DocProperties, f"{resource.lower()}_path") or None
 
     @classmethod
     def get_potential_reference_elements(cls, drawing):

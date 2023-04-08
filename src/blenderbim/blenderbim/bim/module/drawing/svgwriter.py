@@ -21,6 +21,7 @@ import re
 import bpy
 import math
 import bmesh
+import shutil
 import pystache
 import mathutils
 import xml.etree.ElementTree as ET
@@ -65,10 +66,9 @@ class SvgWriter:
         self.scale = 1 / 100  # 1:100
         self.camera_width = None
         self.camera_height = None
-        self.related_paths = None
+        self.resource_paths = {}
 
     def create_blank_svg(self, output_path):
-        self.define_related_paths()  # making sure all paths are defined
         self.calculate_scale()
         self.svg = svgwrite.Drawing(
             output_path,
@@ -94,26 +94,19 @@ class SvgWriter:
         )
         return self
 
-    def define_related_paths(self, **related_paths):
-        if not self.related_paths:
-            self.related_paths = {}
-
-        if not related_paths:
-            related_paths = {
-                "Stylesheet": os.path.join(self.data_dir, "styles", f"default.css"),
-                "Markers": os.path.join(self.data_dir, "templates", "markers.svg"),
-                "Symbols": os.path.join(self.data_dir, "templates", "symbols.svg"),
-                "Patterns": os.path.join(self.data_dir, "templates", "patterns.svg"),
-            }
-            for path_name in list(related_paths.keys()):
-                if path_name in self.related_paths:
-                    del related_paths[path_name]
-
-        for path_name in related_paths:
-            uri = related_paths[path_name]
-            custom_path = tool.Ifc.resolve_uri(uri)
-            if custom_path:
-                self.related_paths[path_name] = custom_path
+    def setup_drawing_resource_paths(self, element):
+        pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
+        for resource in ("Stylesheet", "Markers", "Symbols", "Patterns"):
+            resource_path = pset.get(resource)
+            if not resource_path:
+                continue
+            os.makedirs(os.path.dirname(resource_path), exist_ok=True)
+            if not os.path.exists(resource_path):
+                resource_basename = os.path.basename(resource_path)
+                ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
+                if os.path.exists(ootb_resource):
+                    shutil.copy(ootb_resource, resource_path)
+            self.resource_paths[resource] = tool.Ifc.resolve_uri(resource_path)
 
     def define_boilerplate(self):
         self.add_stylesheet()
@@ -132,28 +125,36 @@ class SvgWriter:
         self.height = self.raw_height * self.svg_scale
 
     def add_stylesheet(self):
-        with open(self.related_paths["Stylesheet"], "r") as stylesheet:
+        if not self.resource_paths["Stylesheet"] or not os.path.exists(self.resource_paths["Stylesheet"]):
+            return
+        with open(self.resource_paths["Stylesheet"], "r") as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
     def add_markers(self):
-        tree = ET.parse(self.related_paths["Markers"])
+        if not self.resource_paths["Markers"] or not os.path.exists(self.resource_paths["Markers"]):
+            return
+        tree = ET.parse(self.resource_paths["Markers"])
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
 
     def add_symbols(self):
-        tree = ET.parse(self.related_paths["Symbols"])
+        if not self.resource_paths["Symbols"] or not os.path.exists(self.resource_paths["Symbols"]):
+            return
+        tree = ET.parse(self.resource_paths["Symbols"])
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
 
     def find_xml_symbol_by_id(self, id):
-        tree = ET.parse(self.related_paths["Symbols"])
+        tree = ET.parse(self.resource_paths["Symbols"])
         xml_symbol = tree.find(f'.//*[@id="{id}"]')
         return External(xml_symbol) if xml_symbol else None
 
     def add_patterns(self):
-        tree = ET.parse(self.related_paths["Patterns"])
+        if not self.resource_paths["Patterns"] or not os.path.exists(self.resource_paths["Patterns"]):
+            return
+        tree = ET.parse(self.resource_paths["Patterns"])
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))

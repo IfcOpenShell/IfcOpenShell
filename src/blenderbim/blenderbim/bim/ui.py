@@ -182,6 +182,21 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.BIMProperties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "docs_dir")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "sheets_dir")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "drawings_dir")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "stylesheet_path")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "markers_path")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "symbols_path")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "patterns_path")
+
         row = layout.row()
         row.operator("bim.configure_visibility")
 

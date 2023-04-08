@@ -24,6 +24,7 @@ import zipfile
 import tempfile
 import ifcopenshell
 import blenderbim.bim.handler
+import blenderbim.tool as tool
 from pathlib import Path
 
 
@@ -371,7 +372,7 @@ class IfcStore:
     def unlink_element(element=None, obj=None):
         if element is None:
             try:
-                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = tool.Ifc.get_entity(obj)
             except:
                 pass
 

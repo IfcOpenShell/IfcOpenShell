@@ -72,6 +72,9 @@ def add_sheet(ifc, drawing, titleblock=None):
     if ifc.get_schema() == "IFC2X3":
         attributes["DocumentId"] = attributes["Identification"]
         del attributes["Identification"]
+        # TODO: How does IFC2X3 store the location?
+    else:
+        attributes["Location"] = drawing.get_default_sheet_path(identification, "UNTITLED")
     ifc.run("document.edit_information", information=sheet, attributes=attributes)
     drawing.create_svg_sheet(sheet, titleblock)
     drawing.import_sheets()
@@ -103,13 +106,13 @@ def disable_editing_schedules(drawing):
 def add_schedule(ifc, drawing, uri=None):
     schedule = ifc.run("document.add_information")
     reference = ifc.run("document.add_reference", information=schedule)
+    name = drawing.get_path_filename(uri)
     if ifc.get_schema() == "IFC2X3":
-        attributes = {"DocumentId": "X", "Name": "UNTITLED", "Scope": "SCHEDULE"}
-        ifc.run("document.edit_information", information=schedule, attributes=attributes)
-        ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
+        attributes = {"DocumentId": "X", "Name": name, "Scope": "SCHEDULE"}
     else:
-        attributes = {"Identification": "X", "Name": "UNTITLED", "Scope": "SCHEDULE", "Location": uri}
-        ifc.run("document.edit_information", information=schedule, attributes=attributes)
+        attributes = {"Identification": "X", "Name": name, "Scope": "SCHEDULE"}
+    ifc.run("document.edit_information", information=schedule, attributes=attributes)
+    ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
     drawing.import_schedules()
 
 
@@ -119,7 +122,7 @@ def remove_schedule(ifc, drawing, schedule=None):
 
 
 def open_schedule(drawing, schedule=None):
-    drawing.open_spreadsheet(drawing.get_schedule_location(schedule))
+    drawing.open_spreadsheet(drawing.get_document_uri(schedule))
 
 
 def update_schedule_name(ifc, drawing, schedule=None, name=None):
@@ -164,8 +167,22 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
             "HasLinework": True,
             "HasAnnotation": True,
             "GlobalReferencing": True,
+            "Stylesheet": drawing.get_default_drawing_resource_path("Stylesheet"),
+            "Markers": drawing.get_default_drawing_resource_path("Markers"),
+            "Symbols": drawing.get_default_drawing_resource_path("Symbols"),
+            "Patterns": drawing.get_default_drawing_resource_path("Patterns"),
         },
     )
+    information = ifc.run("document.add_information")
+    uri = drawing.get_default_drawing_path(drawing_name)
+    reference = ifc.run("document.add_reference", information=information)
+    if ifc.get_schema() == "IFC2X3":
+        attributes = {"DocumentId": "X", "Name": drawing_name, "Scope": "DRAWING"}
+    else:
+        attributes = {"Identification": "X", "Name": drawing_name, "Scope": "DRAWING"}
+    ifc.run("document.edit_information", information=information, attributes=attributes)
+    ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
+    ifc.run("document.assign_document", product=element, document=reference)
     drawing.import_drawings()
 
 
@@ -204,6 +221,7 @@ def remove_drawing(ifc, drawing_tool, drawing=None):
         if reference_obj:
             drawing_tool.delete_object(reference_obj)
         ifc.run("root.remove_product", product=reference)
+    ifc.run("document.remove_information", information=drawing_tool.get_drawing_document(drawing))
     ifc.run("root.remove_product", product=drawing)
     drawing_tool.import_drawings()
 
@@ -243,7 +261,7 @@ def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None)
 
 def build_schedule(drawing, schedule=None):
     drawing.create_svg_schedule(schedule)
-    drawing.open_svg(drawing.get_document_uri(schedule))
+    drawing.open_svg(drawing.get_path_with_ext(drawing.get_document_uri(schedule), "svg"))
 
 
 def sync_references(ifc, collector, drawing_tool, drawing=None):
