@@ -812,7 +812,6 @@ class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
     bl_label = "Export IFC"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Export the IFC project"
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -820,7 +819,7 @@ class ExportIFC(bpy.types.Operator):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False)
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
-
+    
     def invoke(self, context, event):
         if not IfcStore.get_file():
             self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
@@ -891,6 +890,13 @@ class ExportIFC(bpy.types.Operator):
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
+    
+    @classmethod
+    def description(cls, context, properties):
+        if properties.should_save_as == False:
+            return "Export the IFC project to this file"
+        else:
+            return "Export the IFC project to a selected file"
 
 
 class ImportIFC(bpy.types.Operator):
