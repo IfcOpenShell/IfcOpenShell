@@ -890,13 +890,12 @@ class ExportIFC(bpy.types.Operator):
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
-    
+
     @classmethod
     def description(cls, context, properties):
         if properties.should_save_as:
             return "Export the IFC project to a selected file"
-        else:
-            return "Export the IFC project to this file"
+        return "Export the IFC project to this file"
 
 
 class ImportIFC(bpy.types.Operator):
