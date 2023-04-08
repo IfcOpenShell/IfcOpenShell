@@ -819,7 +819,7 @@ class ExportIFC(bpy.types.Operator):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False)
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
-    
+
     def invoke(self, context, event):
         if not IfcStore.get_file():
             self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
@@ -893,10 +893,10 @@ class ExportIFC(bpy.types.Operator):
     
     @classmethod
     def description(cls, context, properties):
-        if properties.should_save_as == False:
-            return "Export the IFC project to this file"
-        else:
+        if properties.should_save_as:
             return "Export the IFC project to a selected file"
+        else:
+            return "Export the IFC project to this file"
 
 
 class ImportIFC(bpy.types.Operator):
