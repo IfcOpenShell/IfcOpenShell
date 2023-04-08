@@ -142,18 +142,12 @@ class BimToolUI:
         if AuthoringData.data["active_material_usage"] == "LAYER2":
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="extrusion_depth", text="Height")
-            op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
-            op.depth = cls.props.extrusion_depth
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="length", text="Length")
-            op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
-            op.length = cls.props.length
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="X Angle")
-            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
-            op.x_angle = cls.props.x_angle
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -197,8 +191,6 @@ class BimToolUI:
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="X Angle")
-            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
-            op.x_angle = cls.props.x_angle
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
@@ -210,8 +202,6 @@ class BimToolUI:
                 "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
             )
             row.prop(data=cls.props, property="extrusion_depth", text=label)
-            op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
-            op.depth = cls.props.extrusion_depth
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
