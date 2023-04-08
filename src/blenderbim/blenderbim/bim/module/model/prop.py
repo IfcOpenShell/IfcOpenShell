@@ -202,7 +202,7 @@ class BIMModelProperties(PropertyGroup):
     constr_browser_state: bpy.props.PointerProperty(type=ConstrBrowserState)
     extrusion_depth: bpy.props.FloatProperty(
         min=0,
-        default=42.0, 
+        default=42.0,
         update=update_extrusion_depth,
     )
     cardinal_point: bpy.props.EnumProperty(
@@ -233,7 +233,7 @@ class BIMModelProperties(PropertyGroup):
     )
     length: bpy.props.FloatProperty(
         soft_min=0,
-        default=42.0, 
+        default=42.0,
         update=lambda self, context: bpy.ops.bim.change_layer_length(length=self.length),
     )
     openings: bpy.props.CollectionProperty(type=ObjProperty)
@@ -243,7 +243,7 @@ class BIMModelProperties(PropertyGroup):
     rl1: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like walls, doors, flooring, skirting, etc
     rl2: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like windows, other hosted furniture
     x_angle: bpy.props.FloatProperty(
-        name="X Angle", 
+        name="X Angle",
         default=0,
         update=lambda self, context: bpy.ops.bim.change_extrusion_x_angle(x_angle=self.x_angle),
     )
