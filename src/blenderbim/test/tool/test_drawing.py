@@ -61,9 +61,15 @@ class TestCreateCamera(NewFile):
 class TestCreateSvgSheet(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
-        subject.create_svg_sheet(document, "A1")
-        assert os.path.isfile(os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg"))
+        document = ifc.createIfcDocumentInformation(
+            Identification="X",
+            Name="FOOBAR",
+            Scope="DOCUMENTATION",
+            Location=os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", "X - FOOBAR.svg"),
+        )
+        uri = subject.create_svg_sheet(document, "A1")
+        assert uri.endswith(".svg")
+        assert os.path.isfile(uri)
 
 
 class TestDeleteCollection(NewFile):
@@ -204,11 +210,13 @@ class TestEnsureUniqueIdentification(NewFile):
 class TestExportTextLiteralAttributes(NewFile):
     def test_run(self):
         TestImportTextAttributes().test_run()
-        assert subject.export_text_literal_attributes(bpy.data.objects.get("Object")) == [{
-            "Literal": "Literal",
-            "Path": "RIGHT",
-            "BoxAlignment": "bottom-left",
-        }]
+        assert subject.export_text_literal_attributes(bpy.data.objects.get("Object")) == [
+            {
+                "Literal": "Literal",
+                "Path": "RIGHT",
+                "BoxAlignment": "bottom-left",
+            }
+        ]
 
 
 class TestGetAnnotationContext(NewFile):
@@ -236,23 +244,29 @@ class TestGetBodyContext(NewFile):
 
 
 class TestGetDocumentUri(NewFile):
-    def test_get_sheet_uri(self):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        document = ifc.createIfcDocumentInformation(
+            Identification="X", Name="FOOBAR", Scope="DOCUMENTATION", Location="Location"
+        )
+        assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
+
+    def test_get_indirect_locations(self):
         ifc = ifcopenshell.file()
         document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
-        result = subject.get_document_uri(document)
-        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg")
-
-    def test_get_schedule_uri(self):
-        ifc = ifcopenshell.file()
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SCHEDULE")
-        result = subject.get_document_uri(document)
-        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "schedules", "X - FOOBAR.svg")
+        reference = ifc.createIfcDocumentReference(Location="Location", ReferencedDocument=document)
+        assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
+        assert subject.get_document_uri(reference) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
 
     def test_run_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
-        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION")
-        result = subject.get_document_uri(document)
-        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg")
+        tool.Ifc.set(ifc)
+        reference = ifc.createIfcDocumentReference(Location="Location")
+        document = ifc.createIfcDocumentInformation(
+            DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION", DocumentReferences=[reference]
+        )
+        assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
+        assert subject.get_document_uri(reference) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
 
 
 class TestGetDrawingCollection(NewFile):
@@ -309,23 +323,6 @@ class TestGetName(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         assert subject.get_name(ifc.createIfcWall(Name="Foobar")) == "Foobar"
-
-
-class TestGetScheduleLocation(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        schedule = ifcopenshell.api.run("document.add_information", ifc)
-        schedule.Location = "uri"
-        reference = ifcopenshell.api.run("document.add_reference", ifc, information=schedule)
-        subject.get_schedule_location(schedule) == "uri"
-
-    def test_run_ifc2x3(self):
-        ifc = ifcopenshell.file(schema="IFC2X3")
-        tool.Ifc.set(ifc)
-        reference = ifc.createIfcDocumentReference(Location="uri")
-        schedule = ifc.createIfcDocumentInformation(DocumentReferences=[reference])
-        subject.get_schedule_location(schedule) == "uri"
 
 
 class TestGenerateDrawingMatrix(NewFile):

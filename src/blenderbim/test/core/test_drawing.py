@@ -87,10 +87,11 @@ class TestAddSheet:
         drawing.generate_sheet_identification().should_be_called().will_return("identification")
         drawing.ensure_unique_identification("identification").should_be_called().will_return("u_identification")
         ifc.get_schema().should_be_called().will_return("IFC4")
+        drawing.get_default_sheet_path("u_identification", "UNTITLED").should_be_called().will_return("uri")
         ifc.run(
             "document.edit_information",
             information="sheet",
-            attributes={"Identification": "u_identification", "Name": "UNTITLED", "Scope": "DOCUMENTATION"},
+            attributes={"Identification": "u_identification", "Name": "UNTITLED", "Scope": "DOCUMENTATION", "Location": "uri"},
         ).should_be_called()
         drawing.create_svg_sheet("sheet", "titleblock").should_be_called()
         drawing.import_sheets().should_be_called()
@@ -141,18 +142,21 @@ class TestDisableEditingSchedules:
 class TestAddSchedule:
     def test_run(self, ifc, drawing):
         ifc.run("document.add_information").should_be_called().will_return("schedule")
+        drawing.get_path_filename("uri").should_be_called().will_return("UNTITLED")
         ifc.run("document.add_reference", information="schedule").should_be_called().will_return("reference")
         ifc.get_schema().should_be_called().will_return("IFC4")
         ifc.run(
             "document.edit_information",
             information="schedule",
-            attributes={"Identification": "X", "Name": "UNTITLED", "Scope": "SCHEDULE", "Location": "uri"},
+            attributes={"Identification": "X", "Name": "UNTITLED", "Scope": "SCHEDULE"},
         ).should_be_called()
+        ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
         drawing.import_schedules().should_be_called()
         subject.add_schedule(ifc, drawing, uri="uri")
 
     def test_using_a_document_id_in_ifc2x3(self, ifc, drawing):
         ifc.run("document.add_information").should_be_called().will_return("schedule")
+        drawing.get_path_filename("uri").should_be_called().will_return("UNTITLED")
         ifc.run("document.add_reference", information="schedule").should_be_called().will_return("reference")
         ifc.get_schema().should_be_called().will_return("IFC2X3")
         ifc.run(
@@ -174,7 +178,7 @@ class TestRemoveSchedule:
 
 class TestOpenSchedule:
     def test_run(self, drawing):
-        drawing.get_schedule_location("schedule").should_be_called().will_return("uri")
+        drawing.get_document_uri("schedule").should_be_called().will_return("uri")
         drawing.open_spreadsheet("uri").should_be_called()
         subject.open_schedule(drawing, schedule="schedule")
 
@@ -225,6 +229,10 @@ class TestAddDrawing:
         ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
         collector.assign("obj").should_be_called()
         ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
+        drawing.get_default_drawing_resource_path("Stylesheet").should_be_called().will_return("stylesheet.css")
+        drawing.get_default_drawing_resource_path("Markers").should_be_called().will_return("markers.svg")
+        drawing.get_default_drawing_resource_path("Symbols").should_be_called().will_return("symbols.svg")
+        drawing.get_default_drawing_resource_path("Patterns").should_be_called().will_return("patterns.svg")
         ifc.run(
             "pset.edit_pset",
             pset="pset",
@@ -236,8 +244,19 @@ class TestAddDrawing:
                 "HasLinework": True,
                 "HasAnnotation": True,
                 "GlobalReferencing": True,
+                "Stylesheet": "stylesheet.css",
+                "Markers": "markers.svg",
+                "Symbols": "symbols.svg",
+                "Patterns": "patterns.svg",
             },
         ).should_be_called()
+        drawing.get_default_drawing_path("name").should_be_called().will_return("uri")
+        ifc.run("document.add_information").should_be_called().will_return("information")
+        ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC4")
+        ifc.run("document.edit_information", information="information", attributes={"Identification": "X", "Name": "name", "Scope": "DRAWING"}).should_be_called()
+        ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
+        ifc.run("document.assign_document", product="element", document="reference").should_be_called()
         drawing.import_drawings().should_be_called()
         subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")
 
@@ -277,6 +296,8 @@ class TestRemoveDrawing:
         ifc.get_object("reference").should_be_called().will_return("reference_obj")
         drawing.delete_object("reference_obj").should_be_called()
         ifc.run("root.remove_product", product="reference").should_be_called()
+        drawing.get_drawing_document("drawing").should_be_called().will_return("information")
+        ifc.run("document.remove_information", information="information").should_be_called()
         ifc.run("root.remove_product", product="drawing").should_be_called()
         drawing.import_drawings().should_be_called()
         subject.remove_drawing(ifc, drawing, drawing="drawing")

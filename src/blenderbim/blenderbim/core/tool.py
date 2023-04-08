@@ -255,15 +255,19 @@ class Drawing:
     def get_annotation_context(cls, target_view): pass
     def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
+    def get_default_drawing_path(cls, name): pass
+    def get_default_drawing_resource_path(cls, resource): pass
+    def get_default_sheet_path(cls, identification, name): pass
     def get_document_uri(cls, document): pass
     def get_drawing_collection(cls, drawing): pass
+    def get_drawing_document(cls, drawing): pass
     def get_drawing_group(cls, drawing): pass
+    def get_path_filename(cls, uri): pass
     def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
-    def get_schedule_location(cls, schedule): pass
     def get_text_literal(cls, obj): pass
     def remove_literal_from_annotation(cls, obj, literal): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
