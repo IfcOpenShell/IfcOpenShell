@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fd17283f77..6cecf9dad3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -826,6 +826,8 @@ if (EMSCRIPTEN)
+   list (REMOVE_ITEM BUILD_TOOLKITS ExpToCasExe)
+ endif()
+ 
++list (REMOVE_ITEM BUILD_TOOLKITS ExpToCasExe)
++
+ # bison
+ if (BUILD_YACCLEX)
+   OCCT_INCLUDE_CMAKE_FILE ("adm/cmake/bison")

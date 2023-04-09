@@ -75,7 +75,7 @@ ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 PYTHON_VERSIONS = ["3.7.16", "3.8.16", "3.9.16", "3.10.10", "3.11.2"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
-OCCT_VERSION = "7.5.3"
+OCCT_VERSION = "7.7.1"
 BOOST_VERSION = "1.80.0"
 PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.9.11"
@@ -553,6 +553,9 @@ if USE_OCCT and "occ" in targets:
     patches = []
     if OCCT_VERSION < "7.4":
         patches.append("./patches/occt/enable-exception-handling.patch")
+        
+    if OCCT_VERSION == "7.7.1":
+        patches.append("./patches/occt/no_ExpToCasExe.patch")
     
     if "wasm" in flags:
         patches.append("./patches/occt/no_em_js.patch")
@@ -567,7 +570,7 @@ if USE_OCCT and "occ" in targets:
             "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype"
         ],
-        download_url = "https://github.com/Open-Cascade-SAS/OCCT",
+        download_url = "https://git.dev.opencascade.org/repos/occt.git",
         download_name = "occt",
         download_tool=download_tool_git,
         patch=patches,
