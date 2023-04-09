@@ -1279,6 +1279,7 @@ class SectionLevelDecorator(LevelDecorator):
 
         vec4 p;
 
+        dist = 0; // make sure dist is defined to prevent flickering
         // start edge callout
         if (t0 == 1u) {
             vec4 head[4];
@@ -1518,6 +1519,7 @@ class GridDecorator(BaseDecorator):
         + """
         #define CIRCLE_SIZE 16.0
         #define DASH_SIZE 48.0
+        // dash pattern "----------------      ----      "
         #define DASH_PATTERN 0x03C0FFFFU
     """
     )
@@ -1538,6 +1540,7 @@ class GridDecorator(BaseDecorator):
         vec4 edge = p1w - p0w, dir = normalize(edge);
         vec4 gap = dir * CIRCLE_SIZE * viewportDrawingScale;
 
+        dist = 0; // make sure dist is defined to prevent flickering
         vec4 head[CIRCLE_SEGS];
         circle_head(CIRCLE_SIZE * viewportDrawingScale, head);
 
