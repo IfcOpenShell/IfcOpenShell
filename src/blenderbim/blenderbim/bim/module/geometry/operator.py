@@ -767,7 +767,6 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
             representation = tool.Geometry.get_active_representation(obj)
             if not representation:
-                obj.select_set(False)
                 continue
 
             if tool.Geometry.is_meshlike(representation):
@@ -791,7 +790,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
         if not context.selected_objects or len(context.selected_objects) != len(objs):
             # We are trying to edit at least one non-mesh-like object : Display a hint to the user
-            self.report({"INFO"}, "Only mesh-like objects can be edited")
+            self.report({"INFO"}, "Only mesh-compatible representations may be edited in edit mode.")
 
         if context.active_object not in context.selected_objects:
             # The active object is non-mesh-like. Set a valid object (or None) as active
