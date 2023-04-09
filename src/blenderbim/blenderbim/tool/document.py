@@ -92,14 +92,16 @@ class Document(blenderbim.core.tool.Document):
             for element in document.DocumentReferences or []:
                 new = props.documents.add()
                 new.ifc_definition_id = element.id()
-                new.name = element.Name or "Unnamed"
+                name = " - ".join([x for x in [element.Description, element.Location] if x])
+                new.name = name or "Unnamed"
                 new.identification = element.ItemReference or "*"
                 new.is_information = False
         else:
             for element in document.HasDocumentReferences:
                 new = props.documents.add()
                 new.ifc_definition_id = element.id()
-                new.name = element.Name or "Unnamed"
+                name = " - ".join([x for x in [element.Description, element.Location] if x])
+                new.name = name or "Unnamed"
                 new.identification = element.Identification or "*"
                 new.is_information = False
 
