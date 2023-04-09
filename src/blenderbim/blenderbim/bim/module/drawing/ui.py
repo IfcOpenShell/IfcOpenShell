@@ -528,5 +528,10 @@ class BIM_UL_sheets(bpy.types.UIList):
                 row.label(text="", icon="IMAGE_DATA")
             elif item.reference_type == "SCHEDULE":
                 row.label(text="", icon="LONGDISPLAY")
-            name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
+            elif item.reference_type == "TITLEBLOCK":
+                row.label(text="", icon="MENU_PANEL")
+            if item.identification:
+                name = f"{item.identification} - {item.name or 'Unnamed'}"
+            else:
+                name = item.name or "Unnamed"
             row.label(text=name)

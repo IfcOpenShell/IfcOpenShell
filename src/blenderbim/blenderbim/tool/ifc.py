@@ -106,10 +106,21 @@ class Ifc(blenderbim.core.tool.Ifc):
 
     @classmethod
     def resolve_uri(cls, uri):
+        if os.path.isabs(uri):
+            return uri
         ifc_path = cls.get_path()
         if os.path.isfile(ifc_path):
             ifc_path = os.path.dirname(ifc_path)
         return uri if not uri or os.path.isabs(uri) else os.path.join(ifc_path, uri)
+
+    @classmethod
+    def get_relative_uri(cls, uri):
+        if not os.path.isabs(uri):
+            return uri
+        ifc_path = cls.get_path()
+        if os.path.isfile(ifc_path):
+            ifc_path = os.path.dirname(ifc_path)
+        return os.path.relpath(uri, ifc_path)
 
     @classmethod
     def unlink(cls, element=None, obj=None):

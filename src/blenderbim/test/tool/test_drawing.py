@@ -247,13 +247,13 @@ class TestGetDocumentUri(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         document = ifc.createIfcDocumentInformation(
-            Identification="X", Name="FOOBAR", Scope="DOCUMENTATION", Location="Location"
+            Identification="X", Name="FOOBAR", Scope="SHEET", Location="Location"
         )
         assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
 
     def test_get_indirect_locations(self):
         ifc = ifcopenshell.file()
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SHEET")
         reference = ifc.createIfcDocumentReference(Location="Location", ReferencedDocument=document)
         assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
         assert subject.get_document_uri(reference) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
@@ -263,7 +263,7 @@ class TestGetDocumentUri(NewFile):
         tool.Ifc.set(ifc)
         reference = ifc.createIfcDocumentReference(Location="Location")
         document = ifc.createIfcDocumentInformation(
-            DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION", DocumentReferences=[reference]
+            DocumentId="X", Name="FOOBAR", Scope="SHEET", DocumentReferences=[reference]
         )
         assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
         assert subject.get_document_uri(reference) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
