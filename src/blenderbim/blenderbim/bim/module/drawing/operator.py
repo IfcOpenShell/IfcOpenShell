@@ -732,7 +732,7 @@ class AddDrawingToSheet(bpy.types.Operator, Operator):
         active_drawing = props.drawings[props.active_drawing_index]
         active_sheet = props.sheets[props.active_sheet_index]
         drawing = tool.Ifc.get().by_id(active_drawing.ifc_definition_id)
-        drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(drawing))
+        drawing_reference = tool.Drawing.get_drawing_document(drawing)
 
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
         if not sheet.is_a("IfcDocumentInformation"):
@@ -745,7 +745,7 @@ class AddDrawingToSheet(bpy.types.Operator, Operator):
 
         has_drawing = False
         for reference in references:
-            if reference.Location == drawing_uri:
+            if reference.Location == drawing_reference.Location:
                 has_drawing = True
                 break
 
@@ -754,9 +754,16 @@ class AddDrawingToSheet(bpy.types.Operator, Operator):
 
         reference = tool.Ifc.run("document.add_reference", information=sheet)
         if tool.Ifc.get_schema() == "IFC2X3":
-            attributes = {"ItemReference": str(len(sheet.DocumentReferences or []))}
+            references = sheet.DocumentReferences
+            id_attr = "ItemReference"
         else:
-            attributes = {"Identification": str(len(sheet.HasDocumentReferences or []))}
+            references = sheet.HasDocumentReferences
+            id_attr = "Identification"
+        attributes = {
+            id_attr: str(len([r for r in references if r.Description in ("DRAWING", "SCHEDULE")]) + 1),
+            "Location": drawing_reference.Location,
+            "Description": "DRAWING",
+        }
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
@@ -819,6 +826,15 @@ class CreateSheets(bpy.types.Operator):
         pdf = os.path.splitext(svg)[0] + ".pdf"
         eps = os.path.splitext(svg)[0] + ".eps"
         dxf = os.path.splitext(svg)[0] + ".dxf"
+
+        references = getattr(sheet, "HasDocumentReferences", getattr(sheet, "DocumentReferences", []))
+        if not [r for r in references if r.Description == "SHEET"]:
+            reference = tool.Ifc.run("document.add_reference", information=sheet)
+            tool.Ifc.run(
+                "document.edit_reference",
+                reference=reference,
+                attributes={"Location": tool.Ifc.get_relative_uri(svg), "Description": "SHEET"},
+            )
 
         svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
         svg2dxf_command = context.preferences.addons["blenderbim"].preferences.svg2dxf_command
@@ -1186,25 +1202,29 @@ class BuildSchedule(bpy.types.Operator, Operator):
         core.build_schedule(tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
 
 
-class AddScheduleToSheet(bpy.types.Operator):
+class AddScheduleToSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.add_schedule_to_sheet"
     bl_label = "Add Schedule To Sheet"
     bl_options = {"REGISTER", "UNDO"}
-    # TODO: check undo redo
 
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
         return props.schedules and props.sheets and context.scene.BIMProperties.data_dir
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.DocProperties
         active_schedule = props.schedules[props.active_schedule_index]
         active_sheet = props.sheets[props.active_sheet_index]
         schedule = tool.Ifc.get().by_id(active_schedule.ifc_definition_id)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            schedule_location = tool.Drawing.get_path_with_ext(schedule.DocumentReferences[0].Location, "svg")
+        else:
+            schedule_location = tool.Drawing.get_path_with_ext(schedule.HasDocumentReferences[0].Location, "svg")
+
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
         if not sheet.is_a("IfcDocumentInformation"):
-            return {"FINISHED"}
+            return
 
         if tool.Ifc.get_schema() == "IFC2X3":
             references = sheet.DocumentReferences or []
@@ -1213,19 +1233,25 @@ class AddScheduleToSheet(bpy.types.Operator):
 
         has_schedule = False
         for reference in references:
-            if reference.Location == tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(schedule), "svg"):
+            if reference.Location == schedule_location:
                 has_schedule = True
                 break
 
         if has_schedule:
-            return {"FINISHED"}
+            return
 
         reference = tool.Ifc.run("document.add_reference", information=sheet)
         if tool.Ifc.get_schema() == "IFC2X3":
-            attributes = {"ItemReference": str(len(sheet.DocumentReferences or []))}
+            references = sheet.DocumentReferences
+            id_attr = "ItemReference"
         else:
-            attributes = {"Identification": str(len(sheet.HasDocumentReferences or []))}
-        attributes["Location"] = tool.Drawing.get_schedule_location(schedule)
+            references = sheet.HasDocumentReferences
+            id_attr = "Identification"
+        attributes = {
+            id_attr: str(len([r for r in references if r.Description in ("DRAWING", "SCHEDULE")]) + 1),
+            "Location": schedule_location,
+            "Description": "SCHEDULE",
+        }
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
         sheet_builder = sheeter.SheetBuilder()
@@ -1233,7 +1259,6 @@ class AddScheduleToSheet(bpy.types.Operator):
         sheet_builder.add_schedule(reference, schedule, sheet)
 
         tool.Drawing.import_sheets()
-        return {"FINISHED"}
 
 
 class AddDrawingStyleAttribute(bpy.types.Operator):

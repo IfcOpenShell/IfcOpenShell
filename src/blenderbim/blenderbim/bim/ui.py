@@ -187,6 +187,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "sheets_dir")
         row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "titleblocks_dir")
+        row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "drawings_dir")
         row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "stylesheet_path")

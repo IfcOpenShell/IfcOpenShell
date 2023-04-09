@@ -255,8 +255,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
-    def get_document_uri(cls, document):
+    def get_document_uri(cls, document, description=None):
         if getattr(document, "Location", None):
+            if os.path.isabs(document.Location):
+                return document.Location
             ifc_path = tool.Ifc.get_path()
             if os.path.isfile(ifc_path):
                 ifc_path = os.path.dirname(ifc_path)
@@ -267,6 +269,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             else:
                 references = document.HasDocumentReferences
             for reference in references:
+                if description and reference.Description != description:
+                    continue
                 location = cls.get_document_uri(reference)
                 if location:
                     return location
@@ -563,7 +567,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         props = bpy.context.scene.DocProperties
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
         props.sheets.clear()
-        sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"]
+        sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
         for sheet in sheets:
             new = props.sheets.add()
             new.ifc_definition_id = sheet.id()
@@ -579,22 +583,19 @@ class Drawing(blenderbim.core.tool.Drawing):
                 continue
 
             for reference in cls.get_document_references(sheet):
+                if reference.Description == "LAYOUT":
+                    continue  # The layout itself is an internal detail and should not be visible to users
                 new = props.sheets.add()
                 new.ifc_definition_id = reference.id()
                 new.is_sheet = False
 
                 if tool.Ifc.get_schema() == "IFC2X3":
-                    new.identification = reference.ItemReference or "X"
+                    new.identification = reference.ItemReference or ""
                 else:
-                    new.identification = reference.Identification or "X"
+                    new.identification = reference.Identification or ""
 
-                element = cls.get_reference_element(reference)
-                if element:
-                    new.name = element.Name
-                    new.reference_type = "DRAWING"
-                else:
-                    new.name = cls.get_reference_document(reference).Name or "Unnamed"
-                    new.reference_type = "SCHEDULE"
+                new.name = os.path.basename(reference.Location)
+                new.reference_type = reference.Description
 
     @classmethod
     def import_text_attributes(cls, obj):
@@ -738,11 +739,21 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_default_sheet_path(cls, identification, name):
-        return os.path.join(bpy.context.scene.DocProperties.sheets_dir, f"{identification} - {name}.svg")
+        return os.path.join(
+            bpy.context.scene.DocProperties.sheets_dir, cls.sanitise_filename(f"{identification} - {name}.svg")
+        )
+
+    @classmethod
+    def get_default_titleblock_path(cls, name):
+        return os.path.join(bpy.context.scene.DocProperties.titleblocks_dir, cls.sanitise_filename(f"{name}.svg"))
 
     @classmethod
     def get_default_drawing_path(cls, name):
-        return os.path.join(bpy.context.scene.DocProperties.drawings_dir, f"{name}.svg")
+        return os.path.join(bpy.context.scene.DocProperties.drawings_dir, cls.sanitise_filename(f"{name}.svg"))
+
+    @classmethod
+    def sanitise_filename(cls, name):
+        return "".join(x for x in name if (x.isalnum() or x in "_- "))
 
     @classmethod
     def get_default_drawing_resource_path(cls, resource):
