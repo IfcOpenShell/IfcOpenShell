@@ -5,7 +5,6 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <BRepAdaptor_CompCurve.hxx>
-#include <BRepAdaptor_HCompCurve.hxx>
 #include <Approx_Curve3d.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
@@ -14,6 +13,11 @@
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 #include <Geom_BSplineCurve.hxx>
+
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX < 0x70600
+#include <BRepAdaptor_HCompCurve.hxx>
+#endif
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -110,8 +114,13 @@ namespace {
 					// @todo
 					const double precision_ = 1.e-5;
 					Logger::Warning("Approximating BasisCurve due to possible discontinuities", e.instance);
-					BRepAdaptor_CompCurve cc(boost::get<TopoDS_Wire>(crv_or_wire), true);
+					const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+#if OCC_VERSION_HEX < 0x70600
+					BRepAdaptor_CompCurve cc(w, true);
 					Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
+#else
+					auto hcc = new BRepAdaptor_CompCurve(w, true);
+#endif
 					// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
 					Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
 					curve = approx.Curve();
