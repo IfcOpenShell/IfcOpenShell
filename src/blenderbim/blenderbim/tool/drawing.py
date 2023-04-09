@@ -753,7 +753,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def sanitise_filename(cls, name):
-        return "".join(x for x in name if (x.isalnum() or x in "_- "))
+        return "".join(x for x in name if (x.isalnum() or x in "._- "))
 
     @classmethod
     def get_default_drawing_resource_path(cls, resource):
