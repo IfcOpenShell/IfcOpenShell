@@ -58,7 +58,7 @@ if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
 SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} libsvgfill)
 else()
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} libsvgfill)
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} libsvgfill)
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
