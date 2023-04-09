@@ -177,7 +177,9 @@ def unregister():
             cls == blenderbim.bim.module.drawing.gizmos.ExtrusionGuidesGizmo or
             cls == blenderbim.bim.module.drawing.gizmos.DimensionLabelGizmo or
             cls == blenderbim.bim.module.drawing.gizmos.DotGizmo or
-            cls == blenderbim.bim.module.drawing.gizmos.UglyDotGizmo
+            cls == blenderbim.bim.module.drawing.gizmos.UglyDotGizmo or
+            cls == blenderbim.bim.module.geometry.operator.OverrideDuplicateMoveMacro or
+            cls == blenderbim.bim.module.geometry.operator.OverrideDuplicateMoveLinkedMacro
         ):
             if bpy.data.scenes['Scene'].BIMProperties.module_visibility['drawing'].is_visible is True:
                 bpy.utils.unregister_class(cls)
