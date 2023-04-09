@@ -172,22 +172,11 @@ def register():
 
 def unregister():
     for cls in reversed(classes):
-        if ( #these panels haven't the cls.is_registered attribute
-            cls == blenderbim.bim.module.drawing.gizmos.ExtrusionWidget or
-            cls == blenderbim.bim.module.drawing.gizmos.ExtrusionGuidesGizmo or
-            cls == blenderbim.bim.module.drawing.gizmos.DimensionLabelGizmo or
-            cls == blenderbim.bim.module.drawing.gizmos.DotGizmo or
-            cls == blenderbim.bim.module.drawing.gizmos.UglyDotGizmo or
-            cls == blenderbim.bim.module.geometry.operator.OverrideDuplicateMoveMacro or
-            cls == blenderbim.bim.module.geometry.operator.OverrideDuplicateMoveLinkedMacro
-        ):
-            if bpy.data.scenes['Scene'].BIMProperties.module_visibility['drawing'].is_visible is True:
-                bpy.utils.unregister_class(cls)
-                continue
-            else:
-                continue
-        if cls.is_registered is not False:
+        if getattr(cls, "is_registered", None) is None:
             bpy.utils.unregister_class(cls)
+        else:
+            if cls.is_registered is not False:
+                bpy.utils.unregister_class(cls)
 
     bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
