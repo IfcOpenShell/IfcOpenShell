@@ -66,22 +66,31 @@ def disable_editing_sheets(drawing):
 
 def add_sheet(ifc, drawing, titleblock=None):
     sheet = ifc.run("document.add_information")
+    layout = ifc.run("document.add_reference", information=sheet)
+    titleblock_reference = ifc.run("document.add_reference", information=sheet)
     identification = drawing.generate_sheet_identification()
     identification = drawing.ensure_unique_identification(identification)
-    attributes = {"Identification": identification, "Name": "UNTITLED", "Scope": "DOCUMENTATION"}
     if ifc.get_schema() == "IFC2X3":
-        attributes["DocumentId"] = attributes["Identification"]
-        del attributes["Identification"]
-        # TODO: How does IFC2X3 store the location?
+        attributes = {"DocumentId": identification, "Name": "UNTITLED", "Scope": "SHEET"}
     else:
-        attributes["Location"] = drawing.get_default_sheet_path(identification, "UNTITLED")
+        attributes = {"Identification": identification, "Name": "UNTITLED", "Scope": "SHEET"}
     ifc.run("document.edit_information", information=sheet, attributes=attributes)
+    ifc.run(
+        "document.edit_reference",
+        reference=layout,
+        attributes={"Location": drawing.get_default_sheet_path(identification, "UNTITLED"), "Description": "LAYOUT"},
+    )
+    ifc.run(
+        "document.edit_reference",
+        reference=titleblock_reference,
+        attributes={"Location": drawing.get_default_titleblock_path(titleblock), "Description": "TITLEBLOCK"},
+    )
     drawing.create_svg_sheet(sheet, titleblock)
     drawing.import_sheets()
 
 
 def open_sheet(drawing, sheet=None):
-    drawing.open_svg(drawing.get_document_uri(sheet))
+    drawing.open_svg(drawing.get_document_uri(sheet, "LAYOUT"))
 
 
 def remove_sheet(ifc, drawing, sheet=None):

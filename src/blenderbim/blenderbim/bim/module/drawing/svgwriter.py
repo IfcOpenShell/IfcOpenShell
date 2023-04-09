@@ -99,6 +99,7 @@ class SvgWriter:
         for resource in ("Stylesheet", "Markers", "Symbols", "Patterns"):
             resource_path = pset.get(resource)
             if not resource_path:
+                self.resource_paths[resource] = None
                 continue
             os.makedirs(os.path.dirname(resource_path), exist_ok=True)
             if not os.path.exists(resource_path):

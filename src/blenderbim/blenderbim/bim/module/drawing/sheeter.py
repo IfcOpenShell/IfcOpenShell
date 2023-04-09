@@ -35,6 +35,8 @@ class SheetBuilder:
         self.scale = "NTS"
 
     def create(self, sheet_path, titleblock_name):
+        sheet_dir = os.path.dirname(sheet_path)
+
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
         root.attrib["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
@@ -48,7 +50,9 @@ class SheetBuilder:
         view = ET.SubElement(root, "g")
         view.attrib["data-type"] = "titleblock"
         titleblock = ET.SubElement(view, "image")
-        titleblock.attrib["xlink:href"] = f"./titleblocks/{titleblock_name}.svg"
+        titleblock.attrib["xlink:href"] = os.path.relpath(
+            tool.Drawing.get_default_titleblock_path(titleblock_name), sheet_dir
+        )
         titleblock.attrib["x"] = "0"
         titleblock.attrib["y"] = "0"
         titleblock.attrib["width"] = str(view_width)
@@ -58,7 +62,6 @@ class SheetBuilder:
         root.attrib["height"] = "{}mm".format(view_height)
         root.attrib["viewBox"] = "0 0 {} {}".format(view_width, view_height)
 
-        sheet_dir = os.path.dirname(sheet_path)
         os.makedirs(sheet_dir, exist_ok=True)
         os.makedirs(os.path.join(sheet_dir, "titleblocks"), exist_ok=True)
         sheet_titleblock_path = os.path.join(sheet_dir, "titleblocks", titleblock_name + ".svg")
