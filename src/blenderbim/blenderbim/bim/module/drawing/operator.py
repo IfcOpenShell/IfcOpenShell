@@ -1459,7 +1459,7 @@ class EditAssignedProduct(bpy.types.Operator, Operator):
 
 class EnableEditingAssignedProduct(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_assigned_product"
-    bl_label = "Enable Editing Text Product"
+    bl_label = "Enable Editing Assigned Product"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -1468,7 +1468,7 @@ class EnableEditingAssignedProduct(bpy.types.Operator, Operator):
 
 class DisableEditingAssignedProduct(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_assigned_product"
-    bl_label = "Disable Editing Text Product"
+    bl_label = "Disable Editing Assigned Product"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -1503,7 +1503,7 @@ class LoadSheets(bpy.types.Operator, Operator):
 
 class DisableEditingSheets(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_sheets"
-    bl_label = "Disable Editing Text Product"
+    bl_label = "Disable Editing Sheets"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -1521,7 +1521,7 @@ class LoadSchedules(bpy.types.Operator, Operator):
 
 class DisableEditingSchedules(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_schedules"
-    bl_label = "Disable Editing Text Product"
+    bl_label = "Disable Editing Schedules"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -1539,7 +1539,7 @@ class LoadDrawings(bpy.types.Operator, Operator):
 
 class DisableEditingDrawings(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_drawings"
-    bl_label = "Disable Editing Text Product"
+    bl_label = "Disable Editing Drawings"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
