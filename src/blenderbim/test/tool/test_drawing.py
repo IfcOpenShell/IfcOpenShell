@@ -83,7 +83,7 @@ class TestDeleteDrawingElements(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        obj = bpy.data.objects.new("Object", None)
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         collection = bpy.data.collections.new("Collection")
         bpy.context.scene.collection.children.link(collection)
         collection.objects.link(obj)
@@ -488,7 +488,7 @@ class TestImportSheets(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SHEET")
         subject.import_sheets()
         props = bpy.context.scene.DocProperties
         assert props.sheets[0].ifc_definition_id == document.id()
@@ -499,7 +499,7 @@ class TestImportSheets(NewFile):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
         ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
-        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="SHEET")
         subject.import_sheets()
         props = bpy.context.scene.DocProperties
         assert props.sheets[0].ifc_definition_id == document.id()

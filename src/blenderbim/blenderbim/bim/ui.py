@@ -183,9 +183,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)
-        row.prop(context.scene.DocProperties, "docs_dir")
-        row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "sheets_dir")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "layouts_dir")
         row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "titleblocks_dir")
         row = self.layout.row(align=True)

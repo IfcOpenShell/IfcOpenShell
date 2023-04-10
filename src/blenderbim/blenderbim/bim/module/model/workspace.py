@@ -68,7 +68,17 @@ class BimTool(WorkSpaceTool):
 
 
 def add_layout_hotkey_operator(layout, text, hotkey, description):
-    op = layout.operator("bim.hotkey", text=text)
+    modifiers = {
+        "A": "EVENT_ALT",
+        "S": "EVENT_SHIFT",
+    }
+    modifier, key = hotkey.split("_")
+
+    row = layout.row(align=True)
+    row.label(text="", icon=modifiers[modifier])
+    row.label(text="", icon=f"EVENT_{key}")
+
+    op = row.operator("bim.hotkey", text=text)
     op.hotkey = hotkey
     op.description = description
     return op
@@ -132,10 +142,7 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl2", text="RL")
         elif cls.props.ifc_class in ("IfcSpaceType"):
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_G")
-            add_layout_hotkey_operator(row, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__)
 
     @classmethod
     def draw_edit_object_interface(cls, context):
@@ -155,45 +162,19 @@ class BimToolUI:
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
 
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_T")
-            row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_Y")
-            row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_M")
-            add_layout_hotkey_operator(row, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__)
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_F")
-            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__)
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_K")
-            add_layout_hotkey_operator(row, "Split", "S_K", bpy.ops.bim.split_wall.__doc__)
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_R")
-            row.operator("bim.hotkey", text="Rotate 90").hotkey = "S_R"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_G")
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
+            add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
+            add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
+
+            add_layout_hotkey_operator(cls.layout, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Split", "S_K", bpy.ops.bim.split_wall.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__)
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
+            add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="X Angle")
@@ -213,36 +194,16 @@ class BimToolUI:
             op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
             op.depth = cls.props.extrusion_depth
 
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_ALT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Edit Axis").hotkey = "A_E"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_T")
-            row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_Y")
-            row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_R")
-            row.operator("bim.hotkey", text="Rotate 90").hotkey = "S_R"
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_G")
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
+            add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
+            add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
+            add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
+            add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
+
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
+            add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
 
         elif AuthoringData.data["active_class"] in (
             "IfcWindow",
@@ -257,20 +218,11 @@ class BimToolUI:
                 row = cls.layout.row(align=True)
                 row.prop(data=cls.props, property="rl1", text="RL")
 
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_G")
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__)
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_F")
-            row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
+            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", "")
 
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_G")
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
 
         elif AuthoringData.data["active_class"] in (
             "IfcCableCarrierSegmentType",
@@ -278,39 +230,29 @@ class BimToolUI:
             "IfcDuctSegmentType",
             "IfcPipeSegmentType",
         ):
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Extend", icon="EVENT_E")
+            add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
 
         elif (
             (RailingData.is_loaded or not RailingData.load())
             and RailingData.data["parameters"]
             and not context.active_object.BIMRailingProperties.is_editing_path
         ):
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Edit Railing Path").hotkey = "S_E"
+            add_layout_hotkey_operator(cls.layout, "Edit Railing Path", "S_E", "")
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
             and RoofData.data["parameters"]
             and not context.active_object.BIMRoofProperties.is_editing_path
         ):
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Edit Roof Path").hotkey = "S_E"
+            add_layout_hotkey_operator(cls.layout, "Edit Roof Path", "S_E", "")
 
         elif DecoratorData.get_ifc_text_data(bpy.context.object):
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.hotkey", text="Edit Text").hotkey = "S_E"
+            add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_O")
+
         if len(context.selected_objects) == 2:
             row.operator("bim.add_opening", text="Apply Void")
         else:
@@ -323,27 +265,14 @@ class BimToolUI:
             else:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
-        row = cls.layout.row(align=True)
-        row.label(text="Align")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Align Exterior", icon="EVENT_X")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Align Centerline", icon="EVENT_C")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Align Interior", icon="EVENT_V")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Mirror", icon="EVENT_M")
+        cls.layout.row(align=True).label(text="Align")
+        add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
+        add_layout_hotkey_operator(cls.layout, "Align Centerline", "S_C", "")
+        add_layout_hotkey_operator(cls.layout, "Align Interior", "S_V", "")
+        add_layout_hotkey_operator(cls.layout, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__)
 
-        row = cls.layout.row(align=True)
-        row.label(text="Mode")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_ALT")
-        row.label(text="", icon="EVENT_O")
-        add_layout_hotkey_operator(row, "Void", "A_O", "Show / edit openings")
+        cls.layout.row(align=True).label(text="Mode")
+        add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Show / edit openings")
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="", icon="EVENT_D")

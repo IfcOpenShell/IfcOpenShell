@@ -8,5 +8,7 @@
     </magic>
     <generic-icon name="x-ifc"/>
     <glob pattern="*.ifc"/>
+    <glob pattern="*.ifczip"/>
+    <glob pattern="*.ifcxml"/>
   </mime-type>
 </mime-info>

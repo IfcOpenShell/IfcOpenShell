@@ -174,9 +174,8 @@ def unregister():
     for cls in reversed(classes):
         if getattr(cls, "is_registered", None) is None:
             bpy.utils.unregister_class(cls)
-        else:
-            if cls.is_registered is not False:
-                bpy.utils.unregister_class(cls)
+        elif cls.is_registered:
+            bpy.utils.unregister_class(cls)
 
     bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)

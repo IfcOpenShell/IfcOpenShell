@@ -20,6 +20,7 @@
 
 from __future__ import print_function
 
+import os
 import sys
 import json
 import functools
@@ -302,7 +303,19 @@ def validate(f, logger, express_rules=False):
         ifcopenshell.ifcopenshell_wrapper.set_log_format_json()
 
         filename = f
-        f = ifcopenshell.open(f)
+        try:
+            f = ifcopenshell.open(f)
+        except ifcopenshell.SchemaError as e:
+            current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
+            schema_name = str(e).split(' ')[-1].lower()
+            exists = current_dir_files.get(schema_name + '.exp')
+            if exists:
+                schema = ifcopenshell.express.parse(exists)
+                ifcopenshell.register_schema(schema)
+
+                f = ifcopenshell.open(f)
+            else:
+                raise e
 
         log_internal_cpp_errors(filename, logger)
 

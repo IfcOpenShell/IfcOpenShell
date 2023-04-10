@@ -21,6 +21,7 @@ import re
 import bpy
 import math
 import bmesh
+import shutil
 import logging
 import mathutils
 import webbrowser
@@ -136,7 +137,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     def create_svg_sheet(cls, document, titleblock):
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        uri = cls.get_document_uri(document)
+        uri = cls.get_document_uri(document, "LAYOUT")
         sheet_builder.create(uri, titleblock)
         return uri
 
@@ -152,7 +153,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             if obj:
                 obj_data = obj.data
                 bpy.data.objects.remove(obj)
-                if obj_data.users == 0:  # in case we have drawing element types
+                if obj_data and obj_data.users == 0:  # in case we have drawing element types
                     cls.remove_object_data(obj_data)
 
     @classmethod
@@ -163,7 +164,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         elif isinstance(data, bpy.types.Mesh):
             bpy.data.meshes.remove(data)
         elif isinstance(data, bpy.types.Curve):
-            bpy.data.curves.remove(C.object.data)
+            bpy.data.curves.remove(data)
 
     @classmethod
     def delete_object(cls, obj):
@@ -583,8 +584,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                 continue
 
             for reference in cls.get_document_references(sheet):
-                if reference.Description == "LAYOUT":
-                    continue  # The layout itself is an internal detail and should not be visible to users
+                if reference.Description in ("SHEET", "LAYOUT", "RASTER"):
+                    # These references are an internal detail and should not be visible to users
+                    continue
                 new = props.sheets.add()
                 new.ifc_definition_id = reference.id()
                 new.is_sheet = False
@@ -727,6 +729,18 @@ class Drawing(blenderbim.core.tool.Drawing):
     # TODO below this point is highly experimental prototype code with no tests
 
     @classmethod
+    def does_file_exist(cls, uri):
+        return os.path.exists(uri)
+
+    @classmethod
+    def delete_file(cls, uri):
+        os.remove(uri)
+
+    @classmethod
+    def move_file(cls, src, dest):
+        shutil.move(src, dest)
+
+    @classmethod
     def generate_drawing_name(cls, target_view, location_hint):
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and location_hint:
             location = tool.Ifc.get().by_id(location_hint)
@@ -736,6 +750,12 @@ class Drawing(blenderbim.core.tool.Drawing):
         elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
             return location_hint + " " + target_view.split("_")[0]
         return target_view
+
+    @classmethod
+    def get_default_layout_path(cls, identification, name):
+        return os.path.join(
+            bpy.context.scene.DocProperties.layouts_dir, cls.sanitise_filename(f"{identification} - {name}.svg")
+        )
 
     @classmethod
     def get_default_sheet_path(cls, identification, name):
@@ -753,7 +773,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def sanitise_filename(cls, name):
-        return "".join(x for x in name if (x.isalnum() or x in "_- "))
+        return "".join(x for x in name if (x.isalnum() or x in "._- "))
 
     @classmethod
     def get_default_drawing_resource_path(cls, resource):
@@ -1177,6 +1197,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         return document.HasDocumentReferences or []
 
     @classmethod
+    def get_reference_description(cls, reference):
+        return reference.Description
+
+    @classmethod
+    def get_reference_location(cls, reference):
+        return reference.Location
+
+    @classmethod
     def get_reference_element(cls, reference):
         if tool.Ifc.get_schema() == "IFC2X3":
             refs = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference]
@@ -1211,16 +1239,21 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_elements(cls, drawing):
+        """returns a set of elements that are included in the drawing"""
+        ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(tool.Ifc.get(), include))
+            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include))
         else:
-            elements = set(tool.Ifc.get().by_type("IfcElement"))
+            elements = set(ifc_file.by_type("IfcElement"))
+            annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
+            elements.update(annotations)
+
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.Selector.parse(tool.Ifc.get(), exclude, elements=elements))
-        elements -= set(tool.Ifc.get().by_type("IfcOpeningElement"))
+            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
+        elements -= set(ifc_file.by_type("IfcOpeningElement"))
         return elements
 
     @classmethod
@@ -1293,11 +1326,17 @@ class Drawing(blenderbim.core.tool.Drawing):
         tool.Spatial.set_active_object(camera)
 
         # sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
-        drawing_elements = cls.get_drawing_elements(tool.Ifc.get_entity(camera))
-        for element in tool.Ifc.get().by_type("IfcElement"):
+        ifc_file = tool.Ifc.get()
+        drawing = tool.Ifc.get_entity(camera)
+        all_drawing_elements = set(ifc_file.by_type("IfcElement"))
+        annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
+        all_drawing_elements.update(annotations)
+        filtered_drawing_elements = cls.get_drawing_elements(drawing)
+
+        for element in all_drawing_elements:
             if element.is_a() in ("IfcOpeningElement",):
                 continue
 
             obj = tool.Ifc.get_object(element)
-            obj.hide_viewport = element not in drawing_elements
-            obj.hide_render = element not in drawing_elements
+            obj.hide_set(element not in filtered_drawing_elements)
+            obj.hide_render = element not in filtered_drawing_elements

@@ -74,7 +74,7 @@ class EnableEditingResource(bpy.types.Operator):
 
 class DisableEditingResource(bpy.types.Operator):
     bl_idname = "bim.disable_editing_resource"
-    bl_label = "Disable Editing Resources"
+    bl_label = "Disable Editing Resource"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -161,7 +161,7 @@ class UnassignResource(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingResourceTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_resource_time"
-    bl_label = "Enable Editing Resource Usage"
+    bl_label = "Enable Editing Resource Time"
     bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
@@ -267,7 +267,7 @@ class EditResourceCostValue(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingResourceBaseQuantity(bpy.types.Operator):
     bl_idname = "bim.enable_editing_resource_base_quantity"
-    bl_label = "Enable Editing Resource Quantity"
+    bl_label = "Enable Editing Resource Base Quantity"
     bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
