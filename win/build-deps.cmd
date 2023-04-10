@@ -169,7 +169,7 @@ cd "%DEPS_DIR%"
 :: VERSIONS
 set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
-set OCCT_VERSION=7.5.3
+set OCCT_VERSION=7.7.1
 :: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 set PYTHON_VERSION=3.4.3
@@ -357,7 +357,7 @@ if not %ERRORLEVEL%==0 goto :Error
 set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
 cd "%DEPS_DIR%"
-call :GitCloneAndCheckoutRevision https://github.com/Open-Cascade-SAS/OCCT "%DEPENDENCY_DIR%" %OCCT_VER%
+call :GitCloneAndCheckoutRevision https://git.dev.opencascade.org/repos/occt.git "%DEPENDENCY_DIR%" %OCCT_VER%
 if not %ERRORLEVEL%==0 goto :Error
 
 :: Patching always blindly would trigger a rebuild each time
