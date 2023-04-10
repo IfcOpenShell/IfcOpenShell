@@ -516,7 +516,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
     bl_idname = "bim.enable_editing_material_set_item_profile"
-    bl_label = "Enable Editing Material Set Item"
+    bl_label = "Enable Editing Material Set Item Profile"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     material_set_item: bpy.props.IntProperty()
@@ -532,7 +532,7 @@ class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
 
 class DisableEditingMaterialSetItemProfile(bpy.types.Operator):
     bl_idname = "bim.disable_editing_material_set_item_profile"
-    bl_label = "Disable Editing Material Set Item"
+    bl_label = "Disable Editing Material Set Item Profile"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
