@@ -160,9 +160,6 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     return e
 
 
-gcroot = []
-
-
 def register_schema(schema):
     """Registers a custom IFC schema
 
@@ -177,7 +174,8 @@ def register_schema(schema):
         ifcopenshell.register_schema(schema)
         ifcopenshell.file(schema="IFC_CUSTOM")
     """
-    gcroot.append(schema)
+    schema.schema.this.disown()
+    schema.disown()
     ifcopenshell_wrapper.register_schema(schema.schema)
     register_schema_attributes(schema.schema)
 

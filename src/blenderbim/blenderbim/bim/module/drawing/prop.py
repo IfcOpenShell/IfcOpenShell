@@ -248,26 +248,9 @@ class Schedule(PropertyGroup):
 
 
 class Sheet(PropertyGroup):
-    def set_name(self, new):
-        old = self.get("name")
-
-        if new == old:
-            return
-        sheet = tool.Ifc.get().by_id(self.ifc_definition_id)
-        old_path = Path(tool.Drawing.get_document_uri(sheet))
-        core.update_sheet_name(tool.Ifc, tool.Drawing, sheet=sheet, name=new)
-        self["name"] = new
-
-        new_path = Path(tool.Drawing.get_document_uri(sheet))
-        if old and old_path.is_file():
-            old_path.rename(new_path)
-
-    def get_name(self):
-        return self.get("name")
-
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     identification: StringProperty(name="Identification")
-    name: StringProperty(name="Name", get=get_name, set=set_name)
+    name: StringProperty(name="Name")
     is_sheet: BoolProperty(name="Is Sheet", default=False)
     reference_type: StringProperty(name="Reference Type")
     is_expanded: BoolProperty(name="Is Expanded", default=False)
@@ -354,11 +337,15 @@ class DocProperties(PropertyGroup):
     decorations_colour: FloatVectorProperty(
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
-    docs_dir: StringProperty(default=os.path.join("docs") + os.path.sep, name="Default Docs Directory")
     sheets_dir: StringProperty(default=os.path.join("sheets") + os.path.sep, name="Default Sheets Directory")
-    titleblocks_dir: StringProperty(default=os.path.join("sheets", "titleblocks") + os.path.sep, name="Default Titleblocks Directory")
+    layouts_dir: StringProperty(default=os.path.join("layouts") + os.path.sep, name="Default Layouts Directory")
+    titleblocks_dir: StringProperty(
+        default=os.path.join("layouts", "titleblocks") + os.path.sep, name="Default Titleblocks Directory"
+    )
     drawings_dir: StringProperty(default=os.path.join("drawings") + os.path.sep, name="Default Drawings Directory")
-    stylesheet_path: StringProperty(default=os.path.join("drawings", "assets", "default.css"), name="Default Stylesheet")
+    stylesheet_path: StringProperty(
+        default=os.path.join("drawings", "assets", "default.css"), name="Default Stylesheet"
+    )
     markers_path: StringProperty(default=os.path.join("drawings", "assets", "markers.svg"), name="Default Markers")
     symbols_path: StringProperty(default=os.path.join("drawings", "assets", "symbols.svg"), name="Default Symbols")
     patterns_path: StringProperty(default=os.path.join("drawings", "assets", "patterns.svg"), name="Default Patterns")

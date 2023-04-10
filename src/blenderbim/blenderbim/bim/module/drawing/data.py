@@ -61,7 +61,7 @@ class SheetsData:
 
     @classmethod
     def total_sheets(cls):
-        return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"])
+        return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"])
 
 
 class DrawingsData:

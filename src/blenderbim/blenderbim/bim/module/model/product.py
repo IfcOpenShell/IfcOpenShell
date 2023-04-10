@@ -402,7 +402,7 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.mirror_elements"
     bl_label = "Mirror Elements"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Faux-mirrors the selected object by an active empty along a mirror plane."
+    bl_description = "Faux-mirrors the selected objects by an active empty along a mirror plane"
 
     @classmethod
     def poll(cls, context):

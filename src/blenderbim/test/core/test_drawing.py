@@ -84,14 +84,26 @@ class TestDisableEditingSheets:
 class TestAddSheet:
     def test_run(self, ifc, drawing):
         ifc.run("document.add_information").should_be_called().will_return("sheet")
+        ifc.run("document.add_reference", information="sheet").should_be_called().will_return("reference")
         drawing.generate_sheet_identification().should_be_called().will_return("identification")
         drawing.ensure_unique_identification("identification").should_be_called().will_return("u_identification")
         ifc.get_schema().should_be_called().will_return("IFC4")
-        drawing.get_default_sheet_path("u_identification", "UNTITLED").should_be_called().will_return("uri")
+        drawing.get_default_layout_path("u_identification", "UNTITLED").should_be_called().will_return("layout_path")
+        drawing.get_default_titleblock_path("titleblock").should_be_called().will_return("titleblock_path")
         ifc.run(
             "document.edit_information",
             information="sheet",
-            attributes={"Identification": "u_identification", "Name": "UNTITLED", "Scope": "DOCUMENTATION", "Location": "uri"},
+            attributes={"Identification": "u_identification", "Name": "UNTITLED", "Scope": "SHEET"},
+        ).should_be_called()
+        ifc.run(
+            "document.edit_reference",
+            reference="reference",
+            attributes={"Location": "layout_path", "Description": "LAYOUT"},
+        ).should_be_called()
+        ifc.run(
+            "document.edit_reference",
+            reference="reference",
+            attributes={"Location": "titleblock_path", "Description": "TITLEBLOCK"},
         ).should_be_called()
         drawing.create_svg_sheet("sheet", "titleblock").should_be_called()
         drawing.import_sheets().should_be_called()
@@ -99,13 +111,26 @@ class TestAddSheet:
 
     def test_using_a_document_id_in_ifc2x3(self, ifc, drawing):
         ifc.run("document.add_information").should_be_called().will_return("sheet")
+        ifc.run("document.add_reference", information="sheet").should_be_called().will_return("reference")
         drawing.generate_sheet_identification().should_be_called().will_return("identification")
         drawing.ensure_unique_identification("identification").should_be_called().will_return("u_identification")
         ifc.get_schema().should_be_called().will_return("IFC2X3")
+        drawing.get_default_layout_path("u_identification", "UNTITLED").should_be_called().will_return("layout_path")
+        drawing.get_default_titleblock_path("titleblock").should_be_called().will_return("titleblock_path")
         ifc.run(
             "document.edit_information",
             information="sheet",
-            attributes={"DocumentId": "u_identification", "Name": "UNTITLED", "Scope": "DOCUMENTATION"},
+            attributes={"DocumentId": "u_identification", "Name": "UNTITLED", "Scope": "SHEET"},
+        ).should_be_called()
+        ifc.run(
+            "document.edit_reference",
+            reference="reference",
+            attributes={"Location": "layout_path", "Description": "LAYOUT"},
+        ).should_be_called()
+        ifc.run(
+            "document.edit_reference",
+            reference="reference",
+            attributes={"Location": "titleblock_path", "Description": "TITLEBLOCK"},
         ).should_be_called()
         drawing.create_svg_sheet("sheet", "titleblock").should_be_called()
         drawing.import_sheets().should_be_called()
@@ -114,13 +139,19 @@ class TestAddSheet:
 
 class TestOpenSheet:
     def test_run(self, drawing):
-        drawing.get_document_uri("sheet").should_be_called().will_return("uri")
+        drawing.get_document_uri("sheet", "LAYOUT").should_be_called().will_return("uri")
         drawing.open_svg("uri").should_be_called()
         subject.open_sheet(drawing, sheet="sheet")
 
 
 class TestRemoveSheet:
     def test_run(self, ifc, drawing):
+        drawing.get_document_references("sheet").should_be_called().will_return(["reference"])
+        drawing.get_reference_description("reference").should_be_called().will_return("LAYOUT")
+        drawing.get_document_uri("reference").should_be_called().will_return("relative_uri")
+        ifc.resolve_uri("relative_uri").should_be_called().will_return("absolute_uri")
+        drawing.does_file_exist("absolute_uri").should_be_called().will_return(True)
+        drawing.delete_file("absolute_uri").should_be_called()
         ifc.run("document.remove_information", information="sheet").should_be_called()
         drawing.import_sheets().should_be_called()
         subject.remove_sheet(ifc, drawing, sheet="sheet")
@@ -254,7 +285,11 @@ class TestAddDrawing:
         ifc.run("document.add_information").should_be_called().will_return("information")
         ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
         ifc.get_schema().should_be_called().will_return("IFC4")
-        ifc.run("document.edit_information", information="information", attributes={"Identification": "X", "Name": "name", "Scope": "DRAWING"}).should_be_called()
+        ifc.run(
+            "document.edit_information",
+            information="information",
+            attributes={"Identification": "X", "Name": "name", "Scope": "DRAWING"},
+        ).should_be_called()
         ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
         ifc.run("document.assign_document", product="element", document="reference").should_be_called()
         drawing.import_drawings().should_be_called()
@@ -280,6 +315,24 @@ class TestDuplicateDrawing:
         drawing.copy_representation("annotation", "new_annotation").should_be_called()
         ifc.run("group.unassign_group", group="group", product="new_annotation").should_be_called()
         ifc.run("group.assign_group", group="new_group", products=["new_annotation"]).should_be_called()
+
+        drawing.get_drawing_document("new_drawing").should_be_called().will_return("old_reference")
+        ifc.run("document.unassign_document", product="new_drawing", document="old_reference").should_be_called()
+
+        ifc.run("document.add_information").should_be_called().will_return("information")
+        ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC4")
+        drawing.get_default_drawing_path("unique_name").should_be_called().will_return("drawing_path")
+        ifc.run(
+            "document.edit_information",
+            information="information",
+            attributes={"Identification": "X", "Name": "unique_name", "Scope": "DRAWING"},
+        ).should_be_called()
+        ifc.run(
+            "document.edit_reference", reference="reference", attributes={"Location": "drawing_path"}
+        ).should_be_called()
+        ifc.run("document.assign_document", product="new_drawing", document="reference").should_be_called()
+
         drawing.import_drawings().should_be_called()
         subject.duplicate_drawing(ifc, drawing, drawing="drawing", should_duplicate_annotations=True)
 
@@ -296,7 +349,12 @@ class TestRemoveDrawing:
         ifc.get_object("reference").should_be_called().will_return("reference_obj")
         drawing.delete_object("reference_obj").should_be_called()
         ifc.run("root.remove_product", product="reference").should_be_called()
-        drawing.get_drawing_document("drawing").should_be_called().will_return("information")
+        drawing.get_drawing_document("drawing").should_be_called().will_return("reference")
+        drawing.get_reference_document("reference").should_be_called().will_return("information")
+        drawing.get_document_uri("information").should_be_called().will_return("relative_uri")
+        ifc.resolve_uri("relative_uri").should_be_called().will_return("absolute_uri")
+        drawing.does_file_exist("absolute_uri").should_be_called().will_return(True)
+        drawing.delete_file("absolute_uri").should_be_called()
         ifc.run("document.remove_information", information="information").should_be_called()
         ifc.run("root.remove_product", product="drawing").should_be_called()
         drawing.import_drawings().should_be_called()
@@ -310,6 +368,13 @@ class TestUpdateDrawingName:
         drawing.get_name("group").should_be_called().will_return("name")
         drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
         drawing.set_drawing_collection_name("group", "collection").should_be_called()
+
+        drawing.get_drawing_document("drawing").should_be_called().will_return("reference")
+        drawing.get_reference_document("reference").should_be_called().will_return("information")
+        ifc.run("document.edit_information", information="information", attributes={"Name": "name"}).should_be_called()
+        drawing.get_reference_location("reference").should_be_called().will_return("location")
+        drawing.get_default_drawing_path("name").should_be_called().will_return("location")
+
         subject.update_drawing_name(ifc, drawing, drawing="drawing", name="name")
 
     def test_run(self, ifc, drawing):
@@ -320,6 +385,20 @@ class TestUpdateDrawingName:
         ifc.run("attribute.edit_attributes", product="group", attributes={"Name": "name"}).should_be_called()
         drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
         drawing.set_drawing_collection_name("group", "collection").should_be_called()
+
+        drawing.get_drawing_document("drawing").should_be_called().will_return("reference")
+        drawing.get_reference_document("reference").should_be_called().will_return("information")
+        ifc.run("document.edit_information", information="information", attributes={"Name": "name"}).should_be_called()
+        drawing.get_reference_location("reference").should_be_called().will_return("old_location")
+        drawing.get_default_drawing_path("name").should_be_called().will_return("new_location")
+        ifc.run(
+            "document.edit_reference", reference="reference", attributes={"Location": "new_location"}
+        ).should_be_called()
+        ifc.resolve_uri("old_location").should_be_called().will_return("old_uri")
+        drawing.does_file_exist("old_uri").should_be_called().will_return(True)
+        ifc.resolve_uri("new_location").should_be_called().will_return("new_uri")
+        drawing.move_file("old_uri", "new_uri").should_be_called()
+
         subject.update_drawing_name(ifc, drawing, drawing="drawing", name="name")
 
 

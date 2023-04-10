@@ -226,20 +226,22 @@ class Document:
 @interface
 class Drawing:
     def activate_view(cls, camera): pass
+    def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
     def copy_representation(cls, source, dest): pass
     def create_annotation_object(cls, drawing, object_type): pass
-    def setup_annotation_object(cls, obj, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_schedule(cls, schedule): pass
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
     def delete_drawing_elements(cls, elements): pass
+    def delete_file(cls, uri): pass
     def delete_object(cls, obj): pass
     def disable_editing_assigned_product(cls, obj): pass
     def disable_editing_drawings(cls): pass
     def disable_editing_schedules(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
+    def does_file_exist(cls, uri): pass
     def enable_editing(cls, obj): pass
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
@@ -257,21 +259,25 @@ class Drawing:
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
+    def get_default_layout_path(cls, identification, name): pass
     def get_default_sheet_path(cls, identification, name): pass
-    def get_document_uri(cls, document): pass
+    def get_default_sheet_path(cls, identification, name): pass
+    def get_default_titleblock_path(cls, name): pass
+    def get_document_references(cls, document): pass
+    def get_document_uri(cls, document, description=None): pass
     def get_drawing_collection(cls, drawing): pass
     def get_drawing_document(cls, drawing): pass
     def get_drawing_group(cls, drawing): pass
-    def get_path_filename(cls, uri): pass
     def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
+    def get_path_filename(cls, uri): pass
+    def get_reference_description(cls, reference): pass
+    def get_reference_document(cls, reference): pass
+    def get_reference_location(cls, reference): pass
     def get_text_literal(cls, obj): pass
-    def remove_literal_from_annotation(cls, obj, literal): pass
-    def synchronise_ifc_and_text_attributes(cls, obj): pass
-    def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
     def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
     def import_schedules(cls): pass
@@ -279,16 +285,20 @@ class Drawing:
     def import_text_attributes(cls, obj): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
+    def move_file(cls, src, dest): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
+    def remove_literal_from_annotation(cls, obj, literal): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, group, collection): pass
     def set_name(cls, element, name): pass
+    def setup_annotation_object(cls, obj, object_type): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
-    def update_text_value(cls, obj): pass
+    def synchronise_ifc_and_text_attributes(cls, obj): pass
     def update_text_size_pset(cls, obj): pass
+    def update_text_value(cls, obj): pass
 
 
 @interface

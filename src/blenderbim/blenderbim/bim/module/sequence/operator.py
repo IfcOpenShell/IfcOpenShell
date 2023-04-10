@@ -170,7 +170,7 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
 
 class EnableEditingWorkScheduleTasks(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_schedule_tasks"
-    bl_label = "Enable Editing Tasks"
+    bl_label = "Enable Editing Work Schedule Tasks"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
@@ -961,7 +961,7 @@ class EditSequenceTimeLag(bpy.types.Operator, tool.Ifc.Operator):
 
 class DisableEditingSequence(bpy.types.Operator):
     bl_idname = "bim.disable_editing_sequence"
-    bl_label = "Disable Editing Sequence Attributes"
+    bl_label = "Disable Editing Sequence"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -1276,7 +1276,7 @@ class LoadTaskAnimationColors(bpy.types.Operator):
 
 class DisableEditingTaskAnimationColors(bpy.types.Operator):
     bl_idname = "bim.disable_editing_task_animation_colors"
-    bl_label = "Disable Editing Colors"
+    bl_label = "Disable Editing Task Animation Colors"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
