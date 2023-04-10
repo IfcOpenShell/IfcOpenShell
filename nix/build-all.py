@@ -59,6 +59,10 @@ import multiprocessing
 import platform
 import sysconfig
 
+# @todo temporary for expired mpfr.org certificate on 2023-04-08
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
 from urllib.request import urlretrieve
 
 
