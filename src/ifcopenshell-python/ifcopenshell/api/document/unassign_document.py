@@ -58,4 +58,7 @@ class Usecase:
     def execute(self):
         for rel in self.settings["product"].HasAssociations:
             if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument == self.settings["document"]:
-                self.file.remove(rel)
+                if len(rel.RelatedObjects) == 1:
+                    self.file.remove(rel)
+                else:
+                    rel.RelatedObjects = [o for o in rel.RelatedObjects if o != self.settings["product"]]
