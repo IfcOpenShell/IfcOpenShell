@@ -172,17 +172,9 @@ def register():
 
 def unregister():
     for cls in reversed(classes):
-        # GizmoGroup, Gizmo and Macro doesn't have cls.is_registered attribute
-        if set((bpy.types.GizmoGroup, bpy.types.Gizmo)) & set(cls.__bases__):
-            if bpy.data.scenes["Scene"].BIMProperties.module_visibility["drawing"].is_visible:
-                bpy.utils.unregister_class(cls)
-            continue
-
-        if bpy.types.Macro in cls.__bases__:
+        if getattr(cls, "is_registered", None) is None:
             bpy.utils.unregister_class(cls)
-            continue
-
-        if cls.is_registered is not False:
+        elif cls.is_registered:
             bpy.utils.unregister_class(cls)
 
     bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
