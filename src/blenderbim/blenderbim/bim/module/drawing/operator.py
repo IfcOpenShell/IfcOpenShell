@@ -605,6 +605,9 @@ class CreateDrawing(bpy.types.Operator):
             return svg_path
 
         elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
+        filtered_drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
+        elements = [e for e in elements if e in filtered_drawing_elements]
+
         annotations = sorted(elements, key=lambda a: tool.Drawing.get_annotation_z_index(a))
 
         self.svg_writer.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)

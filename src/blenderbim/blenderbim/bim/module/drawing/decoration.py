@@ -159,9 +159,13 @@ class BaseDecorator:
             "BATTING",
         )
         for obj in collection.all_objects:
+            if obj.hide_get():
+                continue
+
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+
             if element.is_a("IfcAnnotation"):
                 if element.ObjectType == self.objecttype:
                     results.append(obj)
