@@ -68,9 +68,7 @@ class UnassignType(bpy.types.Operator):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
         self.file = IfcStore.get_file()
-        objs = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        )
+        objs = [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if not element or element.is_a("IfcElementType"):
@@ -90,7 +88,10 @@ class UnassignType(bpy.types.Operator):
                     else:
                         # We must unmap representations.
                         copied_representation = ifcopenshell.util.element.copy_deep(
-                            tool.Ifc.get(), resolved_representation, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback
+                            tool.Ifc.get(),
+                            resolved_representation,
+                            exclude=["IfcGeometricRepresentationContext"],
+                            exclude_callback=exclude_callback,
                         )
                         representations.append(copied_representation)
                         if representation.ContextOfItems == active_context:
@@ -227,6 +228,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 context=body,
                 ifc_representation_class=None,
             )
+
         elif template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             obj = bpy.data.objects.new(name, None)
@@ -260,6 +262,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             elif template == "LAYERSET_AXIS3":
                 axis = "AXIS3"
             ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={"LayerSetDirection": axis})
+
         elif template == "PROFILESET":
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             obj = bpy.data.objects.new(name, None)

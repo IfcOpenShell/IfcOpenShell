@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, handler, gizmos
+from . import ui, prop, operator, handler, gizmos, workspace
 
 classes = (
     operator.ActivateDrawing,
@@ -80,6 +80,7 @@ classes = (
     prop.Literal,
     prop.BIMTextProperties,
     prop.BIMAssignedProductProperties,
+    prop.BIMAnnotationProperties,
     ui.BIM_PT_camera,
     ui.BIM_PT_drawing_underlay,
     ui.BIM_PT_annotation_utilities,
@@ -95,11 +96,15 @@ classes = (
     gizmos.DimensionLabelGizmo,
     gizmos.ExtrusionGuidesGizmo,
     gizmos.ExtrusionWidget,
+    workspace.Hotkey,
 )
 
 
 def register():
+    if not bpy.app.background:
+        bpy.utils.register_tool(workspace.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=True)
     bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
+    bpy.types.Scene.BIMAnnotationProperties = bpy.props.PointerProperty(type=prop.BIMAnnotationProperties)
     bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
     bpy.types.Object.BIMAssignedProductProperties = bpy.props.PointerProperty(type=prop.BIMAssignedProductProperties)
     bpy.types.Object.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
@@ -109,7 +114,10 @@ def register():
 
 
 def unregister():
+    if not bpy.app.background:
+        bpy.utils.unregister_tool(workspace.AnnotationTool)
     del bpy.types.Scene.DocProperties
+    del bpy.types.Scene.BIMAnnotationProperties
     del bpy.types.Camera.BIMCameraProperties
     del bpy.types.Object.BIMAssignedProductProperties
     del bpy.types.Object.BIMTextProperties

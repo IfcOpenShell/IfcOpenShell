@@ -77,17 +77,20 @@ class Annotator:
             co1, co2, _, _ = Annotator.get_placeholder_coords()
         co1 = obj.matrix_world.inverted() @ co1
         co2 = obj.matrix_world.inverted() @ co2
+
         if isinstance(obj.data, bpy.types.Mesh):
             obj.data.vertices.add(2)
             obj.data.vertices[-2].co = co1
             obj.data.vertices[-1].co = co2
             obj.data.edges.add(1)
             obj.data.edges[-1].vertices = (obj.data.vertices[-2].index, obj.data.vertices[-1].index)
+
         if isinstance(obj.data, bpy.types.Curve):
             polyline = obj.data.splines.new("POLY")
             polyline.points.add(1)
             polyline.points[-2].co = list(co1) + [1]
             polyline.points[-1].co = list(co2) + [1]
+
         return obj
 
     @staticmethod
@@ -114,11 +117,13 @@ class Annotator:
         matrix_world[1][3] = co1.y
         matrix_world[2][3] = co1.z
         collection = camera.users_collection[0]
+
         if object_type == "TEXT":
             obj = bpy.data.objects.new(object_type, None)
             obj.matrix_world = matrix_world
             collection.objects.link(obj)
             return obj
+
         elif object_type in ("TEXT_LEADER", "SECTION_LEVEL"):
             data = bpy.data.curves.new(object_type, type="CURVE")
             data.dimensions = "3D"
@@ -127,17 +132,20 @@ class Annotator:
             obj.matrix_world = matrix_world
             collection.objects.link(obj)
             return obj
+
         if object_type != "ANGLE":
             for obj in collection.objects:
                 element = tool.Ifc.get_entity(obj)
                 if element and element.ObjectType == object_type and obj.type == object_type.upper():
                     return obj
+
         if data_type == "mesh":
             data = bpy.data.meshes.new(object_type)
         elif data_type == "curve":
             data = bpy.data.curves.new(object_type, type="CURVE")
             data.dimensions = "3D"
             data.resolution_u = 2
+
         obj = bpy.data.objects.new(object_type, data)
         obj.matrix_world = matrix_world
         collection.objects.link(obj)
@@ -148,14 +156,13 @@ class Annotator:
         if not camera:
             camera = bpy.context.scene.camera
         z_offset = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        if bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y:
-            y = (
-                camera.data.ortho_scale
-                * (bpy.context.scene.render.resolution_y / bpy.context.scene.render.resolution_x)
-                / 4
-            )
-        else:
-            y = camera.data.ortho_scale / 4
+        y = camera.data.ortho_scale / 4
+
+        res_x = bpy.context.scene.render.resolution_x
+        res_y = bpy.context.scene.render.resolution_y
+        if res_x > res_y:
+            y *= res_y / res_x
+
         y_offset = camera.matrix_world.to_quaternion() @ Vector((0, y, 0))
         x_offset = camera.matrix_world.to_quaternion() @ Vector((y / 2, 0, 0))
         return (
