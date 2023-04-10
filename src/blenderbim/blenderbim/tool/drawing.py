@@ -1211,16 +1211,21 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_elements(cls, drawing):
+        """returns a set of elements that are included in the drawing"""
+        ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(tool.Ifc.get(), include))
+            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include))
         else:
-            elements = set(tool.Ifc.get().by_type("IfcElement"))
+            elements = set(ifc_file.by_type("IfcElement"))
+            annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
+            elements.update(annotations)
+
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.Selector.parse(tool.Ifc.get(), exclude, elements=elements))
-        elements -= set(tool.Ifc.get().by_type("IfcOpeningElement"))
+            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
+        elements -= set(ifc_file.by_type("IfcOpeningElement"))
         return elements
 
     @classmethod
@@ -1293,11 +1298,17 @@ class Drawing(blenderbim.core.tool.Drawing):
         tool.Spatial.set_active_object(camera)
 
         # sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
-        drawing_elements = cls.get_drawing_elements(tool.Ifc.get_entity(camera))
-        for element in tool.Ifc.get().by_type("IfcElement"):
+        ifc_file = tool.Ifc.get()
+        drawing = tool.Ifc.get_entity(camera)
+        all_drawing_elements = set(ifc_file.by_type("IfcElement"))
+        annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
+        all_drawing_elements.update(annotations)
+        filtered_drawing_elements = cls.get_drawing_elements(drawing)
+
+        for element in all_drawing_elements:
             if element.is_a() in ("IfcOpeningElement",):
                 continue
 
             obj = tool.Ifc.get_object(element)
-            obj.hide_viewport = element not in drawing_elements
-            obj.hide_render = element not in drawing_elements
+            obj.hide_set(element not in filtered_drawing_elements)
+            obj.hide_render = element not in filtered_drawing_elements
