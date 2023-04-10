@@ -245,7 +245,7 @@ class CreateDrawing(bpy.types.Operator):
                         elif "</svg>" in line:
                             continue
                         outfile.write(line)
-                shutil.copyfile(underlay[0:-4] + ".png", svg_path[0:-4] + "-underlay.png")
+                shutil.copyfile(os.path.splitext(underlay)[0] + ".png", os.path.splitext(svg_path)[0] + "-underlay.png")
             if linework:
                 with open(linework) as infile:
                     should_skip = False
@@ -739,29 +739,24 @@ class AddDrawingToSheet(bpy.types.Operator, Operator):
 
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
         if not sheet.is_a("IfcDocumentInformation"):
-            return {"FINISHED"}
+            return
 
-        if tool.Ifc.get_schema() == "IFC2X3":
-            references = sheet.DocumentReferences or []
-        else:
-            references = sheet.HasDocumentReferences or []
+        references = tool.Drawing.get_document_references(sheet)
 
         has_drawing = False
         for reference in references:
             if reference.Location == drawing_reference.Location:
                 has_drawing = True
                 break
-
         if has_drawing:
-            return {"FINISHED"}
+            return
+
+        if not tool.Drawing.does_file_exist(tool.Drawing.get_document_uri(drawing_reference)):
+            self.report({"ERROR"}, "The drawing must be generated before adding to a sheet.")
+            return
 
         reference = tool.Ifc.run("document.add_reference", information=sheet)
-        if tool.Ifc.get_schema() == "IFC2X3":
-            references = sheet.DocumentReferences
-            id_attr = "ItemReference"
-        else:
-            references = sheet.HasDocumentReferences
-            id_attr = "Identification"
+        id_attr = "ItemReference" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
         attributes = {
             id_attr: str(len([r for r in references if r.Description in ("DRAWING", "SCHEDULE")]) + 1),
             "Location": drawing_reference.Location,
@@ -773,16 +768,15 @@ class AddDrawingToSheet(bpy.types.Operator, Operator):
         sheet_builder.add_drawing(reference, drawing, sheet)
 
         tool.Drawing.import_sheets()
-        return {"FINISHED"}
 
 
-class RemoveDrawingFromSheet(bpy.types.Operator):
+class RemoveDrawingFromSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_drawing_from_sheet"
     bl_label = "Remove Drawing From Sheet"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         reference = tool.Ifc.get().by_id(self.reference)
         sheet = tool.Drawing.get_reference_document(reference)
 
@@ -790,53 +784,68 @@ class RemoveDrawingFromSheet(bpy.types.Operator):
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         sheet_builder.remove_drawing(reference, sheet)
 
-        drawing = tool.Drawing.get_reference_element(reference)
-        if drawing:
-            tool.Ifc.run("document.unassign_document", product=drawing, document=reference)
-
         tool.Ifc.run("document.remove_reference", reference=reference)
 
         tool.Drawing.import_sheets()
-        return {"FINISHED"}
 
 
-class CreateSheets(bpy.types.Operator):
+class CreateSheets(bpy.types.Operator, Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
-    # TODO: check undo redo
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
         return context.scene.DocProperties.sheets and context.scene.BIMProperties.data_dir
 
-    def execute(self, context):
+    def _execute(self, context):
         scene = context.scene
         props = scene.DocProperties
         active_sheet = props.sheets[props.active_sheet_index]
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
 
         if not sheet.is_a("IfcDocumentInformation"):
-            return {"FINISHED"}
+            return
 
         name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
 
+        references = sheet_builder.build(sheet)
+        raster_references = [tool.Ifc.get_relative_uri(r) for r in references["RASTER"]]
+
         # These variables will be made available to the evaluated commands
-        svg = sheet_builder.build(sheet)
+        svg = references["SHEET"]
         basename = os.path.basename(svg)
         path = os.path.dirname(svg)
         pdf = os.path.splitext(svg)[0] + ".pdf"
         eps = os.path.splitext(svg)[0] + ".eps"
         dxf = os.path.splitext(svg)[0] + ".dxf"
 
-        references = getattr(sheet, "HasDocumentReferences", getattr(sheet, "DocumentReferences", []))
-        if not [r for r in references if r.Description == "SHEET"]:
+        has_sheet_reference = False
+        for reference in tool.Drawing.get_document_references(sheet):
+            if reference.Description == "SHEET":
+                has_sheet_reference = True
+            elif reference.Description == "RASTER":
+                if reference.Location in raster_references:
+                    del raster_references[reference.Location]
+                else:
+                    tool.Ifc.run("document.remove_reference", reference=reference)
+
+        if not has_sheet_reference:
             reference = tool.Ifc.run("document.add_reference", information=sheet)
             tool.Ifc.run(
                 "document.edit_reference",
                 reference=reference,
                 attributes={"Location": tool.Ifc.get_relative_uri(svg), "Description": "SHEET"},
+            )
+
+        for raster_reference in raster_references:
+            reference = tool.Ifc.run("document.add_reference", information=sheet)
+            tool.Ifc.run(
+                "document.edit_reference",
+                reference=reference,
+                attributes={"Location": tool.Ifc.get_relative_uri(raster_reference), "Description": "RASTER"},
             )
 
         svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
@@ -860,37 +869,43 @@ class CreateSheets(bpy.types.Operator):
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.pdf_command, pdf)
         else:
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg)
-        return {"FINISHED"}
 
 
-class ChangeSheetTitleBlock(bpy.types.Operator):
+class ChangeSheetTitleBlock(bpy.types.Operator, Operator):
     bl_idname = "bim.change_sheet_title_block"
     bl_label = "Change Sheet Title Block"
     bl_description = "Change the title block of the active sheet"
     bl_options = {"REGISTER"}
 
-    def execute(self, context):
+    def _execute(self, context):
         scene = context.scene
         props = scene.DocProperties
 
         if not len(props.sheets):
             return {"CANCELLED"}
 
+        titleblock = scene.DocProperties.titleblock
+
         active_sheet = props.sheets[props.active_sheet_index]
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
 
+        for reference in tool.Drawing.get_document_references(sheet):
+            description = tool.Drawing.get_reference_description(reference)
+            if description == "TITLEBLOCK":
+                tool.Ifc.run(
+                    "document.edit_reference",
+                    reference=reference,
+                    attributes={"Location": tool.Drawing.get_default_titleblock_path(titleblock)},
+                )
+
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
-        titleblock = scene.DocProperties.titleblock
         sheet_builder.change_titleblock(sheet, titleblock)
 
-        self.report({"INFO"}, 'Title block changed for sheet "{}" to {}'.format(sheet.Name, titleblock))
-        return {"FINISHED"}
 
-
-class OpenView(bpy.types.Operator):
-    bl_idname = "bim.open_view"
-    bl_label = "Open View"
+class OpenDrawing(bpy.types.Operator):
+    bl_idname = "bim.open_drawing"
+    bl_label = "Open Drawing"
     view: bpy.props.StringProperty()
     bl_description = (
         "Opens a .svg drawing based on currently active camera with default system viewer\n"
@@ -1229,27 +1244,22 @@ class AddScheduleToSheet(bpy.types.Operator, Operator):
         if not sheet.is_a("IfcDocumentInformation"):
             return
 
-        if tool.Ifc.get_schema() == "IFC2X3":
-            references = sheet.DocumentReferences or []
-        else:
-            references = sheet.HasDocumentReferences or []
+        references = tool.Drawing.get_document_references(sheet)
 
         has_schedule = False
         for reference in references:
             if reference.Location == schedule_location:
                 has_schedule = True
                 break
-
         if has_schedule:
             return
 
+        if not tool.Drawing.does_file_exist(tool.Ifc.resolve_uri(schedule_location)):
+            self.report({"ERROR"}, "The schedule must be generated before adding to a sheet.")
+            return
+
         reference = tool.Ifc.run("document.add_reference", information=sheet)
-        if tool.Ifc.get_schema() == "IFC2X3":
-            references = sheet.DocumentReferences
-            id_attr = "ItemReference"
-        else:
-            references = sheet.HasDocumentReferences
-            id_attr = "Identification"
+        id_attr = "ItemReference" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
         attributes = {
             id_attr: str(len([r for r in references if r.Description in ("DRAWING", "SCHEDULE")]) + 1),
             "Location": schedule_location,
@@ -1499,6 +1509,33 @@ class LoadSheets(bpy.types.Operator, Operator):
 
         if sheets_not_found:
             self.report({"ERROR"}, "Some sheets svg files are missing:\n" + "\n".join(sheets_not_found))
+
+
+class RenameSheet(bpy.types.Operator, Operator):
+    bl_idname = "bim.rename_sheet"
+    bl_label = "Rename Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    identification: bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        self.props = context.scene.DocProperties
+        sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
+        self.identification = sheet.Identification
+        self.name = sheet.Name
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "identification", text="Identification")
+        row = self.layout.row()
+        row.prop(self, "name", text="Name")
+
+    def _execute(self, context):
+        self.props = context.scene.DocProperties
+        sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
+        core.rename_sheet(tool.Ifc, tool.Drawing, sheet=sheet, identification=self.identification, name=self.name)
+        tool.Drawing.import_sheets()
 
 
 class DisableEditingSheets(bpy.types.Operator, Operator):

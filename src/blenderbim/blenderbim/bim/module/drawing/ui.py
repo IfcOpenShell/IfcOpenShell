@@ -84,7 +84,7 @@ class BIM_PT_camera(Panel):
 
         row = layout.row(align=True)
         row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")
-        op = row.operator("bim.open_view", icon="URL", text="")
+        op = row.operator("bim.open_drawing", icon="URL", text="")
         op.view = context.active_object.name.split("/")[1]
 
 
@@ -185,7 +185,7 @@ class BIM_PT_drawings(Panel):
                 ).drawing = active_drawing.ifc_definition_id
                 col = row.column()
                 col.alignment = "RIGHT"
-                op = row.operator("bim.open_view", icon="URL", text="")
+                op = row.operator("bim.open_drawing", icon="URL", text="")
                 op.view = active_drawing.name
                 op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
                 op.drawing = active_drawing.ifc_definition_id
@@ -281,6 +281,7 @@ class BIM_PT_sheets(Panel):
             active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
+            row.operator("bim.rename_sheet", icon="GREASEPENCIL", text="")
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
@@ -510,7 +511,7 @@ class BIM_UL_sheets(bpy.types.UIList):
             layout.label(text="", translate=False)
             return
 
-        row = layout.row()
+        row = layout.row(align=True)
         if item.is_sheet:
             if item.is_expanded:
                 row.operator(
@@ -520,8 +521,8 @@ class BIM_UL_sheets(bpy.types.UIList):
                 row.operator(
                     "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
                 ).sheet = item.ifc_definition_id
-            name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
-            row.prop(item, "name", text=item.identification or "X", emboss=False)
+
+            row.label(text=f"{item.identification} - {item.name}")
         else:
             row.label(text="", icon="BLANK1")
             if item.reference_type == "DRAWING":
@@ -530,6 +531,9 @@ class BIM_UL_sheets(bpy.types.UIList):
                 row.label(text="", icon="LONGDISPLAY")
             elif item.reference_type == "TITLEBLOCK":
                 row.label(text="", icon="MENU_PANEL")
+            elif item.reference_type == "REVISION":
+                row.label(text="", icon="RECOVER_LAST")
+
             if item.identification:
                 name = f"{item.identification} - {item.name or 'Unnamed'}"
             else:

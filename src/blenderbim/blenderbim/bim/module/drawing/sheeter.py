@@ -34,8 +34,8 @@ class SheetBuilder:
         self.data_dir = None
         self.scale = "NTS"
 
-    def create(self, sheet_path, titleblock_name):
-        sheet_dir = os.path.dirname(sheet_path)
+    def create(self, layout_path, titleblock_name):
+        sheet_dir = os.path.dirname(layout_path)
 
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
@@ -43,16 +43,16 @@ class SheetBuilder:
         root.attrib["id"] = "root"
         root.attrib["version"] = "1.1"
 
-        titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
-        view_root = ET.parse(titleblock_path).getroot()
+        ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
+        titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
+
+        view_root = ET.parse(ootb_titleblock_path).getroot()
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
         view = ET.SubElement(root, "g")
         view.attrib["data-type"] = "titleblock"
         titleblock = ET.SubElement(view, "image")
-        titleblock.attrib["xlink:href"] = os.path.relpath(
-            tool.Drawing.get_default_titleblock_path(titleblock_name), sheet_dir
-        )
+        titleblock.attrib["xlink:href"] = os.path.relpath(titleblock_path, sheet_dir)
         titleblock.attrib["x"] = "0"
         titleblock.attrib["y"] = "0"
         titleblock.attrib["width"] = str(view_width)
@@ -63,24 +63,22 @@ class SheetBuilder:
         root.attrib["viewBox"] = "0 0 {} {}".format(view_width, view_height)
 
         os.makedirs(sheet_dir, exist_ok=True)
-        os.makedirs(os.path.join(sheet_dir, "titleblocks"), exist_ok=True)
-        sheet_titleblock_path = os.path.join(sheet_dir, "titleblocks", titleblock_name + ".svg")
-        if not os.path.exists(sheet_titleblock_path):
-            shutil.copy(titleblock_path, sheet_titleblock_path)
-        with open(sheet_path, "w") as f:
+        os.makedirs(os.path.dirname(titleblock_path), exist_ok=True)
+        if not os.path.exists(titleblock_path):
+            shutil.copy(ootb_titleblock_path, titleblock_path)
+
+        with open(layout_path, "w") as f:
             f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="    "))
 
     def add_drawing(self, reference, drawing, sheet):
         filename = drawing.Name
         sheet_path = tool.Drawing.get_document_uri(sheet)
-        sheet_name = os.path.splitext(os.path.basename(sheet_path))[0]
         sheet_dir = os.path.dirname(sheet_path)
 
         drawing_path = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_reference(drawing))
-        drawing_path = tool.Ifc.resolve_uri(drawing_path)
         underlay_path = os.path.splitext(drawing_path)[0] + "-underlay.png"
 
-        if not os.path.isfile(sheet_path):
+        if not os.path.exists(sheet_path) or not os.path.exists(drawing_path):
             raise FileNotFoundError
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
@@ -190,18 +188,20 @@ class SheetBuilder:
         title.attrib["height"] = str(self.convert_to_mm(title_root.attrib.get("height")))
 
     def build(self, sheet):
-        sheet_path = tool.Drawing.get_document_uri(sheet)
-        sheet_name = os.path.splitext(os.path.basename(sheet_path))[0]
-        self.sheet_dir = os.path.dirname(sheet_path)
+        self.references = {"SHEET": None, "RASTER": []}
 
-        docs_dir = tool.Ifc.resolve_uri(os.path.join(bpy.context.scene.DocProperties.docs_dir, sheet_name))
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        self.layout_dir = os.path.dirname(layout_path)
 
-        os.makedirs(docs_dir, exist_ok=True)
+        output_filename = tool.Ifc.resolve_uri(tool.Drawing.get_default_sheet_path(sheet[0], sheet.Name))
+        self.sheets_dir = os.path.dirname(output_filename)
+
+        os.makedirs(self.sheets_dir, exist_ok=True)
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
-        tree = ET.parse(sheet_path)
+        tree = ET.parse(layout_path)
         root = tree.getroot()
 
         self.defs = ET.Element("defs")
@@ -211,12 +211,12 @@ class SheetBuilder:
         self.build_drawings(root, sheet)
         self.build_schedules(root)
 
-        output_filename = os.path.join(docs_dir, f"{sheet_name}.svg")
-
         with open(output_filename, "wb") as output:
             tree.write(output)
 
-        return output_filename
+        self.references["SHEET"] = output_filename
+
+        return self.references
 
     def build_titleblock(self, root, sheet):
         titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
@@ -232,8 +232,6 @@ class SheetBuilder:
         titleblock.remove(image)
 
     def build_drawings(self, root, sheet):
-        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
-
         for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
             reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
             drawing = tool.Ifc.get().by_id(view.attrib["data-drawing"])
@@ -256,8 +254,10 @@ class SheetBuilder:
                 view.append(self.parse_embedded_svg(foreground, {}))
 
             if background is not None:
-                background_path = os.path.join(self.data_dir, "sheets", self.get_href(background))
-                shutil.copy(background_path, os.path.join(self.data_dir, "build", sheet_name))
+                background_path = os.path.join(self.layout_dir, self.get_href(background))
+                raster_path = os.path.join(self.sheets_dir, os.path.basename(background_path))
+                shutil.copy(background_path, raster_path)
+                self.references["RASTER"].append(raster_path)
 
             if view_title is not None:
                 foreground_path = self.get_href(foreground)
@@ -322,7 +322,7 @@ class SheetBuilder:
         self.defs.append(clip_path)
 
         svg_path = self.get_href(image)
-        with open(os.path.join(self.sheet_dir, svg_path), "r") as template:
+        with open(os.path.join(self.layout_dir, svg_path), "r") as template:
             embedded = ET.fromstring(pystache.render(template.read(), data))
             # viewBox should not be nested
             embedded.attrib["viewBox"] = ""
@@ -339,23 +339,29 @@ class SheetBuilder:
         return group
 
     def change_titleblock(self, sheet, titleblock_name):
+        ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
+        titleblock_path = tool.Drawing.get_default_titleblock_path(titleblock_name)
+        sheet_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        sheet_dir = os.path.dirname(sheet_path)
+
+        os.makedirs(sheet_dir, exist_ok=True)
+        os.makedirs(os.path.join(sheet_dir, "titleblocks"), exist_ok=True)
+        if not os.path.exists(titleblock_path):
+            shutil.copy(ootb_titleblock_path, titleblock_path)
+
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
-        titleblock_svg_path = os.path.join(self.data_dir, "templates", "titleblocks", f"{titleblock_name}.svg")
-        view_root = ET.parse(titleblock_svg_path).getroot()
+        view_root = ET.parse(ootb_titleblock_path).getroot()
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
 
-        sheet_dir = os.path.join(self.data_dir, "sheets")
-        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
-        sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
         sheet_tree = ET.parse(sheet_path)
         root = sheet_tree.getroot()
 
         titleblock = sheet_tree.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
         image = titleblock.findall("{http://www.w3.org/2000/svg}image[@{http://www.w3.org/1999/xlink}href]")[0]
-        image.attrib["{http://www.w3.org/1999/xlink}href"] = f"../templates/titleblocks/{titleblock_name}.svg"
+        image.attrib["{http://www.w3.org/1999/xlink}href"] = os.path.relpath(titleblock_path, sheet_dir)
         image.attrib["width"] = str(view_width)
         image.attrib["height"] = str(view_height)
 
