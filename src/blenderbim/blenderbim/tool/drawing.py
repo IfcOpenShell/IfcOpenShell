@@ -152,7 +152,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             if obj:
                 obj_data = obj.data
                 bpy.data.objects.remove(obj)
-                if obj_data.users == 0:  # in case we have drawing element types
+                if obj_data and obj_data.users == 0:  # in case we have drawing element types
                     cls.remove_object_data(obj_data)
 
     @classmethod
@@ -163,7 +163,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         elif isinstance(data, bpy.types.Mesh):
             bpy.data.meshes.remove(data)
         elif isinstance(data, bpy.types.Curve):
-            bpy.data.curves.remove(C.object.data)
+            bpy.data.curves.remove(data)
 
     @classmethod
     def delete_object(cls, obj):
