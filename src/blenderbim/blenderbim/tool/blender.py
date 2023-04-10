@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell.api
 import blenderbim.tool as tool
+from mathutils import Vector
 
 
 class Blender:
@@ -175,8 +176,16 @@ class Blender:
             "max_y": bound_box[6][1],
             "min_z": bound_box[0][2],
             "max_z": bound_box[6][2],
+            "center": (Vector(bound_box[6]) - Vector(bound_box[0])) / 2,
         }
         return bbox_dict
+
+    @classmethod
+    def select_and_activate_single_object(cls, context, active_object):
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        context.view_layer.objects.active = active_object
+        active_object.select_set(True)
 
     ## BMESH UTILS ##
     @classmethod

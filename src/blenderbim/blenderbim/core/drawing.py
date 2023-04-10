@@ -321,7 +321,6 @@ def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None)
         )
         ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), products=[element])
     collector.assign(obj)
-    drawing_tool.setup_annotation_object(obj, object_type)
     drawing_tool.enable_editing(obj)
 
 
