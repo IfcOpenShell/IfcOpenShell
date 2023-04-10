@@ -70,7 +70,7 @@ taxonomy::loop* ifcopenshell::geometry::polygon_from_points(const std::vector<ta
 	return loop;
 }
 
-taxonomy::loop* ifcopenshell::geometry::profile_helper(Eigen::Matrix4d& m4, const std::vector<profile_point>& points) {
+taxonomy::loop* ifcopenshell::geometry::profile_helper(const taxonomy::matrix4& m4, const std::vector<profile_point>& points) {
 
 	/* TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
 	for (int i = 0; i < numVerts; i++) {
@@ -99,7 +99,7 @@ taxonomy::loop* ifcopenshell::geometry::profile_helper(Eigen::Matrix4d& m4, cons
 	}
 	*/
 
-	const bool has_position = !m4.isIdentity();
+	const bool has_position = !m4.is_identity();
 
 	// @todo precision
 
@@ -108,7 +108,7 @@ taxonomy::loop* ifcopenshell::geometry::profile_helper(Eigen::Matrix4d& m4, cons
 	std::transform(points.begin(), points.end(), std::back_inserter(ps), [&has_position, &m4](const profile_point& p) {
 		if (has_position) {
 			Eigen::Vector4d v(p.xy[0], p.xy[1], 0., 1.);
-			v = m4 * v;
+			v = m4.ccomponents() * v;
 			return taxonomy::point3(v(0), v(1), 0.);
 		} else {
 			return taxonomy::point3(p.xy[0], p.xy[1], 0.);

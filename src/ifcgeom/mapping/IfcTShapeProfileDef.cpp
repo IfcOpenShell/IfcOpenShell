@@ -99,14 +99,13 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTShapeProfileDef* inst) {
 		xy = y - d2;
 	}
 
-	Eigen::Matrix4d m4;
+	taxonomy::matrix4 m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
-		m4 = m.ccomponents();
+		m4 = as<taxonomy::matrix4>(map(inst->Position()));
 	}
 
 	return profile_helper(m4, {

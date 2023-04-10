@@ -32,23 +32,23 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcEllipseProfileDef* inst) {
 
 	const bool rotated = ry > rx;
 
-	Eigen::Matrix4d m4;
+	taxonomy::matrix4 m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
-		m4 = m.ccomponents();
+		m4 = as<taxonomy::matrix4>(map(inst->Position()));
 	}
 
 	if (ry > rx) {
+		// @todo is a copy necesary here or can this be done in place?
 		auto m4_copy = m4;
-		m4 <<
-			-m4_copy.col(1),
-			m4_copy.col(0),
-			m4_copy.col(2),
-			m4_copy.col(3);
+		m4.components() <<
+			-m4_copy.components().col(1),
+			m4_copy.components().col(0),
+			m4_copy.components().col(2),
+			m4_copy.components().col(3);
 		std::swap(rx, ry);
 	}
 
