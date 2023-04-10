@@ -85,13 +85,7 @@ class SvgWriter:
         self.svg.save(pretty=True)
 
     def draw_underlay(self, image):
-        self.svg.add(
-            self.svg.image(
-                os.path.join("..", "diagrams", os.path.basename(image)),
-                width=self.width,
-                height=self.height,
-            )
-        )
+        self.svg.add(self.svg.image(os.path.basename(image), width=self.width, height=self.height))
         return self
 
     def setup_drawing_resource_paths(self, element):
