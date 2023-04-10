@@ -25,7 +25,7 @@ import blenderbim.tool as tool
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
-from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData
+from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
 from blenderbim.bim.module.drawing.data import refresh as refresh_drawing_data
 from pathlib import Path
 from blenderbim.bim.prop import Attribute, StrProperty
@@ -465,3 +465,55 @@ class BIMTextProperties(PropertyGroup):
 class BIMAssignedProductProperties(PropertyGroup):
     is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)
+
+
+# ObjectType: annotation_name, description, icon, data_type
+ANNOTATION_TYPES_DATA = {
+    "DIMENSION":     ("Dimension",        "", "FIXED_SIZE", "curve"),
+    "ANGLE":         ("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
+    "RADIUS":        ("Radius",           "", "FORWARD", "curve"),
+    "DIAMETER":      ("Diameter",         "", "ARROW_LEFTRIGHT", "curve"),
+    "TEXT":          ("Text",             "", "SMALL_CAPS", "empty"),
+    "TEXT_LEADER":   ("Leader",           "", "TRACKING_BACKWARDS", "curve"),
+    "STAIR_ARROW":   ("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
+    "HIDDEN_LINE":   ("Hidden",           "", "CON_TRACKTO", "mesh"),
+    "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
+    "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
+    "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
+    "LINEWORK":      ("Line",             "", "MESH_MONKEY", "mesh"),
+    "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
+    "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
+    "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
+}
+
+annotation_classes = [(x, *ANNOTATION_TYPES_DATA[x][:3], i) for i, x in enumerate(ANNOTATION_TYPES_DATA)]
+
+
+def get_annotation_data_prop(prop_name):
+    def function(self, context):
+        if not AnnotationData.is_loaded:
+            AnnotationData.load()
+        return AnnotationData.data[prop_name]
+
+    return function
+
+
+def update_annotation_object_type(self, context):
+    self.relating_type_id = "0"
+    # changing enum doesn't trigger refresh by itself
+    AnnotationData.is_loaded = False
+
+
+class BIMAnnotationProperties(PropertyGroup):
+    object_type: bpy.props.EnumProperty(
+        name="Annotation Object Type", items=annotation_classes, default="TEXT", update=update_annotation_object_type
+    )
+    relating_type_id: bpy.props.EnumProperty(
+        name="Relating Annotation Type", items=get_annotation_data_prop("relating_types")
+    )
+    create_representation_for_type: bpy.props.BoolProperty(
+        name="Create Representation For Type",
+        default=False,
+        description='Whether "Add type" should define a representation for the type \n'
+        "or allow occurences to have their own",
+    )

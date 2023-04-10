@@ -371,7 +371,7 @@ class BIM_PT_text(Panel):
         element = tool.Ifc.get_entity(context.active_object)
         if not element:
             return
-        return element.is_a("IfcAnnotation") and element.ObjectType in ["TEXT", "TEXT_LEADER"]
+        return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
 
     def draw(self, context):
         obj = context.active_object
@@ -474,7 +474,6 @@ class BIM_PT_annotation_utilities(Panel):
         op = row.operator("bim.add_annotation", text="Stair Arrow", icon="SCREEN_BACK")
         op.object_type = "STAIR_ARROW"
         op.data_type = "curve"
-        op.description = "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation"
         op = row.operator("bim.add_annotation", text="Hidden", icon="CON_TRACKTO")
         op.object_type = "HIDDEN_LINE"
         op.data_type = "mesh"

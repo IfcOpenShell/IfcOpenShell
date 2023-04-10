@@ -31,6 +31,7 @@ def refresh():
     DrawingsData.is_loaded = False
     DecoratorData.data = {}
     DecoratorData.cut_cache = {}
+    AnnotationData.is_loaded = False
 
 
 class ProductAssignmentsData:
@@ -220,7 +221,7 @@ class DecoratorData:
             return result
 
         element = tool.Ifc.get_entity(obj)
-        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["TEXT", "TEXT_LEADER"]:
+        if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
             return None
 
         props = obj.BIMTextProperties
@@ -276,3 +277,28 @@ class DecoratorData:
 
         cls.data[obj.name] = dimension_style
         return dimension_style
+
+
+class AnnotationData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.props = bpy.context.scene.BIMAnnotationProperties
+        cls.data["relating_types"] = cls.get_relating_types()
+
+    @classmethod
+    def get_relating_types(cls):
+        object_type = cls.props.object_type
+        relating_types = []
+        for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
+            if tool.Drawing.is_annotation_object_type(relating_type, object_type):
+                relating_types.append(relating_type)
+
+        enum_items = [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types]
+
+        # item to create anootations without relating types
+        enum_items.insert(0, ("0", "-", ""))
+        return enum_items

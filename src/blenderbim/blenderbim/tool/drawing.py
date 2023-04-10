@@ -40,6 +40,7 @@ from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS
 
 from mathutils import Vector
+import collections
 
 
 class Drawing(blenderbim.core.tool.Drawing):
@@ -80,8 +81,28 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         return obj
 
-    # TODO: add a way for users to run this method to readjust the annotations
-    # based on non-modifier stairs
+    @classmethod
+    def ensure_annotation_in_drawing_plane(cls, obj, camera=None):
+        """Make sure annotation object is going to be visible in the camera view"""
+
+        def get_camera_from_annotation_object(obj):
+            entity = tool.Ifc.get_entity(obj)
+            if not entity:
+                return
+            for rel in entity.HasAssignments:
+                if rel.is_a("IfcRelAssignsToGroup"):
+                    for e in rel.RelatedObjects:
+                        if e.ObjectType == "DRAWING":
+                            return tool.Ifc.get_object(e)
+
+        if not camera:
+            camera = get_camera_from_annotation_object(obj) or bpy.context.scene.camera
+
+        current_pos = camera.matrix_world.inverted() @ obj.location
+        current_pos.z = -camera.data.clip_start
+        current_pos = camera.matrix_world @ current_pos
+        obj.location = current_pos
+
     @classmethod
     def setup_annotation_object(cls, obj, object_type, related_object=None):
         """Finish object's adjustments after both object and entity are created"""
@@ -89,27 +110,70 @@ class Drawing(blenderbim.core.tool.Drawing):
         if not related_object:
             related_object = bpy.context.active_object
         related_entity = tool.Ifc.get_entity(related_object)
+        if not related_entity:
+            return
+
+        obj_entity = tool.Ifc.get_entity(obj)
+        assign_product = False
 
         if object_type == "STAIR_ARROW":
-            if related_entity and related_entity.is_a("IfcStairFlight"):
-                stair, stair_entity = related_object, related_entity
-                arrow = obj
-                arrow_element = tool.Ifc.get_entity(arrow)
-                arrow.parent = stair
+            if related_entity.is_a("IfcStairFlight"):
+                stair, arrow = related_object, obj
 
                 # place the arrow
                 # NOTE: may not work correctly in EDIT mode
                 bbox = tool.Blender.get_object_bounding_box(stair)
                 float_is_zero = lambda f: 0.0001 >= f >= -0.0001
-                arrow.location = Vector((bbox["min_x"], (bbox["max_y"] - bbox["min_y"]) / 2, bbox["max_z"]))
+                arrow.location = stair.matrix_world @ Vector(
+                    (bbox["min_x"], (bbox["max_y"] - bbox["min_y"]) / 2, bbox["max_z"])
+                )
                 last_step_x = max(v.co.x for v in stair.data.vertices if float_is_zero(v.co.z - bbox["max_z"]))
-
                 arrow.data.splines[0].points[0].co = Vector((0, 0, 0, 1))
                 arrow.data.splines[0].points[1].co = Vector((last_step_x, 0, 0, 1))
 
-                if not cls.get_assigned_product(arrow_element):
-                    tool.Ifc.run("drawing.assign_product", relating_product=stair_entity, related_object=arrow_element)
-                pass
+                cls.ensure_annotation_in_drawing_plane(obj)
+                assign_product = True
+
+        elif object_type == "TEXT":
+            bbox = tool.Blender.get_object_bounding_box(related_object)
+
+            obj.location = related_object.matrix_world @ bbox["center"]
+            cls.ensure_annotation_in_drawing_plane(obj)
+            assign_product = True
+
+        if assign_product and not cls.get_assigned_product(obj_entity):
+            tool.Ifc.run("drawing.assign_product", relating_product=related_entity, related_object=obj_entity)
+
+        if object_type == "TEXT":
+            tool.Drawing.update_text_value(obj)
+
+    @classmethod
+    def is_annotation_object_type(cls, element, object_types):
+        if not isinstance(object_types, collections.abc.Iterable):
+            object_types = [object_types]
+
+        element_type = element.is_a()
+
+        if element_type == "IfcAnnotation" and element.ObjectType in object_types:
+            return True
+
+        if element_type == "IfcTypeProduct" and element.ApplicableOccurrence.startswith("IfcAnnotation/"):
+            applicable_object_type = element.ApplicableOccurrence.split("/")[1]
+            if applicable_object_type in object_types:
+                return True
+
+        return False
+
+    @classmethod
+    def get_annotation_representation(cls, element):
+        rep = ifcopenshell.util.representation.get_representation(
+            element, "Plan", "Annotation"
+        ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
+        if not rep:
+            return None
+
+        rep = tool.Geometry.resolve_mapped_representation(rep)
+        return rep
 
     @classmethod
     def create_camera(cls, name, matrix):
@@ -376,13 +440,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        rep = ifcopenshell.util.representation.get_representation(
-            element, "Plan", "Annotation"
-        ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
+        rep = cls.get_annotation_representation(element)
         if not rep:
-            return
-        items = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
+            return [] if return_list else None
 
+        items = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
         if not items:
             return [] if return_list else None
         if return_list:
@@ -395,9 +457,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         if not element:
             return
 
-        rep = ifcopenshell.util.representation.get_representation(
-            element, "Plan", "Annotation"
-        ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
+        rep = cls.get_annotation_representation(element)
         if not rep:
             return
 
@@ -435,9 +495,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         if not element:
             return
 
-        rep = ifcopenshell.util.representation.get_representation(
-            element, "Plan", "Annotation"
-        ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
+        rep = cls.get_annotation_representation(element)
 
         if not rep:
             return
