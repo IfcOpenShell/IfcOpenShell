@@ -25,7 +25,7 @@ namespace ifcopenshell {
 
 		taxonomy::loop* polygon_from_points(const std::vector<taxonomy::point3>& ps, bool external = true);
 
-		taxonomy::loop* profile_helper(Eigen::Matrix4d& m4, const std::vector<profile_point>& points);
+		taxonomy::loop* profile_helper(const taxonomy::matrix4& m4, const std::vector<profile_point>& points);
 
 		taxonomy::loop* fillet_loop(taxonomy::loop* lp, double radius);
 	}
