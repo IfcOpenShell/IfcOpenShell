@@ -84,7 +84,7 @@ class LateBoundSchemaInstantiator:
         for attr_name, decl_type, optional in attribute_definitions:
             attributes.append(w.attribute(attr_name, decl_type, optional))
         self.declarations[str(name)].set_attributes(attributes, is_derived)
-        self.cache.append(attributes)
+        self.cache.extend(attributes)
 
     def inverse_attributes(self, name, inv_attrs):
         attributes = []
@@ -100,6 +100,7 @@ class LateBoundSchemaInstantiator:
                     en.attributes()[attribute_entity_index],
                 )
             )
+        self.cache.extend(attributes)
         self.declarations[str(name)].set_inverse_attributes(attributes)
 
     def entity_subtypes(self, name, tys):
@@ -109,6 +110,10 @@ class LateBoundSchemaInstantiator:
         self.schema = w.schema_definition(
             override_schema_name or self.schema_name, list(self.declarations.values()), None
         )
+
+    def disown(self):
+        for elem in self.cache + list(self.declarations.values()):
+            elem.this.disown()
 
 
 class EarlyBoundCodeWriter:
