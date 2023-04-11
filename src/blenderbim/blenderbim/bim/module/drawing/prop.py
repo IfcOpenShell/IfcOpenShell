@@ -25,7 +25,7 @@ import blenderbim.tool as tool
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
-from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData
+from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData
 from blenderbim.bim.module.drawing.data import refresh as refresh_drawing_data
 from pathlib import Path
 from blenderbim.bim.prop import Attribute, StrProperty
@@ -44,18 +44,15 @@ from bpy.props import (
 
 
 diagram_scales_enum = []
-titleblocks_enum = []
 sheets_enum = []
 vector_styles_enum = []
 
 
 def purge():
     global diagram_scales_enum
-    global titleblocks_enum
     global sheets_enum
     global vector_styles_enum
     diagram_scales_enum = []
-    titleblocks_enum = []
     sheets_enum = []
     vector_styles_enum = []
 
@@ -191,20 +188,14 @@ def update_layer(self, context, name, value):
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={name: value})
 
 
-def getTitleblocks(self, context):
-    global titleblocks_enum
-    if len(titleblocks_enum) < 1:
-        titleblocks_enum.clear()
-        files = Path(os.path.join(context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob("*.svg")
-        files = sorted([str(f.stem) for f in files])
-        titleblocks_enum.extend([(f, f, "") for f in files])
-    return titleblocks_enum
+def get_titleblocks(self, context):
+    if not SheetsData.is_loaded:
+        SheetsData.load()
+    return SheetsData.data["titleblocks"]
 
 
-def refreshTitleblocks(self, context):
-    global titleblocks_enum
-    titleblocks_enum.clear()
-    getTitleblocks(self, context)
+def update_titleblocks(self, context):
+    SheetsData.data["titleblocks"] = SheetsData.titleblocks()
 
 
 def toggleDecorations(self, context):
@@ -327,7 +318,7 @@ class DocProperties(PropertyGroup):
     current_drawing_index: IntProperty(name="Current Drawing Index")
     schedules: CollectionProperty(name="Schedules", type=Schedule)
     active_schedule_index: IntProperty(name="Active Schedule Index")
-    titleblock: EnumProperty(items=getTitleblocks, name="Titleblock", update=refreshTitleblocks)
+    titleblock: EnumProperty(items=get_titleblocks, name="Titleblock", update=update_titleblocks)
     is_editing_sheets: BoolProperty(name="Is Editing Sheets", default=False)
     sheets: CollectionProperty(name="Sheets", type=Sheet)
     active_sheet_index: IntProperty(name="Active Sheet Index")
