@@ -238,11 +238,11 @@ class DumbSlabPlaner:
                         if not rel.is_a("IfcRelAssociatesMaterial"):
                             continue
                         for element in rel.RelatedObjects:
-                            self.change_thickness(element, thickness)
+                            self.change_thickness(element, total_thickness)
                 else:
                     for rel in inverse.AssociatedTo:
                         for element in rel.RelatedObjects:
-                            self.change_thickness(element, thickness)
+                            self.change_thickness(element, total_thickness)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         obj = tool.Ifc.get_object(settings["related_object"])
