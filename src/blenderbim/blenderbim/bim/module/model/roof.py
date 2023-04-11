@@ -42,7 +42,7 @@ from math import pi
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoofType.htm
 
 
-# create read only property in blender operator
+NON_SI_ROOF_PROPS = ("is_editing", "roof_type", "roof_added_previously", "generation_method", "angle")
 
 
 def float_is_zero(f):
@@ -417,8 +417,7 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
 
         # need to make sure all default props will have correct units
         if not props.roof_added_previously:
-            skip_props = ("is_editing", "roof_type", "roof_added_previously", "generation_method")
-            convert_property_group_from_si(props, skip_props=skip_props)
+            convert_property_group_from_si(props, skip_props=NON_SI_ROOF_PROPS)
 
         roof_data = props.get_general_kwargs()
         path_data = get_path_data(obj)
@@ -459,8 +458,7 @@ class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
 
         # need to make sure all props that weren't used before
         # will have correct units
-        skip_props = ("is_editing", "roof_type", "roof_added_previously", "generation_method")
-        skip_props += tuple(data.keys())
+        skip_props = NON_SI_ROOF_PROPS + tuple(data.keys())
         convert_property_group_from_si(props, skip_props=skip_props)
 
         props.is_editing = 1
