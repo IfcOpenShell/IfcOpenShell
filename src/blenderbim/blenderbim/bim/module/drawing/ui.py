@@ -185,6 +185,7 @@ class BIM_PT_drawings(Panel):
                 ).drawing = active_drawing.ifc_definition_id
                 col = row.column()
                 col.alignment = "RIGHT"
+                op = row.operator("bim.select_all_drawings", icon="SELECT_SUBTRACT", text="")
                 op = row.operator("bim.open_drawing", icon="URL", text="")
                 op.view = active_drawing.name
                 op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
@@ -491,6 +492,8 @@ class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
+            selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
+            row.prop(item, "is_selected", text="", icon=selected_icon)
             icon = "UV_FACESEL"
             if item.target_view == "ELEVATION_VIEW":
                 icon = "UV_VERTEXSEL"
