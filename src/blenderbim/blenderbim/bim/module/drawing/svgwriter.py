@@ -794,7 +794,7 @@ class SvgWriter:
                 )
             )
             # TODO: allow metric to be configurable
-            rl = ((matrix_world @ points[0].co).xyz + obj.location).z
+            rl = (matrix_world @ points[0].co).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
                 rl = helper.format_distance(rl)
             else:

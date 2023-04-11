@@ -131,7 +131,7 @@ def format_distance(value, isArea=False, hide_units=True):
     unit_length = bpy.context.scene.unit_settings.length_unit
 
     toInches = 39.3700787401574887
-    inPerFoot = 11.999
+    inPerFoot = 11.9999
 
     if isArea:
         toInches = 1550
