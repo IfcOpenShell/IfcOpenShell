@@ -31,9 +31,11 @@ green = (0.545, 0.863, 0, 1)
 red = (1, 0.2, 0.322, 1)
 blue = (0.157, 0.565, 1, 1)
 grey = (0.2, 0.2, 0.2, 1)
+blue = (0.157, 0.565, 1, 1)
+blue_t = (0.157, 0.565, 1, 0.1)
 
-faces_color = (0.494, 0.540, 0.593, 1)
-preview_edges_color = (0.130, 0.141, 0.371, 1)
+faces_color = blue_t
+preview_edges_color = blue
 
 
 def bm_check_vertex_in_groups(vertex, deform_layer, groups):
