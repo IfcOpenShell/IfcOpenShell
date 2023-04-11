@@ -53,6 +53,7 @@ classes = (
     operator.LoadDrawings,
     operator.LoadSchedules,
     operator.LoadSheets,
+    operator.SelectAllDrawings,
     operator.OpenDrawing,
     operator.OpenSchedule,
     operator.OpenSheet,

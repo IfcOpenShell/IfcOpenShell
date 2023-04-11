@@ -146,7 +146,7 @@ class CreateDrawing(bpy.types.Operator):
     bl_label = "Create Drawing"
     bl_description = (
         "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
-        + "SHIFT+CLICK to print all annotations"
+        + "SHIFT+CLICK to print all selected drawings"
     )
     print_all: bpy.props.BoolProperty(name="Print All", default=False)
 
@@ -155,12 +155,12 @@ class CreateDrawing(bpy.types.Operator):
         return bool(tool.Ifc.get() and tool.Drawing.is_camera_orthographic() and tool.Drawing.is_drawing_active())
 
     def invoke(self, context, event):
-        # printing all annotations on shift+click
+        # printing all drawings on shift+click
         if event.type == "LEFTMOUSE" and event.shift:
             self.print_all = True
         else:
-            # can't rely on default value since `self.print_all = True`
-            # will set the value to `True` for all future calls
+            # can't rely on default value since the line above
+            # will set the value to `True` for all future operator calls
             self.print_all = False
         return self.execute(context)
 
@@ -169,7 +169,7 @@ class CreateDrawing(bpy.types.Operator):
 
         if self.print_all:
             original_drawing_id = self.props.active_drawing_id
-            drawings_to_print = [drawing.ifc_definition_id for drawing in self.props.drawings]
+            drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected]
         else:
             drawings_to_print = [self.props.active_drawing_id]
 
@@ -903,6 +903,30 @@ class ChangeSheetTitleBlock(bpy.types.Operator, Operator):
         sheet_builder.change_titleblock(sheet, titleblock)
 
 
+class SelectAllDrawings(bpy.types.Operator):
+    bl_idname = "bim.select_all_drawings"
+    bl_label = "Select All Drawings"
+    view: bpy.props.StringProperty()
+    bl_description = "Select all drawings in the drawing list.\n\n" + "SHIFT+CLICK to deselect all drawings"
+    select_all: bpy.props.BoolProperty(name="Open All", default=False)
+
+    def invoke(self, context, event):
+        # deselect all drawings on shift+click
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.select_all = False
+        else:
+            # can't rely on default value since the line above
+            # will set the value to `True` for all future operator calls
+            self.select_all = True
+        return self.execute(context)
+
+    def execute(self, context):
+        for drawing in context.scene.DocProperties.drawings:
+            if drawing.is_selected != self.select_all:
+                drawing.is_selected = self.select_all
+        return {"FINISHED"}
+
+
 class OpenDrawing(bpy.types.Operator):
     bl_idname = "bim.open_drawing"
     bl_label = "Open Drawing"
@@ -910,23 +934,25 @@ class OpenDrawing(bpy.types.Operator):
     bl_description = (
         "Opens a .svg drawing based on currently active camera with default system viewer\n"
         + 'or using "svg_command" from the BlenderBIM preferences (if provided).\n\n'
-        + "SHIFT+CLICK to open all drawings"
+        + "SHIFT+CLICK to open all selected drawings"
     )
     open_all: bpy.props.BoolProperty(name="Open All", default=False)
 
     def invoke(self, context, event):
-        # opening all annotations on shift+click
+        # opening all drawings on shift+click
         if event.type == "LEFTMOUSE" and event.shift:
             self.open_all = True
         else:
-            # can't rely on default value since `self.open_all = True`
-            # will set the value to `True` for all future calls
+            # can't rely on default value since the line above
+            # will set the value to `True` for all future operator calls
             self.open_all = False
         return self.execute(context)
 
     def execute(self, context):
         if self.open_all:
-            drawings = [tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings]
+            drawings = [
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+            ]
         else:
             drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]
 
@@ -1004,10 +1030,33 @@ class RemoveDrawing(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove currently selected drawing.\n\n" + "SHIFT+CLICK to remove all selected drawings"
+
     drawing: bpy.props.IntProperty()
+    remove_all: bpy.props.BoolProperty(name="Remove All", default=False)
+
+    def invoke(self, context, event):
+        # removing all selected drawings on shift+click
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.remove_all = True
+        else:
+            # can't rely on default value since the line above
+            # will set the value to `True` for all future operator calls
+            self.remove_all = False
+        return self.execute(context)
 
     def _execute(self, context):
-        core.remove_drawing(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
+        if self.remove_all:
+            drawings = [
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+            ]
+        else:
+            drawings = [tool.Ifc.get().by_id(self.drawing)]
+
+        print("Removing drawings: {}".format([d for d in drawings]))
+
+        for drawing in drawings:
+            core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
 
 
 class AddDrawingStyle(bpy.types.Operator):
