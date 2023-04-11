@@ -444,6 +444,7 @@ def process_expression(context):
 
                 break_points[-1].append(len(args))
 
+                # @todo don't depend on registered schema
                 S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema.name)
                 entity = S.declaration_by_name(typename)
                 entity_attributes = entity.attributes()
@@ -806,7 +807,26 @@ if __name__ == "__main__":
     import subprocess
 
     schema = ifcopenshell.express.express_parser.parse(sys.argv[1]).schema
-    ofn = os.path.join(os.path.dirname(__file__), "rules", f"{schema.name}.py")
+    
+    try:
+        ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema.name)
+    except:
+        # @nb note the difference here between:
+        # 
+        #  - ifcopenshell.express.express_parser.parse
+        #  - ifcopenshell.express.parse.parse
+        # 
+        # First generates a pyparsing AST
+        # 
+        # Second populates a latebound schema
+        # that can be registered in C++.
+        builder = ifcopenshell.express.parse(sys.argv[1])
+        ifcopenshell.register_schema(builder)
+
+    try:
+        ofn = sys.argv[2]
+    except IndexError as e:
+        ofn = os.path.join(os.path.dirname(__file__), "rules", f"{schema.name}.py")
     output = io.StringIO()
 
     print("import ifcopenshell", file=output, sep="\n")
@@ -1025,5 +1045,8 @@ INDETERMINATE = indeterminate_type()
     trsf.assign_parent_refs(tree)
     trsf.visit(tree)
 
-    with open(ofn, "w") as f:
-        f.write(ast.unparse(tree))
+    if ofn == "-":
+        print(ast.unparse(tree))
+    else:
+        with open(ofn, "w") as f:
+            f.write(ast.unparse(tree))

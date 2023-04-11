@@ -82,7 +82,22 @@ def run(f, logger):
     ifcopenshell.settings.unpack_non_aggregate_inverses = True
 
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema}.py")
-    source = open(fn, "r").read()
+    try:
+        source = open(fn, "r").read()
+    except FileNotFoundError as e:
+        import sys
+        import time
+        import subprocess
+
+        current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
+        schema_name = str(f.schema).split(' ')[-1].lower()
+        schema_path = current_dir_files.get(schema_name + '.exp')
+        fn = schema_name + '.py'
+        if not os.path.exists(fn):
+            subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
+            time.sleep(1.)
+        source = open(fn, "r").read()
+
     a = ast.parse(source)
     assertion.rewrite.rewrite_asserts(mod=a, source=source)
     cd = compile(a, f"{f.schema}.py", "exec")
