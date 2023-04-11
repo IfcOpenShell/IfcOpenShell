@@ -230,6 +230,7 @@ class Drawing(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     name: StringProperty(name="Name", update=update_drawing_name)
     target_view: StringProperty(name="Target View")
+    is_selected: BoolProperty(name="Is Selected", default=True)
 
 
 class Schedule(PropertyGroup):

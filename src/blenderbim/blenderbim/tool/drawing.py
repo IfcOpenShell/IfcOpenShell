@@ -542,6 +542,9 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_drawings(cls):
+        current_drawings_selection = {
+            d.ifc_definition_id: d.is_selected for d in bpy.context.scene.DocProperties.drawings
+        }
         bpy.context.scene.DocProperties.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
         for drawing in drawings:
@@ -549,6 +552,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             new.ifc_definition_id = drawing.id()
             new.name = drawing.Name or "Unnamed"
             new.target_view = cls.get_drawing_target_view(drawing)
+            new.is_selected = current_drawings_selection.get(drawing.id(), True)
 
     @classmethod
     def import_schedules(cls):
