@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
+from pathlib import Path
 
 
 def refresh():
@@ -56,12 +58,28 @@ class SheetsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_sheets": cls.total_sheets()}
+        cls.data = {"total_sheets": cls.total_sheets(), "titleblocks": cls.titleblocks()}
         cls.is_loaded = True
 
     @classmethod
     def total_sheets(cls):
         return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"])
+
+    @classmethod
+    def titleblocks(cls):
+        files = Path(os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob("*.svg")
+        files = [str(f.stem) for f in files]
+
+        if tool.Ifc.get():
+            project = tool.Ifc.get().by_type("IfcProject")[0]
+            titleblocks_dir = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
+            if not titleblocks_dir:
+                titleblocks_dir = bpy.context.scene.DocProperties.titleblocks_dir
+            titleblocks_dir = tool.Ifc.resolve_uri(titleblocks_dir)
+            if os.path.exists(titleblocks_dir):
+                files.extend([str(f.stem) for f in Path(titleblocks_dir).glob("*.svg")])
+
+        return [(f, f, "") for f in sorted(list(set(files)))]
 
 
 class DrawingsData:
