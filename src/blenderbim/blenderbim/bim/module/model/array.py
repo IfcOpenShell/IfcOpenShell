@@ -28,7 +28,7 @@ from mathutils import Vector, Matrix
 class AddArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_array"
     bl_label = "Add Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object
@@ -67,7 +67,7 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_array"
     bl_label = "Disable Editing Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         context.active_object.BIMArrayProperties.is_editing = -1
@@ -77,7 +77,7 @@ class DisableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_array"
     bl_label = "Enable Editing Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -99,7 +99,7 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
 class EditArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_array"
     bl_label = "Edit Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -138,7 +138,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_array"
     bl_label = "Remove Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
 
     def _execute(self, context):
