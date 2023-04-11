@@ -753,23 +753,39 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_default_layout_path(cls, identification, name):
-        return os.path.join(
-            bpy.context.scene.DocProperties.layouts_dir, cls.sanitise_filename(f"{identification} - {name}.svg")
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        layouts_dir = (
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "LayoutsDir")
+            or bpy.context.scene.DocProperties.layouts_dir
         )
+        return os.path.join(layouts_dir, cls.sanitise_filename(f"{identification} - {name}.svg"))
 
     @classmethod
     def get_default_sheet_path(cls, identification, name):
-        return os.path.join(
-            bpy.context.scene.DocProperties.sheets_dir, cls.sanitise_filename(f"{identification} - {name}.svg")
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        sheets_dir = (
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "SheetsDir")
+            or bpy.context.scene.DocProperties.sheets_dir
         )
+        return os.path.join(sheets_dir, cls.sanitise_filename(f"{identification} - {name}.svg"))
 
     @classmethod
     def get_default_titleblock_path(cls, name):
-        return os.path.join(bpy.context.scene.DocProperties.titleblocks_dir, cls.sanitise_filename(f"{name}.svg"))
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        titleblocks_dir = (
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
+            or bpy.context.scene.DocProperties.titleblocks_dir
+        )
+        return os.path.join(titleblocks_dir, cls.sanitise_filename(f"{name}.svg"))
 
     @classmethod
     def get_default_drawing_path(cls, name):
-        return os.path.join(bpy.context.scene.DocProperties.drawings_dir, cls.sanitise_filename(f"{name}.svg"))
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        drawings_dir = (
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "DrawingsDir")
+            or bpy.context.scene.DocProperties.drawings_dir
+        )
+        return os.path.join(drawings_dir, cls.sanitise_filename(f"{name}.svg"))
 
     @classmethod
     def sanitise_filename(cls, name):
@@ -777,7 +793,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_default_drawing_resource_path(cls, resource):
-        return getattr(bpy.context.scene.DocProperties, f"{resource.lower()}_path") or None
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        return (
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path")
+            or getattr(bpy.context.scene.DocProperties, f"{resource.lower()}_path")
+        ) or None
 
     @classmethod
     def get_potential_reference_elements(cls, drawing):
