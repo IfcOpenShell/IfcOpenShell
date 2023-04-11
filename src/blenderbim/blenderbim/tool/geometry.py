@@ -274,7 +274,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def is_meshlike(cls, representation):
-        if representation.RepresentationType in (
+        if ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "AdvancedBrep",
             "Annotation2D",
             "BoundingBox",
