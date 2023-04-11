@@ -195,11 +195,12 @@ class Blender:
                 )
             bmesh.update_edit_mesh(mesh)
             if not obj:
-                if not bpy.context.object and bpy.context.object.data != mesh:
+                if not bpy.context.object or bpy.context.object.data != mesh:
                     raise Exception(
                         "Error applying bmesh in EDIT object - object is "
                         "not provided and can't be acquired from the context. "
                     )
+                obj = bpy.context.object
             obj.update_from_editmode()
         else:
             bm.to_mesh(mesh)
