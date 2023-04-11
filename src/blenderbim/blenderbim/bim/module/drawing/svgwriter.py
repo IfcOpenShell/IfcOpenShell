@@ -95,13 +95,14 @@ class SvgWriter:
             if not resource_path:
                 self.resource_paths[resource] = None
                 continue
+            resource_path = tool.Ifc.resolve_uri(resource_path)
             os.makedirs(os.path.dirname(resource_path), exist_ok=True)
             if not os.path.exists(resource_path):
                 resource_basename = os.path.basename(resource_path)
                 ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
                 if os.path.exists(ootb_resource):
                     shutil.copy(ootb_resource, resource_path)
-            self.resource_paths[resource] = tool.Ifc.resolve_uri(resource_path)
+            self.resource_paths[resource] = resource_path
 
     def define_boilerplate(self):
         self.add_stylesheet()
