@@ -72,20 +72,20 @@ class SheetBuilder:
 
     def add_drawing(self, reference, drawing, sheet):
         filename = drawing.Name
-        sheet_path = tool.Drawing.get_document_uri(sheet)
-        sheet_dir = os.path.dirname(sheet_path)
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        layout_dir = os.path.dirname(layout_path)
 
         drawing_path = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_reference(drawing))
         underlay_path = os.path.splitext(drawing_path)[0] + "-underlay.png"
 
-        if not os.path.exists(sheet_path) or not os.path.exists(drawing_path):
+        if not os.path.exists(layout_path) or not os.path.exists(drawing_path):
             raise FileNotFoundError
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
-        sheet_tree = ET.parse(sheet_path)
-        sheet_root = sheet_tree.getroot()
+        layout_tree = ET.parse(layout_path)
+        layout_root = layout_tree.getroot()
 
         view_tree = ET.parse(drawing_path)
         view_root = view_tree.getroot()
@@ -93,7 +93,7 @@ class SheetBuilder:
         # The view is placed into a group with a background image element.
         # Although the foreground SVG already has a background, it is duplicated
         # here to accommodate browsers which do not nest images.
-        view = ET.SubElement(sheet_root, "g")
+        view = ET.SubElement(layout_root, "g")
         view.attrib["data-type"] = "drawing"
         view.attrib["data-id"] = str(reference.id())
         view.attrib["data-drawing"] = drawing.GlobalId
@@ -103,7 +103,7 @@ class SheetBuilder:
         if os.path.isfile(underlay_path):
             background = ET.SubElement(view, "image")
             background.attrib["data-type"] = "background"
-            background.attrib["xlink:href"] = os.path.relpath(underlay_path, sheet_dir)
+            background.attrib["xlink:href"] = os.path.relpath(underlay_path, layout_dir)
             background.attrib["x"] = "30"
             background.attrib["y"] = "30"
             background.attrib["width"] = str(view_width)
@@ -112,66 +112,66 @@ class SheetBuilder:
         if os.path.isfile(drawing_path):
             foreground = ET.SubElement(view, "image")
             foreground.attrib["data-type"] = "foreground"
-            foreground.attrib["xlink:href"] = os.path.relpath(drawing_path, sheet_dir)
+            foreground.attrib["xlink:href"] = os.path.relpath(drawing_path, layout_dir)
             foreground.attrib["x"] = "30"
             foreground.attrib["y"] = "30"
             foreground.attrib["width"] = str(view_width)
             foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(30, view_height + 35, view, sheet_dir)
-        sheet_tree.write(sheet_path)
+        self.add_view_title(30, view_height + 35, view, layout_dir)
+        layout_tree.write(layout_path)
 
     def remove_drawing(self, reference, sheet):
         ET.register_namespace("", "http://www.w3.org/2000/svg")
 
-        sheet_path = tool.Drawing.get_document_uri(sheet)
-        sheet_tree = ET.parse(sheet_path)
-        sheet_root = sheet_tree.getroot()
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        layout_tree = ET.parse(layout_path)
+        layout_root = layout_tree.getroot()
 
-        for g in sheet_root.findall("{http://www.w3.org/2000/svg}g"):
+        for g in layout_root.findall("{http://www.w3.org/2000/svg}g"):
             if g.attrib.get("data-id") == str(reference.id()):
-                sheet_root.remove(g)
+                layout_root.remove(g)
                 break
 
-        sheet_tree.write(sheet_path)
+        layout_tree.write(layout_path)
 
     def add_schedule(self, reference, schedule, sheet):
         view_path = tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(schedule), "svg")
         if not os.path.exists(view_path):
             tool.Drawing.create_svg_schedule(schedule)
         schedule_name = os.path.splitext(os.path.basename(view_path))[0]
-        sheet_path = tool.Drawing.get_document_uri(sheet)
-        sheet_dir = os.path.dirname(sheet_path)
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        layout_dir = os.path.dirname(layout_path)
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
-        sheet_tree = ET.parse(sheet_path)
-        sheet_root = sheet_tree.getroot()
+        layout_tree = ET.parse(layout_path)
+        layout_root = layout_tree.getroot()
 
         view_tree = ET.parse(view_path)
         view_root = view_tree.getroot()
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
 
-        view = ET.SubElement(sheet_root, "g")
+        view = ET.SubElement(layout_root, "g")
         view.attrib["data-type"] = "schedule"
         view.attrib["data-id"] = str(reference.id())
         view.attrib["data-schedule"] = str(schedule.id())
 
         foreground = ET.SubElement(view, "image")
         foreground.attrib["data-type"] = "table"
-        foreground.attrib["xlink:href"] = os.path.relpath(view_path, sheet_dir)
+        foreground.attrib["xlink:href"] = os.path.relpath(view_path, layout_dir)
         foreground.attrib["x"] = "30"
         foreground.attrib["y"] = "30"
         foreground.attrib["width"] = str(view_width)
         foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(30, view_height + 35, view, sheet_dir)
-        sheet_tree.write(sheet_path)
+        self.add_view_title(30, view_height + 35, view, layout_dir)
+        layout_tree.write(layout_path)
 
-    def add_view_title(self, x, y, parent, sheet_dir):
-        title_path = os.path.join(sheet_dir, "assets", "view-title.svg")
+    def add_view_title(self, x, y, parent, layout_dir):
+        title_path = os.path.join(layout_dir, "assets", "view-title.svg")
         os.makedirs(os.path.dirname(title_path), exist_ok=True)
         if not os.path.exists(title_path):
             ootb_title = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "view-title.svg")
@@ -181,7 +181,7 @@ class SheetBuilder:
         title_root = title_tree.getroot()
         title = ET.SubElement(parent, "image")
         title.attrib["data-type"] = "view-title"
-        title.attrib["xlink:href"] = os.path.relpath(title_path, sheet_dir)
+        title.attrib["xlink:href"] = os.path.relpath(title_path, layout_dir)
         title.attrib["x"] = str(x)
         title.attrib["y"] = str(y)
         title.attrib["width"] = str(self.convert_to_mm(title_root.attrib.get("width")))
@@ -193,8 +193,8 @@ class SheetBuilder:
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         self.layout_dir = os.path.dirname(layout_path)
 
-        output_filename = tool.Ifc.resolve_uri(tool.Drawing.get_default_sheet_path(sheet[0], sheet.Name))
-        self.sheets_dir = os.path.dirname(output_filename)
+        sheet_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_sheet_path(sheet[0], sheet.Name))
+        self.sheets_dir = os.path.dirname(sheet_path)
 
         os.makedirs(self.sheets_dir, exist_ok=True)
 
@@ -211,10 +211,10 @@ class SheetBuilder:
         self.build_drawings(root, sheet)
         self.build_schedules(root)
 
-        with open(output_filename, "wb") as output:
+        with open(sheet_path, "wb") as output:
             tree.write(output)
 
-        self.references["SHEET"] = output_filename
+        self.references["SHEET"] = sheet_path
 
         return self.references
 
