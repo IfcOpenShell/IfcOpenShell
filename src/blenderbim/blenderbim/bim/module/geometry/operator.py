@@ -825,7 +825,7 @@ class OverrideModeSetObject(bpy.types.Operator):
         for obj in self.edited_objs:
             if self.should_save:
                 bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
-                if tool.Ifc.get_entity(obj).HasOpenings:
+                if getattr(tool.Ifc.get_entity(obj), "HasOpenings", False):
                     self.reload_representation(obj)
             else:
                 self.reload_representation(obj)
