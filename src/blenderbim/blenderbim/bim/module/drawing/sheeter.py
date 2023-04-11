@@ -35,18 +35,22 @@ class SheetBuilder:
         self.scale = "NTS"
 
     def create(self, layout_path, titleblock_name):
-        sheet_dir = os.path.dirname(layout_path)
-
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
         root.attrib["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
         root.attrib["id"] = "root"
         root.attrib["version"] = "1.1"
 
+        sheet_dir = os.path.dirname(layout_path)
         ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
         titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
 
-        view_root = ET.parse(ootb_titleblock_path).getroot()
+        os.makedirs(sheet_dir, exist_ok=True)
+        os.makedirs(os.path.dirname(titleblock_path), exist_ok=True)
+        if not os.path.exists(titleblock_path):
+            shutil.copy(ootb_titleblock_path, titleblock_path)
+
+        view_root = ET.parse(titleblock_path).getroot()
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
         view = ET.SubElement(root, "g")
@@ -61,11 +65,6 @@ class SheetBuilder:
         root.attrib["width"] = "{}mm".format(view_width)
         root.attrib["height"] = "{}mm".format(view_height)
         root.attrib["viewBox"] = "0 0 {} {}".format(view_width, view_height)
-
-        os.makedirs(sheet_dir, exist_ok=True)
-        os.makedirs(os.path.dirname(titleblock_path), exist_ok=True)
-        if not os.path.exists(titleblock_path):
-            shutil.copy(ootb_titleblock_path, titleblock_path)
 
         with open(layout_path, "w") as f:
             f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="    "))
