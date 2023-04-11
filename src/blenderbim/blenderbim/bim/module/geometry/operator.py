@@ -746,6 +746,8 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
     def _execute(self, context):
         objs = context.selected_objects or [context.active_object]
+        active_obj = context.active_object
+
         if context.active_object:
             context.active_object.select_set(True)
         for obj in objs:
@@ -797,6 +799,11 @@ class OverrideModeSetEdit(bpy.types.Operator):
             context.view_layer.objects.active = context.selected_objects[0] if context.selected_objects else None
         if context.active_object:
             bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        else:
+            # restore the selection if nothing worked
+            for obj in objs:
+                obj.select_set(True)
+            context.view_layer.objects.active = active_obj
         return {"FINISHED"}
 
     def invoke(self, context, event):
