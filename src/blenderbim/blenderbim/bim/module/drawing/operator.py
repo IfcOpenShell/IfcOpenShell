@@ -176,7 +176,7 @@ class CreateDrawing(bpy.types.Operator):
 
         for drawing_id in drawings_to_print:
             if self.print_all:
-                bpy.ops.bim.activate_view(drawing=drawing_id)
+                bpy.ops.bim.activate_drawing(drawing=drawing_id)
 
             self.camera = context.scene.camera
             self.camera_element = tool.Ifc.get_entity(self.camera)
@@ -218,7 +218,7 @@ class CreateDrawing(bpy.types.Operator):
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
 
         if self.print_all:
-            bpy.ops.bim.activate_view(drawing=original_drawing_id)
+            bpy.ops.bim.activate_drawing(drawing=original_drawing_id)
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -978,13 +978,47 @@ class OpenDrawing(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ActivateView(bpy.types.Operator):
+class ActivateModel(bpy.types.Operator):
+    bl_idname = "bim.activate_model"
+    bl_label = "Activate Model"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Activates the model view"
+
+    def execute(self, context):
+        CutDecorator.uninstall()
+
+        bpy.ops.object.hide_view_clear()
+
+        subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            model = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if model:
+                current_representation = tool.Geometry.get_active_representation(obj)
+                if current_representation != model:
+                    blenderbim.core.geometry.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=model,
+                        should_reload=False,
+                        is_global=True,
+                        should_sync_changes_first=True,
+                    )
+        return {"FINISHED"}
+
+
+
+class ActivateDrawing(bpy.types.Operator):
     """
     Activates the selected drawing view
     """
 
-    bl_idname = "bim.activate_view"
-    bl_label = "Activate View"
+    bl_idname = "bim.activate_drawing"
+    bl_label = "Activate Drawing"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Activates the selected drawing view"
     drawing: bpy.props.IntProperty()

@@ -20,8 +20,9 @@ import bpy
 from . import ui, prop, operator, handler, gizmos
 
 classes = (
+    operator.ActivateDrawing,
     operator.ActivateDrawingStyle,
-    operator.ActivateView,
+    operator.ActivateModel,
     operator.AddAnnotation,
     operator.AddDrawing,
     operator.AddDrawingStyle,
