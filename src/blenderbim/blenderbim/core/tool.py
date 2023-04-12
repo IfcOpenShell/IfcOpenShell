@@ -225,7 +225,7 @@ class Document:
 
 @interface
 class Drawing:
-    def activate_view(cls, camera): pass
+    def activate_drawing(cls, camera): pass
     def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
     def copy_representation(cls, source, dest): pass
     def create_annotation_object(cls, drawing, object_type): pass

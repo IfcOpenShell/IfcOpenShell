@@ -196,7 +196,8 @@ class BIM_PT_drawings(Panel):
                 op = row.operator("bim.select_all_drawings", icon="SELECT_SUBTRACT", text="")
                 op = row.operator("bim.open_drawing", icon="URL", text="")
                 op.view = active_drawing.name
-                op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
+                row.operator("bim.activate_model", icon="VIEW3D", text="")
+                op = row.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
                 op.drawing = active_drawing.ifc_definition_id
                 row.operator("bim.create_drawing", text="", icon="OUTPUT")
             self.layout.template_list(
