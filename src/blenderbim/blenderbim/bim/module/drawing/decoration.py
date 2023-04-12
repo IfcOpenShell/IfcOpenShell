@@ -30,6 +30,7 @@ from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
+from gpu_extras.batch import batch_for_shader
 from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.module.drawing.shaders import BASE_LIB_GLSL, BASE_DEF_GLSL
 
@@ -242,7 +243,7 @@ class BaseDecorator:
         vertices = [obj.matrix_world @ v.co for v in bm.verts]
         return vertices, indices
 
-    def decorate(self, context, object):
+    def decorate(self, context, obj):
         """perform actual drawing stuff"""
         raise NotImplementedError()
 
@@ -450,7 +451,7 @@ class DimensionDecorator(BaseDecorator):
     layout(lines) in;
     layout(triangle_strip, max_vertices=MAX_POINTS) out;
 
-    void oblique_dimension_head(in vec4 dir, in float size, 
+    void oblique_dimension_head(in vec4 dir, in float size,
         in float angle, out vec4 head[OBLIQUE_HEAD_VERTS]) {
         float c = cos(angle), s = sin(angle);
         vec4 ortho = vec4(-dir.y, dir.x, 0, 0);
@@ -495,22 +496,22 @@ class DimensionDecorator(BaseDecorator):
 
             // stem
             do_edge_verts(p0, p1);
-            EndPrimitive();      
+            EndPrimitive();
 
         } else {
             vec4 head[3];
             arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
             // start edge arrow
-            do_edge_verts( p0, WIN2CLIP( (p0w + head[1]) ) ); 
-            do_edge_verts_win( p0w + head[1], p0w + head[2] ); 
-            do_edge_verts( WIN2CLIP( p0w + head[2] ), p0 ); 
+            do_edge_verts( p0, WIN2CLIP( (p0w + head[1]) ) );
+            do_edge_verts_win( p0w + head[1], p0w + head[2] );
+            do_edge_verts( WIN2CLIP( p0w + head[2] ), p0 );
             EndPrimitive();
 
             // end edge arrow
-            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) ); 
-            do_edge_verts_win( p1w - head[1], p1w - head[2] ); 
-            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 ); 
+            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) );
+            do_edge_verts_win( p1w - head[1], p1w - head[2] );
+            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 );
             EndPrimitive();
 
             // stem, with gaps for arrows
@@ -569,7 +570,7 @@ class AngleDecorator(BaseDecorator):
     layout(triangle_strip, max_vertices=MAX_POINTS) out;
     in uint type[];
     in vec4 v_next_vert[];
-    
+
     // per edge shader
     void main() {
         // default setup for macro to work
@@ -981,7 +982,7 @@ class StairDecorator(BaseDecorator):
         if (t0 == 1u) {
             vec4 head[CIRCLE_SEGS];
             circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
-        
+
             for(int i=0; i<CIRCLE_SEGS-1; i++) {
                 do_edge_verts_win(p0w + head[i], p0w + head[i+1]);
             }
@@ -1048,7 +1049,7 @@ class HiddenDecorator(BaseDecorator):
 
         dist = 0;
         do_vertex_win( p0w + gap, dir.xy);
-        
+
         dist = length(edge);
         do_vertex_win( p1w - gap, dir.xy);
         EndPrimitive();
@@ -1093,7 +1094,7 @@ class MiscDecorator(BaseDecorator):
     layout(triangle_strip, max_vertices=MAX_POINTS) out;
 
     out float dist; // distance from starging point along segment
-    
+
     void main() {
         DEFAULT_SETUP();
 
@@ -1106,10 +1107,10 @@ class MiscDecorator(BaseDecorator):
         vec4 p;
 
         // NB: something should be used to affect position, otherwise compiler eliminates winsize
-        
+
         dist = 0;
         do_vertex_win( p0w + gap, dir.xy);
-        
+
         dist = length(edge);
         do_vertex_win( p1w - gap, dir.xy);
         EndPrimitive();
@@ -1298,7 +1299,7 @@ class SectionLevelDecorator(LevelDecorator):
         // stem
         dist = 0;
         do_vertex_win( p0w + gap, dir.xy);
-        
+
         dist = length(edge);
         do_vertex_win( p1w - gap, dir.xy);
         EndPrimitive();
@@ -1436,14 +1437,14 @@ class BattingDecorator(BaseDecorator):
 
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1), pmw = (p0w + p1w) * .5;
         vec4 edge = p1w - p0w, dir = normalize(edge);
-                
+
         float segment_width = batting_thickness_winspace / 2.5;
         vec2 batting_dimensions = vec2(segment_width, batting_thickness_winspace);
         // need to multiply by viewportDrawingScale
         // so the drawing will stay consistent on zoom in / zoom out
         // but since we use winspace batting dimensions we skip it
         mat2 m_edge_space = mat2( dir.xy, dir.yx*vec2(1,-1) );
-        
+
         // simplified rectangle + cross version to indicate batting
         vec4 off_y = vec4(m_edge_space * ( vec2(0, 0.5) * batting_dimensions ), 0, 0);
         do_edge_verts_win( p0w + off_y, p0w - off_y );
@@ -1467,7 +1468,7 @@ class BattingDecorator(BaseDecorator):
         // pattern_segment_data[2] = vec2(0, 0.2);
         // pattern_segment_data[3] = vec2(0.5, 0);
         // pattern_segment_data[4] = vec2(1.0, 0.2);
-        // pattern_segment_data[5] = vec2(0.5, 0.8);                
+        // pattern_segment_data[5] = vec2(0.5, 0.8);
         // pattern_segment_data[6] = vec2(1.0, 1.0);
         // zigzag pattern
         // pattern_segment_data[0] = vec2(0, 1);
@@ -1830,7 +1831,7 @@ class TextDecorator(BaseDecorator):
         vec4 p0 = gl_in[0].gl_Position;
         vec4 p0w = CLIP2WIN(p0);
         vec4 p;
-        
+
         vec4 head[CIRCLE_SEGS_ASTERISK];
         circle_head_asterisk(viewportDrawingScale * CIRCLE_SIZE, head);
 
@@ -1885,6 +1886,147 @@ class TextDecorator(BaseDecorator):
                     box_alignment=box_alignment,
                 )
                 line_i += 1
+
+
+class CutDecorator:
+    installed = None
+    cache = {}
+
+    @classmethod
+    def install(cls, context):
+        if cls.installed:
+            cls.uninstall()
+        handler = cls()
+        cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW")
+
+    @classmethod
+    def uninstall(cls):
+        try:
+            SpaceView3D.draw_handler_remove(cls.installed, "WINDOW")
+        except ValueError:
+            pass
+        cls.installed = None
+
+    def __call__(self, context):
+        for obj in self.get_objects(None):
+            self.decorate(context, obj)
+
+    def get_objects(self, collection):
+        return [o for o in bpy.context.visible_objects if o.type == "MESH"]
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    def decorate(self, context, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+
+        # Currently selected objects shall not be cached as they may be being moved / edited.
+        # If the camera is selected, we also disable the cache as the user may be moving the camera.
+        if obj.select_get() or context.scene.camera.select_get():
+            all_vertices, all_edges = None, None
+        else:
+            all_vertices, all_edges = DecoratorData.cut_cache.get(element.id(), (None, None))
+
+        if all_vertices is False:
+            return
+
+        if not self.is_intersecting_camera(obj, context.scene.camera):
+            DecoratorData.cut_cache[element.id()] = (False, False)
+            return
+
+        if all_vertices is None:
+            all_vertices, all_edges = self.bisect_mesh(obj, context.scene.camera)
+            DecoratorData.cut_cache[element.id()] = (all_vertices, all_edges)
+
+        gpu.state.point_size_set(2)
+        gpu.state.blend_set("ALPHA")
+
+        ### Actually drawing
+        # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()
+        # POLYLINE_UNIFORM_COLOR specific uniforms
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.line_shader.uniform_float("lineWidth", 3.0)
+
+        # general shader
+        self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        self.shader.bind()
+
+        green = (0.545, 0.863, 0, 1)
+        white = (0, 0, 0, 1)
+        color = green if obj.select_get() else white
+        self.draw_batch("LINES", all_vertices, color, all_edges)
+        self.draw_batch("POINTS", all_vertices, color)
+
+    def is_intersecting_camera(self, obj, camera):
+        # Based on separating axis theorem
+        plane_co = camera.matrix_world.translation
+        plane_no = camera.matrix_world.col[2].xyz
+
+        # Broadphase check using the bounding box
+        bounding_box_world_coords = [obj.matrix_world @ Vector(coord) for coord in obj.bound_box]
+        bounding_box_signed_distances = [plane_no.dot(v - plane_co) for v in bounding_box_world_coords]
+
+        pos_exists_bb = any(d > 0 for d in bounding_box_signed_distances)
+        neg_exists_bb = any(d < 0 for d in bounding_box_signed_distances)
+
+        if not (pos_exists_bb and neg_exists_bb):
+            return False
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+
+        # Transform the vertices to world space
+        mesh_mat = obj.matrix_world
+        bm.transform(mesh_mat)
+
+        # Calculate the signed distances of all vertices from the plane
+        signed_distances = [plane_no.dot(v.co - plane_co) for v in bm.verts]
+
+        bm.free()
+
+        # Check for intersection
+        pos_exists = any(d > 0 for d in signed_distances)
+        neg_exists = any(d < 0 for d in signed_distances)
+
+        return pos_exists and neg_exists
+
+    def bisect_mesh(self, obj, camera):
+        camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
+        plane_co = camera_matrix.translation
+        plane_no = camera_matrix.col[2].xyz
+
+        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+
+        # Run the bisect operation
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        results = bmesh.ops.bisect_plane(bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no)
+
+        vert_map = {}
+        verts = []
+        edges = []
+        i = 0
+        for geom in results["geom_cut"]:
+            if isinstance(geom, bmesh.types.BMVert):
+                verts.append(tuple((obj.matrix_world @ geom.co) + global_offset))
+                vert_map[geom.index] = i
+                i += 1
+            else:
+                # It seems as though edges always appear after verts
+                edges.append([vert_map[v.index] for v in geom.verts])
+
+        bm.free()
+
+        return verts, edges
 
 
 class DecorationsHandler:

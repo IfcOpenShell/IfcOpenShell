@@ -39,6 +39,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
+from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData
 import blenderbim.bim.export_ifc
 from lxml import etree
@@ -989,11 +990,13 @@ class ActivateView(bpy.types.Operator):
     drawing: bpy.props.IntProperty()
 
     def execute(self, context):
-        core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
+        drawing = tool.Ifc.get().by_id(self.drawing)
+        core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=drawing)
         bpy.context.scene.DocProperties.active_drawing_id = self.drawing
         if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
             bpy.ops.bim.activate_drawing_style()
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
+        CutDecorator.install(context)
         return {"FINISHED"}
 
 
