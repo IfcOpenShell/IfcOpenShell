@@ -145,6 +145,15 @@ def update_preview_multiple(self, context):
             update_relating_type(self, context)
 
 
+def update_extrusion_depth(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    if AuthoringData.data["active_material_usage"] == "LAYER2":
+        bpy.ops.bim.change_extrusion_depth(depth=self.extrusion_depth)
+    elif AuthoringData.data["active_material_usage"] == "PROFILE":
+        bpy.ops.bim.change_profile_depth(depth=self.extrusion_depth)
+
+
 class ConstrTypeInfo(PropertyGroup):
     name: bpy.props.StringProperty(name="Construction type ID")
     icon_id: bpy.props.IntProperty(name="Icon ID")
@@ -191,7 +200,11 @@ class BIMModelProperties(PropertyGroup):
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type}
     constr_classes: bpy.props.CollectionProperty(type=ConstrClassInfo)
     constr_browser_state: bpy.props.PointerProperty(type=ConstrBrowserState)
-    extrusion_depth: bpy.props.FloatProperty(default=42.0)
+    extrusion_depth: bpy.props.FloatProperty(
+        min=0,
+        default=42.0,
+        update=update_extrusion_depth,
+    )
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
@@ -218,14 +231,22 @@ class BIMModelProperties(PropertyGroup):
         name="Cardinal Point",
         default="5",
     )
-    length: bpy.props.FloatProperty(default=42.0)
+    length: bpy.props.FloatProperty(
+        soft_min=0,
+        default=42.0,
+        update=lambda self, context: bpy.ops.bim.change_layer_length(length=self.length),
+    )
     openings: bpy.props.CollectionProperty(type=ObjProperty)
     x: bpy.props.FloatProperty(name="X", default=0.5)
     y: bpy.props.FloatProperty(name="Y", default=0.5)
     z: bpy.props.FloatProperty(name="Z", default=0.5)
     rl1: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like walls, doors, flooring, skirting, etc
     rl2: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like windows, other hosted furniture
-    x_angle: bpy.props.FloatProperty(name="X Angle", default=0)
+    x_angle: bpy.props.FloatProperty(
+        name="X Angle",
+        default=0,
+        update=lambda self, context: bpy.ops.bim.change_extrusion_x_angle(x_angle=self.x_angle),
+    )
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_template: bpy.props.EnumProperty(
         items=(
