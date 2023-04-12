@@ -1351,18 +1351,46 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
         tool.Spatial.set_active_object(camera)
 
-        # sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
-        ifc_file = tool.Ifc.get()
+        # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
-        all_drawing_elements = set(ifc_file.by_type("IfcElement"))
-        annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
-        all_drawing_elements.update(annotations)
-        filtered_drawing_elements = cls.get_drawing_elements(drawing)
+        all_elements = set(tool.Ifc.get().by_type("IfcElement")) - set(tool.Ifc.get().by_type("IfcOpeningElement"))
+        filtered_elements = cls.get_drawing_elements(drawing)
+        hidden_elements = list(all_elements - filtered_elements)
+        hidden_objs = [tool.Ifc.get_object(e) for e in hidden_elements]
 
-        for element in all_drawing_elements:
-            if element.is_a() in ("IfcOpeningElement",):
-                continue
+        # Running operators is much more efficient in this scenario than looping through each element
+        bpy.ops.object.hide_view_clear()
 
+        for hidden_obj in hidden_objs:
+            hidden_obj.hide_set(True)
+            hidden_obj.hide_render = True
+
+        subcontexts = []
+        target_view = cls.get_drawing_target_view(drawing)
+        context_filters = [("Model", "Body", target_view), ("Model", "Body", "MODEL_VIEW")]
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+            plan_contexts = [("Plan", "Body", target_view), ("Plan", "Body", "MODEL_VIEW")]
+            plan_contexts.extend(context_filters)
+            context_filters = plan_contexts
+        for context_filter in context_filters:
+            subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), *context_filter)
+            if subcontext:
+                subcontexts.append(context_filter)
+
+        for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
-            obj.hide_set(element not in filtered_drawing_elements)
-            obj.hide_render = element not in filtered_drawing_elements
+            for subcontext in subcontexts:
+                priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
+                if priority_representation:
+                    current_representation = tool.Geometry.get_active_representation(obj)
+                    if current_representation != priority_representation:
+                        blenderbim.core.geometry.switch_representation(
+                            tool.Ifc,
+                            tool.Geometry,
+                            obj=obj,
+                            representation=priority_representation,
+                            should_reload=False,
+                            is_global=True,
+                            should_sync_changes_first=True,
+                        )
+                    break
