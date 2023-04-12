@@ -336,15 +336,13 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
             for building_element in decomposed_building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
                 if building_obj and building_obj.data:
-                    body = ifcopenshell.util.representation.get_representation(
-                        building_element, "Model", "Body", "MODEL_VIEW"
-                    )
-                    if body:
+                    representation = tool.Geometry.get_active_representation(building_obj)
+                    if representation:
                         blenderbim.core.geometry.switch_representation(
                             tool.Ifc,
                             tool.Geometry,
                             obj=building_obj,
-                            representation=body,
+                            representation=representation,
                             should_reload=True,
                             is_global=True,
                             should_sync_changes_first=False,
