@@ -1370,6 +1370,7 @@ class EditTextPopup(bpy.types.Operator):
     def draw(self, context):
         # shares most of the code with BIM_PT_text.draw()
         # need to keep them in sync or move to some common function
+        # NOTE: that `popup_active_attribute` is used here when it's not used in `BIM_PT_text.draw()`
 
         props = context.active_object.BIMTextProperties
 
@@ -1389,7 +1390,7 @@ class EditTextPopup(bpy.types.Operator):
 
             # skip BoxAlignment since we're going to format it ourselves
             attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
-            blenderbim.bim.helper.draw_attributes(attributes, box)
+            blenderbim.bim.helper.draw_attributes(attributes, box, popup_active_attribute=attributes[0])
 
             row = box.row(align=True)
             cols = [row.column(align=True) for i in range(3)]
