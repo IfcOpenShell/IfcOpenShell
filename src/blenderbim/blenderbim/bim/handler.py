@@ -236,6 +236,11 @@ def setDefaultProperties(scene):
     # TODO: Move to drawing module
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style.name = "Blender Default"
+        drawing_style.render_type = "DEFAULT"
+        bpy.ops.bim.save_drawing_style(index="0")
+
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
@@ -297,8 +302,4 @@ def setDefaultProperties(scene):
                 RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
             }
         )
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Blender Default"
-        drawing_style.render_type = "DEFAULT"
-        bpy.ops.bim.save_drawing_style(index="2")
         AuthoringData.type_thumbnails = {}

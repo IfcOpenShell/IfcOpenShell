@@ -991,7 +991,8 @@ class ActivateView(bpy.types.Operator):
     def execute(self, context):
         core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         bpy.context.scene.DocProperties.active_drawing_id = self.drawing
-        bpy.ops.bim.activate_drawing_style()
+        if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
+            bpy.ops.bim.activate_drawing_style()
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         return {"FINISHED"}
 
