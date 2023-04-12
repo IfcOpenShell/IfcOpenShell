@@ -158,6 +158,14 @@ class BIM_PT_drawings(Panel):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
+        if not DrawingsData.data["has_saved_ifc"]:
+            row = self.layout.row()
+            row.label(text="Project Not Yet Saved", icon="ERROR")
+            row = self.layout.row()
+            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+            op.should_save_as = False
+            return
+
         self.props = context.scene.DocProperties
 
         if not self.props.is_editing_drawings:
@@ -221,6 +229,14 @@ class BIM_PT_schedules(Panel):
         if not SchedulesData.is_loaded:
             SchedulesData.load()
 
+        if not SchedulesData.data["has_saved_ifc"]:
+            row = self.layout.row()
+            row.label(text="Project Not Yet Saved", icon="ERROR")
+            row = self.layout.row()
+            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+            op.should_save_as = False
+            return
+
         self.props = context.scene.DocProperties
 
         if not self.props.is_editing_schedules:
@@ -263,6 +279,14 @@ class BIM_PT_sheets(Panel):
     def draw(self, context):
         if not SheetsData.is_loaded:
             SheetsData.load()
+
+        if not SheetsData.data["has_saved_ifc"]:
+            row = self.layout.row()
+            row.label(text="Project Not Yet Saved", icon="ERROR")
+            row = self.layout.row()
+            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+            op.should_save_as = False
+            return
 
         self.props = context.scene.DocProperties
 
