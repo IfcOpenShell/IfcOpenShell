@@ -23,8 +23,7 @@ from bpy.app.handlers import persistent
 
 @persistent
 def toggleDecorationsOnLoad(*args):
-    toggle = bpy.context.scene.DocProperties.should_draw_decorations
-    if toggle:
+    if bpy.context.scene.DocProperties.should_draw_decorations:
         decoration.DecorationsHandler.install(bpy.context)
     else:
         decoration.DecorationsHandler.uninstall()
