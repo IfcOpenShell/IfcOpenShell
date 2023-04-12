@@ -550,10 +550,10 @@ endif
 	# Required by Spreadsheet
 	# TODO: could pandas be added to create a dataframe for the spreadsheet?
 	mkdir dist/working
-	#cd dist/working && wget https://files.pythonhosted.org/packages/9f/12/0b6bdd627b99cb10816956c1047b0733ef33b61a84e3420faf4d3202df06/pandas-2.0.0.tar.gz
-	#cd dist/working && tar -xzvf pandas*
-	#cd dist/working/pandas-2.0.0/ && cp -r pandas ../../blenderbim/libs/site/packages/
-	#rm -rf dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/9f/12/0b6bdd627b99cb10816956c1047b0733ef33b61a84e3420faf4d3202df06/pandas-2.0.0.tar.gz
+	cd dist/working && tar -xzvf pandas*
+	cd dist/working/pandas-2.0.0/ && cp -r pandas ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
 
 	# Required by IFCCOBie for XLSX support
 	# TODO: see if we can replace this with openpyxl which does both read/write
