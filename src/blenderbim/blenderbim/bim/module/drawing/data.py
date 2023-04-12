@@ -58,8 +58,16 @@ class SheetsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_sheets": cls.total_sheets(), "titleblocks": cls.titleblocks()}
+        cls.data = {
+            "has_saved_ifc": cls.has_saved_ifc(),
+            "total_sheets": cls.total_sheets(),
+            "titleblocks": cls.titleblocks(),
+        }
         cls.is_loaded = True
+
+    @classmethod
+    def has_saved_ifc(cls):
+        return os.path.isfile(tool.Ifc.get_path())
 
     @classmethod
     def total_sheets(cls):
@@ -88,8 +96,16 @@ class DrawingsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_drawings": cls.total_drawings(), "location_hint": cls.location_hint()}
+        cls.data = {
+            "has_saved_ifc": cls.has_saved_ifc(),
+            "total_drawings": cls.total_drawings(),
+            "location_hint": cls.location_hint(),
+        }
         cls.is_loaded = True
+
+    @classmethod
+    def has_saved_ifc(cls):
+        return os.path.isfile(tool.Ifc.get_path())
 
     @classmethod
     def total_drawings(cls):
@@ -112,8 +128,12 @@ class SchedulesData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_schedules": cls.total_schedules()}
+        cls.data = {"has_saved_ifc": cls.has_saved_ifc(), "total_schedules": cls.total_schedules()}
         cls.is_loaded = True
+
+    @classmethod
+    def has_saved_ifc(cls):
+        return os.path.isfile(tool.Ifc.get_path())
 
     @classmethod
     def total_schedules(cls):
