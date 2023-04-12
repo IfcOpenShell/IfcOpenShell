@@ -386,4 +386,4 @@ def activate_drawing_view(ifc, drawing_tool, drawing):
     if not camera:
         camera = drawing_tool.import_drawing(drawing)
         drawing_tool.import_annotations_in_group(drawing_tool.get_drawing_group(drawing))
-    drawing_tool.activate_view(camera)
+    drawing_tool.activate_drawing(camera)
