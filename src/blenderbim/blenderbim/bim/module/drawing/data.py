@@ -30,6 +30,7 @@ def refresh():
     SchedulesData.is_loaded = False
     DrawingsData.is_loaded = False
     DecoratorData.data = {}
+    DecoratorData.cut_cache = {}
 
 
 class ProductAssignmentsData:
@@ -152,6 +153,7 @@ FONT_SIZES = {
 class DecoratorData:
     # stores 1 type of data per object
     data = {}
+    cut_cache = {}
 
     # used by Ifc Annotations with ObjectType = "BATTING"
     @classmethod

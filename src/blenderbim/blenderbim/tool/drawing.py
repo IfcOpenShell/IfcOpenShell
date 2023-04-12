@@ -117,6 +117,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
         camera.data.type = "ORTHO"
         camera.data.ortho_scale = 50  # The default of 6m is too small
+        camera.data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
         camera.data.clip_end = 10  # A slightly more reasonable default
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
             camera.data.BIMCameraProperties.diagram_scale = '1/8"=1\'-0"|1/96'
@@ -495,6 +496,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         camera = bpy.data.cameras.new(tool.Loader.get_mesh_name(geometry))
         camera.type = "ORTHO"
         camera.ortho_scale = width if width > height else height
+        camera.clip_start = 0.002
         camera.clip_end = depth
 
         if width > height:
