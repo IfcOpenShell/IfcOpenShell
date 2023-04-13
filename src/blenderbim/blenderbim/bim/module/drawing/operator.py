@@ -326,10 +326,9 @@ class CreateDrawing(bpy.types.Operator):
             # All very hackish whilst prototyping
             exporter = blenderbim.bim.export_ifc.IfcExporter(None)
             exporter.file = tool.Ifc.get()
-            invalidated_guids = exporter.sync_deletions()
             invalidated_elements = exporter.sync_all_objects()
             invalidated_elements += exporter.sync_edited_objects()
-            [invalidated_guids.append(e.GlobalId) for e in invalidated_elements if hasattr(e, "GlobalId")]
+            invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
 
         # If we have already calculated it in the SVG in the past, don't recalculate
         edited_guids = set()
