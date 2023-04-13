@@ -189,7 +189,8 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
             return
 
-        core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        if tool.Ifc.is_moved(obj):
+            core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
             # These objects are parametrically based on an axis and should not be modified as a mesh
