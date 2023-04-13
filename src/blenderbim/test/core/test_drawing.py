@@ -356,7 +356,6 @@ class TestRemoveDrawing:
         drawing.does_file_exist("absolute_uri").should_be_called().will_return(True)
         drawing.delete_file("absolute_uri").should_be_called()
         ifc.run("document.remove_information", information="information").should_be_called()
-        ifc.run("root.remove_product", product="drawing").should_be_called()
         drawing.import_drawings().should_be_called()
         subject.remove_drawing(ifc, drawing, drawing="drawing")
 

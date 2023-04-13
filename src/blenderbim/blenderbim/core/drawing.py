@@ -261,11 +261,6 @@ def remove_drawing(ifc, drawing_tool, drawing=None):
     if collection:
         drawing_tool.delete_collection(collection)
 
-    group = drawing_tool.get_drawing_group(drawing)
-    if group:
-        drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
-        ifc.run("group.remove_group", group=group)
-
     for reference in drawing_tool.get_drawing_references(drawing):
         reference_obj = ifc.get_object(reference)
         if reference_obj:
@@ -277,7 +272,12 @@ def remove_drawing(ifc, drawing_tool, drawing=None):
     if drawing_tool.does_file_exist(uri):
         drawing_tool.delete_file(uri)
     ifc.run("document.remove_information", information=information)
-    ifc.run("root.remove_product", product=drawing)
+
+    group = drawing_tool.get_drawing_group(drawing)
+    if group:
+        drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
+        ifc.run("group.remove_group", group=group)
+
     drawing_tool.import_drawings()
 
 
