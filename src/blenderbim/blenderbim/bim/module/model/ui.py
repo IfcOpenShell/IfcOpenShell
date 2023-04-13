@@ -137,59 +137,6 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.align_wall", icon="ANCHOR_BOTTOM", text="Int.").align_type = "INTERIOR"
 
 
-class HelpConstrTypes(Operator):
-    bl_idname = "bim.help_relating_types"
-    bl_label = "Construction Types Help"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Click to read some contextual help"
-
-    def execute(self, context):
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_popup(self, width=510)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.row().separator(factor=0.5)
-        row = layout.row()
-        row.alignment = "CENTER"
-        row.label(text="BlenderBIM Help", icon="BLENDER")
-        layout.row().separator(factor=0.5)
-
-        row = layout.row().row()
-        row.label(text="Overview:", icon="KEYTYPE_MOVING_HOLD_VEC")
-        self.draw_lines(layout, self.message_summary)
-        layout.row().separator()
-
-        row = layout.row().row()
-        row.label(text="Further support:", icon="KEYTYPE_MOVING_HOLD_VEC")
-        layout.row().separator(factor=0.5)
-        row = layout.row()
-        op = row.operator("bim.open_upstream", text="Homepage", icon="HOME")
-        op.page = "home"
-        op = row.operator("bim.open_upstream", text="Docs", icon="DOCUMENTS")
-        op.page = "docs"
-        op = row.operator("bim.open_upstream", text="Wiki", icon="CURRENT_FILE")
-        op.page = "wiki"
-        op = row.operator("bim.open_upstream", text="Community", icon="COMMUNITY")
-        op.page = "community"
-        layout.row().separator()
-
-    def draw_lines(self, layout, lines):
-        box = layout.box()
-        for line in lines:
-            row = box.row()
-            row.label(text=f"  {line}")
-
-    @property
-    def message_summary(self):
-        return [
-            "The Construction Type Browser allows to preview and add new instances to the model.",
-            "For further support, please click on the Documentation link below.",
-        ]
-
-
 class BIM_PT_array(bpy.types.Panel):
     bl_label = "IFC Array"
     bl_idname = "BIM_PT_array"
