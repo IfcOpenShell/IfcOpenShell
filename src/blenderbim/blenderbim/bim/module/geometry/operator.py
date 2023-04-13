@@ -360,52 +360,7 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                     return r.MappedRepresentation
 
 
-class OverrideDeleteTrait:
-    def delete_ifc_object(self, obj):
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return
-        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
-        if obj.users_collection and obj.users_collection[0].name == obj.name:
-            parent = ifcopenshell.util.element.get_aggregate(element)
-            if not parent:
-                parent = ifcopenshell.util.element.get_container(element)
-            if parent:
-                parent_obj = tool.Ifc.get_object(parent)
-                if parent_obj:
-                    parent_collection = bpy.data.collections.get(parent_obj.name)
-                    for child in obj.users_collection[0].children:
-                        parent_collection.children.link(child)
-            bpy.data.collections.remove(obj.users_collection[0])
-        if getattr(element, "FillsVoids", None):
-            self.remove_filling(element)
-        if element.is_a("IfcOpeningElement"):
-            if element.HasFillings:
-                for rel in element.HasFillings:
-                    self.remove_filling(rel.RelatedBuildingElement)
-            else:
-                if element.VoidsElements:
-                    self.delete_opening_element(element)
-        else:
-            if getattr(element, "HasOpenings", None):
-                for rel in element.HasOpenings:
-                    self.delete_opening_element(rel.RelatedOpeningElement)
-            for port in ifcopenshell.util.system.get_ports(element):
-                self.remove_port(port)
-        ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
-
-    def delete_opening_element(self, element):
-        bpy.ops.bim.remove_opening(opening_id=element.id())
-
-    def remove_filling(self, element):
-        bpy.ops.bim.remove_filling(filling=element.id())
-
-    def remove_port(self, port):
-        blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
-
-
-class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
+class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
     bl_options = {"REGISTER", "UNDO"}
@@ -434,18 +389,13 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
 
     def _execute(self, context):
         for obj in context.selected_objects:
-            self.delete_ifc_object(obj)
-            try:
-                obj.name
-                bpy.data.objects.remove(obj)
-            except:
-                pass
+            tool.Geometry.delete_ifc_object(obj)
         # Required otherwise gizmos are still visible
         context.view_layer.objects.active = None
         return {"FINISHED"}
 
 
-class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
+class OverrideOutlinerDelete(bpy.types.Operator):
     bl_idname = "bim.override_outliner_delete"
     bl_label = "IFC Delete"
     bl_options = {"REGISTER", "UNDO"}
@@ -496,8 +446,7 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
             # This is the only difference
-            self.delete_ifc_object(obj)
-            bpy.data.objects.remove(obj)
+            tool.Geometry.delete_ifc_object(obj)
         return {"FINISHED"}
 
     def get_collection_objects_and_children(self, collection):
