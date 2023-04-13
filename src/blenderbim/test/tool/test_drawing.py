@@ -61,6 +61,8 @@ class TestCreateCamera(NewFile):
 class TestCreateSvgSheet(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        tool.Ifc.set(ifc)
         document = ifc.createIfcDocumentInformation(
             Identification="X",
             Name="FOOBAR",
@@ -87,12 +89,16 @@ class TestDeleteDrawingElements(NewFile):
         collection = bpy.data.collections.new("Collection")
         bpy.context.scene.collection.children.link(collection)
         collection.objects.link(obj)
-        element = ifc.createIfcAnnotation()
+        element = ifc.createIfcAnnotation(GlobalId=ifcopenshell.guid.new())
         tool.Ifc.link(element, obj)
 
         element_id = element.id()
         subject.delete_drawing_elements([element])
-        assert element_id in IfcStore.deleted_ids
+        try:
+            ifc.by_id(element_id)
+            assert False
+        except:
+            pass
         assert not bpy.data.objects.get("Object")
 
 

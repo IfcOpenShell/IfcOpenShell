@@ -149,7 +149,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def delete_drawing_elements(cls, elements):
         for element in elements:
-            tool.Ifc.delete(element)
+            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
             obj = tool.Ifc.get_object(element)
             if obj:
                 obj_data = obj.data
