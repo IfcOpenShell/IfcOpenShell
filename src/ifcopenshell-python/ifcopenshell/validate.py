@@ -154,7 +154,13 @@ def get_select_members(schema, ty):
             for st in ty.subtypes():
                 yield from inner(st)
         elif isinstance(ty, type_declaration):
+            # @todo shouldn't we list subtypes (e.g IfcPositiveLengthMeasure -> IfcLengthMeasure) here as well?
             yield ty.name()
+        elif isinstance(ty, enumeration_type):
+            yield ty.name()
+        else:
+            # @todo raise exception?
+            pass
 
     v = select_members_cache[cache_key] = set(inner(ty))
     return v
@@ -182,20 +188,22 @@ def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
     elif isinstance(attr_type, (entity_type, type_declaration)):
         invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
     elif isinstance(attr_type, select_type):
-        val_to_use = val
-        if isinstance(schema.declaration_by_name(val.is_a()), enumeration_type):
-            if isinstance(val, ifcopenshell.entity_instance):
-                val_to_use = val.wrappedValue
-            else:
-                invalid = True
-        if not invalid:
+        if not isinstance(val, ifcopenshell.entity_instance):
+            invalid = True
+        else:
+            value_type = schema.declaration_by_name(val.is_a())
+            if not isinstance(value_type, entity_type):
+                # we need to check two things: is (enumeration) literal/value valid
+                # for this type and is enumeration/value type valid for this select.
+                assert_valid(value_type, val.wrappedValue, schema, no_throw=no_throw)
+
             # Previously we relied on `is_a(x) for x in attr_type.select_items()`
             # this was linear in the number of select leafs, which is very large
             # for e.g IfcValue, which is an often used select. Therefore, we now
             # calculate (and cache) the select leafs (including entity subtypes)
             # for the select definition and simply check for membership in this
             # set.
-            invalid = val_to_use.is_a() not in get_select_members(schema, attr_type)
+            invalid = val.is_a() not in get_select_members(schema, attr_type)
     elif isinstance(attr_type, enumeration_type):
         invalid = val not in attr_type.enumeration_items()
     elif isinstance(attr_type, aggregation_type):
