@@ -45,7 +45,6 @@ class IfcExporter:
         self.set_header()
         IfcStore.update_cache()
         if bpy.context.scene.BIMProjectProperties.is_authoring:
-            self.sync_deletions()
             self.sync_all_objects()
             self.sync_edited_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
@@ -86,19 +85,6 @@ class IfcExporter:
         self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
             self.get_application_name(), self.get_application_version()
         )
-
-    def sync_deletions(self):
-        results = []
-        for ifc_definition_id in IfcStore.deleted_ids:
-            try:
-                product = self.file.by_id(ifc_definition_id)
-                if hasattr(product, "GlobalId"):
-                    results.append(product.GlobalId)
-            except:
-                continue
-            ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
-        IfcStore.deleted_ids.clear()
-        return results
 
     def sync_all_objects(self):
         results = []
