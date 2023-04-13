@@ -681,32 +681,33 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
         # Only certain classes should have a footprint
         if element.is_a() not in ("IfcSlab", "IfcRamp"):
-            return {"FINISHED"}
+            return
 
         footprint_context = ifcopenshell.util.representation.get_context(
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
         )
-        if footprint_context:
-            curves = [profile.OuterCurve]
-            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
-                curves.extend(profile.InnerCurves)
-            new_footprint = ifcopenshell.api.run(
-                "geometry.add_footprint_representation", tool.Ifc.get(), context=footprint_context, curves=curves
+        if not footprint_context:
+            return
+
+        curves = [profile.OuterCurve]
+        if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+            curves.extend(profile.InnerCurves)
+        new_footprint = ifcopenshell.api.run(
+            "geometry.add_footprint_representation", tool.Ifc.get(), context=footprint_context, curves=curves
+        )
+        old_footprint = ifcopenshell.util.representation.get_representation(
+            element, "Plan", "FootPrint", "SKETCH_VIEW"
+        )
+        if old_footprint:
+            for inverse in tool.Ifc.get().get_inverse(old_footprint):
+                ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
+            blenderbim.core.geometry.remove_representation(
+                tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
             )
-            old_footprint = ifcopenshell.util.representation.get_representation(
-                element, "Plan", "FootPrint", "SKETCH_VIEW"
+        else:
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_footprint
             )
-            if old_footprint:
-                for inverse in tool.Ifc.get().get_inverse(old_footprint):
-                    ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
-                blenderbim.core.geometry.remove_representation(
-                    tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
-                )
-            else:
-                ifcopenshell.api.run(
-                    "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_footprint
-                )
-        return {"FINISHED"}
 
 
 class ResetVertex(bpy.types.Operator):
