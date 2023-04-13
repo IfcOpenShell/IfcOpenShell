@@ -106,6 +106,7 @@ def switch_representation(
         data = existing_data
 
     geometry.change_object_data(obj, data, is_global=is_global)
+    geometry.record_object_materials(obj)
 
     if should_reload and existing_data:
         geometry.delete_data(existing_data)
@@ -123,20 +124,20 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
     otherwise it will replace object with empty."""
 
     element = ifc.get_entity(obj)
-    type = geometry.get_element_type(element)
+    element_type = geometry.get_element_type(element)
     data = None
-    if type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
+    if element_type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
         if data and geometry.has_data_users(data):
-            for element in geometry.get_elements_of_type(type):
+            for element in geometry.get_elements_of_type(element_type):
                 obj = ifc.get_object(element)
                 if obj:
                     obj = geometry.replace_object_with_empty(obj)
-            obj = ifc.get_object(type)
+            obj = ifc.get_object(element_type)
             if obj:
                 obj = geometry.replace_object_with_empty(obj)
-        ifc.run("geometry.unassign_representation", product=type, representation=representation)
+        ifc.run("geometry.unassign_representation", product=element_type, representation=representation)
         ifc.run("geometry.remove_representation", representation=representation)
     else:
         data = geometry.get_representation_data(representation)
