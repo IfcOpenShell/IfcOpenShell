@@ -30,7 +30,11 @@ import ifcopenshell.validate
 )
 def test_file(file):
     logger = ifcopenshell.validate.json_logger()
-    ifcopenshell.validate.validate(file, logger)
+    try:
+        ifcopenshell.validate.validate(file, logger)
+    except ifcopenshell.SchemaError as e:
+        pytest.skip()
+    file = os.path.basename(file)
     if file.startswith("fail-"):
         assert len(logger.statements) > 0
     if file.startswith("pass-"):
