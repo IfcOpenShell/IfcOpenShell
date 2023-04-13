@@ -52,10 +52,6 @@ class Ifc(blenderbim.core.tool.Ifc):
         return checksum != repr(np.array(obj.diffuse_color).tobytes())
 
     @classmethod
-    def is_deleted(cls, element):
-        return element.id() in IfcStore.deleted_ids
-
-    @classmethod
     def is_edited(cls, obj):
         return list(obj.scale) != [1.0, 1.0, 1.0] or obj in IfcStore.edited_objs
 
@@ -99,10 +95,6 @@ class Ifc(blenderbim.core.tool.Ifc):
     @classmethod
     def edit(cls, obj):
         IfcStore.edited_objs.add(obj)
-
-    @classmethod
-    def delete(cls, element):
-        IfcStore.delete_element(element)
 
     @classmethod
     def resolve_uri(cls, uri):

@@ -250,6 +250,20 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
 
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
+
+        # TODO: In simple scenarios, a type has a ShapeRepresentation of ID
+        # 123. This is then mapped through mapped representations by
+        # occurrences, with no cartesian transformation. In this case, the mesh
+        # data is 100% shared and therefore all have the same mesh name
+        # referencing ID 123. (i.e. the local origins are shared). However, in
+        # complex scenarios, occurrences may have their own cartesian
+        # transformation (via MappingTarget). This will mean that occurrences
+        # will not share the same mesh data and will instead reference a
+        # different ShapeRepresentation ID. In this scenario, we have to
+        # propagate the obj.data back to the type itself and all sibling
+        # occurrences and accommodate their individual cartesian
+        # transformations.
+
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
         if obj.data.BIMMeshProperties.ifc_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
@@ -352,7 +366,6 @@ class OverrideDeleteTrait:
             return
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
-        IfcStore.delete_element(element)
         if obj.users_collection and obj.users_collection[0].name == obj.name:
             parent = ifcopenshell.util.element.get_aggregate(element)
             if not parent:
@@ -379,6 +392,7 @@ class OverrideDeleteTrait:
                     self.delete_opening_element(rel.RelatedOpeningElement)
             for port in ifcopenshell.util.system.get_ports(element):
                 self.remove_port(port)
+        ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
 
     def delete_opening_element(self, element):
         bpy.ops.bim.remove_opening(opening_id=element.id())
@@ -661,7 +675,7 @@ class OverrideJoin(bpy.types.Operator, Operator):
                     continue
                 element = tool.Ifc.get_entity(obj)
                 if element:
-                    tool.Ifc.delete(element)
+                    ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
             bpy.ops.object.join()
             bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
         elif representation.RepresentationType == "SweptSolid":
@@ -699,7 +713,7 @@ class OverrideJoin(bpy.types.Operator, Operator):
                         tool.Ifc.get().createIfcDirection([float(n) for n in position[:, 0][:3]]),
                     )
                     items.append(copied_item)
-                tool.Ifc.delete(element)
+                ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
             representation.Items = items
             bpy.ops.object.join()
             core.switch_representation(
@@ -719,7 +733,7 @@ class OverrideJoin(bpy.types.Operator, Operator):
                 continue
             element = tool.Ifc.get_entity(obj)
             if element:
-                tool.Ifc.delete(element)
+                ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
         bpy.ops.object.join()
 
 

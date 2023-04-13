@@ -36,7 +36,6 @@ class IfcStore:
     cache_path = None
     id_map = {}
     guid_map = {}
-    deleted_ids = set()
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
@@ -63,7 +62,6 @@ class IfcStore:
         IfcStore.cache_path = None
         IfcStore.id_map = {}
         IfcStore.guid_map = {}
-        IfcStore.deleted_ids = set()
         IfcStore.edited_objs = set()
         IfcStore.pset_template_path = ""
         IfcStore.pset_template_file = None
@@ -277,23 +275,6 @@ class IfcStore:
                 return
             data = {"id": element.id(), "obj": obj.name}
             IfcStore.commit_link_element(data)
-
-    @staticmethod
-    def delete_element(element):
-        IfcStore.deleted_ids.add(element.id())
-        if IfcStore.history:
-            data = {"id": element.id()}
-            IfcStore.history[-1]["operations"].append(
-                {"rollback": IfcStore.rollback_delete_element, "commit": IfcStore.commit_delete_element, "data": data}
-            )
-
-    @staticmethod
-    def rollback_delete_element(data):
-        IfcStore.deleted_ids.remove(data["id"])
-
-    @staticmethod
-    def commit_delete_element(data):
-        IfcStore.deleted_ids.add(data["id"])
 
     @staticmethod
     def link_element(element, obj):
