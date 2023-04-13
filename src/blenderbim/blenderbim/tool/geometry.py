@@ -65,6 +65,46 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.data.meshes.remove(data)
 
     @classmethod
+    def delete_ifc_object(cls, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+        if obj.users_collection and obj.users_collection[0].name == obj.name:
+            parent = ifcopenshell.util.element.get_aggregate(element)
+            if not parent:
+                parent = ifcopenshell.util.element.get_container(element)
+            if parent:
+                parent_obj = tool.Ifc.get_object(parent)
+                if parent_obj:
+                    parent_collection = bpy.data.collections.get(parent_obj.name)
+                    for child in obj.users_collection[0].children:
+                        parent_collection.children.link(child)
+            bpy.data.collections.remove(obj.users_collection[0])
+        if getattr(element, "FillsVoids", None):
+            bpy.ops.bim.remove_filling(filling=element.id())
+        if element.is_a("IfcOpeningElement"):
+            if element.HasFillings:
+                for rel in element.HasFillings:
+                    bpy.ops.bim.remove_filling(filling=rel.RelatedBuildingElement.id())
+            else:
+                if element.VoidsElements:
+                    bpy.ops.bim.remove_opening(opening_id=element.id())
+        else:
+            if getattr(element, "HasOpenings", None):
+                for rel in element.HasOpenings:
+                    bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
+            for port in ifcopenshell.util.system.get_ports(element):
+                blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
+        ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+        try:
+            obj.name
+            bpy.data.objects.remove(obj)
+        except:
+            pass
+
+    @classmethod
     def does_representation_id_exist(cls, representation_id):
         try:
             tool.Ifc.get().by_id(representation_id)
