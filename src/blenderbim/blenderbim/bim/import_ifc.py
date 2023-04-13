@@ -60,7 +60,6 @@ class MaterialCreator:
 
     def create(self, element, obj, mesh):
         self.mesh = mesh
-        self.obj = obj
         if (hasattr(element, "Representation") and not element.Representation) or (
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
@@ -140,11 +139,11 @@ class MaterialCreator:
     def assign_material_slots_to_faces(self):
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
             return
-        if len(self.obj.material_slots) == 1:
+        if len(self.mesh.materials) == 1:
             return
         material_to_slot = {}
         for i, material in enumerate(self.mesh["ios_materials"]):
-            slot_index = self.obj.material_slots.find(self.styles[material].name)
+            slot_index = self.mesh.materials.find(self.styles[material].name)
             material_to_slot[i] = slot_index
 
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
