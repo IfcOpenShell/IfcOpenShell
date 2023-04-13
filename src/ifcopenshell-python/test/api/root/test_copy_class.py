@@ -57,6 +57,20 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert pset.HasProperties[0].Name == new_pset.HasProperties[0].Name
         assert pset.HasProperties[0].NominalValue.wrappedValue == new_pset.HasProperties[0].NominalValue.wrappedValue
 
+    def test_copying_type_psets_so_changing_properties_of_the_new_type_does_not_affect_the_old(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"foo": "bar"})
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
+        pset = element.HasPropertySets[0]
+        new_pset = new.HasPropertySets[0]
+        assert element.HasPropertySets[0] != new.HasPropertySets[0]
+        assert pset != new_pset
+        assert pset.Name == new_pset.Name
+        assert pset.HasProperties[0] != new_pset.HasProperties[0]
+        assert pset.HasProperties[0].Name == new_pset.HasProperties[0].Name
+        assert pset.HasProperties[0].NominalValue.wrappedValue == new_pset.HasProperties[0].NominalValue.wrappedValue
+
     def test_copying_a_container_only_and_not_its_contents(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
