@@ -76,6 +76,7 @@ class Usecase:
     def copy_direct_attributes(self, to_element):
         self.remove_representations(to_element)
         self.copy_object_placements(to_element)
+        self.copy_psets(to_element)
 
     def copy_indirect_attributes(self, from_element, to_element):
         for inverse in self.file.get_inverse(from_element):
@@ -160,3 +161,10 @@ class Usecase:
         element.ObjectPlacement.RelativePlacement = ifcopenshell.util.element.copy_deep(
             self.file, element.ObjectPlacement.RelativePlacement
         )
+
+    def copy_psets(self, element):
+        if not element.is_a("IfcTypeObject") or not element.HasPropertySets:
+            return
+        element.HasPropertySets = [
+            ifcopenshell.util.element.copy_deep(self.file, pset) for pset in element.HasPropertySets
+        ]
