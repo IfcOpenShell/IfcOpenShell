@@ -120,9 +120,7 @@ class BoundingBox:
 
 # This function stolen from https://github.com/kevancress/MeasureIt_ARCH/blob/dcf607ce0896aa2284463c6b4ae9cd023fc54cbe/measureit_arch_baseclass.py
 # MeasureIt-ARCH is GPL-v3
-# In the future I will need to rewrite this to allow the user to have custom
-# settings for each annotation object, not read from Blender.
-def format_distance(value, isArea=False, hide_units=True):
+def format_distance(value, isArea=False, hide_units=True, precision=None):
     s_code = "\u00b2"  # Superscript two THIS IS LEGACY (but being kept for when Area Measurements are re-implimented)
 
     # Get Scene Unit Settings
@@ -141,8 +139,7 @@ def format_distance(value, isArea=False, hide_units=True):
 
     # Imperial Formatting
     if unit_system == "IMPERIAL":
-        precision = bpy.context.scene.BIMProperties.imperial_precision
-        if precision == "NONE":
+        if not precision:
             precision = 256
         elif precision == "1":
             precision = 1
@@ -204,8 +201,7 @@ def format_distance(value, isArea=False, hide_units=True):
 
     # METRIC FORMATTING
     elif unit_system == "METRIC":
-        precision = bpy.context.scene.BIMProperties.metric_precision
-        if precision != 0:
+        if precision:
             value = precision * round(float(value) / precision)
 
         # Meters

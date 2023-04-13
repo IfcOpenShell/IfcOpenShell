@@ -610,8 +610,11 @@ class CreateDrawing(bpy.types.Operator):
 
         annotations = sorted(elements, key=lambda a: tool.Drawing.get_annotation_z_index(a))
 
+        precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "MetricPrecision")
+        if not precision:
+            precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "ImperialPrecision")
         self.svg_writer.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
-        self.svg_writer.create_blank_svg(svg_path).draw_annotations(annotations).save()
+        self.svg_writer.create_blank_svg(svg_path).draw_annotations(annotations, precision).save()
 
         return svg_path
 
