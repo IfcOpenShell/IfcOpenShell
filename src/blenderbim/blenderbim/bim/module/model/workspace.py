@@ -111,7 +111,7 @@ class BimToolUI:
 
     @classmethod
     def draw_create_object_interface(cls):
-        if not AuthoringData.data["relating_types_ids"]:
+        if not AuthoringData.data["relating_type_id"]:
             return
         if cls.props.ifc_class == "IfcWallType":
             row = cls.layout.row(align=True)
@@ -301,7 +301,7 @@ class BimToolUI:
             prop_with_search(row, cls.props, "ifc_class", text="")
 
             row = cls.layout.row(align=True)
-            if AuthoringData.data["relating_types_ids"]:
+            if AuthoringData.data["relating_type_id"]:
                 row.label(text="", icon="FILE_3D")
                 prop_with_search(row, cls.props, "relating_type_id", text="")
             else:

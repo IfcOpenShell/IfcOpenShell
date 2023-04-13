@@ -18,7 +18,6 @@
 
 import bpy
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
 from bpy.types import PropertyGroup
 from math import pi
 
