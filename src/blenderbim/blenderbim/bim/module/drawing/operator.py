@@ -187,6 +187,7 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Initialize drawing generation process"):
                     self.cprops = self.camera.data.BIMCameraProperties
                     self.drawing_name = self.file.by_id(drawing_id).Name
+                    self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
                     self.get_scale()
                     if self.cprops.update_representation(self.camera):
                         bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
@@ -543,8 +544,16 @@ class CreateDrawing(bpy.types.Operator):
                     material_name = material.LayerSetName or "null"
                 else:
                     material_name = getattr(material, "Name", "null") or "null"
-                material_name = self.canonicalise_class_name(material_name)
+                material_name = tool.Drawing.canonicalise_class_name(material_name)
                 classes.append(f"material-{material_name}")
+
+            for key in self.metadata:
+                value = ifcopenshell.util.selector.get_element_value(element, key)
+                if value:
+                    classes.append(
+                        tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
+                    )
+
             el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
 
             # Drawing convention states that objects with the same material are merged when cut.
@@ -594,9 +603,6 @@ class CreateDrawing(bpy.types.Operator):
         if group is not None:
             group[:] = reversed(group)
 
-    def canonicalise_class_name(self, name):
-        return re.sub("[^0-9a-zA-Z]+", "", name)
-
     def generate_annotation(self, context):
         if not self.cprops.has_annotation:
             return
@@ -613,7 +619,7 @@ class CreateDrawing(bpy.types.Operator):
         precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "MetricPrecision")
         if not precision:
             precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "ImperialPrecision")
-        self.svg_writer.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
+        self.svg_writer.metadata = self.metadata
         self.svg_writer.create_blank_svg(svg_path).draw_annotations(annotations, precision).save()
 
         return svg_path

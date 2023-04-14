@@ -45,6 +45,10 @@ import collections
 
 class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
+    def canonicalise_class_name(self, name):
+        return re.sub("[^0-9a-zA-Z]+", "", name)
+
+    @classmethod
     def copy_representation(cls, source, dest):
         if source.Representation:
             dest.Representation = ifcopenshell.util.element.copy_deep(

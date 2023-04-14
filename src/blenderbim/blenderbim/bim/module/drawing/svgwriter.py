@@ -354,7 +354,7 @@ class SvgWriter:
     def get_attribute_classes(self, obj):
         element = tool.Ifc.get_entity(obj)
         global_id = "GlobalId-{}".format(element.GlobalId)
-        predefined_type = "PredefinedType-" + self.canonicalise_class_name(
+        predefined_type = "PredefinedType-" + tool.Drawing.canonicalise_class_name(
             str(ifcopenshell.util.element.get_predefined_type(element))
         )
         classes = [global_id, element.is_a(), predefined_type]
@@ -364,11 +364,10 @@ class SvgWriter:
         for key in self.metadata:
             value = ifcopenshell.util.selector.get_element_value(element, key)
             if value:
-                classes.append(self.canonicalise_class_name(key) + "-" + self.canonicalise_class_name(str(value)))
+                classes.append(
+                    tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
+                )
         return classes
-
-    def canonicalise_class_name(self, name):
-        return re.sub("[^0-9a-zA-Z]+", "", name)
 
     def draw_line_annotation(self, obj):
         # TODO: properly scope these offsets
