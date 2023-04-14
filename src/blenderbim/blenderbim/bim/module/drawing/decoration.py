@@ -523,7 +523,7 @@ class DimensionDecorator(BaseDecorator):
 
     def decorate(self, context, obj):
         verts, idxs, _ = self.get_path_geom(obj, topo=False)
-        dimension_style = DecoratorData.get_dimension_style(obj)
+        dimension_style = DecoratorData.get_dimension_data(obj)["dimension_style"]
         self.draw_lines(
             context, obj, verts, idxs, extra_float_kwargs={"use_oblique_style": float(dimension_style == "oblique")}
         )
@@ -532,17 +532,30 @@ class DimensionDecorator(BaseDecorator):
     def draw_labels(self, context, obj, vertices, indices):
         region = context.region
         region3d = context.region_data
+
+        element = tool.Ifc.get_entity(obj)
+        description = element.Description
+        show_description_only = DecoratorData.get_dimension_data(obj)["show_description_only"]
+
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
-            dir = p1 - p0
-            if dir.length < 1:
+            text_dir = p1 - p0
+            if text_dir.length < 1:
                 continue
-            length = (v1 - v0).length
-            text = self.format_value(context, length)
-            self.draw_label(context, text, p0 + (dir) * 0.5, dir)
+
+            if not show_description_only:
+                length = (v1 - v0).length
+                text = self.format_value(context, length)
+
+                self.draw_label(context, text, p0 + text_dir * 0.5, text_dir, box_alignment="bottom-middle")
+                if description:
+                    self.draw_label(context, description, p0 + text_dir * 0.5, text_dir, box_alignment="top-middle")
+
+            elif show_description_only and description:
+                self.draw_label(context, description, p0 + text_dir * 0.5, text_dir, box_alignment="bottom-middle")
 
 
 class AngleDecorator(BaseDecorator):

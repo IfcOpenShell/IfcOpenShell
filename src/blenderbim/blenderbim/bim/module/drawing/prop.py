@@ -454,11 +454,12 @@ class BIMAssignedProductProperties(PropertyGroup):
 
 
 # ObjectType: annotation_name, description, icon, data_type
+# fmt: off
 ANNOTATION_TYPES_DATA = {
-    "DIMENSION":     ("Dimension",        "", "FIXED_SIZE", "curve"),
+    "DIMENSION":     ("Dimension",        "Add dimensions annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "FIXED_SIZE", "curve"),
     "ANGLE":         ("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
     "RADIUS":        ("Radius",           "", "FORWARD", "curve"),
-    "DIAMETER":      ("Diameter",         "", "ARROW_LEFTRIGHT", "curve"),
+    "DIAMETER":      ("Diameter",         "Add diameter annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "ARROW_LEFTRIGHT", "curve"),
     "TEXT":          ("Text",             "", "SMALL_CAPS", "empty"),
     "TEXT_LEADER":   ("Leader",           "", "TRACKING_BACKWARDS", "curve"),
     "STAIR_ARROW":   ("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
@@ -471,6 +472,7 @@ ANNOTATION_TYPES_DATA = {
     "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
     "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
 }
+# fmt: on
 
 annotation_classes = [(x, *ANNOTATION_TYPES_DATA[x][:3], i) for i, x in enumerate(ANNOTATION_TYPES_DATA)]
 
