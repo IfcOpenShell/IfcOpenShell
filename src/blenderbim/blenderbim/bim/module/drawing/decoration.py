@@ -1908,45 +1908,29 @@ class CutDecorator:
         cls.installed = None
 
     def __call__(self, context):
-        for obj in self.get_objects(None):
-            self.decorate(context, obj)
+        all_vertices = []
+        all_edges = []
+        selected_vertices = []
+        selected_edges = []
+        all_vertex_i_offset = 0
+        selected_vertex_i_offset = 0
+        for obj in [o for o in bpy.context.visible_objects if o.type == "MESH"]:
+            verts, edges = self.decorate(context, obj)
+            if not verts:
+                continue
 
-    def get_objects(self, collection):
-        return [o for o in bpy.context.visible_objects if o.type == "MESH"]
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
-
-    def decorate(self, context, obj):
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return
-
-        # Currently selected objects shall not be cached as they may be being moved / edited.
-        # If the camera is selected, we also disable the cache as the user may be moving the camera.
-        if obj.select_get() or context.scene.camera.select_get():
-            all_vertices, all_edges = None, None
-        else:
-            all_vertices, all_edges = DecoratorData.cut_cache.get(element.id(), (None, None))
-
-        if all_vertices is False:
-            return
-
-        if not self.is_intersecting_camera(obj, context.scene.camera):
-            DecoratorData.cut_cache[element.id()] = (False, False)
-            return
-
-        if all_vertices is None:
-            all_vertices, all_edges = self.bisect_mesh(obj, context.scene.camera)
-            DecoratorData.cut_cache[element.id()] = (all_vertices, all_edges)
+            if obj.select_get():
+                selected_vertices.extend(verts)
+                selected_edges.extend([[vi + selected_vertex_i_offset for vi in e] for e in edges])
+                selected_vertex_i_offset += len(verts)
+            else:
+                all_vertices.extend(verts)
+                all_edges.extend([[vi + all_vertex_i_offset for vi in e] for e in edges])
+                all_vertex_i_offset += len(verts)
 
         gpu.state.point_size_set(2)
         gpu.state.blend_set("ALPHA")
 
-        ### Actually drawing
         # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
         self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
@@ -1959,10 +1943,44 @@ class CutDecorator:
         self.shader.bind()
 
         green = (0.545, 0.863, 0, 1)
-        white = (0, 0, 0, 1)
-        color = green if obj.select_get() else white
-        self.draw_batch("LINES", all_vertices, color, all_edges)
-        self.draw_batch("POINTS", all_vertices, color)
+        black = (0, 0, 0, 1)
+
+        if all_vertices:
+            self.draw_batch("LINES", all_vertices, black, all_edges)
+            self.draw_batch("POINTS", all_vertices, black)
+        if selected_vertices:
+            self.draw_batch("LINES", selected_vertices, green, selected_edges)
+            self.draw_batch("POINTS", selected_vertices, green)
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    def decorate(self, context, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return None, None
+
+        # Currently selected objects shall not be cached as they may be being moved / edited.
+        # If the camera is selected, we also disable the cache as the user may be moving the camera.
+        if obj.select_get() or context.scene.camera.select_get():
+            verts, edges = None, None
+        else:
+            verts, edges = DecoratorData.cut_cache.get(element.id(), (None, None))
+
+        if verts is False:
+            return None, None
+
+        if not self.is_intersecting_camera(obj, context.scene.camera):
+            DecoratorData.cut_cache[element.id()] = (False, False)
+            return None, None
+
+        if verts is None:
+            verts, edges = self.bisect_mesh(obj, context.scene.camera)
+            DecoratorData.cut_cache[element.id()] = (verts, edges)
+        return verts, edges
 
     def is_intersecting_camera(self, obj, camera):
         # Based on separating axis theorem
