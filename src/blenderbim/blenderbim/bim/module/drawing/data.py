@@ -259,15 +259,16 @@ class DecoratorData:
         cls.data[obj.name] = text_data
         return text_data
 
-    # used by Ifc Annotations with ObjectType = "DIMENSION"
+    # used by Ifc Annotations with ObjectType = "DIMENSION" / "DIAMETER"
     @classmethod
-    def get_dimension_style(cls, obj):
+    def get_dimension_data(cls, obj):
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
 
         element = tool.Ifc.get_entity(obj)
-        if not element or not element.is_a("IfcAnnotation") or element.ObjectType != "DIMENSION":
+        supported_object_types = ("DIMENSION", "DIAMETER")
+        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in supported_object_types:
             return None
 
         dimension_style = "arrow"
@@ -275,8 +276,13 @@ class DecoratorData:
         if classes and "oblique" in classes.lower().split():
             dimension_style = "oblique"
 
-        cls.data[obj.name] = dimension_style
-        return dimension_style
+        show_description_only = (
+            ifcopenshell.util.element.get_pset(element, "BBIM_Dimension", "ShowDescriptionOnly") or False
+        )
+
+        dimension_data = {"dimension_style": dimension_style, "show_description_only": show_description_only}
+        cls.data[obj.name] = dimension_data
+        return dimension_data
 
 
 class AnnotationData:
