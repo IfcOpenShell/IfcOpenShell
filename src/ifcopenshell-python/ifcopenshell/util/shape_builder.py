@@ -55,6 +55,8 @@ class ShapeBuilder:
         return ifc_curve
 
     def get_rectangle_coords(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None):
+        """get rectangle coords in counter-clockwise order
+        starting from the bottom left corner"""
         dimensions = len(size)
 
         if not position:

@@ -282,6 +282,8 @@ class LibraryGenerator:
             return output
 
         def create_fillet_rectangle(size=None, position=None, fillet_radius=50.0):
+            """`fillet_radius` is either float or list of floats for each corner
+            in counter-clockwise order starting from bottom left"""
             kwargs = dict()
             if size:
                 kwargs["size"] = size
@@ -1251,7 +1253,7 @@ class LibraryGenerator:
             )
             fillet_radius = min(width / 2, (depth - cistern_depth) / 2)
             _, _, seat_main_curve = get_simple_2dcurve_data(
-                seat_main_curve_points, fillets=(1, 2), fillet_radius=fillet_radius, closed=True, ifc_file=self.file
+                seat_main_curve_points, fillets=(2, 3), fillet_radius=fillet_radius, closed=True, ifc_file=self.file
             )
             seat_main_curve_mask = builder.circle(center=V(0, depth - fillet_radius), radius=fillet_radius * 0.75)
             seat_main_curve_profile = builder.profile(seat_main_curve, inner_curves=seat_main_curve_mask)
@@ -1415,7 +1417,7 @@ class LibraryGenerator:
             rectangle_second = create_fillet_rectangle(
                 size=V(second_width, second_depth),
                 position=V((width - second_width) / 2, (depth - second_depth) * 0.3),
-                fillet_radius=(50.0, 150.0, 150.0, 50.0),
+                fillet_radius=(150.0, 150.0, 50.0, 50.0),
             )
             rectangle_second_3d = ifcopenshell.util.element.copy_deep(self.file, rectangle_second)
 
