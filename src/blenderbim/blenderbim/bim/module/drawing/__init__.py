@@ -47,7 +47,6 @@ classes = (
     operator.EditAssignedProduct,
     operator.EditText,
     operator.EditTextPopup,
-    operator.EditVectorStyle,
     operator.EnableEditingAssignedProduct,
     operator.EnableEditingText,
     operator.ExpandSheet,
