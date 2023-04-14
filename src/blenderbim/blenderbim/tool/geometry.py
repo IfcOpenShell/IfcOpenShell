@@ -317,6 +317,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         if ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "AdvancedBrep",
             "Annotation2D",
+            "Annotation3D",
             "BoundingBox",
             "Brep",
             "Curve",
