@@ -233,11 +233,7 @@ class SvgWriter:
                 rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
-            text_style = {
-                "text-anchor": "start",
-                "alignment-baseline": "baseline",
-                "dominant-baseline": "baseline",
-            }
+            text_style = self.get_box_alignment_parameters("bottom-left")
             self.svg.add(self.svg.text(f"RL +{rl}", insert=tuple(text_position), class_="SECTIONLEVEL", **text_style))
             if tag:
                 self.svg.add(self.svg.text(tag, insert=(text_position[0], text_position[1] - 5), **text_style))
@@ -266,11 +262,7 @@ class SvgWriter:
                     "UP",
                     insert=tuple(text_position),
                     class_="STAIR",
-                    **{
-                        "text-anchor": "middle",
-                        "alignment-baseline": "middle",
-                        "dominant-baseline": "middle",
-                    },
+                    **self.get_box_alignment_parameters("center"),
                 )
             )
 
@@ -294,16 +286,13 @@ class SvgWriter:
             )
             line["stroke-dasharray"] = "12.5, 3, 3, 3"
             axis_tag = tool.Ifc.get_entity(obj).Name
+            text_style = self.get_box_alignment_parameters("center")
             self.svg.add(
                 self.svg.text(
                     axis_tag,
                     insert=tuple(start * self.svg_scale),
                     class_="GRID",
-                    **{
-                        "text-anchor": "middle",
-                        "alignment-baseline": "middle",
-                        "dominant-baseline": "middle",
-                    },
+                    **text_style,
                 )
             )
             self.svg.add(
@@ -311,11 +300,7 @@ class SvgWriter:
                     axis_tag,
                     insert=tuple(end * self.svg_scale),
                     class_="GRID",
-                    **{
-                        "text-anchor": "middle",
-                        "alignment-baseline": "middle",
-                        "dominant-baseline": "middle",
-                    },
+                    **text_style,
                 )
             )
 
@@ -571,11 +556,7 @@ class SvgWriter:
 
                     reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
                     text_position = symbol_position_svg
-                    text_style = {
-                        "text-anchor": "middle",
-                        "alignment-baseline": "middle",
-                        "dominant-baseline": "middle",
-                    }
+                    text_style = self.get_box_alignment_parameters("center")
                     self.svg.add(
                         self.svg.text(
                             reference_id,
@@ -608,11 +589,7 @@ class SvgWriter:
 
         reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
         text_position = symbol_position_svg
-        text_style = {
-            "text-anchor": "middle",
-            "alignment-baseline": "middle",
-            "dominant-baseline": "middle",
-        }
+        text_style = self.get_box_alignment_parameters("center")
         self.svg.add(
             self.svg.text(
                 reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="ELEVATION", **text_style
@@ -638,6 +615,43 @@ class SvgWriter:
                     sheet_id = sheet.Identification or "-"
                 return (reference_id, sheet_id)
         return ("-", "-")
+
+    def get_box_alignment_parameters(self, box_alignment):
+        """Convenience method to get svg parameters for text alignment
+        in a readable way.
+
+        Metehod expecting values like:
+
+        `top-left`, `top-middle`, `top-right`,
+
+        `middle-left`, `center`, `middle-right`,
+
+        `bottom-left`, `bottom-middle`, `bottom-right`
+        """
+        # reference for alignment values:
+        # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/text-anchor
+        # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/alignment-baseline
+        vertical_alignment = {
+            "top": "hanging",
+            "bottom": "baseline",
+            "center": "middle",
+            "middle": "middle",
+        }
+        alignment_baseline = vertical_alignment[next(align for align in vertical_alignment if align in box_alignment)]
+        horizontal_alignment = {
+            "left": "start",
+            "right": "end",
+            "center": "middle",
+            "middle": "middle",
+        }
+        text_anchor = horizontal_alignment[next(align for align in horizontal_alignment if align in box_alignment)]
+
+        # using dominant-baseline because we plan to use <tspan> subtags
+        # otherwise alignment-baseline would be sufficient
+        return {
+            "dominant-baseline": alignment_baseline,
+            "text-anchor": text_anchor,
+        }
 
     def draw_text_annotation(self, text_obj, position):
         x_offset = self.raw_width / 2
@@ -684,34 +698,6 @@ class SvgWriter:
             if not symbol_svg or not template_text_fields:
                 self.svg.add(self.svg.use(f"#{symbol}", insert=text_position_svg))
 
-        def get_box_alignment_parameters(box_alignment):
-            # reference for alignment values:
-            # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/text-anchor
-            # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/alignment-baseline
-            vertical_alignment = {
-                "top": "hanging",
-                "bottom": "baseline",
-                "center": "middle",
-                "middle": "middle",
-            }
-            alignment_baseline = vertical_alignment[
-                next(align for align in vertical_alignment if align in box_alignment)
-            ]
-            horizontal_alignment = {
-                "left": "start",
-                "right": "end",
-                "center": "middle",
-                "middle": "middle",
-            }
-            text_anchor = horizontal_alignment[next(align for align in horizontal_alignment if align in box_alignment)]
-
-            # using dominant-baseline because we plan to use <tspan> subtags
-            # otherwise alignment-baseline would be sufficient
-            return {
-                "dominant-baseline": alignment_baseline,
-                "text-anchor": text_anchor,
-            }
-
         for text_literal in text_literals:
             # after pretty indentation some redundant spaces can occur in svg tags
             # this is why we apply "font-size: 0;" to the text tag to remove those spaces
@@ -725,7 +711,7 @@ class SvgWriter:
                     "transform": transform,
                     "style": "font-size: 0;",
                 },
-                **get_box_alignment_parameters(text_literal.BoxAlignment),
+                **self.get_box_alignment_parameters(text_literal.BoxAlignment),
             )
             self.svg.add(text_tag)
 
@@ -803,20 +789,15 @@ class SvgWriter:
                 rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
-            if projected_points[0].x > projected_points[-1].x:
-                text_anchor = "end"
-            else:
-                text_anchor = "start"
+
+            box_alignment = "bottom-left" if projected_points[0].x <= projected_points[-1].x else "bottom-right"
+            text_style = self.get_box_alignment_parameters(box_alignment)
             self.svg.add(
                 self.svg.text(
                     "RL +{}".format(rl),
                     insert=tuple(text_position),
                     class_="PLANLEVEL",
-                    **{
-                        "text-anchor": text_anchor,
-                        "alignment-baseline": "baseline",
-                        "dominant-baseline": "baseline",
-                    },
+                    **text_style,
                 )
             )
 
@@ -932,12 +913,7 @@ class SvgWriter:
         text_offset = (text_position - center_position).xy.normalized() * 5
         text_position += text_offset
 
-        text_style = {
-            "text-anchor": "middle",
-            "alignment-baseline": "middle",
-            "dominant-baseline": "middle",
-        }
-
+        text_style = self.get_box_alignment_parameters("center")
         angle_text = abs(round(math.degrees(angle), 3))
         if is_reflex:
             angle_text = 360 - angle_text
@@ -998,12 +974,7 @@ class SvgWriter:
             )
             text_position += text_offset
 
-            text_style = {
-                "text-anchor": "middle",
-                "alignment-baseline": "middle",
-                "dominant-baseline": "middle",
-            }
-
+            text_style = self.get_box_alignment_parameters("center")
             radius = (points[-1].co - points[-2].co).length
             radius = helper.format_distance(radius, precision=self.precision)
             tag = element.Description or f"R{radius}"
@@ -1076,19 +1047,15 @@ class SvgWriter:
             )
             text_position += text_offset
 
-            text_style = {
-                "text-anchor": "middle",
-                "alignment-baseline": "middle",
-                "dominant-baseline": "middle",
-            }
-
+            text_style = self.get_box_alignment_parameters("center")
             self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
 
     def draw_diameter_annotations(self, obj):
         classes = self.get_attribute_classes(obj)
         matrix_world = obj.matrix_world
         element = tool.Ifc.get_entity(obj)
-        text_override = element.Description
+        dimension_text = element.Description
+        show_description_only = DecoratorData.get_dimension_data(obj)["show_description_only"]
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             for i, p in enumerate(points):
@@ -1097,22 +1064,32 @@ class SvgWriter:
                 v0_global = matrix_world @ points[i].co.xyz
                 v1_global = matrix_world @ points[i + 1].co.xyz
                 self.draw_dimension_annotation(
-                    v0_global, v1_global, classes, text_override, text_format=lambda x: "D" + x
+                    v0_global,
+                    v1_global,
+                    classes,
+                    dimension_text,
+                    text_format=lambda x: "D" + x,
+                    show_description_only=show_description_only,
                 )
 
     def draw_dimension_annotations(self, obj):
         classes = self.get_attribute_classes(obj)
         matrix_world = obj.matrix_world
         element = tool.Ifc.get_entity(obj)
-        text_override = element.Description
+        dimension_text = element.Description
+        show_description_only = DecoratorData.get_dimension_data(obj)["show_description_only"]
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
-            for i, p in enumerate(points):
-                if i + 1 >= len(points):
-                    continue
+            for i in range(len(points) - 1):
                 v0_global = matrix_world @ points[i].co.xyz
                 v1_global = matrix_world @ points[i + 1].co.xyz
-                self.draw_dimension_annotation(v0_global, v1_global, classes, text_override)
+                self.draw_dimension_annotation(
+                    v0_global,
+                    v1_global,
+                    classes,
+                    dimension_text=dimension_text,
+                    show_description_only=show_description_only,
+                )
 
     def draw_measureit_arch_dimension_annotations(self):
         try:
@@ -1126,46 +1103,44 @@ class SvgWriter:
                 Vector(coord[0]), Vector(coord[1]), ["IfcAnnotation", "PredefinedType-DIMENSION"]
             )
 
-    def draw_dimension_annotation(self, v0_global, v1_global, classes, text_override=None, text_format=lambda x: x):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+    def draw_dimension_annotation(
+        self, v0_global, v1_global, classes, dimension_text=None, text_format=lambda x: x, show_description_only=False
+    ):
+        offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
         v1 = self.project_point_onto_camera(v1_global)
-        start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-        end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+        start = (offset + v0.xy * Vector((1, -1))) * self.svg_scale
+        end = (offset + v1.xy * Vector((1, -1))) * self.svg_scale
         mid = ((end - start) / 2) + start
         vector = end - start
         perpendicular = Vector((vector.y, -vector.x)).normalized()
         dimension = (v1_global - v0_global).length
         dimension = helper.format_distance(dimension, precision=self.precision)
-        sheet_dimension = ((end * self.svg_scale) - (start * self.svg_scale)).length
-        if sheet_dimension < 5:  # annotation can't fit
-            # offset text to right of marker
-            text_position = (end * self.svg_scale) + perpendicular + (3 * vector.normalized())
-        else:
-            text_position = (mid * self.svg_scale) + perpendicular
+        sheet_dimension = (end - start).length
+
+        # if annotation can't fit offset text to the right of marker
+        text_position = mid if sheet_dimension > 5 else (end + (3 * vector.normalized()))
         rotation = math.degrees(vector.angle_signed(Vector((1, 0))))
-        line = self.svg.add(
-            self.svg.line(
-                start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes)
-            )
-        )
-        if text_override is not None:
-            text = text_override
-        else:
-            text = str(dimension)
-        text = text_format(text)
-        self.svg.add(
-            self.svg.text(
-                text,
-                insert=tuple(text_position),
+
+        line = self.svg.line(start=start, end=end, class_=" ".join(classes))
+        self.svg.add(line)
+
+        def create_text_tag(text, text_position, box_alignment):
+            text_kwargs = {"transform": "rotate({} {} {})".format(rotation, text_position.x, text_position.y)}
+            return self.svg.text(
+                text_format(text),
+                insert=text_position,
                 class_="DIMENSION",
-                **{
-                    "transform": "rotate({} {} {})".format(rotation, text_position.x, text_position.y),
-                    "text-anchor": "middle",
-                },
+                **(text_kwargs | self.get_box_alignment_parameters(box_alignment)),
             )
-        )
+
+        if not show_description_only:
+            self.svg.add(create_text_tag(str(dimension), text_position + perpendicular, "bottom-middle"))
+            if dimension_text:
+                self.svg.add(create_text_tag(dimension_text, text_position - perpendicular, "top-middle"))
+
+        elif show_description_only and dimension_text:
+            self.svg.add(create_text_tag(dimension_text, text_position + perpendicular, "bottom-middle"))
 
     def project_point_onto_camera(self, point):
         # TODO is this needlessly complex?
