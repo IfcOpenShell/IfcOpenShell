@@ -1230,20 +1230,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 return space
 
 
-class EditVectorStyle(bpy.types.Operator):
-    bl_idname = "bim.edit_vector_style"
-    bl_label = "Edit Vector Style"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        camera = context.scene.camera
-        vector_style = context.scene.DocProperties.drawing_styles[
-            camera.data.BIMCameraProperties.active_drawing_style_index
-        ].vector_style
-        bpy.data.texts.load(os.path.join(context.scene.BIMProperties.data_dir, "styles", vector_style + ".css"))
-        return {"FINISHED"}
-
-
 class RemoveSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_sheet"
     bl_label = "Remove Sheet"
