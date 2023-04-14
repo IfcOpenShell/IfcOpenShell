@@ -45,16 +45,13 @@ from bpy.props import (
 
 diagram_scales_enum = []
 sheets_enum = []
-vector_styles_enum = []
 
 
 def purge():
     global diagram_scales_enum
     global sheets_enum
-    global vector_styles_enum
     diagram_scales_enum = []
     sheets_enum = []
-    vector_styles_enum = []
 
 
 def update_target_view(self, context):
@@ -211,16 +208,6 @@ def toggleDecorations(self, context):
         decoration.DecorationsHandler.uninstall()
 
 
-def getVectorStyles(self, context):
-    global vector_styles_enum
-    if len(vector_styles_enum) < 1:
-        sheets_enum.clear()
-        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, "styles")).glob("*.css"):
-            f = str(filename.stem)
-            vector_styles_enum.append((f, f, ""))
-    return vector_styles_enum
-
-
 class Variable(PropertyGroup):
     name: StringProperty(name="Name")
     prop_key: StringProperty(name="Property Key")
@@ -260,7 +247,6 @@ class DrawingStyle(PropertyGroup):
         name="Render Type",
         default="VIEWPORT",
     )
-    vector_style: EnumProperty(items=getVectorStyles, name="Vector Style")
     include_query: StringProperty(name="Include Query")
     exclude_query: StringProperty(name="Exclude Query")
     attributes: CollectionProperty(name="Attributes", type=StrProperty)
