@@ -421,13 +421,14 @@ class Model(blenderbim.core.tool.Model):
                     obj = tool.Ifc.get_object(element)
                     if obj:
                         tool.Geometry.delete_ifc_object(obj)
+                array["children"].clear()
 
             child_i = 0
             existing_children = set(array["children"])
             total_existing_children = len(array["children"])
             children_elements = []
             children_objs = []
-            if array["dimension_input_type"] == "Total":
+            if array["method"] == "DISTRIBUTE":
                 divider = 1 if ((array["count"] - 1) == 0) else (array["count"] - 1)
                 base_offset = Vector([array["x"] / divider, array["y"] / divider, array["z"] / divider]) * unit_scale
             else:
