@@ -120,7 +120,7 @@ class BoundingBox:
 
 # This function stolen from https://github.com/kevancress/MeasureIt_ARCH/blob/dcf607ce0896aa2284463c6b4ae9cd023fc54cbe/measureit_arch_baseclass.py
 # MeasureIt-ARCH is GPL-v3
-def format_distance(value, isArea=False, hide_units=True, precision=None):
+def format_distance(value, isArea=False, hide_units=True, precision=None, decimals_number=None):
     s_code = "\u00b2"  # Superscript two THIS IS LEGACY (but being kept for when Area Measurements are re-implimented)
 
     # Get Scene Unit Settings
@@ -204,22 +204,29 @@ def format_distance(value, isArea=False, hide_units=True, precision=None):
         if precision:
             value = precision * round(float(value) / precision)
 
+        if decimals_number:
+            fmt = "%1." + str(decimals_number) + "f"
+            #fmt = decimals_number
+
         # Meters
         if unit_length == "METERS":
-            fmt = "%1.3f"
+            if not decimals_number:
+                fmt = "%1.3f"
             if hide_units is False:
                 fmt += " m"
             tx_dist = fmt % value
         # Centimeters
         elif unit_length == "CENTIMETERS":
-            fmt = "%1.1f"
+            if not decimals_number:
+                fmt = "%1.1f"
             if hide_units is False:
                 fmt += " cm"
             d_cm = value * (100)
             tx_dist = fmt % d_cm
         # Millimeters
         elif unit_length == "MILLIMETERS":
-            fmt = "%1.0f"
+            if not decimals_number:
+                fmt = "%1.0f"
             if hide_units is False:
                 fmt += " mm"
             d_mm = value * (1000)
@@ -227,20 +234,21 @@ def format_distance(value, isArea=False, hide_units=True, precision=None):
 
         # Otherwise Use Adaptive Units
         else:
-            if round(value, 2) >= 1.0:
+            if round(value, 2) >= 1.0 and not decimals_number:
                 fmt = "%1.3f"
                 if hide_units is False:
                     fmt += " m"
                 tx_dist = fmt % value
             else:
-                if round(value, 2) >= 0.01:
+                if round(value, 2) >= 0.01 and not decimals_number:
                     fmt = "%1.1f"
                     if hide_units is False:
                         fmt += " cm"
                     d_cm = value * (100)
                     tx_dist = fmt % d_cm
                 else:
-                    fmt = "%1.0f"
+                    if not decimals_number:
+                        fmt = "%1.0f"
                     if hide_units is False:
                         fmt += " mm"
                     d_mm = value * (1000)
