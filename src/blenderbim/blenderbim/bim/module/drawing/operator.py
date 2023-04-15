@@ -620,9 +620,9 @@ class CreateDrawing(bpy.types.Operator):
         if not precision:
             precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "ImperialPrecision")
 
-        decimals_number = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "DecimalsNumber")
+        decimal_places = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "DecimalPlaces")
         self.svg_writer.metadata = self.metadata
-        self.svg_writer.create_blank_svg(svg_path).draw_annotations(annotations, precision, decimals_number).save()
+        self.svg_writer.create_blank_svg(svg_path).draw_annotations(annotations, precision, decimal_places).save()
 
 
         return svg_path
