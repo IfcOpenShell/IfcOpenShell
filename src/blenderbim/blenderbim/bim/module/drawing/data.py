@@ -29,9 +29,9 @@ def refresh():
     SheetsData.is_loaded = False
     SchedulesData.is_loaded = False
     DrawingsData.is_loaded = False
+    AnnotationData.is_loaded = False
     DecoratorData.data = {}
     DecoratorData.cut_cache = {}
-    AnnotationData.is_loaded = False
 
 
 class ProductAssignmentsData:
