@@ -196,7 +196,7 @@ class BIM_PT_object_material(Panel):
         else:
             row = self.layout.row(align=True)
             if ObjectMaterialData.data["set_item_name"] == "profile":
-                row.prop(self.mprops, "profiles", icon="ITALIC", text="")
+                prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
             prop_with_search(row, self.props, "material", icon="MATERIAL", text="")
             op = row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
@@ -230,11 +230,11 @@ class BIM_PT_object_material(Panel):
         draw_attributes(self.props.material_set_item_attributes, box)
 
         row = box.row()
-        row.prop(self.props, "material_set_item_material", icon="MATERIAL", text="Material")
+        prop_with_search(row, self.props, "material_set_item_material", icon="MATERIAL", text="Material")
 
         if ObjectMaterialData.data["set_item_name"] == "profile":
             row = box.row()
-            row.prop(self.mprops, "profiles", icon="ITALIC", text="Profile")
+            prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="Profile")
 
     def draw_read_only_set_item_ui(self, set_item, index, is_first=False, is_last=False):
         if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
