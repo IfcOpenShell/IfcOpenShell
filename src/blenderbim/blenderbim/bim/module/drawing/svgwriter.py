@@ -155,8 +155,9 @@ class SvgWriter:
         for child in root:
             self.svg.defs.add(External(child))
 
-    def draw_annotations(self, annotations, precision):
+    def draw_annotations(self, annotations, precision, decimals_number):
         self.precision = precision
+        self.decimals_number = decimals_number
         for element in annotations:
             obj = tool.Ifc.get_object(element)
             if not obj or element.ObjectType == "DRAWING":
@@ -226,7 +227,7 @@ class SvgWriter:
             # TODO: allow metric to be configurable
             rl = (matrix_world @ points[0].co.xyz).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl, precision=self.precision)
+                rl = helper.format_distance(rl, precision=self.precision, decimals_number=self.decimals_number)
             else:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
                 rl /= unit_scale
@@ -782,7 +783,7 @@ class SvgWriter:
             # TODO: allow metric to be configurable
             rl = (matrix_world @ points[0].co).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl, precision=self.precision)
+                rl = helper.format_distance(rl, precision=self.precision, decimals_number=self.decimals_number)
             else:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
                 rl /= unit_scale
@@ -976,7 +977,7 @@ class SvgWriter:
 
             text_style = self.get_box_alignment_parameters("center")
             radius = (points[-1].co - points[-2].co).length
-            radius = helper.format_distance(radius, precision=self.precision)
+            radius = helper.format_distance(radius, precision=self.precision, decimals_number=self.decimals_number)
             tag = element.Description or f"R{radius}"
 
             self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
@@ -1032,7 +1033,7 @@ class SvgWriter:
                 elif element.ObjectType == "SLOPE_FRACTION":
                     if angle == 90:
                         return "-"
-                    return f"{helper.format_distance(rise, precision=self.precision)} / {helper.format_distance(run, precision=self.precision)}"
+                    return f"{helper.format_distance(rise, precision=self.precision, decimals_number=self.decimals_number)} / {helper.format_distance(run, precision=self.precision, decimals_number=self.decimals_number)}"
                 elif element.ObjectType == "SLOPE_PERCENT":
                     if angle == 90:
                         return "-"
@@ -1115,7 +1116,7 @@ class SvgWriter:
         vector = end - start
         perpendicular = Vector((vector.y, -vector.x)).normalized()
         dimension = (v1_global - v0_global).length
-        dimension = helper.format_distance(dimension, precision=self.precision)
+        dimension = helper.format_distance(dimension, precision=self.precision, decimals_number=self.decimals_number)
         sheet_dimension = (end - start).length
 
         # if annotation can't fit offset text to the right of marker
