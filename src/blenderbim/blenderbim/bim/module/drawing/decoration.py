@@ -407,21 +407,13 @@ class BaseDecorator:
         blf.disable(font_id, blf.ROTATION)
 
     def format_value(self, context, value):
-        unit_system = context.scene.unit_settings.system
-        if unit_system == "IMPERIAL":
-            precision = context.scene.BIMProperties.imperial_precision
-            if precision == "NONE":
-                precision = 256
-            elif precision == "1":
-                precision = 1
-            elif "/" in precision:
-                precision = int(precision.split("/")[1])
-        elif unit_system == "METRIC":
-            precision = 4
-        else:
-            return
-
-        return bpy.utils.units.to_string(unit_system, "LENGTH", value, precision=precision)
+        return bpy.utils.units.to_string(
+            context.scene.unit_settings.system,
+            "LENGTH",
+            value,
+            precision=4,
+            split_unit=context.scene.unit_settings.system == "IMPERIAL",
+        )
 
 
 class DimensionDecorator(BaseDecorator):
