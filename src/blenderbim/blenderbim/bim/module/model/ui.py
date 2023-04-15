@@ -171,7 +171,7 @@ class BIM_PT_array(bpy.types.Panel):
                     row.operator("bim.edit_array", icon="CHECKMARK", text="").item = i
                     row.operator("bim.disable_editing_array", icon="CANCEL", text="")
                     row = box.row(align=True)
-                    row.prop(props, "dimension_input_type")
+                    row.prop(props, "method")
                     row = box.row(align=True)
                     row.prop(props, "use_local_space")
                     row.prop(props, "sync_children")
@@ -185,18 +185,15 @@ class BIM_PT_array(bpy.types.Panel):
                     row = col.row(align=True)
                     row.prop(props, "z")
                     row.operator("bim.input_cursor_z_array", icon="CURSOR", text="")
-
                 else:
                     row = box.row(align=True)
-                    row.label(text=f"{array['count']} Items", icon="MOD_ARRAY")
+                    name = f"{array['count']} Items ({array.get('method', 'OFFSET').capitalize()})"
+                    row.label(text=name, icon="MOD_ARRAY")
                     row.operator("bim.enable_editing_array", icon="GREASEPENCIL", text="").item = i
                     row.operator("bim.remove_array", icon="X", text="").item = i
                     row = box.row(align=True)
-                    row.label(text=f"Dimension input type: {array.get('dimension_input_type', 'Increment')}")
-                    row = box.row(align=True)
-                    row.label(text=f"Use Local Space: {array.get('use_local_space', False)}")
-                    row = box.row(align=True)
-                    row.label(text=f"X: {array['x']}")
+                    icon = "EMPTY_ARROWS" if array.get("use_local_space", False) else "EMPTY_AXIS"
+                    row.label(text=f"X: {array['x']}", icon=icon)
                     row.label(text=f"Y: {array['y']}")
                     row.label(text=f"Z: {array['z']}")
         else:

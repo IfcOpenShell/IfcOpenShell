@@ -156,18 +156,15 @@ class BIMArrayProperties(PropertyGroup):
         description="Use local space for array items offset instead of world space",
         default=True,
     )
-    dimension_input_type: bpy.props.EnumProperty(
-        items=(
-            ("Increment", "Increment", ""),
-            ("Total", "Total", ""),
-        ),
-        name="Type of input dimension",
-        default="Increment",
+    method: bpy.props.EnumProperty(
+        items=(("OFFSET", "Offset", ""), ("DISTRIBUTE", "Distribute", "")),
+        name="Method",
+        default="OFFSET",
     )
     sync_children: bpy.props.BoolProperty(
         name="Sync Children",
-        description="Keep children objects in sync with parent object",
-        default = False,
+        description="Regenerate all children based on the parent object",
+        default=False,
     )
 
 
