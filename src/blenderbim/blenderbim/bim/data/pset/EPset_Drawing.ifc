@@ -5,7 +5,7 @@ FILE_NAME('EPset_Drawing.ifc','2020-01-01T00:00:00',(),(),'EPset_Drawing','EPset
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
-#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation',(#2,#3,#4,#5,#6,#7,#8,#9,#10,#11,#12,#13,#14,#15,#16,#17));
+#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation',(#2,#3,#4,#5,#6,#7,#8,#9,#10,#11,#12,#13,#14,#15,#16,#17,#18));
 #2=IFCSIMPLEPROPERTYTEMPLATE('23JavTMk98ZxXhrUEnjAcf',$,'TargetView','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #3=IFCSIMPLEPROPERTYTEMPLATE('1yVWUt5H9DAOuu0OaMMLpe',$,'Scale','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #4=IFCSIMPLEPROPERTYTEMPLATE('3gsuPBtU93b8f0gg1pjkq6',$,'HumanScale','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
@@ -22,5 +22,6 @@ DATA;
 #15=IFCSIMPLEPROPERTYTEMPLATE('2sHDBuW7P4TROy$hL2w7ct',$,'Patterns','',.P_SINGLEVALUE.,'IfcURIReference',$,$,$,$,$,.READWRITE.);
 #16=IFCSIMPLEPROPERTYTEMPLATE('1$xfo9EVb26QLqmPll2_RK',$,'MetricPrecision','',.P_SINGLEVALUE.,'IfcReal',$,$,$,$,$,.READWRITE.);
 #17=IFCSIMPLEPROPERTYTEMPLATE('38uAtrp9nD_901NO42zd$7',$,'ImperialPrecision','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
+#18=IFCSIMPLEPROPERTYTEMPLATE('1MX0uffTL6TOvtvEJpxFmk',$,'DecimalsNumber','',.P_SINGLEVALUE.,'IfcInteger',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;
