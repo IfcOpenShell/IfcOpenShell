@@ -1124,34 +1124,34 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (900.0, 750.0, 2100.0)
         representation_3d, representation_2d = create_shower_or_bathtube(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Shower 75x90", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Shower 75x90", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (800.0, 800.0, 2100.0)
         representation_3d, representation_2d = create_shower_or_bathtube(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Shower 80x80", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Shower 80x80", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (900.0, 900.0, 2100.0)
         representation_3d, representation_2d = create_shower_or_bathtube(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Shower 90x90", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Shower 90x90", representation_3d, representation_2d)
 
         # bathtubs
         overall_width, overall_depth, overall_height = (1600.0, 700.0, 550.0)
         representation_3d, representation_2d = create_shower_or_bathtube(
             overall_width, overall_depth, overall_height, bathtube=True
         )
-        self.create_explicit_type("IfcFurnitureType", "Neufert Small Bathtub", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Small Bathtub", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (1700.0, 750.0, 550.0)
         representation_3d, representation_2d = create_shower_or_bathtube(
             overall_width, overall_depth, overall_height, bathtube=True
         )
-        self.create_explicit_type("IfcFurnitureType", "Neufert Medium Bathtub", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Medium Bathtub", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (1800.0, 800.0, 550.0)
         representation_3d, representation_2d = create_shower_or_bathtube(
             overall_width, overall_depth, overall_height, bathtube=True
         )
-        self.create_explicit_type("IfcFurnitureType", "Neufert Large Bathtub", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Large Bathtub", representation_3d, representation_2d)
 
         def create_toilet(width, depth, height, seat_level=0):
             shift_to_center = V(-width / 2, 0)
@@ -1291,13 +1291,13 @@ class LibraryGenerator:
         overall_width, overall_depth, overall_height, seat_level = (550.0, 650.0, 770.0, 400)
         representation_3d, representation_2d = create_toilet(overall_width, overall_depth, overall_height, seat_level)
         self.create_explicit_type(
-            "IfcFurnitureType", "Neufert Toilet with Cistern", representation_3d, representation_2d
+            "IfcSanitaryTerminalType", "Neufert Toilet with Cistern", representation_3d, representation_2d
         )
 
         overall_width, overall_depth, overall_height = (400.0, 530.0, 400.0)
         representation_3d, representation_2d = create_toilet(overall_width, overall_depth, overall_height)
         self.create_explicit_type(
-            "IfcFurnitureType", "Generic Toilet without Cistern", representation_3d, representation_2d
+            "IfcSanitaryTerminalType", "Generic Toilet without Cistern", representation_3d, representation_2d
         )
 
         def create_urinal(width, depth, height):
@@ -1393,15 +1393,15 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (350.0, 350.0, 650.0)
         representation_3d, representation_2d = create_urinal(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Small Urinal", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Small Urinal", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (400.0, 400.0, 650.0)
         representation_3d, representation_2d = create_urinal(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Medium Urinal", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Medium Urinal", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (450.0, 450.0, 650.0)
         representation_3d, representation_2d = create_urinal(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Large Urinal", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Large Urinal", representation_3d, representation_2d)
 
         def create_basin(width, depth, height):
             second_width = 0.9 * width
@@ -1442,19 +1442,19 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (450.0, 400.0, 250.0)
         representation_3d, representation_2d = create_basin(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Extra Small Basin", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Extra Small Basin", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (500.0, 450.0, 250.0)
         representation_3d, representation_2d = create_basin(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Small Basin", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Small Basin", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (550.0, 500.0, 250.0)
         representation_3d, representation_2d = create_basin(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Medium Basin", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Medium Basin", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (600.0, 550.0, 250.0)
         representation_3d, representation_2d = create_basin(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Large Basin", representation_3d, representation_2d)
+        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Large Basin", representation_3d, representation_2d)
 
         def create_desk(width, depth, height, return_representations=False):
             leg_width = 50.0
@@ -1612,7 +1612,7 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (500.0, 570.0, 820.0)
         representation_3d, representation_2d = create_dishwasher(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Dishwasher", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricAppliance", "Neufert Dishwasher", representation_3d, representation_2d)
 
         def create_cooktop(width, depth, height):
             items_3d, items_2d = create_box_objects(width, depth, height)
@@ -1633,15 +1633,15 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (580.0, 510.0, 50.0)
         representation_3d, representation_2d = create_cooktop(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Cooktop 58x51", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricApplianceType", "Neufert Cooktop 58x51", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (750.0, 510.0, 50.0)
         representation_3d, representation_2d = create_cooktop(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Cooktop 75x51", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricApplianceType", "Neufert Cooktop 75x51", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (890.0, 510.0, 50.0)
         representation_3d, representation_2d = create_cooktop(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Cooktop 89x51", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricApplianceType", "Neufert Cooktop 89x51", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (1750.0, 600.0, 850.0)
         representation_3d, representation_2d = create_box_objects(
@@ -1711,21 +1711,21 @@ class LibraryGenerator:
         representation_3d, representation_2d = create_box_objects(
             overall_width, overall_depth, overall_height, return_representations=True
         )
-        self.create_explicit_type("IfcFurnitureType", "Generic Small Fridge Zone", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricApplianceType", "Generic Small Fridge Zone", representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (900.0, 700.0, 1900.0)
         representation_3d, representation_2d = create_box_objects(
             overall_width, overall_depth, overall_height, return_representations=True
         )
         self.create_explicit_type(
-            "IfcFurnitureType", "Generic Medium Fridge Zone", representation_3d, representation_2d
+            "IfcElectricApplianceType", "Generic Medium Fridge Zone", representation_3d, representation_2d
         )
 
         overall_width, overall_depth, overall_height = (1000.0, 750.0, 1900.0)
         representation_3d, representation_2d = create_box_objects(
             overall_width, overall_depth, overall_height, return_representations=True
         )
-        self.create_explicit_type("IfcFurnitureType", "Generic Large Fridge Zone", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricApplianceType", "Generic Large Fridge Zone", representation_3d, representation_2d)
 
         def create_sink(width, depth, height, add_table):
             shift_to_center = V(-width / 2, -depth)
@@ -1801,7 +1801,7 @@ class LibraryGenerator:
 
             overall_width, overall_depth, overall_height = parameters
             representation_3d, representation_2d = create_sink(overall_width, overall_depth, overall_height, add_table)
-            self.create_explicit_type("IfcFurnitureType", sink_name, representation_3d, representation_2d)
+            self.create_explicit_type("IfcSanitaryTerminalType", sink_name, representation_3d, representation_2d)
 
         overall_width, overall_depth, overall_height = (2200.0, 600.0, 900.0)
         representation_3d, representation_2d = create_box_objects(
@@ -1861,7 +1861,7 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (595.0, 680.0, 850.0)
         representation_3d, representation_2d = create_washing_machine(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Washing Machine", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricApplianceType", "Neufert Washing Machine", representation_3d, representation_2d)
 
         def create_dryer_machine(width, depth, height):
             items_3d, items_2d = create_box_objects(width, depth, height)
@@ -1892,7 +1892,7 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (595.0, 680.0, 850.0)
         representation_3d, representation_2d = create_dryer_machine(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcFurnitureType", "Neufert Drier", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricApplianceType", "Neufert Drier", representation_3d, representation_2d)
 
         parking_lots_data = {
             "30 Deg Bay Class 1/1A No Overhang": (2100, 5400, 2000),
