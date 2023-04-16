@@ -278,6 +278,7 @@ class Drawing:
     def get_reference_document(cls, reference): pass
     def get_reference_location(cls, reference): pass
     def get_text_literal(cls, obj): pass
+    def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
     def import_schedules(cls): pass

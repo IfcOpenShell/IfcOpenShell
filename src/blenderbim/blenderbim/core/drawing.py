@@ -189,7 +189,7 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     ifc.run("group.assign_group", group=group, products=[element])
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
-    if drawing.get_unit_system == "METRIC":
+    if drawing.get_unit_system() == "METRIC":
         scale = "1/100"
         human_scale = "1:100"
     else:
