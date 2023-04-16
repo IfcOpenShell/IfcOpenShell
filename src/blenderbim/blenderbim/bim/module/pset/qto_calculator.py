@@ -895,7 +895,8 @@ class QtoCalculator:
 
         # add object to scene collection and then hide them.
         collection.objects.get(new_OBB_object.name, collection.objects.link(new_OBB_object))
-        new_OBB_object.hide_set(True)
+        if bpy.context.view_layer.objects.get(new_OBB_object.name):
+            new_OBB_object.hide_set(True)
 
         return new_OBB_object
 
@@ -948,7 +949,8 @@ class QtoCalculator:
 
         # add object to scene collection and then hide them.
         collection.objects.link(new_AABB_object)
-        new_AABB_object.hide_set(True)
+        if bpy.context.view_layer.objects.get(new_AABB_object.name):
+            new_AABB_object.hide_set(True)
 
         return new_AABB_object
 
@@ -992,7 +994,8 @@ class QtoCalculator:
         bpy.ops.mesh.select_all(action="SELECT")
         bpy.ops.mesh.bisect(plane_co=plane_co_neg, plane_no=plane_no_neg, use_fill=True, clear_outer=True)
         bpy.ops.object.editmode_toggle()
-        bis_obj.hide_set(True)
+        if bpy.context.view_layer.objects.get(bis_obj.name):
+            bis_obj.hide_set(True)
 
         return bis_obj
 

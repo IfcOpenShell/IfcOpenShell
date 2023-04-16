@@ -940,7 +940,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             context.area.type = old
             for global_id in exception_global_ids:
                 obj = IfcStore.get_element(global_id)
-                if obj:
+                if obj and bpy.context.view_layer.objects.get(obj.name):
                     obj.hide_set(True)
         else:
             objs = []
