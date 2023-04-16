@@ -1856,7 +1856,7 @@ class IfcImporter:
                     camera.BIMCameraProperties.diagram_scale = valid_scales[0]
                 else:
                     camera.BIMCameraProperties.diagram_scale = "CUSTOM"
-                    camera.BIMCameraProperties.custom_diagram_scale = pset["Scale"]
+                    camera.BIMCameraProperties.custom_diagram_scale = pset["HumanScale"] + "|" + pset["Scale"]
             if "HasUnderlay" in pset:
                 camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
             if "HasLinework" in pset:
