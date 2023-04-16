@@ -139,7 +139,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         bpy.ops.object.select_all(action="DESELECT")
         for product in products:
             obj = tool.Ifc.get_object(product)
-            if obj:
+            if obj and bpy.context.view_layer.objects.get(obj.name):
                 obj.select_set(True)
                 if unhide:
                     obj.hide_set(False)
@@ -150,12 +150,12 @@ class Spatial(blenderbim.core.tool.Spatial):
         if action == "select":
             [obj.select_set(True) for obj in objects]
         elif action == "isolate":
-            [obj.hide_set(False) for obj in objects]
-            [obj.hide_set(True) for obj in bpy.context.visible_objects if not obj in objects]  # this is slow
+            [obj.hide_set(False) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
+            [obj.hide_set(True) for obj in bpy.context.visible_objects if not obj in objects and bpy.context.view_layer.objects.get(obj.name)]  # this is slow
         elif action == "unhide":
-            [obj.hide_set(False) for obj in objects]
+            [obj.hide_set(False) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
         elif action == "hide":
-            [obj.hide_set(True) for obj in objects]
+            [obj.hide_set(True) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
 
     @classmethod
     def deselect_objects(cls):
@@ -164,7 +164,7 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def show_scene_objects(cls):
-        [obj.hide_set(False) for obj in bpy.data.scenes["Scene"].objects]
+        [obj.hide_set(False) for obj in bpy.data.scenes["Scene"].objects if bpy.context.view_layer.objects.get(obj.name)]
 
     @classmethod
     def get_selected_products(cls):

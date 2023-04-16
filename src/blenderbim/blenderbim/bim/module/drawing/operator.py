@@ -288,8 +288,9 @@ class CreateDrawing(bpy.types.Operator):
         else:
             previous_visibility = {}
             for obj in self.camera.users_collection[0].objects:
-                previous_visibility[obj.name] = obj.hide_get()
-                obj.hide_set(True)
+                if bpy.context.view_layer.objects.get(obj.name):
+                    previous_visibility[obj.name] = obj.hide_get()
+                    obj.hide_set(True)
             for obj in context.visible_objects:
                 if (
                     (not obj.data and not obj.instance_collection)
@@ -298,8 +299,9 @@ class CreateDrawing(bpy.types.Operator):
                     or "IfcGridAxis/" in obj.name
                     or "IfcOpeningElement/" in obj.name
                 ):
-                    previous_visibility[obj.name] = obj.hide_get()
-                    obj.hide_set(True)
+                    if bpy.context.view_layer.objects.get(obj.name):
+                        previous_visibility[obj.name] = obj.hide_get()
+                        obj.hide_set(True)
 
             space = self.get_view_3d(context.screen.areas)
             previous_shading = space.shading.type
