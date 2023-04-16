@@ -1424,8 +1424,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.ops.object.hide_view_clear()
 
         for hidden_obj in hidden_objs:
-            hidden_obj.hide_set(True)
-            hidden_obj.hide_render = True
+            if bpy.context.view_layer.objects.get(hidden_obj.name):
+                hidden_obj.hide_set(True)
+                hidden_obj.hide_render = True
 
         subcontexts = []
         target_view = cls.get_drawing_target_view(drawing)
