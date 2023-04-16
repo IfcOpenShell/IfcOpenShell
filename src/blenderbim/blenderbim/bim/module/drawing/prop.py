@@ -80,7 +80,7 @@ def update_diagram_scale(self, context):
         )
     except:
         return
-    pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
+    pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
