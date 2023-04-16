@@ -354,6 +354,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return os.path.splitext(path)[0] + f".{ext}"
 
     @classmethod
+    def get_unit_system(cls):
+        return bpy.context.scene.unit_settings.system
+
+    @classmethod
     def get_drawing_collection(cls, drawing):
         obj = tool.Ifc.get_object(drawing)
         if obj:
