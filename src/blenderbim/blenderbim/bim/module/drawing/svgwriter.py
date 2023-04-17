@@ -1056,7 +1056,8 @@ class SvgWriter:
         matrix_world = obj.matrix_world
         element = tool.Ifc.get_entity(obj)
         dimension_text = element.Description
-        show_description_only = DecoratorData.get_dimension_data(obj)["show_description_only"]
+        dimension_data = DecoratorData.get_dimension_data(obj)
+
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             for i, p in enumerate(points):
@@ -1070,7 +1071,8 @@ class SvgWriter:
                     classes,
                     dimension_text,
                     text_format=lambda x: "D" + x,
-                    show_description_only=show_description_only,
+                    show_description_only=dimension_data["show_description_only"],
+                    suppress_zero_inches=dimension_data["suppress_zero_inches"],
                 )
 
     def draw_dimension_annotations(self, obj):
@@ -1078,7 +1080,8 @@ class SvgWriter:
         matrix_world = obj.matrix_world
         element = tool.Ifc.get_entity(obj)
         dimension_text = element.Description
-        show_description_only = DecoratorData.get_dimension_data(obj)["show_description_only"]
+        dimension_data = DecoratorData.get_dimension_data(obj)
+
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             for i in range(len(points) - 1):
@@ -1089,7 +1092,8 @@ class SvgWriter:
                     v1_global,
                     classes,
                     dimension_text=dimension_text,
-                    show_description_only=show_description_only,
+                    show_description_only=dimension_data["show_description_only"],
+                    suppress_zero_inches=dimension_data["suppress_zero_inches"],
                 )
 
     def draw_measureit_arch_dimension_annotations(self):
@@ -1105,7 +1109,14 @@ class SvgWriter:
             )
 
     def draw_dimension_annotation(
-        self, v0_global, v1_global, classes, dimension_text=None, text_format=lambda x: x, show_description_only=False
+        self,
+        v0_global,
+        v1_global,
+        classes,
+        dimension_text=None,
+        text_format=lambda x: x,
+        show_description_only=False,
+        suppress_zero_inches=False,
     ):
         offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
@@ -1116,7 +1127,12 @@ class SvgWriter:
         vector = end - start
         perpendicular = Vector((vector.y, -vector.x)).normalized()
         dimension = (v1_global - v0_global).length
-        dimension = helper.format_distance(dimension, precision=self.precision, decimal_places=self.decimal_places)
+        dimension = helper.format_distance(
+            dimension,
+            precision=self.precision,
+            decimal_places=self.decimal_places,
+            suppress_zero_inches=suppress_zero_inches,
+        )
         sheet_dimension = (end - start).length
 
         # if annotation can't fit offset text to the right of marker
