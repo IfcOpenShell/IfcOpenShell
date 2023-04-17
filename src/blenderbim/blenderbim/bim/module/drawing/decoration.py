@@ -415,6 +415,49 @@ class BaseDecorator:
             split_unit=context.scene.unit_settings.system == "IMPERIAL",
         )
 
+    def draw_text(self, context, obj, text_world_position=None):
+        """if `text_world_position` is not provided, the object's location will be used"""
+        if not text_world_position:
+            text_world_position = obj.location
+
+        region = context.region
+        region3d = context.region_data
+
+        text_dir = Vector((1, 0))
+        text_dir_world = region3d.perspective_matrix.inverted().to_quaternion() @ text_dir.to_3d()
+        text_dir_world_rotated = obj.matrix_world.to_quaternion() @ text_dir_world
+        text_dir = (region3d.perspective_matrix.to_quaternion() @ text_dir_world_rotated).to_2d().normalized()
+
+        pos = location_3d_to_region_2d(region, region3d, text_world_position)
+        props = obj.BIMTextProperties
+        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
+        literals_data = text_data["Literals"]
+
+        # draw asterisk symbol to visually indicate that there are multiple literals
+        if len(literals_data) > 1:
+            verts = [text_world_position]
+            idxs = [(0, 0)]
+            self.draw_lines(context, obj, verts, idxs)
+
+        line_i = 0
+        for literal_data in literals_data:
+            box_alignment = literal_data["BoxAlignment"]
+
+            for line in literal_data["CurrentValue"].split("\\n"):
+                self.draw_label(
+                    context,
+                    line,
+                    pos,
+                    text_dir,
+                    gap=0,
+                    center=False,
+                    vcenter=False,
+                    font_size_mm=text_data["FontSize"],
+                    line_no=line_i,
+                    box_alignment=box_alignment,
+                )
+                line_i += 1
+
 
 class DimensionDecorator(BaseDecorator):
     """Decorator for dimension objects
@@ -735,24 +778,12 @@ class LeaderDecorator(BaseDecorator):
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
         if not spline_points:
             return Vector((0, 0, 0))
-        return obj.matrix_world @ spline_points[0].co
+        return (obj.matrix_world @ spline_points[0].co).to_3d()
 
     def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
         self.draw_lines(context, obj, verts, idxs, topo)
-        self.draw_labels(context, obj)
-
-    def draw_labels(self, context, obj):
-        region = context.region
-        region3d = context.region_data
-        dir = Vector((1, 0))
-        pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
-
-        props = obj.BIMTextProperties
-        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
-        text = text_data["Literals"][0]["CurrentValue"]
-
-        self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
+        self.draw_text(context, obj, self.get_spline_end(obj))
 
 
 class RadiusDecorator(BaseDecorator):
@@ -1848,49 +1879,7 @@ class TextDecorator(BaseDecorator):
     """
 
     def decorate(self, context, obj):
-        self.draw_labels(context, obj)
-
-    def draw_labels(self, context, obj):
-        region = context.region
-        region3d = context.region_data
-
-        def matrix_only_rotation(m):
-            return m.to_3x3().normalized().to_4x4()
-
-        text_dir = Vector((1, 0))
-        text_dir_world = matrix_only_rotation(region3d.perspective_matrix.inverted()) @ text_dir.to_3d()
-        text_dir_world_rotated = matrix_only_rotation(obj.matrix_world) @ text_dir_world
-        text_dir = (matrix_only_rotation(region3d.perspective_matrix) @ text_dir_world_rotated).to_2d().normalized()
-
-        pos = location_3d_to_region_2d(region, region3d, obj.matrix_world.translation)
-        props = obj.BIMTextProperties
-        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
-        literals_data = text_data["Literals"]
-
-        # draw asterisk symbol to visually indicate that there are multiple literals
-        if len(literals_data) > 1:
-            verts = [obj.location]
-            idxs = [(0, 0)]
-            self.draw_lines(context, obj, verts, idxs)
-
-        line_i = 0
-        for literal_data in literals_data:
-            box_alignment = literal_data["BoxAlignment"]
-
-            for line in literal_data["CurrentValue"].split("\\n"):
-                self.draw_label(
-                    context,
-                    line,
-                    pos,
-                    text_dir,
-                    gap=0,
-                    center=False,
-                    vcenter=False,
-                    font_size_mm=text_data["FontSize"],
-                    line_no=line_i,
-                    box_alignment=box_alignment,
-                )
-                line_i += 1
+        self.draw_text(context, obj)
 
 
 class CutDecorator:

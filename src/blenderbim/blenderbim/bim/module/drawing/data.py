@@ -212,7 +212,7 @@ class DecoratorData:
         cls.data[obj.name] = display_data
         return display_data
 
-    # used by Ifc Annotations with ObjectType = "TEXT"
+    # used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"
     @classmethod
     def get_ifc_text_data(cls, obj):
         """returns font size in mm for current ifc text object"""
