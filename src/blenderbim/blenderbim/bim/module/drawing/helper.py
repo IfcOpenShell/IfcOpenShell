@@ -120,7 +120,9 @@ class BoundingBox:
 
 # This function stolen from https://github.com/kevancress/MeasureIt_ARCH/blob/dcf607ce0896aa2284463c6b4ae9cd023fc54cbe/measureit_arch_baseclass.py
 # MeasureIt-ARCH is GPL-v3
-def format_distance(value, isArea=False, hide_units=True, precision=None, decimal_places=None):
+def format_distance(
+    value, isArea=False, hide_units=True, precision=None, decimal_places=None, suppress_zero_inches=False
+):
     s_code = "\u00b2"  # Superscript two THIS IS LEGACY (but being kept for when Area Measurements are re-implimented)
 
     # Get Scene Unit Settings
@@ -183,18 +185,19 @@ def format_distance(value, isArea=False, hide_units=True, precision=None, decima
             inches = 0
 
         if not isArea:
+            add_inches = bool(inches) or not suppress_zero_inches
             tx_dist = ""
             if feet:
                 tx_dist += str(feet) + "'"
-            if feet and inches:
+            if feet and add_inches:
                 tx_dist += " - "
-            if inches:
+            if add_inches:
                 tx_dist += str(inches)
-            if inches and frac:
+            if add_inches and frac:
                 tx_dist += " "
             if frac:
                 tx_dist += str(frac) + "/" + str(base)
-            if inches or frac:
+            if add_inches or frac:
                 tx_dist += '"'
         else:
             tx_dist = str("%1.3f" % (value * toInches / inPerFoot)) + " sq. ft."

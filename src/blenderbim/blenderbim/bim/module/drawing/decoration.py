@@ -570,7 +570,8 @@ class DimensionDecorator(BaseDecorator):
 
         element = tool.Ifc.get_entity(obj)
         description = element.Description
-        show_description_only = DecoratorData.get_dimension_data(obj)["show_description_only"]
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        show_description_only = dimension_data["show_description_only"]
 
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
@@ -583,6 +584,8 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
+                # TODO: same distance format function as in svg?
+                # requires storing drawing precision and decimal_places from pset to data.py
                 text = self.format_value(context, length)
 
                 self.draw_label(context, text, p0 + text_dir * 0.5, text_dir, box_alignment="bottom-middle")

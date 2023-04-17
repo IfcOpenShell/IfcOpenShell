@@ -276,11 +276,15 @@ class DecoratorData:
         if classes and "oblique" in classes.lower().split():
             dimension_style = "oblique"
 
-        show_description_only = (
-            ifcopenshell.util.element.get_pset(element, "BBIM_Dimension", "ShowDescriptionOnly") or False
-        )
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension") or {}
+        show_description_only = pset_data.get("ShowDescriptionOnly", False)
+        suppress_zero_inches = pset_data.get("SuppressZeroInches", False)
 
-        dimension_data = {"dimension_style": dimension_style, "show_description_only": show_description_only}
+        dimension_data = {
+            "dimension_style": dimension_style,
+            "show_description_only": show_description_only,
+            "suppress_zero_inches": suppress_zero_inches,
+        }
         cls.data[obj.name] = dimension_data
         return dimension_data
 
