@@ -1704,4 +1704,4 @@ class SelectAssignedProduct(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.select_assigned_product(tool.Drawing)
+        core.select_assigned_product(tool.Drawing, context)
