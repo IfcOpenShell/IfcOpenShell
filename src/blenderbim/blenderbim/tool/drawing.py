@@ -1367,8 +1367,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         return reference.ReferencedDocument
 
     @classmethod
-    def select_assigned_product(cls):
-        obj = cls.get_active_object()
+    def select_assigned_product(cls, context):
+        obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         product = cls.get_assigned_product(element)
         if product:
