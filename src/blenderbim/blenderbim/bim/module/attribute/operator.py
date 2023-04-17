@@ -50,7 +50,20 @@ class EnableEditingAttributes(bpy.types.Operator):
         oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
         props.attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes)
+
+        def callback(name, prop, data):
+            if name in ("RefLatitude", "RefLongitude"):
+                new = props.attributes.add()
+                new.name = name
+                new.is_null = data[name] is None
+                new.is_optional = True
+                new.data_type = "string"
+                new.ifc_class = data["type"]
+                new.string_value = "" if new.is_null else json.dumps(data[name])
+
+        blenderbim.bim.helper.import_attributes2(
+            tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes, callback=callback
+        )
         props.is_editing_attributes = True
         return {"FINISHED"}
 
@@ -87,7 +100,19 @@ class EditAttributes(bpy.types.Operator, Operator):
             obj = bpy.data.materials.get(self.obj)
         props = obj.BIMAttributeProperties
         product = tool.Ifc.get_entity(obj)
-        attributes = blenderbim.bim.helper.export_attributes(props.attributes)
+
+        def callback(attributes, prop):
+            if prop.name in ("RefLatitude", "RefLongitude"):
+                if prop.is_null:
+                    attributes[prop.name] = None
+                else:
+                    try:
+                        attributes[prop.name] = json.loads(prop.string_value)
+                    except:
+                        attributes[prop.name] = None
+                return True
+
+        attributes = blenderbim.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
         return {"FINISHED"}
