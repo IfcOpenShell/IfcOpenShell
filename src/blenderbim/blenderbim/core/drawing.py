@@ -380,8 +380,8 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
             drawing_tool.sync_object_representation(reference_obj)
 
 
-def select_assigned_product(drawing):
-    drawing.select_assigned_product()
+def select_assigned_product(drawing, context):
+    drawing.select_assigned_product(context)
 
 
 def activate_drawing_view(ifc, drawing_tool, drawing):
