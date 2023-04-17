@@ -241,6 +241,8 @@ class IfcImporter:
         self.profile_code("Create native elements")
         self.create_elements()
         self.profile_code("Create elements")
+        self.create_generic_elements(self.annotations)
+        self.profile_code("Create annotations")
         self.create_grids()
         self.profile_code("Create grids")
         self.create_spatial_elements()
@@ -320,10 +322,13 @@ class IfcImporter:
             if isinstance(self.elements, set):
                 self.elements = list(self.elements)
             # TODO: enable filtering for annotations
-            self.annotations = set(self.file.by_type("IfcAnnotation"))
+            self.annotations = set([a for a in self.file.by_type("IfcAnnotation") if not a.HasAssignments])
         else:
-            self.elements = self.file.by_type("IfcElement")
-            self.annotations = set(self.file.by_type("IfcAnnotation"))
+            if self.file.schema in ("IFC2X3", "IFC4"):
+                self.elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
+            else:
+                self.elements = self.file.by_type("IfcElement")
+            self.annotations = set([a for a in self.file.by_type("IfcAnnotation") if not a.HasAssignments])
 
         self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
         if self.ifc_import_settings.is_coordinating:
@@ -904,9 +909,6 @@ class IfcImporter:
 
         if mesh:
             pass
-        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            mesh = self.create_camera(element, shape)
-            tool.Loader.link_mesh(shape, mesh)
         elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element) and shape:
             mesh = self.create_curve(element, shape)
             tool.Loader.link_mesh(shape, mesh)
@@ -1816,54 +1818,6 @@ class IfcImporter:
                 and representation.RepresentationType == "MappedRepresentation"
             ):
                 return representation.Items[0].MappingTarget
-
-    def create_camera(self, element, shape):
-        if hasattr(shape, "geometry"):
-            geometry = shape.geometry
-        else:
-            geometry = shape
-
-        v = geometry.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        z = [v[i + 2] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
-        depth = max(z) - min(z)
-
-        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name(geometry))
-        camera.type = "ORTHO"
-        camera.ortho_scale = width if width > height else height
-        camera.clip_end = depth
-
-        if width > height:
-            camera.BIMCameraProperties.raster_x = 1000
-            camera.BIMCameraProperties.raster_y = round(1000 * (height / width))
-        else:
-            camera.BIMCameraProperties.raster_x = round(1000 * (width / height))
-            camera.BIMCameraProperties.raster_y = 1000
-
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets.get("EPset_Drawing")
-        if pset:
-            if "TargetView" in pset:
-                camera.BIMCameraProperties.target_view = pset["TargetView"]
-            if "Scale" in pset:
-                valid_scales = [
-                    i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]
-                ]
-                if valid_scales:
-                    camera.BIMCameraProperties.diagram_scale = valid_scales[0]
-                else:
-                    camera.BIMCameraProperties.diagram_scale = "CUSTOM"
-                    camera.BIMCameraProperties.custom_diagram_scale = pset["HumanScale"] + "|" + pset["Scale"]
-            if "HasUnderlay" in pset:
-                camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
-            if "HasLinework" in pset:
-                camera.BIMCameraProperties.has_linework = pset["HasLinework"]
-            if "HasAnnotation" in pset:
-                camera.BIMCameraProperties.has_annotation = pset["HasAnnotation"]
-        return camera
 
     def create_curve(self, element, shape):
         if hasattr(shape, "geometry"):
