@@ -912,7 +912,7 @@ class PartOfResult(Result):
 class PropertyResult(Result):
     def to_string(self):
         if self.reason["type"] == "NOPSET":
-            return "The entity has no property sets"
+            return "The required property set does not exist"
         elif self.reason["type"] == "NOVALUE":
             return "The property set does not contain the required property"
         elif self.reason["type"] == "MEASURE":
