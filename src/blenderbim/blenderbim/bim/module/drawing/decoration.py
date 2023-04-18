@@ -1908,6 +1908,9 @@ class CutDecorator:
         cls.installed = None
 
     def __call__(self, context):
+        self.model_props = context.scene.BIMModelProperties
+        selected_elements_color = self.model_props.decorator_color_selected
+
         all_vertices = []
         all_edges = []
         selected_vertices = []
@@ -1942,15 +1945,14 @@ class CutDecorator:
         self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
         self.shader.bind()
 
-        green = (0.545, 0.863, 0, 1)
         black = (0, 0, 0, 1)
 
         if all_vertices:
             self.draw_batch("LINES", all_vertices, black, all_edges)
             self.draw_batch("POINTS", all_vertices, black)
         if selected_vertices:
-            self.draw_batch("LINES", selected_vertices, green, selected_edges)
-            self.draw_batch("POINTS", selected_vertices, green)
+            self.draw_batch("LINES", selected_vertices, selected_elements_color, selected_edges)
+            self.draw_batch("POINTS", selected_vertices, selected_elements_color)
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
         shader = self.line_shader if shader_type == "LINES" else self.shader
