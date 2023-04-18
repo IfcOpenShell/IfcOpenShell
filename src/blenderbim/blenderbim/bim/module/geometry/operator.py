@@ -636,7 +636,7 @@ class OverrideJoin(bpy.types.Operator, Operator):
                     continue
                 element = tool.Ifc.get_entity(obj)
 
-                # Non IFC elements cannot be join since we cannot guarantee SweptSolid compliance
+                # Non IFC elements cannot be joined since we cannot guarantee SweptSolid compliance
                 if not element:
                     obj.select_set(False)
                     continue
@@ -651,6 +651,9 @@ class OverrideJoin(bpy.types.Operator, Operator):
 
                 for item in obj_rep.Items:
                     copied_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+                    for style in item.StyledByItem:
+                        copied_style = ifcopenshell.util.element.copy(tool.Ifc.get(), style)
+                        copied_style.Item = copied_item
                     if copied_item.Position:
                         position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
                     else:
