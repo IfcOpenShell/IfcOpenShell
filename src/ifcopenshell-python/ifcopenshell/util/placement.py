@@ -20,7 +20,10 @@ import numpy as np
 
 
 def a2p(o, z, x):
+    x = x / np.linalg.norm(x)
+    z = z / np.linalg.norm(z)
     y = np.cross(z, x)
+    y = y / np.linalg.norm(y)
     r = np.eye(4)
     r[:-1, :-1] = x, y, z
     r[-1, :-1] = o
