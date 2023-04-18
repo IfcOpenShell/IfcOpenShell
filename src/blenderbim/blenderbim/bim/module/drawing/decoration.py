@@ -422,11 +422,14 @@ class BaseDecorator:
 
         region = context.region
         region3d = context.region_data
+        camera = context.scene.camera
 
-        text_dir = Vector((1, 0))
-        text_dir_world = region3d.perspective_matrix.inverted().to_quaternion() @ text_dir.to_3d()
-        text_dir_world_rotated = obj.matrix_world.to_quaternion() @ text_dir_world
-        text_dir = (region3d.perspective_matrix.to_quaternion() @ text_dir_world_rotated).to_2d().normalized()
+        def get_basis_vector(matrix, i=0):
+            """returns basis vector for i in world space, unaffected by object scale"""
+            return matrix.inverted()[i].to_3d().normalized()
+
+        text_dir_world_x_axis = get_basis_vector(obj.matrix_world)
+        text_dir = (camera.matrix_world.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
         props = obj.BIMTextProperties
