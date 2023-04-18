@@ -91,6 +91,11 @@ def get_cartesiantransformationoperator3d(inst):
     return m4
 
 
+def get_mappeditem_transformation(item):
+    m4 = ifcopenshell.util.placement.get_axis2placement(item.MappingSource.MappingOrigin)
+    return get_cartesiantransformationoperator(item.MappingTarget) @ m4
+
+
 def get_storey_elevation(storey):
     if storey.ObjectPlacement:
         matrix = get_local_placement(storey.ObjectPlacement)
