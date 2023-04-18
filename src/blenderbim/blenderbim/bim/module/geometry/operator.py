@@ -815,10 +815,17 @@ class OverrideModeSetObject(bpy.types.Operator):
         )
 
     def draw(self, context):
-        row = self.layout.row(align=True)
-        row.prop(self, "should_save")
+        if self.is_valid:
+            row = self.layout.row()
+            row.prop(self, "should_save")
+        else:
+            row = self.layout.row()
+            row.label(text="No Geometry Found: Object will revert to previous state.")
 
     def invoke(self, context, event):
+        self.is_valid = True
+        self.should_save = True
+
         bpy.ops.object.mode_set(mode="EDIT", toggle=True)
 
         if not tool.Ifc.get():
@@ -834,16 +841,19 @@ class OverrideModeSetObject(bpy.types.Operator):
                 continue
 
             element = tool.Ifc.get_entity(obj)
-            if not element or element.is_a("IfcAnnotation"):
+            if not element:
                 continue
 
             if obj.data.BIMMeshProperties.ifc_definition_id:
+                if not tool.Geometry.has_geometric_data(obj):
+                    self.is_valid = False
+                    self.should_save = False
                 representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
                 if tool.Geometry.is_meshlike(
                     representation
                 ) and obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
                     self.edited_objs.append(obj)
-                elif element.HasOpenings:
+                elif getattr(element, "HasOpenings", None):
                     self.unchanged_objs_with_openings.append(obj)
 
         if self.edited_objs:
