@@ -248,6 +248,16 @@ class Geometry(blenderbim.core.tool.Geometry):
         return data.users != 0
 
     @classmethod
+    def has_geometric_data(cls, obj):
+        if not obj.data:
+            return False
+        if isinstance(obj.data, bpy.types.Mesh):
+            return bool(obj.data.vertices)
+        elif isinstance(obj.data, bpy.types.Curve):
+            return bool(obj.data.splines)
+        return False
+
+    @classmethod
     def import_representation(cls, obj, representation, apply_openings=True):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
