@@ -113,9 +113,7 @@ class Annotator:
         camera = tool.Ifc.get_object(drawing)
         co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = camera.matrix_world.copy()
-        matrix_world[0][3] = co1.x
-        matrix_world[1][3] = co1.y
-        matrix_world[2][3] = co1.z
+        matrix_world.translation = co1
         collection = camera.users_collection[0]
 
         if object_type == "TEXT":

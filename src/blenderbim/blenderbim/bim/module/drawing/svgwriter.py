@@ -665,13 +665,13 @@ class SvgWriter:
         text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
         text_position_svg = text_position * self.svg_scale
 
-        local_x_axis = text_obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        projected_x_axis = self.project_point_onto_camera(position + local_x_axis)
-        angle = math.degrees(
-            (Vector((x_offset + projected_x_axis.x, y_offset - projected_x_axis.y)) - text_position).angle_signed(
-                Vector((1, 0))
-            )
-        )
+        def get_basis_vector(matrix, i=0):
+            """returns basis vector for i in world space, unaffected by object scale"""
+            return matrix.inverted()[i].to_3d().normalized()
+
+        text_dir_world_x_axis = get_basis_vector(text_obj.matrix_world)
+        text_dir = (self.camera.matrix_world.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
+        angle = math.degrees(-text_dir.angle_signed(Vector((1, 0))))
 
         transform = "rotate({}, {}, {})".format(angle, *text_position_svg)
         classes = self.get_attribute_classes(text_obj)

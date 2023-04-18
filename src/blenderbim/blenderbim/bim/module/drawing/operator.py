@@ -553,7 +553,9 @@ class CreateDrawing(bpy.types.Operator):
                 value = ifcopenshell.util.selector.get_element_value(element, key)
                 if value:
                     classes.append(
-                        tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
+                        tool.Drawing.canonicalise_class_name(key)
+                        + "-"
+                        + tool.Drawing.canonicalise_class_name(str(value))
                     )
 
             el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
@@ -625,7 +627,6 @@ class CreateDrawing(bpy.types.Operator):
         decimal_places = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "DecimalPlaces")
         self.svg_writer.metadata = self.metadata
         self.svg_writer.create_blank_svg(svg_path).draw_annotations(annotations, precision, decimal_places).save()
-
 
         return svg_path
 
@@ -707,8 +708,7 @@ class AddAnnotation(bpy.types.Operator, Operator):
         if not drawing:
             self.report({"WARNING"}, "Not a BIM camera")
             return
-        # TODO: support adding multiple annotations if there are multiple selected objects
-        # that can be used as annotations references
+
         r = core.add_annotation(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing, object_type=self.object_type)
         if isinstance(r, str):
             self.report({"WARNING"}, r)
@@ -1022,7 +1022,6 @@ class ActivateModel(bpy.types.Operator):
                         should_sync_changes_first=True,
                     )
         return {"FINISHED"}
-
 
 
 class ActivateDrawing(bpy.types.Operator):
