@@ -218,7 +218,7 @@ class EditBcfTopicName(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        topic = bcfxml.topics[blender_topic.name]
+        topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title
         return {"FINISHED"}
 
@@ -233,7 +233,7 @@ class EditBcfTopic(bpy.types.Operator):
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
 
-        topic = bcfxml.topics[blender_topic.name]
+        topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title or None
         topic.priority = blender_topic.priority or None
         topic.due_date = blender_topic.due_date or None
