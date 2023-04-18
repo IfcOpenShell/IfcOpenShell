@@ -56,6 +56,41 @@ def get_local_placement(plc):
     return np.dot(parent, get_axis2placement(plc.RelativePlacement))
 
 
+def get_cartesiantransformationoperator3d(inst):
+    origin = np.array(inst.LocalOrigin.Coordinates)
+    axis1 = np.array((1., 0., 0.))
+    axis2 = np.array((0., 1., 0.))
+    axis3 = np.array((0., 0., 1.))
+
+    if inst.Axis1:
+        axis1[0:3] = inst.Axis1.DirectionRatios
+    if inst.Axis2:
+        axis2[0:3] = inst.Axis2.DirectionRatios
+    if inst.Axis3:
+        axis3[0:3] = inst.Axis3.DirectionRatios
+
+    m4 = ifcopenshell.util.placement.a2p(origin, axis3, axis1)
+    # Negate axis2 (introduce mirroring) when supplied axis2
+    # is opposite of constructed axis2, but remains orthogonal
+    if m4.T[1][0:3].dot(axis2) < 0.:
+        m4.T[1] *= -1.
+
+    scale1 = scale2 = scale3 = 1.
+
+    if inst.Scale:
+        scale1 = inst.Scale
+
+    if inst.is_a('IfcCartesianTransformationOperator3DnonUniform'):
+        scale2 = inst.Scale2 if inst.Scale2 is not None else scale1
+        scale3 = inst.Scale3 if inst.Scale3 is not None else scale1
+
+    m4.T[0] *= scale1
+    m4.T[1] *= scale2
+    m4.T[2] *= scale3
+
+    return m4
+
+
 def get_storey_elevation(storey):
     if storey.ObjectPlacement:
         matrix = get_local_placement(storey.ObjectPlacement)
