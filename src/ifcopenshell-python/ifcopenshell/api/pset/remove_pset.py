@@ -64,7 +64,8 @@ class Usecase:
             elif self.settings["pset"].is_a() in ("IfcMaterialProperties", "IfcProfileProperties"):
                 properties = self.settings["pset"].Properties or []
             for prop in properties:
-                self.file.remove(prop)
+                if self.file.get_total_inverses(prop) == 1:
+                    self.file.remove(prop)
             self.file.remove(self.settings["pset"])
         for element in to_purge:
             self.file.remove(element)
