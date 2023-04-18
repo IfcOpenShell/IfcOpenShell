@@ -78,6 +78,9 @@ def register():
         km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
 
+        km = wm.keyconfigs.addon.keymaps.new(name="Curve", space_type="EMPTY")
+        kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
+
         km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         kmi = km.keymap_items.new("bim.override_outliner_delete", "X", "PRESS")
