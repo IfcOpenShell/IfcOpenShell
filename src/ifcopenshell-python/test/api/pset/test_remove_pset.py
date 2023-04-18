@@ -73,3 +73,13 @@ class TestRemovePset(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelDefinesByProperties")) == 0
         assert len(self.file.by_type("IfcQuantitySet")) == 0
         assert len(self.file.by_type("IfcPhysicalSimpleQuantity")) == 0
+
+    def test_removing_a_pset_with_shared_properties(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        pset2 = ifcopenshell.api.run("pset.add_pset", self.file, product=element2, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        pset2.HasProperties = pset.HasProperties
+        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        assert pset2.HasProperties
