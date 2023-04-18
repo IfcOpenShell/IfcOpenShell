@@ -766,6 +766,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                             results.add(obj)
         return results
 
+
 # TODO: merge with ProfileDecorator?
 class DecorationsHandler:
     installed = None
@@ -792,26 +793,26 @@ class DecorationsHandler:
         batch.draw(shader)
 
     def __call__(self, context):
+        self.model_props = context.scene.BIMModelProperties
+        selected_elements_color = self.model_props.decorator_color_selected
+        unselected_elements_color = self.model_props.decorator_color_unselected
+        special_elements_color = self.model_props.decorator_color_special
+
+        def transparent_color(color, alpha=0.1):
+            color = [i for i in color]
+            color[3] = alpha
+            return color
+
         gpu.state.point_size_set(6)
         gpu.state.blend_set("ALPHA")
 
         for opening in context.scene.BIMModelProperties.openings:
             obj = opening.obj
-
             if not obj:
                 continue
 
-            white = (1, 1, 1, 1)
-            white_t = (1, 1, 1, 0.5)
-            green = (0.545, 0.863, 0, 1)
-            red = (1, 0.2, 0.322, 1)
-            red_t = (1, 0.2, 0.322, 0.1)
-            blue = (0.157, 0.565, 1, 1)
-            blue_t = (0.157, 0.565, 1, 0.1)
-            grey = (0.2, 0.2, 0.2, 1)
-
             self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
-            self.line_shader.bind() # required to be able to change uniforms of the shader
+            self.line_shader.bind()  # required to be able to change uniforms of the shader
             # POLYLINE_UNIFORM_COLOR specific uniforms
             self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
             self.line_shader.uniform_float("lineWidth", 2.0)
@@ -848,21 +849,22 @@ class DecorationsHandler:
                     else:
                         unselected_edges.append(edge_indices)
 
-                self.draw_batch("LINES", verts, white_t, unselected_edges)
-                self.draw_batch("LINES", verts, green, selected_edges)
-                self.draw_batch("POINTS", unselected_vertices, white)
-                self.draw_batch("POINTS", selected_vertices, green)
+                self.draw_batch("LINES", verts, transparent_color(unselected_elements_color, 0.5), unselected_edges)
+                self.draw_batch("LINES", verts, selected_elements_color, selected_edges)
+                self.draw_batch("POINTS", unselected_vertices, unselected_elements_color)
+                self.draw_batch("POINTS", selected_vertices, selected_elements_color)
             else:
                 bm = bmesh.new()
                 bm.from_mesh(obj.data)
 
                 verts = [tuple(obj.matrix_world @ v.co) for v in bm.verts]
                 edges = [tuple([v.index for v in e.verts]) for e in bm.edges]
-                self.draw_batch("LINES", verts, green if obj in context.selected_objects else blue, edges)
+                color = selected_elements_color if obj in context.selected_objects else special_elements_color
+                self.draw_batch("LINES", verts, color, edges)
 
             obj.data.calc_loop_triangles()
             tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
-            self.draw_batch("TRIS", verts, blue_t, tris)
+            self.draw_batch("TRIS", verts, transparent_color(special_elements_color), tris)
 
             if "HalfSpaceSolid" in obj.name:
                 # Arrow shape
@@ -875,7 +877,8 @@ class DecorationsHandler:
                     tuple(obj.matrix_world @ Vector((0, -0.05, 0.45))),
                 ]
                 edges = [(0, 1), (1, 2), (1, 3), (1, 4), (1, 5)]
-                self.draw_batch("LINES", verts, green if obj in context.selected_objects else blue, edges)
+                color = selected_elements_color if obj in context.selected_objects else special_elements_color
+                self.draw_batch("LINES", verts, color, edges)
 
             if obj.mode != "EDIT":
                 bm.free()

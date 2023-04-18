@@ -25,17 +25,14 @@ from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 
 
-white = (1, 1, 1, 1)
-white_t = (1, 1, 1, 0.5)
-green = (0.545, 0.863, 0, 1)
-red = (1, 0.2, 0.322, 1)
-blue = (0.157, 0.565, 1, 1)
-grey = (0.2, 0.2, 0.2, 1)
-blue = (0.157, 0.565, 1, 1)
-blue_t = (0.157, 0.565, 1, 0.1)
+ERROR_ELEMENTS_COLOR = (1, 0.2, 0.322, 1)  # RED
+UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 
-faces_color = blue_t
-preview_edges_color = blue
+
+def transparent_color(color, alpha=0.1):
+    color = [i for i in color]
+    color[3] = alpha
+    return color
 
 
 def bm_check_vertex_in_groups(vertex, deform_layer, groups):
@@ -85,9 +82,15 @@ class ProfileDecorator:
         bmesh.ops.triangulate(traingulated_bm, faces=traingulated_bm.faces)
 
         face_indices = [[v.index for v in f.verts] for f in traingulated_bm.faces]
+        faces_color = transparent_color(self.model_props.decorator_color_special)
         self.draw_batch("TRIS", vertices_coords, faces_color, face_indices)
 
     def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
+        self.model_props = context.scene.BIMModelProperties
+        selected_elements_color = self.model_props.decorator_color_selected
+        unselected_elements_color = self.model_props.decorator_color_unselected
+        special_elements_color = self.model_props.decorator_color_special
+
         obj = context.active_object
 
         if obj.mode != "EDIT":
@@ -203,16 +206,16 @@ class ProfileDecorator:
         if draw_faces:
             self.draw_faces(bm, all_vertices)
 
-        self.draw_batch("LINES", all_vertices, white_t, unselected_edges)
-        self.draw_batch("LINES", all_vertices, green, selected_edges)
-        self.draw_batch("LINES", all_vertices, grey, arc_edges)
-        self.draw_batch("LINES", all_vertices, preview_edges_color, preview_edges)
-        self.draw_batch("LINES", all_vertices, blue, roof_angle_edges)
+        self.draw_batch("LINES", all_vertices, transparent_color(unselected_elements_color), unselected_edges)
+        self.draw_batch("LINES", all_vertices, selected_elements_color, selected_edges)
+        self.draw_batch("LINES", all_vertices, UNSPECIAL_ELEMENT_COLOR, arc_edges)
+        self.draw_batch("LINES", all_vertices, special_elements_color, preview_edges)
+        self.draw_batch("LINES", all_vertices, special_elements_color, roof_angle_edges)
 
-        self.draw_batch("POINTS", unselected_vertices, white_t)
-        self.draw_batch("POINTS", error_vertices, red)
-        self.draw_batch("POINTS", special_vertices, blue)
-        self.draw_batch("POINTS", selected_vertices, green)
+        self.draw_batch("POINTS", unselected_vertices, transparent_color(unselected_elements_color, 0.5))
+        self.draw_batch("POINTS", error_vertices, ERROR_ELEMENTS_COLOR)
+        self.draw_batch("POINTS", special_vertices, self.model_props.decorator_color_special)
+        self.draw_batch("POINTS", selected_vertices, self.model_props.decorator_color_selected)
 
         # Draw arcs
         arc_centroids = []
@@ -237,9 +240,9 @@ class ProfileDecorator:
                 arc_centroids.append(tuple(centroid))
             arc_segments.append(tool.Cad.create_arc_segments(pts=points, num_verts=17, make_edges=True))
 
-        self.draw_batch("POINTS", arc_centroids, grey)
+        self.draw_batch("POINTS", arc_centroids, UNSPECIAL_ELEMENT_COLOR)
         for verts, edges in arc_segments:
-            self.draw_batch("LINES", verts, blue, edges)
+            self.draw_batch("LINES", verts, special_elements_color, edges)
 
         # Draw circles
         circle_centroids = []
@@ -258,9 +261,9 @@ class ProfileDecorator:
             segments = [[list(matrix @ Vector(v)) for v in segments[0]], segments[1]]
             circle_segments.append(segments)
 
-        self.draw_batch("POINTS", circle_centroids, grey)
+        self.draw_batch("POINTS", circle_centroids, UNSPECIAL_ELEMENT_COLOR)
         for verts, edges in circle_segments:
-            self.draw_batch("LINES", verts, blue, edges)
+            self.draw_batch("LINES", verts, special_elements_color, edges)
 
     def create_matrix(self, p, x, y, z):
         return Matrix([x, y, z, p]).to_4x4().transposed()
