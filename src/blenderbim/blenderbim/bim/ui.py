@@ -173,6 +173,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "decorations_colour")
+        row = self.layout.row()
+        row.prop(context.scene.BIMModelProperties, "decorator_color_selected")
+        row = self.layout.row()
+        row.prop(context.scene.BIMModelProperties, "decorator_color_unselected")
+        row = self.layout.row()
+        row.prop(context.scene.BIMModelProperties, "decorator_color_special")
 
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "schema_dir")
