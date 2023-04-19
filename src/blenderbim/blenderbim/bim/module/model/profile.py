@@ -260,7 +260,7 @@ class DumbProfileJoiner:
         body[1 if connection == "ATEND" else 0] = intersect
         self.recreate_profile(element1, profile1, axis, body)
 
-    def set_depth(self, profile1, length):
+    def set_depth(self, profile1, si_length):
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
@@ -270,8 +270,6 @@ class DumbProfileJoiner:
         axis1 = self.get_profile_axis(profile1)
         axis = copy.deepcopy(axis1)
         body = copy.deepcopy(axis1)
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        si_length = unit_scale * length
         end = profile1.matrix_world @ Vector((0, 0, si_length))
         axis[1] = end
         body[1] = end
@@ -977,5 +975,5 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         bpy.context.view_layer.update()
 
         joiner = DumbProfileJoiner()
-        joiner.set_depth(obj, depth / self.unit_scale)
+        joiner.set_depth(obj, depth)
         return {"FINISHED"}
