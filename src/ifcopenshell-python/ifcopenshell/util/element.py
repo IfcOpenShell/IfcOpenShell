@@ -641,6 +641,9 @@ def get_decomposition(element):
         for rel in getattr(element, "HasFillings", []):
             queue.append(rel.RelatedBuildingElement)
             results.append(rel.RelatedBuildingElement)
+        for rel in getattr(element, "IsNestedBy", []):
+            queue.extend(rel.RelatedObjects)
+            results.extend(rel.RelatedObjects)
     return results
 
 
