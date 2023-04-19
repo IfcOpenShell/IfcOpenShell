@@ -42,13 +42,13 @@ def assign_object_base_qto(ifc, qto, obj):
     )
 
 
-def calculate_objects_base_quantities(ifc, qto, calculator, selected_objects):
+def calculate_objects_base_quantities(ifc, cost, qto, calculator, selected_objects):
     if selected_objects:
         for obj in selected_objects:
-            calculate_object_base_quantities(ifc, qto, calculator, obj)
+            calculate_object_base_quantities(ifc, cost, qto, calculator, obj)
 
 
-def calculate_object_base_quantities(ifc, qto, calculator, obj):
+def calculate_object_base_quantities(ifc, cost, qto, calculator, obj):
     product = ifc.get_entity(obj)
     if not product:
         return
@@ -65,3 +65,4 @@ def calculate_object_base_quantities(ifc, qto, calculator, obj):
         )
     calculated_quantities = qto.get_calculated_object_quantities(calculator, base_quantity_name, obj)
     ifc.run("pset.edit_qto", qto=base_qto, properties=calculated_quantities)
+    cost.update_cost_items(product=product)
