@@ -26,6 +26,7 @@ from shapely.ops import unary_union
 import blenderbim.tool as tool
 import ifcopenshell
 from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
+import blenderbim.bim
 
 
 class QtoCalculator:
@@ -45,6 +46,27 @@ class QtoCalculator:
                 else:
                     self.mapping_dict[key][item] = None
 
+    def convert_to_project_units(self, value, qto_name, quantity_name):
+        ifc_file = tool.Ifc.get()
+        quantity_to_unit_types = {
+            'Q_LENGTH': ('LENGTHUNIT', 'METRE'),
+            'Q_AREA': ('AREAUNIT', 'SQUARE_METRE'),
+            'Q_VOLUME': ('VOLUMEUNIT', 'CUBIC_METRE'),
+        }
+        
+        qt = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
+        quantity_type = next(q.TemplateType for q in qt.HasPropertyTemplates if q.Name == quantity_name)
+        unit_type =  quantity_to_unit_types.get(quantity_type, None)
+        if not unit_type:
+            return
+    
+        unit_type, base_unit = unit_type
+        project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type)
+        if not project_unit:
+            return
+        value = ifcopenshell.util.unit.convert(value, from_prefix=None, from_unit=base_unit, to_prefix=getattr(project_unit, "Prefix", None), to_unit=project_unit.Name)
+        return value
+    
     def calculate_quantity(self, qto_name, quantity_name, obj):
         string = "self.mapping_dict[qto_name][quantity_name](obj"
         if isinstance(mapper[qto_name][quantity_name], dict):
@@ -53,7 +75,9 @@ class QtoCalculator:
             args = ""
         string += args
         string += ")"
-        return eval(string)
+        value = eval(string)
+
+        return self.convert_to_project_units(value, qto_name, quantity_name) or value
 
     def guess_quantity(self, prop_name, alternative_prop_names, obj):
         prop_name = prop_name.lower()
