@@ -68,24 +68,45 @@ class TestGetRoundedValue(test.bim.bootstrap.NewFile):
         assert subject.get_rounded_value(quantity) == 1.234
 
 class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        project = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject", name="My Project")
-        ifcopenshell.api.run("unit.assign_unit", ifc)
-        context = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        bpy.ops.mesh.primitive_cube_add(location=(0.0,0.0,0.0), size = 2)
+    def setup_file(self):
+        self.ifc = ifcopenshell.file()
+        tool.Ifc.set(self.ifc)
+        project = ifcopenshell.api.run("root.create_entity", self.ifc, ifc_class="IfcProject", name="My Project")
+
+    def setup_units(self, units):
+        ifcopenshell.api.run("unit.assign_unit", self.ifc, **units)
+
+    def calculate_quantities(self, obj):
+        context = ifcopenshell.api.run("context.add_context", self.ifc, context_type="Model")
+        bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 0.0), size=2)
         obj = bpy.context.active_object
-        element = blenderbim.core.root.assign_class(tool.Ifc,
-                                                    tool.Collector,
-                                                    tool.Root,
-                                                    obj=obj,
-                                                    ifc_class="IfcWall",
-                                                    predefined_type = "ELEMENTEDWALL",
-                                                    context = context)
+        element = blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcWall",
+            predefined_type="ELEMENTEDWALL",
+            context=context,
+        )
         calculator = QtoCalculator()
-        base_qto = ifcopenshell.api.run("pset.add_qto", ifc, product=element, name="Qto_WallBaseQuantities")
-        quantities = subject.get_calculated_object_quantities(calculator = calculator, qto_name = "Qto_WallBaseQuantities", obj = obj)
+        base_qto = ifcopenshell.api.run("pset.add_qto", self.ifc, product=element, name="Qto_WallBaseQuantities")
+        quantities = subject.get_calculated_object_quantities(
+            calculator=calculator, qto_name="Qto_WallBaseQuantities", obj=obj
+        )
+        return quantities
+
+    def test_meters_project_unit(self):
+        self.setup_file()
+        self.setup_units(
+            {
+                "length": {"is_metric": True, "raw": "METERS"},
+                "area": {"is_metric": True, "raw": "SQUARE_METERS"},
+                "volume": {"is_metric": True, "raw": "CUBIC_METERS"},
+            }
+        )
+        quantities = self.calculate_quantities(bpy.context.active_object)
+
         assert quantities["Length"] == 2
         assert quantities["Width"] == 2
         assert quantities["Height"] == 2
@@ -95,6 +116,49 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         assert quantities["NetSideArea"] == 4
         assert quantities["GrossVolume"] == 8
         assert quantities["NetVolume"] == 8
+
+    def test_prefix_project_unit(self):
+        self.setup_file()
+        self.setup_units(
+            {
+                "length": {"is_metric": True, "raw": "MILLIMETERS"},
+                "area": {"is_metric": True, "raw": "SQUARE_MILLIMETERS"},
+                "volume": {"is_metric": True, "raw": "CUBIC_MILLIMETERS"},
+            }
+        )
+        quantities = self.calculate_quantities(bpy.context.active_object)
+
+        assert quantities["Length"] == 2e3
+        assert quantities["Width"] == 2e3
+        assert quantities["Height"] == 2e3
+        assert quantities["GrossFootprintArea"] == 4e6
+        assert quantities["NetFootprintArea"] == 4e6
+        assert quantities["GrossSideArea"] == 4e6
+        assert quantities["NetSideArea"] == 4e6
+        assert quantities["GrossVolume"] == 8e9
+        assert quantities["NetVolume"] == 8e9
+
+    def test_imperial_project_unit(self):
+        self.setup_file()
+        self.setup_units(
+            {
+                "length": {"is_metric": False, "raw": "FEET"},
+                "area": {"is_metric": False, "raw": "FEET"},
+                "volume": {"is_metric": False, "raw": "FEET"},
+            }
+        )
+        quantities = self.calculate_quantities(bpy.context.active_object)
+
+        assert quantities["Length"] == 6.562
+        assert quantities["Width"] == 6.562
+        assert quantities["Height"] == 6.562
+        assert quantities["GrossFootprintArea"] == 43.056
+        assert quantities["NetFootprintArea"] == 43.056
+        assert quantities["GrossSideArea"] == 43.056
+        assert quantities["NetSideArea"] == 43.056
+        assert quantities["GrossVolume"] == 282.517
+        assert quantities["NetVolume"] == 282.517
+
 
 class TestAddObjectBaseQto(test.bim.bootstrap.NewFile):
     def test_run(self):
