@@ -1021,6 +1021,7 @@ class ActivateModel(bpy.types.Operator):
                         is_global=True,
                         should_sync_changes_first=True,
                     )
+        tool.Blender.update_viewport()
         return {"FINISHED"}
 
 
