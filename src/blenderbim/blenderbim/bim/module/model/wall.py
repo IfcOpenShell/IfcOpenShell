@@ -207,6 +207,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         layer2_objs = []
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -219,7 +220,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
                 return
             x, y, z = extrusion.ExtrudedDirection.DirectionRatios
             x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
-            extrusion.Depth = self.depth * (1 / cos(x_angle))
+            extrusion.Depth = self.depth / si_conversion * (1 / cos(x_angle))
             if tool.Model.get_usage_type(element) == "LAYER2":
                 for rel in element.ConnectedFrom:
                     if rel.is_a() == "IfcRelConnectsElements":
@@ -996,7 +997,7 @@ class DumbWallJoiner:
 
         self.recreate_wall(element1, wall1, axis, body)
 
-    def set_length(self, wall1, length):
+    def set_length(self, wall1, si_length):
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
@@ -1006,8 +1007,6 @@ class DumbWallJoiner:
         axis1 = tool.Model.get_wall_axis(wall1)
         axis = copy.deepcopy(axis1["reference"])
         body = copy.deepcopy(axis1["reference"])
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        si_length = unit_scale * length
         end = (wall1.matrix_world @ Vector((si_length, 0, 0))).to_2d()
         axis[1] = end
         body[1] = end
