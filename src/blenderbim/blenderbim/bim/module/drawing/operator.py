@@ -1485,10 +1485,12 @@ class DisableEditingText(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_text(tool.Drawing, obj=context.active_object)
+        obj = context.active_object
+        core.disable_editing_text(tool.Drawing, obj=obj)
 
         # force update this object's font size for viewport display
-        DecoratorData.data.pop(context.object.name, None)
+        DecoratorData.data.pop(obj.name, None)
+        tool.Drawing.update_text_value(obj)
         tool.Blender.update_viewport()
 
 
