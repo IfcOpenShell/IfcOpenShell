@@ -86,7 +86,7 @@ class BIMModelProperties(PropertyGroup):
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
-    extrusion_depth: bpy.props.FloatProperty(default=42.0)
+    extrusion_depth: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
@@ -113,7 +113,7 @@ class BIMModelProperties(PropertyGroup):
         name="Cardinal Point",
         default="5",
     )
-    length: bpy.props.FloatProperty(default=42.0)
+    length: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
     openings: bpy.props.CollectionProperty(type=ObjProperty)
     x: bpy.props.FloatProperty(name="X", default=0.5)
     y: bpy.props.FloatProperty(name="Y", default=0.5)
