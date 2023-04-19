@@ -30,7 +30,6 @@ import blenderbim.bim
 
 
 class QtoCalculator:
-
     def __init__(self):
         self.mapping_dict = {}
         for key in mapper.keys():
@@ -49,24 +48,30 @@ class QtoCalculator:
     def convert_to_project_units(self, value, qto_name, quantity_name):
         ifc_file = tool.Ifc.get()
         quantity_to_unit_types = {
-            'Q_LENGTH': ('LENGTHUNIT', 'METRE'),
-            'Q_AREA': ('AREAUNIT', 'SQUARE_METRE'),
-            'Q_VOLUME': ('VOLUMEUNIT', 'CUBIC_METRE'),
+            "Q_LENGTH": ("LENGTHUNIT", "METRE"),
+            "Q_AREA": ("AREAUNIT", "SQUARE_METRE"),
+            "Q_VOLUME": ("VOLUMEUNIT", "CUBIC_METRE"),
         }
-        
+
         qt = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
         quantity_type = next(q.TemplateType for q in qt.HasPropertyTemplates if q.Name == quantity_name)
-        unit_type =  quantity_to_unit_types.get(quantity_type, None)
+        unit_type = quantity_to_unit_types.get(quantity_type, None)
         if not unit_type:
             return
-    
+
         unit_type, base_unit = unit_type
         project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type)
         if not project_unit:
             return
-        value = ifcopenshell.util.unit.convert(value, from_prefix=None, from_unit=base_unit, to_prefix=getattr(project_unit, "Prefix", None), to_unit=project_unit.Name)
+        value = ifcopenshell.util.unit.convert(
+            value,
+            from_prefix=None,
+            from_unit=base_unit,
+            to_prefix=getattr(project_unit, "Prefix", None),
+            to_unit=project_unit.Name,
+        )
         return value
-    
+
     def calculate_quantity(self, qto_name, quantity_name, obj):
         string = "self.mapping_dict[qto_name][quantity_name](obj"
         if isinstance(mapper[qto_name][quantity_name], dict):
@@ -102,7 +107,7 @@ class QtoCalculator:
             return self.get_gross_surface_area(obj)
         elif "volume" in prop_name and "gross" in prop_name:
             return self.get_gross_volume(obj)
-        elif "volume" in prop_name :
+        elif "volume" in prop_name:
             return self.get_net_volume(obj)
 
     def get_units(self, o, vg_index):
@@ -124,7 +129,7 @@ class QtoCalculator:
             x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
             y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
             z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
-            if self.get_object_main_axis(o) == "x" or main_axis=="x":
+            if self.get_object_main_axis(o) == "x" or main_axis == "x":
                 return max(x, y)
             if self.get_object_main_axis(o) == "z":
                 return max(z, x)
@@ -250,7 +255,10 @@ class QtoCalculator:
         decompositions = ifcopenshell.util.element.get_decomposition(element)
         finish_floor_height = 0
         for decomposition in decompositions:
-            if decomposition.get_info()['PredefinedType'] == 'FLOORING' and decomposition.get_info()['type'] == 'IfcCovering' :
+            if (
+                decomposition.get_info()["PredefinedType"] == "FLOORING"
+                and decomposition.get_info()["type"] == "IfcCovering"
+            ):
                 floor_obj = tool.Ifc.get_object(decomposition)
                 new_finish_floor_height = self.get_height(floor_obj)
                 if new_finish_floor_height > finish_floor_height:
@@ -263,15 +271,16 @@ class QtoCalculator:
         decompositions = ifcopenshell.util.element.get_decomposition(element)
         finish_ceiling_height = 0
         for decomposition in decompositions:
-            if decomposition.get_info()['PredefinedType'] == 'CEILING' and decomposition.get_info()['type'] == 'IfcCovering' :
+            if (
+                decomposition.get_info()["PredefinedType"] == "CEILING"
+                and decomposition.get_info()["type"] == "IfcCovering"
+            ):
                 ceiling_obj = tool.Ifc.get_object(decomposition)
                 new_finish_ceiling_height = self.get_height(ceiling_obj)
                 if new_finish_ceiling_height > finish_ceiling_height:
                     finish_ceiling_height = new_finish_ceiling_height
 
         return finish_ceiling_height
-
-
 
     def get_net_perimeter(self, o):
         parsed_edges = []
@@ -300,9 +309,9 @@ class QtoCalculator:
         pass
 
     def get_rectangular_perimeter(self, obj):
-        length = self.get_length(obj, main_axis='x')
+        length = self.get_length(obj, main_axis="x")
         height = self.get_height(obj)
-        return (length+height)*2
+        return (length + height) * 2
 
     def get_lowest_polygons(self, o):
         lowest_polygons = []
@@ -321,7 +330,6 @@ class QtoCalculator:
         return lowest_polygons
 
     def get_highest_polygons(self, o):
-
         highest_polygons = []
         highest_z = None
         for polygon in o.data.polygons:
@@ -351,8 +359,8 @@ class QtoCalculator:
         total_net_floor_area = self.get_net_footprint_area(obj)
 
         for decomposition in decompositions:
-            decomposition_type = decomposition.get_info()['type']
-            if  decomposition_type == 'IfcColumn' or decomposition_type == 'IfcColumn':
+            decomposition_type = decomposition.get_info()["type"]
+            if decomposition_type == "IfcColumn" or decomposition_type == "IfcColumn":
                 decomposition_obj = tool.Ifc.get_object(decomposition)
                 net_footprint_obj_area = self.get_net_footprint_area(decomposition_obj)
                 total_net_floor_area -= net_footprint_obj_area
@@ -367,9 +375,9 @@ class QtoCalculator:
         total_gross_ceiling_area = 0
 
         for decomposition in decompositions:
-            decomposition_type = decomposition.get_info()['type']
-            decomposition_predefined_type = decomposition.get_info()['PredefinedType']
-            if  decomposition_type == 'IfcCovering' and decomposition_predefined_type == 'CEILING':
+            decomposition_type = decomposition.get_info()["type"]
+            decomposition_predefined_type = decomposition.get_info()["PredefinedType"]
+            if decomposition_type == "IfcCovering" and decomposition_predefined_type == "CEILING":
                 decomposition_obj = tool.Ifc.get_object(decomposition)
                 total_gross_ceiling_area += self.get_gross_footprint_area(decomposition_obj)
 
@@ -383,13 +391,13 @@ class QtoCalculator:
         total_net_ceiling_area = 0
 
         for decomposition in decompositions:
-            decomposition_type = decomposition.get_info()['type']
-            decomposition_predefined_type = decomposition.get_info()['PredefinedType']
-            if  decomposition_type == 'IfcCovering' and decomposition_predefined_type == 'CEILING':
+            decomposition_type = decomposition.get_info()["type"]
+            decomposition_predefined_type = decomposition.get_info()["PredefinedType"]
+            if decomposition_type == "IfcCovering" and decomposition_predefined_type == "CEILING":
                 decomposition_obj = tool.Ifc.get_object(decomposition)
                 total_net_ceiling_area += self.get_net_footprint_area(decomposition_obj)
 
-            if  decomposition_type == 'IfcWall' or decomposition_type == 'IfcColumn':
+            if decomposition_type == "IfcWall" or decomposition_type == "IfcColumn":
                 decomposition_obj = tool.Ifc.get_object(decomposition)
                 total_net_ceiling_area -= self.get_net_roofprint_area(decomposition_obj)
 
@@ -403,8 +411,8 @@ class QtoCalculator:
         total_space_net_volume = self.get_gross_volume(obj)
 
         for decomposition in decompositions:
-            decomposition_type = decomposition.get_info()['type']
-            if  decomposition_type == 'IfcWall' or decomposition_type == 'IfcColumn':
+            decomposition_type = decomposition.get_info()["type"]
+            if decomposition_type == "IfcWall" or decomposition_type == "IfcColumn":
                 decomposition_obj = tool.Ifc.get_object(decomposition)
                 total_space_net_volume -= self.get_net_volume(decomposition_obj)
 
@@ -565,33 +573,37 @@ class QtoCalculator:
             or material.is_a("IfcMaterialProfileSet")
             or material.is_a("IfcMaterialConstituentSet")
         ):
-                return
+            return
 
-        if material.is_a('IfcMaterial'):
+        if material.is_a("IfcMaterial"):
             material_mass_density = ifcopenshell.util.element.get_pset(material, "Pset_MaterialCommon", "MassDensity")
             return material_mass_density
 
-        if material.is_a('IfcMaterialLayerSetUsage'):
+        if material.is_a("IfcMaterialLayerSetUsage"):
             material_layers = material.ForLayerSet.MaterialLayers
             densities = []
             thicknesses = []
             obj_mass_density = 0
             for material_layer in material_layers:
-                material_mass_density = ifcopenshell.util.element.get_pset(material_layer.Material, "Pset_MaterialCommon", "MassDensity")
+                material_mass_density = ifcopenshell.util.element.get_pset(
+                    material_layer.Material, "Pset_MaterialCommon", "MassDensity"
+                )
                 if material_mass_density is None:
                     return
                 densities.append(material_mass_density)
                 thickness = material_layer.LayerThickness
                 thicknesses.append(thickness)
-                obj_mass_density = obj_mass_density + (material_mass_density* thickness)
+                obj_mass_density = obj_mass_density + (material_mass_density * thickness)
             total_thickness = sum(thicknesses)
-            obj_mass_density = obj_mass_density/total_thickness
+            obj_mass_density = obj_mass_density / total_thickness
             return obj_mass_density
 
-        if material.is_a('IfcMaterialProfileSetUsage'):
+        if material.is_a("IfcMaterialProfileSetUsage"):
             material_profiles = material.ForProfileSet.MaterialProfiles
             if len(material_profiles) == 1:
-                material_mass_density = ifcopenshell.util.element.get_pset(material_profiles[0].Material, "Pset_MaterialCommon", "MassDensity")
+                material_mass_density = ifcopenshell.util.element.get_pset(
+                    material_profiles[0].Material, "Pset_MaterialCommon", "MassDensity"
+                )
                 return material_mass_density
             else:
                 return
@@ -663,8 +675,8 @@ class QtoCalculator:
             for opening in openings:
                 opening_id = opening.RelatedOpeningElement.GlobalId
                 ifc_opening_element = ifc.by_guid(opening_id)
-                #bl_opening_obj = tool.Ifc.get_object(ifc_opening_element)
-                #mesh = bpy.data.meshes.new('myMesh')
+                # bl_opening_obj = tool.Ifc.get_object(ifc_opening_element)
+                # mesh = bpy.data.meshes.new('myMesh')
                 mesh = self.get_gross_element_mesh(ifc_opening_element)
 
                 bl_opening_obj = bpy.data.objects.new("MyObject", mesh)
@@ -680,8 +692,12 @@ class QtoCalculator:
 
                 bl_OBB_opening_object = self.get_OBB_object(bl_opening_obj)
                 opening_area = self.get_lateral_area(
-                    #self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
-                    bl_OBB_opening_object, angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True, main_axis = 'x',
+                    # self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
+                    bl_OBB_opening_object,
+                    angle_z1=angle_z1,
+                    angle_z2=angle_z2,
+                    exclude_end_areas=True,
+                    main_axis="x",
                 )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
@@ -756,16 +772,16 @@ class QtoCalculator:
         if not self.has_openings(obj):
             return self.get_net_side_area(obj)
 
-        gross_side_area = self.get_lateral_area(obj, exclude_end_areas = True, subtract_openings = False, main_axis = 'x') / 2
+        gross_side_area = self.get_lateral_area(obj, exclude_end_areas=True, subtract_openings=False, main_axis="x") / 2
 
         return gross_side_area
 
     def get_net_side_area(self, obj):
-        net_side_area = self.get_lateral_area(obj, exclude_end_areas = True, main_axis = 'x') / 2
+        net_side_area = self.get_lateral_area(obj, exclude_end_areas=True, main_axis="x") / 2
         return net_side_area
 
     def get_outer_surface_area(self, obj):
-        outer_surface_area = self.get_lateral_area(obj, exclude_end_areas = True, angle_z1 = 0, angle_z2 = 360)
+        outer_surface_area = self.get_lateral_area(obj, exclude_end_areas=True, angle_z1=0, angle_z2=360)
         return outer_surface_area
 
     def get_end_area(self, obj):
@@ -775,7 +791,7 @@ class QtoCalculator:
 
         gross_obj.matrix_world = obj.matrix_world
 
-        end_area = self.get_lateral_area(gross_obj, exclude_side_areas = True) / 2
+        end_area = self.get_lateral_area(gross_obj, exclude_side_areas=True) / 2
 
         self.delete_obj(gross_obj)
         self.delete_mesh(gross_mesh)
@@ -798,7 +814,7 @@ class QtoCalculator:
         ifc = tool.Ifc.get()
         ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
-#        if len(openings := ifc_element.HasOpenings) != 0:
+        #        if len(openings := ifc_element.HasOpenings) != 0:
         if len(openings := self.has_openings(obj)) != 0:
             for opening in openings:
                 if opening.RelatedOpeningElement.PredefinedType == "OPENING":
@@ -837,8 +853,8 @@ class QtoCalculator:
 
             if angle_to_z_axis < angle:
                 # offset the raycast, otherwise the raycast will always collide with the object.
-                offset = polygon.center+Vector((0,0,0.01))
-                if ignore_internal and obj.ray_cast(offset, (0,0,1))[0]:
+                offset = polygon.center + Vector((0, 0, 0.01))
+                if ignore_internal and obj.ray_cast(offset, (0, 0, 1))[0]:
                     continue
                 area += polygon.area
 
@@ -966,7 +982,7 @@ class QtoCalculator:
         new_AABB_object = bpy.data.objects.new(f"OBB_{ifc_id}", aabb_mesh)
         new_AABB_object.matrix_world = obj.matrix_world
 
-          # create new collection for QtoCalculator
+        # create new collection for QtoCalculator
         collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
         if not bpy.context.scene.collection.children.get(collection.name):
             bpy.context.scene.collection.children.link(collection)
@@ -1122,12 +1138,7 @@ class QtoCalculator:
             return 0
 
         # touching polygons should be coplanar:
-        plane_intersection = mathutils.geometry.intersect_plane_plane(
-                center1,
-                normal1,
-                center2,
-                normal2
-            )
+        plane_intersection = mathutils.geometry.intersect_plane_plane(center1, normal1, center2, normal2)
 
         # sometimes coplanar planes will interesect far off into the distance.  This is a crude way of filtering out those intersections.
         if plane_intersection[0] is None or (plane_intersection[0] - center1).magnitude > 20:
@@ -1236,15 +1247,16 @@ class QtoCalculator:
         bpy.data.meshes.remove(mesh)
 
     def delete_obj(self, obj):
-        bpy.data.objects.remove(obj, do_unlink = True)
+        bpy.data.objects.remove(obj, do_unlink=True)
+
 
 # # Following code is here temporarily to test newly created functions:
 
-#qto = QtoCalculator()
-#o = bpy.context.active_object
-#sel = bpy.context.selected_objects
+# qto = QtoCalculator()
+# o = bpy.context.active_object
+# sel = bpy.context.selected_objects
 #
-#nl = '\n'
+# nl = '\n'
 # print(
 #     f"get_linear_length: {qto.get_linear_length(o)}{nl}{nl}"
 #     f"get_width: {qto.get_width(o)}{nl}{nl}"
@@ -1269,5 +1281,3 @@ class QtoCalculator:
 #     f"get_touching_objects(o, ['IfcElement']): {qto.get_touching_objects(o, ['IfcElement'])}{nl}{nl}"
 #     #f"get_contact_area: {qto.get_contact_area(o)}{nl}{nl}"
 #     )
-
-
