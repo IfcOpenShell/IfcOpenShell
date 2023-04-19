@@ -634,7 +634,31 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def load_cost_item_quantities(cls, cost_item=None):
         if not cost_item:
-            cost_item = tool.Cost.get_highlighted_cost_item()
-        tool.Cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
-        tool.Cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
-        tool.Cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
+            cost_item = cls.get_highlighted_cost_item()
+        if not cost_item:
+            return
+        cls.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
+        cls.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
+        cls.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
+
+    @classmethod
+    def update_cost_items(cls, product=None, pset=None):
+        cost_items = []
+        if product:
+            cost_items = ifcopenshell.util.cost.get_cost_items_for_product(product)
+        if pset:
+            def get_products_from_pset(pset):
+                products = []
+                for rel in pset.DefinesOccurrence or []:
+                    if rel.is_a("IfcRelDefinesByProperties"):
+                        products.extend(rel.RelatedObjects)
+                return products
+            products = get_products_from_pset(pset)
+            for product in products or []:
+                cost_items.extend(ifcopenshell.util.cost.get_cost_items_for_product(product))
+        for cost_item in cost_items:
+            cls.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
+
+    @classmethod
+    def has_schedules(cls):
+        return bool(tool.Ifc.get().by_type("IfcCostSchedule"))

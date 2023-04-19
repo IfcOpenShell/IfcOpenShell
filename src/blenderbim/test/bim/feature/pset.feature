@@ -212,6 +212,19 @@ Scenario: Edit pset - object
     When I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
 
+Scenario: Edit qto - object
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I set "active_object.PsetProperties.qto_name" to "Qto_WallBaseQuantities"
+    When I press "bim.add_qto(obj='IfcWall/Cube', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties[0].metadata.float_value" to "0.42"
+    And I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
+    Then nothing happens
+
 Scenario: Edit pset - material
     Given an empty IFC project
     And I add a cube

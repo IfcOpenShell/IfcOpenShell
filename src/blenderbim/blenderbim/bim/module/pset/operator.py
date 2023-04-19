@@ -295,8 +295,8 @@ class EditPset(bpy.types.Operator, Operator):
                 name=props.active_pset_name,
                 properties=properties,
             )
-            bpy.ops.bim.load_cost_item_quantities()
-
+            if tool.Cost.has_schedules():
+                tool.Cost.update_cost_items(pset=pset)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
         tool.Blender.update_viewport()
 

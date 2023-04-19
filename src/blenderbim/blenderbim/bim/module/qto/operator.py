@@ -195,5 +195,5 @@ class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get() and context.selected_objects
 
     def _execute(self, context):
-        core.calculate_objects_base_quantities(tool.Ifc, tool.Qto, QtoCalculator(), selected_objects = context.selected_objects)
+        core.calculate_objects_base_quantities(tool.Ifc, tool.Cost, tool.Qto, QtoCalculator(), selected_objects = context.selected_objects)
         return {"FINISHED"}
