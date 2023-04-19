@@ -176,7 +176,7 @@ class Blender:
             "max_y": bound_box[6][1],
             "min_z": bound_box[0][2],
             "max_z": bound_box[6][2],
-            "center": (Vector(bound_box[6]) - Vector(bound_box[0])) / 2,
+            "center": (Vector(bound_box[6]) + Vector(bound_box[0])) / 2,
         }
         return bbox_dict
 
