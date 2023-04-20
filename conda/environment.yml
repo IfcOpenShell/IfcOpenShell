@@ -10,5 +10,4 @@ dependencies:
   - ripgrep
   - pip
   - pip:
-      - --extra-index-url https://lief.s3-website.fr-par.scw.cloud/latest
-      - lief
+      - lief==0.13
