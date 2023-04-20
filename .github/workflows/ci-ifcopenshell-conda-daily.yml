@@ -40,17 +40,11 @@ jobs:
       - name: Download and extract MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS' }}
         run: |
-          curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
-
-      - name: Install ninja
-        run: |
-          if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-            sudo apt-get install ninja-build
-          elif [[ "$OSTYPE" == "darwin"* ]]; then
-            brew install ninja
-          elif [[ "$OSTYPE" == "win32" ]]; then
-            choco install ninja
-          fi
+          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz && \
+          tar xf MacOSX10.13.sdk.tar.xz && \
+          sudo mv -v MacOSX10.13.sdk /opt/ && \
+          ls /opt/
+      - uses: seanmiddleditch/gha-setup-ninja@master
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
           environment-file: conda/environment.build.yml
