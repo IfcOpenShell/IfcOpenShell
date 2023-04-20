@@ -98,6 +98,35 @@ class Qto(blenderbim.core.tool.Qto):
         return bool(mapper.get(qto_name, {}).get(quantity_name, None))
 
     @classmethod
+    def convert_to_project_units(cls, value, qto_name, quantity_name):
+        ifc_file = tool.Ifc.get()
+        quantity_to_unit_types = {
+            "Q_LENGTH": ("LENGTHUNIT", "METRE"),
+            "Q_AREA": ("AREAUNIT", "SQUARE_METRE"),
+            "Q_VOLUME": ("VOLUMEUNIT", "CUBIC_METRE"),
+        }
+
+        qt = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
+        quantity_type = next(q.TemplateType for q in qt.HasPropertyTemplates if q.Name == quantity_name)
+        unit_type = quantity_to_unit_types.get(quantity_type, None)
+        if not unit_type:
+            return
+
+        unit_type, base_unit = unit_type
+        project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type)
+        if not project_unit:
+            return
+        value = ifcopenshell.util.unit.convert(
+            value,
+            from_prefix=None,
+            from_unit=base_unit,
+            to_prefix=getattr(project_unit, "Prefix", None),
+            to_unit=project_unit.Name,
+        )
+        return value
+
+
+    @classmethod
     def get_guessed_quantities(cls, obj, pset_qto_properties):
         calculated_quantities = {}
         for pset_qto_property in pset_qto_properties:
