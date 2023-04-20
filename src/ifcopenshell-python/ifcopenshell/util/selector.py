@@ -255,6 +255,8 @@ class Selector:
         value = element
         for key in keys:
             key = key.strip()
+            if value is None:
+                return
             if key == "type":
                 value = ifcopenshell.util.element.get_type(value)
             elif key in ("material", "mat"):
@@ -302,7 +304,10 @@ class Selector:
                     value = value.get(key, None)
             elif isinstance(value, (list, tuple)): # If we use regex
                 if key.isnumeric():
-                    value = value[int(key)]
+                    try:
+                        value = value[int(key)]
+                    except IndexError:
+                        return
                 else:
                     results = []
                     for v in value:
