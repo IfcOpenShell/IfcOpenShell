@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy.types import Operator
 import bmesh
 
 import ifcopenshell
@@ -29,12 +28,11 @@ from blenderbim.bim.module.model.data import RoofData, refresh
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 import json
-from math import tan, radians, degrees, atan
+from math import tan
 from mathutils import Vector, Matrix
 from bpypolyskel import bpypolyskel
 import shapely
 from pprint import pprint
-from itertools import chain
 from math import pi
 
 # reference:
@@ -116,10 +114,13 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
 
     original_geometry_data = dict()
     angle_layer = bm.edges.layers.float.get("BBIM_gable_roof_angles")
+    separate_verts_layer = bm.edges.layers.int.get("BBIM_gable_roof_separate_verts")
     if angle_layer:
-        original_geometry_data["edges"] = [(set(bm_get_indices(e.verts)), e[angle_layer]) for e in bm.edges]
+        original_geometry_data["edges"] = [
+            (set(bm_get_indices(e.verts)), e[angle_layer], e[separate_verts_layer]) for e in bm.edges
+        ]
     else:
-        original_geometry_data["edges"] = [(set(bm_get_indices(e.verts)), None) for e in bm.edges]
+        original_geometry_data["edges"] = [(set(bm_get_indices(e.verts)), None, None) for e in bm.edges]
 
     original_geometry_data["verts"] = {v.index: v.co.copy() for v in bm.verts}
     footprint_z = bm.verts[:][0].co.z
@@ -212,6 +213,7 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
     footprint_edges = []
     footprint_verts = set()
     verts_to_change = {}
+    verts_to_rip = []
 
     # find footprint edges
     for edge in bm.edges:
@@ -227,7 +229,7 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
     # iterate over edges from original geometry
     # if their angle was redefined by user - apply the changes to the related vertices
     # to match the requested angle
-    for old_edge_verts, defined_angle in original_geometry_data["edges"]:
+    for old_edge_verts, defined_angle, separate_verts in original_geometry_data["edges"]:
         if not defined_angle:
             continue
 
@@ -240,13 +242,34 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
 
         verts_to_move = find_other_polygon_verts(identical_edge)
         for v in verts_to_move:
-            vert_co = verts_to_change.get(v, v.co)
-            new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
-            verts_to_change[v] = new_vert_co
+            if not separate_verts:
+                vert_co = verts_to_change.get(v, v.co)
+                new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
+                verts_to_change[v] = new_vert_co
+            else:
+                vert_co = v.co
+                new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
+                verts_to_rip.append([v, new_vert_co, identical_edge])
+
+    def separate_vert(bm, vert, edge, new_co):
+        face = next(f for f in vert.link_faces if edge in f.edges)
+        new_v = bmesh.utils.face_vert_separate(face, vert)
+        new_v.co = new_co
+        new_edge = bm.edges.new((vert, new_v))
+
+        for cur_edge in face.edges:
+            if cur_edge == edge:
+                continue
+            bmesh.ops.contextual_create(bm, geom=[new_edge, cur_edge])
 
     # apply all changes once at the end
     for v in verts_to_change:
         v.co = verts_to_change[v]
+
+    for v, new_co, edge in verts_to_rip:
+        separate_vert(bm, v, edge, new_co)
+
+    bmesh.ops.contextual_create(bm, geom=bm.edges[:])
 
     extrusion_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
     extruded_verts = bm_sort_out_geom(extrusion_geom)["verts"]
@@ -289,9 +312,6 @@ def update_roof_modifier_ifc_data(context):
     # occurences attributes
     # occurences = tool.Ifc.get_all_element_occurences(element)
 
-    # TODO: add Qto_RoofBaseQuantities, need to calculate GrossArea, NetArea, ProjectedArea
-    # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Qto_RoofBaseQuantities.htm
-
     tool.Ifc.edit(obj)
 
 
@@ -311,12 +331,14 @@ def update_roof_modifier_bmesh(context):
         RoofData.load()
     path_data = RoofData.data["parameters"]["data_dict"]["path_data"]
     angle_layer_data = path_data.get("gable_roof_angles", None)
+    separate_verts_data = path_data.get("gable_roof_separate_verts", None)
 
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     # need to make sure we support edit mode
     # since users will probably be in edit mode when they'll be changing roof path
     bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
     angle_layer = bm.edges.layers.float.new("BBIM_gable_roof_angles")
+    separate_verts_layer = bm.edges.layers.int.new("BBIM_gable_roof_separate_verts")
 
     # generating roof path
     new_verts = [bm.verts.new(Vector(v) * si_conversion) for v in path_data["verts"]]
@@ -325,6 +347,7 @@ def update_roof_modifier_bmesh(context):
         e = path_data["edges"][i]
         edge = bm.edges.new((new_verts[e[0]], new_verts[e[1]]))
         edge[angle_layer] = angle_layer_data[i] if angle_layer_data else 0
+        edge[separate_verts_layer] = separate_verts_data[i] if separate_verts_data else 0
         new_edges.append(edge)
 
     if props.is_editing_path:
@@ -349,12 +372,15 @@ def get_path_data(obj):
     bm_mesh_clean_up(bm)
 
     angle_layer = bm.edges.layers.float.get("BBIM_gable_roof_angles")
+    separate_verts_layer = bm.edges.layers.int.get("BBIM_gable_roof_separate_verts")
 
     path_data = dict()
     path_data["edges"] = [bm_get_indices(e.verts) for e in bm.edges]
     path_data["verts"] = [v.co / si_conversion for v in bm.verts]
     if angle_layer:
         path_data["gable_roof_angles"] = [e[angle_layer] for e in bm.edges]
+    if separate_verts_layer:
+        path_data["gable_roof_separate_verts"] = [e[separate_verts_layer] for e in bm.edges]
 
     if not path_data["edges"] or not path_data["verts"]:
         return None
@@ -634,6 +660,7 @@ class SetGableRoofEdgeAngle(bpy.types.Operator):
     bl_label = "Set Gable Roof Edge Angle"
     bl_options = {"REGISTER", "UNDO"}
     angle: bpy.props.FloatProperty(name="Angle", default=90)
+    separate_verts: bpy.props.BoolProperty(name="Separate Verts", default=True)
 
     @classmethod
     def poll(cls, context):
@@ -656,12 +683,17 @@ class SetGableRoofEdgeAngle(bpy.types.Operator):
         if "BBIM_gable_roof_angles" not in me.attributes:
             me.attributes.new("BBIM_gable_roof_angles", type="FLOAT", domain="EDGE")
 
+        if "BBIM_gable_roof_separate_verts" not in me.attributes:
+            me.attributes.new("BBIM_gable_roof_separate_verts", type="INT", domain="EDGE")
+
         angles_layer = bm.edges.layers.float["BBIM_gable_roof_angles"]
+        separate_verts_layer = bm.edges.layers.int["BBIM_gable_roof_separate_verts"]
 
         for e in bm.edges:
             if not e.select:
                 continue
             e[angles_layer] = self.angle
+            e[separate_verts_layer] = self.separate_verts
 
         tool.Blender.apply_bmesh(me, bm)
         return {"FINISHED"}
