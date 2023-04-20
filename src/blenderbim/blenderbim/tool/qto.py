@@ -90,7 +90,8 @@ class Qto(blenderbim.core.tool.Qto):
         return {
             quantity_name: cls.get_rounded_value(calculator.calculate_quantity(qto_name, quantity_name, obj))
             for quantity_name in cls.get_applicable_quantity_names(qto_name) or []
-            if cls.has_calculator(qto_name, quantity_name) and calculator.calculate_quantity(qto_name, quantity_name, obj) is not None
+            if cls.has_calculator(qto_name, quantity_name)
+            and calculator.calculate_quantity(qto_name, quantity_name, obj) is not None
         }
 
     @classmethod
@@ -98,16 +99,22 @@ class Qto(blenderbim.core.tool.Qto):
         return bool(mapper.get(qto_name, {}).get(quantity_name, None))
 
     @classmethod
-    def convert_to_project_units(cls, value, qto_name, quantity_name):
+    def convert_to_project_units(cls, value, qto_name=None, quantity_name=None, quantity_type=None):
+        """You can either specify `quantity_type` or provide `qto_name/quantity_name`
+        to let method figure the `quantity_type` from the templates
+
+        `quantity_type` values are `Q_LENGTH`, `Q_AREA`, `Q_VOLUME`
+        """
         ifc_file = tool.Ifc.get()
         quantity_to_unit_types = {
             "Q_LENGTH": ("LENGTHUNIT", "METRE"),
             "Q_AREA": ("AREAUNIT", "SQUARE_METRE"),
             "Q_VOLUME": ("VOLUMEUNIT", "CUBIC_METRE"),
         }
+        if not quantity_type:
+            qt = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
+            quantity_type = next(q.TemplateType for q in qt.HasPropertyTemplates if q.Name == quantity_name)
 
-        qt = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
-        quantity_type = next(q.TemplateType for q in qt.HasPropertyTemplates if q.Name == quantity_name)
         unit_type = quantity_to_unit_types.get(quantity_type, None)
         if not unit_type:
             return
@@ -124,7 +131,6 @@ class Qto(blenderbim.core.tool.Qto):
             to_unit=project_unit.Name,
         )
         return value
-
 
     @classmethod
     def get_guessed_quantities(cls, obj, pset_qto_properties):
