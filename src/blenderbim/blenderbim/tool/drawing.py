@@ -1338,7 +1338,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         if include:
             elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include))
         else:
-            elements = set(ifc_file.by_type("IfcElement"))
+            if tool.Ifc.get_schema() == "IFC2X3":
+                elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
+            else:
+                elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
             elements.update(annotations)
 
