@@ -53,11 +53,13 @@ jobs:
           sudo mv -v MacOSX10.13.sdk /opt/ && \
           ls /opt/
       - uses: seanmiddleditch/gha-setup-ninja@master
-      - uses: conda-incubator/setup-miniconda@v2  # https://github.com/conda-incubator/setup-miniconda
+      - uses: mamba-org/provision-with-micromamba@main # https://github.com/mamba-org/provision-with-micromamba
         with:
-          activate-environment: conda-build
-          python-version: ${{ matrix.pyver.distver }}
+          channels: conda-forge
+          channel-priority: strict
           environment-file: conda/environment.yml
+          extra-specs: |
+            python=${{ matrix.pyver.distver }}
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
         run: |
