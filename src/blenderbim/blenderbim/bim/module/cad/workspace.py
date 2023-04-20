@@ -229,6 +229,7 @@ class CadHotkey(bpy.types.Operator):
                 and bpy.context.active_object.BIMRoofProperties.is_editing_path
             ):
                 self.layout.row().prop(props, "gable_roof_edge_angle")
+                self.layout.row().prop(props, "gable_roof_separate_verts")
 
         elif self.hotkey == "S_V":
             if not self.is_profile():
@@ -285,7 +286,9 @@ class CadHotkey(bpy.types.Operator):
             and RoofData.data["parameters"]
             and bpy.context.active_object.BIMRoofProperties.is_editing_path
         ):
-            bpy.ops.bim.set_gable_roof_edge_angle(angle=self.props.gable_roof_edge_angle)
+            bpy.ops.bim.set_gable_roof_edge_angle(
+                angle=self.props.gable_roof_edge_angle, separate_verts=self.props.gable_roof_separate_verts
+            )
 
     def hotkey_S_T(self):
         bpy.ops.bim.cad_mitre()
