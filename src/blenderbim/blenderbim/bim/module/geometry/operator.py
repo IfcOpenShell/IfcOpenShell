@@ -389,7 +389,10 @@ class OverrideDelete(bpy.types.Operator):
 
     def _execute(self, context):
         for obj in context.selected_objects:
-            tool.Geometry.delete_ifc_object(obj)
+            if tool.Ifc.get_entity(obj):
+                tool.Geometry.delete_ifc_object(obj)
+            else:
+                bpy.data.objects.remove(obj)
         # Required otherwise gizmos are still visible
         context.view_layer.objects.active = None
         return {"FINISHED"}
