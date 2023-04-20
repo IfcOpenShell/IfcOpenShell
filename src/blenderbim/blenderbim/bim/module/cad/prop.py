@@ -31,3 +31,4 @@ class BIMCadProperties(PropertyGroup):
     gable_roof_edge_angle: bpy.props.FloatProperty(
         name="Gable Roof Edge Angle", default=pi / 2, soft_min=0, soft_max=pi / 2, subtype="ANGLE"
     )
+    gable_roof_separate_verts: bpy.props.BoolProperty(name="Separate Verts", default=True)
