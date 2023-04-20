@@ -56,6 +56,23 @@ class TestGetElementValue(test.bootstrap.IFC4):
         # Provide shortform for convenience
         assert subject.get_element_value(element, "mat.i.Name") == ["L1", "L2"]
 
+    def test_selecting_a_query_that_fails_silently(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        assert subject.get_element_value(element, "material.item.Name.0") is None
+
+    def test_selceting_a_list_item_that_fails_silently(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        material2 = ifcopenshell.api.run("material.add_material", self.file, name="CON02")
+        material_set = ifcopenshell.api.run(
+            "material.add_material_set", self.file, name="FOO", set_type="IfcMaterialLayerSet"
+        )
+        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material)
+        layer.Name = "L1"
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material_set)
+        assert subject.get_element_value(element, "material.item.Name.0") == "L1"
+        assert subject.get_element_value(element, "material.item.Name.1") is None
+
 
 class TestSelector(test.bootstrap.IFC4):
     def test_selecting_by_class(self):
