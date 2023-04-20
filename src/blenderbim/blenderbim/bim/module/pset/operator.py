@@ -386,26 +386,7 @@ class CalculateQuantity(bpy.types.Operator):
 
     def calculate_quantity(self, obj, context):
         quantity = self.qto_calculator.calculate_quantity(obj.PsetProperties.active_pset_name, self.prop, obj)
-        prefix, name = self.get_blender_prefix_name(context)
-        quantity = ifcopenshell.util.unit.convert(quantity, None, "METRE", prefix, name)
         return round(quantity, 3)
-
-    def get_prefix_name(self, value):
-        if "/" in value:
-            return value.split("/")
-        return None, value
-
-    def get_blender_prefix_name(self, context):
-        unit_settings = context.scene.unit_settings
-        if unit_settings.system == "IMPERIAL":
-            if unit_settings.length_unit == "INCHES":
-                return None, "inch"
-            elif unit_settings.length_unit == "FEET":
-                return None, "foot"
-        elif unit_settings.system == "METRIC":
-            if unit_settings.length_unit == "METERS":
-                return None, "METRE"
-            return unit_settings.length_unit[0 : -len("METERS")], "METRE"
 
 
 class GuessQuantity(bpy.types.Operator):
