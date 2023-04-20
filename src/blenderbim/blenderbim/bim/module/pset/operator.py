@@ -381,11 +381,19 @@ class CalculateQuantity(bpy.types.Operator):
         self.qto_calculator = QtoCalculator()
         obj = context.active_object
         prop = obj.PsetProperties.properties.get(self.prop)
-        prop.metadata.float_value = self.calculate_quantity(obj, context)
+        quantity = self.calculate_quantity(obj, context)
+
+        if quantity is None:
+            self.report({"ERROR"}, "Could not calculate quantity")
+            return {"CANCELLED"}
+
+        prop.metadata.float_value = quantity
         return {"FINISHED"}
 
     def calculate_quantity(self, obj, context):
         quantity = self.qto_calculator.calculate_quantity(obj.PsetProperties.active_pset_name, self.prop, obj)
+        if quantity is None:
+            return
         return round(quantity, 3)
 
 
@@ -404,35 +412,7 @@ class GuessQuantity(bpy.types.Operator):
 
     def guess_quantity(self, obj, context):
         quantity = self.qto_calculator.guess_quantity(self.prop, [p.name for p in obj.PsetProperties.properties], obj)
-        if "area" in self.prop.lower():
-            if context.scene.BIMProperties.area_unit:
-                prefix, name = self.get_prefix_name(context.scene.BIMProperties.area_unit)
-                quantity = ifcopenshell.util.unit.convert(quantity, None, "SQUARE_METRE", prefix, name)
-        elif "volume" in self.prop.lower():
-            if context.scene.BIMProperties.volume_unit:
-                prefix, name = self.get_prefix_name(context.scene.BIMProperties.volume_unit)
-                quantity = ifcopenshell.util.unit.convert(quantity, None, "CUBIC_METRE", prefix, name)
-        else:
-            prefix, name = self.get_blender_prefix_name(context)
-            quantity = ifcopenshell.util.unit.convert(quantity, None, "METRE", prefix, name)
-        return round(quantity, 3)
-
-    def get_prefix_name(self, value):
-        if "/" in value:
-            return value.split("/")
-        return None, value
-
-    def get_blender_prefix_name(self, context):
-        unit_settings = context.scene.unit_settings
-        if unit_settings.system == "IMPERIAL":
-            if unit_settings.length_unit == "INCHES":
-                return None, "inch"
-            elif unit_settings.length_unit == "FEET":
-                return None, "foot"
-        elif unit_settings.system == "METRIC":
-            if unit_settings.length_unit == "METERS":
-                return None, "METRE"
-            return unit_settings.length_unit[0 : -len("METERS")], "METRE"
+        return round(quantity, 3) if quantity is not None else None
 
 
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
