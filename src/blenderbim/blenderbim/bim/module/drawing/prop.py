@@ -330,6 +330,7 @@ class DocProperties(PropertyGroup):
 
 
 class BIMCameraProperties(PropertyGroup):
+    calculate_surfaces: BoolProperty(name="Calculate Surfaces", default=False)
     has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
     has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
     has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)
