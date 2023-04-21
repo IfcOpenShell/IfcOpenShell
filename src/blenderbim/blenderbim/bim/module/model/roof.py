@@ -28,12 +28,11 @@ from blenderbim.bim.module.model.data import RoofData, refresh
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 import json
-from math import tan
+from math import tan, pi
 from mathutils import Vector, Matrix
 from bpypolyskel import bpypolyskel
 import shapely
 from pprint import pprint
-from math import pi
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoof.htm
@@ -214,6 +213,7 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
     footprint_verts = set()
     verts_to_change = {}
     verts_to_rip = []
+    bottom_chords_to_remove = []
 
     # find footprint edges
     for edge in bm.edges:
@@ -251,6 +251,9 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
                 new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
                 verts_to_rip.append([v, new_vert_co, identical_edge])
 
+        if defined_angle >= pi/2:
+            bottom_chords_to_remove.append(identical_edge)
+
     def separate_vert(bm, vert, edge, new_co):
         face = next(f for f in vert.link_faces if edge in f.edges)
         new_v = bmesh.utils.face_vert_separate(face, vert)
@@ -268,7 +271,8 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
 
     for v, new_co, edge in verts_to_rip:
         separate_vert(bm, v, edge, new_co)
-
+    
+    bmesh.ops.delete(bm, geom=bottom_chords_to_remove, context='EDGES')
     bmesh.ops.contextual_create(bm, geom=bm.edges[:])
 
     extrusion_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
