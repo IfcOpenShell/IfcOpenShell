@@ -251,7 +251,7 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
                 new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
                 verts_to_rip.append([v, new_vert_co, identical_edge])
 
-        if defined_angle >= pi/2:
+        if defined_angle >= pi / 2:
             bottom_chords_to_remove.append(identical_edge)
 
     def separate_vert(bm, vert, edge, new_co):
@@ -271,9 +271,8 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
 
     for v, new_co, edge in verts_to_rip:
         separate_vert(bm, v, edge, new_co)
-    
-    bmesh.ops.delete(bm, geom=bottom_chords_to_remove, context='EDGES')
-    bmesh.ops.contextual_create(bm, geom=bm.edges[:])
+
+    bmesh.ops.delete(bm, geom=bottom_chords_to_remove, context="EDGES")
 
     extrusion_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
     extruded_verts = bm_sort_out_geom(extrusion_geom)["verts"]
