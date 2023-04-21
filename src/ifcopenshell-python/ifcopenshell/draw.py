@@ -201,6 +201,10 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
         projection, g1 = g1, g1.parentNode
         
         svgfill_context = W.context(W.FILTERED_CARTESIAN_QUOTIENT, 1.0e-3)
+
+        # remove duplicates (without tolerance)
+        ls = list(map(tuple, set(map(frozenset, ls))))
+
         svgfill_context.add(ls)
         
         if settings.merge_cells:
