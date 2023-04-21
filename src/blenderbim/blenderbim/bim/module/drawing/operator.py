@@ -26,6 +26,7 @@ import shutil
 import shapely
 import subprocess
 import webbrowser
+import numpy as np
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
@@ -439,6 +440,8 @@ class CreateDrawing(bpy.types.Operator):
             self.setup_serialiser(ifc)
             cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
+            tree = ifcopenshell.geom.tree()
+            tree.enable_face_styles(True)
 
             elements = drawing_elements.copy()
             for body_context in body_contexts:
@@ -456,6 +459,7 @@ class CreateDrawing(bpy.types.Operator):
                         for elem in self.yield_from_iterator(it):
                             processed.add(ifc.by_id(elem.id))
                             self.serialiser.write(elem)
+                            tree.add_element(elem)
                         elements -= processed
 
             elements = drawing_elements.copy()
@@ -474,20 +478,60 @@ class CreateDrawing(bpy.types.Operator):
                         for elem in self.yield_from_iterator(it):
                             processed.add(ifc.by_id(elem.id))
                             self.serialiser.write(elem)
+                            tree.add_element(elem)
                         elements -= processed
-
-            with profile("Camera element"):
-                # @todo tfk: is this needed?
-                # If the camera isn't serialised, then nothing gets serialised. Odd behaviour.
-                geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
-                it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
-                for elem in self.yield_from_iterator(it):
-                    self.serialiser.write(elem)
 
         with profile("Finalizing"):
             self.serialiser.finalize()
         results = self.svg_buffer.get_value()
 
+        if self.camera.data.BIMCameraProperties.calculate_surfaces:
+            # shapely variant
+            root = etree.fromstring(results)
+            group = root.findall('.//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}name]')[0]
+            nm = group.attrib["{http://www.ifcopenshell.org/ns}name"]
+            m4 = np.array(json.loads(group.attrib["{http://www.ifcopenshell.org/ns}plane"]))
+            m3 = np.array(json.loads(group.attrib["{http://www.ifcopenshell.org/ns}matrix3"]))
+            m44 = np.eye(4)
+            m44[0][0:2] = m3[0][0:2]
+            m44[1][0:2] = m3[1][0:2]
+            m44[0][3] = m3[0][2]
+            m44[1][3] = m3[1][2]
+            m44 = np.linalg.inv(m44)
+
+            projections = group.findall('.//{http://www.w3.org/2000/svg}g[@class="projection"]') or []
+
+            for projection in projections:
+                boundary_lines = []
+                for path in projection.findall('./{http://www.w3.org/2000/svg}path'):
+                    start, end = [co[1:].split(",") for co in path.attrib["d"].split()]
+                    boundary_lines.append(shapely.LineString([start, end]))
+                unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+                closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+
+                for polygon in closed_polygons.geoms:
+                    # Less than 1mm2 is not worth styling on sheet
+                    if polygon.area < 1:
+                        continue
+                    centroid = polygon.centroid
+                    internal_point = centroid if polygon.contains(centroid) else polygon.representative_point()
+                    if internal_point:
+                        internal_point = [internal_point.x, internal_point.y]
+                        a, b = self.drawing_to_model_co(m44, m4, internal_point, 0.0), self.drawing_to_model_co(m44, m4, internal_point, -100.0)
+                        inside_elements = [e for e in tree.select(self.pythonize(a)) if not e.is_a("IfcAnnotation")]
+                        if not inside_elements:
+                            elements = [e for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a)) if not e.instance.is_a("IfcAnnotation")]
+                            if elements:
+                                path = etree.SubElement(group, "path")
+                                d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
+                                for interior in polygon.interiors:
+                                    d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                                path.attrib["d"] = d
+                                classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
+                                classes.append("surface")
+                                path.set("class", " ".join(list(classes)))
+
+            results = etree.tostring(root)
         with profile("Post processing"):
             root = etree.fromstring(results)
             self.move_projection_to_bottom(root)
@@ -532,36 +576,45 @@ class CreateDrawing(bpy.types.Operator):
                 if not it.next():
                     break
 
+    def get_svg_classes(self, element):
+        classes = [element.is_a()]
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        material_name = ""
+        if material:
+            if material.is_a("IfcMaterialLayerSet"):
+                material_name = material.LayerSetName or "null"
+            else:
+                material_name = getattr(material, "Name", "null") or "null"
+            material_name = tool.Drawing.canonicalise_class_name(material_name)
+            classes.append(f"material-{material_name}")
+        else:
+            classes.append(f"material-null")
+
+        for key in self.metadata:
+            value = ifcopenshell.util.selector.get_element_value(element, key)
+            if value:
+                classes.append(
+                    tool.Drawing.canonicalise_class_name(key)
+                    + "-"
+                    + tool.Drawing.canonicalise_class_name(str(value))
+                )
+        return classes
+
     def merge_linework_and_add_metadata(self, root):
         joined_paths = {}
 
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
-            classes = ["cut"]
             element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
-            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-            material_name = ""
-            if material:
-                if material.is_a("IfcMaterialLayerSet"):
-                    material_name = material.LayerSetName or "null"
-                else:
-                    material_name = getattr(material, "Name", "null") or "null"
-                material_name = tool.Drawing.canonicalise_class_name(material_name)
-                classes.append(f"material-{material_name}")
+            classes = self.get_svg_classes(element)
+            classes.append("cut")
 
-            for key in self.metadata:
-                value = ifcopenshell.util.selector.get_element_value(element, key)
-                if value:
-                    classes.append(
-                        tool.Drawing.canonicalise_class_name(key)
-                        + "-"
-                        + tool.Drawing.canonicalise_class_name(str(value))
-                    )
+            el.set("class", " ".join(classes))
 
-            el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
+            material_name = [c for c in classes if c.split("-")[0] == "material"][0]
 
             # Drawing convention states that objects with the same material are merged when cut.
-            if material_name != "null" and el.findall("{http://www.w3.org/2000/svg}path"):
+            if material_name != "material-null" and el.findall("{http://www.w3.org/2000/svg}path"):
                 joined_paths.setdefault(material_name, []).append(el)
 
         for key, els in joined_paths.items():
@@ -599,6 +652,14 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = d
                 g.set("class", " ".join(list(classes)))
                 root_g.append(g)
+
+    def drawing_to_model_co(self, m44, m4, xy, z=0.0):
+        xyzw = m44 @ np.array(xy + [z, 1.0])
+        xyzw[1] *= -1.0
+        return (m4 @ xyzw)[0:3]
+
+    def pythonize(self, arr):
+        return tuple(map(float, arr))
 
     def move_projection_to_bottom(self, root):
         # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
@@ -653,20 +714,6 @@ class CreateDrawing(bpy.types.Operator):
                 if space.type != "VIEW_3D":
                     continue
                 return space
-
-    def get_classes(self, element, position, svg_writer):
-        classes = [position, element.is_a()]
-        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-        if material:
-            classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(material))))
-        classes.append("globalid-{}".format(element.GlobalId))
-        for attribute in svg_writer.annotations["attributes"]:
-            result = ifcopenshell.util.selector.get_element_value(element, attribute)
-            if result:
-                classes.append(
-                    "{}-{}".format(re.sub("[^0-9a-zA-Z]+", "", attribute), re.sub("[^0-9a-zA-Z]+", "", result))
-                )
-        return classes
 
     def get_material_name(self, element):
         if hasattr(element, "Name") and element.Name:
