@@ -18,7 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.api
-import boltspy as bolts
 from math import cos, tan, pi
 from pathlib import Path
 from mathutils import Vector
@@ -85,7 +84,7 @@ def get_simple_2dcurve_data(coords, fillets=[], fillet_radius=[], closed=True, i
                 segments.append([current_point - 1, current_point])
 
     if closed:
-        segments.append([0, len(points) - 1])
+        segments.append([len(points) - 1, 0])
 
     # replace negative index
     if segments[0][0] == -1:
@@ -1612,7 +1611,7 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (500.0, 570.0, 820.0)
         representation_3d, representation_2d = create_dishwasher(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcElectricAppliance", "Neufert Dishwasher", representation_3d, representation_2d)
+        self.create_explicit_type("IfcElectricApplianceType", "Neufert Dishwasher", representation_3d, representation_2d)
 
         def create_cooktop(width, depth, height):
             items_3d, items_2d = create_box_objects(width, depth, height)
