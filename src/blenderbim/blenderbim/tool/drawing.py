@@ -1342,6 +1342,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
                 elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
+            elements = {e for e in elements if e.is_a() != "IfcSpace"}
             annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
             elements.update(annotations)
 
@@ -1349,6 +1350,19 @@ class Drawing(blenderbim.core.tool.Drawing):
         if exclude:
             elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
         elements -= set(ifc_file.by_type("IfcOpeningElement"))
+        return elements
+
+    @classmethod
+    def get_drawing_spaces(cls, drawing):
+        ifc_file = tool.Ifc.get()
+        pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
+        include = pset.get("Include", None)
+        elements = set(ifc_file.by_type("IfcSpace"))
+        if include:
+            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
+        exclude = pset.get("Exclude", None)
+        if exclude:
+            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
         return elements
 
     @classmethod
@@ -1464,3 +1478,69 @@ class Drawing(blenderbim.core.tool.Drawing):
                             should_sync_changes_first=True,
                         )
                     break
+
+    @classmethod
+    def is_intersecting_camera(cls, obj, camera):
+        # Based on separating axis theorem
+        plane_co = camera.matrix_world.translation
+        plane_no = camera.matrix_world.col[2].xyz
+
+        # Broadphase check using the bounding box
+        bounding_box_world_coords = [obj.matrix_world @ Vector(coord) for coord in obj.bound_box]
+        bounding_box_signed_distances = [plane_no.dot(v - plane_co) for v in bounding_box_world_coords]
+
+        pos_exists_bb = any(d > 0 for d in bounding_box_signed_distances)
+        neg_exists_bb = any(d < 0 for d in bounding_box_signed_distances)
+
+        if not (pos_exists_bb and neg_exists_bb):
+            return False
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+
+        # Transform the vertices to world space
+        mesh_mat = obj.matrix_world
+        bm.transform(mesh_mat)
+
+        # Calculate the signed distances of all vertices from the plane
+        signed_distances = [plane_no.dot(v.co - plane_co) for v in bm.verts]
+
+        bm.free()
+
+        # Check for intersection
+        pos_exists = any(d > 0 for d in signed_distances)
+        neg_exists = any(d < 0 for d in signed_distances)
+
+        return pos_exists and neg_exists
+
+    @classmethod
+    def bisect_mesh(cls, obj, camera):
+        camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
+        plane_co = camera_matrix.translation
+        plane_no = camera_matrix.col[2].xyz
+
+        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+
+        # Run the bisect operation
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        results = bmesh.ops.bisect_plane(bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no)
+
+        vert_map = {}
+        verts = []
+        edges = []
+        i = 0
+        for geom in results["geom_cut"]:
+            if isinstance(geom, bmesh.types.BMVert):
+                verts.append(tuple((obj.matrix_world @ geom.co) + global_offset))
+                vert_map[geom.index] = i
+                i += 1
+            else:
+                # It seems as though edges always appear after verts
+                edges.append([vert_map[v.index] for v in geom.verts])
+
+        bm.free()
+
+        return verts, edges
