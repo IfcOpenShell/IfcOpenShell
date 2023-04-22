@@ -1,6 +1,5 @@
 import bpy
 from bpy.types import PropertyGroup
-
 from bpy.props import (
     StringProperty,
     BoolProperty,
@@ -8,7 +7,6 @@ from bpy.props import (
     IntProperty,
     EnumProperty,
 )
-
 from data import IfcGitData
 
 

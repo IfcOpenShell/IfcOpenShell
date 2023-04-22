@@ -1,8 +1,8 @@
 import bpy
 import os
 import shutil
-import tool
-import blenderbim.tool as btool
+# import tool
+import blenderbim.tool as tool
 
 
 def refresh():
@@ -35,8 +35,8 @@ class IfcGitData:
 
     @classmethod
     def repo(cls):
-        if bool(btool.Ifc.get()):
-            path_ifc = btool.Ifc.get_path()
+        if bool(tool.Ifc.get()):
+            path_ifc = tool.Ifc.get_path()
             if not os.path.isfile(path_ifc):
                 return None
             return tool.IfcGit.repo_from_path(path_ifc)
@@ -49,7 +49,7 @@ class IfcGitData:
 
     @classmethod
     def path_ifc(cls):
-        return btool.Ifc.get_path()
+        return tool.Ifc.get_path()
 
     @classmethod
     def branches_by_hexsha(cls):
@@ -67,8 +67,8 @@ class IfcGitData:
 
     @classmethod
     def name_ifc(cls):
-        if bool(btool.Ifc.get()):
-            path_ifc = btool.Ifc.get_path()
+        if bool(tool.Ifc.get()):
+            path_ifc = tool.Ifc.get_path()
         if tool.IfcGitRepo.repo:
             working_dir = tool.IfcGitRepo.repo.working_dir
             return os.path.relpath(path_ifc, working_dir)
@@ -76,8 +76,8 @@ class IfcGitData:
 
     @classmethod
     def dir_name(cls):
-        if bool(btool.Ifc.get()):
-            path_ifc = btool.Ifc.get_path()
+        if bool(tool.Ifc.get()):
+            path_ifc = tool.Ifc.get_path()
             if not os.path.isfile(path_ifc):
                 return None
             return os.path.dirname(path_ifc)
@@ -85,15 +85,15 @@ class IfcGitData:
 
     @classmethod
     def base_name(cls):
-        if bool(btool.Ifc.get()):
-            path_ifc = btool.Ifc.get_path()
+        if bool(tool.Ifc.get()):
+            path_ifc = tool.Ifc.get_path()
             return os.path.basename(path_ifc)
         return None
 
     @classmethod
     def is_dirty(cls):
         if tool.IfcGitRepo.repo and cls.git_exe():
-            path_ifc = btool.Ifc.get_path()
+            path_ifc = tool.Ifc.get_path()
             return tool.IfcGitRepo.repo.is_dirty(path=path_ifc)
         return False
 
