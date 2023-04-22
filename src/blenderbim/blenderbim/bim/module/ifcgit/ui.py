@@ -1,4 +1,3 @@
-
 import bpy
 import time
 from data import IfcGitData
