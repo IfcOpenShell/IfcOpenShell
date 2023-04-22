@@ -96,6 +96,7 @@ classes = (
     slab.ResetVertex,
     slab.SetArcIndex,
     space.GenerateSpace,
+    space.GenerateSpacesFromWalls,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
