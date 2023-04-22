@@ -3,12 +3,7 @@ import re
 import bpy
 import blenderbim.core.ifcgit as core
 import blenderbim.tool as tool
-# from tool import IfcGit as tool
-from data import IfcGitData
-
-# import handler
-
-# import blenderbim.tool as tool
+from blenderbim.bim.module.ifcgit.data import IfcGitData, refresh
 
 
 class CreateRepo(bpy.types.Operator):
@@ -34,7 +29,7 @@ class CreateRepo(bpy.types.Operator):
     def execute(self, context):
 
         core.create_repo(tool.IfcGit, tool.Ifc)
-        handler.refresh_ui_data()
+        refresh()
         return {"FINISHED"}
 
 
@@ -58,7 +53,7 @@ class AddFileToRepo(bpy.types.Operator):
     def execute(self, context):
 
         core.add_file(tool.IfcGit, tool.Ifc)
-        handler.refresh_ui_data()
+        refresh()
         return {"FINISHED"}
 
 
@@ -72,7 +67,7 @@ class DiscardUncommitted(bpy.types.Operator):
     def execute(self, context):
 
         core.discard_uncomitted(tool.IfcGit, tool.Ifc)
-        handler.refresh_ui_data()
+        refresh()
         return {"FINISHED"}
 
 
@@ -107,7 +102,7 @@ class CommitChanges(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.commit_changes(tool.IfcGit, tool.Ifc, repo, context)
-        handler.refresh_ui_data()
+        refresh()
         return {"FINISHED"}
 
 
@@ -129,7 +124,7 @@ class RefreshGit(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.refresh_revision_list(tool.IfcGit, repo, tool.Ifc)
-        handler.refresh_ui_data()
+        refresh()
         return {"FINISHED"}
 
 
@@ -143,7 +138,7 @@ class DisplayRevision(bpy.types.Operator):
     def execute(self, context):
 
         core.colourise_revision(tool.IfcGit, context)
-        handler.refresh_ui_data()
+        refresh()
         return {"FINISHED"}
 
 
@@ -158,7 +153,7 @@ class DisplayUncommitted(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.colourise_uncommitted(tool.IfcGit, tool.Ifc, repo)
-        handler.refresh_ui_data()
+        refresh()
         return {"FINISHED"}
 
 
@@ -172,7 +167,7 @@ class SwitchRevision(bpy.types.Operator):
     def execute(self, context):
 
         core.switch_revision(tool.IfcGit, tool.Ifc)
-        handler.refresh_ui_data()
+        refresh()
         return {"FINISHED"}
 
 
@@ -192,7 +187,7 @@ class Merge(bpy.types.Operator):
     def execute(self, context):
 
         if core.merge_branch(tool.IfcGit, tool.Ifc, self):
-            handler.refresh_ui_data()
+            refresh()
             return {"FINISHED"}
         else:
             return {"CANCELLED"}
