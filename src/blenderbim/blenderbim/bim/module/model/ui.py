@@ -135,6 +135,8 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.align_wall", icon="ANCHOR_TOP", text="Ext.").align_type = "EXTERIOR"
         row.operator("bim.align_wall", icon="ANCHOR_CENTER", text="C/L").align_type = "CENTERLINE"
         row.operator("bim.align_wall", icon="ANCHOR_BOTTOM", text="Int.").align_type = "INTERIOR"
+        row = self.layout.row(align=True)
+        row.operator("bim.generate_spaces_from_walls")
 
 
 class BIM_PT_array(bpy.types.Panel):
