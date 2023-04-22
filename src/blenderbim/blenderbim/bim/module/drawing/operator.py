@@ -485,10 +485,13 @@ class CreateDrawing(bpy.types.Operator):
             self.serialiser.finalize()
         results = self.svg_buffer.get_value()
 
+        root = etree.fromstring(results)
+        self.move_projection_to_bottom(root)
+        self.merge_linework_and_add_metadata(root)
+
         if self.camera.data.BIMCameraProperties.calculate_shapely_surfaces:
             # shapely variant
-            root = etree.fromstring(results)
-            group = root.findall('.//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}name]')[0]
+            group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
             nm = group.attrib["{http://www.ifcopenshell.org/ns}name"]
             m4 = np.array(json.loads(group.attrib["{http://www.ifcopenshell.org/ns}plane"]))
             m3 = np.array(json.loads(group.attrib["{http://www.ifcopenshell.org/ns}matrix3"]))
@@ -503,7 +506,7 @@ class CreateDrawing(bpy.types.Operator):
 
             for projection in projections:
                 boundary_lines = []
-                for path in projection.findall('./{http://www.w3.org/2000/svg}path'):
+                for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
                     start, end = [co[1:].split(",") for co in path.attrib["d"].split()]
                     boundary_lines.append(shapely.LineString([start, end]))
                 unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
@@ -517,23 +520,39 @@ class CreateDrawing(bpy.types.Operator):
                     internal_point = centroid if polygon.contains(centroid) else polygon.representative_point()
                     if internal_point:
                         internal_point = [internal_point.x, internal_point.y]
-                        a, b = self.drawing_to_model_co(m44, m4, internal_point, 0.0), self.drawing_to_model_co(m44, m4, internal_point, -100.0)
+                        a, b = self.drawing_to_model_co(m44, m4, internal_point, 0.0), self.drawing_to_model_co(
+                            m44, m4, internal_point, -100.0
+                        )
                         inside_elements = [e for e in tree.select(self.pythonize(a)) if not e.is_a("IfcAnnotation")]
                         if not inside_elements:
-                            elements = [e for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a)) if not e.instance.is_a("IfcAnnotation")]
+                            elements = [
+                                e
+                                for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a))
+                                if not e.instance.is_a("IfcAnnotation")
+                            ]
                             if elements:
-                                path = etree.SubElement(group, "path")
-                                d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
+                                path = etree.Element("path")
+                                d = (
+                                    "M"
+                                    + " L".join(
+                                        [",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]
+                                    )
+                                    + " Z"
+                                )
                                 for interior in polygon.interiors:
-                                    d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                                    d += (
+                                        " M"
+                                        + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]])
+                                        + " Z"
+                                    )
                                 path.attrib["d"] = d
                                 classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
                                 classes.append("surface")
                                 path.set("class", " ".join(list(classes)))
-
-            results = etree.tostring(root)
+                                group.insert(0, path)
 
         if self.camera.data.BIMCameraProperties.calculate_svgfill_surfaces:
+            results = etree.tostring(root).decode("utf8")
             svg_data_1 = results
             from xml.dom.minidom import parseString
 
@@ -624,7 +643,11 @@ class CreateDrawing(bpy.types.Operator):
                             if iteration != num_passes:
                                 semantics[pi] = (inside_elements[0], -1)
                         else:
-                            elements = [e for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a)) if not e.instance.is_a("IfcAnnotation")]
+                            elements = [
+                                e
+                                for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a))
+                                if not e.instance.is_a("IfcAnnotation")
+                            ]
 
                         if elements:
                             classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
@@ -682,16 +705,56 @@ class CreateDrawing(bpy.types.Operator):
                     # This generally shouldn't happen
                     g1.appendChild(g2)
 
-            data = dom1.toxml()
-            data = data.encode("ascii", "xmlcharrefreplace")
-
-            results = data
-        with profile("Post processing"):
+            results = dom1.toxml()
+            results = results.encode("ascii", "xmlcharrefreplace")
             root = etree.fromstring(results)
-            self.move_projection_to_bottom(root)
-            self.merge_linework_and_add_metadata(root)
-            with open(svg_path, "wb") as svg:
-                svg.write(etree.tostring(root))
+
+        # Spaces are handled as a special case, since they are often overlayed
+        # in addition to elements. For example, a space should not obscure
+        # other elements in projection. Spaces should also not override cut
+        # elements but instead be drawn in addition to cut elements.
+        spaces = tool.Drawing.get_drawing_spaces(self.camera_element)
+
+        group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
+
+        self.svg_writer.calculate_scale()
+        x_offset = self.svg_writer.raw_width / 2
+        y_offset = self.svg_writer.raw_height / 2
+
+        for space in spaces:
+            obj = tool.Ifc.get_object(space)
+            if not obj or not tool.Drawing.is_intersecting_camera(obj, self.camera):
+                continue
+            verts, edges = tool.Drawing.bisect_mesh(obj, self.camera)
+            verts = [self.svg_writer.project_point_onto_camera(Vector(v)) for v in verts]
+            line_strings = [
+                shapely.LineString(
+                    [
+                        (
+                            (x_offset + verts[e[0]][0]) * self.svg_writer.svg_scale,
+                            (y_offset - verts[e[0]][1]) * self.svg_writer.svg_scale,
+                        ),
+                        (
+                            (x_offset + verts[e[1]][0]) * self.svg_writer.svg_scale,
+                            (y_offset - verts[e[1]][1]) * self.svg_writer.svg_scale,
+                        ),
+                    ]
+                )
+                for e in edges
+            ]
+            closed_polygons = shapely.polygonize(line_strings)
+            for polygon in closed_polygons.geoms:
+                classes = self.get_svg_classes(space)
+                path = etree.Element("path")
+                d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
+                for interior in polygon.interiors:
+                    d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                path.attrib["d"] = d
+                path.set("class", " ".join(list(classes)))
+                group.append(path)
+
+        with open(svg_path, "wb") as svg:
+            svg.write(etree.tostring(root))
 
         return svg_path
 
@@ -748,13 +811,12 @@ class CreateDrawing(bpy.types.Operator):
             value = ifcopenshell.util.selector.get_element_value(element, key)
             if value:
                 classes.append(
-                    tool.Drawing.canonicalise_class_name(key)
-                    + "-"
-                    + tool.Drawing.canonicalise_class_name(str(value))
+                    tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
                 )
         return classes
 
     def merge_linework_and_add_metadata(self, root):
+        group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
         joined_paths = {}
 
         ifc = tool.Ifc.get()
@@ -796,16 +858,15 @@ class CreateDrawing(bpy.types.Operator):
             elif type(merged_polygons) == shapely.Polygon:
                 merged_polygons = [merged_polygons]
 
-            root_g = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
             for polygon in merged_polygons:
-                g = etree.SubElement(root, "g")
+                g = etree.Element("g")
                 path = etree.SubElement(g, "path")
                 d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
                 for interior in polygon.interiors:
                     d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
                 path.attrib["d"] = d
                 g.set("class", " ".join(list(classes)))
-                root_g.append(g)
+                group.append(g)
 
     def drawing_to_model_co(self, m44, m4, xy, z=0.0):
         xyzw = m44 @ np.array(xy + [z, 1.0])
@@ -816,14 +877,12 @@ class CreateDrawing(bpy.types.Operator):
         return tuple(map(float, arr))
 
     def move_projection_to_bottom(self, root):
-        # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
+        # IfcConvert puts the projection afterwards which is not correct since
+        # projection should be drawn underneath the cut.
         group = root.find("{http://www.w3.org/2000/svg}g")
-        if self.camera.data.BIMCameraProperties.calculate_svgfill_surfaces:
-            # SVGFill already places the projection in the right spot.
-            return
-        # group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
-        if group is not None:
-            group[:] = reversed(group)
+        projection = group.find("{http://www.w3.org/2000/svg}g[@class='projection']")
+        projection.getparent().remove(projection)
+        group.insert(0, projection)
 
     def generate_annotation(self, context):
         if not self.cprops.has_annotation:
