@@ -485,7 +485,7 @@ class CreateDrawing(bpy.types.Operator):
             self.serialiser.finalize()
         results = self.svg_buffer.get_value()
 
-        if self.camera.data.BIMCameraProperties.calculate_surfaces:
+        if self.camera.data.BIMCameraProperties.calculate_shapely_surfaces:
             # shapely variant
             root = etree.fromstring(results)
             group = root.findall('.//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}name]')[0]
@@ -532,6 +532,160 @@ class CreateDrawing(bpy.types.Operator):
                                 path.set("class", " ".join(list(classes)))
 
             results = etree.tostring(root)
+
+        if self.camera.data.BIMCameraProperties.calculate_svgfill_surfaces:
+            svg_data_1 = results
+            from xml.dom.minidom import parseString
+
+            def yield_groups(n):
+                if n.nodeType == n.ELEMENT_NODE and n.tagName == "g":
+                    yield n
+                for c in n.childNodes:
+                    yield from yield_groups(c)
+
+            dom1 = parseString(svg_data_1)
+            svg1 = dom1.childNodes[0]
+            groups1 = [g for g in yield_groups(svg1) if g.getAttribute("class") == "projection"]
+
+            ls_groups = ifcopenshell.ifcopenshell_wrapper.svg_to_line_segments(results, "projection")
+
+            for i, (ls, g1) in enumerate(zip(ls_groups, groups1)):
+                projection, g1 = g1, g1.parentNode
+
+                svgfill_context = ifcopenshell.ifcopenshell_wrapper.context(
+                    ifcopenshell.ifcopenshell_wrapper.EXACT_CONSTRUCTIONS, 1.0e-3
+                )
+
+                # EXACT_CONSTRUCTIONS is significantly faster than FILTERED_CARTESIAN_QUOTIENT
+                # remove duplicates (without tolerance)
+                ls = [l for l in map(tuple, set(map(frozenset, ls))) if len(l) == 2 and l[0] != l[1]]
+                svgfill_context.add(ls)
+
+                num_passes = 0
+
+                for iteration in range(num_passes + 1):
+                    # initialize empty group, note that in the current approach only one
+                    # group is stored
+                    ps = ifcopenshell.ifcopenshell_wrapper.svg_groups_of_polygons()
+                    if iteration != 0 or svgfill_context.build():
+                        svgfill_context.write(ps)
+
+                    if iteration != num_passes:
+                        pairs = svgfill_context.get_face_pairs()
+                        semantics = [None] * (max(pairs) + 1)
+
+                    # Reserialize cells into an SVG string
+                    svg_data_2 = ifcopenshell.ifcopenshell_wrapper.polygons_to_svg(ps, True)
+
+                    # We parse both SVG files to create on document with the combination of sections from
+                    # the output directly from the serializer and the cells found from the hidden line
+                    # rendering
+                    dom2 = parseString(svg_data_2)
+                    svg2 = dom2.childNodes[0]
+                    # file 2 only has the groups we are interested in.
+                    # in fact in the approach, it's only a single group
+
+                    g2 = list(yield_groups(svg2))[0]
+
+                    # These are attributes on the original group that we can use to reconstruct
+                    # a 4x4 matrix of the projection used in the SVG generation process
+                    nm = g1.getAttribute("ifc:name")
+                    m4 = np.array(json.loads(g1.getAttribute("ifc:plane")))
+                    m3 = np.array(json.loads(g1.getAttribute("ifc:matrix3")))
+                    m44 = np.eye(4)
+                    m44[0][0:2] = m3[0][0:2]
+                    m44[1][0:2] = m3[1][0:2]
+                    m44[0][3] = m3[0][2]
+                    m44[1][3] = m3[1][2]
+                    m44 = np.linalg.inv(m44)
+
+                    # Loop over the cell paths
+                    for pi, p in enumerate(g2.getElementsByTagName("path")):
+
+                        d = p.getAttribute("d")
+                        coords = [co[1:].split(",") for co in d.split() if co[1:]]
+                        polygon = shapely.Polygon(coords)
+                        # 1mm2 polygons aren't worth styling in paperspace. Raycasting is expensive!
+                        if polygon.area < 1:
+                            continue
+                        # point inside is an attribute that comes from line_segments_to_polygons() polygons_to_svg?
+                        # it is an arbitrary point guaranteed to be inside the polygon and outside
+                        # of any potential inner bounds. We can use this to construct a ray to find
+                        # the face of the IFC element that the cell belongs to.
+                        assert p.hasAttribute("ifc:pointInside")
+
+                        xy = list(map(float, p.getAttribute("ifc:pointInside").split(",")))
+
+                        a, b = self.drawing_to_model_co(m44, m4, xy, 0.0), self.drawing_to_model_co(m44, m4, xy, -100.0)
+
+                        inside_elements = [e for e in tree.select(self.pythonize(a)) if not e.is_a("IfcAnnotation")]
+                        if inside_elements:
+                            elements = None
+                            if iteration != num_passes:
+                                semantics[pi] = (inside_elements[0], -1)
+                        else:
+                            elements = [e for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a)) if not e.instance.is_a("IfcAnnotation")]
+
+                        if elements:
+                            classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
+                            classes.append("projection")
+
+                            if iteration != num_passes:
+                                semantics[pi] = elements[0]
+                        else:
+                            classes = ["projection"]
+
+                        p.setAttribute("style", "")
+                        p.setAttribute("class", " ".join(classes))
+
+                    if iteration != num_passes:
+                        to_remove = []
+
+                        for he_idx in range(0, len(pairs), 2):
+                            # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
+                            # to see if they're coplanar, because ray-distance will be different in case
+                            # of element surfaces non-orthogonal to the view direction
+
+                            def format(x):
+                                if x is None:
+                                    return None
+                                elif isinstance(x, tuple):
+                                    # found to be inside element using tree.select() no face or style info
+                                    return x
+                                else:
+                                    return (x.instance.is_a(), x.ray_distance, tuple(x.position))
+
+                            pp = pairs[he_idx : he_idx + 2]
+                            if pp == (-1, -1):
+                                continue
+                            data = list(map(format, map(semantics.__getitem__, pp)))
+                            if None not in data and data[0][0] == data[1][0] and abs(data[0][1] - data[1][1]) < 1.0e-5:
+                                to_remove.append(he_idx // 2)
+                                # Print edge index and semantic data
+                                # print(he_idx // 2, *data)
+
+                        svgfill_context.merge(to_remove)
+
+                # Swap the XML nodes from the files
+                # Remove the original hidden line node we still have in the serializer output
+                g1.removeChild(projection)
+                g2.setAttribute("class", "projection")
+                # Find the children of the projection node parent
+                children = [x for x in g1.childNodes if x.nodeType == x.ELEMENT_NODE]
+                if children:
+                    # Insert the new semantically enriched cell-based projection node
+                    # *before* the node with sections from the serializer. SVG derives
+                    # draw order from node order in the DOM so sections are draw over
+                    # the projections.
+                    g1.insertBefore(g2, children[0])
+                else:
+                    # This generally shouldn't happen
+                    g1.appendChild(g2)
+
+            data = dom1.toxml()
+            data = data.encode("ascii", "xmlcharrefreplace")
+
+            results = data
         with profile("Post processing"):
             root = etree.fromstring(results)
             self.move_projection_to_bottom(root)
@@ -664,6 +818,9 @@ class CreateDrawing(bpy.types.Operator):
     def move_projection_to_bottom(self, root):
         # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
         group = root.find("{http://www.w3.org/2000/svg}g")
+        if self.camera.data.BIMCameraProperties.calculate_svgfill_surfaces:
+            # SVGFill already places the projection in the right spot.
+            return
         # group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
         if group is not None:
             group[:] = reversed(group)
