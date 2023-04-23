@@ -33,6 +33,13 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.generate_space"
     bl_label = "Generate Space"
     bl_options = {"REGISTER"}
+    bl_description = "Create a space from the cursor position. Move the cursor position into the desired position, select the right space collection and run the operator"
+
+    @classmethod
+    def poll(cls, context):
+        collection = context.view_layer.active_layer_collection.collection
+        collection_obj = bpy.data.objects.get(collection.name)
+        return tool.Ifc.get_entity(collection_obj)
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
@@ -177,9 +184,15 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        return context.selected_objects and element.is_a("IfcWall")
 
     def _execute(self, context):
+        # This only works based on a 2D plan only considering the standard
+        # walls (i.e. prismatic) in the active object storey.
+        # In order to run, the active objct must be a wall and
+        # have to be selected walls
         props = context.scene.BIMModelProperties
 
         active_obj = bpy.context.active_object
