@@ -237,6 +237,8 @@ endif
 	# Provides IFCCityJSON functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccityjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
+	# Provides IfcGit functionality
+	cd dist/working && . env/bin/activate && $(PIP) install GitPython --target=./site-packages
 
 	# Provides Mustache templating in construction documentation
 	# TODO: remove this dependency, it seems overkill and we seem to get by with str replaces
