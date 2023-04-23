@@ -816,6 +816,13 @@ class CreateDrawing(bpy.types.Operator):
         return classes
 
     def merge_linework_and_add_metadata(self, root):
+        join_criteria = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinCriteria")
+        if join_criteria:
+            join_criteria = join_criteria.split(",")
+        else:
+            # Drawing convention states that same objects classes with the same material are merged when cut.
+            join_criteria = ["class", "material.Name", 'r"Pset.*Common"."Status"']
+
         group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
         joined_paths = {}
 
@@ -827,11 +834,18 @@ class CreateDrawing(bpy.types.Operator):
 
             el.set("class", " ".join(classes))
 
-            material_name = [c for c in classes if c.split("-")[0] == "material"][0]
+            keys = []
+            for query in join_criteria:
+                key = ifcopenshell.util.selector.get_element_value(element, query)
+                if isinstance(key, (list, tuple)):
+                    keys.extend(key)
+                else:
+                    keys.append(key)
 
-            # Drawing convention states that objects with the same material are merged when cut.
-            if material_name != "material-null" and el.findall("{http://www.w3.org/2000/svg}path"):
-                joined_paths.setdefault(material_name, []).append(el)
+            hash_keys = hash(tuple(keys))
+
+            if el.findall("{http://www.w3.org/2000/svg}path"):
+                joined_paths.setdefault(hash_keys, []).append(el)
 
         for key, els in joined_paths.items():
             polygons = []
