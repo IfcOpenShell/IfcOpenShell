@@ -17,16 +17,49 @@
     <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:0.25" />
 </pattern>
 <pattern id="square1" width="1" height="1" patternUnits="userSpaceOnUse">
-    <line x1="0" y1="0" x2="0" y2="1" style="stroke:black; stroke-width:0.25" />
-    <line x1="0" y1="0" x2="1" y2="0" style="stroke:black; stroke-width:0.25" />
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 1 0 1 1" />
 </pattern>
 <pattern id="square2" width="2" height="2" patternUnits="userSpaceOnUse">
-    <line x1="0" y1="0" x2="0" y2="2" style="stroke:black; stroke-width:0.25" />
-    <line x1="0" y1="0" x2="2" y2="0" style="stroke:black; stroke-width:0.25" />
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 2 0 2 2" />
 </pattern>
 <pattern id="square3" width="3" height="3" patternUnits="userSpaceOnUse">
-    <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:0.25" />
-    <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:0.25" />
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 3 0 3 3" />
+</pattern>
+<pattern id="recth1" width="2" height="1" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 2 0 2 1" />
+</pattern>
+<pattern id="recth2" width="4" height="2" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 4 0 4 2" />
+</pattern>
+<pattern id="recth3" width="6" height="3" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 6 0 6 3" />
+</pattern>
+<pattern id="rectv1" width="1" height="2" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 1 0 1 2" />
+</pattern>
+<pattern id="rectv2" width="2" height="4" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 2 0 2 4" />
+</pattern>
+<pattern id="rectv3" width="3" height="6" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.25; fill: none;" d="M 0 0 3 0 3 6" />
+</pattern>
+<pattern id="tile1" width="2" height="2" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.15; fill: none;" d="M 0 0 2 0 2 1 0 1 M 1 1 1 2" />
+</pattern>
+<pattern id="tile2" width="4" height="4" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.15; fill: none;" d="M 0 0 4 0 4 2 0 2 M 2 2 2 4" />
+</pattern>
+<pattern id="tile3" width="6" height="6" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.15; fill: none;" d="M 0 0 6 0 6 3 0 3 M 3 3 3 6" />
+</pattern>
+<pattern id="board1" width="4" height="2" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.15; fill: none;" d="M 0 0 4 0 4 1 0 1 M 2 1 2 2" />
+</pattern>
+<pattern id="board2" width="8" height="4" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.15; fill: none;" d="M 0 0 8 0 8 2 0 2 M 4 2 4 4" />
+</pattern>
+<pattern id="board3" width="12" height="6" patternUnits="userSpaceOnUse">
+    <path style="stroke: black; stroke-width: 0.15; fill: none;" d="M 0 0 12 0 12 3 0 3 M 6 3 6 6" />
 </pattern>
 <pattern id="crosshatch1" width="1" height="1" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
     <line x1="0" y1="0" x2="0" y2="1" style="stroke:black; stroke-width:0.25" />
