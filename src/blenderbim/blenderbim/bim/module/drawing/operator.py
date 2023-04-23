@@ -1148,38 +1148,6 @@ class CreateSheets(bpy.types.Operator, Operator):
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg)
 
 
-class ChangeSheetTitleBlock(bpy.types.Operator, Operator):
-    bl_idname = "bim.change_sheet_title_block"
-    bl_label = "Change Sheet Title Block"
-    bl_description = "Change the title block of the active sheet"
-    bl_options = {"REGISTER"}
-
-    def _execute(self, context):
-        scene = context.scene
-        props = scene.DocProperties
-
-        if not len(props.sheets):
-            return {"CANCELLED"}
-
-        titleblock = scene.DocProperties.titleblock
-
-        active_sheet = props.sheets[props.active_sheet_index]
-        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
-
-        for reference in tool.Drawing.get_document_references(sheet):
-            description = tool.Drawing.get_reference_description(reference)
-            if description == "TITLEBLOCK":
-                tool.Ifc.run(
-                    "document.edit_reference",
-                    reference=reference,
-                    attributes={"Location": tool.Drawing.get_default_titleblock_path(titleblock)},
-                )
-
-        sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = scene.BIMProperties.data_dir
-        sheet_builder.change_titleblock(sheet, titleblock)
-
-
 class SelectAllDrawings(bpy.types.Operator):
     bl_idname = "bim.select_all_drawings"
     bl_label = "Select All Drawings"
@@ -1863,9 +1831,9 @@ class LoadSheets(bpy.types.Operator, Operator):
             self.report({"ERROR"}, "Some sheets svg files are missing:\n" + "\n".join(sheets_not_found))
 
 
-class RenameSheet(bpy.types.Operator, Operator):
-    bl_idname = "bim.rename_sheet"
-    bl_label = "Rename Sheet"
+class EditSheet(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_sheet"
+    bl_label = "Edit Sheet"
     bl_options = {"REGISTER", "UNDO"}
     identification: bpy.props.StringProperty()
     name: bpy.props.StringProperty()
@@ -1873,20 +1841,49 @@ class RenameSheet(bpy.types.Operator, Operator):
     def invoke(self, context, event):
         self.props = context.scene.DocProperties
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
-        self.identification = sheet.Identification
-        self.name = sheet.Name
+        if sheet.is_a("IfcDocumentInformation"):
+            self.document_type = "SHEET"
+            self.name = sheet.Name
+            self.identification = sheet.Identification
+        elif sheet.is_a("IfcDocumentReference") and sheet.Description == "TITLEBLOCK":
+            self.document_type = "TITLEBLOCK"
+        else:
+            self.document_type = "EMBEDDED"
+            self.identification = sheet.Identification
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
-        row = self.layout.row()
-        row.prop(self, "identification", text="Identification")
-        row = self.layout.row()
-        row.prop(self, "name", text="Name")
+        if self.document_type == "SHEET":
+            row = self.layout.row()
+            row.prop(self, "identification", text="Identification")
+            row = self.layout.row()
+            row.prop(self, "name", text="Name")
+        elif self.document_type == "TITLEBLOCK":
+            row = self.layout.row()
+            row.prop(context.scene.DocProperties, "titleblock", text="Titleblock")
+        elif self.document_type == "EMBEDDED":
+            row = self.layout.row()
+            row.prop(self, "identification", text="Identification")
 
     def _execute(self, context):
         self.props = context.scene.DocProperties
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
-        core.rename_sheet(tool.Ifc, tool.Drawing, sheet=sheet, identification=self.identification, name=self.name)
+        if self.document_type == "SHEET":
+            core.rename_sheet(tool.Ifc, tool.Drawing, sheet=sheet, identification=self.identification, name=self.name)
+        elif self.document_type == "EMBEDDED":
+            core.rename_reference(tool.Ifc, reference=sheet, identification=self.identification)
+        elif self.document_type == "TITLEBLOCK":
+            titleblock = self.props.titleblock
+            reference = sheet
+            sheet = tool.Drawing.get_reference_document(reference)
+            tool.Ifc.run(
+                "document.edit_reference",
+                reference=reference,
+                attributes={"Location": tool.Drawing.get_default_titleblock_path(titleblock)},
+            )
+            sheet_builder = sheeter.SheetBuilder()
+            sheet_builder.data_dir = context.scene.BIMProperties.data_dir
+            sheet_builder.change_titleblock(sheet, titleblock)
         tool.Drawing.import_sheets()
 
 

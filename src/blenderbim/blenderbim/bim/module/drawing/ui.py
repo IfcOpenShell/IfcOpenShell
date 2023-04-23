@@ -302,14 +302,13 @@ class BIM_PT_sheets(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props, "titleblock", text="")
         row.operator("bim.add_sheet", text="", icon="ADD")
-        row.operator("bim.change_sheet_title_block", text="", icon="MODIFIER_DATA")
         row.operator("bim.disable_editing_sheets", text="", icon="CANCEL")
 
         if self.props.sheets and self.props.active_sheet_index < len(self.props.sheets):
             active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
-            row.operator("bim.rename_sheet", icon="GREASEPENCIL", text="")
+            row.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
