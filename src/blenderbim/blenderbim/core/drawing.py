@@ -127,6 +127,10 @@ def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
                     drawing.move_file(old_location, ifc.resolve_uri(new_location))
 
 
+def rename_reference(ifc, reference=None, identification=None):
+    ifc.run("document.edit_reference", reference=reference, attributes={"Identification": identification})
+
+
 def load_schedules(drawing):
     drawing.import_schedules()
     drawing.enable_editing_schedules()
