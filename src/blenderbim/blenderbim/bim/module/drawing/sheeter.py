@@ -344,7 +344,7 @@ class SheetBuilder:
         sheet_dir = os.path.dirname(sheet_path)
 
         os.makedirs(sheet_dir, exist_ok=True)
-        os.makedirs(os.path.join(sheet_dir, "titleblocks"), exist_ok=True)
+        os.makedirs(os.path.dirname(titleblock_path), exist_ok=True)
         if not os.path.exists(titleblock_path):
             shutil.copy(ootb_titleblock_path, titleblock_path)
 
