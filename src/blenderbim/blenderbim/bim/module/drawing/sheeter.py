@@ -208,7 +208,7 @@ class SheetBuilder:
 
         self.build_titleblock(root, sheet)
         self.build_drawings(root, sheet)
-        self.build_schedules(root)
+        self.build_schedules(root, sheet)
 
         with open(sheet_path, "wb") as output:
             tree.write(output)
@@ -261,6 +261,7 @@ class SheetBuilder:
             if view_title is not None:
                 foreground_path = self.get_href(foreground)
                 data = reference.get_info()
+                data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
                 if not data["Name"]:
                     data["Name"] = ntpath.basename(foreground_path)[0:-4]
                 data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
@@ -269,7 +270,7 @@ class SheetBuilder:
             for image in images:
                 view.remove(image)
 
-    def build_schedules(self, root):
+    def build_schedules(self, root, sheet):
         for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]'):
             reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
             schedule = tool.Ifc.get().by_id(int(view.attrib["data-schedule"]))
@@ -291,6 +292,7 @@ class SheetBuilder:
             if view_title is not None:
                 path = self.get_href(table)
                 data = reference.get_info()
+                data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
                 if not data["Name"]:
                     data["Name"] = schedule.Name or "Unnamed"
                 view.append(self.parse_embedded_svg(view_title, data))
