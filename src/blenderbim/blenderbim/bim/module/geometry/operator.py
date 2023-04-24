@@ -715,7 +715,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        objs = context.selected_objects or [context.active_object]
+        objs = context.selected_objects or ([context.active_object] if context.active_object else [])
         active_obj = context.active_object
 
         if context.active_object:
