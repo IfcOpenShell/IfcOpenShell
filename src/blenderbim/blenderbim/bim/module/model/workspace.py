@@ -202,6 +202,15 @@ class BimToolUI:
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
+        elif (
+            (RailingData.is_loaded or not RailingData.load())
+            and RailingData.data["parameters"]
+            and not context.active_object.BIMRailingProperties.is_editing_path
+        ):
+            # NOTE: should be above "active_representation_type" = "SweptSolid" check
+            # because it could be a SweptSolid too
+            add_layout_hotkey_operator(cls.layout, "Edit Railing Path", "S_E", "")
+
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
             add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
 
@@ -231,13 +240,6 @@ class BimToolUI:
             "IfcPipeSegmentType",
         ):
             add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
-
-        elif (
-            (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
-            and not context.active_object.BIMRailingProperties.is_editing_path
-        ):
-            add_layout_hotkey_operator(cls.layout, "Edit Railing Path", "S_E", "")
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
@@ -407,6 +409,16 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
 
+        # NOTE: placing it before the other operations because railing can also be SweptSolid
+        # and it might conflict with one of the conditions below
+        if (
+            (RailingData.is_loaded or not RailingData.load())
+            and RailingData.data["parameters"]
+            and not bpy.context.active_object.BIMRailingProperties.is_editing_path
+        ):
+            bpy.ops.bim.enable_editing_railing_path()
+            return
+
         selected_usages = {}
         for obj in bpy.context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -460,15 +472,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
-
-        elif (
-            (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
-            and not bpy.context.active_object.BIMRailingProperties.is_editing_path
-        ):
-            # undo the unselection done above because railing has no usage type 🙃
-            bpy.context.object.select_set(True)
-            bpy.ops.bim.enable_editing_railing_path()
 
         elif (
             (RoofData.is_loaded or not RoofData.load())

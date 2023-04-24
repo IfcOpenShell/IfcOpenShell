@@ -18,14 +18,11 @@
 
 
 import bpy
-from bpy.types import Operator
 import bmesh
-
 import ifcopenshell
 from ifcopenshell.util.shape_builder import V
 import blenderbim
 import blenderbim.tool as tool
-import blenderbim.core.geometry as core
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.door import bm_sort_out_geom
@@ -39,6 +36,15 @@ import json
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailing.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailingType.htm
+
+
+NON_SI_RAILING_PROPS = (
+    "is_editing",
+    "railing_type",
+    "railing_added_previously",
+    "use_manual_supports",
+    "terminal_type",
+)
 
 
 def bm_split_edge_at_offset(edge, offset):
@@ -82,7 +88,31 @@ def update_railing_modifier_ifc_data(context):
             "Height": props.height,
         },
     )
-    tool.Ifc.edit(obj)
+
+    if props.railing_type == "WALL_MOUNTED_HANDRAIL":
+        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        railing_path = [Vector(v) for v in RailingData.data["parameters"]["data_dict"]["path_data"]["verts"]]
+        representation_data = {
+            "railing_type": props.railing_type,
+            "context": body,
+            "railing_path": railing_path,
+            "use_manual_supports": props.use_manual_supports,
+            "support_spacing": props.support_spacing,
+            "railing_diameter": props.railing_diameter,
+            "clear_width": props.clear_width,
+            "terminal_type": props.terminal_type,
+            "height": props.height,
+        }
+        model_representation = ifcopenshell.api.run(
+            "geometry.add_railing_representation", ifc_file, **representation_data
+        )
+        tool.Model.replace_object_ifc_representation(body, obj, model_representation)
+
+        # hacky way to ensure tha ifc representation won't get tessellated at project save
+        IfcStore.edited_objs.discard(obj)
+
+    elif props.railing_type == "FRAMELESS_PANEL":
+        tool.Ifc.edit(obj)
 
 
 def update_bbim_railing_pset(element, railing_data):
@@ -118,77 +148,114 @@ def update_railing_modifier_bmesh(context):
         tool.Blender.apply_bmesh(obj.data, bm)
         return
 
-    # generating the entire railing
-    height = props.height * si_conversion
-    thickness = props.thickness * si_conversion
-    spacing = props.spacing * si_conversion
+    if props.railing_type != "FRAMELESS_PANEL":
+        return
 
-    # spacing
-    # split each edge in 3 segments by 0.5 * spacing by x-y plane
-    main_edges = bm.edges[:]
-    for main_edge in main_edges:
-        bm_split_edge_at_offset(main_edge, spacing)
+    def generate_frameless_panel_railing():
+        # generating FRAMELESS_PANEL railing
+        height = props.height * si_conversion
+        thickness = props.thickness * si_conversion
+        spacing = props.spacing * si_conversion
 
-    # thickness
-    # keep track of translated verts so we won't translate the same
-    # vert twice
-    edge_dissolving_verts = []
-    for main_edge in main_edges:
-        v0, v1 = main_edge.verts
-        edge_dissolving_verts.extend([v0, v1])
+        # spacing
+        # split each edge in 3 segments by 0.5 * spacing by x-y plane
+        main_edges = bm.edges[:]
+        for main_edge in main_edges:
+            bm_split_edge_at_offset(main_edge, spacing)
 
-        edge_dir = ((v1.co - v0.co) * V(1, 1, 0)).normalized()
-        ortho_vector = edge_dir.cross(V(0, 0, 1))
+        # thickness
+        # keep track of translated verts so we won't translate the same
+        # vert twice
+        edge_dissolving_verts = []
+        for main_edge in main_edges:
+            v0, v1 = main_edge.verts
+            edge_dissolving_verts.extend([v0, v1])
 
-        extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
+            edge_dir = ((v1.co - v0.co) * V(1, 1, 0)).normalized()
+            ortho_vector = edge_dir.cross(V(0, 0, 1))
+
+            extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
+            extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+            bmesh.ops.translate(bm, vec=ortho_vector * (-thickness / 2), verts=extruded_verts)
+
+            extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
+            extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+            bmesh.ops.translate(bm, vec=ortho_vector * (thickness / 2), verts=extruded_verts)
+
+            # dissolve middle edge
+            bmesh.ops.dissolve_edges(bm, edges=[main_edge])
+
+        # height
+        extruded_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
         extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
-        bmesh.ops.translate(bm, vec=ortho_vector * (-thickness / 2), verts=extruded_verts)
+        extrusion_vector = Vector((0, 0, 1)) * height
+        bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
 
-        extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
-        extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
-        bmesh.ops.translate(bm, vec=ortho_vector * (thickness / 2), verts=extruded_verts)
+        # dissolve middle edges
+        edges_to_dissolve = []
+        verts_to_dissolve = []
+        for v in edge_dissolving_verts:
+            for e in v.link_edges:
+                other_vert = e.other_vert(v)
+                if other_vert in extruded_verts:
+                    edges_to_dissolve.append(e)
+                    verts_to_dissolve.append(other_vert)
+        bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
+        bmesh.ops.dissolve_verts(bm, verts=verts_to_dissolve)
 
-        # dissolve middle edge
-        bmesh.ops.dissolve_edges(bm, edges=[main_edge])
+        # to remove unnecessary verts in 0 spacing case
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
-    # height
-    extruded_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
-    extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
-    extrusion_vector = Vector((0, 0, 1)) * height
-    bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
+        tool.Blender.apply_bmesh(obj.data, bm)
 
-    # dissolve middle edges
-    edges_to_dissolve = []
-    verts_to_dissolve = []
-    for v in edge_dissolving_verts:
-        for e in v.link_edges:
-            other_vert = e.other_vert(v)
-            if other_vert in extruded_verts:
-                edges_to_dissolve.append(e)
-                verts_to_dissolve.append(other_vert)
-    bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
-    bmesh.ops.dissolve_verts(bm, verts=verts_to_dissolve)
-
-    # to remove unnecessary verts in 0 spacing case
-    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
-
-    tool.Blender.apply_bmesh(obj.data, bm)
+    generate_frameless_panel_railing()
 
 
 def get_path_data(obj):
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    if obj.mode == "EDIT":
-        # otherwise mesh may not contain all changes
-        # added in edit mode
-        obj.update_from_editmode()
 
-    mesh = obj.data
-    path_data = dict()
-    path_data["edges"] = [e.vertices[:] for e in mesh.edges]
-    path_data["verts"] = [v.co / si_conversion for v in mesh.vertices]
-
-    if not path_data["edges"] or not path_data["verts"]:
+    bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+    end_points = [v for v in bm.verts if len(v.link_edges) == 1]
+    if not end_points:
         return None
+
+    # if we have some previous data then we try to match
+    # start or end of the path with the previous path
+    previous_data = False
+    if previous_data:
+        previous_start = previous_data[0]
+        previous_end = previous_data[-1]
+
+        potential_start = min([(v, (v.co - previous_start).length) for v in end_points], key=lambda v_data: v_data[1])
+        potential_end = min([(v, (v.co - previous_end).length) for v in end_points], key=lambda v_data: v_data[1])
+
+        if potential_start[1] < potential_end[1]:
+            start_point = potential_start[0]
+        else:
+            start_point = next(v for v in end_points if v != potential_start[0])
+    else:
+        start_point = min(end_points, key=lambda v: v.index)
+
+    # walking through the path
+    # to make sure all verts and in consequent order
+    edge = start_point.link_edges[0]
+    v = edge.other_vert(start_point)
+    points = [start_point.co, v.co]
+    segments = [(0, 1)]
+    i = 2
+
+    other_edge = lambda edges, edge: next(e for e in edges if e != edge)
+
+    while len(link_edges := v.link_edges) != 1:
+        link_edges = v.link_edges
+        edge = other_edge(link_edges, edge)
+        v = edge.other_vert(v)
+        points.append(v.co)
+        segments.append((i - 1, i))
+        i += 1
+
+    path_data = {"edges": segments, "verts": [p / si_conversion for p in points]}
+
     return path_data
 
 
@@ -248,8 +315,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
 
         # need to make sure all default props will have correct units
         if not props.railing_added_previously:
-            skip_props = ("is_editing", "railing_type", "railing_added_previously")
-            convert_property_group_from_si(props, skip_props=skip_props)
+            convert_property_group_from_si(props, skip_props=NON_SI_RAILING_PROPS)
 
         railing_data = props.get_general_kwargs()
         path_data = get_path_data(obj)
@@ -289,8 +355,7 @@ class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
 
         # need to make sure all props that weren't used before
         # will have correct units
-        skip_props = ("is_editing", "railing_type", "railing_added_previously")
-        skip_props += tuple(data.keys())
+        skip_props = NON_SI_RAILING_PROPS + tuple(data.keys())
         convert_property_group_from_si(props, skip_props=skip_props)
 
         props.is_editing = 1
@@ -343,6 +408,37 @@ class FinishEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
         railing_data = props.get_general_kwargs()
         railing_data["path_data"] = path_data
         props.is_editing = -1
+
+        update_bbim_railing_pset(element, railing_data)
+        update_railing_modifier_ifc_data(context)
+        return {"FINISHED"}
+
+
+class FlipRailingPathOrder(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.flip_railing_path_order"
+    bl_label = "Flip Railing Path Order"
+    bl_description = "Can be useful to maintain railing supports direction"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        props = obj.BIMRailingProperties
+
+        if not RailingData.is_loaded:
+            RailingData.load()
+        path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
+
+        # flip the vertex order and edges
+        path_data["verts"] = path_data["verts"][::-1]
+        last_vert_i = len(path_data["verts"]) - 1
+        edges = []
+        for edge in path_data["edges"][::-1]:
+            edge = [abs(vi - last_vert_i) for vi in edge[::-1]]
+            edges.append(edge)
+
+        railing_data = props.get_general_kwargs()
+        railing_data["path_data"] = path_data
 
         update_bbim_railing_pset(element, railing_data)
         update_railing_modifier_ifc_data(context)

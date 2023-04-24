@@ -494,7 +494,18 @@ class BIMDoorProperties(PropertyGroup):
 
 
 class BIMRailingProperties(PropertyGroup):
-    railing_types = (("FRAMELESS_PANEL", "FRAMELESS_PANEL", ""),)
+    railing_types = (
+        ("FRAMELESS_PANEL", "FRAMELESS_PANEL", ""),
+        ("WALL_MOUNTED_HANDRAIL", "WALL_MOUNTED_HANDRAIL", ""),
+    )
+    cap_types = (
+        ("none", "none", ""),
+        ("180", "180", ""),
+        ("to_wall", "to_wall", ""),
+        ("to_floor", "to_floor", ""),
+        ("to_end_post", "to_end_post", ""),
+        ("to_end_post_and_floor", "to_end_post_and_floor", ""),
+    )
 
     railing_added_previously: bpy.props.BoolProperty(default=False)
     is_editing: bpy.props.IntProperty(default=-1)
@@ -505,13 +516,42 @@ class BIMRailingProperties(PropertyGroup):
     thickness: bpy.props.FloatProperty(name="Thickness", default=0.050)
     spacing: bpy.props.FloatProperty(name="Spacing", default=0.050)
 
+    # wall mounted handrail specific properties
+    use_manual_supports: bpy.props.BoolProperty(
+        name="Use Manual Supports",
+        default=False,
+        description="If enabled, supports are added on every vertex on the edges of the railing path.\n"
+        "If disabled, supports are added automatically based on the support spacing",
+    )
+    support_spacing: bpy.props.FloatProperty(
+        name="Support Spacing", default=1.0, description="Distance between supports if automatic supports are used"
+    )
+    railing_diameter: bpy.props.FloatProperty(name="Railing Diameter", default=0.050)
+    clear_width: bpy.props.FloatProperty(
+        name="Clear Width", default=0.040, description="Clear width between the railing and the wall"
+    )
+    terminal_type: bpy.props.EnumProperty(name="Terminal Type", items=cap_types, default="180")
+
     def get_general_kwargs(self):
-        return {
+        base_kwargs = {
             "railing_type": self.railing_type,
             "height": self.height,
-            "thickness": self.thickness,
-            "spacing": self.spacing,
         }
+        additional_kwargs = {}
+        if self.railing_type == "FRAMELESS_PANEL":
+            additional_kwargs = {
+                "thickness": self.thickness,
+                "spacing": self.spacing,
+            }
+        elif self.railing_type == "WALL_MOUNTED_HANDRAIL":
+            additional_kwargs = {
+                "railing_diameter": self.railing_diameter,
+                "clear_width": self.clear_width,
+                "use_manual_supports": self.use_manual_supports,
+                "support_spacing": self.support_spacing,
+                "terminal_type": self.terminal_type,
+            }
+        return base_kwargs | additional_kwargs
 
 
 class BIMRoofProperties(PropertyGroup):
