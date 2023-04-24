@@ -871,6 +871,8 @@ class CreateDrawing(bpy.types.Operator):
                 merged_polygons = merged_polygons.geoms
             elif type(merged_polygons) == shapely.Polygon:
                 merged_polygons = [merged_polygons]
+            else:
+                merged_polygons = []
 
             for polygon in merged_polygons:
                 g = etree.Element("g")
