@@ -706,27 +706,20 @@ class SvgWriter:
             # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
 
             text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
+            attribs = {
+                "transform": transform,
+                "style": "font-size: 0;",
+            }
+            if "fill-bg" in classes:
+                attribs["filter"] = "url(#fill-background)"
             text_tag = self.svg.text(
                 "",
-                **{
-                    "transform": transform,
-                    "style": "font-size: 0;",
-                },
+                **attribs,
                 **self.get_box_alignment_parameters(text_literal.BoxAlignment),
             )
             self.svg.add(text_tag)
 
             text_lines = text.replace("\\n", "\n").split("\n")
-
-            # adding fill background tspan
-            # tspans and text doesn't support setting up "background-color"
-            # so we add a filter, we do it in separate span because otherwise it will produce blurry image
-            # adding just 1 tspan seems to work
-            if "fill-bg" in classes:
-                tspan = self.svg.tspan(
-                    text_lines[0], class_=classes_str, insert=text_position_svg, filter="url(#fill-background)"
-                )
-                text_tag.add(tspan)
 
             for line_number, text_line in enumerate(text_lines):
                 # position has to be inserted at tspan to avoid x offset between tspans
