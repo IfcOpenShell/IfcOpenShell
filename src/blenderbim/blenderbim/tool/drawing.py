@@ -1290,6 +1290,18 @@ class Drawing(blenderbim.core.tool.Drawing):
         return document.HasDocumentReferences or []
 
     @classmethod
+    def get_references_with_location(cls, location):
+        return [r for r in tool.Ifc.get().by_type("IfcDocumentReference") if r.Location == location]
+
+    @classmethod
+    def update_embedded_svg_location(cls, uri, old_location, new_location):
+        with open(uri, "r") as f:
+            svg = f.read()
+        svg = svg.replace(os.path.basename(old_location), os.path.basename(new_location))
+        with open(uri, "w") as f:
+            f.write(svg)
+
+    @classmethod
     def get_reference_description(cls, reference):
         return reference.Description
 
@@ -1300,7 +1312,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_reference_element(cls, reference):
         if tool.Ifc.get_schema() == "IFC2X3":
-            refs = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference]
+            refs = [r for r in tool.Ifc.get().by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference]
         else:
             refs = reference.DocumentRefForObjects
         if refs:

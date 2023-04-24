@@ -308,9 +308,17 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
     new_location = drawing_tool.get_default_drawing_path(name)
     if old_location != new_location:
         ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
-        old_location = ifc.resolve_uri(old_location)
-        if drawing_tool.does_file_exist(old_location):
-            drawing_tool.move_file(old_location, ifc.resolve_uri(new_location))
+        resolved_old_location = ifc.resolve_uri(old_location)
+        if drawing_tool.does_file_exist(resolved_old_location):
+            drawing_tool.move_file(resolved_old_location, ifc.resolve_uri(new_location))
+
+    for reference in drawing_tool.get_references_with_location(old_location):
+        ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
+        sheet = drawing_tool.get_reference_document(reference)
+        if not sheet:
+            uri = ifc.resolve_uri(drawing_tool.get_document_uri(sheet, "LAYOUT"))
+            if drawing_tool.does_file_exist(uri):
+                drawing_tool.update_embedded_svg_location(uri, old_location, new_location)
 
 
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
