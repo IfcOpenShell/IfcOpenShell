@@ -35,10 +35,21 @@ class ShapeBuilder:
     def __init__(self, ifc_file):
         self.file = ifc_file
 
-    def polyline(self, points, closed=False, position_offset=None):
+    def polyline(self, points, closed=False, position_offset=None, arc_points=[]):
         # > points - list of points formatted like ( (x0, y0), (x1, y1) )
         # < IfcIndexedPolyCurve
-        segments = [(i, i + 1) for i in range(1, len(points))]
+        segments = []
+
+        cur_i = 0
+        while cur_i < len(points) - 1:
+            cur_i_ifc = cur_i + 1
+            if cur_i + 1 in arc_points:
+                segments.append((cur_i_ifc, cur_i_ifc + 1, cur_i_ifc + 2))
+                cur_i += 2
+            else:
+                segments.append((cur_i_ifc, cur_i_ifc + 1))
+                cur_i += 1
+
         if closed:
             segments.append((len(points), 1))
         if position_offset:
@@ -50,7 +61,12 @@ class ShapeBuilder:
         elif dimensions == 3:
             ifc_points = self.file.createIfcCartesianPointList3D(points)
 
-        ifc_segments = [self.file.createIfcLineIndex(segment) for segment in segments]
+        ifc_segments = []
+        for segment in segments:
+            if len(segment) == 2:
+                ifc_segments.append(self.file.createIfcLineIndex(segment))
+            elif len(segment) == 3:
+                ifc_segments.append(self.file.createIfcArcIndex(segment))
         ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
@@ -187,28 +203,20 @@ class ShapeBuilder:
         # < returns IfcArbitraryClosedProfileDef or IfcArbitraryProfileDefWithVoids
 
         if outer_curve.Dim != 2:
-            # TODO: replace with exception
-            print(
-                f"WARNING. Outer curve for IfcArbitraryClosedProfileDef/IfcIfcArbitraryProfileDefWithVoid should be 2D to be valid, currently it has {outer_curve.Dim} dimensions.\n"
+            raise Exception(
+                f"Outer curve for IfcArbitraryClosedProfileDef/IfcIfcArbitraryProfileDefWithVoid should be 2D to be valid, currently it has {outer_curve.Dim} dimensions.\n"
                 "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
             )
-            import traceback
-
-            traceback.print_stack()
 
         if inner_curves:
             if not isinstance(inner_curves, collections.abc.Iterable):
                 inner_curves = [inner_curves]
-                # TODO: replace with exception
                 if any(curve.Dim != 2 for curve in inner_curves):
-                    print(
+                    raise Exception(
                         "WARNING. InnerCurve for IfcIfcArbitraryProfileDefWithVoid sould be 2D to be valid, "
                         "currently on one of the inner curves is using different amount of dimensions.\n"
                         "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
                     )
-                    import traceback
-
-                    traceback.print_stack()
 
             profile = self.file.createIfcArbitraryProfileDefWithVoids(
                 ProfileName=name, ProfileType=profile_type, OuterCurve=outer_curve, InnerCurves=inner_curves
@@ -515,6 +523,17 @@ class ShapeBuilder:
         )
         return extruded_area
 
+    def create_swept_disk_solid(self, path_curve, radius):
+        """Create IfcSweptDiskSolid from `path_curve` (must be 3D) and `radius`"""
+        if path_curve.Dim != 3:
+            raise Exception(
+                f"Path curve for IfcSweptDiskSolid should be 3D to be valid, currently it has {path_curve.Dim} dimensions.\n"
+                "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSweptDiskSolid.htm#8.8.3.42.4-Formal-propositions"
+            )
+
+        disk_solid = self.file.createIfcSweptDiskSolid(Directrix=path_curve, Radius=radius)
+        return disk_solid
+
     def get_representation(self, context, items, representation_type=None):
         # > items - could be a list or single curve/IfcExtrudedAreaSolid
         # < IfcShapeRepresentation
@@ -522,7 +541,7 @@ class ShapeBuilder:
             items = [items]
 
         if not representation_type:
-            if items[0].is_a("IfcExtrudedAreaSolid"):
+            if items[0].is_a() in ("IfcExtrudedAreaSolid", "IfcSweptDiskSolid"):
                 representation_type = "SweptSolid"
             elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
                 representation_type = "Curve3D"
@@ -539,3 +558,13 @@ class ShapeBuilder:
 
     def deep_copy(self, element):
         return ifcopenshell.util.element.copy_deep(self.file, element)
+
+    # UTILITIES
+    def extrude_by_y_kwargs(self):
+        """shortcut for `ShapeBuilder.extrude` to extrude by y axis.
+        it assumes you have 2d profile in xz plane and trying to extrude it by y axis"""
+        return {
+            "position_x_axis": Vector((1, 0, 0)),
+            "position_z_axis": Vector((0, -1, 0)),
+            "extrusion_vector": Vector((0, 0, -1)),
+        }
