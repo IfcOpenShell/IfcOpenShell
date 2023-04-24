@@ -710,23 +710,28 @@ class SvgWriter:
                 "transform": transform,
                 "style": "font-size: 0;",
             }
+
+            def add_text_tag(add_fill_bg):
+                text_tag = self.svg.text(
+                    "",
+                    **(attribs | {"filter": "url(#fill-background)"}) if add_fill_bg else attribs,
+                    **self.get_box_alignment_parameters(text_literal.BoxAlignment),
+                )
+                self.svg.add(text_tag)
+
+                text_lines = text.replace("\\n", "\n").split("\n")
+
+                for line_number, text_line in enumerate(text_lines):
+                    # position has to be inserted at tspan to avoid x offset between tspans
+                    tspan = self.svg.tspan(text_line, class_=classes_str, insert=text_position_svg)
+                    # doing it here and not in tspan constructor because constructor adds unnecessary spaces
+                    tspan.update({"dy": f"{line_number}em"})
+                    text_tag.add(tspan)
+
             if "fill-bg" in classes:
-                attribs["filter"] = "url(#fill-background)"
-            text_tag = self.svg.text(
-                "",
-                **attribs,
-                **self.get_box_alignment_parameters(text_literal.BoxAlignment),
-            )
-            self.svg.add(text_tag)
+                add_text_tag(True)
+            add_text_tag(False)
 
-            text_lines = text.replace("\\n", "\n").split("\n")
-
-            for line_number, text_line in enumerate(text_lines):
-                # position has to be inserted at tspan to avoid x offset between tspans
-                tspan = self.svg.tspan(text_line, class_=classes_str, insert=text_position_svg)
-                # doing it here and not in tspan constructor because constructor adds unnecessary spaces
-                tspan.update({"dy": f"{line_number}em"})
-                text_tag.add(tspan)
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
