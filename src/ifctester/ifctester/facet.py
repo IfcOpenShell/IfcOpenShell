@@ -89,6 +89,12 @@ class Facet:
                     template = template.replace(key_variable, str(value))
                     total_replacements += 1
                 if total_replacements == total_variables:
+                    if hasattr(self, "maxOccurs") and clause_type == "requirement":
+                        if self.maxOccurs == 0:
+                            template = re.sub(
+                                r"(?i)(shall|must)", r"\1 not", template, 1
+                            )  # replace "shall/must" with "shall not/must not"
+                            return template
                     return template
 
     def to_ids_value(self, parameter):
