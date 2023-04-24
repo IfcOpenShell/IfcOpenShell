@@ -194,8 +194,8 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         # In order to run, the active objct must be a wall and
         # have to be selected walls
         props = context.scene.BIMModelProperties
-
         active_obj = bpy.context.active_object
+
         if not active_obj:
             self.report({'ERROR'}, "No active object. Please select a wall")
             return
@@ -224,72 +224,22 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         x, y, z = active_obj.matrix_world.translation.xyz
         mat = active_obj.matrix_world
         h = active_obj.dimensions.z
+        selected_objects = bpy.context.selected_objects
 
-        boundary_elements = []
-        for obj in bpy.context.selected_objects:
-            subelement = tool.Ifc.get_entity(obj)
-            if subelement.is_a("IfcWall"):
-                boundary_elements.append(subelement)
+        boundary_elements = self.get_boundary_elements(selected_objects)
 
-        polys = []
-        for boundary_element in boundary_elements:
-            obj = tool.Ifc.get_object(boundary_element)
-            if not obj:
-                continue
-            points = []
-            base = self.get_obj_base_points(obj)
-            for index in ["low_left", "low_right", "high_right", "high_left"]:
-                point = base[index]
-                points.append(point)
+        polys = self.get_polygons(boundary_elements)
 
-            polys.append(Polygon(points))
-
-        model = tool.Ifc.get()
-
-        project_unit = ifcopenshell.util.unit.get_project_unit(model, "LENGTHUNIT")
-        prefix=getattr(project_unit, "Prefix", None)
-
-        tolerance = 0.03
-
-        converted_tolerance = ifcopenshell.util.unit.convert(
-                                                        value = tolerance,
-                                                        from_prefix = None,
-                                                        from_unit = "METRE",
-                                                        to_prefix = prefix,
-                                                        to_unit = project_unit.Name,
-                                                        )
-
+        converted_tolerance = self.get_converted_tolerance(tolerance = 0.03)
 
         union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style = 2, join_style = 2)
 
         i=0
         for linear_ring in union.interiors:
             poly = Polygon(linear_ring)
-
             poly = poly.buffer(converted_tolerance, single_sided=True, cap_style = 2, join_style = 2)
 
-            bm = bmesh.new()
-            bm.verts.index_update()
-            bm.edges.index_update()
-
-            mat_invert = mat.inverted()
-
-            new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], 0])) for v in poly.exterior.coords[0:-1]]
-            [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-            bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
-
-            bm.verts.index_update()
-            bm.edges.index_update()
-
-            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
-            bmesh.ops.triangle_fill(bm, edges=bm.edges)
-            bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
-
-            extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-            extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-            bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
-
-            bmesh.ops.recalc_face_normals(bm, faces = bm.faces)
+            bm = self.get_bmesh_from_polygon(poly, mat, h)
 
             name = "Space" + str(i)
             mesh = bpy.data.meshes.new(name = name)
@@ -306,6 +256,29 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+    def get_boundary_elements(self, selected_objects):
+        boundary_elements = []
+        for obj in selected_objects:
+            subelement = tool.Ifc.get_entity(obj)
+            if subelement.is_a("IfcWall"):
+                boundary_elements.append(subelement)
+        return boundary_elements
+
+    def get_polygons(self, boundary_elements):
+        polys = []
+        for boundary_element in boundary_elements:
+            obj = tool.Ifc.get_object(boundary_element)
+            if not obj:
+                continue
+            points = []
+            base = self.get_obj_base_points(obj)
+            for index in ["low_left", "low_right", "high_right", "high_left"]:
+                point = base[index]
+                points.append(point)
+
+            polys.append(Polygon(points))
+        return polys
+
     def get_obj_base_points(self, obj):
         x_values = [(obj.matrix_world @ Vector(v)).x for v in obj.bound_box]
         y_values = [(obj.matrix_world @ Vector(v)).y for v in obj.bound_box]
@@ -316,4 +289,42 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
             "high_right": (x_values[7], y_values[7]),
         }
 
+    def get_converted_tolerance(self, tolerance):
+        model = tool.Ifc.get()
+        project_unit = ifcopenshell.util.unit.get_project_unit(model, "LENGTHUNIT")
+        prefix=getattr(project_unit, "Prefix", None)
 
+        converted_tolerance = ifcopenshell.util.unit.convert(
+                                                        value = tolerance,
+                                                        from_prefix = None,
+                                                        from_unit = "METRE",
+                                                        to_prefix = prefix,
+                                                        to_unit = project_unit.Name,
+                                                        )
+        return tolerance
+
+    def get_bmesh_from_polygon(self, poly, mat, h):
+        bm = bmesh.new()
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        mat_invert = mat.inverted()
+
+        new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], 0])) for v in poly.exterior.coords[0:-1]]
+        [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+        bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.triangle_fill(bm, edges=bm.edges)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
+
+        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
+        bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
+
+        bmesh.ops.recalc_face_normals(bm, faces = bm.faces)
+
+        return bm
