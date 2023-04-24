@@ -830,7 +830,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "LayoutsDir")
             or bpy.context.scene.DocProperties.layouts_dir
         )
-        return os.path.join(layouts_dir, cls.sanitise_filename(f"{identification} - {name}.svg"))
+        return os.path.join(layouts_dir, cls.sanitise_filename(f"{identification} - {name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_sheet_path(cls, identification, name):
@@ -839,7 +839,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "SheetsDir")
             or bpy.context.scene.DocProperties.sheets_dir
         )
-        return os.path.join(sheets_dir, cls.sanitise_filename(f"{identification} - {name}.svg"))
+        return os.path.join(sheets_dir, cls.sanitise_filename(f"{identification} - {name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_titleblock_path(cls, name):
@@ -848,7 +848,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
             or bpy.context.scene.DocProperties.titleblocks_dir
         )
-        return os.path.join(titleblocks_dir, cls.sanitise_filename(f"{name}.svg"))
+        return os.path.join(titleblocks_dir, cls.sanitise_filename(f"{name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_drawing_path(cls, name):
@@ -857,7 +857,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "DrawingsDir")
             or bpy.context.scene.DocProperties.drawings_dir
         )
-        return os.path.join(drawings_dir, cls.sanitise_filename(f"{name}.svg"))
+        return os.path.join(drawings_dir, cls.sanitise_filename(f"{name}.svg")).replace("\\", "/")
 
     @classmethod
     def sanitise_filename(cls, name):
@@ -866,10 +866,11 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_default_drawing_resource_path(cls, resource):
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        return (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path")
-            or getattr(bpy.context.scene.DocProperties, f"{resource.lower()}_path")
-        ) or None
+        resource_path = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path") or getattr(
+            bpy.context.scene.DocProperties, f"{resource.lower()}_path"
+        )
+        if resource_path:
+            return resource_path.replace("\\", "/")
 
     @classmethod
     def get_potential_reference_elements(cls, drawing):
