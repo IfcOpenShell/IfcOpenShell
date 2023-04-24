@@ -148,6 +148,7 @@ classes = (
     railing.AddRailing,
     railing.CancelEditingRailing,
     railing.FinishEditingRailing,
+    railing.FlipRailingPathOrder,
     railing.EnableEditingRailing,
     railing.CancelEditingRailingPath,
     railing.FinishEditingRailingPath,
