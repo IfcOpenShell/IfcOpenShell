@@ -38,11 +38,9 @@ class IfcGitData:
     def repo(cls):
         if bool(tool.Ifc.get()):
             path_ifc = tool.Ifc.get_path()
-            if not os.path.isfile(path_ifc):
-                return None
-            return tool.IfcGit.repo_from_path(path_ifc)
-        else:
-            return tool.IfcGitRepo.repo
+            if os.path.isfile(path_ifc):
+                return tool.IfcGit.repo_from_path(path_ifc)
+        return None
 
     @classmethod
     def branch_names(cls):
@@ -50,7 +48,10 @@ class IfcGitData:
 
     @classmethod
     def path_ifc(cls):
-        return tool.Ifc.get_path()
+        path_ifc = tool.Ifc.get_path()
+        if os.path.isfile(path_ifc):
+            return tool.Ifc.get_path()
+        return None
 
     @classmethod
     def branches_by_hexsha(cls):
@@ -70,32 +71,33 @@ class IfcGitData:
     def name_ifc(cls):
         if bool(tool.Ifc.get()):
             path_ifc = tool.Ifc.get_path()
-        if tool.IfcGitRepo.repo:
-            working_dir = tool.IfcGitRepo.repo.working_dir
-            return os.path.relpath(path_ifc, working_dir)
+            if tool.IfcGitRepo.repo and os.path.isfile(path_ifc):
+                working_dir = tool.IfcGitRepo.repo.working_dir
+                return os.path.relpath(path_ifc, working_dir)
         return None
 
     @classmethod
     def dir_name(cls):
         if bool(tool.Ifc.get()):
             path_ifc = tool.Ifc.get_path()
-            if not os.path.isfile(path_ifc):
-                return None
-            return os.path.dirname(path_ifc)
+            if os.path.isfile(path_ifc):
+                return os.path.dirname(path_ifc)
         return None
 
     @classmethod
     def base_name(cls):
         if bool(tool.Ifc.get()):
             path_ifc = tool.Ifc.get_path()
-            return os.path.basename(path_ifc)
+            if os.path.isfile(path_ifc):
+                return os.path.basename(path_ifc)
         return None
 
     @classmethod
     def is_dirty(cls):
-        if tool.IfcGitRepo.repo and cls.git_exe():
+        if cls.repo() and cls.git_exe():
             path_ifc = tool.Ifc.get_path()
-            return tool.IfcGitRepo.repo.is_dirty(path=path_ifc)
+            if os.path.isfile(path_ifc):
+                return cls.repo().is_dirty(path=path_ifc)
         return False
 
     @classmethod
@@ -103,7 +105,8 @@ class IfcGitData:
         props = bpy.context.scene.IfcGitProperties
         if len(props.ifcgit_commits) > 0:
             item = props.ifcgit_commits[props.commit_index]
-            return tool.IfcGitRepo.repo.commit(rev=item.hexsha)
+            if cls.repo():
+                return cls.repo().commit(rev=item.hexsha)
 
     @classmethod
     def current_revision(cls):
