@@ -71,9 +71,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
 
             if IfcGitData.data["repo"].head.is_detached:
                 row = layout.row()
-                row.label(
-                    text="HEAD is detached, commit will create a branch", icon="ERROR"
-                )
+                row.label(text="HEAD is detached, commit will create a branch", icon="ERROR")
                 row.prop(props, "new_branch_name")
 
             row = layout.row()
@@ -83,9 +81,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         if IfcGitData.data["repo"].head.is_detached:
             row.label(text="Working branch: Detached HEAD")
         else:
-            row.label(
-                text="Working branch: " + IfcGitData.data["repo"].active_branch.name
-            )
+            row.label(text="Working branch: " + IfcGitData.data["repo"].active_branch.name)
 
         grouped = layout.row()
         column = grouped.column()
@@ -141,9 +137,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
 class COMMIT_UL_List(bpy.types.UIList):
     """List of Git commits"""
 
-    def draw_item(
-        self, context, layout, data, item, icon, active_data, active_propname, index
-    ):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
 
         props = context.scene.IfcGitProperties
 
@@ -166,9 +160,7 @@ class COMMIT_UL_List(bpy.types.UIList):
                 refs += "{" + tag.name + "} "
 
         if commit == current_revision:
-            layout.label(
-                text="[HEAD] " + refs + commit.message, icon="DECORATE_KEYFRAME"
-            )
+            layout.label(text="[HEAD] " + refs + commit.message, icon="DECORATE_KEYFRAME")
         else:
             layout.label(text=refs + commit.message, icon="DECORATE_ANIMATE")
         layout.label(text=time.strftime("%c", time.localtime(commit.committed_date)))

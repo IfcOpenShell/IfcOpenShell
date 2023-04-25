@@ -15,9 +15,7 @@ def git_branches(self, context):
 
     # NOTE "Python must keep a reference to the strings returned by
     # the callback or Blender will misbehave or even crash"
-    IfcGitData.data["branch_names"] = sorted(
-        [branch.name for branch in IfcGitData.data["repo"].heads]
-    )
+    IfcGitData.data["branch_names"] = sorted([branch.name for branch in IfcGitData.data["repo"].heads])
 
     if "main" in IfcGitData.data["branch_names"]:
         IfcGitData.data["branch_names"].remove("main")
