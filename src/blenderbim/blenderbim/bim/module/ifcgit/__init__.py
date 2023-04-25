@@ -15,44 +15,29 @@
 # 2023 Bruno Postle <bruno@postle.net>, Bruno Perdigão <brunoperdigao@tutanota.com>,
 # Massimo Fabbro <maxfb87@yahoo.it>
 
-# import os
-# import sys
 import bpy
 from . import ui, prop, operator
 
-# sys.path.insert(0, "/home/bruno/src/ifc-git")
-# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-# bl_info = {
-#         "name": "IFC Git",
-#         "author": "Bruno Postle",
-#         "location": "Scene > IFC Git",
-#         "description": "Manage IFC files in Git repositories",
-#         "blender": (2, 80, 0),
-#         "category": "Import-Export",
-#     }
 
 classes = (
-        operator.AddFileToRepo,
-        operator.CommitChanges,
-        operator.CreateRepo,
-        operator.DiscardUncommitted,
-        operator.DisplayRevision,
-        operator.DisplayUncommitted,
-        operator.Merge,
-        operator.RefreshGit,
-        operator.SwitchRevision,
-        prop.IfcGitListItem,
-        prop.IfcGitProperties,
-        ui.IFCGIT_PT_panel,
-        ui.COMMIT_UL_List,
-    )
-
-
+    operator.AddFileToRepo,
+    operator.CommitChanges,
+    operator.CreateRepo,
+    operator.DiscardUncommitted,
+    operator.DisplayRevision,
+    operator.DisplayUncommitted,
+    operator.Merge,
+    operator.RefreshGit,
+    operator.SwitchRevision,
+    prop.IfcGitListItem,
+    prop.IfcGitProperties,
+    ui.IFCGIT_PT_panel,
+    ui.COMMIT_UL_List,
+)
 
 
 def register():
-        bpy.types.Scene.IfcGitProperties = bpy.props.PointerProperty(type=prop.IfcGitProperties)
+    bpy.types.Scene.IfcGitProperties = bpy.props.PointerProperty(type=prop.IfcGitProperties)
 
 
 def unregister():
