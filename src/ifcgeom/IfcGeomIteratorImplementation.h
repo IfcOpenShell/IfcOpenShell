@@ -1038,7 +1038,7 @@ namespace IfcGeom {
 					ifc_product = ifc_entity->as<IfcSchema::IfcProduct>();
 					parent_id = -1;
 					try {
-						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product)->template as<IfcSchema::IfcObjectDefinition>();
+						auto parent_object = kernel.get_decomposing_entity(ifc_product);
 						if (parent_object) {
 							parent_id = parent_object->data().id();
 						}
