@@ -47,9 +47,7 @@ class IfcGit:
     @classmethod
     def add_file_to_repo(cls, repo, path_file):
         repo.index.add(path_file)
-        repo.index.commit(
-            message="Added " + os.path.relpath(path_file, repo.working_dir)
-        )
+        repo.index.commit(message="Added " + os.path.relpath(path_file, repo.working_dir))
         bpy.ops.ifcgit.refresh()
 
     @classmethod
@@ -63,7 +61,6 @@ class IfcGit:
         repo.index.add(path_file)
         repo.index.commit(message=props.commit_message)
         props.commit_message = ""
-        return repo
 
     @classmethod
     def create_new_branch(cls):
@@ -209,9 +206,7 @@ class IfcGit:
         current_revision = repo.commit()
 
         if selected_revision == current_revision:
-            area = next(
-                area for area in bpy.context.screen.areas if area.type == "VIEW_3D"
-            )
+            area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
             area.spaces[0].shading.color_type = "MATERIAL"
             return
 
@@ -249,9 +244,7 @@ class IfcGit:
         final_step_ids = {}
         final_step_ids["added"] = step_ids["added"]
         final_step_ids["removed"] = step_ids["removed"]
-        final_step_ids["modified"] = step_ids["modified"].union(
-            modified_shape_object_step_ids["modified"]
-        )
+        final_step_ids["modified"] = step_ids["modified"].union(modified_shape_object_step_ids["modified"])
         return final_step_ids
 
     @classmethod
@@ -311,9 +304,7 @@ class IfcGit:
         section = 'mergetool "ifcmerge"'
         if not config_reader.has_section(section):
             config_writer = IfcGitRepo.repo.config_writer()
-            config_writer.set_value(
-                section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED"
-            )
+            config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
 
     @classmethod
