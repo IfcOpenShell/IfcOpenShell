@@ -102,6 +102,7 @@ class CommitChanges(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.commit_changes(tool.IfcGit, tool.Ifc, repo, context)
+        bpy.ops.ifcgit.refresh()
         refresh()
         return {"FINISHED"}
 
