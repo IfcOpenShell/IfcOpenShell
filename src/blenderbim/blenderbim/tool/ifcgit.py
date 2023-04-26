@@ -285,9 +285,6 @@ class IfcGit:
         for obj in blender_collection.objects:
             bpy.data.objects.remove(obj, do_unlink=True)
         bpy.data.collections.remove(blender_collection)
-        for collection in bpy.data.collections:
-            if not collection.users:
-                bpy.data.collections.remove(collection)
 
     @classmethod
     def is_valid_branch_name(cls, new_branch_name):
