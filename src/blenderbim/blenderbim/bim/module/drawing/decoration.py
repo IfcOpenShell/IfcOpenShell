@@ -2069,6 +2069,9 @@ class CutDecorator:
         edges = []
         offset = 0
         for segment in final_segments:
+            if not segment:
+                # Why does this occur?
+                continue
             if isinstance(segment[0], tuple):
                 segment = [Vector(co) for co in segment]
             verts.extend([bm.verts.new(co.to_3d()) for co in segment])
