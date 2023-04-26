@@ -88,7 +88,7 @@ class CommitChanges(bpy.types.Operator):
             repo
             and repo.head.is_detached
             and (
-                not tool.is_valid_ref_format(props.new_branch_name)
+                not tool.IfcGit.is_valid_ref_format(props.new_branch_name)
                 or props.new_branch_name in [branch.name for branch in repo.branches]
             )
         ):
