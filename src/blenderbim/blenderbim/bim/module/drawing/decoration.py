@@ -22,10 +22,12 @@ import bpy
 import blf
 import math
 import bmesh
+import shapely
 import ifcopenshell
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
-from math import acos, pi, atan, degrees
+from math import pi, sin, cos, tan, acos, atan, degrees
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -1915,12 +1917,22 @@ class CutDecorator:
         all_edges = []
         selected_vertices = []
         selected_edges = []
+        layer_vertices = []
+        layer_edges = []
         all_vertex_i_offset = 0
         selected_vertex_i_offset = 0
+        layer_vertex_i_offset = 0
+
         for obj in [o for o in bpy.context.visible_objects if o.type == "MESH"]:
             verts, edges = self.decorate(context, obj)
             if not verts:
                 continue
+
+            obj_layer_verts, obj_layer_edges = self.slice_layersets(context, obj, verts, edges)
+            if obj_layer_verts:
+                layer_vertices.extend(obj_layer_verts)
+                layer_edges.extend([[vi + layer_vertex_i_offset for vi in e] for e in obj_layer_edges])
+                layer_vertex_i_offset += len(obj_layer_verts)
 
             if obj.select_get():
                 selected_vertices.extend(verts)
@@ -1931,7 +1943,7 @@ class CutDecorator:
                 all_edges.extend([[vi + all_vertex_i_offset for vi in e] for e in edges])
                 all_vertex_i_offset += len(verts)
 
-        gpu.state.point_size_set(2)
+        gpu.state.point_size_set(1)
         gpu.state.blend_set("ALPHA")
 
         # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
@@ -1939,13 +1951,20 @@ class CutDecorator:
         self.line_shader.bind()
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-        self.line_shader.uniform_float("lineWidth", 3.0)
+        self.line_shader.uniform_float("lineWidth", 2.0)
 
         # general shader
         self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
         self.shader.bind()
 
         black = (0, 0, 0, 1)
+
+        if layer_vertices:
+            self.draw_batch("LINES", layer_vertices, black, layer_edges)
+            self.draw_batch("POINTS", layer_vertices, black)
+
+        gpu.state.point_size_set(2)
+        self.line_shader.uniform_float("lineWidth", 3.0)
 
         if all_vertices:
             self.draw_batch("LINES", all_vertices, black, all_edges)
@@ -1983,6 +2002,243 @@ class CutDecorator:
             verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
             DecoratorData.cut_cache[element.id()] = (verts, edges)
         return verts, edges
+
+    def slice_layersets(self, context, obj, cut_verts, cut_edges):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        imat = obj.matrix_world.inverted()
+        element = tool.Ifc.get_entity(obj)
+        if "LAYER" not in (tool.Model.get_usage_type(element) or ""):
+            return None, None
+
+        layers = self.get_layer_data(element)
+        minx = min([co[0] for co in obj.bound_box])
+        maxx = max([co[0] for co in obj.bound_box])
+        min_edge = [Vector((minx, layers["offset"])), Vector((maxx, layers["offset"]))]
+        max_edge = [
+            Vector((minx, layers["offset"] + layers["thickness"])),
+            Vector((maxx, layers["offset"] + layers["thickness"])),
+        ]
+        centerline = [
+            Vector((minx, layers["offset"] + layers["thickness"] / 2)),
+            Vector((maxx, layers["offset"] + layers["thickness"] / 2)),
+        ]
+        connections = self.get_connections(element, obj, centerline, min_edge, max_edge)
+
+        start_point = None
+        end_point = None
+        if connections["ATSTART"]:
+            boundary_edge = min_edge if connections["ATSTART"]["angle"] > 0 else max_edge
+            rel_dir = connections["ATSTART"]["centerline"][1] - connections["ATSTART"]["centerline"][0]
+            offset, _ = tool.Cad.intersect_edges(boundary_edge, [centerline[0], centerline[0] + rel_dir])
+            offset_x = (offset - centerline[0]).length + abs(offset.x)
+            intersect, _ = tool.Cad.intersect_edges(boundary_edge, connections["ATSTART"]["centerline"])
+            if tool.Cad.is_point_on_edge(intersect, boundary_edge):
+                centerline[0] = centerline[0] + Vector((offset_x, 0))
+                start_point = centerline[0] + rel_dir
+        if connections["ATEND"]:
+            boundary_edge = min_edge if connections["ATEND"]["angle"] > 0 else max_edge
+            rel_dir = connections["ATEND"]["centerline"][1] - connections["ATEND"]["centerline"][0]
+            offset, _ = tool.Cad.intersect_edges(boundary_edge, [centerline[1], centerline[1] + rel_dir])
+
+            offset_x = (offset - centerline[1]).length + abs((maxx - abs(offset.x)))
+            intersect, _ = tool.Cad.intersect_edges(boundary_edge, connections["ATEND"]["centerline"])
+            if tool.Cad.is_point_on_edge(intersect, boundary_edge):
+                centerline[1] = centerline[1] - Vector((offset_x, 0))
+                end_point = centerline[1] + rel_dir
+
+        min_segments = self.get_segments(connections["MINPATH"], centerline, start_point, end_point)
+        max_segments = self.get_segments(connections["MAXPATH"], centerline, start_point, end_point)
+
+        final_segments = []
+        for segment in min_segments:
+            segment_line = shapely.LineString([co for co in segment])
+            for distance in layers["min_layers"]:
+                distance *= -1
+                layer_line = shapely.offset_curve(segment_line, distance, join_style=shapely.BufferJoinStyle.mitre)
+                final_segments.append(list(layer_line.coords))
+        for segment in max_segments:
+            segment_line = shapely.LineString([co for co in segment])
+            for distance in layers["max_layers"]:
+                layer_line = shapely.offset_curve(segment_line, distance, join_style=shapely.BufferJoinStyle.mitre)
+                final_segments.append(list(layer_line.coords))
+
+        # Extrude and bisect layers
+        bm = bmesh.new()
+        verts = []
+        edges = []
+        offset = 0
+        for segment in final_segments:
+            if isinstance(segment[0], tuple):
+                segment = [Vector(co) for co in segment]
+            verts.extend([bm.verts.new(co.to_3d()) for co in segment])
+            [bm.edges.new((verts[i + offset], verts[i + 1 + offset])) for i in range(0, len(segment) - 1)]
+            offset += len(segment)
+
+        extrusion_dir = (0, 0, 3)
+        extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=bm.edges[:])
+        bmesh.ops.translate(
+            bm, vec=extrusion_dir, verts=[v for v in extruded_geom["geom"] if isinstance(v, bmesh.types.BMVert)]
+        )
+
+        verts, edges = self.bisect_mesh(obj, bm, context.scene.camera)
+        layer_linestrings = [shapely.LineString((verts[e[0]], verts[e[1]])) for e in edges]
+
+        clipped_linestrings = []
+
+        polygons = shapely.polygonize([shapely.LineString((cut_verts[e[0]], cut_verts[e[1]])) for e in cut_edges])
+        for polygon in polygons.geoms:
+            clipped_linestrings.extend([polygon.intersection(ls) for ls in layer_linestrings])
+
+        verts = []
+        edges = []
+        offset = 0
+        for linestring in clipped_linestrings:
+            try:
+                linestring = list(linestring.coords)
+            except:
+                print("Failed ... ", linestring)
+                continue
+            verts.extend(linestring)
+            edges.extend([(i + offset, i + 1 + offset) for i in range(0, len(linestring) - 1)])
+            offset += len(linestring)
+
+        return verts, edges
+
+    def bisect_mesh(self, obj, bm, camera):
+        camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
+        plane_co = camera_matrix.translation
+        plane_no = camera_matrix.col[2].xyz
+
+        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
+
+        # Run the bisect operation
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        results = bmesh.ops.bisect_plane(bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no)
+
+        vert_map = {}
+        verts = []
+        edges = []
+        i = 0
+        for geom in results["geom_cut"]:
+            if isinstance(geom, bmesh.types.BMVert):
+                verts.append(tuple((obj.matrix_world @ geom.co) + global_offset))
+                vert_map[geom.index] = i
+                i += 1
+            else:
+                # It seems as though edges always appear after verts
+                edges.append([vert_map[v.index] for v in geom.verts])
+
+        bm.free()
+
+        return verts, edges
+
+    def get_layer_data(self, element):
+        usage = ifcopenshell.util.element.get_material(element)
+        offset = usage.OffsetFromReferenceLine * self.unit_scale
+        layer_set = usage.ForLayerSet
+        total_thickness = layer_set.TotalThickness
+        half_thickness = total_thickness / 2
+        min_layers = []
+        max_layers = []
+        current_thickness = 0
+        for layer in layer_set.MaterialLayers:
+            current_thickness += layer.LayerThickness
+            if current_thickness / total_thickness < 0.5:
+                min_layers.append((half_thickness - current_thickness) * self.unit_scale)
+            else:
+                max_layers.append((current_thickness - half_thickness) * self.unit_scale)
+        min_layers.reverse()
+        max_layers.pop()
+        if usage.DirectionSense == "NEGATIVE":
+            total_thickness *= -1
+            offset *= -1
+            min_layers = [l * -1 for l in min_layers]
+            max_layers = [l * -1 for l in max_layers]
+        return {
+            "offset": offset,
+            "min_layers": min_layers,
+            "max_layers": max_layers,
+            "thickness": total_thickness * self.unit_scale,
+        }
+
+    def get_segments(self, connections, centerline, start_point, end_point):
+        segments = []
+        total_connections = len(connections)
+        if total_connections:
+            for i in range(0, total_connections + 1):
+                if i == 0:
+                    connection = connections[i]
+                    segments.append([centerline[0], connection["intersection"], connection["out_point"]])
+                elif i == total_connections:
+                    segments.append([segments[-1][-1], segments[-1][-2], centerline[1]])
+                else:
+                    connection = connections[i]
+                    segments.append(
+                        [segments[-1][-1], segments[-1][-2], connection["intersection"], connection["out_point"]]
+                    )
+        else:
+            segments.append([centerline[0], centerline[1]])
+        if start_point:
+            segments[0].insert(0, start_point)
+        if end_point:
+            segments[-1].append(end_point)
+        return segments
+
+    def get_connections(self, wall, obj, centerline, min_edge, max_edge):
+        connections = {"ATEND": None, "ATSTART": None, "ATPATH": [], "MINPATH": [], "MAXPATH": []}
+        for rel in wall.ConnectedTo:
+            if rel.RelatingConnectionType == "ATPATH":
+                connections["ATPATH"].append(
+                    self.get_connection_metadata(obj, rel.RelatedElement, centerline, min_edge, max_edge)
+                )
+            else:
+                connections[rel.RelatingConnectionType] = self.get_connection_metadata(
+                    obj, rel.RelatedElement, centerline, min_edge, max_edge
+                )
+        for rel in wall.ConnectedFrom:
+            # We only consider ATPATH since in this situation, we have the
+            # priority. The non-priority wall never has any layers that need to
+            # "turn a corner".
+            if rel.RelatedConnectionType == "ATPATH":
+                connections["ATPATH"].append(
+                    self.get_connection_metadata(obj, rel.RelatingElement, centerline, min_edge, max_edge)
+                )
+        connections["ATPATH"] = sorted(connections["ATPATH"], key=lambda c: c["intersection"].x)
+        for connection in connections["ATPATH"]:
+            if connection["angle"] > 0:
+                connections["MINPATH"].append(connection)
+            else:
+                connections["MAXPATH"].append(connection)
+        return connections
+
+    def get_connection_metadata(self, obj, rel_element, centerline, min_edge, max_edge):
+        imat = obj.matrix_world.inverted()
+        rel_obj = tool.Ifc.get_object(rel_element)
+        layers = self.get_layer_data(rel_element)
+        minx = min([co[0] for co in rel_obj.bound_box])
+        maxx = max([co[0] for co in rel_obj.bound_box])
+        rel_centerline = [
+            Vector((minx, layers["offset"] + layers["thickness"] / 2)),
+            Vector((maxx, layers["offset"] + layers["thickness"] / 2)),
+        ]
+        rel_centerline = [obj.matrix_world.inverted() @ rel_obj.matrix_world @ v.to_3d() for v in rel_centerline]
+        rel_centerline = [v.to_2d() for v in rel_centerline]
+        intersection, _ = tool.Cad.intersect_edges(centerline, rel_centerline)
+        closest_centerline_point = tool.Cad.closest_vector(intersection, tuple(rel_centerline))
+        if closest_centerline_point == rel_centerline[1]:
+            rel_centerline = [rel_centerline[1], rel_centerline[0]]
+        angle = tool.Cad.angle_edges(centerline, rel_centerline, signed=True)
+        # A little extreme, but maybe it's OK?
+        out_point = tool.Cad.furthest_vector(intersection, tuple(rel_centerline))
+        return {
+            "element": rel_element,
+            "obj": rel_obj,
+            "centerline": rel_centerline,
+            "intersection": intersection,
+            "angle": angle,
+            "out_point": out_point,
+        }
 
 
 class DecorationsHandler:
