@@ -117,15 +117,19 @@ class BIM_PT_work_schedules(Panel):
         self.tprops = context.scene.BIMTaskTreeProperties
         self.animation_props = context.scene.BIMAnimationProperties
 
-        row = self.layout.row()
-        if SequenceData.data["has_work_schedules"]:
-            row.label(
-                text="{} Work Schedules Found".format(SequenceData.data["number_of_work_schedules_loaded"]),
-                icon="TEXT",
-            )
-        else:
-            row.label(text="No Work Schedules found.", icon="TEXT")
-        row.operator("bim.add_work_schedule", text="", icon="ADD")
+        if not self.props.active_work_schedule_id:
+            row = self.layout.row()
+            if SequenceData.data["has_work_schedules"]:
+                row.label(
+                    text="{} Work Schedules Found".format(SequenceData.data["number_of_work_schedules_loaded"]),
+                    icon="TEXT",
+                )
+            else:
+                row.label(text="No Work Schedules found.", icon="TEXT")
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
+            row.prop(self.props, "work_schedule_predefined_types")
+            row.operator("bim.add_work_schedule", text="Add new", icon="ADD")
 
         for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
             self.draw_work_schedule_ui(work_schedule_id, work_schedule)
@@ -133,17 +137,41 @@ class BIM_PT_work_schedules(Panel):
     def draw_work_schedule_ui(self, work_schedule_id, work_schedule):
         row = self.layout.row(align=True)
         row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
-
         if self.props.active_work_schedule_id == work_schedule_id:
             if self.props.editing_type == "WORK_SCHEDULE":
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
             elif self.props.editing_type == "TASKS":
-                row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
-                row.prop(self.props, "should_show_visualisation_ui", text="", icon="CAMERA_STEREO")
-                row.operator("bim.generate_gantt_chart", text="", icon="NLA").work_schedule = work_schedule_id
-                row.operator("bim.recalculate_schedule", text="", icon="FILE_REFRESH").work_schedule = work_schedule_id
-                row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
-            row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
+                grid = self.layout.grid_flow(columns=2, even_columns=True)
+
+                col = grid.column()
+                row1 = col.row(align=True)
+                row1.alignment = "LEFT"
+                row1.label(text="Schedule tools")
+                row1 = col.row(align=True)
+                row1.alignment = "RIGHT"
+                row1.operator(
+                    "bim.generate_gantt_chart", text="Generate Gantt", icon="NLA"
+                ).work_schedule = work_schedule_id
+                row1.operator(
+                    "bim.recalculate_schedule", text="Re-calculate Schedule", icon="FILE_REFRESH"
+                ).work_schedule = work_schedule_id
+                row2 = col.row(align=True)
+                row2.alignment = "RIGHT"
+                row2.operator(
+                    "bim.select_work_schedule_products", text="Select Assigned", icon="RESTRICT_SELECT_OFF"
+                ).work_schedule = work_schedule_id
+                row2.operator(
+                    "bim.select_unassigned_work_schedule_products", text="Select Unassigned", icon="RESTRICT_SELECT_OFF"
+                ).work_schedule = work_schedule_id
+                col = grid.column()
+                row1 = col.row(align=True)
+                row1.alignment = "LEFT"
+                row1.label(text="Settings")
+                row1 = col.row(align=True)
+                row1.alignment = "RIGHT"
+                row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
+                row1.prop(self.props, "should_show_visualisation_ui", text="Animation Options", icon="CAMERA_STEREO")
+            row.operator("bim.disable_editing_work_schedule", text="Disable editing", icon="CANCEL")
         else:
             row.operator(
                 "bim.enable_editing_work_schedule_tasks", text="", icon="ACTION"
@@ -188,8 +216,9 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.remove_task", text="", icon="X").task = ifc_definition_id
 
     def draw_column_ui(self):
-        row = self.layout.row(align=True)
-        row.operator("bim.setup_default_task_columns", text="Show Default Columns", icon="ANCHOR_BOTTOM")
+        row = self.layout.row()
+        row.operator("bim.setup_default_task_columns", text="Add Default Columns", icon="ANCHOR_BOTTOM")
+        row.alignment = "RIGHT"
         row = self.layout.row(align=True)
         row.prop(self.props, "column_types", text="")
         column_type = self.props.column_types
@@ -226,7 +255,7 @@ class BIM_PT_work_schedules(Panel):
         op.work_schedule = self.props.active_work_schedule_id
 
         row = self.layout.row(align=True)
-        row.label(text="Animation Options")
+        row.label(text="Speed Settings")
         row = self.layout.row(align=True)
         row.prop(self.props, "speed_types", text="")
         if self.props.speed_types == "FRAME_SPEED":
@@ -237,14 +266,34 @@ class BIM_PT_work_schedules(Panel):
             row.prop(self.props, "speed_real_duration", text="")
         elif self.props.speed_types == "MULTIPLIER_SPEED":
             row.prop(self.props, "speed_multiplier", text="")
+        row = self.layout.row(align=True)
+        row.label(text="Display Settings")
+        row = self.layout.row(align=True)
         if not self.animation_props.is_editing:
             op = row.operator(
-                "bim.enable_editing_task_animation_colors", text="Customize Animation Colors", icon="SEQUENCE_COLOR_04"
+                "bim.enable_editing_task_animation_colors", text="Customize Object Colors", icon="SEQUENCE_COLOR_04"
             )
         else:
             op = row.operator(
-                "bim.disable_editing_task_animation_colors", text="Hide Animation Colors", icon="SEQUENCE_COLOR_01"
+                "bim.disable_editing_task_animation_colors", text="Hide Object Colors", icon="SEQUENCE_COLOR_01"
             )
+
+        row.prop(self.animation_props, "should_show_task_bar_options", text="Task Bar", icon="NLA_PUSHDOWN")
+        if self.animation_props.should_show_task_bar_options:
+            row = self.layout.row()
+            row.operator("bim.add_task_bars", text="Add Bar Visual", icon="NLA_PUSHDOWN")
+
+            grid = self.layout.grid_flow(columns=2, even_columns=True)
+            # Column1
+            col = grid.column()
+            row1 = col.row(align=True)
+            row1.label(text="Bar Colors", icon="NLA_PUSHDOWN")
+
+            row2 = col.row(align=True)
+            row2.prop(self.animation_props, "color_progress")
+
+            row3 = col.row(align=True)
+            row3.prop(self.animation_props, "color_full")
 
         if self.animation_props.is_editing:
             self.draw_visualisation_settings_ui()
@@ -286,6 +335,13 @@ class BIM_PT_work_schedules(Panel):
         draw_attributes(self.props.work_schedule_attributes, self.layout)
 
     def draw_editable_task_ui(self, work_schedule_id):
+        row = self.layout.row(align=True)
+        row.label(text="")
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.operator("bim.add_summary_task", text="Add Summary Task", icon="ADD").work_schedule = work_schedule_id
+        row.operator("bim.expand_all_tasks", text="Expand All")
+        row.operator("bim.contract_all_tasks", text="Contract All")
         self.draw_task_operators()
         self.layout.template_list(
             "BIM_UL_tasks",
@@ -295,9 +351,6 @@ class BIM_PT_work_schedules(Panel):
             self.props,
             "active_task_index",
         )
-        row = self.layout.row()
-        row.operator("bim.expand_all_tasks", text="Expand All")
-        row.operator("bim.contract_all_tasks", text="Contract All")
         if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
             self.draw_editable_task_attributes_ui()
         elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
@@ -430,7 +483,7 @@ class BIM_PT_task_icom(Panel):
                 input_id = self.props.task_inputs[self.props.active_task_input_index].ifc_definition_id
                 op.related_object = input_id
 
-        op = row2.operator("bim.select_task_related_inputs", icon="RESTRICT_SELECT_OFF", text="")
+        op = row2.operator("bim.select_task_related_inputs", icon="RESTRICT_SELECT_OFF", text="Select")
         op.task = task.ifc_definition_id
 
         row2 = col.row()
