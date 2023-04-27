@@ -143,10 +143,29 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_sorted_tasks_ids(cls, tasks):
-        cls.sort_keys = {task.id(): cls.get_sort_key(task) for task in tasks}
-        related_object_ids = sorted(cls.sort_keys, key=cls.natural_sort_key)
+        def get_sort_key(task):
+            # Sorting only applies to actual tasks, not the WBS
+            for rel in task.IsNestedBy:
+                for object in rel.RelatedObjects:
+                    if object.is_a("IfcTask"):
+                        return "0000000000" + (task.Identification or "")
+            if not bpy.context.scene.BIMWorkScheduleProperties.sort_column:
+                return task.Identification or ""
+            column_type, name = bpy.context.scene.BIMWorkScheduleProperties.sort_column.split(".")
+            if column_type == "IfcTask":
+                return task.Name or ""
+            elif column_type == "IfcTaskTime" and task.TaskTime:
+                return task.TaskTime.Name or ""
+            return task.Identification or ""
+
+        def natural_sort_key(i, _nsre=re.compile("([0-9]+)")):
+            s = sort_keys[i]
+            return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
+
+        sort_keys = {task.id(): get_sort_key(task) for task in tasks}
+        related_object_ids = sorted(sort_keys, key=natural_sort_key)
         if bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed:
-            return related_object_ids.reverse()
+            related_object_ids.reverse()
         return related_object_ids
 
     @classmethod
@@ -161,27 +180,6 @@ class Sequence(blenderbim.core.tool.Sequence):
             if new.is_expanded:
                 for related_object_id in cls.get_sorted_tasks_ids(ifcopenshell.util.sequence.get_nested_tasks(task)):
                     cls.create_new_task_li(related_object_id, level_index + 1)
-
-    @classmethod
-    def natural_sort_key(cls, i, _nsre=re.compile("([0-9]+)")):
-        s = cls.sort_keys[i]
-        return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
-
-    @classmethod
-    def get_sort_key(cls, task):
-        # Sorting only applies to actual tasks, not the WBS
-        for rel in task.IsNestedBy:
-            for object in rel.RelatedObjects:
-                if object.is_a("IfcTask"):
-                    return "0000000000" + (task.Identification or "")
-        if not bpy.context.scene.BIMWorkScheduleProperties.sort_column:
-            return task.Identification or ""
-        column_type, name = bpy.context.scene.BIMWorkScheduleProperties.sort_column.split(".")
-        if column_type == "IfcTask":
-            return task.Name or ""
-        elif column_type == "IfcTaskTime" and task.TaskTime:
-            return task.TaskTime.Name or ""
-        return task.Identification or ""
 
     @classmethod
     def load_task_properties(cls, task=None):
