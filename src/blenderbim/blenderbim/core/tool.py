@@ -619,11 +619,24 @@ class Search:
 @interface
 class Sequence:
     def add_task_column(cls, column_type, name, data_type): pass
+    def add_text_animation_handler(cls, settings): pass
+    def animate_consumption(cls, obj, start_frame, product_frame, color, animation_type): pass
+    def animate_creation(cls, obj, start_frame, product_frame, color): pass
+    def animate_destruction(cls, obj, start_frame, color, animation_type): pass
+    def animate_input(cls, obj, start_frame, product_frame, animation_type): pass
+    def animate_movement_from(cls, obj, start_frame, color, animation_type): pass
+    def animate_movement_to(cls, obj, start_frame, product_frame, color): pass
+    def animate_objects(cls, settings, frames, clear_previous, animation_type): pass
+    def animate_operation(cls, obj, start_frame, product_frame, color): pass
+    def animate_output(cls, obj, start_frame, product_frame): pass
+    def clear_object_animation(cls, obj): pass
+    def clear_objects_animation(cls, include_blender_objects): pass
     def contract_all_tasks(cls): pass
     def contract_task(cls, task): pass
     def create_bars(cls, tasks): pass
-    def create_bars(cls, tasks):pass
+    def create_new_task_json(cls, task, json, type_map=None): pass
     def create_task_tree(cls, work_schedule): pass
+    def create_tasks_json(cls, work_schedule=None): pass
     def disable_editing_rel_sequence(cls): pass
     def disable_editing_task_animation_colors(cls): pass
     def disable_editing_task_time(cls): pass
@@ -651,11 +664,13 @@ class Sequence:
     def expand_all_tasks(cls): pass
     def expand_task(cls, task): pass
     def find_related_input_tasks(cls, product): pass
-    def find_related_output_tasks(cls, column): pass
     def find_related_output_tasks(cls, product): pass
+    def generate_gantt_browser_chart(cls, task_json): pass
     def get_active_task(cls): pass
     def get_active_work_schedule(cls): pass
     def get_animation_bar_tasks(cls): pass
+    def get_animation_product_frames(cls, work_schedule, settings): pass
+    def get_animation_settings(cls): pass
     def get_checked_tasks(cls): pass
     def get_direct_nested_tasks(cls, task):pass
     def get_direct_task_outputs(cls, task): pass
@@ -665,7 +680,6 @@ class Sequence:
     def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
     def get_recurrence_pattern_times(cls): pass
     def get_rel_sequence_attributes(cls): pass
-
     def get_selected_resource(cls): pass
     def get_start_date(cls): pass
     def get_task_attribute_value(cls, attribute_name): pass
@@ -678,12 +692,15 @@ class Sequence:
     def get_work_calendar_attributes(cls): pass
     def get_work_plan_attributes(cls): pass
     def get_work_schedule_attributes(cls): pass
+    def get_work_schedule_products(cls, work_schedule): pass
     def get_work_schedule(cls, task): pass
     def get_work_time_attributes(cls): pass
     def guess_date_range(cls, work_schedule): pass
+    def has_task_assignments(cls, product, cost_schedule=None): pass
     def highlight_task(cls, task): pass
     def is_work_schedule_active(cls, work_schedule): pass
     def load_lag_time_attributes(cls, lag_time): pass
+    def load_product_tasks(cls, product): pass
     def load_rel_sequence_attributes(cls, rel_sequence): pass
     def load_resources(cls): pass
     def load_task_animation_colors(cls): pass
@@ -706,6 +723,7 @@ class Sequence:
     def setup_default_task_columns(cls): pass
     def show_snapshot(cls, product_states): pass
     def update_visualisation_date(cls, start_date, finish_date): pass
+
 
 @interface
 class Spatial:
