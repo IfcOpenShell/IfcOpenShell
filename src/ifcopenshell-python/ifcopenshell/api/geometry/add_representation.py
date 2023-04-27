@@ -740,11 +740,18 @@ class Usecase:
                 "Vertex",
                 [self.create_vertex_point(self.settings["geometry"].vertices[0].co)],
             )
+        if len(self.settings["geometry"].vertices) == 2 or len(self.settings["geometry"].polygons) == 0:
+            return self.file.createIfcTopologyRepresentation(
+                self.settings["context"],
+                self.settings["context"].ContextIdentifier,
+                "Edge",
+                [self.create_edge()],
+            )
         return self.file.createIfcTopologyRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Edge",
-            [self.create_edge()],
+            "Face",
+            [self.create_face()],
         )
 
     def create_vertex_point(self, point):
@@ -758,3 +765,35 @@ class Usecase:
         if not points:
             return
         return self.file.createIfcEdge(self.create_vertex_point(points[0].co), self.create_vertex_point(points[1].co))
+
+    def create_face(self):
+        points = self.settings["geometry"].vertices
+        if not points:
+            return
+        # create plane
+        origin = self.file.createIfcCartesianPoint((points[0].co.x, points[0].co.y, points[0].co.z))
+        normal = self.settings["geometry"].polygons[0].normal
+        # need to define refdirection for local x axis reference
+        # we choose default value to be a horizontal vector on the plane
+        if 1 - abs(Z_AXIS.dot(normal)) < EPSILON:  # normal is vertical
+            x_axis = self.file.createIfcDirection((1.0, 0.0, 0.0))
+        else:
+            hor_normal = Vector((normal.x, normal.y, 0))
+            x_vector = Z_AXIS.cross(hor_normal).normalized()
+            x_axis = self.file.createIfcDirection(x_vector)
+        z_axis = self.file.createIfcDirection(normal)
+        local_axes = self.file.createIfcAxis2Placement3D(origin, z_axis, x_axis)
+        plane = self.file.createIfcPlane(local_axes)
+        
+        # create face
+        verts = [self.create_vertex_point(point.co) for point in points]
+        edges = [None] * len(verts)
+        for i, v in enumerate(verts):
+            v2_index = (i + 1) if i < len(verts) - 1 else 0
+            edge = self.file.createIfcEdge(v, verts[v2_index])
+            edges[i] = self.file.createIfcOrientedEdge(None, None, edge, True)
+        edge_loop = self.file.createIfcEdgeLoop(tuple(edges))
+        face_bound = self.file.createIfcFaceBound(edge_loop, True)
+
+        face = self.file.createIfcFaceSurface((face_bound,), plane, True)
+        return face
