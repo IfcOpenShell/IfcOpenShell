@@ -430,6 +430,20 @@ def select_task_inputs(sequence, spatial, task=None):
     spatial.select_products(products=sequence.get_task_inputs(task))
 
 
+def select_work_schedule_products(sequence, spatial, work_schedule=None):
+    products = sequence.get_work_schedule_products(work_schedule)
+    spatial.select_products(products)
+
+
+def select_unassigned_work_schedule_products(ifc, sequence, spatial):
+    spatial.deselect_all()
+    products = ifc.get().by_type("IfcElement")
+    work_schedule = sequence.get_active_work_schedule()
+    schedule_products = sequence.get_work_schedule_products(work_schedule)
+    selection = [product for product in products if product not in schedule_products]
+    spatial.select_products(selection)
+
+
 def recalculate_schedule(ifc, work_schedule=None):
     ifc.run("sequence.recalculate_schedule", work_schedule=work_schedule)
 
@@ -521,6 +535,7 @@ def visualise_work_schedule_date(sequence, work_schedule=None):
 def generate_gantt_chart(sequence, work_schedule):
     json = sequence.create_tasks_json(work_schedule)
     sequence.generate_gantt_browser_chart(json)
+
 
 def load_product_tasks(sequence, product=None):
     sequence.load_product_tasks(product)
