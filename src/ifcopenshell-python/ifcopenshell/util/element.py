@@ -781,6 +781,18 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
+            # See #3052. IfcOpenShell is extremely slow in removing elements if
+            # the element has an inverse, and that inverse references that
+            # element in a big list. The most common example is an
+            # IfcPolygonalFaceSet with a Faces attribute of tens of thousands
+            # of IfcIndexedPolygonalFace. In this situation, removing a
+            # IfcIndexedPolygonalFace will take very, very long. If we are
+            # going to delete an element (i.e. added to the to_delete set), we
+            # clear any large lists (10 is an arbitrary threshold) to prevent
+            # this issue.
+            for i, attribute in enumerate(subelement):
+                if isinstance(attribute, tuple) and len(attribute) > 10:
+                    subelement[i] = []
     # We delete elements from subgraph in reverse order to allow batching to work
     for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
         ifc_file.remove(subelement)
