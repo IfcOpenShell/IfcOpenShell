@@ -1327,3 +1327,31 @@ class HighlightTask(bpy.types.Operator):
         if isinstance(r, str):
             self.report({"WARNING"}, r)
         return {"FINISHED"}
+
+
+class SelectWorkScheduleProducts(bpy.types.Operator):
+    bl_idname = "bim.select_work_schedule_products"
+    bl_label = "Select Work Schedule Products"
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        r = core.select_work_schedule_products(
+            tool.Sequence, tool.Spatial, work_schedule=tool.Ifc.get().by_id(self.work_schedule)
+        )
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+        return {"FINISHED"}
+
+
+class SelectUnassignedWorkScheduleProducts(bpy.types.Operator):
+    bl_idname = "bim.select_unassigned_work_schedule_products"
+    bl_label = "Select Unassigned Work Schedule Products"
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        r = core.select_unassigned_work_schedule_products(tool.Ifc, tool.Sequence, tool.Spatial)
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+        return {"FINISHED"}

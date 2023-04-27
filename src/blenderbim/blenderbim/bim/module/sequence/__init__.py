@@ -99,6 +99,8 @@ classes = (
     operator.RemoveWorkTime,
     operator.SelectTaskRelatedProducts,
     operator.SelectTaskRelatedInputs,
+    operator.SelectWorkScheduleProducts,
+    operator.SelectUnassignedWorkScheduleProducts,
     operator.SetTaskSortColumn,
     operator.SetupDefaultTaskColumns,
     operator.UnassignLagTime,
