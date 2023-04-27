@@ -1524,3 +1524,19 @@ class Sequence(blenderbim.core.tool.Sequence):
             new = props.product_output_tasks.add()
             new.name = task.Name or "Unnamed"
             new.ifc_definition_id = task.id()
+
+    @classmethod
+    def get_work_schedule_products(cls, work_schedule):
+        products = []
+        for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+            products.extend(ifcopenshell.util.sequence.get_task_inputs(task, is_deep=True))
+            products.extend(ifcopenshell.util.sequence.get_task_outputs(task, is_deep=True))
+        return products
+
+    @classmethod
+    def has_task_assignments(cls, product, work_schedule=None):
+        task_inputs, task_ouputs = ifcopenshell.util.sequence.get_tasks_for_product(product)
+        if work_schedule:
+            task_inputs = [task for task in task_inputs or [] if cls.get_work_schedule(task) == work_schedule]
+            task_ouputs = [task for task in task_ouputs or [] if cls.get_work_schedule(task) == work_schedule]
+        return bool(task_inputs or task_ouputs)
