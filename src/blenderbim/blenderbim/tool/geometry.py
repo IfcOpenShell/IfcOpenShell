@@ -84,6 +84,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             bpy.data.collections.remove(obj.users_collection[0])
         if getattr(element, "FillsVoids", None):
             bpy.ops.bim.remove_filling(filling=element.id())
+
         if element.is_a("IfcOpeningElement"):
             if element.HasFillings:
                 for rel in element.HasFillings:
@@ -97,7 +98,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
             for port in ifcopenshell.util.system.get_ports(element):
                 blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
-        ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
         try:
             obj.name
             bpy.data.objects.remove(obj)
