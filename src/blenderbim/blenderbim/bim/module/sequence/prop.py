@@ -228,6 +228,12 @@ def updateTaskDuration(self, context):
     bpy.ops.bim.load_task_properties()
 
 
+def get_schedule_predefined_types(self, context):
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["predefined_types"]
+
+
 def update_visualisation_start(self, context):
     update_visualisation_start_finish(self, context, "visualisation_start")
 
@@ -335,6 +341,9 @@ class ISODuration(PropertyGroup):
 
 
 class BIMWorkScheduleProperties(PropertyGroup):
+    work_schedule_predefined_types: EnumProperty(
+        items=get_schedule_predefined_types, name="Predefined Type", default=None
+    )
     durations_attributes: CollectionProperty(name="Durations Attributes", type=ISODuration)
     work_calendars: EnumProperty(items=getWorkCalendars, name="Work Calendars")
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)
@@ -346,7 +355,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
-    should_show_bar_visual_option: BoolProperty(name="Should Show Settings UI", default=False)
+    should_show_bar_visual_option: BoolProperty(name="Add to task bar", default=False)
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
     columns: CollectionProperty(name="Columns", type=Attribute)
     active_column_index: IntProperty(name="Active Column Index")
@@ -501,3 +510,4 @@ class BIMAnimationProperties(PropertyGroup):
         description="color picker",
         update=update_color_progress,
     )
+    should_show_task_bar_options: BoolProperty(name="Show Task Bar Options", default=False)
