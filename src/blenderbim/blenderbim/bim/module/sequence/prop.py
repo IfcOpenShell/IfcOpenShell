@@ -20,6 +20,8 @@ import bpy
 import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import blenderbim.tool as tool
+import blenderbim.core.sequence as core
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.sequence.data import SequenceData
 import blenderbim.bim.module.pset.data
@@ -36,7 +38,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-
 
 taskcolumns_enum = []
 tasktimecolumns_enum = []
@@ -108,7 +109,7 @@ def updateTaskName(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled or self.name == "Unnamed":
         return
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     ifcopenshell.api.run(
         "sequence.edit_task",
         self.file,
@@ -124,7 +125,7 @@ def updateTaskIdentification(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled or self.identification == "XXX":
         return
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     ifcopenshell.api.run(
         "sequence.edit_task",
         self.file,
@@ -160,7 +161,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
     if startfinish_value == "-":
         return
 
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
 
     try:
         startfinish_datetime = parser.isoparse(startfinish_value)
@@ -208,7 +209,7 @@ def updateTaskDuration(self, context):
         self.duration = "-"
         return
 
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     task = self.file.by_id(self.ifc_definition_id)
     if task.TaskTime:
         task_time = task.TaskTime
@@ -283,6 +284,9 @@ def update_color_progress(self, context):
         color[1] = color_progress.g
         color[2] = color_progress.b
 
+def update_sort_reversed(self, context):
+    if context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+        core.create_task_tree(tool.Sequence, work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id))
 
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
@@ -360,7 +364,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     columns: CollectionProperty(name="Columns", type=Attribute)
     active_column_index: IntProperty(name="Active Column Index")
     sort_column: StringProperty(name="Sort Column")
-    is_sort_reversed: BoolProperty(name="Is Sort Reversed")
+    is_sort_reversed: BoolProperty(name="Is Sort Reversed", update=update_sort_reversed)
     column_types: EnumProperty(
         items=[
             ("IfcTask", "IfcTask", ""),
