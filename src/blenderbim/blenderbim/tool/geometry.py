@@ -333,6 +333,8 @@ class Geometry(blenderbim.core.tool.Geometry):
             "Curve",
             "Curve2D",
             "Curve3D",
+            "Edge",
+            "Face",
             "FillArea",
             "GeometricCurveSet",
             "GeometricSet",

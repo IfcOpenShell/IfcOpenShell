@@ -378,6 +378,8 @@ class Model(blenderbim.core.tool.Model):
 
     @classmethod
     def get_usage_type(cls, element):
+        if element.is_a("IfcStructuralItem"):
+            return
         material = ifcopenshell.util.element.get_material(element, should_inherit=False)
         if material:
             if material.is_a("IfcMaterialLayerSetUsage"):
