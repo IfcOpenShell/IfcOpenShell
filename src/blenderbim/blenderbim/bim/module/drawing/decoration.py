@@ -2008,7 +2008,7 @@ class CutDecorator:
 
         imat = obj.matrix_world.inverted()
         element = tool.Ifc.get_entity(obj)
-        if "LAYER" not in (tool.Model.get_usage_type(element) or ""):
+        if tool.Model.get_usage_type(element) != "LAYER2":
             return None, None
 
         layers = self.get_layer_data(element)
@@ -2191,22 +2191,30 @@ class CutDecorator:
     def get_connections(self, wall, obj, centerline, min_edge, max_edge):
         connections = {"ATEND": None, "ATSTART": None, "ATPATH": [], "MINPATH": [], "MAXPATH": []}
         for rel in wall.ConnectedTo:
+            # How do you join to a non layered element? Not sure.
+            if tool.Model.get_usage_type(rel.RelatedElement) != "LAYER2":
+                continue
             if rel.RelatingConnectionType == "ATPATH":
-                connections["ATPATH"].append(
-                    self.get_connection_metadata(obj, rel.RelatedElement, centerline, min_edge, max_edge)
-                )
+                metadata = self.get_connection_metadata(obj, rel.RelatedElement, centerline, min_edge, max_edge)
+                if not metadata:
+                    continue
+                connections["ATPATH"].append(metadata)
             else:
-                connections[rel.RelatingConnectionType] = self.get_connection_metadata(
-                    obj, rel.RelatedElement, centerline, min_edge, max_edge
-                )
+                metadata = self.get_connection_metadata(obj, rel.RelatedElement, centerline, min_edge, max_edge)
+                if not metadata:
+                    continue
+                connections[rel.RelatingConnectionType] = metadata
         for rel in wall.ConnectedFrom:
+            if tool.Model.get_usage_type(rel.RelatingElement) != "LAYER2":
+                continue
             # We only consider ATPATH since in this situation, we have the
             # priority. The non-priority wall never has any layers that need to
             # "turn a corner".
             if rel.RelatedConnectionType == "ATPATH":
-                connections["ATPATH"].append(
-                    self.get_connection_metadata(obj, rel.RelatingElement, centerline, min_edge, max_edge)
-                )
+                metadata = self.get_connection_metadata(obj, rel.RelatingElement, centerline, min_edge, max_edge)
+                if not metadata:
+                    continue
+                connections["ATPATH"].append(metadata)
         connections["ATPATH"] = sorted(connections["ATPATH"], key=lambda c: c["intersection"].x)
         for connection in connections["ATPATH"]:
             if connection["angle"] > 0:
@@ -2227,7 +2235,11 @@ class CutDecorator:
         ]
         rel_centerline = [obj.matrix_world.inverted() @ rel_obj.matrix_world @ v.to_3d() for v in rel_centerline]
         rel_centerline = [v.to_2d() for v in rel_centerline]
-        intersection, _ = tool.Cad.intersect_edges(centerline, rel_centerline)
+        intersection = tool.Cad.intersect_edges(centerline, rel_centerline)
+        if intersection:
+            intersection, _ = intersection
+        else:
+            return
         closest_centerline_point = tool.Cad.closest_vector(intersection, tuple(rel_centerline))
         if closest_centerline_point == rel_centerline[1]:
             rel_centerline = [rel_centerline[1], rel_centerline[0]]
