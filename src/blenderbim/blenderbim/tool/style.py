@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import numpy as np
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -74,7 +75,7 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def get_surface_rendering_attributes(cls, obj):
-        transparency = obj.diffuse_color[3]
+        transparency = 1 - obj.diffuse_color[3]
         diffuse_color = obj.diffuse_color
 
         attributes = {
@@ -202,6 +203,10 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def is_editing_styles(cls):
         return bpy.context.scene.BIMStylesProperties.is_editing
+
+    @classmethod
+    def record_shading(cls, obj):
+        obj.BIMMaterialProperties.shading_checksum = repr(np.array(obj.diffuse_color).tobytes())
 
     @classmethod
     def select_elements(cls, elements):

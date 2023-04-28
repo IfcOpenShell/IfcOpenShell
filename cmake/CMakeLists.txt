@@ -54,6 +54,7 @@ OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only."
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
+OPTION(WASM_BUILD OFF)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
@@ -149,6 +150,14 @@ UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
 
+if(WASM_BUILD)
+    # when using the nix/build-all.py build script we should not
+    # look into the sysroot for most of the dependencies but rather
+    # in the designated build/ folder created by the script.
+    set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
+    set(CMAKE_FIND_ROOT_PATH "")
+endif()
+
 if (NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
 FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
@@ -199,7 +208,14 @@ ELSE()
     ENDIF()
 ENDIF()
 
-set(BOOST_COMPONENTS system program_options regex thread date_time)
+if (WASM_BUILD)
+    set(BOOST_COMPONENTS)
+else()
+    # @todo review this, shouldn't this be all possible header-only now?
+    # ... or rewritten using C++17 features?
+    set(BOOST_COMPONENTS system program_options regex thread date_time)
+endif()
+
 if(USE_MMAP)
     if(MSVC)
         # filesystem is necessary for the utf-16 wpath
@@ -210,6 +226,10 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
+MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+
 if (NOT MINIMAL_BUILD)
 # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
   find_package(LibXml2 REQUIRED)
@@ -219,11 +239,6 @@ if (NOT MINIMAL_BUILD AND IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
 	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
-
-FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
-MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
-
 
 # Usage:
 # set(SOME_LIRARIES foo bar)
@@ -343,10 +358,21 @@ if("${libTKernelExt}" STREQUAL ".a")
     set(OCCT_STATIC ON)
 endif()
 
+if(WASM_BUILD)
+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
+endif()
+
 if(OCCT_STATIC)
     find_package(Threads)
-    # OPENCASCADE_LIBRARIES repeated three times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    
+    if(WASM_BUILD)
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    else()
+        # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
+        # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    endif()
+    
     if (NOT APPLE AND NOT WIN32)
         set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
     endif()
@@ -620,7 +646,12 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
 endfunction()
 
 if(NOT SCHEMA_VERSIONS)
-    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3")
+    if(WASM_BUILD)
+        # super arbitrarily try to keep size down at least a little bit
+        set(SCHEMA_VERSIONS "2x3" "4")
+    else()
+        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3" "4x3_tc1" "4x3_add1")
+    endif()
 endif()
 
 foreach(s ${SCHEMA_VERSIONS})
@@ -697,7 +728,11 @@ if (BUILD_IFCGEOM)
 	foreach(s ${SCHEMA_VERSIONS})
 		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom_ifc${s})
 	endforeach()
-	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
+	if (WASM_BUILD)
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
+	else()
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})	
+	endif()
 endif()
 if (BUILD_CONVERT OR BUILD_IFCPYTHON)
 	foreach(s ${SCHEMA_VERSIONS})
@@ -741,7 +776,11 @@ set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "0.6.0" SOVERSION "0.6")
 
-TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+if (WASM_BUILD)
+    TARGET_LINK_LIBRARIES(IfcParse ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+else()
+    TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+endif()
 
 if (BUILD_IFCGEOM)
 
@@ -753,7 +792,9 @@ set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 foreach(s ${SCHEMA_VERSIONS})
 	add_library(IfcGeom_ifc${s} STATIC ${IFCGEOM_FILES})
 	set_target_properties(IfcGeom_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
-	TARGET_LINK_LIBRARIES(IfcGeom_ifc${s} IfcParse ${OPENCASCADE_LIBRARIES})
+	if (NOT WASM_BUILD)
+	    TARGET_LINK_LIBRARIES(IfcGeom_ifc${s} IfcParse ${OPENCASCADE_LIBRARIES})	    
+	endif()
 endforeach()
 
 # IfcGeom (schema agnostic)
@@ -768,7 +809,11 @@ if (UNIX)
 find_package(Threads)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+if (WASM_BUILD)
+    TARGET_LINK_LIBRARIES(IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+else()
+    TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+endif()
 
 endif(BUILD_IFCGEOM)
 
@@ -785,7 +830,12 @@ set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 foreach(s ${SCHEMA_VERSIONS})
 	add_library(Serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
 	set_target_properties(Serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
-	TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
+	
+	if (WASM_BUILD)
+	    TARGET_LINK_LIBRARIES(Serializers_ifc${s} ${HDF5_LIBRARIES})
+	else()
+	    TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
+	endif()
 endforeach()
 
 add_library(Serializers ${SERIALIZERS_FILES})
@@ -967,7 +1017,7 @@ endforeach(COMPONENT)
 
 set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3.8 ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3.8, python3-pytest ${BOOST_DEPS}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")

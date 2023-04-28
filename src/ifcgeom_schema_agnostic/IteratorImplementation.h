@@ -73,6 +73,7 @@ namespace IfcGeom {
 		virtual BRepElement* get_native() = 0;
 		virtual const Element* get_object(int id) = 0;
 		virtual IfcUtil::IfcBaseClass* create() = 0;
+		virtual ~IteratorImplementation() {}
 	};
 
 }

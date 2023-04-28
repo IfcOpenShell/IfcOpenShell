@@ -19,7 +19,6 @@
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.helper import import_attributes
-from ifcopenshell.api.group.data import Data
 from bpy.types import PropertyGroup
 import json
 from bpy.props import (
@@ -35,7 +34,7 @@ from bpy.props import (
 
 
 class ExpandedGroups(StrProperty):
-    json_string: StringProperty(name="JSON String", default="{}")
+    json_string: StringProperty(name="JSON String", default="[]")
 
 
 class Group(PropertyGroup):

@@ -1,8 +1,6 @@
 {% set name = "ifcopenshell" %}
 {% set version = "0.7.0" %}
-{% set occt_version = "7.6.2" %}
-{% set cgal_cpp_version = "5.3" %}
-{% set hdf5_version = "1.12.1" %}
+
 
 package:
   name: {{ name }}
@@ -13,6 +11,7 @@ source:
 
 build:
   binary_relocation: false [osx]
+  number: 1
 
 requirements:
   build:
@@ -24,46 +23,31 @@ requirements:
 
   host:
     - python
-    - occt >={{ occt_version }}
-    - hdf5 >={{ hdf5_version }}
-    - cgal-cpp >={{ cgal_cpp_version }}
-    - nlohmann_json
+    - boost-cpp
+    - occt
     - libxml2
+    - cgal-cpp
+    - hdf5
+    - mpfr
+    - gmp  # [unix]
+    - mpir  # [win]
+    - nlohmann_json
 
   run:
     - python
-    - occt >={{ occt_version }}
-    - cgal-cpp >={{ cgal_cpp_version }}
-    - hdf5 >={{ hdf5_version }}
-    - lark-parser
-    - deepdiff
-    - requests
+    - boost-cpp
+    - {{ pin_compatible('occt', max_pin='x.x.x') }}
+    - libxml2
+    - cgal-cpp
+    - hdf5
+    - mpfr
+    - gmp  # [unix]
+    - mpir  # [win]
     - nlohmann_json
-    - isodate
-    - numpy >=1.17
 
 test:
   imports:
     - ifcopenshell
-  requires:
-    - pytest
-    - pytest-cov
-    - numpy
-    - lxml
-    - isodate
-    - lark
-    - networkx
-    - xmlschema
-  #source_files:
-  #  - src/ifcopenshell-python/test/api
-  #  - src/ifcopenshell-python/test/util
-  #  - src/ifcopenshell-python/test/bootstrap.py
-  #  - src/ifcopenshell-python/test/test_file.py
-  #  - src/ifcopenshell-python/test/test_wall_opening.py
-  #  - src/ifcopenshell-python/test/__init__.py
-  #commands:
-  #  #- pip install bcf-client
-  #  - cd ../src/ifcopenshell-python/test && pytest -p no:pytest-blender
 
 about:
   home: http://ifcopenshell.org

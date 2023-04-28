@@ -19,6 +19,7 @@
 import os
 import bpy
 import ifcopenshell
+from ifcopenshell.util.doc import get_attribute_doc
 from blenderbim.bim.module.pset_template.data import PsetTemplatesData
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.ifc import IfcStore
@@ -111,11 +112,27 @@ def get_template_type(self, context):
 
 
 class PsetTemplate(PropertyGroup):
-    global_id: StringProperty(name="Global ID")
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    template_type: EnumProperty(items=get_template_type, name="Template Type")
-    applicable_entity: StringProperty(name="Applicable Entity")
+    global_id: StringProperty(
+        name="Global ID",
+        description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "GlobalId"),
+    )
+    name: StringProperty(
+        name="Name",
+        description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "Name"),
+    )
+    description: StringProperty(
+        name="Description",
+        description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "Description"),
+    )
+    template_type: EnumProperty(
+        items=get_template_type,
+        name="Template Type",
+        description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "TemplateType"),
+    )
+    applicable_entity: StringProperty(
+        name="Applicable Entity",
+        description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "ApplicableEntity"),
+    )
 
 
 class EnumerationValues(PropertyGroup):
@@ -126,9 +143,18 @@ class EnumerationValues(PropertyGroup):
 
 
 class PropTemplate(PropertyGroup):
-    global_id: StringProperty(name="Global ID")
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
+    global_id: StringProperty(
+        name="Global ID",
+        description=get_attribute_doc("IFC4", "IfcPropertyTemplate", "GlobalId"),
+    )
+    name: StringProperty(
+        name="Name",
+        description=get_attribute_doc("IFC4", "IfcPropertyTemplate", "Name"),
+    )
+    description: StringProperty(
+        name="Description",
+        description=get_attribute_doc("IFC4", "IfcPropertyTemplate", "Description"),
+    )
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
     template_type: EnumProperty(
         items=[("P_SINGLEVALUE", "P_SINGLEVALUE", ""), ("P_ENUMERATEDVALUE", "P_ENUMERATEDVALUE", "")],

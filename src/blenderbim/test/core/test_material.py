@@ -94,6 +94,7 @@ class TestAddMaterialSet:
 
 class TestRemoveMaterial:
     def test_removing_a_material(self, ifc, material, style):
+        material.is_material_used_in_sets("material").should_be_called().will_return(False)
         ifc.get_object("material").should_be_called().will_return(None)
         ifc.unlink(element="material").should_be_called()
         ifc.run("material.remove_material", material="material").should_be_called()
@@ -101,6 +102,7 @@ class TestRemoveMaterial:
         subject.remove_material(ifc, material, style, material="material")
 
     def test_removing_a_material_and_reloading_imported_materials(self, ifc, material, style):
+        material.is_material_used_in_sets("material").should_be_called().will_return(False)
         ifc.get_object("material").should_be_called().will_return(None)
         ifc.unlink(element="material").should_be_called()
         ifc.run("material.remove_material", material="material").should_be_called()
@@ -110,6 +112,7 @@ class TestRemoveMaterial:
         subject.remove_material(ifc, material, style, material="material")
 
     def test_removing_a_material_object_if_it_has_no_style(self, ifc, material, style):
+        material.is_material_used_in_sets("material").should_be_called().will_return(False)
         ifc.get_object("material").should_be_called().will_return("obj")
         ifc.unlink(element="material").should_be_called()
         ifc.run("material.remove_material", material="material").should_be_called()
@@ -119,11 +122,16 @@ class TestRemoveMaterial:
         subject.remove_material(ifc, material, style, material="material")
 
     def test_preserving_a_material_object_if_it_is_still_used_as_a_style(self, ifc, material, style):
+        material.is_material_used_in_sets("material").should_be_called().will_return(False)
         ifc.get_object("material").should_be_called().will_return("obj")
         ifc.unlink(element="material").should_be_called()
         ifc.run("material.remove_material", material="material").should_be_called()
         style.get_style("obj").should_be_called().will_return("style")
         material.is_editing_materials().should_be_called().will_return(False)
+        subject.remove_material(ifc, material, style, material="material")
+
+    def test_not_removing_a_material_if_it_is_used_in_a_material_set(self, ifc, material, style):
+        material.is_material_used_in_sets("material").should_be_called().will_return(True)
         subject.remove_material(ifc, material, style, material="material")
 
 

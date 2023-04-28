@@ -2,6 +2,22 @@ VERSION:=`date '+%y%m%d'`
 PYVERSION:=py310
 PLATFORM:=linux
 
+SED:=sed -i
+ifeq ($(OS),Windows_NT)
+HOSTOS:=win
+else
+UNAME_S:=$(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+HOSTOS:=linux
+endif
+ifeq ($(UNAME_S),Darwin)
+HOSTOS:=macos
+PYTHON:=python3
+PATCH:=patch -d
+SED:=sed -i '' -e
+endif
+endif
+
 ifeq ($(PYVERSION), py36)
 PYNUMBER:=36
 endif
@@ -15,7 +31,10 @@ ifeq ($(PYVERSION), py39)
 PYNUMBER:=39
 endif
 ifeq ($(PYVERSION), py310)
-PYNUMBER:=31
+PYNUMBER:=310
+endif
+ifeq ($(PYVERSION), py311)
+PYNUMBER:=311
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -35,6 +54,13 @@ ifeq ($(PLATFORM), macosm1)
 ifeq ($(PYVERSION), py36)
 # Pure Evil. Let me know if you're the first to file a bug report.
 PYNUMBER:=37
+endif
+endif
+
+ifeq ($(PLATFORM), macos)
+ifeq ($(PYVERSION), py311)
+# Pure Evil. Let me know if you're the first to file a bug report.
+PYNUMBER:=310
 endif
 endif
 
@@ -77,7 +103,7 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-4fb910f-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-476ab50-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
 ifeq ($(PLATFORM), win)
@@ -86,8 +112,14 @@ else
 	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
 endif
 	rm -rf dist/working
+	# distutils cannot access anything outside the cwd, so hackishly swap out the README.md
+	cp README.md ../README.bak
+	cp ../../README.md README.md
+	$(SED) "s/999999/$(VERSION)/" pyproject.toml
 	python -m build
-	cd dist && mv ifcopenshell_python-0.7.0-py3-none-any.whl ifcopenshell_python-0.7.0-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	$(SED) "s/$(VERSION)/999999/" pyproject.toml
+	mv ../README.bak README.md
+	cd dist && mv ifcopenshell-0.7.0.$(VERSION)-py3-none-any.whl ifcopenshell-0.7.0.$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 	rm -rf dist/ifcopenshell
-	rm -rf dist/ifcopenshell_python.egg-info
-	rm -rf dist/ifcopenshell-python-0.7.0.tar.gz
+	rm -rf dist/ifcopenshell.egg-info
+	rm -rf dist/ifcopenshell-0.7.0.$(VERSION).tar.gz

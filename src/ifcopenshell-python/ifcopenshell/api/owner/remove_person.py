@@ -20,11 +20,27 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, person=None):
+        """Remove an person
+
+        All roles and addresses assigned to the person will also be
+        removed.
+
+        :param person: The IfcPerson to remove
+        :type person: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            ifcopenshell.api.run("owner.add_person", model,
+                identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
+            ifcopenshell.api.run("owner.remove_person", model, person=person)
+        """
         self.file = file
-        self.settings = {"person": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"person": person}
 
     def execute(self):
         for role in self.settings["person"].Roles or []:

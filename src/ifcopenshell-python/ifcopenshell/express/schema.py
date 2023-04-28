@@ -75,31 +75,39 @@ class Schema:
         return str(v) in self.entities
 
     def __len__(self):
-        return len(self.types) + len(self.entities)
+        return len(self.keys)
 
     def __iter__(self):
         return iter(self.keys)
 
     def __getitem__(self, key):
-        return self.types_entities[key]
+        return self.all_declarations[OrderedCaseInsensitiveDict_KeyObject(key)]
 
     def __init__(self, parsetree):
         self.tree = parsetree
-        self.name = parsetree.syntax[0][0].simple_id
+        schema = next(iter(parsetree.syntax[0]))
+        self.name = schema.simple_id
+        schema_declarations = list(schema.schema_body[0])
 
         sort = lambda d: OrderedCaseInsensitiveDict(sorted(d))
 
         declarations = [
             d.any()[0]
-            for d in parsetree.syntax[0][0].schema_body[0]
-            if d.rule == "declaration" and d.any()[0].rule != "function_decl"
+            for d in schema_declarations
+            if d.rule == "declaration"
+        ] + [
+            d
+            for d in schema_declarations
+            if d.rule == "RuleDeclaration"
         ]
-
+        
         self.types = sort([(t.name, t) for t in declarations if isinstance(t, nodes.TypeDeclaration)])
         self.entities = sort([(t.name, t) for t in declarations if isinstance(t, nodes.EntityDeclaration)])
+        self.rules = sort([(t.name, t) for t in declarations if isinstance(t, nodes.RuleDeclaration)])
+        self.functions = sort([(t.name, t) for t in declarations if isinstance(t, nodes.FunctionDeclaration)])
 
-        self.keys = list(self.types.keys()) + list(self.entities.keys())
-        self.types_entities = {k: v for d in (self.types, self.entities) for k, v in d.items()}
+        self.keys = list(self.types.keys()) + list(self.entities.keys()) + list(self.rules.keys()) + list(self.functions.keys())
+        self.all_declarations = {k: v for d in (self.types, self.entities, self.rules, self.functions) for k, v in d.items()}
 
         of_type = lambda *types: sort(
             [(a, b.type) for a, b in self.types.items() if any(isinstance(b.type, ty) for ty in types)]

@@ -138,7 +138,7 @@ class Csv2Ifc:
         if unit:
             return unit
         else:
-            unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type=unit_type, name=ifcopenshell.util.unit.si_type_names.get(unit_type, None))
+            unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type=unit_type)
         # unit = self.file.createIfcContextDependentUnit(
         #     self.file.createIfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0), "USERDEFINED", symbol
         # )

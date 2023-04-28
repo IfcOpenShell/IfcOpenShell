@@ -36,6 +36,7 @@ namespace IfcUtil {
 	std::wstring::value_type convert_codepage(int codepage, int c);
 	std::string convert_utf8(const std::wstring& s);
 	std::wstring convert_utf8(const std::string& s);
+	std::u32string convert_utf8_to_utf32(const std::string& s);
 }
 
 namespace IfcParse {
@@ -67,7 +68,7 @@ namespace IfcWrite {
 
 	class IFC_PARSE_API IfcCharacterEncoder {
 	private:
-		std::wstring str;
+		std::u32string str;
 	public:
 		IfcCharacterEncoder(const std::string& input);
 		operator std::string();

@@ -20,11 +20,32 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, work_schedule=None):
+        """Removes a work schedule
+
+        All tasks in the work schedule are also removed recursively.
+
+        :param work_schedule: The IfcWorkSchedule to remove.
+        :type work_schedule: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # This will hold all our construction schedules
+            work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+
+            # Let's imagine this is one of our schedules in our work plan.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model,
+                name="Construction Schedule A", work_plan=work_plan)
+
+            # And remove it immediately
+            ifcopenshell.api.run("sequence.remove_work_schedule", model, work_schedule=schedule)
+        """
         self.file = file
-        self.settings = {"work_schedule": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"work_schedule": work_schedule}
 
     def execute(self):
         # TODO: do a deep purge

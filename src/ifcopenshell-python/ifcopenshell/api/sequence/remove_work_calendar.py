@@ -20,11 +20,29 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, work_calendar=None):
+        """Removes a work calendar
+
+        All relationships are also removed, such as if a task is set to use that
+        calendar.
+
+        :param work_calendar: The IfcWorkCalendar to remove
+        :type work_calendar: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's create a new calendar.
+            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model, name="5 Day Week")
+
+            # And remove it immediately
+            ifcopenshell.api.run("sequence.remove_work_calendar", model, work_calendar=calendar)
+        """
         self.file = file
-        self.settings = {"work_calendar": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"work_calendar": work_calendar}
 
     def execute(self):
         # TODO: do a deep purge

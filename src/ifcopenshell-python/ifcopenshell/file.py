@@ -21,10 +21,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+from pathlib import Path
 import numbers
 import functools
-import ifcopenshell.util.element
+import zipfile
 
+import ifcopenshell.util.element
+import ifcopenshell.util.file
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
 
@@ -85,15 +89,16 @@ class Transaction:
             self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
 
     def store_edit(self, element, index, value):
-        self.operations.append(
-            {
-                "action": "edit",
-                "id": element.id(),
-                "index": index,
-                "old": self.serialise_value(element, element[index]),
-                "new": self.serialise_value(element, value),
-            }
-        )
+        if element.id():
+            self.operations.append(
+                {
+                    "action": "edit",
+                    "id": element.id(),
+                    "index": index,
+                    "old": self.serialise_value(element, element[index]),
+                    "new": self.serialise_value(element, value),
+                }
+            )
 
     def store_delete(self, element):
         inverses = {}
@@ -176,7 +181,9 @@ class file(object):
     Class has instance methods for filtering by element Id, Type, etc.
     Instantiated objects can be subscripted by Id or Guid
 
-    Example::
+    Example:
+
+    .. code:: python
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
@@ -243,7 +250,9 @@ class file(object):
         :returns: An entity instance
         :rtype: ifcopenshell.entity_instance.entity_instance
 
-        Example::
+        Example:
+
+        .. code:: python
 
             f = ifcopenshell.file()
             f.create_entity("IfcPerson")
@@ -377,17 +386,29 @@ class file(object):
 
         return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
 
-    def get_inverse(self, inst, allow_duplicate=False):
+    def get_inverse(self, inst, allow_duplicate=False, with_attribute_indices=False):
         """Return a list of entities that reference this entity
 
         :param inst: The entity instance to get inverse relationships
         :type inst: ifcopenshell.entity_instance.entity_instance
+        :param allow_duplicate: Returns a `list` when True, `set` when False
+        :param with_attribute_indices: Returns pairs of <i, idx>
+           where i[idx] is inst or contains inst. Requires allow_duplicate=True
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
         :rtype: list
         """
+        if with_attribute_indices and not allow_duplicate:
+            raise ValueError("with_attribute_indices requires allow_duplicate to be True")
+
         inverses = [entity_instance(e, self) for e in self.wrapped_data.get_inverse(inst.wrapped_data)]
+
         if allow_duplicate:
-            return inverses
+            if with_attribute_indices:
+                idxs = self.wrapped_data.get_inverse_indices(inst.wrapped_data)
+                return list(zip(inverses, idxs))
+            else:
+                return inverses
+
         return set(inverses)
 
     def get_total_inverses(self, inst):
@@ -429,6 +450,46 @@ class file(object):
 
     def __iter__(self):
         return iter(self[id] for id in self.wrapped_data.entity_names())
+
+    def write(self, path: "os.PathLike | str", format=None, zipped=False) -> None:
+        """Write ifc model to file.
+
+        :param format: Force use of a specific format. Guessed from file name if None.
+        Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to format=".ifc" with zipped=True)
+        For zipped .ifcXML use format=".ifcXML" with zipped=True
+        :param zipped: zip the file after it is written
+
+        Examples:
+        >>> model.write("path/to/model.ifc")
+        >>> model.write("path/to/model.ifcXML")
+        >>> model.write("path/to/model.ifcZIP")
+        >>> model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
+        >>> model.write("path/to/model.anyextension", format=".ifcXML")
+        """
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if format == None:
+            format = ifcopenshell.util.file.guess_format(path)
+        if format == ".ifcXML":
+            serializer = ifcopenshell_wrapper.XmlSerializer(self, str(path))
+            serializer.finalize()
+            if zipped:
+                unzipped_path = path.with_suffix(format)
+                path.rename(unzipped_path)
+                with zipfile.ZipFile(path, "w") as zip_file:
+                    zip_file.write(unzipped_path, unzipped_path.name, compress_type=zipfile.ZIP_DEFLATED)
+                unzipped_path.unlink()
+            return
+        if format == ".ifcZIP":
+            return self.write(path, ".ifc", zipped=True)
+        self.wrapped_data.write(str(path))
+        if zipped:
+            unzipped_path = path.with_suffix(format)
+            path.rename(unzipped_path)
+            with zipfile.ZipFile(path, "w") as zip_file:
+                zip_file.write(unzipped_path, unzipped_path.name, compress_type=zipfile.ZIP_DEFLATED)
+                unzipped_path.unlink()
+        return
 
     @staticmethod
     def from_string(s):

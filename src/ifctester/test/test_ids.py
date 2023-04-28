@@ -23,12 +23,22 @@ import ifcopenshell
 from ifctester import ids
 
 
-def run(name, specs, model, expected, applicable_entities, failed_entities):
-    specs.validate(model)
-    spec = specs.specifications[0]
-    assert spec.status is expected
-    assert set(spec.applicable_entities) == set(applicable_entities)
-    assert set(spec.requirements[0].failed_entities) == set(failed_entities)
+def run(name, ids, ifc, expected, applicable_entities=None, failed_entities=None):
+    ids.validate(ifc)
+    all_applicable = set()
+    all_failures = set()
+    if not applicable_entities:
+        applicable_entities = []
+    if not failed_entities:
+        failed_entities = []
+    for spec in ids.specifications:
+        assert spec.status is expected
+        all_applicable.update(spec.applicable_entities)
+        for requirement in spec.requirements:
+            if requirement.status is False:
+                all_failures.update(requirement.failed_entities)
+    assert set(all_applicable) == set(applicable_entities)
+    assert set(all_failures) == set(failed_entities)
 
 
 class TestIds:
@@ -116,17 +126,18 @@ class TestIds:
         waldo = model.createIfcWall(Name="Waldo")
         run("A minimal IDS can check a minimal IFC 1/2", specs, model, False, [wall, waldo], [wall])
         wall.Name = "Waldo"
-        run("A minimal IDS can check a minimal IFC 2/2", specs, model, True, [wall, waldo], [])
+        run("A minimal IDS can check a minimal IFC 2/2", specs, model, True, [wall, waldo])
 
-        spec.ifcVersion = []
+        spec.ifcVersion = ["IFC2X3"]
         run(
             "Specification version is purely metadata and does not impact pass or fail result",
             specs,
             model,
             True,
-            [wall, waldo],
+            [wall, waldo]
         )
 
+        spec.ifcVersion = []
         spec.minOccurs = 1
         model = ifcopenshell.file()
         waldo = model.createIfcWall(Name="Waldo")
@@ -239,3 +250,43 @@ class TestSpecification:
             "applicability": {},
             "requirements": {},
         }
+    
+    def test_specification_has_no_requirements(self):
+        model = ifcopenshell.file()
+        wall = model.createIfcWall()
+        waldo = model.createIfcWall(Name="Waldo")
+        
+        test_ids = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        test_ids.specifications.append(spec)
+        spec.minOccurs = 1
+        run("A specification that is required and has at least one applicable entity but no requirements shall pass", test_ids, model, True, [wall, waldo], None)
+        
+        test_ids = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        test_ids.specifications.append(spec)
+        spec.minOccurs = 1
+        run("A specification that is required but has no applicable entities or requirements shall fail", test_ids, model, False, None, None)
+        
+        test_ids = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        test_ids.specifications.append(spec)
+        spec.minOccurs = 0
+        run("A specification that is optional and has at least one applicable entity but no requirements shall pass", test_ids, model, True, [wall, waldo], None)
+        
+        test_ids = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        test_ids.specifications.append(spec)
+        spec.minOccurs = 0
+        spec.maxOccurs = 0
+        run("A specification that is prohibited and has at least one applicable entity but no requirements shall fail", test_ids, model, False, [wall, waldo], None)
+        
+        test_ids = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        test_ids.specifications.append(spec)
+        spec.minOccurs = 0
+        spec.maxOccurs = 0
+        run("A specification that is prohibited but has no applicable entities or requirements shall pass", test_ids, model, True, None, None)

@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -20,18 +19,41 @@
 from collections import deque
 import ifcopenshell.util.element
 
+
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger):
+        """Optimise the filesize of an IFC model by reusing non-rooted elements
+
+        It is possible to non-losslessly optimise the filesize of an IFC model.
+
+        Note that this is usually not recommended. Optimising runs a risk of
+        losing some indirect semantic data critical for native IFC authoring.
+        Most parties who recommend optimisation are not aware of these risks.
+        Optimising is only safe in the context of read-only IFCs.
+
+        If filesize is an issue, another approach would be to use IFCZIP
+        instead to compress the model. Optimising the model only typically
+        affects filesize and has minimal impact on load times. Large filesizes
+        can usually be solved through other means. Consult the BlenderBIM Add-on
+        documentation on dealing with large models for more details.
+
+        This patch may be run multiple times with diminishing returns.
+
+        Example:
+
+        .. code:: python
+
+            ifcpatch.execute({"input": model, "recipe": "RecycleNonRootedElements", "arguments": []})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
 
     def patch(self):
         deleted = []
         hashes = {}
         for element in self.file:
-            if element.is_a('IfcRoot'):
+            if element.is_a("IfcRoot"):
                 continue
             h = hash(tuple(element))
             if h in hashes:
@@ -42,13 +64,13 @@ class Patcher:
                 hashes[h] = element
         deleted.sort()
         deleted_q = deque(deleted)
-        new = ''
-        for line in self.file.wrapped_data.to_string().split('\n'):
+        new = ""
+        for line in self.file.wrapped_data.to_string().split("\n"):
             try:
-                if int(line.split('=')[0][1:]) != deleted_q[0]:
-                    new += (line + '\n')
+                if int(line.split("=")[0][1:]) != deleted_q[0]:
+                    new += line + "\n"
                 else:
                     deleted_q.popleft()
             except:
-                new += (line + '\n')
+                new += line + "\n"
         self.file = new

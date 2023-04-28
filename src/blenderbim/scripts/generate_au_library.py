@@ -42,13 +42,13 @@ class LibraryGenerator:
         ifcopenshell.api.run(
             "project.assign_declaration", self.file, definition=self.library, relating_context=self.project
         )
-        unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+        unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
 
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
         plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
         self.representations = {
-            "body": ifcopenshell.api.run(
+            "model_body": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
                 context_type="Model",
@@ -56,7 +56,7 @@ class LibraryGenerator:
                 target_view="MODEL_VIEW",
                 parent=model,
             ),
-            "annotation": ifcopenshell.api.run(
+            "plan_body": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
                 context_type="Plan",
@@ -179,9 +179,9 @@ class LibraryGenerator:
         )
         self.create_profile_type("IfcBeamType", "DEMO2", profile)
 
-        self.create_type("IfcWindowType", "DEMO1", {"body": "Window", "annotation": "Window-Annotation"})
-        self.create_type("IfcDoorType", "DEMO1", {"body": "Door", "annotation": "Door-Annotation"})
-        self.create_type("IfcFurnitureType", "BUNNY", {"body": "Bunny", "annotation": "Bunny-Annotation"})
+        self.create_type("IfcWindowType", "DEMO1", {"model_body": "Window", "plan_body": "Window-Annotation"})
+        self.create_type("IfcDoorType", "DEMO1", {"model_body": "Door", "plan_body": "Door-Annotation"})
+        self.create_type("IfcFurnitureType", "BUNNY", {"model_body": "Bunny", "plan_body": "Bunny-Annotation"})
 
         self.file.write("blenderbim-au-library.ifc")
 

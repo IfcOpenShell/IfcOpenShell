@@ -19,26 +19,7 @@
 import isodate
 from dateutil import parser
 import ifcopenshell.util.date as ifcdateutils
-
-
-def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=False):
-    if task.TaskTime:
-        current_date = (
-            ifcdateutils.ifc2datetime(getattr(task.TaskTime, attribute_name))
-            if getattr(task.TaskTime, attribute_name)
-            else ""
-        )
-        if current_date:
-            return current_date
-    for subtask in get_nested_tasks(task):
-        current_date = derive_date(subtask, attribute_name, date=date, is_earliest=is_earliest, is_latest=is_latest)
-        if is_earliest:
-            if current_date and (date is None or current_date < date):
-                date = current_date
-        if is_latest:
-            if current_date and (date is None or current_date > date):
-                date = current_date
-    return date
+from datetime import timedelta
 
 
 def parse_datetime(value):
@@ -64,28 +45,80 @@ def canonicalise_time(time):
     return time.strftime("%d/%m/%y")
 
 
-def get_nested_tasks(task):
-    tasks = []
-    for rel in task.IsNestedBy:
-        for object in rel.RelatedObjects:
-            if object.is_a("IfcTask"):
-                tasks.append(object)
-    return tasks
+def parse_duration_as_blender_props(dt, simplify=True):
+    if simplify:
+        if isinstance(dt, str):
+            dt = ifcdateutils.ifc2datetime(dt)
+
+        seconds = getattr(dt, "seconds", 0)
+        hours, seconds = divmod(seconds, 3600)
+        minutes, seconds = divmod(seconds, 60)
+        days = getattr(dt, "days", 0)
+        months = int(getattr(dt, "months", 0))
+        years = int(getattr(dt, "years", 0))
+        return {
+            "years": years,
+            "months": months,
+            "days": days,
+            "hours": hours,
+            "minutes": minutes,
+            "seconds": seconds,
+        }
 
 
-def get_parent_task(task):
-    return task.Nests[0].RelatingObject if task.Nests and task.Nests[0].RelatingObject.is_a("IfcTask") else None
+def simplify_duration(durations_attributes, duration_type, prop_name):
+    for item in durations_attributes:
+        if item.name == prop_name:
+            duration_props = item
+    if duration_props and not duration_type or duration_type == "ELAPSEDTIME":
+        duration_string = "P{}Y{}M{}DT{}H{}M{}S".format(
+            duration_props.years if duration_props.years else 0,
+            duration_props.months if duration_props.months else 0,
+            duration_props.days if duration_props.days else 0,
+            duration_props.hours if duration_props.hours else 0,
+            duration_props.minutes if duration_props.minutes else 0,
+            duration_props.seconds if duration_props.seconds else 0,
+        )
+        duration_object = ifcdateutils.ifc2datetime(duration_string)
+    elif duration_props and duration_type == "WORKTIME":
+        years = (duration_props.years * 365 * 24 * 60 * 60) if duration_props.years else 0
+        months = (duration_props.months * 30 * 24 * 60 * 60) if duration_props.months else 0
+        days = (duration_props.days * 24 * 60 * 60) if duration_props.days else 0
+        days_subtotal = (years + months + days) / (24 * 60 * 60)
 
+        hours = (duration_props.hours * 60 * 60) if duration_props.hours else 0
+        minutes = (duration_props.minutes * 60) if duration_props.minutes else 0
+        seconds = duration_props.seconds if duration_props.seconds else 0
+        total_seconds = hours + minutes + seconds
 
-def get_task_work_schedule(task):
-    parent_task = get_parent_task(task)
-    if parent_task:
-        get_task_work_schedule(parent_task)
-    else:
-        schedules = [
-            rel.RelatingControl
-            for rel in task.HasAssignments
-            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule")
-        ]
-        print(f"Returning {schedules}")
-        return schedules
+        # TODO: implement actual calendar worktime
+        calendar_seconds_per_day = 8 * 60 * 60
+        extra_days, seconds_left = divmod(total_seconds, calendar_seconds_per_day)
+        total_days = days_subtotal + extra_days
+        duration_object = timedelta(days=total_days, seconds=seconds_left)
+    if duration_object:
+        total_days = int(duration_object.days)
+        seconds_left = int(duration_object.seconds)
+        years, days = divmod(total_days, 365)
+        if hasattr(duration_object, "years"):
+            years += duration_object.years
+
+        months, days = divmod(days, 30)
+        if hasattr(duration_object, "months"):
+            months += duration_object.months
+
+        if months >= 12:
+            extra_years, months = divmod(months, 12)
+            years += extra_years
+
+        hours, seconds = divmod(seconds_left, 3600)
+        minutes, seconds = divmod(seconds, 60)
+
+        return "P{}Y{}M{}DT{}H{}M{}S".format(
+            int(years),
+            int(months),
+            int(days),
+            int(hours),
+            int(minutes),
+            int(seconds),
+        )

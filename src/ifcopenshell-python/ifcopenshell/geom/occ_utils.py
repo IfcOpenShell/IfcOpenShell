@@ -32,6 +32,8 @@ try:  # python 3.3+
 except ImportError:  # python 2
     from collections import Iterable
 
+import OCC
+
 try:
     from OCC.Core import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
 
@@ -90,8 +92,11 @@ def initialize_display():
             dirs = [(3, 2, 1), (-1, -2, -3)]
 
         for dir in dirs:
-            light = V3d.V3d_DirectionalLight(viewer_handle)
-            light.SetDirection(*dir)
+            if OCC.VERSION < "7.5":
+                light = V3d.V3d_DirectionalLight(viewer_handle)
+                light.SetDirection(*dir)
+            else:
+                light = V3d.V3d_DirectionalLight(*dir)
             viewer.SetLightOn(light.GetHandle() if USE_OCCT_HANDLE else light)
 
     setup()

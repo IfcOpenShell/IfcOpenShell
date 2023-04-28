@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020-2023 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-PYTHON:=python
+PYTHON:=python3.10
+PIP:=pip3.10
 PATCH:=patch
 SED:=sed -i
 ifeq ($(OS),Windows_NT)
@@ -47,7 +48,7 @@ PYNUMBER:=39
 endif
 ifeq ($(PYVERSION), py310)
 PYLIBDIR:=python3.10
-PYNUMBER:=31
+PYNUMBER:=310
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -55,19 +56,25 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py37h5f1835d_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py37h95e2c48_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py37h0379df6_3.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/linux-64/lxml-4.9.1-py37h540881e_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/30/c0/d0526314971fc661b083ab135747dc68446a3022686da8c16d25fcf6ef07/lxml-4.6.3-cp37-cp37m-manylinux2014_x86_64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/1d/a4/931d0780f31f3ea8c4f9ef6464a2825137c5241e6707a5fb03bef760a7eb/shapely-2.0.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/ed/d5/c2e84e1e36ab8ebea033921d5886a056c77e18bab5ab1051fcc22de2e8a2/Pillow-9.2.0-cp37-cp37m-manylinux_2_28_x86_64.whl
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py39hbcdfc36_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py39h5aed9d1_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py39h5472131_3.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/linux-64/lxml-4.9.1-py39hb9d737c_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/19/d9/a69c6aff5673554df48120565a14a50eaa41d29ae03b02faa0b023666318/lxml-4.6.3-cp39-cp39-manylinux2014_x86_64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/2d/f2/8ec281d357e8bb7d08dc8d727f0e4c8ef3dae7d3fa75c69c8e452bb82d50/shapely-2.0.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/01/61/3ff85fb4bb596ce3d223c8fcf93c8df5c12bc8899dfb4fb3cb1c5b20dd5f/Pillow-9.2.0-cp39-cp39-manylinux_2_28_x86_64.whl
 endif
 ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/linux-64/hpp-fcl-1.8.0-py310hdaf7e41_1.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/linux-64/eigenpy-2.6.11-py310hf3e5c9c_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py310h7c3ba0c_5.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/linux-64/lxml-4.9.1-py310h5764c6d_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/25/1e/19b46d8e8881fe0df2e20945d51919eeb1817836d62a90efa8506530e45c/lxml-4.8.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/a8/a5/403728b5614b28083f6424dfdefec5fcf58068495fb03bb08532671c642f/shapely-2.0.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/f6/51/320986ebd6d46a0e95c2240468ced73153b691ce07617078bcdf30c609ec/Pillow-9.2.0-cp310-cp310-manylinux_2_28_x86_64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/linux-64/assimp-5.0.1-hedfc422_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/linux-64/octomap-1.9.7-h4bd325d_0.tar.bz2
@@ -79,19 +86,25 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py37h994c40b_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/1e/3e/f0abc15d5dac50939bccc589aae336d5ead4c72e7ad1039a2e0f3630ea92/lxml-4.6.3-cp37-cp37m-macosx_10_9_x86_64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/e6/7d/4923f27c340339e1c896c77cafc8ed672c8d381a025bbab6c6ddcba27e8f/shapely-2.0.1-cp37-cp37m-macosx_10_9_x86_64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/88/49/c26fc3b5b0e82bdc9d8751d6b939da29327b0d98f7c3b95a575cbfed2743/Pillow-9.2.0-cp37-cp37m-macosx_10_10_x86_64.whl
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py39h1e32b98_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py39h5405915_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py39ha641261_3.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py39h701faf5_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/b8/74/a71f7ad72e8db54ce899efab84507b801660750cbbfa6a39e6717557d36a/lxml-4.6.3-cp39-cp39-macosx_10_9_x86_64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/36/a4/7e542a209f862f967d7cb8e939eff155f4294a27d17e16441fb8bdd51a2c/shapely-2.0.1-cp39-cp39-macosx_10_9_x86_64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/88/7a/ddfe28b485b623361457d4783007c1f9ba83a87f93e7fec32f64793efb6c/Pillow-9.2.0-cp39-cp39-macosx_10_10_x86_64.whl
 endif
 ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-64/hpp-fcl-1.8.0-py310h651ac30_1.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/osx-64/eigenpy-2.6.11-py310hc03097c_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py310h509978a_5.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py310h6c45266_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/a1/44/17b7dac7a18807d30e2fe10c3328c152808f5464565e230bfd0e77f178c6/lxml-4.8.0-cp310-cp310-macosx_10_15_x86_64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/1f/2a/dc3353c2431cf53e8d04bb8fba27e584410ca3435c9c85f76d71bf0c0e80/shapely-2.0.1-cp310-cp310-macosx_10_9_x86_64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/d8/60/b13c00d403f34110e96c1b5c0afa73ce461efe3fe960c3a7e3e7fe190d82/Pillow-9.2.0-cp310-cp310-macosx_10_10_x86_64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-64/assimp-5.0.1-h1224e73_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-64/octomap-1.9.7-h940c156_0.tar.bz2
@@ -105,18 +118,24 @@ HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-f
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
 LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py37h994c40b_0.tar.bz2
+SHAPELY_URL:=https://files.pythonhosted.org/packages/e6/7d/4923f27c340339e1c896c77cafc8ed672c8d381a025bbab6c6ddcba27e8f/shapely-2.0.1-cp37-cp37m-macosx_10_9_x86_64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/aa/bc/21097cd891dd2fa02f2b3d767e02e883e026482e59d29975d1bc30024aa3/Pillow-9.2.0-cp39-cp39-macosx_11_0_arm64.whl
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-arm64/hpp-fcl-1.7.5-py39ha69f3c1_2.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.7/download/osx-arm64/eigenpy-2.6.7-py39ha69f3c1_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py39h2550fe3_0.tar.bz2
 LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py39h9eb174b_0.tar.bz2
+SHAPELY_URL:=https://files.pythonhosted.org/packages/ea/aa/45fbd031edf3149cb767d8b9f9db45d5faf0324d743c6b8fb0298cc022d0/shapely-2.0.1-cp39-cp39-macosx_11_0_arm64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/aa/bc/21097cd891dd2fa02f2b3d767e02e883e026482e59d29975d1bc30024aa3/Pillow-9.2.0-cp39-cp39-macosx_11_0_arm64.whl
 endif
 ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-arm64/hpp-fcl-1.8.0-py310h5699539_2.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.9/download/osx-arm64/eigenpy-2.6.9-py310habfc766_1.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py310h4566fd1_0.tar.bz2
 LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py310h02f21da_0.tar.bz2
+SHAPELY_URL:=https://files.pythonhosted.org/packages/ec/41/d59208743e737184e1b403e95a937aebb022b8459e99efbcd5208fc8be46/shapely-2.0.1-cp310-cp310-macosx_11_0_arm64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/0c/5f/117b653cad585f3aedfe0de996c292e67d4b020ed77f652e5a6c8c24f908/Pillow-9.2.0-cp310-cp310-macosx_11_0_arm64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-arm64/assimp-5.0.1-h0f81e16_7.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-arm64/octomap-1.9.7-hc021e02_0.tar.bz2
@@ -128,24 +147,37 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py37h839d6b1_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/win-64/eigenpy-2.6.5-py37h2c32e34_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py37h3b38789_3.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/win-64/lxml-4.9.1-py37hcc03f2d_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/9e/5e/171ee9d40a600f565fe691ec5bf7596247ec62cfb2edc00c91afe8ea837b/lxml-4.6.3-cp37-cp37m-win_amd64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/e2/87/b8b8d8d57b429b01aa56b7d723075c09f33c988b8091bb6f790c83436909/shapely-2.0.1-cp37-cp37m-win_amd64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/69/f5/9e802159d78b2eaf26bf1f8b94648605993f5ca7247ac8870f065063fc40/Pillow-9.2.0-cp37-cp37m-win_amd64.whl
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py39h2e7c763_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/win-64/eigenpy-2.6.5-py39h3ce40e6_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py39hefe7e4c_3.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/win-64/lxml-4.9.1-py39hb82d6ee_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/72/d4/426ecb8849c47c3e370c87aa0ac05d85768df917ffea27fcd6686a5e6495/lxml-4.6.3-cp39-cp39-win_amd64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/a7/ae/eab645c4075093584b7a65ab71cb8ff4563a015bd935c9b55dba14b2c1eb/shapely-2.0.1-cp39-cp39-win_amd64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/19/3f/b4d4bcf05dbcbe07f2e9613a8f4180c297395e73a91d8ad22c32c6624f8c/Pillow-9.2.0-cp39-cp39-win_amd64.whl
 endif
 ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/win-64/hpp-fcl-1.8.0-py310hc5a3c62_1.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/win-64/eigenpy-2.6.11-py310hbd43d28_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py310hc781a3c_5.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/win-64/lxml-4.9.1-py310he2412df_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/f6/71/65c80a4caa1617a4c6e8fe1500cebb179db96232e2f623bfe6a1f4294e39/lxml-4.8.0-cp310-cp310-win_amd64.whl
+SHAPELY_URL:=https://files.pythonhosted.org/packages/81/8a/7ac076a86b2632f1872284c5e60ed5f2fc26094875a85b35d9fa17b52504/shapely-2.0.1-cp310-cp310-win_amd64.whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/02/55/67a3c17b9e7d972ed8c246f104da99ca4f3ea42fba566697e479011b84b6/Pillow-9.2.0-cp310-cp310-win_amd64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/win-64/assimp-5.0.1-hc2aa0de_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/win-64/octomap-1.9.7-h5362a0b_0.tar.bz2
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/win-64/zlib-1.2.11-h62dcd97_1010.tar.bz2
 endif
+
+.PHONY: bump
+bump:
+	cd . && $(SED) "s/$(OLD)/$(NEW)/" Makefile
+	cd ../ifcopenshell-python/ && $(SED) "s/$(OLD)/$(NEW)/" Makefile
+	cd ../ifcopenshell-python/docs/ifcconvert/ && $(SED) "s/$(OLD)/$(NEW)/" installation.rst
+	cd ../ifcopenshell-python/docs/ifcopenshell-python/ && $(SED) "s/$(OLD)/$(NEW)/" installation.rst
 
 .PHONY: dist
 dist:
@@ -158,7 +190,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-4fb910f-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-476ab50-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -176,14 +208,16 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/api/* dist/blenderbim/libs/site/packages/ifcopenshell/api/
 	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/entity_instance.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/file.py dist/blenderbim/libs/site/packages/ifcopenshell/
+	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/validate.py dist/blenderbim/libs/site/packages/ifcopenshell/
+	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/express/rule_executor.py dist/blenderbim/libs/site/packages/ifcopenshell/express/
 	# Provides bcf functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/bcf/src/bcf dist/blenderbim/libs/site/packages/
 	# Provides IFCClash functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
 	# Provides BIMTester functionality
 	cd dist/working && $(PYTHON) -m venv env
-	cd dist/working && . env/bin/activate && pip install pybabel
-	cd dist/working && . env/bin/activate && pip install babel
+	cd dist/working && . env/bin/activate && $(PIP) install pybabel
+	cd dist/working && . env/bin/activate && $(PIP) install babel
 	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.7.0/src/ifcbimtester/bimtester/locale/
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
 	# Provides IFCTester functionality
@@ -202,9 +236,15 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifc5d/ifc5d dist/blenderbim/libs/site/packages/
 	# Provides IFCCityJSON functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccityjson dist/blenderbim/libs/site/packages/
+	# Provides IfcGit functionality
+	cd dist/working && . env/bin/activate && $(PIP) install GitPython --target=./site-packages
+	cp -r dist/working/site-packages/smmap dist/blenderbim/libs/site/packages/
+	cp -r dist/working/site-packages/gitdb dist/blenderbim/libs/site/packages/
+	cp -r dist/working/site-packages/git dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides Mustache templating in construction documentation
+	# TODO: remove this dependency, it seems overkill and we seem to get by with str replaces
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/3f/e7/8750ba6c6101d6aa5ceeb20c013adf2c6f3554a12c71d75654b468404bfa/pystache-0.6.0.tar.gz
 	cd dist/working && tar -xzvf pystache*
@@ -244,6 +284,13 @@ endif
 	cd dist/working && wget https://files.pythonhosted.org/packages/4f/51/15a4f6b8154d292e130e5e566c730d8ec6c9802563d58760666f1818ba58/decorator-5.0.9.tar.gz
 	cd dist/working && tar -xzvf decorator*
 	cp -r dist/working/decorator-5.0.9/src/decorator.py dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Provides audio playback for costing
+	mkdir -p dist/working
+	git clone https://github.com/Andrej730/aud.git --branch master-reduced-size --depth 1 dist/working/aud
+	cd dist/working/aud && git checkout 529af208fbcb707c387bfb681d2605c0b6112de7
+	cp -r dist/working/aud/aud dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
@@ -290,6 +337,13 @@ endif
 
 	# Required by bcf
 	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/ad/c7/17c9d16320d8e2cfdb27d2fd298b5e8f7a3f211025b0c1bc7a39a85bd690/xsdata-22.11.tar.gz
+	cd dist/working && tar -xzvf xsdata*
+	cp -r dist/working/xsdata-22.11/xsdata dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by bcf
+	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/11/bc/5afb61dd5d863e5cf77cd952445c50c17e65953405986f19e97e4389692a/elementpath-3.0.2.tar.gz
 	cd dist/working && tar -xzvf elementpath*
 	cp -r dist/working/elementpath-3.0.2/elementpath dist/blenderbim/libs/site/packages/
@@ -316,6 +370,29 @@ endif
 	cp -r dist/working/PyP6Xer-1.13.0/xerparser dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Required by QTOCalculator
+	mkdir dist/working
+	cd dist/working && wget $(SHAPELY_URL)
+	cd dist/working && cp *.whl shapely.zip && unzip shapely.zip
+	cp -r dist/working/shapely dist/blenderbim/libs/site/packages/
+ifeq ($(PLATFORM), win)
+	cp -r dist/working/shapely.libs dist/blenderbim/libs/site/packages/
+endif
+ifeq ($(PLATFORM), linux)
+	cp -r dist/working/shapely.libs dist/blenderbim/libs/site/packages/
+endif
+	rm -rf dist/working
+
+	# Required by the BIM tool thumbnail generator
+	mkdir dist/working
+	cd dist/working && wget $(PILLOW_URL)
+	cd dist/working && cp *.whl pillow.zip && unzip pillow.zip
+	cp -r dist/working/PIL dist/blenderbim/libs/site/packages/
+ifeq ($(PLATFORM), linux)
+	cp -r dist/working/Pillow.libs dist/blenderbim/libs/site/packages/
+endif
+	rm -rf dist/working
+
 	# Required by xerparser and IFC4D
 	# TODO: remove this dependency. It's only used to show a progress bar.
 	mkdir dist/working
@@ -324,11 +401,13 @@ endif
 	cp -r dist/working/tqdm-4.50.0/tqdm dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by IFCCityJSON
 	mkdir dist/working
 	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
-	cd dist/working && . env/bin/activate && pip install cjio --target=./site-packages
+	# Required by IFCCityJSON
+	cd dist/working && . env/bin/activate && $(PIP) install cjio --target=./site-packages
+	# Provides express rule validation for ifcopenshell.validate
+	cd dist/working && . env/bin/activate && $(PIP) install pytest --target=./site-packages
 	cd dist/working/site-packages/ && rm -r *dist-info*
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
@@ -442,11 +521,22 @@ endif
 	rm -rf dist/working
 
 	# Required by ids - uh, not any more, but I'm trying it out in the drawing module
+ifeq ($(PLATFORM), macosm1)
+	# No wheels available for MacOS M1, but turns out this Anaconda build works
 	mkdir dist/working
 	cd dist/working && wget $(LXML_URL)
 	cd dist/working && tar -xf lxml*
 	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/lxml dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
+else
+	# Wheels are preferred for other OSes. A first attempt at using Anaconda
+	# builds for everything shows it breaks on windows. See #2422.
+	mkdir dist/working
+	cd dist/working && wget $(LXML_URL)
+	cd dist/working && cp *.whl lxml.zip && unzip lxml.zip
+	cp -r dist/working/lxml dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+endif
 
 	# Required by behave
 	mkdir dist/working
@@ -463,6 +553,7 @@ endif
 	rm -rf dist/working
 
 	# Required by IFCCOBie for XLSX support
+	# TODO: see if we can replace this with openpyxl which does both read/write
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/0c/bc/82d6783f83f65f56d8b77d052773c4a2f952fa86385f0cd54e1e006658d7/XlsxWriter-1.2.9.tar.gz
 	cd dist/working && tar -xzvf XlsxWriter*
@@ -534,7 +625,7 @@ endif
 	cd dist/working/brickschema-0.5.1/ && cp -r brickschema ../../blenderbim/libs/site/packages/
 	# For now lets bundle the latest nightly schema
 	cd dist/working && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
-	cd dist/working && cp Brick.ttl ../../blenderbim/bim/schema/Brick.ttl
+	cd dist/working && cp Brick.ttl ../blenderbim/bim/schema/Brick.ttl
 	rm -rf dist/working
 
 	# Required by brickschema
@@ -564,6 +655,13 @@ endif
 	cd dist/working && wget https://blenderbim.org/builds/pkg_resources.tar.gz
 	cd dist/working && tar -xzvf pkg_resources*
 	cd dist/working/ && cp -r pkg_resources ../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required for hipped roof generation
+	mkdir dist/working
+	cd dist/working && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
+	cd dist/working && unzip master.zip
+	cp -r dist/working/bpypolyskel-master/bpypolyskel dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	cd dist/blenderbim && $(SED) "s/999999/$(VERSION)/" __init__.py

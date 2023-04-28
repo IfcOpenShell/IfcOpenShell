@@ -21,7 +21,7 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
-from ifcopenshell.api.boundary.data import Data
+from blenderbim.bim.module.boundary.data import SpaceBoundariesData
 
 
 class BIM_PT_SceneBoundaries(Panel):
@@ -67,7 +67,6 @@ class BIM_PT_Boundary(Panel):
     def draw(self, context):
         props = context.active_object.BIMObjectProperties
         ifc_file = tool.Ifc.get()
-        element = ifc_file.by_id(props.ifc_definition_id)
         boundary = ifc_file.by_id(props.ifc_definition_id)
         self.bprops = context.active_object.bim_boundary_properties
         if self.bprops.is_editing:
@@ -101,8 +100,13 @@ class BIM_PT_Boundary(Panel):
             entity = getattr(boundary, ifc_attribute)
             if entity:
                 row.label(text=f"{entity.is_a()}/{entity.Name}")
-                op = row.operator("bim.select_global_id", text="", icon="TRACKER")
+                op = row.operator("bim.select_global_id", text="", icon="OBJECT_DATA")
                 op.global_id = entity.GlobalId
+                if ifc_attribute in ("RelatingSpace", "RelatedBuildingElement"):
+                    op = row.operator("bim.select_related_element_boundaries", text="", icon="RESTRICT_SELECT_OFF")
+                    op.related_element = entity.id()
+                    op = row.operator("bim.select_related_element_type_boundaries", text="", icon="ASSET_MANAGER")
+                    op.related_element = entity.id()
             else:
                 row.label(text="")
 
@@ -119,6 +123,7 @@ class BIM_PT_SpaceBoundaries(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
@@ -130,28 +135,23 @@ class BIM_PT_SpaceBoundaries(Panel):
             return False
         if not IfcStore.get_element(props.ifc_definition_id):
             return False
-        valid_classes = ("IfcSpace", "IfcExternalSpatialElement")
-        entity = IfcStore.get_file().by_id(props.ifc_definition_id)
-        for ifc_class in valid_classes:
-            if entity.is_a(ifc_class):
+        element = tool.Ifc.get_entity(context.active_object)
+        for ifc_class in ("IfcSpace", "IfcExternalSpatialElement"):
+            if element.is_a(ifc_class):
                 return True
         return False
 
     def draw(self, context):
+        if not SpaceBoundariesData.is_loaded:
+            SpaceBoundariesData.load()
+
         self.props = context.active_object.BIMObjectProperties
         self.ifc_file = tool.Ifc.get()
         row = self.layout.row()
         row.operator("bim.load_space_boundaries")
-        if not Data.is_loaded:
-            Data.load(self.ifc_file)
-        for boundary_id in Data.spaces.get(self.props.ifc_definition_id, []):
-            boundary_data = Data.boundaries[boundary_id]
-            building_element = self.ifc_file.by_id(boundary_data["RelatedBuildingElement"])
+        row.operator("bim.select_space_boundaries", text="", icon="RESTRICT_SELECT_OFF")
+        for boundary in SpaceBoundariesData.data["boundaries"]:
             row = self.layout.row()
-            if building_element:
-                bld_el_description = f"{building_element.is_a()}/{building_element.Name}"
-            else:
-                bld_el_description = None
-            row.label(text=f"{boundary_id} > {bld_el_description}", icon="GHOST_ENABLED")
+            row.label(text=boundary["description"], icon="GHOST_ENABLED")
             op = row.operator("bim.load_boundary", text="", icon="RESTRICT_SELECT_OFF")
-            op.boundary_id = boundary_id
+            op.boundary_id = boundary["id"]

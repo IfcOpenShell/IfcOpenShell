@@ -50,6 +50,9 @@
     "IfcChimney": [
         "IfcChimneyType"
     ],
+    "IfcCivilElement": [
+        "IfcCivilElementType"
+    ],
     "IfcCoil": [
         "IfcCoilType"
     ],
@@ -317,7 +320,8 @@
         "IfcColumnType"
     ],
     "IfcDoorStandardCase": [
-        "IfcDoorType"
+        "IfcDoorType",
+        "IfcDoorStyle"
     ],
     "IfcMemberStandardCase": [
         "IfcMemberType"
@@ -338,6 +342,7 @@
         "IfcWallType"
     ],
     "IfcWindowStandardCase": [
-        "IfcWindowType"
+        "IfcWindowType",
+        "IfcWindowStyle"
     ]
 }

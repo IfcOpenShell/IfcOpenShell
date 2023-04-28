@@ -243,10 +243,21 @@ bool IfcGeom::Kernel::faceset_helper<CP, LP>::edge(int A, int B, TopoDS_Edge& e)
 }
 
 template <typename CP, typename LP>
-bool IfcGeom::Kernel::faceset_helper<CP, LP>::wire(const LP& loop, TopoDS_Wire& wire) {
+bool IfcGeom::Kernel::faceset_helper<CP, LP>::wire(const LP& loop, TopoDS_Wire& w) {
+	TopTools_ListOfShape ws;
+	if (!wires(loop, ws)) {
+		return false;
+	}
+	util::select_largest(ws, w);
+	return true;
+}
+
+template <typename CP, typename LP>
+bool IfcGeom::Kernel::faceset_helper<CP, LP>::wires(const LP& loop, TopTools_ListOfShape& wires) {
 	if (duplicates_.find(util::conditional_address_of(loop)) != duplicates_.end()) {
 		return false;
 	}
+	TopoDS_Wire wire;
 	BRep_Builder builder;
 	builder.MakeWire(wire);
 	int count = 0;
@@ -264,10 +275,12 @@ bool IfcGeom::Kernel::faceset_helper<CP, LP>::wire(const LP& loop, TopoDS_Wire& 
 		wire.Closed(true);
 
 		TopTools_ListOfShape results;
-		if (kernel_->getValue(GV_NO_WIRE_INTERSECTION_CHECK) == 0. && util::wire_intersections(wire, results, kernel_->get_wire_intersection_tolerance(wire), kernel_->getValue(IfcGeom::Kernel::GV_PRECISION))) {
+		if (kernel_->getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(wire, results, {kernel_->getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0., kernel_->getValue(GV_NO_WIRE_INTERSECTION_TOLERANCE) < 0., 0., kernel_->getValue(GV_PRECISION)})) {
 			Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
-			util::select_largest(results, wire);
 			non_manifold_ = true;
+			wires = results;
+		} else {
+			wires.Append(wire);
 		}
 
 		return true;

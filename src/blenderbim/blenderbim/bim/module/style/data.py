@@ -17,8 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
 import ifcopenshell
+from ifcopenshell.util.doc import get_entity_doc
+import blenderbim.tool as tool
 
 
 def refresh():
@@ -33,12 +34,16 @@ class StylesData:
     @classmethod
     def load(cls):
         cls.data = {"style_types": cls.style_types(), "total_styles": cls.total_styles()}
+        cls.is_loaded = True
 
     @classmethod
     def style_types(cls):
         declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
-        return [(c, c, "") for c in sorted([d.name() for d in declarations])]
+        version = tool.Ifc.get_schema()
+        return [
+            (c, c, get_entity_doc(version, c).get("description", "")) for c in sorted([d.name() for d in declarations])
+        ]
 
     @classmethod
     def total_styles(cls):
@@ -51,7 +56,12 @@ class StyleAttributesData:
 
     @classmethod
     def load(cls):
-        cls.data = {"attributes": cls.get_attributes()}
+        cls.data = {"ifc_style_id": cls.ifc_style_id(), "attributes": cls.get_attributes()}
+        cls.is_loaded = True
+
+    @classmethod
+    def ifc_style_id(cls):
+        return bpy.context.active_object.active_material.BIMMaterialProperties.ifc_style_id
 
     @classmethod
     def get_attributes(cls):

@@ -25,7 +25,6 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.attribute as core
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.attribute.data import Data
 
 
 class Operator:
@@ -51,9 +50,20 @@ class EnableEditingAttributes(bpy.types.Operator):
         oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
         props.attributes.clear()
-        if oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes)
+
+        def callback(name, prop, data):
+            if name in ("RefLatitude", "RefLongitude"):
+                new = props.attributes.add()
+                new.name = name
+                new.is_null = data[name] is None
+                new.is_optional = True
+                new.data_type = "string"
+                new.ifc_class = data["type"]
+                new.string_value = "" if new.is_null else json.dumps(data[name])
+
+        blenderbim.bim.helper.import_attributes2(
+            tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes, callback=callback
+        )
         props.is_editing_attributes = True
         return {"FINISHED"}
 
@@ -88,33 +98,22 @@ class EditAttributes(bpy.types.Operator, Operator):
             obj = bpy.data.objects.get(self.obj)
         elif self.obj_type == "Material":
             obj = bpy.data.materials.get(self.obj)
-        oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
-        attributes = {}
-        for attribute in Data.products[oprops.ifc_definition_id]:
-            blender_attribute = props.attributes.get(attribute["name"])
-            if not blender_attribute:
-                continue
-            if attribute["is_optional"] and blender_attribute.is_null:
-                attributes[attribute["name"]] = None
-            elif attribute["type"] == "string":
-                attributes[attribute["name"]] = blender_attribute.string_value
-            elif attribute["type"] == "list":
-                values = blender_attribute.string_value[1:-1].split(", ")
-                if attribute["list_type"] == "float":
-                    values = [float(v) for v in values]
-                elif attribute["list_type"] == "integer":
-                    values = [int(v) for v in values]
-                attributes[attribute["name"]] = values
-            elif attribute["type"] == "integer":
-                attributes[attribute["name"]] = blender_attribute.int_value
-            elif attribute["type"] == "float":
-                attributes[attribute["name"]] = blender_attribute.float_value
-            elif attribute["type"] == "enum":
-                attributes[attribute["name"]] = blender_attribute.enum_value
-        product = self.file.by_id(oprops.ifc_definition_id)
-        ifcopenshell.api.run("attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes})
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        product = tool.Ifc.get_entity(obj)
+
+        def callback(attributes, prop):
+            if prop.name in ("RefLatitude", "RefLongitude"):
+                if prop.is_null:
+                    attributes[prop.name] = None
+                else:
+                    try:
+                        attributes[prop.name] = json.loads(prop.string_value)
+                    except:
+                        attributes[prop.name] = None
+                return True
+
+        attributes = blenderbim.bim.helper.export_attributes(props.attributes, callback=callback)
+        ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
         return {"FINISHED"}
 
@@ -143,5 +142,5 @@ class CopyAttributeToSelection(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)

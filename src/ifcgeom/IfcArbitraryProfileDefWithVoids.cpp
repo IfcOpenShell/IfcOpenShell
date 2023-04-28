@@ -22,6 +22,7 @@
 #include <TopoDS_Face.hxx>
 #include <ShapeFix_Shape.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -31,8 +32,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* 
 		return false;
 	}
 
-	assert_closed_wire(profile);
+	util::assert_closed_wire(profile, getValue(GV_PRECISION));
 
+	// @todo this is a discrepancy with IfcArbitraryClosedProfileDef without voids.
+	// wire intersection code is not triggered this way.
 	BRepBuilderAPI_MakeFace mf(profile);
 
 	IfcSchema::IfcCurve::list::ptr voids = l->InnerCurves();
@@ -40,7 +43,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* 
 	for(IfcSchema::IfcCurve::list::it it = voids->begin(); it != voids->end(); ++it) {
 		TopoDS_Wire hole;
 		if (convert_wire(*it, hole)) {
-			assert_closed_wire(hole);
+			util::assert_closed_wire(hole, getValue(GV_PRECISION));
 			mf.Add(hole);
 		}
 	}

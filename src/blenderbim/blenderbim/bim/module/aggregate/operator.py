@@ -58,16 +58,22 @@ class BIM_OT_unassign_object(bpy.types.Operator, Operator):
     bl_idname = "bim.unassign_object"
     bl_label = "Unassign Object"
     bl_options = {"REGISTER", "UNDO"}
-    relating_object: bpy.props.IntProperty()
-    related_object: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.unassign_object(
-            tool.Ifc,
-            tool.Collector,
-            relating_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object)),
-            related_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.related_object)),
-        )
+        for obj in bpy.context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if not aggregate:
+                continue
+            core.unassign_object(
+                tool.Ifc,
+                tool.Aggregate,
+                tool.Collector,
+                relating_obj=tool.Ifc.get_object(aggregate),
+                related_obj=tool.Ifc.get_object(element),
+            )
 
 
 class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):
@@ -92,52 +98,61 @@ class BIM_OT_disable_editing_aggregate(bpy.types.Operator, Operator):
         core.disable_editing_aggregate(tool.Aggregate, obj=context.active_object)
 
 
-class BIM_OT_add_aggregate(bpy.types.Operator):
+class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     """Add aggregate to IFC element"""
 
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
+    ifc_class: bpy.props.StringProperty(name="IFC Class", default="IfcElementAssembly")
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.prop(self, "ifc_class")
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return {"FINISHED"}
+        try:
+            ifc_class = tool.Ifc.schema().declaration_by_name(self.ifc_class).name()
+        except:
+            return
+        aggregate = self.create_aggregate(context, ifc_class)
 
-        aggregate = self.create_aggregate(context)
-        tool.Collector.sync(obj)
-        current_aggregate = ifcopenshell.util.element.get_aggregate(element)
-        current_container = ifcopenshell.util.element.get_container(element)
-        if current_aggregate:
-            core.assign_object(
-                tool.Ifc,
-                tool.Aggregate,
-                tool.Collector,
-                relating_obj=tool.Ifc.get_object(current_aggregate),
-                related_obj=aggregate,
-            )
-        elif current_container:
-            blenderbim.core.spatial.assign_container(
-                tool.Ifc,
-                tool.Collector,
-                tool.Spatial,
-                structure_obj=tool.Ifc.get_object(current_container),
-                element_obj=aggregate,
-            )
-        core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
-        return {"FINISHED"}
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
 
-    def create_aggregate(self, context):
-        aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
+            tool.Collector.sync(obj)
+            current_aggregate = ifcopenshell.util.element.get_aggregate(element)
+            current_container = ifcopenshell.util.element.get_container(element)
+            if current_aggregate:
+                core.assign_object(
+                    tool.Ifc,
+                    tool.Aggregate,
+                    tool.Collector,
+                    relating_obj=tool.Ifc.get_object(current_aggregate),
+                    related_obj=aggregate,
+                )
+            elif current_container:
+                blenderbim.core.spatial.assign_container(
+                    tool.Ifc,
+                    tool.Collector,
+                    tool.Spatial,
+                    structure_obj=tool.Ifc.get_object(current_container),
+                    element_obj=aggregate,
+                )
+            core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
+
+    def create_aggregate(self, context, ifc_class):
+        aggregate_collection = bpy.data.collections.new(f"{ifc_class}/Assembly")
         context.scene.collection.children.link(aggregate_collection)
         aggregate = bpy.data.objects.new("Assembly", None)
         aggregate_collection.objects.link(aggregate)
-        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
+        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class=ifc_class)
         return aggregate
 
 

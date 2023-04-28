@@ -89,6 +89,7 @@ class MepGenerator:
         ifc_class = ifc_classes[0]
 
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
+
         obj.location = self.location
         obj.rotation_euler[0] = math.pi / 2
         obj.rotation_euler[2] = math.pi / 2

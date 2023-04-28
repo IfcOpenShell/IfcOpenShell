@@ -26,8 +26,7 @@ from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
-from ifcopenshell.api.material.data import Data as MaterialData
-from ifcopenshell.api.type.data import Data as TypeData
+from blenderbim.bim.module.model.data import AuthoringData
 
 
 global_subscription_owner = object()
@@ -48,9 +47,9 @@ def mode_callback(obj, data):
         ):
             continue
         if obj.data.BIMMeshProperties.ifc_definition_id:
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
         elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
 
 
 def name_callback(obj, data):
@@ -66,7 +65,6 @@ def name_callback(obj, data):
     if isinstance(obj, bpy.types.Material):
         if obj.BIMObjectProperties.ifc_definition_id:
             IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).Name = obj.name
-            MaterialData.load_materials()
         if obj.BIMMaterialProperties.ifc_style_id:
             IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id).Name = obj.name
         refresh_ui_data()
@@ -90,31 +88,33 @@ def name_callback(obj, data):
                 break
         if grid_collection:
             grid_collection.name = obj.name
-    if element.is_a("IfcTypeProduct"):
-        TypeData.purge()
     element.Name = "/".join(obj.name.split("/")[1:])
     refresh_ui_data()
 
 
 def color_callback(obj, data):
     if obj.BIMMaterialProperties.ifc_style_id:
-        IfcStore.edited_objs.add(obj)
+        tool.Ifc.edit(obj)
 
 
 def active_object_callback():
     refresh_ui_data()
 
 
-def subscribe_to(object, data_path, callback):
+def active_material_index_callback(obj, data):
+    refresh_ui_data()
+
+
+def subscribe_to(obj, data_path, callback):
     try:
-        subscribe_to = object.path_resolve(data_path, False)
+        subscribe_to = obj.path_resolve(data_path, False)
     except:
         return
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
-        owner=object,
+        owner=obj,
         args=(
-            object,
+            obj,
             data_path,
         ),
         notify=callback,
@@ -236,6 +236,11 @@ def setDefaultProperties(scene):
     # TODO: Move to drawing module
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style.name = "Blender Default"
+        drawing_style.render_type = "DEFAULT"
+        bpy.ops.bim.save_drawing_style(index="0")
+
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
@@ -297,7 +302,4 @@ def setDefaultProperties(scene):
                 RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
             }
         )
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Blender Default"
-        drawing_style.render_type = "DEFAULT"
-        bpy.ops.bim.save_drawing_style(index="2")
+        AuthoringData.type_thumbnails = {}

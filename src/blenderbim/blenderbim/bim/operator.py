@@ -19,11 +19,16 @@
 import os
 import bpy
 import json
+import time
+import logging
+import textwrap
+import tempfile
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from . import schema
+from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
@@ -97,6 +102,20 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         return {"RUNNING_MODAL"}
 
 
+class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
+    bl_idname = "bim.reload_selected_ifc_file"
+    bl_label = "Reload selected IFC File"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload currently selected IFC file"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        self.filepath = context.scene.BIMProperties.ifc_file
+        if self.is_existing_ifc_file():
+            context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
+        return {"FINISHED"}
+
+
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
@@ -143,6 +162,8 @@ class OpenUpstream(bpy.types.Operator):
             webbrowser.open("https://wiki.osarch.org/index.php?title=Category:BlenderBIM_Add-on")
         elif self.page == "community":
             webbrowser.open("https://community.osarch.org/")
+        elif self.page == "fund":
+            webbrowser.open("https://opencollective.com/opensourcebim")
         return {"FINISHED"}
 
 
@@ -192,6 +213,11 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_compare_node(self):
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
+        group.inputs.new("NodeSocketFloat", "Value")
+        group.inputs["Value"].default_value = 1.0  # Mandatory multiplier for the last node group
+        group.inputs.new("NodeSocketVector", "Vector")
+        group.outputs.new("NodeSocketFloat", "Value")
+        group.outputs.new("NodeSocketFloat", "Line Decorator")
         group_input = group.nodes.new(type="NodeGroupInput")
         group_input.location = 0, 50
 
@@ -203,6 +229,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         greater.inputs[1].default_value = 0
         greater.location = 400, 0
 
+        compare = group.nodes.new(type="ShaderNodeMath")
+        compare.operation = "COMPARE"
+        compare.inputs[1].default_value = 0
+        compare.inputs[2].default_value = 0.04
+        compare.location = 400, -200
+
         multiply = group.nodes.new(type="ShaderNodeMath")
         multiply.operation = "MULTIPLY"
         multiply.inputs[0].default_value = 1
@@ -211,57 +243,68 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         group_output = group.nodes.new(type="NodeGroupOutput")
         group_output.location = 800, 0
 
-        group.links.new(group_input.outputs[""], multiply.inputs[0])
-        group.links.new(group_input.outputs[""], separate_xyz.inputs[0])
+        group.links.new(group_input.outputs["Value"], multiply.inputs[0])
+        group.links.new(group_input.outputs["Vector"], separate_xyz.inputs[0])
         group.links.new(separate_xyz.outputs[2], greater.inputs[0])
         group.links.new(greater.outputs[0], multiply.inputs[1])
-        group.links.new(multiply.outputs[0], group_output.inputs[""])
+        group.links.new(multiply.outputs[0], group_output.inputs["Value"])
+        group.links.new(separate_xyz.outputs[2], compare.inputs[0])
+        group.links.new(compare.outputs[0], group_output.inputs["Line Decorator"])
 
     def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
+        group.inputs.new("NodeSocketShader", "Shader")
+        group.outputs.new("NodeSocketShader", "Shader")
         links = group.links
         nodes = group.nodes
 
         group_input = nodes.new(type="NodeGroupInput")
         group_output = nodes.new(type="NodeGroupOutput")
-        group_output.location = 600, 250
+        group_output.location = 800, 250
 
-        backfacing_mix = nodes.new(type="ShaderNodeMixShader")
-        backfacing_mix.location = group_output.location - Vector((400, 350))
+        mix_decorator = group.nodes.new(type="ShaderNodeMixShader")
+        mix_decorator.name = "Line Decorator Mix"
+        mix_decorator.location = group_output.location - Vector((200, 0))
+
+        mix_section = group.nodes.new(type="ShaderNodeMixShader")
+        mix_section.name = "Section Mix"
+        mix_section.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
+        mix_section.location = mix_decorator.location - Vector((200, 200))
+
+        transparent = nodes.new(type="ShaderNodeBsdfTransparent")
+        transparent.location = mix_section.location - Vector((200, 100))
+
+        mix_backfacing = nodes.new(type="ShaderNodeMixShader")
+        mix_backfacing.location = mix_section.location - Vector((200, 0))
+
+        group_input.location = mix_backfacing.location - Vector((200, 50))
 
         backfacing = nodes.new(type="ShaderNodeNewGeometry")
-        backfacing.location = backfacing_mix.location + Vector((-200, 200))
-        group_input.location = backfacing_mix.location - Vector((200, 50))
+        backfacing.location = mix_backfacing.location + Vector((-200, 200))
 
         emission = nodes.new(type="ShaderNodeEmission")
         emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
-        emission.location = backfacing_mix.location - Vector((200, 150))
-
-        transparent = nodes.new(type="ShaderNodeBsdfTransparent")
-        transparent.location = group_output.location - Vector((400, 100))
-
-        section_mix = group.nodes.new(type="ShaderNodeMixShader")
-        section_mix.name = "Section Mix"
-        section_mix.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
-        section_mix.location = group_output.location - Vector((200, 0))
+        emission.location = mix_backfacing.location - Vector((200, 150))
 
         cut_obj = nodes.new(type="ShaderNodeTexCoord")
         cut_obj.object = obj
-        cut_obj.location = group_output.location - Vector((800, 150))
+        cut_obj.location = backfacing.location - Vector((200, 200))
 
         section_compare = nodes.new(type="ShaderNodeGroup")
         section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
         section_compare.name = "Last Section Compare"
-        section_compare.location = group_output.location - Vector((600, 0))
+        section_compare.location = backfacing.location + Vector((0, 200))
 
         links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
-        links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
-        links.new(group_input.outputs[""], backfacing_mix.inputs[1])
-        links.new(emission.outputs["Emission"], backfacing_mix.inputs[2])
-        links.new(section_compare.outputs[0], section_mix.inputs[0])
-        links.new(transparent.outputs["BSDF"], section_mix.inputs[1])
-        links.new(backfacing_mix.outputs["Shader"], section_mix.inputs[2])
-        links.new(section_mix.outputs["Shader"], group_output.inputs[""])
+        links.new(backfacing.outputs["Backfacing"], mix_backfacing.inputs[0])
+        links.new(group_input.outputs["Shader"], mix_backfacing.inputs[1])
+        links.new(emission.outputs["Emission"], mix_backfacing.inputs[2])
+        links.new(section_compare.outputs["Value"], mix_section.inputs[0])
+        links.new(transparent.outputs[0], mix_section.inputs[1])
+        links.new(mix_backfacing.outputs["Shader"], mix_section.inputs[2])
+        links.new(section_compare.outputs["Line Decorator"], mix_decorator.inputs[0])
+        links.new(mix_section.outputs["Shader"], mix_decorator.inputs[1])
+        links.new(mix_decorator.outputs["Shader"], group_output.inputs["Shader"])
 
     def append_obj_to_section_override_node(self, obj):
         group = bpy.data.node_groups.get("Section Override")
@@ -397,15 +440,76 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
         bpy.ops.object.delete({"selected_objects": [context.active_object]})
 
 
-class ReloadIfcFile(bpy.types.Operator):
+class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload the same IFC file"
+    bl_description = "Reload an updated IFC file"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
-    def execute(self, context):
-        # TODO: reimplement. See #1222.
+    def _execute(self, context):
+        import ifcdiff
+
+        old = tool.Ifc.get()
+        new = ifcopenshell.open(self.filepath)
+
+        ifc_diff = ifcdiff.IfcDiff(old, new, relationships=[])
+        ifc_diff.diff()
+
+        changed_elements = set([k for k, v in ifc_diff.change_register.items() if "geometry_changed" in v])
+
+        for global_id in ifc_diff.deleted_elements | changed_elements:
+            element = tool.Ifc.get().by_guid(global_id)
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                bpy.data.objects.remove(obj)
+
+        # STEP IDs may change, but we assume the GlobalID to be constant
+        obj_map = {}
+        for obj in bpy.data.objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and hasattr(element, "GlobalId"):
+                obj_map[obj.name] = element.GlobalId
+
+        delta_elements = [new.by_guid(global_id) for global_id in ifc_diff.added_elements | changed_elements]
+        tool.Ifc.set(new)
+
+        for obj in bpy.data.objects:
+            global_id = obj_map.get(obj.name)
+            if global_id:
+                try:
+                    tool.Ifc.link(new.by_guid(global_id), obj)
+                except:
+                    # Still prototyping, so things like types definitely won't work
+                    print("Could not relink", obj)
+
+        start = time.time()
+        logger = logging.getLogger("ImportIFC")
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+        logging.basicConfig(
+            filename=path_log,
+            filemode="a",
+            level=logging.DEBUG,
+        )
+        settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
+        settings.has_filter = True
+        settings.should_filter_spatial_elements = False
+        settings.elements = delta_elements
+        settings.logger.info("Starting import")
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+
+        context.scene.BIMProperties.ifc_file = self.filepath
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class AddIfcFile(bpy.types.Operator):
@@ -426,6 +530,20 @@ class RemoveIfcFile(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.DocProperties.ifc_files.remove(self.index)
+        return {"FINISHED"}
+
+
+class BIM_OT_open_webbrowser(bpy.types.Operator):
+    bl_idname = "bim.open_webbrowser"
+    bl_description = "Open the URL in your Web Browser"
+    bl_label = "Open URL"
+
+    url: bpy.props.StringProperty()
+
+    def execute(self, context):
+        import webbrowser
+
+        webbrowser.open(self.url)
         return {"FINISHED"}
 
 
@@ -531,6 +649,12 @@ def update_enum_property_search_prop(self, context):
     for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
             setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
+            predefined_type = self.collection_predefined_types[i].name
+            if predefined_type:
+                try:
+                    setattr(context.data, "ifc_predefined_type", predefined_type)
+                except TypeError:  # User clicked on a suggestion, but it's not a predefined type
+                    pass
             break
 
 
@@ -541,6 +665,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
     collection_names: bpy.props.CollectionProperty(type=StrProperty)
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
+    collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
 
     def invoke(self, context, event):
@@ -565,9 +690,10 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
         self.collection_names.clear()
         self.collection_identifiers.clear()
 
-    def add_item(self, identifier: str, name: str):
+    def add_item(self, identifier: str, name: str, predefined_type: str = ""):
         self.collection_identifiers.add().name = identifier
         self.collection_names.add().name = name
+        self.collection_predefined_types.add().name = predefined_type
 
     def add_items_regular(self, items):
         self.identifiers = []
@@ -588,12 +714,12 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                     if not isinstance(values, (tuple, list)):
                         values = [values]
                     for value in values:
-                        self.add_item(identifier=key, name=key + " (" + value + ")")
+                        self.add_item(identifier=key, name=key + " > " + value, predefined_type=value.upper())
 
 
 class EditBlenderCollection(bpy.types.Operator):
     bl_idname = "bim.edit_blender_collection"
-    bl_label = "Add or Remove blender collection item"
+    bl_label = "Add or Remove Blender Collection Item"
     bl_options = {"REGISTER", "UNDO"}
     option: bpy.props.StringProperty(description="add or remove item from collection")
     collection: bpy.props.StringProperty(description="collection to be edited")
@@ -605,3 +731,31 @@ class EditBlenderCollection(bpy.types.Operator):
         else:
             getattr(context.bim_prop_group, self.collection).remove(self.index)
         return {"FINISHED"}
+
+
+class BIM_OT_show_description(bpy.types.Operator):
+    bl_idname = "bim.show_description"
+    bl_label = "Description"
+    attr_name: bpy.props.StringProperty()
+    description: bpy.props.StringProperty()
+    url: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=80)
+        for line in wrapper.wrap(self.attr_name + " : " + self.description):
+            layout.label(text=line)
+        if self.url:
+            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
+            url_op.url = self.url
+
+    @classmethod
+    def description(cls, context, properties):
+        return properties.description

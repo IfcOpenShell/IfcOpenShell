@@ -30,6 +30,8 @@ classes = (
     operator.EnableEditingCostSchedule,
     operator.EnableEditingCostItems,
     operator.EnableEditingCostItem,
+    operator.ExportCostSchedules,
+    operator.ExpandCostItems,
     operator.EnableEditingCostItemQuantities,
     operator.EnableEditingCostItemQuantity,
     operator.EnableEditingCostItemValues,
@@ -65,6 +67,15 @@ classes = (
     operator.ExpandCostItemRate,
     operator.ContractCostItemRate,
     operator.CalculateCostItemResourceValue,
+    operator.ClearCostItemAssignments,
+    operator.HighlightProductCostItem,
+    operator.LoadProductCostItems,
+    operator.ReorderCostItem,
+    operator.SelectUnassignedProducts,
+    operator.LoadCostItemElementQuantities,
+    operator.LoadCostItemTaskQuantities,
+    operator.LoadCostItemResourceQuantities,
+    operator.ChangeParentCostItem,
     prop.CostItem,
     prop.CostItemQuantity,
     prop.CostItemType,
@@ -78,6 +89,8 @@ classes = (
     ui.BIM_UL_cost_item_quantities,
     ui.BIM_UL_cost_item_types,
     ui.BIM_UL_cost_item_rates,
+    ui.BIM_UL_product_cost_items,
+    ui.BIM_PT_Costing_Tools,
 )
 
 

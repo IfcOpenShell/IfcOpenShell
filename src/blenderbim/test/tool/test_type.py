@@ -114,6 +114,14 @@ class TestGetIfcRepresentationClass(NewFile):
         assert subject.get_ifc_representation_class(ifc.createIfcColumn()) is None
 
 
+class TestGetModelTypes(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        assert subject.get_model_types() == [wall_type]
+
+
 class TestGetObjectData(NewFile):
     def test_run(self):
         data = bpy.data.meshes.new("Mesh")
@@ -139,15 +147,14 @@ class TestGetRepresentationContext(NewFile):
         assert subject.get_representation_context(representation) == context
 
 
-class TestHasDynamicVoids(NewFile):
+class TestGetTypeOccurrences(NewFile):
     def test_run(self):
-        obj = bpy.data.objects.new("Object", None)
-        assert subject.has_dynamic_voids(obj) is False
-
-    def test_checking_modifiers(self):
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-        assert subject.has_dynamic_voids(obj) is True
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        assert subject.get_type_occurrences(wall_type) == (wall,)
 
 
 class TestHasMaterialUsage(NewFile):
@@ -158,6 +165,13 @@ class TestHasMaterialUsage(NewFile):
         usage = ifc.createIfcMaterialProfileSetUsage()
         ifc.createIfcRelAssociatesMaterial(RelatingMaterial=usage, RelatedObjects=[element])
         assert subject.has_material_usage(element) is True
+
+
+class TestRemoveObject(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        subject.remove_object(obj)
+        assert not bpy.data.objects.get("Object")
 
 
 class TestRunGeometryAddRepresentation(NewFile):

@@ -17,6 +17,7 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import uuid
 import ifcopenshell
 import ifcopenshell.api
 from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
@@ -414,13 +415,15 @@ class TestAttribute:
             expected=False,
         )
 
-        global_id = ifcopenshell.guid.new()
-        facet = Attribute(name="GlobalId", value=global_id)
         ifc = ifcopenshell.file()
+        ns = uuid.UUID("b59aa156-82a4-4b4c-a6e5-3d04a0236af9")
+        element = ifc.createIfcWall()
+        element.GlobalId = ifcopenshell.guid.compress(uuid.uuid5(ns, str(element.id())).hex)
+        facet = Attribute(name="GlobalId", value=element.GlobalId)
         run(
             "GlobalIds are treated as strings and not expanded",
             facet=facet,
-            inst=ifc.createIfcWall(GlobalId=global_id),
+            inst=element,
             expected=True,
         )
 
@@ -649,7 +652,7 @@ class TestAttribute:
             expected=True,
         )
 
-        restriction = Restriction(options={"minInclusive": 42, "maxInclusive": 42},  base="decimal")
+        restriction = Restriction(options={"minInclusive": 42, "maxInclusive": 42}, base="decimal")
         facet = Attribute(name="RefractionIndex", value=restriction)
         ifc = ifcopenshell.file()
         run(
@@ -699,15 +702,15 @@ class TestClassification:
         project = ifc.createIfcProject()
         system_a = ifcopenshell.api.run("classification.add_classification", ifc, classification=system_a)
         element0 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         ifcopenshell.api.run(
             "classification.add_reference", ifc, product=element1, reference=ref1, classification=system_a
         )
-        element11 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element11 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcColumn")
         ifcopenshell.api.run(
             "classification.add_reference", ifc, product=element11, reference=ref11, classification=system_a
         )
-        element22 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element22 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run(
             "classification.add_reference",
             ifc,
@@ -738,9 +741,9 @@ class TestClassification:
         run("A required facet checks all parameters as normal", facet=facet, inst=element1, expected=True)
         facet = Classification(minOccurs=0, maxOccurs=0)
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element1, expected=False)
-        facet = Attribute(name="Name", minOccurs=0)
+        facet = Classification(minOccurs=0)
         run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element0, expected=True)
-        facet = Attribute(name="Rabbit", minOccurs=0)
+        facet = Classification(minOccurs=0)
         run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element1, expected=True)
 
         facet = Classification(value="1")
@@ -1228,14 +1231,10 @@ class TestProperty:
         ifc = ifcopenshell.file()
         ifc.createIfcProject()
         # Milli prefix used to check measurement conversions
-        lengthunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
-        areaunit = ifcopenshell.api.run(
-            "unit.add_si_unit", ifc, unit_type="AREAUNIT", name="SQUARE_METRE", prefix="MILLI"
-        )
-        volumeunit = ifcopenshell.api.run(
-            "unit.add_si_unit", ifc, unit_type="VOLUMEUNIT", name="CUBIC_METRE", prefix="MILLI"
-        )
-        timeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="TIMEUNIT", name="SECOND")
+        lengthunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        areaunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="AREAUNIT", prefix="MILLI")
+        volumeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="VOLUMEUNIT", prefix="MILLI")
+        timeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="TIMEUNIT")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[lengthunit, areaunit, volumeunit, timeunit])
         return ifc
 
@@ -1404,13 +1403,17 @@ class TestPartOf:
         assert facet.asdict() == {"@relation": "IfcRelAggregates"}
         facet = PartOf(
             entity="IfcGroup",
+            predefinedType="predefinedType",
             relation="IfcRelAssignsToGroup",
             minOccurs="0",
             maxOccurs="unbounded",
             instructions="instructions",
         )
         assert facet.asdict() == {
-            "entity": {"simpleValue": "IfcGroup"},
+            "entity": {
+                "name": {"simpleValue": "IfcGroup"},
+                "predefinedType": {"simpleValue": "predefinedType"},
+            },
             "@relation": "IfcRelAssignsToGroup",
             "@minOccurs": "0",
             "@maxOccurs": "unbounded",
@@ -1446,6 +1449,19 @@ class TestPartOf:
         facet = PartOf(entity="IFCWALL", relation="IfcRelAggregates")
         run("An aggregate may specify the entity of the whole 2/2", facet=facet, inst=subelement, expected=False)
 
+        element.PredefinedType = "BASESLAB"
+        facet = PartOf(entity="IFCSLAB", predefinedType="BASESLAB", relation="IfcRelAggregates")
+        run(
+            "An aggregate may specify the predefined type of the whole 1/2", facet=facet, inst=subelement, expected=True
+        )
+        facet = PartOf(entity="IFCSLAB", predefinedType="SLABRADOR", relation="IfcRelAggregates")
+        run(
+            "An aggregate may specify the predefined type of the whole 2/2",
+            facet=facet,
+            inst=subelement,
+            expected=False,
+        )
+
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
@@ -1472,6 +1488,12 @@ class TestPartOf:
         facet = PartOf(entity="IFCINVENTORY", relation="IfcRelAssignsToGroup")
         run("A group entity must match exactly 2/2", facet=facet, inst=element, expected=True)
 
+        group.ObjectType = "BUNNY"
+        facet = PartOf(entity="IFCINVENTORY", predefinedType="BUNNARY", relation="IfcRelAssignsToGroup")
+        run("A group predefined type must match exactly 2/2", facet=facet, inst=element, expected=False)
+        facet = PartOf(entity="IFCINVENTORY", predefinedType="BUNNY", relation="IfcRelAssignsToGroup")
+        run("A group predefined type must match exactly 2/2", facet=facet, inst=element, expected=True)
+
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
@@ -1489,6 +1511,12 @@ class TestPartOf:
         run("The container entity must match exactly 1/2", facet=facet, inst=element, expected=False)
         facet = PartOf(relation="IfcRelContainedInSpatialStructure", entity="IFCSPACE")
         run("The container entity must match exactly 2/2", facet=facet, inst=element, expected=True)
+
+        container.ObjectType = "BURROW"
+        facet = PartOf(relation="IfcRelContainedInSpatialStructure", entity="IFCSPACE", predefinedType="WARREN")
+        run("The container predefined type must match exactly 1/2", facet=facet, inst=element, expected=False)
+        facet = PartOf(relation="IfcRelContainedInSpatialStructure", entity="IFCSPACE", predefinedType="BURROW")
+        run("The container predefined type must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
@@ -1515,6 +1543,13 @@ class TestPartOf:
         run("The nest entity must match exactly 1/2", facet=facet, inst=subelement, expected=False)
         facet = PartOf(relation="IfcRelNests", entity="IFCFURNITURE")
         run("The nest entity must match exactly 2/2", facet=facet, inst=subelement, expected=True)
+
+        element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "WATERBOTTLE"
+        facet = PartOf(relation="IfcRelNests", entity="IFCFURNITURE", predefinedType="LITTERBOX")
+        run("The nest predefined type must match exactly 1/2", facet=facet, inst=subelement, expected=False)
+        facet = PartOf(relation="IfcRelNests", entity="IFCFURNITURE", predefinedType="WATERBOTTLE")
+        run("The nest predefined type must match exactly 2/2", facet=facet, inst=subelement, expected=True)
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcFurniture")

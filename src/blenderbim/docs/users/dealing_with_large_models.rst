@@ -29,7 +29,7 @@ The first priority is to ensure you do not have a prohibitively large filesize.
   BReps or tessellations where appropriate. Choosing the wrong export setting
   can easily double or triple your filesize and export times. Choose **Design
   Transfer View** instead of **Coordination View** or **Reference View**. Look
-  for export settings that use the keywords like "surface", "solid", "brep", 
+  for export settings that use the keywords like "surface", "solid", "brep",
   "tessellation", or "extrusion".
 - Improve your model breakdown strategy (see below)
 - Identify objects with large polygon counts and improve the modeling (see below)
@@ -62,8 +62,16 @@ Filtered model loading
 ----------------------
 
 You may filter elements and only load a portion of the model. Click on **Enable
-Advanced Mode** when loading a model and you will be presented with model
-loading options in the **IFC Project** panel. **Filter Modes** include:
+Advanced Mode** when loading a model.
+
+.. image:: advanced-mode.png
+
+This will preload the model and present you with model loading options in the
+**IFC Project** panel.
+
+.. image:: advanced-mode-settings.png
+
+**Filter Modes** include:
 
 - **Decomposition**, filter by location in the building, such as **Level 1** or
   **Building A**.
@@ -125,8 +133,8 @@ elements starting at item number 30,000 and ending at item number 50,000. This
 allows you to arbitrarily break down large models into submodels. This can be
 combined with other filters.
 
-`Beta versions of Blender 3.3 <https://builder.blender.org/download/patch/>`__
-may be used which will result in a faster load time (~50%).
+Using Blender 3.3 and above will result in a faster load time (~50%) compared to
+older Blender versions.
 
 Coordination only models
 ------------------------

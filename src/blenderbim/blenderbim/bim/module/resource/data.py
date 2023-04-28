@@ -18,7 +18,6 @@
 
 import bpy
 import blenderbim.tool as tool
-from ifcopenshell.api.cost.data import CostValueTrait
 import ifcopenshell
 
 
@@ -26,7 +25,7 @@ def refresh():
     ResourceData.is_loaded = False
 
 
-class ResourceData(CostValueTrait):
+class ResourceData:
     data = {}
     is_loaded = False
     cost_values = {}
@@ -34,56 +33,49 @@ class ResourceData(CostValueTrait):
     @classmethod
     def load(cls):
         cls.data = {
-            "has_resources": cls.has_resources(),
+            "total_resources": cls.total_resources(),
+            "resources": cls.resources(),
+            "active_resource_ids": cls.active_resource_ids(),
+            "cost_values": cls.cost_values(),
         }
-        cls.load_resources()
         cls.is_loaded = True
 
     @classmethod
-    def has_resources(cls):
-        return bool(tool.Ifc.get().by_type("IfcResource"))
-
-    @classmethod
-    def number_of_resources_loaded(cls):
+    def total_resources(cls):
         return len(tool.Ifc.get().by_type("IfcResource"))
 
     @classmethod
-    def load_resources(cls):
-        cls.data["resources"] = {}
+    def resources(cls):
+        results = {}
         for resource in tool.Ifc.get().by_type("IfcResource"):
-            data = resource.get_info()
-            del data["OwnerHistory"]
-            data["IsNestedBy"] = []
-            for rel in resource.IsNestedBy:
-                [data["IsNestedBy"].append(o.id()) for o in rel.RelatedObjects]
-            data["Nests"] = []
-            for rel in resource.Nests:
-                [data["Nests"].append(rel.RelatingObject.id())]
-            data["ResourceOf"] = []
-            for rel in resource.ResourceOf:
-                [data["ResourceOf"].append(o.id()) for o in rel.RelatedObjects]
-            data["HasContext"] = resource.HasContext[0].RelatingContext.id() if resource.HasContext else None
-            if resource.Usage:
-                data["Usage"] = data["Usage"].id()
-            data["TotalCostQuantity"] = cls.get_total_quantity(resource)
+            base_quantity = None
             if resource.BaseQuantity:
-                data["BaseQuantity"] = resource.BaseQuantity.get_info()
-                del data["BaseQuantity"]["Unit"]
-            if resource.BaseCosts:
-                data["BaseCosts"] = [e.id() for e in resource.BaseCosts]
-                cls.load_cost_values(resource, data)
-            cls.data["resources"][resource.id()] = data
-        cls.data["number_of_resources_loaded"] = cls.number_of_resources_loaded()
+                base_quantity = resource.BaseQuantity.get_info()
+                del base_quantity["Unit"]
+            results[resource.id()] = {"type": resource.is_a(), "BaseQuantity": base_quantity}
+        return results
 
-    def load_resource_times(cls):
-        cls.data["resource_times"] = {}
-        for resource_time in tool.Ifc.get().by_type("IfcResourceTime"):
-            data = resource_time.get_info()
-            for key, value in data.items():
-                if not value:
-                    continue
-                if "Start" in key or "Finish" in key or key == "StatusTime":
-                    data[key] = ifcopenshell.util.date.ifc2datetime(value)
-                elif "Work" in key or key == "LevelingDelay":
-                    data[key] = ifcopenshell.util.date.ifc2datetime(value)
-            cls.data["resource_times"][resource_time.id()] = data
+    @classmethod
+    def cost_values(cls):
+        results = []
+        ifc_id = bpy.context.scene.BIMResourceProperties.active_resource_id
+        if not ifc_id:
+            return results
+        resource = tool.Ifc.get().by_id(ifc_id)
+        for cost_value in resource.BaseCosts or []:
+            label = "{0:.2f}".format(ifcopenshell.util.cost.calculate_applied_value(resource, cost_value))
+            label += " = {}".format(ifcopenshell.util.cost.serialise_cost_value(cost_value))
+            results.append({"id": cost_value.id(), "label": label})
+        return results
+
+    @classmethod
+    def active_resource_ids(cls):
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return []
+        results = []
+        for rel in getattr(element, "HasAssignments", []) or []:
+            if rel.is_a("IfcRelAssignsToResource"):
+                results.append(rel.RelatingResource.id())
+        return results

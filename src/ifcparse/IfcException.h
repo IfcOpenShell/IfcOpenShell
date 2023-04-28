@@ -62,7 +62,7 @@ namespace IfcParse {
 			const std::string& expected_type
 		)
 			: IfcException(
-				std::string("Token ") + token_string + " at " + 
+				std::string("Token ") + token_string + " at offset " + 
 				boost::lexical_cast<std::string>(token_start) + 
 				" invalid " + expected_type
 			)
@@ -72,7 +72,7 @@ namespace IfcParse {
 			char c
 		)
 			: IfcException(
-				std::string("Unexpected '") + std::string(1, c) + "' at " +
+				std::string("Unexpected '") + std::string(1, c) + "' at offset " +
 				boost::lexical_cast<std::string>(token_start)
 			)
 		{}

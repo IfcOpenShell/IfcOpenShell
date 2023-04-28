@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from ifcopenshell.util.doc import get_entity_doc
+import blenderbim.tool as tool
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
 from bpy.types import PropertyGroup
@@ -64,6 +66,23 @@ def update_actor_class(self, context):
     ActorData.data["actors"] = ActorData.actors()
 
 
+def get_actor_class_enum(self, context):
+    version = tool.Ifc.get_schema()
+    return [
+        ("IfcActor", "Actor", get_entity_doc(version, "IfcActor").get("description", "")),
+        ("IfcOccupant", "Occupant", get_entity_doc(version, "IfcOccupant").get("description", "")),
+    ]
+
+
+def get_actor_type_enum(self, context):
+    version = tool.Ifc.get_schema()
+    return [
+        ("IfcPerson", "Person", get_entity_doc(version, "IfcPerson").get("description", "")),
+        ("IfcOrganization", "Organisation", get_entity_doc(version, "IfcOrganization").get("description", "")),
+        ("IfcPersonAndOrganization", "User", get_entity_doc(version, "IfcPersonAndOrganization").get("description", "")),
+    ]
+
+
 class BIMOwnerProperties(PropertyGroup):
     active_person_id: IntProperty(name="Active Person Id")
     person_attributes: CollectionProperty(name="Person Attributes", type=Attribute)
@@ -81,24 +100,28 @@ class BIMOwnerProperties(PropertyGroup):
     facsimile_numbers: CollectionProperty(type=StrProperty, name="Facsimile Numbers")
     electronic_mail_addresses: CollectionProperty(type=StrProperty, name="Emails")
     messaging_ids: CollectionProperty(type=StrProperty, name="IMs")
-    user_person: EnumProperty(items=get_user_person, name="Person")
-    user_organisation: EnumProperty(items=get_user_organisation, name="Organisation")
+    user_person: EnumProperty(
+        items=get_user_person, name="Person", description="This entity represents an individual human being."
+    )
+    user_organisation: EnumProperty(
+        items=get_user_organisation,
+        name="Organisation",
+        description="A named and structured grouping with a corporate identity.",
+    )
     active_user_id: IntProperty(name="Active User Id")
     active_actor_id: IntProperty(name="Active Actor Id")
     actor_attributes: CollectionProperty(name="Actor Attributes", type=Attribute)
     actor_class: EnumProperty(
-        items=(("IfcActor", "Actor", ""), ("IfcOccupant", "Occupant", "")),
+        items=get_actor_class_enum,
         name="Actor Type",
         update=update_actor_class,
     )
     actor_type: EnumProperty(
-        items=(
-            ("IfcPerson", "Person", ""),
-            ("IfcOrganization", "Organisation", ""),
-            ("IfcPersonAndOrganization", "User", ""),
-        ),
+        items=get_actor_type_enum,
         name="Actor Type",
         update=update_actor_type,
     )
-    the_actor: EnumProperty(items=get_the_actor, name="Actor")
+    the_actor: EnumProperty(
+        items=get_the_actor, name="Actor", description="This entity represents an individual human being."
+    )
     actor: EnumProperty(items=get_actor, name="Actor")

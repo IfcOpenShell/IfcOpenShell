@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -17,18 +16,39 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger, elevation=0):
+        """Sets the reference elevation of all IfcSites
+
+        To completely reference model coordinates, a reference elevation should
+        be specified on the IfcSite. This is often omitted or not possible by
+        proprietary BIM applications. This patch lets you set the reference
+        elevation attribute explicitly.
+
+        Note that this does not physically shift the Z coordinates of anything.
+        The reference elevation is simply a numerical attribute.
+
+        :param elevation: The elevation to set.
+        :type elevation: float
+
+        Example:
+
+        .. code:: python
+
+            # All IfcSites will have their reference elevation set to 42.
+            ifcpatch.execute({"input": model, "recipe": "SetRefElevation", "arguments": [42]})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
+        self.elevation = elevation
 
     def patch(self):
-        project = self.file.by_type('IfcProject')[0]
-        sites = self.find_decomposed_ifc_class(project, 'IfcSite')
+        project = self.file.by_type("IfcProject")[0]
+        sites = self.find_decomposed_ifc_class(project, "IfcSite")
         for site in sites:
-            site.RefElevation = float(self.args[0])
+            site.RefElevation = float(self.elevation)
 
     def find_decomposed_ifc_class(self, element, ifc_class):
         results = []

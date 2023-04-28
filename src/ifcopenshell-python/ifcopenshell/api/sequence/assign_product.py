@@ -21,14 +21,53 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relating_product=None, related_object=None):
+        """Assigns a product to be produced as a result of a process
+
+        A construction task may result in products (e.g. a wall) being
+        constructed. These task "Outputs" are defined in IFC through product
+        relationships.
+
+        Not all tasks have Outputs. For example, maintenance tasks will
+        typically not have any outputs.
+
+        See ifcopenshell.api.sequence.assign_process for Inputs and other types
+        of process relationships that can be described in manufacturing
+        process modeling.
+
+        :param relating_product: The IfcProduct that was constructed as a result
+            of the task.
+        :type relating_product: ifcopenshell.entity_instance.entity_instance
+        :param related_object: The IfcProcess (typically IfcTask) of the
+            construction task.
+        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created IfcRelAssignsToProduct relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # Let's imagine we are creating a construction schedule. All tasks
+            # need to be part of a work schedule.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+
+            # Let's create a construction task. Note that the predefined type is
+            # important to distinguish types of tasks.
+            task = ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Build wall", identification="A", predefined_type="CONSTRUCTION")
+
+            # Let's say we have a wall somewhere.
+            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+            # Let's construct that wall!
+            ifcopenshell.api.run("sequence.assign_product", relating_product=wall, related_object=task)
+        """
         self.file = file
         self.settings = {
-            "relating_product": None,
-            "related_object": None,
+            "relating_product": relating_product,
+            "related_object": related_object,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if self.settings["related_object"].HasAssignments:

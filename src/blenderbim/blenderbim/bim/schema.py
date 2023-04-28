@@ -27,7 +27,12 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 
 
 class IfcSchema:
-    def __init__(self):
+    def __init__(self, schema_name="IFC4"):
+        schema_name = schema_name.upper()
+        if schema_name not in ("IFC2X3", "IFC4", "IFC4X3"):
+            schema_name = "IFC4"
+        self.schema_name = schema_name
+
         self.schema_dir = Path(cwd).joinpath("schema")
         self.data_dir = Path(cwd).joinpath("data")
         # TODO: Make it less troublesome
@@ -51,8 +56,7 @@ class IfcSchema:
 
     def load_pset_templates(self):
         property_paths = self.data_dir.joinpath("pset").glob("*.ifc")
-        # TODO: add IFC2X3 PsetQto template support
-        self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+        self.psetqto = ifcopenshell.util.pset.get_template(self.schema_name)
         # Keep only the first template, which is the official buildingSMART one
         self.psetqto.templates = self.psetqto.templates[0:1]
         self.psetqto.get_applicable.cache_clear()
@@ -62,6 +66,7 @@ class IfcSchema:
             self.psetqto.templates.append(ifcopenshell.open(path))
 
     def load(self):
+        # TODO: need to update for ifc4x3?
         for product in self.products:
             with open(os.path.join(self.schema_dir, f"{product}_IFC4.json")) as f:
                 setattr(self, product, json.load(f))
@@ -99,6 +104,6 @@ class IfcSchema:
 ifc = IfcSchema()
 
 
-def reload():
+def reload(schema_name):
     global ifc
-    ifc = IfcSchema()
+    ifc = IfcSchema(schema_name)

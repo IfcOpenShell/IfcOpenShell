@@ -49,3 +49,8 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.draw_system_arrows")
         row = layout.row()
         row.operator("bim.clean_wireframes")
+
+        row = layout.row(align=True)
+        row.operator("bim.enable_editing_sketch_extrusion_profile", text="Start Sketching")
+        row.operator("bim.edit_sketch_extrusion_profile", text="", icon="FILE_REFRESH")
+        row.operator("bim.disable_editing_sketch_extrusion_profile", text="", icon="CANCEL")

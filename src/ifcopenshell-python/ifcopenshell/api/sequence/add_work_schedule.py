@@ -22,16 +22,57 @@ from datetime import datetime
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, name="Unnamed", predefined_type="NOTDEFINED", start_time=None, work_plan=None):
+        """Add a new work schedule
+
+        A work schedule is a group of tasks, where the tasks are typically
+        either for maintenance or for construction scheduling.
+
+        :param name: The name of the work schedule.
+        :type name: str
+        :param predefined_type: The type of schedule, chosen from ACTUAL,
+            BASELINE, and PLANNED. Typically you would start with PLANNED, then
+            convert to a BASELINE when changes are made with separate schedules,
+            then have a parallel ACTUAL schedule.
+        :type predefined_type: str
+        :param start_time: The earlier start time when the schedule is relevant.
+            May be represented with an ISO standard string.
+        :type start_time: str,datetime.time,optional
+        :param work_plan: The IfcWorkPlan the schedule will be part of. If not
+            provided, the schedule will not be grouped in a work plan and would
+            exist as a top level schedule in the project. This is not
+            recommended.
+        :type work_plan: ifcopenshell.entity_instance.entity_instance,optional
+        :return: The newly created IfcWorkSchedule
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # This will hold all our construction schedules
+            work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+
+            # Let's imagine this is one of our schedules in our work plan.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model,
+                name="Construction Schedule A", work_plan=work_plan)
+
+            # Add a root task to represent the design milestones, and major
+            # project phases.
+            ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Milestones", identification="A")
+            ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Design", identification="B")
+            construction = ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Construction", identification="C")
+        """
         self.file = file
         self.settings = {
-            "name": "Unnamed",
-            "predefined_type": "NOTDEFINED",
-            "start_time": datetime.now(),
-            "work_plan": None,
+            "name": name,
+            "predefined_type": predefined_type,
+            "start_time": start_time or datetime.now(),
+            "work_plan": work_plan,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         work_schedule = ifcopenshell.api.run(

@@ -20,6 +20,7 @@ import os
 import json
 import time
 import ifcopenshell
+import ifcopenshell.util.attribute
 
 # This is highly experimental and incomplete, however, it may work for simple datasets.
 # In this simple implementation, we only support 2X3<->4 right now
@@ -49,27 +50,106 @@ def get_subtypes(entity):
 
 
 def reassign_class(ifc_file, element, new_class):
+    """
+    Attempts to change the class (entity name) of `element` to `new_class` by
+    removing element and recreating a similar instance of type `new_class`
+    with the same id.
+    
+    In certain cases it may affect the structure of inversely related instances:
+    - Multiple occurrences of reassigned instance within the same aggregate
+      (such as start and end-point of polyline)
+    - Occurrences of reassigned instance within an ordered aggregate
+      (such as IfcRelNests)
+    
+    It's unlikely that this affects real-world usage of this function.
+    """
+    
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
     try:
-        new_element = ifc_file.create_entity(new_class)
+        declaration = schema.declaration_by_name(new_class)
+    except:
+        print(f"Class of {element} could not be changed to {new_class} as the class does not exist")
+
+    info = element.get_info()
+
+    new_attributes = {}
+    for attribute in declaration.all_attributes():
+        name = attribute.name()
+        old_attribute = info.get(name, None)
+        if old_attribute:
+            if ifcopenshell.util.attribute.get_primitive_type(attribute) == "enum":
+                if old_attribute in ifcopenshell.util.attribute.get_enum_items(attribute):
+                    new_attributes[name] = old_attribute
+            else:
+                new_attributes[name] = old_attribute
+
+    inverse_pairs = ifc_file.get_inverse(element, allow_duplicate=True, with_attribute_indices=True)
+    ifc_file.remove(element)
+
+    try:
+        new_element = ifc_file.create_entity(new_class, id=info["id"], **new_attributes)
     except:
         print(f"Class of {element} could not be changed to {new_class}")
-        return element
-    new_attributes = [new_element.attribute_name(i) for i, attribute in enumerate(new_element)]
-    for i, attribute in enumerate(element):
-        try:
-            new_element[new_attributes.index(element.attribute_name(i))] = attribute
-        except:
-            continue
-    for inverse in ifc_file.get_inverse(element):
-        ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
-    ifc_file.remove(element)
+        old_class = info.pop("type")
+        return ifc_file.create_entity(old_class, **info)
+
+    for inverse_pair in inverse_pairs:
+        inverse, index = inverse_pair
+        if inverse[index] is None:
+            inverse[index] = new_element
+        elif isinstance(inverse[index], tuple):
+            item = list(inverse[index])
+            item.append(new_element)
+            inverse[index] = item
+
     return new_element
+
+
+class BatchReassignClass:
+    def __init__(self, file):
+        self.file = file
+        self.purge()
+
+    def reassign(self, element, new_class):
+        try:
+            new_element = self.file.create_entity(new_class)
+        except:
+            print(f"Class of {element} could not be changed to {new_class}")
+            return element
+        new_attributes = [new_element.attribute_name(i) for i, attribute in enumerate(new_element)]
+        for i, attribute in enumerate(element):
+            try:
+                new_element[new_attributes.index(element.attribute_name(i))] = attribute
+            except:
+                continue
+        for inverse_pair in self.file.get_inverse(element, allow_duplicate=True, with_attribute_indices=True):
+            inverse, index = inverse_pair
+            self.replacements.setdefault(inverse, {}).setdefault(index, {})[element] = new_element
+        self.to_delete.add(element)
+        return new_element
+
+    def unbatch(self):
+        for inverse, replacements in self.replacements.items():
+            for index, element_map in replacements.items():
+                value = inverse[index]
+                new = inverse.walk(lambda x : True, lambda v: element_map.get(v, v), value)
+                if value != new:
+                    inverse[index] = new
+
+        for element in self.to_delete:
+            self.file.remove(element)
+        self.purge()
+
+    def purge(self):
+        self.replacements = {}
+        self.to_delete = set()
 
 
 class Migrator:
     def __init__(self):
         self.migrated_ids = {}
         self.class_4_to_2x3 = json.load(open(os.path.join(cwd, "class_4_to_2x3.json"), "r"))
+        self.class_2x3_to_4 = json.load(open(os.path.join(cwd, "class_2x3_to_4.json"), "r"))
 
         # IFC4 classes, and their IFC4 attribute : IFC2X3 attributes
         self.attribute_4_to_2x3 = json.load(open(os.path.join(cwd, "attribute_4_to_2x3.json"), "r"))
@@ -125,6 +205,8 @@ class Migrator:
         }
 
     def migrate(self, element, new_file):
+        if element.id() == 0:
+            return new_file.create_entity(element.is_a(), element.wrappedValue)
         try:
             return new_file.by_id(self.migrated_ids[element.id()])
         except:
@@ -149,8 +231,7 @@ class Migrator:
             if new_file.schema == "IFC2X3":
                 new_element = new_file.create_entity(self.class_4_to_2x3[element.is_a()])
             elif new_file.schema == "IFC4":
-                print("Class migration to IFC4 not yet supported for", element)
-                pass
+                new_element = new_file.create_entity(self.class_2x3_to_4[element.is_a()])
         return new_element
 
     def migrate_attributes(self, element, new_file, new_element, new_element_schema):
@@ -214,13 +295,12 @@ class Migrator:
                 for item in value:
                     new_value.append(self.migrate(item, new_file))
                 value = new_value
-        setattr(new_element, attribute.name(), value)
+        if value is not None:
+            setattr(new_element, attribute.name(), value)
 
     def generate_default_value(self, attribute, new_file):
         if attribute.name() in self.default_values:
             return self.default_values[attribute.name()]
-        elif self.default_entities[attribute.name()]:
-            return self.default_entities[attribute.name()]
         elif attribute.name() == "OwnerHistory":
             self.default_entities[attribute.name()] = new_file.create_entity(
                 "IfcOwnerHistory",
@@ -249,4 +329,4 @@ class Migrator:
                     "CreationDate": int(time.time()),
                 },
             )
-        return self.default_entities[attribute.name()]
+        return self.default_entities.get(attribute.name(), None)

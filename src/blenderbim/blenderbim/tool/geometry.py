@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import struct
+import hashlib
 import logging
 import numpy as np
 import ifcopenshell
@@ -59,21 +61,49 @@ class Geometry(blenderbim.core.tool.Geometry):
                 obj.scale = Vector((1.0, 1.0, 1.0))
 
     @classmethod
-    def create_dynamic_voids(cls, obj):
-        element = tool.Ifc.get_entity(obj)
-        for rel in element.HasOpenings:
-            opening_obj = tool.Ifc.get_object(rel.RelatedOpeningElement)
-            if not opening_obj:
-                continue
-            modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-            modifier.operation = "DIFFERENCE"
-            modifier.object = opening_obj
-            modifier.solver = "EXACT"
-            modifier.use_self = True
-
-    @classmethod
     def delete_data(cls, data):
         bpy.data.meshes.remove(data)
+
+    @classmethod
+    def delete_ifc_object(cls, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+        if obj.users_collection and obj.users_collection[0].name == obj.name:
+            parent = ifcopenshell.util.element.get_aggregate(element)
+            if not parent:
+                parent = ifcopenshell.util.element.get_container(element)
+            if parent:
+                parent_obj = tool.Ifc.get_object(parent)
+                if parent_obj:
+                    parent_collection = bpy.data.collections.get(parent_obj.name)
+                    for child in obj.users_collection[0].children:
+                        parent_collection.children.link(child)
+            bpy.data.collections.remove(obj.users_collection[0])
+        if getattr(element, "FillsVoids", None):
+            bpy.ops.bim.remove_filling(filling=element.id())
+
+        if element.is_a("IfcOpeningElement"):
+            if element.HasFillings:
+                for rel in element.HasFillings:
+                    bpy.ops.bim.remove_filling(filling=rel.RelatedBuildingElement.id())
+            else:
+                if element.VoidsElements:
+                    bpy.ops.bim.remove_opening(opening_id=element.id())
+        else:
+            if getattr(element, "HasOpenings", None):
+                for rel in element.HasOpenings:
+                    bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
+            for port in ifcopenshell.util.system.get_ports(element):
+                blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
+            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+        try:
+            obj.name
+            bpy.data.objects.remove(obj)
+        except:
+            pass
 
     @classmethod
     def does_representation_id_exist(cls, representation_id):
@@ -85,7 +115,13 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def duplicate_object_data(cls, obj):
-        return obj.data.copy()
+        if obj.data:
+            return obj.data.copy()
+
+    @classmethod
+    def get_active_representation(cls, obj):
+        if obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
+            return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj):
@@ -133,6 +169,38 @@ class Geometry(blenderbim.core.tool.Geometry):
         return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
     @classmethod
+    def get_mesh_checksum(cls, mesh):
+        data_bytes = b""
+        if isinstance(mesh, bpy.types.Mesh):
+            vertices = mesh.vertices[:]
+            edges = mesh.edges[:]
+            faces = mesh.polygons[:]
+
+            # Convert mesh data to bytes
+            for v in vertices:
+                data_bytes += struct.pack("3f", *v.co)
+            for e in edges:
+                data_bytes += struct.pack("2i", *e.vertices)
+            for f in faces:
+                data_bytes += struct.pack("%di" % len(f.vertices), *f.vertices)
+        elif isinstance(mesh, bpy.types.Curve):
+            splines = mesh.splines[:]
+
+            for spline in splines:
+                if spline.type == "BEZIER":
+                    for bezier_point in spline.bezier_points:
+                        data_bytes += struct.pack("3f", *bezier_point.co)
+                        data_bytes += struct.pack("3f", *bezier_point.handle_left)
+                        data_bytes += struct.pack("3f", *bezier_point.handle_right)
+                else:
+                    for point in spline.points:
+                        data_bytes += struct.pack("4f", *point.co)
+
+        hasher = hashlib.sha1()
+        hasher.update(data_bytes)
+        return hasher.hexdigest()
+
+    @classmethod
     def get_object_data(cls, obj):
         return obj.data
 
@@ -165,6 +233,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     def get_styles(cls, obj):
         return [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
 
+    # TODO: multiple Literals?
     @classmethod
     def get_text_literal(cls, representation):
         texts = [i for i in representation.Items if i.is_a("IfcTextLiteral")]
@@ -180,15 +249,26 @@ class Geometry(blenderbim.core.tool.Geometry):
         return data.users != 0
 
     @classmethod
-    def import_representation(cls, obj, representation, enable_dynamic_voids=False):
+    def has_geometric_data(cls, obj):
+        if not obj.data:
+            return False
+        if isinstance(obj.data, bpy.types.Mesh):
+            return bool(obj.data.vertices)
+        elif isinstance(obj.data, bpy.types.Curve):
+            return bool(obj.data.splines)
+        return False
+
+    @classmethod
+    def import_representation(cls, obj, representation, apply_openings=True):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
         settings = ifcopenshell.geom.settings()
         settings.set(settings.WELD_VERTICES, True)
 
-        if representation.ContextOfItems.ContextIdentifier == "Body":
-            if element.is_a("IfcTypeProduct") or enable_dynamic_voids:
+        context = representation.ContextOfItems
+        if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
+            if element.is_a("IfcTypeProduct") or not apply_openings:
                 shape = ifcopenshell.geom.create_shape(settings, representation)
             else:
                 shape = ifcopenshell.geom.create_shape(settings, element)
@@ -244,6 +324,31 @@ class Geometry(blenderbim.core.tool.Geometry):
         return representation.RepresentationType == "MappedRepresentation"
 
     @classmethod
+    def is_meshlike(cls, representation):
+        if ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
+            "AdvancedBrep",
+            "Annotation2D",
+            "Annotation3D",
+            "BoundingBox",
+            "Brep",
+            "Curve",
+            "Curve2D",
+            "Curve3D",
+            "FillArea",
+            "GeometricCurveSet",
+            "GeometricSet",
+            "Point",
+            "PointCloud",
+            "Surface",
+            "Surface2D",
+            "Surface3D",
+            "SurfaceModel",
+            "Tessellation",
+        ):
+            return True
+        return False
+
+    @classmethod
     def is_type_product(cls, element):
         return element.is_a("IfcTypeProduct")
 
@@ -260,6 +365,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         # These are recorded separately because they have different numerical tolerances
         obj.BIMObjectProperties.location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
         obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+
+    @classmethod
+    def remove_connection(cls, connection):
+        tool.Ifc.get().remove(connection)
 
     @classmethod
     def rename_object(cls, obj, name):
@@ -292,6 +401,15 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def run_style_add_style(cls, obj=None):
         return blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=obj)
+
+    @classmethod
+    def select_connection(cls, connection):
+        obj = tool.Ifc.get_object(connection.RelatingElement)
+        if obj:
+            obj.select_set(True)
+        obj = tool.Ifc.get_object(connection.RelatedElement)
+        if obj:
+            obj.select_set(True)
 
     @classmethod
     def should_force_faceted_brep(cls):

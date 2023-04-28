@@ -23,6 +23,11 @@
 #ifndef IFCGEOMFILTER_H
 #define IFCGEOMFILTER_H
 
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 107800 && defined(_MSC_VER)
+#define BOOST_REGEX_NO_W32
+#endif
+
 #include "Kernel.h"
 #include "../ifcparse/IfcFile.h"
 

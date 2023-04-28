@@ -72,6 +72,25 @@ class TestAssign(NewFile):
         assert len(space_obj.users_collection) == 1
         assert space_obj.users_collection[0].name == space_obj.name
 
+    def test_in_decomposition_mode_multiple_assigns_do_not_create_duplicate_spatial_structure_collections(self):
+        bpy.ops.bim.create_project()
+        space_obj = bpy.data.objects.new("IfcSpace/Name", None)
+        space_element = tool.Ifc.get().createIfcSpace()
+        tool.Ifc.link(space_element, space_obj)
+        bpy.context.scene.collection.objects.link(space_obj)
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            tool.Ifc.get(),
+            relating_object=tool.Ifc.get().by_type("IfcSite")[0],
+            product=space_element,
+        )
+        subject.assign(space_obj)
+        subject.assign(space_obj)
+        assert bpy.data.collections.get("IfcSpace/Name")
+        assert bpy.data.collections.get("IfcSite/My Site")
+        assert not bpy.data.collections.get("IfcSpace/Name.001")
+        assert not bpy.data.collections.get("IfcSite/My Site.001")
+
     def test_in_decomposition_mode_spatial_zone_elements_are_not_placed_in_a_collection_of_the_same_name(self):
         bpy.ops.bim.create_project()
         space_obj = bpy.data.objects.new("IfcSpaceZone/Name", None)
@@ -115,6 +134,17 @@ class TestAssign(NewFile):
         subject.assign(element_obj)
         assert len(element_obj.users_collection) == 1
         assert element_obj.users_collection[0].name == element_obj.name
+
+    def test_in_decomposition_mode_multiple_assigns_do_not_create_duplicate_collections(self):
+        tool.Ifc.set(ifcopenshell.file())
+        element_obj = bpy.data.objects.new("IfcProject/Name", None)
+        element = tool.Ifc.get().createIfcProject()
+        tool.Ifc.link(element, element_obj)
+        bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(element_obj)
+        subject.assign(element_obj)
+        assert bpy.data.collections.get("IfcProject/Name")
+        assert not bpy.data.collections.get("IfcProject/Name.001")
 
     def test_in_decomposition_mode_existing_collections_are_reassigned_to_the_correct_place_in_the_hierarchy(self):
         bpy.ops.bim.create_project()
@@ -306,3 +336,12 @@ class TestSync(NewFile):
         col.objects.link(obj)
         subject.sync(obj)
         assert ifcopenshell.util.element.get_aggregate(element).is_a("IfcBuilding")
+
+    def test_openings_are_never_contained(self):
+        bpy.ops.bim.create_project()
+        obj = bpy.data.objects.new("Object", None)
+        element = tool.Ifc.get().createIfcOpeningElement()
+        tool.Ifc.link(element, obj)
+        bpy.data.collections.get("IfcSite/My Site").objects.link(obj)
+        subject.sync(obj)
+        assert ifcopenshell.util.element.get_container(element) is None

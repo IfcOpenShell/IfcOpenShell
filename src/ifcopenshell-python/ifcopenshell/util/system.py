@@ -17,6 +17,34 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+group_types = {
+    "IfcZone": ("IfcZone", "IfcSpace", "IfcSpatialZone"),
+    "IfcBuiltSystem": (
+        "IfcBuiltElement",
+        "IfcFurnishingElement",
+        "IfcElementAssembly",
+        "IfcTransportElement",
+    ),
+    "IfcBuildingSystem": (
+        "IfcBuildingElement",
+        "IfcFurnishingElement",
+        "IfcElementAssembly",
+        "IfcTransportElement",
+    ),
+    "IfcDistributionSystem": ("IfcDistributionElement",),
+    "IfcStructuralAnalysisModel": ("IfcStructuralMember", "IfcStructuralConnection"),
+    "IfcSystem": ("IfcProduct",),
+    "IfcGroup": ("IfcObjectDefinition",),
+}
+
+
+def is_assignable(product, system) -> bool:
+    for assignable in group_types.get(system.is_a(), ()):
+        if product.is_a(assignable):
+            return True
+    return False
+
+
 def get_system_elements(system):
     results = []
     for rel in system.IsGroupedBy:
@@ -27,11 +55,12 @@ def get_system_elements(system):
 def get_element_systems(element):
     results = []
     for rel in element.HasAssignments:
-        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in [
+        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in (
             "IfcSystem",
             "IfcDistributionSystem",
             "IfcBuildingSystem",
-        ]:
+            "IfcZone",
+        ):
             results.append(rel.RelatingGroup)
     return results
 
@@ -54,18 +83,34 @@ def get_connected_port(port):
 
 
 def get_connected_to(element):
-    # Note: this code is for IFC2X3. IFC4 has a different approach.
     results = []
-    for rel in element.HasPorts:
-        for rel2 in rel.RelatingPort.ConnectedTo:
-            results.extend([r.RelatedElement for r in rel2.RelatedPort.ContainedIn if r.RelatedElement != element])
-    return results
+    for port in ifcopenshell.util.system.get_ports(element):
+        for relConnectsPort in port.ConnectedTo:
+            for disPort in [relConnectsPort.RelatedPort,relConnectsPort.RelatingPort]:
+                if hasattr(disPort,"Nests"):
+                    for relNest in disPort.Nests:
+                        if relNest.RelatingObject != element:
+                            results.append(relNest.RelatingObject)
+                # IFC2X3 only, deprecated in IFC4
+                elif hasattr(disPort,"ContainedIn"):
+                    for relConPortToElement in disPort.ContainedIn:
+                        if relConPortToElement.RelatedElement != element:
+                            results.append(relConPortToElement.RelatedElement)
+    return(results)
 
 
 def get_connected_from(element):
-    # Note: this code is for IFC2X3. IFC4 has a different approach.
     results = []
-    for rel in element.HasPorts:
-        for rel2 in rel.RelatingPort.ConnectedFrom:
-            results.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn if r.RelatedElement != element])
-    return results
+    for port in ifcopenshell.util.system.get_ports(element):
+        for relConnectsPort in port.ConnectedFrom:
+            for disPort in [relConnectsPort.RelatedPort,relConnectsPort.RelatingPort]:
+                if hasattr(disPort,"Nests"):
+                    for relNest in disPort.Nests:
+                        if relNest.RelatingObject != element:
+                            results.append(relNest.RelatingObject)
+                # IFC2X3 only, deprecated in IFC4
+                elif hasattr(disPort,"ContainedIn"):
+                    for relConPortToElement in disPort.ContainedIn:
+                        if relConPortToElement.RelatedElement != element:
+                            results.append(relConPortToElement.RelatedElement)
+    return(results)

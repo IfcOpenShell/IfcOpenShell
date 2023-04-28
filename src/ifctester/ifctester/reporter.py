@@ -24,6 +24,7 @@ import datetime
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
+
 class Reporter:
     def __init__(self, ids):
         self.ids = ids
@@ -57,7 +58,7 @@ class Console(Reporter):
 
     def report(self):
         self.set_style("bold", "blue")
-        print(self.ids.info.get("title", "Untitled IDS"))
+        self.print(self.ids.info.get("title", "Untitled IDS"))
         for specification in self.ids.specifications:
             self.report_specification(specification)
         self.set_style("reset")
@@ -65,48 +66,48 @@ class Console(Reporter):
     def report_specification(self, specification):
         if specification.status is True:
             self.set_style("bold", "green")
-            print("[PASS] ", end="")
+            self.print("[PASS] ", end="")
         elif specification.status is False:
             self.set_style("bold", "red")
-            print("[FAIL] ", end="")
+            self.print("[FAIL] ", end="")
         elif specification.status is None:
             self.set_style("bold", "yellow")
-            print("[UNTESTED] ", end="")
+            self.print("[UNTESTED] ", end="")
 
         self.set_style("bold")
         total = len(specification.applicable_entities)
         total_successes = total - len(specification.failed_entities)
-        print(f"({total_successes}/{total}) ", end="")
+        self.print(f"({total_successes}/{total}) ", end="")
 
         if specification.minOccurs != 0:
-            print(f"*", end="")
+            self.print(f"*", end="")
 
-        print(specification.name)
+        self.print(specification.name)
 
         self.set_style("cyan")
-        print(" " * 4 + "Applies to:")
+        self.print(" " * 4 + "Applies to:")
         self.set_style("reset")
 
         for applicability in specification.applicability:
-            print(" " * 8 + applicability.to_string("applicability"))
+            self.print(" " * 8 + applicability.to_string("applicability"))
 
         if not total and specification.status is False:
             return
 
         self.set_style("cyan")
-        print(" " * 4 + "Requirements:")
+        self.print(" " * 4 + "Requirements:")
         self.set_style("reset")
 
         for requirement in specification.requirements:
             self.set_style("reset")
             self.set_style("red") if requirement.failed_entities else self.set_style("green")
-            print(" " * 8 + requirement.to_string("requirement"))
+            self.print(" " * 8 + requirement.to_string("requirement"))
             self.set_style("reset")
             for i, element in enumerate(requirement.failed_entities[0:10]):
-                print(" " * 12, end="")
+                self.print(" " * 12, end="")
                 self.report_reason(requirement.failed_reasons[i], element)
             if len(requirement.failed_entities) > 10:
-                print(" " * 12 + f"... {len(requirement.failed_entities)} in total ...")
+                self.print(" " * 12 + f"... {len(requirement.failed_entities)} in total ...")
         self.set_style("reset")
 
     def report_reason(self, reason, element):
@@ -116,15 +117,37 @@ class Console(Reporter):
                 self.set_style("purple")
             else:
                 self.set_style("reset")
-            print(substring, end="")
+            self.print(substring, end="")
             is_bold = not is_bold
         self.set_style("grey")
-        print(" - " + str(element))
+        self.print(" - " + str(element))
         self.set_style("reset")
 
     def set_style(self, *colours):
         if self.use_colour:
             sys.stdout.write("".join([self.colours[c] for c in colours]))
+
+    def print(self, txt, end=None):
+        if end is not None:
+            print(txt, end=end)
+        else:
+            print(txt)
+
+
+class Txt(Console):
+    def __init__(self, ids):
+        super().__init__(ids, use_colour=False)
+        self.text = ""
+
+    def print(self, txt, end=None):
+        self.text += txt + "\n" if end is None else txt
+
+    def to_string(self):
+        print(self.text)
+
+    def to_file(self, filepath):
+        with open(filepath, "w") as outfile:
+            return outfile.write(self.text)
 
 
 class Json(Reporter):
@@ -146,10 +169,7 @@ class Json(Reporter):
                 {
                     "description": requirement.to_string("requirement"),
                     "status": requirement.status,
-                    "failed_entities": [
-                        {"reason": requirement.failed_reasons[i], "element": str(e)}
-                        for i, e in enumerate(requirement.failed_entities[0:10])
-                    ],
+                    "failed_entities": self.report_failed_entities(requirement),
                 }
             )
         total = len(specification.applicable_entities)
@@ -164,6 +184,12 @@ class Json(Reporter):
             "required": specification.minOccurs != 0,
             "requirements": requirements,
         }
+
+    def report_failed_entities(self, requirement):
+        return [
+            {"reason": requirement.failed_reasons[i], "element": str(e)}
+            for i, e in enumerate(requirement.failed_entities)
+        ]
 
     def to_string(self):
         import json
@@ -204,103 +230,123 @@ class Html(Json):
                 return outfile.write(pystache.render(file.read(), self.results))
 
 
-class BcfHandler(logging.StreamHandler):
-    """Logging handler for creation of BCF report files.
+class Ods(Json):
+    def __init__(self, ids):
+        super().__init__(ids)
+        self.colours = {
+            "h": "cccccc",  # Header
+            "p": "97cc64",  # Pass
+            "f": "fb5a3e",  # Fail
+            "t": "ffffff",  # Regular text
+        }
+        self.results = {}
 
-    :param project_name: defaults to "IDS Project"
-    :type project_name: str, optional
-    :param author: Email of the person creating the BCF report, defaults to "your@email.com"
-    :type author: str, optional
-    :param filepath: Path to save the BCF report, defaults to None
-    :type filepath: str, optional
-    :param report_valid: True if you want to list all the compliant cases as well, defaults to False
-    :type report_valid: bool, optional
+    def to_file(self, filepath):
+        from odf.opendocument import OpenDocumentSpreadsheet
+        from odf.style import Style, TableCellProperties
+        from odf.table import Table, TableRow, TableCell
+        from odf.text import P
 
-    Example::
+        self.doc = OpenDocumentSpreadsheet()
 
-        bcf_handler = BcfHandler(
-            project_name="Default IDS Project",
-            author="your@email.com",
-            filepath="example.bcf",
-        )
-        logger = logging.getLogger("IDS_Logger")
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
-        logger.addHandler(bcf_handler)
-    """
+        self.cell_formats = {}
+        for key, value in self.colours.items():
+            style = Style(name=key, family="table-cell")
+            style.addElement(TableCellProperties(backgroundcolor="#" + value))
+            self.doc.automaticstyles.addElement(style)
+            self.cell_formats[key] = style
 
-    def __init__(self, project_name="IDS Project", author="your@email.com", filepath=None, report_valid=False):
-        import numpy as np
-        import ifcopenshell.util.placement
+        table = Table(name=self.results["title"])
+        tr = TableRow()
+        for header in ["Specification", "Status", "Total Compliant", "Total Applicable", "Percentage Compliant"]:
+            tc = TableCell(valuetype="string", stylename="h")
+            tc.addElement(P(text=header))
+            tr.addElement(tc)
+        table.addElement(tr)
+
+        rows = []
+        for specification in self.results["specifications"]:
+            rows.append(
+                [
+                    specification["name"],
+                    "Pass" if specification["status"] else "Fail",
+                    str(specification["total_successes"]),
+                    str(specification["total"]),
+                    str(specification["percentage"]),
+                ]
+            )
+
+        for row in rows:
+            tr = TableRow()
+            c = 0
+            stylename = "p" if row[1] == "Pass" else "f"
+            for col in row:
+                tc = TableCell(valuetype="string", stylename=stylename)
+                if col is None:
+                    col = "NULL"
+                tc.addElement(P(text=col))
+                tr.addElement(tc)
+                c += 1
+            table.addElement(tr)
+        self.doc.spreadsheet.addElement(table)
+
+        for specification in self.results["specifications"]:
+            if specification["status"]:
+                continue
+            table = Table(name=specification["name"])
+            tr = TableRow()
+            for header in ["Requirement", "Problem", "Element"]:
+                tc = TableCell(valuetype="string", stylename="h")
+                tc.addElement(P(text=header))
+                tr.addElement(tc)
+            table.addElement(tr)
+            for requirement in specification["requirements"]:
+                if requirement["status"]:
+                    continue
+                for failure in requirement["failed_entities"]:
+                    row = [
+                        requirement["description"],
+                        failure.get("reason", "No reason provided"),
+                        str(failure.get("element", "No element found")),
+                    ]
+                    tr = TableRow()
+                    c = 0
+                    for col in row:
+                        tc = TableCell(valuetype="string", stylename="t")
+                        if col is None:
+                            col = "NULL"
+                        tc.addElement(P(text=col))
+                        tr.addElement(tc)
+                        c += 1
+                    table.addElement(tr)
+            self.doc.spreadsheet.addElement(table)
+
+        self.doc.save(filepath, True)
+
+
+class Bcf(Json):
+    def report_failed_entities(self, requirement):
+        return [
+            {"reason": requirement.failed_reasons[i], "element": e} for i, e in enumerate(requirement.failed_entities)
+        ]
+
+    def to_file(self, filepath):
         from bcf.v2.bcfxml import BcfXml
-        from bcf.v2 import data as bcf
 
-        logging.StreamHandler.__init__(self)
-        if report_valid:
-            self.setLevel(logging.INFO)
-        else:
-            self.setLevel(logging.ERROR)
-        self.bcf = BcfXml()
-        self.bcf.author = author
-        self.bcf.new_project()
-        self.bcf.project.name = project_name
-        self.filepath = filepath
-        self.bcf.edit_project()
-
-    def emit(self, log_content):
-        """Triggered on each use of logging with the BCF handler enabled.
-
-        :param log_content: default logger message
-        :type log_content: string|dict
-        """
-        topic = bcf.Topic()
-        topic.title = log_content.msg["sentence"].split(".\n")[1]
-        topic.description = log_content.msg["sentence"].split(".\n")[0]
-        self.bcf.add_topic(topic)
-        # try:  # Add viewpoint and link to ifc object
-        viewpoint = bcf.Viewpoint()
-        viewpoint.perspective_camera = bcf.PerspectiveCamera()
-        ifc_elem = log_content.msg["ifc_element"]
-        # ifc_elem = ifc_file.by_guid(log_content.msg["guid"])
-        target_position = np.array(ifcopenshell.util.placement.get_local_placement(ifc_elem.ObjectPlacement))
-        target_position = target_position[:, 3][0:3]
-        camera_position = target_position + np.array((5, 5, 5))
-        viewpoint.perspective_camera.camera_view_point.x = camera_position[0]
-        viewpoint.perspective_camera.camera_view_point.y = camera_position[1]
-        viewpoint.perspective_camera.camera_view_point.z = camera_position[2]
-        camera_direction = camera_position - target_position
-        camera_direction = camera_direction / np.linalg.norm(camera_direction)
-        camera_right = np.cross(np.array([0.0, 0.0, 1.0]), camera_direction)
-        camera_right = camera_right / np.linalg.norm(camera_right)
-        camera_up = np.cross(camera_direction, camera_right)
-        camera_up = camera_up / np.linalg.norm(camera_up)
-        rotation_transform = np.zeros((4, 4))
-        rotation_transform[0, :3] = camera_right
-        rotation_transform[1, :3] = camera_up
-        rotation_transform[2, :3] = camera_direction
-        rotation_transform[-1, -1] = 1
-        translation_transform = np.eye(4)
-        translation_transform[:3, -1] = -camera_position
-        look_at_transform = np.matmul(rotation_transform, translation_transform)
-        mat = np.linalg.inv(look_at_transform)
-        viewpoint.perspective_camera.camera_direction.x = mat[0][2] * -1
-        viewpoint.perspective_camera.camera_direction.y = mat[1][2] * -1
-        viewpoint.perspective_camera.camera_direction.z = mat[2][2] * -1
-        viewpoint.perspective_camera.camera_up_vector.x = mat[0][1]
-        viewpoint.perspective_camera.camera_up_vector.y = mat[1][1]
-        viewpoint.perspective_camera.camera_up_vector.z = mat[2][1]
-        viewpoint.components = bcf.Components()
-        c = bcf.Component()
-        c.ifc_guid = log_content.msg["guid"]
-        viewpoint.components.selection.append(c)
-        viewpoint.components.visibility = bcf.ComponentVisibility()
-        viewpoint.components.visibility.default_visibility = True
-        viewpoint.snapshot = None
-        self.bcf.add_viewpoint(topic, viewpoint)
-
-    def flush(self):
-        """Saves the BCF report to file. Triggered at the end of the validation process."""
-        if not self.filepath:
-            self.filepath = os.getcwd() + r"\IDS_report.bcf"
-        if not (self.filepath.endswith(".bcf") or self.filepath.endswith(".bcfzip")):
-            self.filepath = self.filepath + r"\IDS_report.bcf"
-        self.bcf.save_project(self.filepath)
+        bcfxml = BcfXml.create_new(self.results["title"])
+        for specification in self.results["specifications"]:
+            if specification["status"]:
+                continue
+            for requirement in specification["requirements"]:
+                if requirement["status"]:
+                    continue
+                for failure in requirement["failed_entities"]:
+                    element = failure["element"]
+                    title = f"{element.id()}/{element.is_a()}/"
+                    title += getattr(element, "Name", None) or "Unnamed"
+                    title += " - " + failure.get("reason", "No reason")
+                    description = f'{specification["name"]} - {requirement["description"]}'
+                    topic = bcfxml.add_topic(title, description, "IfcTester")
+                    if element.is_a("IfcElement"):
+                        topic.add_viewpoint(element)
+        bcfxml.save_project(filepath)

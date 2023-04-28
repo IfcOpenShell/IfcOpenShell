@@ -29,6 +29,8 @@ def refresh():
     ObjectPsetsData.is_loaded = False
     ObjectQtosData.is_loaded = False
     MaterialPsetsData.is_loaded = False
+    MaterialSetPsetsData.is_loaded = False
+    MaterialSetItemPsetsData.is_loaded = False
     TaskQtosData.is_loaded = False
     ResourceQtosData.is_loaded = False
     ResourcePsetsData.is_loaded = False
@@ -94,7 +96,40 @@ class MaterialPsetsData(Data):
 
     @classmethod
     def load(cls):
-        cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object.active_material))}
+        cls.data = {
+            "ifc_definition_id": bpy.context.active_object.active_material.BIMObjectProperties.ifc_definition_id,
+            "psets": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object.active_material)),
+        }
+        cls.is_loaded = True
+
+
+class MaterialSetPsetsData(Data):
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        psets = {}
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            if material and "Set" in material.is_a():
+                psets = cls.psetqtos(material)
+        cls.data = {"psets": psets}
+        cls.is_loaded = True
+
+
+class MaterialSetItemPsetsData(Data):
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        psets = {}
+        ifc_definition_id = bpy.context.active_object.BIMObjectMaterialProperties.active_material_set_item_id
+        if ifc_definition_id:
+            psets = cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id))
+        cls.data = {"psets": psets}
         cls.is_loaded = True
 
 
@@ -173,4 +208,8 @@ class AddEditCustomPropertiesData:
     @classmethod
     def primary_measure_type(cls):
         schema = tool.Ifc.schema()
-        return [(t, t, "") for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])]
+        version = tool.Ifc.get_schema()
+        return [
+            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
+            for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
+        ]

@@ -20,11 +20,43 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None):
+        """Removes a product
+
+        This is effectively a smart delete function that not only removes a
+        product, but also all of its relationships. It is always recommended to
+        use this function to prevent orphaned data in your IFC model.
+
+        This is intended to be used for removing:
+
+        - IfcAnnotation
+        - IfcElement
+        - IfcElementType
+        - IfcSpatialElement
+        - IfcSpatialElementType
+
+        For example, geometric representations are removed. Placement
+        coordinates are also removed. Properties are removed. Material, type,
+        containment, aggregation, and nesting relationships are removed (but
+        naturally, the materials, types, containers, etc themselves remain).
+
+        :param product: The element to remove.
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # We have a wall.
+            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+            # No we don't.
+            ifcopenshell.api.run("root.remove_product", model, product=wall)
+        """
         self.file = file
-        self.settings = {"product": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"product": product}
 
     def execute(self):
         representations = []
@@ -52,10 +84,33 @@ class Usecase:
                 ifcopenshell.api.run("grid.remove_grid_axis", self.file, axis=axis)
 
         # TODO: remove object placement and other relationships
-        for inverse in self.file.get_inverse(self.settings["product"]):
-            if inverse.is_a("IfcRelFillsElement"):
+        for inverse_id in [i.id() for i in self.file.get_inverse(self.settings["product"])]:
+            try:
+                inverse = self.file.by_id(inverse_id)
+            except:
+                continue
+            if inverse.is_a("IfcRelDefinesByProperties"):
+                ifcopenshell.api.run(
+                    "pset.remove_pset",
+                    self.file,
+                    product=self.settings["product"],
+                    pset=inverse.RelatingPropertyDefinition,
+                )
+            elif inverse.is_a("IfcRelAssociatesMaterial"):
+                ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
+            elif inverse.is_a("IfcRelDefinesByType"):
+                if inverse.RelatingType == self.settings["product"]:
+                    for related_object in inverse.RelatedObjects:
+                        ifcopenshell.api.run("type.unassign_type", self.file, related_object=related_object)
+                else:
+                    ifcopenshell.api.run("type.unassign_type", self.file, related_object=self.settings["product"])
+            elif inverse.is_a("IfcRelSpaceBoundary"):
+                self.file.remove(inverse)
+            elif inverse.is_a("IfcRelFillsElement"):
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelVoidsElement"):
+                self.file.remove(inverse)
+            elif inverse.is_a("IfcRelServicesBuildings"):
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelNests"):
                 if inverse.RelatingObject == self.settings["product"]:
@@ -64,4 +119,20 @@ class Usecase:
                             ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
                     if not inverse.RelatedObjects:
                         self.file.remove(inverse)
+            elif inverse.is_a("IfcRelAggregates"):
+                if inverse.RelatingObject == self.settings["product"] or len(inverse.RelatedObjects) == 1:
+                    self.file.remove(inverse)
+            elif inverse.is_a("IfcRelContainedInSpatialStructure"):
+                if inverse.RelatingStructure == self.settings["product"] or len(inverse.RelatedElements) == 1:
+                    self.file.remove(inverse)
+            elif inverse.is_a("IfcRelConnectsPathElements"):
+                self.file.remove(inverse)
+            elif inverse.is_a("IfcRelAssignsToGroup"):
+                if len(inverse.RelatedObjects) == 1:
+                    self.file.remove(inverse)
+            elif inverse.is_a("IfcRelAssignsToProduct"):
+                if inverse.RelatingProduct == self.settings["product"]:
+                    self.file.remove(inverse)
+                elif len(inverse.RelatedObjects) == 1:
+                    self.file.remove(inverse)
         self.file.remove(self.settings["product"])

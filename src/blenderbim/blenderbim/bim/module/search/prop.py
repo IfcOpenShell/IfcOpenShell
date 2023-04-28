@@ -130,6 +130,10 @@ def load_selection_options(self, context):
         elif self.selector == "IfcPropertySet":
             psets = Selector.parse(ifc, ".IfcPropertySet")
             options = set([o.Name for o in psets])
+        elif self.selector == "Attribute":
+            attributes = ["GlobalId", "Name", "Description", "ObjectType", "Tag", "PredefinedType"]
+            for a in attributes:
+                options.append((a, a, ""))            
 
     elif load_option == "sub_options":
         if self.selector in ["IfcSpatialElement", "IfcElementType"]:
@@ -207,11 +211,6 @@ class SearchQueryFilter(PropertyGroup, IfcSelector):
         name="Filter selection by",
         update=load_selection_options,
         default="-",
-    )
-    attribute: EnumProperty(
-        items=[(i, i, i) for i in ["GlobalId", "Name", "Description", "ObjectType", "Tag", "PredefinedType"]],
-        name="Filter selection by",
-        update=load_selection_options,
     )
 
 

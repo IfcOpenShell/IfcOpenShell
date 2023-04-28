@@ -20,11 +20,32 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, actor=None):
+        """Removes an actor
+
+        :param actor: The IfcActor to remove.
+        :type actor: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Setup an organisation with a single role
+            organisation = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="AWB", name="Architects Without Ballpens")
+            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation)
+            ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "ARCHITECT"})
+
+            # Assign that organisation to a newly created actor
+            actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
+
+            # Actually we need ballpens on this project
+            ifcopenshell.api.run("owner.remove_actor", model, actor=actor)
+        """
         self.file = file
-        self.settings = {"actor": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"actor": actor}
 
     def execute(self):
         self.file.remove(self.settings["actor"])

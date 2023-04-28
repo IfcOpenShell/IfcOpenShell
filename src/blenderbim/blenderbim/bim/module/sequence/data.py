@@ -19,10 +19,13 @@
 import bpy
 import blenderbim.tool as tool
 import ifcopenshell
+from ifcopenshell.util.doc import get_predefined_type_doc
 
 
 def refresh():
     SequenceData.is_loaded = False
+    WorkPlansData.is_loaded = False
+    TaskICOMData.is_loaded = False
 
 
 class SequenceData:
@@ -32,6 +35,7 @@ class SequenceData:
     @classmethod
     def load(cls):
         cls.data = {
+            "predefined_types": cls.get_work_schedule_types(),
             "has_work_plans": cls.has_work_plans(),
             "has_work_schedules": cls.has_work_schedules(),
             "has_work_calendars": cls.has_work_calendars(),
@@ -72,7 +76,7 @@ class SequenceData:
     def load_work_plans(cls):
         cls.data["work_plans"] = {}
         for work_plan in tool.Ifc.get().by_type("IfcWorkPlan"):
-            data = {"Name": work_plan.Name}
+            data = {"Name": work_plan.Name or "Unnamed"}
             data["IsDecomposedBy"] = []
             for rel in work_plan.IsDecomposedBy:
                 data["IsDecomposedBy"].extend([o.id() for o in rel.RelatedObjects])
@@ -84,6 +88,8 @@ class SequenceData:
         cls.data["work_schedules"] = {}
         for work_schedule in tool.Ifc.get().by_type("IfcWorkSchedule"):
             data = work_schedule.get_info()
+            if not data["Name"]:
+                data["Name"] = "Unnamed"
             del data["OwnerHistory"]
             if data["Creators"]:
                 data["Creators"] = [p.id() for p in data["Creators"]]
@@ -107,6 +113,8 @@ class SequenceData:
         for work_calendar in tool.Ifc.get().by_type("IfcWorkCalendar"):
             data = work_calendar.get_info()
             del data["OwnerHistory"]
+            if not data["Name"]:
+                data["Name"] = "Unnamed"
             data["WorkingTimes"] = [t.id() for t in work_calendar.WorkingTimes or []]
             data["ExceptionTimes"] = [t.id() for t in work_calendar.ExceptionTimes or []]
             cls.data["work_calendars"][work_calendar.id()] = data
@@ -216,3 +224,79 @@ class SequenceData:
                     if rel.RelatingControl.is_a("IfcWorkCalendar"):
                         data["HasAssignmentsWorkCalendar"].append(rel.RelatingControl.id())
             cls.data["tasks"][task.id()] = data
+
+    @classmethod
+    def get_work_schedule_types(cls):
+        results = []
+        declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")
+        version = tool.Ifc.get_schema()
+        for attribute in declaration.attributes():
+            if attribute.name() == "PredefinedType":
+                results.extend(
+                    [
+                        (e, e, get_predefined_type_doc(version, "IfcWorkSchedule", e))
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                    ]
+                )
+                break
+        return results
+
+
+class WorkPlansData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "total_work_plans": cls.total_work_plans(),
+            "work_plans": cls.work_plans(),
+            "has_work_schedules": cls.has_work_schedules(),
+            "active_work_plan_schedules": cls.active_work_plan_schedules(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def total_work_plans(cls):
+        return len(tool.Ifc.get().by_type("IfcWorkPlan"))
+
+    @classmethod
+    def work_plans(cls):
+        results = []
+        for work_plan in tool.Ifc.get().by_type("IfcWorkPlan"):
+            results.append({"id": work_plan.id(), "name": work_plan.Name or "Unnamed"})
+        return results
+
+    @classmethod
+    def has_work_schedules(cls):
+        return len(tool.Ifc.get().by_type("IfcWorkSchedule"))
+
+    @classmethod
+    def active_work_plan_schedules(cls):
+        results = []
+        if not bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id:
+            return []
+        for rel in tool.Ifc.get().by_id(bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id).IsDecomposedBy:
+            for work_schedule in rel.RelatedObjects:
+                results.append({"id": work_schedule.id(), "name": work_schedule.Name or "Unnamed"})
+        return results
+
+
+class TaskICOMData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"can_active_resource_be_assigned": cls.can_active_resource_be_assigned()}
+        cls.is_loaded = True
+
+    @classmethod
+    def can_active_resource_be_assigned(cls):
+        resource_props = bpy.context.scene.BIMResourceProperties
+        resource_tprops = bpy.context.scene.BIMResourceTreeProperties
+        total_resources = len(resource_tprops.resources)
+        if total_resources and resource_props.active_resource_index < total_resources:
+            resource_id = resource_tprops.resources[resource_props.active_resource_index].ifc_definition_id
+            return not tool.Ifc.get().by_id(resource_id).is_a("IfcCrewResource")
+        return False

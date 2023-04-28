@@ -54,7 +54,7 @@ class BIM_PT_class(Panel):
                 row.operator("bim.disable_reassign_class", icon="CANCEL", text="")
                 self.draw_class_dropdowns(
                     context,
-                    root_prop.getIfcPredefinedTypes(context.scene.BIMRootProperties, context),
+                    root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context),
                     is_reassigning_class=True,
                 )
             else:
@@ -67,7 +67,7 @@ class BIM_PT_class(Panel):
                 if IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcRoot"):
                     row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
         else:
-            ifc_predefined_types = root_prop.getIfcPredefinedTypes(context.scene.BIMRootProperties, context)
+            ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
             self.draw_class_dropdowns(context, ifc_predefined_types)
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")

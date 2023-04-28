@@ -58,6 +58,7 @@ class draw_settings:
     profile_threshold: int = -1
     cells: bool = True
     merge_cells: bool = False
+    include_projection: bool = True
 
 
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
@@ -116,8 +117,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
     sr.setPolygonal(True)
     sr.setUseNamespace(True)
 
-    # sane default?
-    sr.setAlwaysProject(True)
+    sr.setAlwaysProject(settings.include_projection)
 
     sr.setProfileThreshold(settings.profile_threshold)
     sr.setBoundingRectangle(settings.width, settings.height)
@@ -201,6 +201,10 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
         projection, g1 = g1, g1.parentNode
         
         svgfill_context = W.context(W.FILTERED_CARTESIAN_QUOTIENT, 1.0e-3)
+
+        # remove duplicates (without tolerance)
+        ls = list(map(tuple, set(map(frozenset, ls))))
+
         svgfill_context.add(ls)
         
         if settings.merge_cells:

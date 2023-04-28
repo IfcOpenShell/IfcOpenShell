@@ -21,14 +21,34 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, group=None):
+        """Unassigns a product from a group
+
+        If the product isn't assigned to the group, nothing will happen.
+
+        :param product: A IfcProduct element to unassign from the group
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :param group: The IfcGroup to unassign from
+        :type group: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
+            furniture = model.by_type("IfcFurniture")
+            ifcopenshell.api.run("group.assign_group", model, products=furniture, group=group)
+
+            bad_furniture = furniture[0]
+            ifcopenshell.api.run("group.unassign_group", model, product=bad_furniture, group=group)
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "group": None,
+            "product": product,
+            "group": group,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if not self.settings["group"].IsGroupedBy:

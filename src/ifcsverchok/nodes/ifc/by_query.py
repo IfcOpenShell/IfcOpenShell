@@ -1,6 +1,5 @@
-
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcSverchok.
 #
@@ -21,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.selector
 import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -29,21 +29,22 @@ from sverchok.data_structure import updateNode
 class SvIfcByQuery(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcByQuery"
     bl_label = "IFC By Query"
-    file: StringProperty(name="file", update=updateNode)
-    query: StringProperty(name="query", update=updateNode)
+    query: StringProperty(name="Query", update=updateNode)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "file").prop_name = "file"
         self.inputs.new("SvStringsSocket", "query").prop_name = "query"
-        self.outputs.new("SvStringsSocket", "entity")
+        self.outputs.new("SvStringsSocket", "Entity")
 
     def process(self):
-        self.sv_input_names = ["file", "query"]
+        if not self.inputs["query"].sv_get()[0][0]:
+            return
+        self.file = SvIfcStore.get_file()
+        self.sv_input_names = ["query"]
         super().process()
 
-    def process_ifc(self, file, query):
+    def process_ifc(self, query):
         selector = ifcopenshell.util.selector.Selector()
-        self.outputs["entity"].sv_set([selector.parse(file, query)])
+        self.outputs["Entity"].sv_set([selector.parse(self.file, query)])
 
 
 def register():

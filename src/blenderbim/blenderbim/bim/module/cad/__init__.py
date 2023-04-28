@@ -17,14 +17,20 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import operator, workspace
+from . import operator, prop, workspace
 
 classes = (
+    operator.AlignViewToProfile,
+    operator.AddIfcArcIndexFillet,
+    operator.AddIfcCircle,
+    operator.AddRectangle,
     operator.CadArcFrom2Points,
     operator.CadArcFrom3Points,
     operator.CadFillet,
     operator.CadMitre,
+    operator.CadOffset,
     operator.CadTrimExtend,
+    prop.BIMCadProperties,
     workspace.CadHotkey,
 )
 
@@ -32,8 +38,10 @@ classes = (
 def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.CadTool, after={"builtin.transform"}, separator=True, group=True)
+    bpy.types.Scene.BIMCadProperties = bpy.props.PointerProperty(type=prop.BIMCadProperties)
 
 
 def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.CadTool)
+    del bpy.types.Scene.BIMCadProperties

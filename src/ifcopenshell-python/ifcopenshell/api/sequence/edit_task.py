@@ -18,11 +18,37 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, task=None, attributes=None):
+        """Edits the attributes of an IfcTask
+
+        For more information about the attributes and data types of an
+        IfcTask, consult the IFC documentation.
+
+        :param task: The IfcTask entity you want to edit
+        :type task: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's imagine we are creating a construction schedule. All tasks
+            # need to be part of a work schedule.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+
+            # Add a root task to represent the design milestones, and major
+            # project phases.
+            task = ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Milestones", identification="A")
+
+            # Change the identification
+            ifcopenshell.api.run("sequence.edit_task", model, task=task, attributes={"Identification": "M"})
+        """
         self.file = file
-        self.settings = {"task": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"task": task, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

@@ -20,11 +20,12 @@ import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.type.data import TypeData
 
 
 class BIM_PT_type(Panel):
-    bl_label = "IFC Construction Type"
+    bl_label = "IFC Type"
     bl_idname = "BIM_PT_type"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -69,16 +70,17 @@ class BIM_PT_type(Panel):
 
             row.prop(props, "relating_type_class", text="")
             if type_prop.get_relating_type(None, context):
-                row.prop(props, "relating_type", text="")
+                prop_with_search(row, props, "relating_type", text="")
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
             else:
                 row.label(text="No Types Found")
             row.operator("bim.disable_editing_type", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
-            if TypeData.data["type_name"]:
-                row.label(text=TypeData.data["type_name"])
-                row.operator("bim.select_type", icon="TRACKER", text="")
+            if TypeData.data["relating_type"]:
+                row.label(text=TypeData.data["relating_type"]["name"])
+                op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
+                op.relating_type = TypeData.data["relating_type"]["id"]
                 row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_type", icon="X", text="")

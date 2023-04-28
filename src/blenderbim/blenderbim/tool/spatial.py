@@ -133,3 +133,55 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix):
         target_obj.matrix_world = relative_to_obj.matrix_world @ matrix
+
+    @classmethod
+    def select_products(cls, products, unhide=False):
+        bpy.ops.object.select_all(action="DESELECT")
+        for product in products:
+            obj = tool.Ifc.get_object(product)
+            if obj and bpy.context.view_layer.objects.get(obj.name):
+                obj.select_set(True)
+                if unhide:
+                    obj.hide_set(False)
+
+    @classmethod
+    def filter_products(cls, products, action):
+        objects = [tool.Ifc.get_object(product) for product in products if tool.Ifc.get_object(product)]
+        if action == "select":
+            [obj.select_set(True) for obj in objects]
+        elif action == "isolate":
+            [obj.hide_set(False) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
+            [obj.hide_set(True) for obj in bpy.context.visible_objects if not obj in objects and bpy.context.view_layer.objects.get(obj.name)]  # this is slow
+        elif action == "unhide":
+            [obj.hide_set(False) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
+        elif action == "hide":
+            [obj.hide_set(True) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
+
+    @classmethod
+    def deselect_objects(cls):
+        [obj.select_set(False) for obj in bpy.context.selected_objects]
+        # bpy.ops.object.select_all(action='DESELECT')
+
+    @classmethod
+    def show_scene_objects(cls):
+        [obj.hide_set(False) for obj in bpy.data.scenes["Scene"].objects if bpy.context.view_layer.objects.get(obj.name)]
+
+    @classmethod
+    def get_selected_products(cls):
+        for obj in bpy.context.selected_objects:
+            entity = tool.Ifc.get_entity(obj)
+            if entity and entity.is_a("IfcProduct"):
+                yield entity
+
+    @classmethod
+    def get_selected_product_types(cls):
+        for obj in bpy.context.selected_objects:
+            entity = tool.Ifc.get_entity(obj)
+            if entity and entity.is_a("IfcTypeProduct"):
+                yield entity
+
+    @classmethod
+    def copy_xy(cls, src_obj, destination_obj):
+        z = src_obj.location[2]
+        src_obj.location = (destination_obj.location[0], destination_obj.location[1], z)
+

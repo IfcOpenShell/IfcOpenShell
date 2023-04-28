@@ -25,7 +25,6 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.unit as core
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.unit.data import Data
 
 
 class Operator:

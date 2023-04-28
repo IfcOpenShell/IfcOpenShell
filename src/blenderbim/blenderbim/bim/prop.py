@@ -16,15 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
 import os
 import bpy
 import json
 import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
+from ifcopenshell.util.doc import (
+    get_entity_doc,
+    get_attribute_doc,
+    get_property_set_doc,
+    get_property_doc,
+    get_predefined_type_doc,
+)
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -97,7 +106,7 @@ def cache_string(s):
 cache_string.data = {}
 
 
-def getAttributeEnumValues(prop, context):
+def get_attribute_enum_values(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
     data = json.loads(prop.enum_items)
@@ -120,6 +129,9 @@ def getAttributeEnumValues(prop, context):
                     "",
                 )
             )
+
+    if prop.enum_descriptions:
+        items = [(identifier, name, prop.enum_descriptions[i].name) for i, (identifier, name, _) in enumerate(items)]
 
     return items
 
@@ -161,6 +173,18 @@ def update_section_color(self, context):
         pass
 
 
+def update_section_line_decorator(self, context):
+    compare_node_group = bpy.data.node_groups.get("Section Compare")
+    if compare_node_group is None:
+        return
+    for node in compare_node_group.nodes:
+        if not hasattr(node, "operation"):
+            continue
+        if node.operation == "COMPARE":
+            node.inputs[2].default_value = self.section_line_decorator_width
+            break
+
+
 class StrProperty(PropertyGroup):
     pass
 
@@ -169,7 +193,7 @@ class ObjProperty(PropertyGroup):
     obj: bpy.props.PointerProperty(type=bpy.types.Object)
 
 
-def updateAttributeValue(self, context):
+def update_attribute_value(self, context):
     value_name = self.get_value_name()
     if value_name:
         value_names = [value_name]
@@ -183,22 +207,59 @@ def updateAttributeValue(self, context):
             self.is_null = False
 
 
+def set_int_value(self, new_value):
+    set_numerical_value(self, "int_value", new_value)
+
+
+def set_float_value(self, new_value):
+    set_numerical_value(self, "float_value", new_value)
+
+
+def set_numerical_value(self, value_name, new_value):
+    if self.value_min_constraint and new_value < self.value_min:
+        new_value = self.value_min
+    elif self.value_max_constraint and new_value > self.value_max:
+        new_value = self.value_max
+    self[value_name] = new_value
+
+
 class Attribute(PropertyGroup):
+    tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    ifc_class: StringProperty(name="Ifc Class")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value", update=updateAttributeValue)
-    bool_value: BoolProperty(name="Value", update=updateAttributeValue)
-    int_value: IntProperty(name="Value", update=updateAttributeValue)
-    float_value: FloatProperty(name="Value", update=updateAttributeValue)
+    string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
+    bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
+    int_value: IntProperty(
+        name="Value",
+        description=tooltip,
+        update=update_attribute_value,
+        get=lambda self: int(self.get("int_value", 0)),
+        set=set_int_value,
+    )
+    float_value: FloatProperty(
+        name="Value",
+        description=tooltip,
+        update=update_attribute_value,
+        get=lambda self: float(self.get("float_value", 0.0)),
+        set=set_float_value,
+    )
     enum_items: StringProperty(name="Value")
-    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
+    enum_descriptions: CollectionProperty(type=StrProperty)
+    enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
+    has_calculator: BoolProperty(name="Has Calculator", default=False)
+    value_min: FloatProperty(description="This is used to validate int_value and float_value")
+    value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
+    value_max: FloatProperty(description="This is used to validate int_value and float_value")
+    value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
 
     def get_value(self):
-        if self.is_null:
+        if self.is_optional and self.is_null:
             return None
         return getattr(self, str(self.get_value_name()), None)
 
@@ -264,12 +325,19 @@ class BIMProperties(PropertyGroup):
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
-        name="Temporary Section Cutaway Colour",
+        name="Cutaway Colour",
         subtype="COLOR",
         default=(1, 0, 0),
         min=0.0,
         max=1.0,
         update=update_section_color,
+    )
+    section_line_decorator_width: FloatProperty(
+        name="Line Decorator Width",
+        default=0.04,
+        min=0.0,
+        soft_max=1.0,
+        update=update_section_line_decorator,
     )
     area_unit: EnumProperty(
         default="SQUARE_METRE",
@@ -303,22 +371,6 @@ class BIMProperties(PropertyGroup):
             ("cubic yard", "Cubic Yard", ""),
         ],
         name="IFC Volume Unit",
-    )
-    metric_precision: FloatProperty(default=0, name="Drawing Metric Precision")
-    imperial_precision: EnumProperty(
-        items=[
-            ("NONE", "No rounding", ""),
-            ("1", 'Nearest 1"', ""),
-            ("1/2", 'Nearest 1/2"', ""),
-            ("1/4", 'Nearest 1/4"', ""),
-            ("1/8", 'Nearest 1/8"', ""),
-            ("1/16", 'Nearest 1/16"', ""),
-            ("1/32", 'Nearest 1/32"', ""),
-            ("1/64", 'Nearest 1/64"', ""),
-            ("1/128", 'Nearest 1/128"', ""),
-            ("1/256", 'Nearest 1/256"', ""),
-        ],
-        name="Drawing Imperial Precision",
     )
 
 
@@ -363,13 +415,18 @@ class BIMMaterialProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
+    shading_checksum: StringProperty(name="Shading Checksum")
 
 
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    ifc_boolean_id: IntProperty(name="IFC Boolean ID")
+    obj: bpy.props.PointerProperty(type=bpy.types.Object)
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)
+    subshape_type: StringProperty(name="Subshape Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
+    mesh_checksum: StringProperty(name="Mesh Checksum", default="")

@@ -43,18 +43,15 @@ class BIM_PT_resources(Panel):
             ResourceData.load()
 
         row = self.layout.row(align=True)
-        if ResourceData.data["has_resources"]:
-            row.label(
-                text="{} Resources Found".format(ResourceData.data["number_of_resources_loaded"]),
-                icon="TEXT",
-            )
+        if ResourceData.data["total_resources"]:
+            row.label(text=f"{ResourceData.data['total_resources']} Resources Found", icon="TEXT")
         else:
             row.label(text="No Resources found.", icon="COMMUNITY")
         if self.props.is_editing:
             row.operator("bim.disable_resource_editing_ui", text="", icon="CANCEL")
         else:
-            row.operator("bim.load_resources", text="Load Resources", icon="GREASEPENCIL")
-            row.operator("import_resources.bim", text="Import Resources", icon="IMPORT")
+            row.operator("bim.load_resources", text="", icon="GREASEPENCIL")
+            row.operator("import_resources.bim", text="", icon="IMPORT")
         if not self.props.is_editing:
             return
 
@@ -170,25 +167,20 @@ class BIM_PT_resources(Panel):
         if self.props.cost_types == "CATEGORY":
             op.cost_category = self.props.cost_category
 
-        for cost_value_id in ResourceData.data["resources"][self.props.active_resource_id]["BaseCosts"] or []:
+        for cost_value in ResourceData.data["cost_values"]:
             row = self.layout.row(align=True)
-            self.draw_readonly_cost_value_ui(row, cost_value_id)
+            self.draw_readonly_cost_value_ui(row, cost_value)
 
         if self.props.cost_value_editing_type == "ATTRIBUTES":
-            box = self.layout.box()
-            self.draw_editable_cost_value_ui(box, ResourceData.cost_values[self.props.active_cost_value_id])
+            blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
-    def draw_readonly_cost_value_ui(self, layout, cost_value_id):
-        cost_value = ResourceData.cost_values[cost_value_id]
-
-        if self.props.active_cost_value_id == cost_value_id and self.props.cost_value_editing_type == "FORMULA":
+    def draw_readonly_cost_value_ui(self, layout, cost_value):
+        if self.props.active_cost_value_id == cost_value["id"] and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
         else:
-            cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
-            cost_value_label += " = " + cost_value["Formula"]
-            layout.label(text=cost_value_label, icon="DISC")
+            layout.label(text=cost_value["label"], icon="DISC")
 
-        self.draw_cost_value_operator_ui(layout, cost_value_id, self.props.active_resource_id)
+        self.draw_cost_value_operator_ui(layout, cost_value["id"], self.props.active_resource_id)
 
     def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
         if self.props.active_cost_value_id and self.props.active_cost_value_id == cost_value_id:
@@ -211,9 +203,6 @@ class BIM_PT_resources(Panel):
             op = layout.operator("bim.remove_cost_value", text="", icon="X")
             op.parent = parent_id
             op.cost_value = cost_value_id
-
-    def draw_editable_cost_value_ui(self, layout, cost_value):
-        blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, layout)
 
 
 class BIM_UL_resources(UIList):
@@ -244,10 +233,10 @@ class BIM_UL_resources(UIList):
             else:
                 row.label(text="", icon="DOT")
             row.prop(item, "name", emboss=False, text="", icon=icon_map[resource["type"]])
+            row.prop(item, "schedule_usage", text="", emboss=False)
             if context.active_object and not props.active_resource_id:
-                oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
-                if oprops.ifc_definition_id in ResourceData.data["resources"][item.ifc_definition_id]["ResourceOf"]:
+                if item.ifc_definition_id in ResourceData.data["active_resource_ids"]:
                     op = row.operator("bim.unassign_resource", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.resource = item.ifc_definition_id
                 else:

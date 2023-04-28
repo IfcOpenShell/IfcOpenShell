@@ -21,6 +21,7 @@ from bpy_extras.io_utils import ImportHelper
 import blenderbim.core.resource as core
 import blenderbim.tool as tool
 
+
 class LoadResources(bpy.types.Operator):
     bl_idname = "bim.load_resources"
     bl_label = "Load Resources"
@@ -46,7 +47,7 @@ class LoadResourceProperties(bpy.types.Operator):
 
 class AddResource(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_resource"
-    bl_label = "Add resource"
+    bl_label = "Add Resource"
     bl_options = {"REGISTER", "UNDO"}
     ifc_class: bpy.props.StringProperty()
     parent_resource: bpy.props.IntProperty()
@@ -73,7 +74,7 @@ class EnableEditingResource(bpy.types.Operator):
 
 class DisableEditingResource(bpy.types.Operator):
     bl_idname = "bim.disable_editing_resource"
-    bl_label = "Disable Editing Resources"
+    bl_label = "Disable Editing Resource"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -144,7 +145,7 @@ class AssignResource(bpy.types.Operator, tool.Ifc.Operator):
     related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.assign_resource(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        core.assign_resource(tool.Ifc, tool.Spatial, resource=tool.Ifc.get().by_id(self.resource))
 
 
 class UnassignResource(bpy.types.Operator, tool.Ifc.Operator):
@@ -155,12 +156,12 @@ class UnassignResource(bpy.types.Operator, tool.Ifc.Operator):
     related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.unassign_resource(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        core.unassign_resource(tool.Ifc, tool.Spatial, resource=tool.Ifc.get().by_id(self.resource))
 
 
 class EnableEditingResourceTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_resource_time"
-    bl_label = "Enable Editing Resource Usage"
+    bl_label = "Enable Editing Resource Time"
     bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
@@ -266,7 +267,7 @@ class EditResourceCostValue(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingResourceBaseQuantity(bpy.types.Operator):
     bl_idname = "bim.enable_editing_resource_base_quantity"
-    bl_label = "Enable Editing Resource Quantity"
+    bl_label = "Enable Editing Resource Base Quantity"
     bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 

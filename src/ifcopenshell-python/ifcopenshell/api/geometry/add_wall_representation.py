@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from math import sin, cos
 
 
 class Usecase:
@@ -28,8 +29,12 @@ class Usecase:
             "height": 3.0,
             "offset": 0.0,
             "thickness": 0.2,
+            # Sloped walls along the wall's X axis, provided in radians
+            "x_angle": 0,
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
+            # [{"type": "IfcBooleanClippingResult", "operand_type": "IfcHalfSpaceSolid", "matrix": [...]}, {...}]
             "clippings": [],  # A list of planes that define clipping half space solids
+            "booleans": [],  # Any existing IfcBooleanResults
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -39,24 +44,31 @@ class Usecase:
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Clipping" if self.settings["clippings"] else "SweptSolid",
+            "Clipping" if self.settings["clippings"] or self.settings["booleans"] else "SweptSolid",
             [self.create_item()],
         )
 
     def create_item(self):
         length = self.convert_si_to_unit(self.settings["length"])
         thickness = self.convert_si_to_unit(self.settings["thickness"])
+        thickness *= 1 / cos(self.settings["x_angle"])
         points = (
-            (0.0, 0.0, 0.0),
-            (0.0, thickness, 0.0),
-            (length, thickness, 0.0),
-            (length, 0.0, 0.0),
-            (0.0, 0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, thickness),
+            (length, thickness),
+            (length, 0.0),
+            (0.0, 0.0),
         )
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
-            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points))
+            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points), None, False)
+        if self.settings["x_angle"]:
+            extrusion_direction = self.file.createIfcDirection(
+                (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
+            )
+        else:
+            extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             self.file.createIfcAxis2Placement3D(
@@ -64,27 +76,44 @@ class Usecase:
                 self.file.createIfcDirection((0.0, 0.0, 1.0)),
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),
-            self.file.createIfcDirection((0.0, 0.0, 1.0)),
-            self.convert_si_to_unit(self.settings["height"]),
+            extrusion_direction,
+            self.convert_si_to_unit(self.settings["height"]) * (1 / cos(self.settings["x_angle"])),
         )
+        if self.settings["booleans"]:
+            extrusion = self.apply_booleans(extrusion)
         if self.settings["clippings"]:
-            return self.apply_clippings(extrusion)
+            extrusion = self.apply_clippings(extrusion)
         return extrusion
+
+    def apply_booleans(self, first_operand):
+        while self.settings["booleans"]:
+            boolean = self.settings["booleans"].pop()
+            boolean.FirstOperand = first_operand
+            first_operand = boolean
+        return first_operand
 
     def apply_clippings(self, first_operand):
         while self.settings["clippings"]:
             clipping = self.settings["clippings"].pop()
-            second_operand = self.file.createIfcHalfSpaceSolid(
-                self.file.createIfcPlane(
-                    self.file.createIfcAxis2Placement3D(
-                        self.file.createIfcCartesianPoint((clipping[0][3], clipping[1][3], clipping[2][3])),
-                        self.file.createIfcDirection((clipping[0][2], clipping[1][2], clipping[2][2])),
-                        self.file.createIfcDirection((clipping[0][0], clipping[1][0], clipping[2][0])),
-                    )
-                ),
-                False,
-            )
-            first_operand = self.file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)
+            if clipping["operand_type"] == "IfcHalfSpaceSolid":
+                matrix = clipping["matrix"]
+                second_operand = self.file.createIfcHalfSpaceSolid(
+                    self.file.createIfcPlane(
+                        self.file.createIfcAxis2Placement3D(
+                            self.file.createIfcCartesianPoint(
+                                (
+                                    self.convert_si_to_unit(matrix[0][3]),
+                                    self.convert_si_to_unit(matrix[1][3]),
+                                    self.convert_si_to_unit(matrix[2][3]),
+                                )
+                            ),
+                            self.file.createIfcDirection((matrix[0][2], matrix[1][2], matrix[2][2])),
+                            self.file.createIfcDirection((matrix[0][0], matrix[1][0], matrix[2][0])),
+                        )
+                    ),
+                    False,
+                )
+            first_operand = self.file.create_entity(clipping["type"], "DIFFERENCE", first_operand, second_operand)
         return first_operand
 
     def convert_si_to_unit(self, co):

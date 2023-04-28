@@ -42,7 +42,7 @@ class TestGetGlobalMatrix(test.bim.bootstrap.NewFile):
     def test_applying_an_object_placement_blender_offset(self):
         ifc = ifcopenshell.file()
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
         tool.Ifc.set(ifc)
         props = bpy.context.scene.BIMGeoreferenceProperties

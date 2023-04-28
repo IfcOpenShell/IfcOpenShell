@@ -18,16 +18,62 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, axis_tag=None, same_sense=None, uvw_axes=None, grid=None):
+        """Adds a new grid axis to a grid
+
+        An IFC grid will typically have a minimum of two axes which will be
+        perpendicular to one another. Grids may be rectangular (typically
+        perpendicular lines), radial (where one set of axes is a circle and the
+        other is a line), or triangular (three sets of axes, each at a different
+        angle to one another).
+
+        For a simple rectangular grid, the "UAxes" are a set of one or more
+        horizontal axes, which are typically labeled with the convention of A,
+        B, C, etc. The "VAxes" is another set of one or more vertical axes,
+        typically labeled with the convention of 1, 2, 3, etc. These axes are
+        horizontal or vertical relative to project north.
+
+        For a radial grid, the "UAxes" are straight lines, typically radiating
+        from a central point. The "VAxes" are circular perimeters, with the
+        center of these circles being the same central point.
+
+        For a triangular grid, the UAxes, VAxes, and WAxes are all sets of one
+        or more straight lines.
+
+        :param axis_tag: The name of the axis, that would typically be labeled
+            on drawings or described on site during coordination, such as A, B,
+            C, 1, 2, 3, etc. Defaults to "A".
+        :type axis_tag: str, optional
+        :param same_sense: Determines whether the direction of the axis's line
+            is reversed. True means the direction the geometry is defined in
+            represents the direction of the axis. False means the direction is
+            reversed. Leave as True if unsure. Defaults to "True".
+        :type same_sense: bool, optional
+        :param uvw_axes: Choose from "UAxes", "VAxes" or "WAxes" depending on
+            which set of axes the new axis you are adding should belong to.
+            Defaults to "UAxes".
+        :type uvw_axes: str, optional
+        :param grid: The IfcGrid you are adding the axis to.
+        :type grid: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created IfcGridAxis
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+            # A pretty standard rectangular grid, with only two axes.
+            grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")
+            axis_a = ifcopenshell.api.run("grid.create_grid_axis", model,
+                axis_tag="A", uvw_axes="UAxes", grid=grid)
+            axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
+                axis_tag="1", uvw_axes="VAxes", grid=grid)
+        """
         self.file = file
         self.settings = {
-            "axis_tag": "A",
-            "same_sense": True,
-            "uvw_axes": "UAxes",  # Choose which axes
-            "grid": None,
+            "axis_tag": axis_tag or "A",
+            "same_sense": same_sense or True,
+            "uvw_axes": uvw_axes or "UAxes",  # Choose which axes
+            "grid": grid,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         element = self.file.create_entity(

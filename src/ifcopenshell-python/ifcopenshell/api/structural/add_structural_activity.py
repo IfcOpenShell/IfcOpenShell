@@ -20,17 +20,52 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(
+        self,
+        file,
+        ifc_class="IfcStructuralPlanarAction",
+        predefined_type="CONST",
+        global_or_local="GLOBAL_COORDS",
+        applied_load=None,
+        structural_member=None,
+    ):
+        """Adds a new structural activity
+
+        A structural activity is either a structural action or a reaction. It
+        may be applied to a point, a curve, or a planar surface, and may be a
+        constant load, linear, etc.
+
+        The activity must be defined using an applied load, and associated with
+        a structural member.
+
+        :param ifc_class: Choose from any subtype of IfcStructuralActivity.
+        :type ifc_class: str
+        :param predefined_type: View the IFC documentation for what valid
+            predefined types may be chosen.
+        :type predefined_type: str
+        :param global_or_local: The location coordinates of the load is always
+            defined locally relative to the structural member the activity is
+            assigned to. However, the directions of the applied load may either
+            be specified globally or locally depending on how this argument is
+            set. Choose from GLOBAL_COORDS or LOCAL_COORDS.
+        :type global_or_local: str
+        :param applied_load: The IfcStructuralLoad that is applied in this
+            activity.
+        :type applied_load: ifcopenshell.entity_instance.entity_instance
+        :param structural_member: The IfcStructuralMember that the load is
+            applied to.
+        :type structural_member: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created entity based on the ifc_class
+        :rtype: ifcopenshell.entity_instance.entity_instance
+        """
         self.file = file
         self.settings = {
-            "ifc_class": "IfcStructuralPlanarAction",
-            "predefined_type": "CONST",
-            "global_or_local": "GLOBAL_COORDS",
-            "applied_load": None,
-            "structural_member": None,
+            "ifc_class": ifc_class,
+            "predefined_type": predefined_type,
+            "global_or_local": global_or_local,
+            "applied_load": applied_load,
+            "structural_member": structural_member,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         activity = ifcopenshell.api.run(

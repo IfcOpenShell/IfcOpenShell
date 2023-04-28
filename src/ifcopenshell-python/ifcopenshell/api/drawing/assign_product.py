@@ -21,14 +21,48 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relating_product=None, related_object=None):
+        """Associates a product and an object, typically for annotation
+
+        Warning: this is an experimental API.
+
+        When you want to draw attention to a feature or characteristic (such as
+        a dimension, material, or name) or of a product (e.g. wall, slab,
+        furniture, etc), an annotation object is created. This annotation is
+        then associated with the product so that it can reference attributes,
+        properties, and relationships.
+
+        For example, an annotation of a line will be associated with a grid
+        axis, such that when that grid axis moves, the annotation of that grid
+        axis (which is typically truncated to the extents of a drawing) will
+        also move.
+
+        Another example might be a label of a furniture product, which might
+        have some text of the name of the furniture to be shown on drawings or
+        in 3D.
+
+        :param relating_product: The IfcProduct the object is related to
+        :type relating_product: ifcopenshell.entity_instance.entity_instance
+        :param related_object: The object (typically IfcAnnotation) that the
+            product is related to
+        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :return: The created IfcRelAssignsToProduct relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+            annotation = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcAnnotation")
+            ifcopenshell.api.run("drawing.assign_product", model,
+                relating_product=furniture, related_object=annotation)
+        """
         self.file = file
         self.settings = {
-            "relating_product": None,
-            "related_object": None,
+            "relating_product": relating_product,
+            "related_object": related_object,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         is_grid_axis = self.settings["relating_product"].is_a("IfcGridAxis")

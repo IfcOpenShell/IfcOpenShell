@@ -50,7 +50,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 			coords.size() < 3 ? 0. : coords[2] * getValue(GV_LENGTH_UNIT)));
 	}
 
-	int max_index = points.size();
+	int max_index = (int) points.size();
 
 	BRepBuilderAPI_MakeWire w;
 

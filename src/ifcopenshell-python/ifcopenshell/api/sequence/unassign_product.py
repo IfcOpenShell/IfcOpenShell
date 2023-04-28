@@ -21,14 +21,45 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relating_product=None, related_object=None):
+        """Unassigns a product and object relationship
+
+        See ifcopenshell.api.sequence.assign_product for details.
+
+        :param relating_product: The IfcProduct in the relationship.
+        :type relating_product: ifcopenshell.entity_instance.entity_instance
+        :param related_object: The IfcTask in the relationship.
+        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's imagine we are creating a construction schedule. All tasks
+            # need to be part of a work schedule.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+
+            # Let's create a construction task. Note that the predefined type is
+            # important to distinguish types of tasks.
+            task = ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Build wall", identification="A", predefined_type="CONSTRUCTION")
+
+            # Let's say we have a wall somewhere.
+            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+            # Let's construct that wall!
+            ifcopenshell.api.run("sequence.assign_product", relating_product=wall, related_object=task)
+
+            # Change our mind.
+            ifcopenshell.api.run("sequence.unassign_product", relating_product=wall, related_object=task)
+        """
         self.file = file
         self.settings = {
-            "relating_product": None,
-            "related_object": None,
+            "relating_product": relating_product,
+            "related_object": related_object,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         for rel in self.settings["related_object"].HasAssignments or []:

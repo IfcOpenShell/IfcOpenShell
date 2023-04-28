@@ -19,23 +19,49 @@
 
 #include <gp_Trsf2d.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/profile_helper.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Shape& face) {
+
+	const bool doFillet1 = !!l->FilletRadius();
+#ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
+	const bool doFlangeEdgeRadius = !!l->FlangeEdgeRadius();
+	const bool hasSlope = !!l->FlangeSlope();
+#else
+	const bool doFlangeEdgeRadius = false;
+#endif
+
 	const double x1 = l->OverallWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double y = l->OverallDepth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double d1 = l->WebThickness() / 2.0f  * getValue(GV_LENGTH_UNIT);
-	const double dy1 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
+	const double d1 = l->WebThickness() / 2.0f	* getValue(GV_LENGTH_UNIT);
+	const double ft1 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
+#ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
+	const double slope = l->FlangeSlope().get_value_or(0.) * getValue(GV_PLANEANGLE_UNIT);
+#endif
 
-	bool doFillet1 = !!l->FilletRadius();
-	double f1 = 0.;
+	double dy = 0.0f;
+	double f1 = 0.0f;
+	double f2 = 0.0f;
+	double fe1 = 0.0f;
+	double fe2 = 0.0f;
+	double x2 = x1;
+	double ft2 = ft1;
+
 	if ( doFillet1 ) {
 		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
+#ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
+	if (doFlangeEdgeRadius) {
+		fe1 = *l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
+	}
+	if (hasSlope) {
+		dy = (x1 - d1) * tan(slope);
+	}
+#endif
 
 	bool doFillet2 = doFillet1;
-	double x2 = x1, dy2 = dy1, f2 = f1;
 
 	// @todo in IFC4 a IfcAsymmetricIShapeProfileDef is not a subtype anymore of IfcIShapeProfileDef!
 	if (l->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
@@ -46,11 +72,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 			f2 = *assym->TopFlangeFilletRadius() * getValue(GV_LENGTH_UNIT);
 		}
 		if (assym->TopFlangeThickness()) {
-			dy2 = *assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
+			ft2 = *assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
 		}
-	}	
+	} else {
+		f2 = f1;
+		fe2 = fe1;
+	}
 
-	if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || dy1 < ALMOST_ZERO || dy2 < ALMOST_ZERO ) {
+	if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || ft1 < ALMOST_ZERO || ft2 < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
@@ -64,8 +93,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 		IfcGeom::Kernel::convert(l->Position(), trsf2d);
 	}
 
-	double coords[24] = {-x1,-y, x1,-y, x1,-y+dy1, d1,-y+dy1, d1,y-dy2, x2,y-dy2, x2,y, -x2,y, -x2,y-dy2, -d1,y-dy2, -d1,-y+dy1, -x1,-y+dy1};
-	int fillets[4] = {3,4,9,10};
-	double radii[4] = {f1,f2,f2,f1};
-	return profile_helper(12,coords,(doFillet1||doFillet2) ? 4 : 0,fillets,radii,trsf2d,face);
+	double coords[24] = {
+		-x1,-y,
+		x1,-y,
+		x1,-y+ft1,
+		d1,-y+ft1+dy,
+		d1,y-ft2-dy,
+		x2,y-ft2,
+		x2,y,
+		-x2,y,
+		-x2,y-ft2,
+		-d1,y-ft2-dy,
+		-d1,-y+ft1+dy,
+		-x1,-y+ft1
+	};
+	int fillets[8] = {2,3,4,5,8,9,10,11};
+	double radii[8] = {fe1,f1,f2,fe2,fe2,f2,f1,fe1};
+	return util::profile_helper(12,coords,(doFillet1 || doFillet2 || doFlangeEdgeRadius) ? 8 : 0,fillets,radii,trsf2d,face);
 }

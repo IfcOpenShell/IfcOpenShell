@@ -48,6 +48,15 @@ def replace_variables(value):
     return value
 
 
+def is_x(number, x):
+    return abs(number - x) < 1e-6
+
+
+def vectors_are_equal(v1, v2):
+    assert len(v1) == len(v2), f"Compared vectors are not equal length: {v1}, {v2}"
+    return all(is_x(v1[i], v2[i]) for i in range(len(v1)))
+
+
 @given("an untestable scenario")
 def an_untestable_scenario():
     pass
@@ -70,6 +79,8 @@ def an_empty_ifc_project():
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    bpy.context.scene.unit_settings.system = "METRIC"
+    bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
     bpy.ops.bim.create_project()
 
 
@@ -162,9 +173,16 @@ def i_press_operator(operator):
         exec(f"bpy.ops.{operator}()")
 
 
+@given(parsers.parse('I evaluate expression "{expression}"'))
+@when(parsers.parse('I evaluate expression "{expression}"'))
+def i_evaluate_expression(expression):
+    expression = replace_variables(expression)
+    exec(expression)
+
+
 @when("I duplicate the selected objects")
 def i_duplicate_the_selected_objects():
-    bpy.ops.object.duplicate_move()
+    bpy.ops.bim.override_object_duplicate_move()
     blenderbim.bim.handler.active_object_callback()
 
 
@@ -190,7 +208,10 @@ def then_the_object_name_is_selected(name):
 @given(parsers.parse('the object "{name}" is moved to "{location}"'))
 @when(parsers.parse('the object "{name}" is moved to "{location}"'))
 def the_object_name_is_moved_to_location(name, location):
-    the_object_name_exists(name).location += Vector([float(co) for co in location.split(",")])
+    location = [float(co) for co in location.split(",")]
+    the_object_name_exists(name).matrix_world[0][3] = location[0]
+    the_object_name_exists(name).matrix_world[1][3] = location[1]
+    the_object_name_exists(name).matrix_world[2][3] = location[2]
 
 
 @given(parsers.parse('the object "{name}" is scaled to "{scale}"'))
@@ -230,7 +251,7 @@ def i_set_prop_to_value(prop, value):
     try:
         eval(f"bpy.context.{prop}")
     except:
-        assert False, "Property does not exist"
+        assert False, f"Property {prop} does not exist when trying to set to value {value}"
     try:
         exec(f'bpy.context.{prop} = r"{value}"')
     except:
@@ -243,7 +264,7 @@ def i_set_prop_to_value(prop):
     try:
         eval(f"bpy.context.{prop}")
     except:
-        assert False, "Property does not exist"
+        assert False, f"Property {prop} does not exist"
     try:
         exec(f'bpy.context.{prop} = r""')
     except:
@@ -257,7 +278,7 @@ def i_am_on_frame_number(number):
 
 @when("I delete the selected objects")
 def i_delete_the_selected_objects():
-    bpy.ops.object.delete()
+    bpy.ops.bim.override_object_delete()
 
 
 @given(parsers.parse('the variable "{key}" is "{value}"'))
@@ -277,6 +298,16 @@ def the_object_name_exists(name) -> bpy.types.Object:
     obj = bpy.data.objects.get(name)
     if not obj:
         assert False, f'The object "{name}" does not exist'
+    return obj
+
+
+@given(parsers.parse('the collection "{name}" exists'))
+@when(parsers.parse('the collection "{name}" exists'))
+@then(parsers.parse('the collection "{name}" exists'))
+def the_collection_name_exists(name) -> bpy.types.Collection:
+    obj = bpy.data.collections.get(name)
+    if not obj:
+        assert False, f'The collection "{name}" does not exist'
     return obj
 
 
@@ -351,22 +382,6 @@ def the_object_name_should_display_as_mode(name, mode):
     assert obj.display_type == mode
 
 
-@then(parsers.parse('the object "{name1}" has a boolean difference by "{name2}"'))
-def the_object_name1_has_a_boolean_difference_by_name2(name1, name2):
-    obj = the_object_name_exists(name1)
-    has_mod = any((m for m in obj.modifiers if m.type == "BOOLEAN" and m.object and m.object.name == name2))
-    assert has_mod, "No boolean found"
-
-
-@then(parsers.parse('the object "{name1}" has no boolean difference by "{name2}"'))
-def the_object_name1_has_no_boolean_difference_by_name2(name1, name2):
-    try:
-        the_object_name1_has_a_boolean_difference_by_name2(name1, name2)
-    except AssertionError:
-        return
-    assert False, "A boolean was found"
-
-
 @then(parsers.parse('the object "{name}" is voided by "{void}"'))
 def the_object_name_is_voided_by_void(name, void):
     ifc = IfcStore.get_file()
@@ -390,7 +405,7 @@ def the_object_name_is_not_voided(name):
     assert not element.HasOpenings, "A void was found"
 
 
-@then(parsers.parse('the object "{name}" is not a void'))
+@then(parsers.parse('the object "{name}" is a void'))
 def the_object_name_is_a_void(name):
     ifc = IfcStore.get_file()
     obj = the_object_name_exists(name)
@@ -502,7 +517,11 @@ def prop_is_value(prop, value):
                 exec(f"assert list(bpy.context.{prop}) == {value}")
                 is_value = True
             except:
-                pass
+                try:
+                    exec(f"assert vectors_are_equal(bpy.context.{prop}, {value})")
+                    is_value = True
+                except:
+                    pass
     if not is_value:
         print(f"bpy.context.{prop}")
         actual_value = eval(f"bpy.context.{prop}")
@@ -512,6 +531,55 @@ def prop_is_value(prop, value):
 @then(parsers.parse('the object "{name}" has the material "{material}"'))
 def the_object_name_has_the_material_material(name, material):
     assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
+
+
+@then(
+    parsers.parse(
+        'the object "{name}" has a "{thickness}" thick layered material containing the material "{material_name}"'
+    )
+)
+def the_object_name_has_a_thickness_thick_layered_material_containing_the_material_material(
+    name, thickness, material_name
+):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material and "LayerSet" in material.is_a()
+    if material.is_a("IfcMaterialLayerSetUsage"):
+        material = material.ForLayerSet
+    total_thickness = 0
+    material_names = []
+    for layer in material.MaterialLayers or []:
+        total_thickness += layer.LayerThickness
+        material_names.append(layer.Material.Name)
+    assert is_x(total_thickness, float(thickness))
+    assert material_name in material_names
+
+
+@then(
+    parsers.parse(
+        'the object "{name}" has a profiled material containing the material "{material_name}" and profile "{profile_name}"'
+    )
+)
+def the_object_name_has_a_profiled_material_containing_the_material_material_and_profile_profile(
+    name, material_name, profile_name
+):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material and "ProfileSet" in material.is_a()
+    if material.is_a("IfcMaterialProfileSetUsage"):
+        material = material.ForProfileSet
+    material_names = []
+    profile_names = []
+    for profile in material.MaterialProfiles or []:
+        material_names.append(profile.Material.Name)
+        profile_names.append(profile.Profile.ProfileName)
+    assert material_name in material_names, f"No material {material_name} found in profiled materials: {material_names}"
+    assert profile_name in profile_names, f"No profile {profile_name} found in material profiles: {profile_names}"
+
+
+@then(parsers.parse('the object "{name}" does not have the material "{material}"'))
+def the_object_name_does_not_have_the_material_material(name, material):
+    assert material not in [ms.material.name for ms in the_object_name_exists(name).material_slots]
 
 
 @then(parsers.parse('the object "{name}" is in the collection "{collection}"'))
@@ -527,7 +595,13 @@ def the_collection_name1_is_in_the_collection_name2(name1, name2):
 @then(parsers.parse('the object "{name}" does not exist'))
 def the_object_name_does_not_exist(name):
     obj = bpy.data.objects.get(name)
-    assert obj is None or len(obj.users_collection) == 0, "Object exists"
+    assert obj is None or len(obj.users_collection) == 0, f"Object {name} exists"
+
+
+@then(parsers.parse('the collection "{name}" does not exist'))
+def the_collection_name_does_not_exist(name):
+    obj = bpy.data.collections.get(name)
+    assert obj is None, f"Collection {name} exists"
 
 
 @then(parsers.parse('objects starting with "{name}" do not exist'))
@@ -559,15 +633,28 @@ def the_object_name_has_no_scale(name):
 
 @then(parsers.parse('the object "{name}" dimensions are "{dimensions}"'))
 def the_object_name_dimensions_are_dimensions(name, dimensions):
-    assert list(the_object_name_exists(name).dimensions) == [float(co) for co in dimensions.split(",")]
+    actual_dimensions = list(the_object_name_exists(name).dimensions)
+    expected_dimensions = [float(co) for co in dimensions.split(",")]
+    for i, number in enumerate(actual_dimensions):
+        assert is_x(number, expected_dimensions[i])
+
+
+@then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
+def the_object_name_is_at_location(name, location):
+    obj = the_object_name_exists(name)
+    obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
+    assert (
+        obj_corner - Vector([float(co) for co in location.split(",")])
+    ).length < 0.1, f"Object has top right corner {obj_corner}"
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
 def the_object_name_is_at_location(name, location):
-    obj_corner = Vector(the_object_name_exists(name).bound_box[0])
+    obj = the_object_name_exists(name)
+    obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has corner {obj_corner}"
+    ).length < 0.1, f"Object has bottom left corner {obj_corner}"
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
@@ -592,53 +679,16 @@ def the_object_name_has_no_modifiers(name):
     assert len(the_object_name_exists(name).modifiers) == 0
 
 
-@then(parsers.parse('the construction type "{ifc_class}"/"{relating_type}" has a preview'))
-def the_construction_type_has_a_preview(ifc_class, relating_type):
-    if "preview_constr_types" not in AuthoringData.data:
-        assert False, "There are no previews loaded"
-    preview_constr_types = AuthoringData.data["preview_constr_types"]
-    if ifc_class not in preview_constr_types:
-        assert False, f"Construction class {ifc_class} has no available previews"
-    relating_type_id = AuthoringData.relating_type_id_by_name(ifc_class, relating_type)
-    if relating_type_id is None:
-        assert False, f"No construction type {ifc_class}/{relating_type} was found"
-    if relating_type_id not in preview_constr_types[ifc_class]:
-        assert False, f"Construction type {ifc_class}/{relating_type} has no available previews"
-    preview_data = preview_constr_types[ifc_class][relating_type_id]
-    if "icon_id" not in preview_data:
-        assert False, f"Construction type {ifc_class}/{relating_type} has a preview, but no assigned icon_id"
-    icon_id = preview_data["icon_id"]
-    if not isinstance(icon_id, int):
-        assert False, f"Construction type {ifc_class}/{relating_type} has an invalid icon_id {icon_id}"
-    # Note: icon_id must be > 0 in UI mode, but asset_generate_preview() doesn't work headlessly -> skipping for now
-    # if icon_id == 0:
-    #     assert False, f'Construction type {ifc_class}/{relating_type} has the default null value for icon_id'
-    assert True
-
-
-@then("there is a Construction Type preview")
-def there_is_a_construction_type_preview():
-    props = bpy.context.scene.BIMModelProperties
-    assert props.icon_id > 0, f"There isn't a Construction Type preview"
-
-
-@then(parsers.parse('all construction types for "{ifc_class}" have a preview'))
-def all_construction_types_have_a_preview(ifc_class):
-    if "preview_constr_types" not in AuthoringData.data:
-        assert False, "There are no previews loaded"
-    preview_constr_types = AuthoringData.data["preview_constr_types"]
-    if ifc_class not in preview_constr_types:
-        assert False, f"Construction class {ifc_class} has no available previews"
-    constr_class_occurrences = AuthoringData.constr_class_entities(ifc_class)
-    for constr_class_entity in constr_class_occurrences:
-        the_construction_type_has_a_preview(ifc_class, constr_class_entity.Name)
-
-
 @given("I load the demo construction library")
 @when("I load the demo construction library")
 def i_add_a_construction_library():
     lib_path = "./blenderbim/bim/data/libraries/IFC4 Demo Library.ifc"
     bpy.ops.bim.select_library_file(filepath=lib_path, append_all=True)
+
+
+@given(parsers.parse('the cursor is at "{location}"'))
+def the_cursor_is_at_location(location):
+    bpy.context.scene.cursor.location = [float(co) for co in location.split(",")]
 
 
 @given("I display the construction type browser")
@@ -664,3 +714,59 @@ def construction_type(relating_type_name):
 @when("I move the cursor to the bottom left corner")
 def move_cursor_bottom_left():
     bpy.context.window.cursor_warp(10, 10)
+
+
+@given(parsers.parse("I prepare to undo"))
+@when(parsers.parse("I prepare to undo"))
+@then(parsers.parse("I prepare to undo"))
+def hit_undo():
+    bpy.ops.ed.undo_push(message="UNDO STEP")
+
+
+@given(parsers.parse("I undo"))
+@when(parsers.parse("I undo"))
+@then(parsers.parse("I undo"))
+def hit_undo():
+    bpy.ops.ed.undo_push(message="UNDO STEP")
+    bpy.ops.ed.undo()
+
+
+# These definitions are not to be used in tests but simply in debugging failing tests
+
+
+@given(parsers.parse("I run test code"))
+@when(parsers.parse("I run test code"))
+@then(parsers.parse("I run test code"))
+def run_test_code():
+    pass
+
+
+@given(parsers.parse("I save sample test files"))
+@when(parsers.parse("I save sample test files"))
+@then(parsers.parse("I save sample test files"))
+def saving_sample_test_files(and_open_in_blender=None):
+    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
+    blend_filepath = f"{filepath}.blend"
+    bpy.ops.export_ifc.bim(filepath=f"{filepath}.ifc", should_save_as=True)
+    bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
+
+
+# TODO: merge to single fixture with `saving_sample_test_files`; add "and wait"
+@given(parsers.parse("I save sample test files and open in blender"))
+@when(parsers.parse("I save sample test files and open in blender"))
+@then(parsers.parse("I save sample test files and open in blender"))
+def saving_sample_test_files_and_open_in_blender():
+    saving_sample_test_files()
+    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file.blend"
+    import subprocess
+
+    subprocess.Popen([bpy.app.binary_path, f"{filepath}"])
+
+
+@given(parsers.parse("I run pdb"))
+@when(parsers.parse("I run pdb"))
+@then(parsers.parse("I run pdb"))
+def run_pdb():
+    import pdb
+
+    pdb.set_trace()

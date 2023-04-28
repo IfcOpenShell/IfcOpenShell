@@ -1,6 +1,5 @@
-
 # IfcPatch - IFC patching utiliy
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcPatch.
 #
@@ -24,11 +23,27 @@ import ifcopenshell.util.selector
 
 class Patcher:
     def __init__(self, src, file, logger, query: str = ".IfcWall"):
-        """Extract Elements
+        """Extract certain elements into a new model
 
-        Extract a subset of elements from an existing IFC data set and save it to a new IFC file.
+        Extract a subset of elements from an existing IFC data set and save it
+        to a new IFC file. For example, you might want to extract only the walls
+        in a model and save it as a new model.
 
         :param query: A query to select the subset of IFC elements.
+        :type query: str
+
+        Example:
+
+        .. code:: python
+
+            # Extract all walls
+            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": [".IfcWall"]})
+
+            # Extract all slabs
+            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": [".IfcSlab"]})
+
+            # Extract all walls and slabs
+            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": [".IfcWall|.IfcSlab"]})
         """
         self.src = src
         self.file = file
@@ -43,6 +58,7 @@ class Patcher:
         for owner_history in self.file.by_type("IfcOwnerHistory"):
             self.owner_history = self.new.add(owner_history)
             break
+        self.add_element(self.file.by_type("IfcProject")[0])
         selector = ifcopenshell.util.selector.Selector()
         for element in selector.parse(self.file, self.query):
             self.add_element(element)

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.geometry
@@ -60,6 +61,10 @@ class Type(blenderbim.core.tool.Type):
                 return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
     @classmethod
+    def get_model_types(cls):
+        return tool.Ifc.get().by_type("IfcElementType")
+
+    @classmethod
     def get_object_data(cls, obj):
         return obj.data
 
@@ -75,11 +80,8 @@ class Type(blenderbim.core.tool.Type):
         return representation.ContextOfItems
 
     @classmethod
-    def has_dynamic_voids(cls, obj):
-        for modifier in obj.modifiers:
-            if modifier.name == "IfcOpeningElement" and modifier.type == "BOOLEAN":
-                return True
-        return False
+    def get_type_occurrences(cls, element_type):
+        return ifcopenshell.util.element.get_types(element_type)
 
     @classmethod
     def has_material_usage(cls, element):
@@ -87,6 +89,10 @@ class Type(blenderbim.core.tool.Type):
         if material:
             return "Usage" in material.is_a()
         return False
+
+    @classmethod
+    def remove_object(cls, obj):
+        bpy.data.objects.remove(obj)
 
     @classmethod
     def run_geometry_add_representation(
@@ -105,14 +111,14 @@ class Type(blenderbim.core.tool.Type):
 
     @classmethod
     def run_geometry_switch_representation(
-        cls, obj=None, representation=None, should_reload=None, enable_dynamic_voids=None, is_global=None
+        cls, obj=None, representation=None, should_reload=None, is_global=None
     ):
         return blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
             should_reload=should_reload,
-            enable_dynamic_voids=enable_dynamic_voids,
             is_global=is_global,
             should_sync_changes_first=False,
         )

@@ -21,14 +21,46 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relating_process=None, related_process=None):
+        """Removes a sequence relationship between tasks
+
+        :param relating_process: The previous / predecessor task.
+        :type relating_process: ifcopenshell.entity_instance.entity_instance
+        :param related_process: The next / successor task.
+        :type related_process: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's imagine we are creating a construction schedule. All tasks
+            # need to be part of a work schedule.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+
+            # Let's imagine a root construction task
+            construction = ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Construction", identification="C")
+
+            # Let's imagine we're building 2 zones, one after another.
+            zone1 = ifcopenshell.api.run("sequence.add_task", model,
+                parent_task=construction, name="Zone 1", identification="C.1")
+            zone2 = ifcopenshell.api.run("sequence.add_task", model,
+                parent_task=construction, name="Zone 2", identification="C.2")
+
+            # Zone 1 finishes, then zone 2 starts.
+            ifcopenshell.api.run("sequence.assign_sequence", model, relating_process=zone1, related_process=zone2)
+
+            # Let's make them unrelated
+            ifcopenshell.api.run("sequence.unassign_sequence", model,
+                relating_process=zone1, related_process=zone2)
+        """
         self.file = file
         self.settings = {
-            "relating_process": None,
-            "related_process": None,
+            "relating_process": relating_process,
+            "related_process": related_process,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         for rel in self.settings["related_process"].IsSuccessorFrom or []:

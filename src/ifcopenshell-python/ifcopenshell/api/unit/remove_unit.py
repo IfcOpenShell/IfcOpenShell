@@ -21,11 +21,29 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, unit=None):
+        """Remove a unit
+
+        Be very careful when a unit is removed, as it may mean that previously
+        defined quantities in the model completely lose their meaning.
+
+        :param unit: The unit element to remove
+        :type unit: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # What?
+            unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="HANDFULS")
+
+            # Yeah maybe not.
+            ifcopenshell.api.run("unit.remove_unit", model, unit=unit)
+        """
         self.file = file
-        self.settings = {"unit": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"unit": unit}
 
     def execute(self):
         unit_assignment = ifcopenshell.util.unit.get_unit_assignment(self.file)

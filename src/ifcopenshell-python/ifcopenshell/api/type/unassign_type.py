@@ -21,11 +21,34 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, related_object=None):
+        """Unassigns a type of an occurrence
+
+        :param related_object: The IfcElement occurrence.
+        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # A furniture type. This would correlate to a particular model in a
+            # manufacturer's catalogue. Like an Ikea sofa :)
+            furniture_type = ifcopenshell.api.run("root.create_entity", model,
+                ifc_class="IfcFurnitureType", name="FUN01")
+
+            # An individual occurrence of a that sofa.
+            furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+
+            # Assign the furniture to the furniture type.
+            ifcopenshell.api.run("type.assign_type", model, related_object=furniture, relating_type=furniture_type)
+
+            # Change our mind. Maybe it's a different type?
+            ifcopenshell.api.run("type.unassign_type", model, related_object=furniture)
+        """
         self.file = file
-        self.settings = {"related_object": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"related_object": related_object}
 
     def execute(self):
         if self.file.schema == "IFC2X3":

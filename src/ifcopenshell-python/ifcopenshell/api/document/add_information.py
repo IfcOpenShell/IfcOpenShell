@@ -20,11 +20,41 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, parent=None):
+        """Adds a new document information to the project
+
+        An IFC document information is a document associated with the project.
+        It may be a drawing, specification, schedule, certificate, warranty
+        guarantee, manual, contract, and so on. They are often used for drawings
+        and facility management purposes.
+
+        A document may also be a subdocument of a larger document, this is
+        useful for superseding documents or tracking older versions. The parent
+        is considered the latest version and the children are older revisions.
+
+        :param parent: The parent document, if necessary.
+        :type parent: ifcopenshell.entity_instance.entity_instance, optional
+        :return: The newly created IfcDocumentInformation entity
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            document = ifcopenshell.api.run("document.add_information", model)
+            # A document typically has a unique drawing or document name (which
+            # follows a coding system depending on the project), as well as a
+            # title.  This should match what is shown on the titleblock or title
+            # page of the document. At a minimum you'd also want to specify a
+            # URI location. The location may be on local, or on a CDE, or any
+            # other platform.
+            ifcopenshell.api.run("document.edit_information", model,
+                information=document,
+                attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
+                "Location": "A-GA-6100 - Overall Plan.pdf"})
+        """
         self.file = file
-        self.settings = {"parent": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"parent": parent}
 
     def execute(self):
         id_attribute = "DocumentId" if self.file.schema == "IFC2X3" else "Identification"

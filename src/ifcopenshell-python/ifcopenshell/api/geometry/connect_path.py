@@ -28,6 +28,7 @@ class Usecase:
             "related_element": None,
             "relating_connection": "NOTDEFINED",
             "related_connection": "NOTDEFINED",
+            "description": None,
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -35,6 +36,8 @@ class Usecase:
     def execute(self):
         incompatible_connections = []
         for rel in self.settings["relating_element"].ConnectedTo:
+            if not rel.is_a("IfcRelConnectsPathElements"):
+                continue
             if rel.RelatedElement == self.settings["related_element"]:
                 incompatible_connections.append(rel)
             elif (
@@ -44,6 +47,8 @@ class Usecase:
                 incompatible_connections.append(rel)
 
         for rel in self.settings["relating_element"].ConnectedFrom:
+            if not rel.is_a("IfcRelConnectsPathElements"):
+                continue
             if (
                 rel.RelatedConnectionType in ["ATSTART", "ATEND"]
                 and rel.RelatedConnectionType == self.settings["relating_connection"]
@@ -51,6 +56,8 @@ class Usecase:
                 incompatible_connections.append(rel)
 
         for rel in self.settings["related_element"].ConnectedFrom:
+            if not rel.is_a("IfcRelConnectsPathElements"):
+                continue
             if (
                 rel.RelatedConnectionType in ["ATSTART", "ATEND"]
                 and rel.RelatedConnectionType == self.settings["related_connection"]
@@ -58,6 +65,8 @@ class Usecase:
                 incompatible_connections.append(rel)
 
         for rel in self.settings["related_element"].ConnectedTo:
+            if not rel.is_a("IfcRelConnectsPathElements"):
+                continue
             if rel.RelatedElement == self.settings["relating_element"]:
                 incompatible_connections.append(rel)
             elif (
@@ -73,8 +82,11 @@ class Usecase:
         return self.file.createIfcRelConnectsPathElements(
             ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            Description=self.settings["description"],
             RelatingElement=self.settings["relating_element"],
             RelatedElement=self.settings["related_element"],
             RelatingConnectionType=self.settings["relating_connection"],
             RelatedConnectionType=self.settings["related_connection"],
+            RelatingPriorities=[],
+            RelatedPriorities=[],
         )

@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -22,14 +21,29 @@ import ifcopenshell.util.schema
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger, schema="IFC4"):
+        """Migrate from one IFC version to another
+
+        Note that this is experimental and will try to preserve as much data as
+        possible. Upgrading to IFC4 is more stable than downgrading to IFC2X3.
+
+        :param schema: The schema identifier of the IFC version to migrate to.
+        :type schema: str
+
+        Example:
+
+        .. code:: python
+
+            # Upgrade an IFC2X3 model to IFC4
+            ifcpatch.execute({"input": model, "recipe": "Migrate", "arguments": ["IFC4"]})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
+        self.schema = schema
 
     def patch(self):
-        self.file_patched = ifcopenshell.file(schema=self.args[0])
+        self.file_patched = ifcopenshell.file(schema=self.schema)
         migrator = ifcopenshell.util.schema.Migrator()
         for element in self.file:
             migrator.migrate(element, self.file_patched)

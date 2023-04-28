@@ -45,7 +45,6 @@ class IfcExporter:
         self.set_header()
         IfcStore.update_cache()
         if bpy.context.scene.BIMProjectProperties.is_authoring:
-            self.sync_deletions()
             self.sync_all_objects()
             self.sync_edited_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
@@ -87,19 +86,6 @@ class IfcExporter:
             self.get_application_name(), self.get_application_version()
         )
 
-    def sync_deletions(self):
-        results = []
-        for ifc_definition_id in IfcStore.deleted_ids:
-            try:
-                product = self.file.by_id(ifc_definition_id)
-                if hasattr(product, "GlobalId"):
-                    results.append(product.GlobalId)
-            except:
-                continue
-            ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
-        IfcStore.deleted_ids.clear()
-        return results
-
     def sync_all_objects(self):
         results = []
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -126,7 +112,8 @@ class IfcExporter:
                 continue
             try:
                 if isinstance(obj, bpy.types.Material):
-                    blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=obj)
+                    if tool.Ifc.has_changed_shading(obj):
+                        blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=obj)
                 else:
                     element = tool.Ifc.get_entity(obj)
                     if element:
@@ -149,10 +136,10 @@ class IfcExporter:
         return checksum != str([s.id() for s in tool.Geometry.get_styles(obj) if s])
 
     def sync_object_placement(self, obj):
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not tool.Ifc.is_moved(obj):
             return
         blender_matrix = np.array(obj.matrix_world)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
             bpy.ops.bim.update_representation(obj=obj.name)
             return element

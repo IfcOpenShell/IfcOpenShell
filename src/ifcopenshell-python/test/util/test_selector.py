@@ -22,6 +22,58 @@ import ifcopenshell.api
 import ifcopenshell.util.selector as subject
 
 
+class TestGetElementValue(test.bootstrap.IFC4):
+    def test_selecting_an_elements_class_or_id_using_a_query(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        assert subject.get_element_value(element, "class") == "IfcWall"
+        assert subject.get_element_value(element, "id") == element.id()
+
+    def test_selecting_an_elements_value_using_a_query(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.Name = "Foobar"
+        assert subject.get_element_value(element, "Name") == "Foobar"
+
+    def test_selecting_using_a_multiple_key_query(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        material2 = ifcopenshell.api.run("material.add_material", self.file, name="CON02")
+        material_set = ifcopenshell.api.run(
+            "material.add_material_set", self.file, name="FOO", set_type="IfcMaterialLayerSet"
+        )
+        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material)
+        layer.Name = "L1"
+        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material)
+        layer.Name = "L2"
+        ifcopenshell.api.run("material.edit_layer", self.file, layer=layer, attributes={"LayerThickness": 13})
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material_set)
+        assert subject.get_element_value(element, "material.MaterialLayers.Name") == ["L1", "L2"]
+        # Allow to use "item" to generically select an item in a material set
+        assert subject.get_element_value(element, "material.item.Name") == ["L1", "L2"]
+        assert subject.get_element_value(element, "material.item.Name.0") == "L1"
+        assert subject.get_element_value(element, "material.item.Name.1") == "L2"
+        assert subject.get_element_value(element, '"material"."item"."Name"') == ["L1", "L2"]
+        assert subject.get_element_value(element, 'r"material"."item"."Name"') == ["L1", "L2"]
+        # Provide shortform for convenience
+        assert subject.get_element_value(element, "mat.i.Name") == ["L1", "L2"]
+
+    def test_selecting_a_query_that_fails_silently(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        assert subject.get_element_value(element, "material.item.Name.0") is None
+
+    def test_selceting_a_list_item_that_fails_silently(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        material2 = ifcopenshell.api.run("material.add_material", self.file, name="CON02")
+        material_set = ifcopenshell.api.run(
+            "material.add_material_set", self.file, name="FOO", set_type="IfcMaterialLayerSet"
+        )
+        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material)
+        layer.Name = "L1"
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material_set)
+        assert subject.get_element_value(element, "material.item.Name.0") == "L1"
+        assert subject.get_element_value(element, "material.item.Name.1") is None
+
+
 class TestSelector(test.bootstrap.IFC4):
     def test_selecting_by_class(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -53,6 +105,7 @@ class TestSelector(test.bootstrap.IFC4):
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
         assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo]") == [element]
         assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Fox]") == []
+        assert subject.Selector.parse(self.file, '.IfcElement[r"Foo.*ar"."Fo.*"]') == [element]
 
     def test_selecting_by_string_property(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -142,8 +195,20 @@ class TestSelector(test.bootstrap.IFC4):
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="a !%$§&/()?|*-+,€~#@µ^°a")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a !%$§&/()?|*-+,€~#@µ^°a": "Bar"})
         assert subject.Selector.parse(
-            self.file, '.IfcElement[a !%$§&/()?|*-+,€~#@µ^°a.a !%$§&/()?|*-+,€~#@µ^°a="Bar"]'
+            self.file, '.IfcElement["a !%$§&/()?|*-+,€~#@µ^°a"."a !%$§&/()?|*-+,€~#@µ^°a"="Bar"]'
         ) == [element]
+
+    def test_selecting_a_property_which_includes_a_dot(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="a.b")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"c.d": "Bar"})
+        assert subject.Selector.parse(self.file, '.IfcElement["a.b"."c.d"="Bar"]') == [element]
+
+    def test_selecting_a_property_which_includes_an_escaped_quote(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name='"a.b"')
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={'"c.d"': "Bar"})
+        assert subject.Selector.parse(self.file, r'.IfcElement["\"a.b\""."\"c.d\""="Bar"]') == [element]
 
     def test_comparing_if_value_is_in_a_list(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -176,3 +241,57 @@ class TestSelector(test.bootstrap.IFC4):
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
         assert subject.Selector.parse(self.file, ".IfcWall", elements=[element])
         assert not subject.Selector.parse(self.file, ".IfcWall", elements=[element2])
+
+    def test_selecting_a_property_via_a_wildcard_pset_name(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobaz")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Baz"})
+        assert subject.Selector.parse(self.file, '.IfcElement[r"Foo.*"."Foo"="Bar"]') == [element]
+
+    def test_selecting_a_property_via_a_wildcard_property_name(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobaz")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Baz"})
+        assert subject.Selector.parse(self.file, '.IfcElement[r"Foo.*"."F.*"="Bar"]') == [element]
+
+    def test_selecting_an_attribute_via_a_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element_type.Name = "Foo"
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        assert set(subject.Selector.parse(self.file, '.IfcWall[type.Name="Foo"]')) == {element}
+
+    def test_selecting_via_a_material(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
+        assert set(subject.Selector.parse(self.file, '.IfcWall[material.Name="CON01"]')) == {element}
+
+    def test_selecting_via_a_material_set(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        material_set = ifcopenshell.api.run(
+            "material.add_material_set", self.file, name="FOO", set_type="IfcMaterialLayerSet"
+        )
+        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material)
+        ifcopenshell.api.run("material.edit_layer", self.file, layer=layer, attributes={"LayerThickness": 13})
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material_set)
+        assert set(subject.Selector.parse(self.file, '.IfcWall[material.LayerSetName="FOO"]')) == {element}
+
+    def test_selecting_via_a_material_set_item(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        material2 = ifcopenshell.api.run("material.add_material", self.file, name="CON02")
+        material_set = ifcopenshell.api.run(
+            "material.add_material_set", self.file, name="FOO", set_type="IfcMaterialLayerSet"
+        )
+        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material)
+        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material2)
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material_set)
+        assert set(subject.Selector.parse(self.file, '.IfcWall[material.item.Material.Name="CON01"]')) == {element}
+        assert set(subject.Selector.parse(self.file, '.IfcWall[material.item.Material.Name="CON02"]')) == {element}
+        assert set(subject.Selector.parse(self.file, '.IfcWall[material.item.Material.Name="CON03"]')) == set()

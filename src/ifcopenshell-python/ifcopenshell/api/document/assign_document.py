@@ -20,14 +20,47 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, document=None):
+        """Assigns a document to a product
+
+        An object may be assigned to zero, one, or multiple documents. Almost
+        any object or property may be assigned to a document, though typically
+        we'd only use it for spaces, types, physical products and schedules.
+        Adding a new assignment is typically done using a document reference and
+        an object.  IFC technically allows association with a document
+        information and an object, but this is not encouraged because it is not
+        consistent with other external relationships (such as classification
+        systems or libraries).
+
+        :param product: The object to associate the document to. This could be
+            almost any sensible object in IFC.
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :param document: The IfcDocumentReference to associate to, or
+            alternatively an IfcDocumentInformation, though this is not
+            recommended.
+        :type document: ifcopenshell.entity_instance.entity_instance
+        :return: The IfcRelAssociatesDocument relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            document = ifcopenshell.api.run("document.add_information", model)
+            ifcopenshell.api.run("document.edit_information", model,
+                information=document,
+                attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
+                "Location": "A-GA-6100 - Overall Plan.pdf"})
+            reference = ifcopenshell.api.run("document.add_reference", model, information=document)
+
+            # Let's imagine storey represents an IfcBuildingStorey for the ground floor
+            ifcopenshell.api.run("document.assign_document", model, product=storey, document=reference)
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "document": None,
+            "product": product,
+            "document": document,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         rel = self.get_document_rel()

@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -17,16 +16,26 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger):
+        """Removes any 3D geometry associated with a site or multiple sites
+
+        If no sites or no site geometry is present, nothing happens.
+
+        Example:
+
+        .. code:: python
+
+            ifcpatch.execute({"input": model, "recipe": "RemoveSiteRepresentation", "arguments": []})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
 
     def patch(self):
-        project = self.file.by_type('IfcProject')[0]
-        sites = self.find_decomposed_ifc_class(project, 'IfcSite')
+        project = self.file.by_type("IfcProject")[0]
+        sites = self.find_decomposed_ifc_class(project, "IfcSite")
         for site in sites:
             site.Representation = None
 

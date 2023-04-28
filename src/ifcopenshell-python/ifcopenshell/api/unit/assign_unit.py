@@ -21,16 +21,51 @@ import ifcopenshell.util.unit
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, units=None, length=None, area=None, volume=None):
+        """Assign default project units
+
+        Whenever a unitised quantity is specified, such as a length, area,
+        voltage, pressure, etc, these project units are used by default.
+
+        It is also possible to override units for specific properties. For
+        example, generally you might want square metres for area measurements,
+        but you might want square millimeters for the measurements of the cross
+        sectional area of cables in cable trays. However, this function only
+        deals with the default project units.
+
+        :param units: A list of units to assign as project defaults. See
+            ifcopenshell.api.unit.add_si_unit, unit.add_conversion_based_unit,
+            and unit.add_monetary_unit for information on how to create units.
+        :type units: list[ifcopenshell.entity_instance.entity_instance],optional
+        :return: The IfcUnitAssignment element
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # You need a project before you can assign units.
+            ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
+
+            # Millimeters and square meters
+            length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
+            area = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="AREAUNIT")
+
+            # Make it our default units, if we are doing a metric building
+            ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
+
+            # Alternatively, you may specify without any arguments to
+            # automatically create millimeters, square meters, and cubic meters
+            # as a convenience for testing purposes. Sorry imperial folks, we
+            # prioritise metric here.
+            ifcopenshell.api.run("unit.assign_unit", model)
+        """
         self.file = file
-        self.settings = {
-            "units": None,
-            "length": {"is_metric": True, "raw": "MILLIMETERS"},
-            "area": {"is_metric": True, "raw": "METERS"},
-            "volume": {"is_metric": True, "raw": "METERS"},
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"units": units}
+        # This is a convenience function, likely to be deprecated in the future.
+        self.settings["length"] = length or {"is_metric": True, "raw": "MILLIMETERS"}
+        self.settings["area"] = area or {"is_metric": True, "raw": "METERS"}
+        self.settings["volume"] = volume or {"is_metric": True, "raw": "METERS"}
 
     def execute(self):
         # We're going to refactor this to split unit creation and assignment

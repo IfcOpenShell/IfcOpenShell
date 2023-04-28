@@ -24,6 +24,7 @@ import zipfile
 import tempfile
 import ifcopenshell
 import blenderbim.bim.handler
+import blenderbim.tool as tool
 from pathlib import Path
 
 
@@ -35,7 +36,6 @@ class IfcStore:
     cache_path = None
     id_map = {}
     guid_map = {}
-    deleted_ids = set()
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
@@ -51,6 +51,7 @@ class IfcStore:
     history = []
     future = []
     schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
+    session_files = {}
 
     @staticmethod
     def purge():
@@ -61,7 +62,6 @@ class IfcStore:
         IfcStore.cache_path = None
         IfcStore.id_map = {}
         IfcStore.guid_map = {}
-        IfcStore.deleted_ids = set()
         IfcStore.edited_objs = set()
         IfcStore.pset_template_path = ""
         IfcStore.pset_template_file = None
@@ -71,6 +71,7 @@ class IfcStore:
         IfcStore.history = []
         IfcStore.future = []
         IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
+        IfcStore.session_files = {}
 
     @staticmethod
     def get_file():
@@ -96,7 +97,14 @@ class IfcStore:
             try:
                 IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
             except:
-                return
+                if os.path.exists(IfcStore.cache_path):
+                    os.remove(IfcStore.cache_path)
+                    try:
+                        IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
+                    except:
+                        return
+                else:
+                    return
         return IfcStore.cache
 
     @staticmethod
@@ -225,7 +233,11 @@ class IfcStore:
             try:
                 value.name
             except:
-                obj = bpy.data.objects.get(IfcStore.undo_redo_stack_object_names[key])
+                # TODO not so sure about this obj_name check
+                obj_name = IfcStore.undo_redo_stack_object_names.get(key, None)
+                if not obj_name:
+                    continue
+                obj = bpy.data.objects.get(obj_name)
                 if not obj or not obj.BIMObjectProperties.ifc_definition_id:
                     continue
                 element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -248,35 +260,33 @@ class IfcStore:
         if not obj:
             return
         if obj.BIMObjectProperties.ifc_definition_id:
-            element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            try:
+                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            except:
+                return
             data = {"id": element.id(), "obj": obj.name}
             if hasattr(element, "GlobalId"):
                 data["guid"] = element.GlobalId
             IfcStore.commit_link_element(data)
         if hasattr(obj, "BIMMaterialProperties") and obj.BIMMaterialProperties.ifc_style_id:
-            element = IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id)
+            try:
+                element = IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id)
+            except:
+                return
             data = {"id": element.id(), "obj": obj.name}
             IfcStore.commit_link_element(data)
 
     @staticmethod
-    def delete_element(element):
-        IfcStore.deleted_ids.add(element.id())
-        if IfcStore.history:
-            data = {"id": element.id()}
-            IfcStore.history[-1]["operations"].append(
-                {"rollback": IfcStore.rollback_delete_element, "commit": IfcStore.commit_delete_element, "data": data}
-            )
-
-    @staticmethod
-    def rollback_delete_element(data):
-        IfcStore.deleted_ids.remove(data["id"])
-
-    @staticmethod
-    def commit_delete_element(data):
-        IfcStore.deleted_ids.add(data["id"])
-
-    @staticmethod
     def link_element(element, obj):
+        existing_obj = IfcStore.id_map.get(element.id(), None)
+        if existing_obj == obj:
+            return
+        elif existing_obj:
+            try:
+                existing_obj.name
+                IfcStore.unlink_element(obj=existing_obj)
+            except:
+                pass
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
             IfcStore.guid_map[element.GlobalId] = obj
@@ -292,6 +302,7 @@ class IfcStore:
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
         elif isinstance(obj, bpy.types.Object):
             blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+            blenderbim.bim.handler.subscribe_to(obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback)
 
         for listener in IfcStore.element_listeners:
             listener(element, obj)
@@ -324,10 +335,25 @@ class IfcStore:
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
     @staticmethod
+    def rollback_unlink_element(data):
+        if "id" not in data or "obj" not in data:
+            return
+        obj = bpy.data.objects.get(data["obj"])
+        IfcStore.id_map[data["id"]] = obj
+        if data["guid"]:
+            IfcStore.guid_map[data["guid"]] = obj
+
+    @staticmethod
+    def commit_unlink_element(data):
+        del IfcStore.id_map[data["id"]]
+        if data["guid"]:
+            del IfcStore.guid_map[data["guid"]]
+
+    @staticmethod
     def unlink_element(element=None, obj=None):
         if element is None:
             try:
-                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = tool.Ifc.get_entity(obj)
             except:
                 pass
 
@@ -357,6 +383,17 @@ class IfcStore:
             obj.BIMMaterialProperties.ifc_style_id = 0
         elif obj:
             obj.BIMObjectProperties.ifc_definition_id = 0
+
+        if IfcStore.history:
+            data = {}
+            if element:
+                data["id"] = element.id()
+                data["guid"] = getattr(element, "GlobalId", None)
+            if obj:
+                data["obj"] = obj.name
+            IfcStore.history[-1]["operations"].append(
+                {"rollback": IfcStore.rollback_unlink_element, "commit": IfcStore.commit_unlink_element, "data": data}
+            )
 
     @staticmethod
     def execute_ifc_operator(operator, context):

@@ -22,6 +22,7 @@ import ifcopenshell
 import ifcopenshell.api
 import blenderbim.bim.schema
 import blenderbim.bim.handler
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -160,7 +161,7 @@ class EnableEditingPropTemplate(bpy.types.Operator):
 
 class DeletePropEnum(bpy.types.Operator):
     bl_idname = "bim.delete_prop_enum"
-    bl_label = "delete property enumeration"
+    bl_label = "Delete Property Enumeration"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
@@ -172,7 +173,7 @@ class DeletePropEnum(bpy.types.Operator):
 
 class AddPropEnum(bpy.types.Operator):
     bl_idname = "bim.add_prop_enum"
-    bl_label = "add property enumeration"
+    bl_label = "Add Property Enumeration"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
@@ -223,7 +224,7 @@ class SavePsetTemplateFile(bpy.types.Operator):
     def execute(self, context):
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         blenderbim.bim.handler.purge_module_data()
-        blenderbim.bim.schema.reload()
+        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
         return {"FINISHED"}
 
 

@@ -48,7 +48,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 
 	// Remove points that are too close to one another
 	const double eps = getValue(GV_PRECISION) * 10;
-	remove_duplicate_points_from_loop(polygon, true, eps);
+	util::remove_duplicate_points_from_loop(polygon, true, eps);
 
 	int count = polygon.Length();
 	if (original_count - count != 0) {
@@ -70,7 +70,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	result = w.Wire();
 
 	TopTools_ListOfShape results;
-	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) == 0. && util::wire_intersections(result, results, get_wire_intersection_tolerance(result), getValue(GV_PRECISION))) {
+	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(result, results, {getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0., getValue(GV_NO_WIRE_INTERSECTION_TOLERANCE) < 0., 0., getValue(GV_PRECISION)})) {
 		Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", l);
 		util::select_largest(results, result);
 	}

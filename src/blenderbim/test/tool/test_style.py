@@ -175,7 +175,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
                 "Green": 1,
                 "Blue": 1,
             },
-            "Transparency": 1,
+            "Transparency": 0,
             "DiffuseColour": {
                 "Name": None,
                 "Red": 0.5,
@@ -202,7 +202,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
                 "Green": 1,
                 "Blue": 1,
             },
-            "Transparency": 1,
+            "Transparency": 0,
             "DiffuseColour": {
                 "Name": None,
                 "Red": 0.5,
@@ -229,7 +229,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
                 "Green": 1,
                 "Blue": 1,
             },
-            "Transparency": 1,
+            "Transparency": 0,
             "DiffuseColour": {
                 "Name": None,
                 "Red": 0.5,
@@ -255,7 +255,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
                 "Green": 1,
                 "Blue": 1,
             },
-            "Transparency": 1,
+            "Transparency": 0,
             "DiffuseColour": {
                 "Name": None,
                 "Red": 0.5,
@@ -281,7 +281,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
                 "Green": 1,
                 "Blue": 1,
             },
-            "Transparency": 1,
+            "Transparency": 0,
             "DiffuseColour": {
                 "Name": None,
                 "Red": 1,

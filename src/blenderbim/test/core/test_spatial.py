@@ -78,8 +78,9 @@ class TestRemoveContainer:
 
 
 class TestCopyToContainer:
-    def test_run(self, ifc, spatial):
+    def test_run(self, ifc, collector, spatial):
         ifc.get_entity("obj").should_be_called().will_return("element")
+        collector.sync("obj").should_be_called()
         spatial.get_container("element").should_be_called().will_return("container")
         ifc.get_object("container").should_be_called().will_return("container_obj")
         spatial.get_relative_object_matrix("obj", "container_obj").should_be_called().will_return("matrix")
@@ -92,10 +93,11 @@ class TestCopyToContainer:
 
         spatial.disable_editing("obj").should_be_called()
 
-        subject.copy_to_container(ifc, spatial, obj="obj", containers=["to_container"])
+        subject.copy_to_container(ifc, collector, spatial, obj="obj", containers=["to_container"])
 
-    def test_using_an_absolute_matrix_if_there_is_no_from_container(self, ifc, spatial):
+    def test_using_an_absolute_matrix_if_there_is_no_from_container(self, ifc, collector, spatial):
         ifc.get_entity("obj").should_be_called().will_return("element")
+        collector.sync("obj").should_be_called()
         spatial.get_container("element").should_be_called().will_return(None)
         spatial.get_object_matrix("obj").should_be_called().will_return("matrix")
 
@@ -107,7 +109,7 @@ class TestCopyToContainer:
 
         spatial.disable_editing("obj").should_be_called()
 
-        subject.copy_to_container(ifc, spatial, obj="obj", containers=["to_container"])
+        subject.copy_to_container(ifc, collector, spatial, obj="obj", containers=["to_container"])
 
 
 class TestSelectContainer:
@@ -124,6 +126,5 @@ class TestSelectSimilarContainer:
         ifc.get_entity("obj").should_be_called().will_return("element")
         spatial.get_container("element").should_be_called().will_return("container")
         spatial.get_decomposed_elements("container").should_be_called().will_return(["contained_element"])
-        ifc.get_object("contained_element").should_be_called().will_return("contained_obj")
-        spatial.select_object("contained_obj").should_be_called()
+        spatial.select_products(["contained_element"]).should_be_called()
         subject.select_similar_container(ifc, spatial, obj="obj")

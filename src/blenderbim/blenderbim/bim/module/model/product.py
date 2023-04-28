@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -18,6 +18,7 @@
 
 import bpy
 import mathutils
+from functools import reduce
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.system
@@ -30,10 +31,16 @@ import blenderbim.core.geometry
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
-from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop
+import json
+
+
+def select_and_activate_single_object(context, obj):
+    bpy.ops.object.select_all(action="DESELECT")
+    context.view_layer.objects.active = obj
+    obj.select_set(True)
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -45,9 +52,7 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
         obj = bpy.data.objects.new("TYPEX", None)
         context.scene.collection.objects.link(obj)
         context.scene.BIMRootProperties.ifc_product = "IfcElementType"
-        bpy.ops.object.select_all(action="DESELECT")
-        context.view_layer.objects.active = obj
-        obj.select_set(True)
+        select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
 
@@ -92,6 +97,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):
+                select_and_activate_single_object(context, context.selected_objects[-1])
                 return {"FINISHED"}
         if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
             if mep.MepGenerator(relating_type).generate():
@@ -125,15 +131,27 @@ class AddConstrTypeInstance(bpy.types.Operator):
         mesh = bpy.data.meshes.new(name="Instance")
         mesh.from_pydata(verts, edges, faces)
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
+
         obj.location = context.scene.cursor.location
         collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
         collection_obj = bpy.data.objects.get(collection.name)
+
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+
         # Update required as core.type.assign_type may change obj.data
-        bpy.context.view_layer.update()
+        context.view_layer.update()
+
+        # set occurences properties for the types defined with modifiers
+        if instance_class in ["IfcWindow", "IfcDoor"]:
+            pset_name = f"BBIM_{instance_class[3:]}"
+            bbim_pset = ifcopenshell.util.element.get_psets(element).get(pset_name, None)
+            if bbim_pset:
+                bbim_prop_data = json.loads(bbim_pset["Data"])
+                element.OverallWidth = bbim_prop_data["overall_width"]
+                element.OverallHeight = bbim_prop_data["overall_height"]
 
         if (
             building_obj
@@ -142,11 +160,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         ):
             if instance_class in ["IfcWindow", "IfcDoor"]:
                 # TODO For now we are hardcoding windows and doors as a prototype
-                bpy.ops.bim.add_element_opening(
-                    voided_building_element=building_obj.name, filling_building_element=obj.name
-                )
-            if instance_class == "IfcDoor":
-                obj.location[2] = building_obj.location[2] - min([v[2] for v in obj.bound_box])
+                bpy.ops.bim.add_filled_opening(voided_obj=building_obj.name, filling_obj=obj.name)
         else:
             if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
                 obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
@@ -162,9 +176,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
-        bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
-        context.view_layer.objects.active = obj
+        if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:
+            pass
+        else:
+            select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
     @staticmethod
@@ -180,31 +195,30 @@ class AddConstrTypeInstance(bpy.types.Operator):
             else:
                 layer_set_direction = "AXIS2"
 
+        obj = None
         if layer_set_direction == "AXIS3":
-            if slab.DumbSlabGenerator(relating_type).generate():
-                return True
+            obj = slab.DumbSlabGenerator(relating_type).generate()
         elif layer_set_direction == "AXIS2":
-            if wall.DumbWallGenerator(relating_type).generate():
-                return True
+            obj = wall.DumbWallGenerator(relating_type).generate()
         else:
             pass  # Dumb block generator? Eh? :)
 
+        if obj:
+            material = ifcopenshell.util.element.get_material(tool.Ifc.get_entity(obj))
+            material.LayerSetDirection = layer_set_direction
+            return True
 
-class DisplayConstrTypes(bpy.types.Operator):
-    bl_idname = "bim.display_constr_types"
-    bl_label = "Browse Construction Types"
+
+class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.change_type_page"
+    bl_label = "Change Type Page"
     bl_options = {"REGISTER"}
-    bl_description = "Display all available Construction Types to add new instances"
+    page: bpy.props.IntProperty()
 
-    def invoke(self, context, event):
-        if not AuthoringData.is_loaded:
-            AuthoringData.load()
+    def _execute(self, context):
         props = context.scene.BIMModelProperties
-        ifc_class = props.ifc_class
-        relating_type_info = AuthoringData.relating_type_info(ifc_class)
-        if relating_type_info is None or not relating_type_info.fully_loaded:
-            AuthoringData.assetize_constr_class(ifc_class)
-        bpy.ops.bim.display_constr_types_ui("INVOKE_DEFAULT")
+        bpy.ops.bim.load_type_thumbnails(ifc_class=props.type_class, offset=9 * (self.page - 1), limit=9)
+        props.type_page = self.page
         return {"FINISHED"}
 
 
@@ -254,43 +268,199 @@ class AlignProduct(bpy.types.Operator):
         return results
 
 
-class DynamicallyVoidProduct(bpy.types.Operator):
-    bl_idname = "bim.dynamically_void_product"
-    bl_label = "Dynamically Void Product"
+class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_type_thumbnails"
+    bl_label = "Load Type Thumbnails"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
+    ifc_class: bpy.props.StringProperty()
+    limit: bpy.props.IntProperty()
+    offset: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        from PIL import Image, ImageDraw
+
+        if bpy.app.background:
+            return
+
+        props = bpy.context.scene.BIMModelProperties
+        processing = set()
+        # Only process at most one paginated class at a time.
+        # Large projects have hundreds of types which can lead to unnecessary lag.
+        queue = sorted(tool.Ifc.get().by_type(self.ifc_class), key=lambda e: e.Name or "Unnamed")
+        if self.limit:
+            queue = queue[self.offset : self.offset + self.limit]
+        else:
+            offset = 9 * (props.type_page - 1)
+            if offset < 0:
+                offset = 0
+            queue = queue[offset : offset + 9]
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        while queue:
+            # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation
+            element = queue.pop()
+            obj = tool.Ifc.get_object(element)
+
+            if not obj:
+                continue  # Nothing to process
+            elif AuthoringData.type_thumbnails.get(element.id(), None):
+                continue  # Already processed
+            elif obj.preview and obj.preview.icon_id:
+                AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
+                continue
+
+            if obj.data:
+                obj.asset_generate_preview()
+                while not obj.preview:
+                    pass
+            else:
+                size = 128
+                img = Image.new("RGBA", (size, size))
+                draw = ImageDraw.Draw(img)
+
+                material = ifcopenshell.util.element.get_material(element)
+                if material and material.is_a("IfcMaterialProfileSet"):
+                    profile = material.MaterialProfiles[0].Profile
+                    tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
+
+                elif material and material.is_a("IfcMaterialLayerSet"):
+                    thicknesses = [l.LayerThickness for l in material.MaterialLayers]
+                    total_thickness = sum(thicknesses)
+                    si_total_thickness = total_thickness * unit_scale
+                    if si_total_thickness <= 0.051:
+                        width = 10
+                    elif si_total_thickness <= 0.11:
+                        width = 20
+                    elif si_total_thickness <= 0.21:
+                        width = 30
+                    elif si_total_thickness <= 0.31:
+                        width = 40
+                    else:
+                        width = 50
+
+                    height = 100
+
+                    is_horizontal = False
+                    if element.is_a("IfcSlabType"):
+                        is_horizontal = True
+
+                    parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
+                    if parametric:
+                        layer_set_direction = parametric.get("LayerSetDirection", None)
+                        if layer_set_direction == "AXIS2":
+                            is_horizontal = False
+                        elif layer_set_direction == "AXIS3":
+                            is_horizontal = True
+
+                    if is_horizontal:
+                        width, height = height, width
+
+                    x_offset = (size / 2) - (width / 2)
+                    y_offset = (size / 2) - (height / 2)
+                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
+                    current_thickness = 0
+                    del thicknesses[-1]
+                    for thickness in thicknesses:
+                        current_thickness += thickness
+                        if element.is_a("IfcSlabType"):
+                            y = (current_thickness / total_thickness) * height
+                            line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
+                        else:
+                            x = (current_thickness / total_thickness) * width
+                            line = [x_offset + x, y_offset, x_offset + x, y_offset + height]
+                        draw.line(line, fill="white", width=2)
+                elif False:
+                    # TODO: things like parametric duct segments
+                    pass
+                elif not element.RepresentationMaps:
+                    # Empties are represented by a generic thumbnail
+                    width = height = 100
+                    x_offset = (size / 2) - (width / 2)
+                    y_offset = (size / 2) - (height / 2)
+                    draw.line([x_offset, y_offset, width + x_offset, height + y_offset], fill="white", width=2)
+                    draw.line([x_offset, y_offset + height, width + x_offset, y_offset], fill="white", width=2)
+                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
+                else:
+                    draw.line([0, 0, size, size], fill="red", width=2)
+                    draw.line([0, size, size, 0], fill="red", width=2)
+
+                pixels = [item for sublist in img.getdata() for item in sublist]
+
+                obj.asset_generate_preview()
+                while not obj.preview:
+                    pass
+
+                obj.preview.image_size = size, size
+                obj.preview.image_pixels_float = pixels
+
+            queue.append(element)
+        return {"FINISHED"}
+
+
+class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.mirror_elements"
+    bl_label = "Mirror Elements"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Faux-mirrors the selected objects by an active empty along a mirror plane"
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return context.selected_objects
 
-    def execute(self, context):
-        obj = bpy.data.objects.get(self.obj)
-        if obj is None:
+    def _execute(self, context):
+        # This is not a true mirror operation. In BIM, objects that are
+        # mirrored are not the same type. (i.e. a mirrored asymmetric desk is a
+        # completely different product). To preserve types, we calculate
+        # bounding box centroids, and mirror the position of the object.  The
+        # mirrored object performs the necessary rotation to preserve the
+        # mirrored intention, but never actually truly mirror anything (i.e.
+        # scale = -1).
+
+        # Objects are mirrored along the YZ plane of the mirror object.
+        # Mirrored objects have their relative local Y and Z axes preserved,
+        # and the new X axis is calculated.
+
+        # In theory, untyped objects may be truly mirrored, but this is not yet
+        # implemented.
+        mirror = context.active_object
+        reflection = Matrix()
+        reflection[0][0] = -1
+
+        mirror.select_set(False)
+
+        if not context.selected_objects:
+            self.report(
+                {"INFO"},
+                "At least two objects must be selected: an object to be mirrored, and a mirror axis as the active object.",
+            )
             return {"FINISHED"}
-        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if not product.HasOpenings:
-            return {"FINISHED"}
-        if [m for m in obj.modifiers if m.type == "BOOLEAN"]:
-            return {"FINISHED"}
-        representation = ifcopenshell.util.representation.get_representation(product, "Model", "Body", "MODEL_VIEW")
-        if not representation:
-            return {"FINISHED"}
-        was_edit_mode = obj.mode == "EDIT"
-        if was_edit_mode:
-            bpy.ops.object.mode_set(mode="OBJECT")
-        blenderbim.core.geometry.switch_representation(
-            tool.Geometry,
-            obj=obj,
-            representation=representation,
-            should_reload=True,
-            enable_dynamic_voids=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-        if was_edit_mode:
-            bpy.ops.object.mode_set(mode="EDIT")
-        return {"FINISHED"}
+
+        bpy.ops.bim.override_object_duplicate_move(is_interactive=False)
+
+        for obj in context.selected_objects:
+            if obj == mirror:
+                continue
+
+            objmat = mirror.matrix_world.inverted() @ obj.matrix_world.copy()
+            x, y, z = objmat.to_3x3().col
+            centroid = Vector(obj.bound_box[0]).lerp(Vector(obj.bound_box[6]), 0.5)
+            c = mirror.matrix_world.inverted() @ obj.matrix_world @ centroid
+            newy = mirror.matrix_world.to_quaternion() @ (y @ reflection)
+            newz = mirror.matrix_world.to_quaternion() @ (z @ reflection)
+            newx = newy.cross(newz)
+            newc = mirror.matrix_world @ (c @ reflection)
+
+            newmat = Matrix((newx.to_4d(), newy.to_4d(), newz.to_4d(), newc.to_4d())).transposed()
+            newmat.col[3][0:3] = Vector(newmat.col[3][0:3]) - (newmat.to_quaternion() @ centroid)
+
+            obj.matrix_world = newmat
+
+    def copy_obj(self, obj):
+        new = obj.copy()
+        new.data = wall2.data.copy()
+        wall1.users_collection[0].objects.link(wall2)
+        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
 
 
 def generate_box(usecase_path, ifc_file, settings):
@@ -315,7 +485,7 @@ def generate_box(usecase_path, ifc_file, settings):
             "geometry.assign_representation",
             ifc_file,
             should_run_listeners=False,
-            **{"product": product, "representation": new_box}
+            **{"product": product, "representation": new_box},
         )
 
 
@@ -339,11 +509,11 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
             blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
                 should_reload=True,
-                enable_dynamic_voids=True,
                 is_global=True,
                 should_sync_changes_first=False,
             )
@@ -386,3 +556,28 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
             continue
 
         obj.data.materials.append(IfcStore.get_element(material[0].id()))
+
+
+def ensure_material_unassigned(usecase_path, ifc_file, settings):
+    elements = [settings["product"]]
+    if elements[0].is_a("IfcElementType"):
+        elements.extend(ifcopenshell.util.element.get_types(elements[0]))
+    for element in elements:
+        obj = tool.Ifc.get_object(element)
+        if not obj or not obj.data:
+            continue
+        element_material = ifcopenshell.util.element.get_material(element)
+        if element_material:
+            continue
+        to_remove = []
+        for i, slot in enumerate(obj.material_slots):
+            if not slot.material:
+                continue
+            material = tool.Ifc.get_entity(slot.material)
+            if material:
+                to_remove.append(i)
+        total_removed = 0
+        for i in to_remove:
+            obj.active_material_index = i - total_removed
+            bpy.ops.object.material_slot_remove({"object": obj})
+            total_removed += 1

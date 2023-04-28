@@ -1,0 +1,6 @@
+black
+mypy
+pylint
+isort
+xsdata
+tox==3.27.1

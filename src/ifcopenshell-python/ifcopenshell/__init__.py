@@ -21,7 +21,9 @@
 Typically used for opening an IFC via a filepath, or accessing one of the
 submodules.
 
-Example::
+Example:
+
+.. code:: python
 
     import ifcopenshell
     print(ifcopenshell.version) # v0.7.0-1b1fd1e6
@@ -34,6 +36,11 @@ from __future__ import print_function
 
 import os
 import sys
+import tempfile
+import zipfile
+from pathlib import Path
+
+import ifcopenshell.util.file
 
 if hasattr(os, "uname"):
     platform_system = os.uname()[0].lower()
@@ -80,19 +87,34 @@ class SchemaError(Error):
     pass
 
 
-def open(fn):
+def open(path: "os.PathLike | str", format: str = None) -> file:
     """Loads an IFC dataset from a filepath
 
-    :param fn: Filepath to the IFC model
-    :type fn: string
-    :returns: A file object
-    :rtype: ifcopenshell.file.file
+    You can specify a file format. If no format is given, it is guessed from its extension.
+    Currently supported specified format : .ifc | .ifcZIP | .ifcXML
 
-    Example::
-
-        ifc_file = ifcopenshell.open("/path/to/model.ifc")
+    Examples:
+        model = ifcopenshell.open("/path/to/model.ifc")
+        model = ifcopenshell.open("/path/to/model.ifcXML")
+        model = ifcopenshell.open("/path/to/model.any_extension", ".ifc")
     """
-    f = ifcopenshell_wrapper.open(os.path.abspath(fn))
+    path = Path(path)
+    if format is None:
+        format = ifcopenshell.util.file.guess_format(path)
+    if format == ".ifcXML":
+        f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
+        if f:
+            return file(f)
+        raise IOError(f"Failed to parse .ifcXML file from {path}")
+    if format == ".ifcZIP":
+        with tempfile.TemporaryDirectory() as unzipped_path:
+            with zipfile.ZipFile(path) as zf:
+                for name in zf.namelist():
+                    if Path(name).suffix.lower() in (".ifc", ".ifcxml"):
+                        return open(zf.extract(name, unzipped_path))
+                else:
+                    raise LookupError(f"No .ifc or .ifcXML file found in {path}")
+    f = ifcopenshell_wrapper.open(str(path.absolute()))
     if f.good():
         return file(f)
     else:
@@ -101,7 +123,8 @@ def open(fn):
             NO_HEADER: (Error, "Unable to parse IFC SPF header"),
             UNSUPPORTED_SCHEMA: (
                 SchemaError,
-                "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
+                "Unsupported schema: %s"
+                % ",".join(f.header.file_schema.schema_identifiers),
             ),
         }[f.good().value()]
         raise exc(msg)
@@ -122,7 +145,9 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     :returns: An entity instance
     :rtype: ifcopenshell.entity_instance.entity_instance
 
-    Example::
+    Example:
+
+    .. code:: python
 
         person = ifcopenshell.create_entity("IfcPerson") # #0=IfcPerson($,$,$,$,$,$,$,$)
         model = ifcopenshell.file()
@@ -135,22 +160,22 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     return e
 
 
-gcroot = []
-
-
 def register_schema(schema):
     """Registers a custom IFC schema
 
     :param schema: A schema object
     :type schema: ifcopenshell.express.schema_class.SchemaClass
 
-    Example::
+    Example:
+
+    .. code:: python
 
         schema = ifcopenshell.express.parse("/path/to/ifc-custom.exp")
         ifcopenshell.register_schema(schema)
         ifcopenshell.file(schema="IFC_CUSTOM")
     """
-    gcroot.append(schema)
+    schema.schema.this.disown()
+    schema.disown()
     ifcopenshell_wrapper.register_schema(schema.schema)
     register_schema_attributes(schema.schema)
 

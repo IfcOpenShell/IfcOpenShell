@@ -21,11 +21,45 @@ import ifcopenshell.util.date
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, resource_time=None, attributes=None):
+        """Edits the attributes of an IfcResourceTime
+
+        For more information about the attributes and data types of an
+        IfcResourceTime, consult the IFC documentation.
+
+        :param resource_time: The IfcResourceTime entity you want to edit
+        :type resource_time: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Add our own crew
+            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+
+            # Add some labour to our crew.
+            labour = ifcopenshell.api.run("resource.add_resource", model,
+                parent_resource=crew, ifc_class="IfcLaborResource")
+
+            # Labour resource is quantified in terms of time.
+            ifcopenshell.api.run("resource.add_resource_quantity", model,
+                resource=labour, ifc_class="IfcQuantityTime")
+
+            # Store the unit time used in hours
+            ifcopenshell.api.run("resource.edit_resource_quantity", model,
+                physical_quantity=time, attributes={"TimeValue": 8.0})
+
+            # Let's imagine we've used the resource for 2 days.
+            time = ifcopenshell.api.run("resource.add_resource_time", model, resource=labour)
+            ifcopenshell.api.run("resource.edit_resource_time", model,
+                resource_time=time, attributes={"ScheduleWork": "P16H"})
+        """
         self.file = file
-        self.settings = {"resource_time": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"resource_time": resource_time, "attributes": attributes or {}}
 
     def execute(self):
         self.resource = self.get_resource()

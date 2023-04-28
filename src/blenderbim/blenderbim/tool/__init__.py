@@ -30,13 +30,17 @@ from blenderbim.tool.drawing import Drawing
 from blenderbim.tool.geometry import Geometry
 from blenderbim.tool.georeference import Georeference
 from blenderbim.tool.ifc import Ifc
+from blenderbim.tool.ifcgit import IfcGit
+from blenderbim.tool.ifcgit import IfcGitRepo
 from blenderbim.tool.library import Library
+from blenderbim.tool.loader import Loader
 from blenderbim.tool.material import Material
 from blenderbim.tool.misc import Misc
 from blenderbim.tool.model import Model
 from blenderbim.tool.owner import Owner
 from blenderbim.tool.patch import Patch
 from blenderbim.tool.project import Project
+from blenderbim.tool.profile import Profile
 from blenderbim.tool.pset import Pset
 from blenderbim.tool.qto import Qto
 from blenderbim.tool.resource import Resource
@@ -49,3 +53,5 @@ from blenderbim.tool.surveyor import Surveyor
 from blenderbim.tool.system import System
 from blenderbim.tool.type import Type
 from blenderbim.tool.unit import Unit
+from blenderbim.tool.search import Search
+from blenderbim.tool.cost import Cost

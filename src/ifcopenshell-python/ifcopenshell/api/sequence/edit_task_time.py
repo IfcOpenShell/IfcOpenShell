@@ -22,11 +22,38 @@ import ifcopenshell.util.sequence
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, task_time=None, attributes=None):
+        """Edits the attributes of an IfcTaskTime
+
+        For more information about the attributes and data types of an
+        IfcTaskTime, consult the IFC documentation.
+
+        :param task_time: The IfcTaskTime entity you want to edit
+        :type task_time: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's imagine we are creating a construction schedule. All tasks
+            # need to be part of a work schedule.
+            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+
+            # Create a task to do formwork
+            task = ifcopenshell.api.run("sequence.add_task", model,
+                work_schedule=schedule, name="Formwork", identification="A")
+
+            # Let's say it takes 2 days and starts on the 1st of January, 2000
+            time = ifcopenshell.api.run("sequence.add_task_time", model, task=formwork)
+            ifcopenshell.api.run("sequence.edit_task_time", model,
+                task_time=time, attributes={"ScheduleStart": "2000-01-01", "ScheduleDuration": "P2D"})
+        """
         self.file = file
-        self.settings = {"task_time": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"task_time": task_time, "attributes": attributes or {}}
 
     def execute(self):
         self.task = self.get_task()

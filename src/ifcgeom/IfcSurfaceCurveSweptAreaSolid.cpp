@@ -34,6 +34,7 @@
 #include <ShapeFix_Edge.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -51,7 +52,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 			Logger::Error("Failed to convert reference surface", l);
 			return false;
 		}
-		if (count(surface_shell, TopAbs_FACE) != 1) {
+		if (util::count(surface_shell, TopAbs_FACE) != 1) {
 			Logger::Error("Non-continuous reference surface", l);
 			return false;
 		}

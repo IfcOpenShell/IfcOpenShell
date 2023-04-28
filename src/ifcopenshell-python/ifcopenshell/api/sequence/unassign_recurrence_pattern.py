@@ -20,11 +20,37 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, recurrence_pattern=None):
+        """Unassigns a recurrence pattern
+
+        Note that a recurring task time must have a recurrence pattern, so if
+        you remove it, be sure to clean up after yourself.
+
+        :param recurrence_pattern: The IfcRecurrencePattern to remove.
+        :type recurrence_pattern: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's create a new calendar.
+            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+
+            # Let's start defining the times that we work during the week.
+            work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+                work_calendar=calendar, time_type="WorkingTimes")
+
+            # We create a weekly recurrence
+            pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
+                parent=work_time, recurrence_type="WEEKLY")
+
+            # Change our mind, let's just maintain it whenever we feel like it.
+            ifcopenshell.api.run("sequence.unassign_recurrence_pattern", recurrence_pattern=pattern)
+        """
         self.file = file
-        self.settings = {"recurrence_pattern": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"recurrence_pattern": recurrence_pattern}
 
     def execute(self):
         self.file.remove(self.settings["recurrence_pattern"])

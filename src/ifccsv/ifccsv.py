@@ -20,12 +20,26 @@
 
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifccsv.py`
 
+import csv
+import argparse
 import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
-import csv
-import argparse
+
+try:
+    from odf.opendocument import OpenDocumentSpreadsheet
+    from odf.style import Style, TableCellProperties
+    from odf.table import Table, TableRow, TableCell
+    from odf.text import P
+except:
+    pass  # No ODF support
+
+
+try:
+    from xlsxwriter import Workbook
+except:
+    pass  # No XLSX support
 
 
 class IfcAttributeSetter:
@@ -129,7 +143,7 @@ class IfcCsv:
         self.results = []
         self.attributes = []
         self.output = ""
-        self.selector = ifcopenshell.util.selector.Selector()
+        self.format = "csv"
         self.delimiter = ","
 
     def export(self, ifc_file, elements):
@@ -147,16 +161,98 @@ class IfcCsv:
                     del self.attributes[index]
 
             for attribute in self.attributes:
-                result.append(self.selector.get_element_value(element, attribute))
+                result.append(ifcopenshell.util.selector.get_element_value(element, attribute))
             self.results.append(result)
 
+        self.headers = ["GlobalId"]
+        self.headers.extend(self.attributes)
+
+        if self.format == "csv":
+            self.export_csv()
+        elif self.format == "ods":
+            self.export_ods()
+        elif self.format == "xlsx":
+            self.export_xlsx()
+
+    def export_csv(self):
         with open(self.output, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=self.delimiter)
-            header = ["GlobalId"]
-            header.extend(self.attributes)
-            writer.writerow(header)
+            writer.writerow(self.headers)
             for row in self.results:
                 writer.writerow(row)
+
+    def export_ods(self):
+        self.doc = OpenDocumentSpreadsheet()
+
+        self.colours = {
+            "h": "dc8774",  # Header
+            "g": "eda786",  # GlobalId
+            "a": "96c7d0",  # Other Attribute
+        }
+
+        self.cell_formats = {}
+        for key, value in self.colours.items():
+            style = Style(name=key, family="table-cell")
+            style.addElement(TableCellProperties(backgroundcolor="#" + value))
+            self.doc.automaticstyles.addElement(style)
+            self.cell_formats[key] = style
+
+        table = Table(name="IfcCSV")
+        tr = TableRow()
+        for header in self.headers:
+            tc = TableCell(valuetype="string", stylename="h")
+            tc.addElement(P(text=header))
+            tr.addElement(tc)
+        table.addElement(tr)
+        for row in self.results:
+            tr = TableRow()
+            c = 0
+            for i, col in enumerate(row):
+                cell_format = "g" if i == 0 else "a"
+                tc = TableCell(valuetype="string", stylename=cell_format)
+                if col is None:
+                    col = "NULL"
+                tc.addElement(P(text=col))
+                tr.addElement(tc)
+                c += 1
+            table.addElement(tr)
+        self.doc.spreadsheet.addElement(table)
+
+        if self.output[-4:].lower() == ".ods":
+            self.output = self.output[0:-4]
+        self.doc.save(self.output, True)
+
+    def export_xlsx(self):
+        self.workbook = Workbook(self.output)
+
+        self.colours = {
+            "h": "dc8774",  # Header
+            "g": "eda786",  # GlobalId
+            "a": "96c7d0",  # Other Attribute
+        }
+
+        self.cell_formats = {}
+        for key, value in self.colours.items():
+            self.cell_formats[key] = self.workbook.add_format()
+            self.cell_formats[key].set_bg_color(value)
+
+        worksheet = self.workbook.add_worksheet("IfcCSV")
+        r = 0
+        c = 0
+        for header in self.headers:
+            cell = worksheet.write(r, c, header, self.cell_formats["h"])
+            c += 1
+        c = 0
+        r += 1
+        for row in self.results:
+            c = 0
+            for i, col in enumerate(row):
+                cell_format = "g" if i == 0 else "a"
+                cell = worksheet.write(r, c, col, self.cell_formats[cell_format])
+                c += 1
+            r += 1
+
+        self.workbook.close()
 
     def get_wildcard_attributes(self, attribute):
         results = set()
@@ -192,9 +288,15 @@ class IfcCsv:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Exports IFC data to and from CSV")
     parser.add_argument("-i", "--ifc", type=str, required=True, help="The IFC file")
-    parser.add_argument("-c", "--csv", type=str, default="data.csv", help="The CSV file to import from or export to")
+    parser.add_argument("-s", "--spreadsheet", type=str, default="data.csv", help="The spreadsheet file")
+    parser.add_argument("-f", "--format", type=str, default="csv", help="The format, chosen from csv, ods, or xlsx")
     parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as ".IfcWall"')
-    parser.add_argument("-a", "--arguments", nargs="+", help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'type', 'Name' or 'Pset_Foo.Bar'")
+    parser.add_argument(
+        "-a",
+        "--arguments",
+        nargs="+",
+        help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'type', 'Name' or 'Pset_Foo.Bar'",
+    )
     parser.add_argument("--export", action="store_true", help="Export from IFC to CSV")
     parser.add_argument("--import", action="store_true", help="Import from CSV to IFC")
     args = parser.parse_args()
@@ -204,13 +306,15 @@ if __name__ == "__main__":
         selector = ifcopenshell.util.selector.Selector()
         results = selector.parse(ifc_file, args.query)
         ifc_csv = IfcCsv()
-        ifc_csv.output = args.csv
+        ifc_csv.output = args.spreadsheet
+        ifc_csv.format = args.format
         ifc_csv.attributes = args.arguments if args.arguments else []
         ifc_csv.selector = selector
         ifc_csv.export(ifc_file, results)
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
-        ifc_csv.output = args.csv
+        ifc_csv.output = args.spreadsheet
+        ifc_csv.format = args.format
         ifc_file = ifcopenshell.open(args.ifc)
         ifc_csv.Import(ifc_file)
         ifc_file.write(args.ifc)

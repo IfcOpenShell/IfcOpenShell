@@ -18,14 +18,32 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, identification="APTR", name="Aperture Science"):
+        """Adds a new organisation
+
+        Organisations are the main way to identify manufacturers, suppliers, and
+        other actors who do not have a single representative or must not have
+        any personally identifiable information.
+
+        :param identification: The short code identifying the organisation.
+            Sometimes used in drawing naming schemes. Otherise used as a
+            canonicalised way of computers to identify the organisation. Like
+            their stock name.
+        :type identification: str, optional
+        :param name: The legal name of the organisation
+        :type name: str, optional
+        :return: The newly created IfcOrganization
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            organisation = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="AWB", name="Architects Without Ballpens")
+        """
         self.file = file
-        self.settings = {
-            "identification": "APTR",
-            "name": "Aperture Science",
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"identification": identification, "name": name}
 
     def execute(self):
         data = {"Name": self.settings["name"]}

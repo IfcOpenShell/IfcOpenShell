@@ -56,11 +56,17 @@ release = "0.7.0"
 # - I couldn't customise the template to show submodules above members which makes API discovery hard for users
 extensions = ["autoapi.extension"]
 
+# We'll add the toctree entry ourselves to distinguish between C++ and Python
+autoapi_add_toctree_entry = True
+
 # We're only documenting Python here
 autoapi_type = 'python'
 
 # autoapi works by reading source code instead of importing modules
-autoapi_dirs = ['../ifcopenshell', '../../ifcdiff']
+autoapi_dirs = ['../ifcopenshell', '../../ifcdiff', '../../ifcpatch/ifcpatch']
+
+# These are auto-generated based on the IFC schema, so exclude them
+autoapi_ignore = ['*ifcopenshell/express/rules*']
 
 # autoapi_options doesn't have show-module-summary, as it tends to create one
 # page per function which contradicts the presentation of showing all functions
@@ -90,7 +96,6 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
 html_theme = "furo"
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -99,3 +104,8 @@ html_theme = "furo"
 html_static_path = ["_static"]
 
 html_css_files = ["custom.css"]
+
+# Code block styles. Dark styling helps important code examples "pop" on the
+# page even on light themes.
+pygments_style = "one-dark"
+pygments_dark_style = "one-dark"

@@ -26,6 +26,7 @@ import ifcopenshell.api
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
+import blenderbim.bim.schema
 import blenderbim.tool as tool
 import blenderbim.core.project as core
 import blenderbim.core.context
@@ -34,7 +35,7 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
-from ifcopenshell.api.context.data import Data as ContextData
+from pathlib import Path
 
 
 class CreateProject(bpy.types.Operator):
@@ -55,6 +56,7 @@ class CreateProject(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMProjectProperties
         template = None if props.template_file == "0" else props.template_file
+        blenderbim.bim.schema.reload(props.export_schema)
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
 
     def rollback(self, data):
@@ -546,6 +548,7 @@ class UnloadProject(bpy.types.Operator):
     bl_idname = "bim.unload_project"
     bl_label = "Unload Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Unload the IFC project"
 
     def execute(self, context):
         IfcStore.purge()
@@ -562,6 +565,7 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
+        blenderbim.bim.schema.reload(self.file.schema)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
@@ -591,6 +595,10 @@ class LoadProjectElements(bpy.types.Operator):
         settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         context.scene.BIMProjectProperties.is_loading = False
+
+        tool.Project.load_default_thumbnails()
+        tool.Project.set_default_context()
+        tool.Project.set_default_modeling_dimensions()
         return {"FINISHED"}
 
     def get_decomposition_elements(self):
@@ -822,7 +830,10 @@ class ExportIFC(bpy.types.Operator):
                 self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
             return self.execute(context)
         if not self.filepath:
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
+            if bpy.data.is_saved:
+                self.filepath = Path(bpy.data.filepath).with_suffix(".ifc").__str__()
+            else:
+                self.filepath = "untitled.ifc"
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -879,6 +890,12 @@ class ExportIFC(bpy.types.Operator):
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.should_save_as:
+            return "Export the IFC project to a selected file"
+        return "Export the IFC project to this file"
 
 
 class ImportIFC(bpy.types.Operator):

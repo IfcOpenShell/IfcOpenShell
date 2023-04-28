@@ -29,7 +29,12 @@ class Collector(blenderbim.core.tool.Collector):
         # This is the reverse of assign. It reads the Blender collection and figures out its IFC hierarchy
         element = tool.Ifc.get_entity(obj)
 
-        if element.is_a("IfcProject") or element.is_a("IfcGridAxis"):
+        if (
+            not element
+            or element.is_a("IfcProject")
+            or element.is_a("IfcGridAxis")
+            or element.is_a("IfcOpeningElement")
+        ):
             return
 
         if not obj.users_collection:
@@ -96,17 +101,17 @@ class Collector(blenderbim.core.tool.Collector):
     @classmethod
     def _get_own_collection(cls, element, obj):
         if element.is_a("IfcProject"):
-            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
+            return bpy.data.collections.get(obj.name) or bpy.data.collections.new(obj.name)
 
         if tool.Ifc.get_schema() == "IFC2X3":
             if element.is_a("IfcSpatialStructureElement"):
-                return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
+                return bpy.data.collections.get(obj.name) or bpy.data.collections.new(obj.name)
         else:
             if element.is_a("IfcSpatialStructureElement") or element.is_a("IfcExternalSpatialStructureElement"):
-                return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
+                return bpy.data.collections.get(obj.name) or bpy.data.collections.new(obj.name)
 
         if element.is_a("IfcGrid"):
-            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
+            return bpy.data.collections.get(obj.name) or bpy.data.collections.new(obj.name)
 
         if element.is_a("IfcGridAxis"):
             if element.PartOfU:
@@ -130,16 +135,16 @@ class Collector(blenderbim.core.tool.Collector):
             for rel in element.HasAssignments or []:
                 if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
                     name = "IfcGroup/" + rel.RelatingGroup.Name
-                    return bpy.data.collections.get(name, bpy.data.collections.new(name))
+                    return bpy.data.collections.get(name) or bpy.data.collections.new(name)
 
         if element.is_a("IfcStructuralMember"):
-            return bpy.data.collections.get("Members", bpy.data.collections.new("Members"))
+            return bpy.data.collections.get("Members") or bpy.data.collections.new("Members")
 
         if element.is_a("IfcStructuralConnection"):
-            return bpy.data.collections.get("Connections", bpy.data.collections.new("Connections"))
+            return bpy.data.collections.get("Connections") or bpy.data.collections.new("Connections")
 
         if getattr(element, "IsDecomposedBy", None):
-            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
+            return bpy.data.collections.get(obj.name) or bpy.data.collections.new(obj.name)
 
     @classmethod
     def _get_collection(cls, element, obj):

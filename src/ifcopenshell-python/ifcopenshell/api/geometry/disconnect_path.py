@@ -37,17 +37,17 @@ class Usecase:
             connections = [
                 r
                 for r in self.settings["element"].ConnectedTo
-                if r.RelatingConnectionType == self.settings["connection_type"]
+                if r.is_a("IfcRelConnectsPathElements") and r.RelatingConnectionType == self.settings["connection_type"]
             ] + [
                 r
                 for r in self.settings["element"].ConnectedFrom
-                if r.RelatedConnectionType == self.settings["connection_type"]
+                if r.is_a("IfcRelConnectsPathElements") and r.RelatedConnectionType == self.settings["connection_type"]
             ]
         else:
             connections = [
                 r
                 for r in self.settings["relating_element"].ConnectedTo
-                if r.RelatedElement == self.settings["related_element"]
+                if r.is_a("IfcRelConnectsPathElements") and r.RelatedElement == self.settings["related_element"]
             ]
 
         for connection in set(connections):

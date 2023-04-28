@@ -47,6 +47,16 @@ class BIMQtoProperties(PropertyGroup):
                 "Side Formwork",
                 "Calculate the exposed formwork for all sides only (e.g. for columns) of one or more objects",
             ),
+            ("NetFootprintArea", "Net footprint area", "Calculate the net footprint area"),
+            ("NetRoofprintArea", "Net roofprint area", "Calculate the net roofprint area"),
+            ("LateralArea", "Lateral area", "Calculate the lateral area"),
+            ("TotalSurfaceArea", "Total surface area", "Calculate the total surface area"),
+            ("OpeningArea", "Opening area", "Calculate the opening area"),
+            ("GrossTopArea", "Gross top area", "Calculate the gross top area"),
+            ("NetTopArea", "Net top area", "Calculate the net top area"),
+            ("ProjectedArea", "Projected area", "Calculate the projected area"),
+            ("TotalContactArea", "Total contact area", "Get the total contact area"),
+            ("ContactArea", "Contact area between two objects", "Get the contact area")
         ],
         name="Qto Methods",
     )

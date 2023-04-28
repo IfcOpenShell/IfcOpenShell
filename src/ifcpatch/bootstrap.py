@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -25,4 +24,3 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 
 import ifcpatch.__main__
-

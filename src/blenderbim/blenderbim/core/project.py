@@ -42,20 +42,32 @@ def create_project(ifc, project, schema=None, template=None):
         context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
     )
     project.run_context_add_context(
+        context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent=model
+    )
+    project.run_context_add_context(
         context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model
+    )
+    project.run_context_add_context(
+        context_type="Model", context_identifier="Annotation", target_view="SECTION_VIEW", parent=model
+    )
+    project.run_context_add_context(
+        context_type="Model", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent=model
+    )
+    project.run_context_add_context(
+        context_type="Model", context_identifier="Annotation", target_view="MODEL_VIEW", parent=model
+    )
+    project.run_context_add_context(
+        context_type="Model", context_identifier="Profile", target_view="ELEVATION_VIEW", parent=model
     )
     plan = project.run_context_add_context(context_type="Plan", context_identifier="", target_view="", parent=0)
     project.run_context_add_context(
         context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent=plan
     )
     project.run_context_add_context(
+        context_type="Plan", context_identifier="Body", target_view="PLAN_VIEW", parent=plan
+    )
+    project.run_context_add_context(
         context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
-    )
-    project.run_context_add_context(
-        context_type="Plan", context_identifier="Annotation", target_view="SECTION_VIEW", parent=plan
-    )
-    project.run_context_add_context(
-        context_type="Plan", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent=plan
     )
 
     project.run_root_assign_class(obj=site, ifc_class="IfcSite", context=body)
@@ -71,3 +83,7 @@ def create_project(ifc, project, schema=None, template=None):
 
     if template:
         project.append_all_types_from_template(template)
+
+    project.load_default_thumbnails()
+    project.set_default_context()
+    project.set_default_modeling_dimensions()

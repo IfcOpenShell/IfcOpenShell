@@ -18,6 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.module.geometry.data import RepresentationsData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -29,6 +30,16 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def get_contexts(self, context):
+    if not RepresentationsData.is_loaded:
+        RepresentationsData.load()
+    return RepresentationsData.data["contexts"]
+
+
+class BIMObjectGeometryProperties(PropertyGroup):
+    contexts: EnumProperty(items=get_contexts, name="Contexts")
 
 
 class BIMGeometryProperties(PropertyGroup):

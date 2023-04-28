@@ -65,7 +65,7 @@ class BIM_PT_spatial(Panel):
             row = self.layout.row(align=True)
             if SpatialData.data["label"]:
                 row.label(text=SpatialData.data["label"])
-                row.operator("bim.select_container", icon="TRACKER", text="")
+                row.operator("bim.select_container", icon="OBJECT_DATA", text="")
                 row.operator("bim.select_similar_container", icon="RESTRICT_SELECT_OFF", text="")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
                 if SpatialData.data["is_directly_contained"]:

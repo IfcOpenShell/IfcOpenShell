@@ -26,6 +26,7 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #include <NCollection_UBTree.hxx>
 #include <BRepBndLib.hxx>
@@ -112,8 +113,8 @@ namespace IfcGeom {
 						return dss.Value() <= extend;
 					}
 				} else {
-					if (IfcGeom::Kernel::count(A, TopAbs_SHELL) == 0 ||
-						IfcGeom::Kernel::count(B, TopAbs_SHELL) == 0)
+					if (util::count(A, TopAbs_SHELL) == 0 ||
+						util::count(B, TopAbs_SHELL) == 0)
 					{
 						return false;
 					}
@@ -121,14 +122,14 @@ namespace IfcGeom {
 					if (completely_within) {
 						BRepAlgoAPI_Cut cut(B, A);
 						if (cut.IsDone()) {
-							if (IfcGeom::Kernel::count(cut.Shape(), TopAbs_SHELL) == 0) {
+							if (util::count(cut.Shape(), TopAbs_SHELL) == 0) {
 								return true;
 							}
 						}
 					} else {
 						BRepAlgoAPI_Common common(A, B);
 						if (common.IsDone()) {
-							if (IfcGeom::Kernel::count(common.Shape(), TopAbs_SHELL) > 0) {
+							if (util::count(common.Shape(), TopAbs_SHELL) > 0) {
 								return true;
 							}
 						}
@@ -410,7 +411,7 @@ namespace IfcGeom {
 					
 					// Assumption is that the number of styles is small, so the linear lookup time is not significant.
 					auto sit = std::find(styles_.begin(), styles_.end(), *adaptor);
-					int index;
+					size_t index;
 					if (sit == styles_.end()) {
 						index = styles_.size();
 						styles_.push_back(*adaptor);
@@ -420,7 +421,7 @@ namespace IfcGeom {
 
 					TopExp_Explorer exp(it.Value(), TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
-						face_styles_.Bind(exp.Current(), index);
+						face_styles_.Bind(exp.Current(), (int) index);
 					}
 				}
 			}

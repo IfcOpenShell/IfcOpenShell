@@ -18,11 +18,21 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, condition=None, attributes=None):
+        """Edits the attributes of an IfcBoundaryCondition
+
+        For more information about the attributes and data types of an
+        IfcBoundaryCondition, consult the IFC documentation.
+
+        :param condition: The IfcBoundaryCondition entity you want to edit
+        :type condition: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"condition": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"condition": condition, "attributes": attributes or {}}
 
     def execute(self):
         for name, data in self.settings["attributes"].items():

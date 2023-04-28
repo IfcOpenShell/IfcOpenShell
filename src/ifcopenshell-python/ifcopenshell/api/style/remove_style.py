@@ -20,11 +20,28 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, style=None):
+        """Removes a presentation style
+
+        All of the presentation items of the style will also be removed.
+
+        :param style: The IfcPresentationStyle to remove.
+        :type style: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Create a new surface style
+            style = ifcopenshell.api.run("style.add_style", model)
+
+            # Not anymore!
+            ifcopenshell.api.run("style.remove_style", model, style=style)
+        """
         self.file = file
-        self.settings = {"style": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"style": style}
 
     def execute(self):
         self.purge_styled_items(self.settings["style"])

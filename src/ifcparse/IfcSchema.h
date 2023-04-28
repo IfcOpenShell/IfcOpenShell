@@ -455,7 +455,7 @@ namespace IfcParse {
 			}
 			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), *name_ptr, declaration_by_name_cmp());
 			if (it == declarations_.end() || (**it).name_uc() != *name_ptr) {
-				throw IfcParse::IfcException("Entity with '" + name + "' not found");
+				throw IfcParse::IfcException("Entity with name '" + name + "' not found in schema '" + name_ + "'");
 			} else {
 				return *it;
 			}

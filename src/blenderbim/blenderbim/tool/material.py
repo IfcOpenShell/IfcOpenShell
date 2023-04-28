@@ -90,6 +90,18 @@ class Material(blenderbim.core.tool.Material):
         return bpy.context.scene.BIMMaterialProperties.is_editing
 
     @classmethod
+    def is_material_used_in_sets(cls, material):
+        for inverse in tool.Ifc.get().get_inverse(material):
+            if inverse.is_a() in [
+                "IfcMaterialProfile",
+                "IfcMaterialLayer",
+                "IfcMaterialConstituent",
+                "IfcMaterialList",
+            ]:
+                return True
+        return False
+
+    @classmethod
     def select_elements(cls, elements):
         for element in elements:
             obj = tool.Ifc.get_object(element)

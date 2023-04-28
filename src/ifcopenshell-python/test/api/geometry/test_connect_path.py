@@ -24,12 +24,13 @@ class TestConnectPath(test.bootstrap.IFC4):
     def test_connecting_a_path(self):
         wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        rel = self.connect_path(wall1, wall2, "ATSTART", "ATEND")
+        rel = self.connect_path(wall1, wall2, "ATSTART", "ATEND", description="MITRE")
         assert rel.is_a("IfcRelConnectsPathElements")
         assert rel.RelatingElement == wall1
         assert rel.RelatedElement == wall2
         assert rel.RelatingConnectionType == "ATSTART"
         assert rel.RelatedConnectionType == "ATEND"
+        assert rel.Description == "MITRE"
 
     def test_doing_nothing_if_the_element_is_already_connected(self):
         wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -129,7 +130,12 @@ class TestConnectPath(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelConnectsPathElements")) == 1
 
     def connect_path(
-        self, relating_element, related_element, relating_connection="NOTDEFINED", related_connection="NOTDEFINED"
+        self,
+        relating_element,
+        related_element,
+        relating_connection="NOTDEFINED",
+        related_connection="NOTDEFINED",
+        description=None,
     ):
         return ifcopenshell.api.run(
             "geometry.connect_path",
@@ -138,4 +144,5 @@ class TestConnectPath(test.bootstrap.IFC4):
             related_element=related_element,
             relating_connection=relating_connection,
             related_connection=related_connection,
+            description=description,
         )

@@ -20,11 +20,38 @@ import ifcopenshell.util.date
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, work_time=None, attributes=None):
+        """Edits the attributes of an IfcWorkTime
+
+        For more information about the attributes and data types of an
+        IfcWorkTime, consult the IFC documentation.
+
+        :param work_time: The IfcWorkTime entity you want to edit
+        :type work_time: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # Let's create a new calendar.
+            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+
+            # Let's start defining the times that we work during the week.
+            work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+                work_calendar=calendar, time_type="WorkingTimes")
+
+            # If we don't specify any recurring time periods in our work time,
+            # we need to specify a start and end date of the work time. It
+            # starts at 0:00 on the start date and 24:00 at the end date.
+            ifcopenshell.api.run("sequence.edit_work_time", model,
+                work_time=work_time, attributes={"StartDate": "2000-01-01", "FinishDate": "2000-01-02"})
+        """
         self.file = file
-        self.settings = {"work_time": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"work_time": work_time, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

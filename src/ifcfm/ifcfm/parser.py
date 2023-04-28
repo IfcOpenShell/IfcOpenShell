@@ -29,28 +29,83 @@ class Parser:
     def __init__(self, logger):
         self.logger = logger
         self.file = None
-        self.sheets = [
-            "actors",
-            "facilities",
-            "floors",
-            "spaces",
-            "zones",
-            "types",
-            "components",
-            "systems",
-            "assemblies",
-            "connections",
-            "spares",
-            "resources",
-            "jobs",
-            "impacts",
-            "documents",
-            "attributes",
-            "coordinates",
-            "issues",
-        ]
-        for sheet in self.sheets:
-            setattr(self, sheet, {})
+        self.categories = {
+            "actors": self.get_actors,
+            "facilities": self.get_facilities,
+            "floors": self.get_floors,
+            "spaces": self.get_spaces,
+            "zones": self.get_zones,
+            "types": self.get_types,
+            "components": self.get_components,
+            "systems": self.get_systems,
+            # "assemblies",
+            # "connections",
+            # "spares",
+            # "resources",
+            # "jobs",
+            # "impacts",
+            "documents": self.get_documents,
+            # "attributes",
+            # "coordinates",
+            # "issues",
+        }
+        # COBie
+        self.custom_parameters = {
+            "types": {
+                "AssetType": lambda e, p: None,
+                "ManufacturerOrganizationName": lambda e, p: None,
+                "ModelNumber": lambda e, p: None,
+                "WarrantyGuarantorParts": lambda e, p: None,
+                "WarrantyDurationParts": lambda e, p: None,
+                "WarrantyGuarantorLabour": lambda e, p: None,
+                "WarrantyDurationLabour": lambda e, p: None,
+                "DurationUnit": lambda e, p: "months",
+                "WarrantyDescription": lambda e, p: None,
+                "ReplacementCost": lambda e, p: None,
+                "ExpectedLife": lambda e, p: None,
+                "NominalLength": lambda e, p: None,
+                "NominalWidth": lambda e, p: None,
+                "NominalHeight": lambda e, p: None,
+            },
+            "components": {
+                "SerialNumber": lambda e, p: None,
+                "InstallationDate": lambda e, p: None,
+                "WarrantyStartDate": lambda e, p: None,
+                "TagNumber": lambda e, p: None,
+                "BarCode": lambda e, p: None,
+                "AssetIdentifier": lambda e, p: None,
+            }
+        }
+        # AOH-BEM
+        self.custom_parameters = {
+            "types": {
+                "ProcurementMethod": lambda e, p: None,
+                "ManufacturerOrganizationName": lambda e, p: None,
+                "SupplierOrganizationName": lambda e, p: None,
+                "ModelNumber": lambda e, p: None,
+                "WarrantyOrganizationName": lambda e, p: None,
+                "WarrantyDuration": lambda e, p: None,
+                "SpecificationSection": lambda e, p: None,
+                "SubmittalID": lambda e, p: None,
+                "ProductURL": lambda e, p: None,
+            },
+            "components": {
+                "InstallationDate": lambda e, p: None,
+                "WarrantyStartDate": lambda e, p: None,
+                "InstalledModelNumber": lambda e, p: None,
+                "SerialNumber": lambda e, p: None,
+                "BarCode": lambda e, p: None,
+                "TagNumber": lambda e, p: None,
+                "OwnerAssetID": lambda e, p: None,
+                "FluidHotFeedName": lambda e, p: None,
+                "FluidColdFeedName": lambda e, p: None,
+                "ElectricPanelName": lambda e, p: None,
+                "ElectricCircuitName": lambda e, p: None,
+                "ControlledByName": lambda e, p: None,
+                "InterlockedWithName": lambda e, p: None,
+                "PartOfAssemblyName": lambda e, p: None,
+            }
+        }
         self.picklists = {
             "Category-Role": [],
             "Category-Facility": [],
@@ -70,25 +125,9 @@ class Parser:
 
     def parse(self, files):
         self.files = files
-
-        self.get_actors()
-        self.get_facilities()
-        self.get_floors()
-        self.get_spaces()
-        self.get_zones()
-        self.get_types()
-        self.get_components()
-        self.get_systems()
-        # self.get_assemblies()
-        # self.get_connections()
-        # self.get_spares()
-        # self.get_resources()
-        # self.get_jobs()
-        # self.get_impacts()
-        self.get_documents()
-        # self.get_attributes()
-        # self.get_coordinates()
-        # self.get_issues()
+        for category, get_category in self.categories.items():
+            setattr(self, category, {})
+            get_category()
 
     def get_actors(self):
         for ifc in self.files.values():
@@ -180,6 +219,10 @@ class Parser:
                 return result
             return round(result, decimals)
 
+    def get_custom_parameters(self, category, data, element, psets):
+        for parameter, get_parameter in self.custom_parameters.get(category, {}).items():
+            data[parameter] = get_parameter(element, psets)
+
     def get_spaces(self):
         for key, ifc in self.files.items():
             if "arch" not in key:
@@ -190,8 +233,7 @@ class Parser:
                 primary_keys.append(name)
                 # TODO: not correct mapping
                 psets = ifcopenshell.util.element.get_psets(element)
-
-                self.spaces[name] = {
+                data = {
                     "Name": name,
                     "AuthorOrganizationName": element.OwnerHistory.OwningUser.TheOrganization.Name,
                     "AuthorDate": ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat(),
@@ -205,6 +247,8 @@ class Parser:
                     "AreaGross": self.get_property(psets, "Qto_SpaceBaseQuantities", "GrossFloorArea", decimals=2),
                     "AreaNet": self.get_property(psets, "Qto_SpaceBaseQuantities", "NetFloorArea", decimals=2),
                 }
+                self.get_custom_parameters("spaces", data, element, psets)
+                self.spaces[name] = data
 
     def get_zones(self):
         for ifc in self.files.values():
@@ -213,7 +257,7 @@ class Parser:
                     for space in rel.RelatedObjects:
                         if not space.is_a("IfcSpace"):
                             continue
-                        self.zones[element.Name + space.Name] = {
+                        self.zones[(element.Name or "Unnamed") + (space.Name or "Unnamed")] = {
                             "Name": element.Name,
                             "AuthorOrganizationName": element.OwnerHistory.OwningUser.TheOrganization.Name,
                             "AuthorDate": ifcopenshell.util.date.ifc2datetime(
@@ -249,27 +293,19 @@ class Parser:
         for element in ifcopenshell.util.fm.get_fmhem_types(self.files[ifc_file]):
             name = element.Name
             primary_keys.append(name)
-            category = self.get_classification(element)
-
-            self.types[name] = {
+            psets = ifcopenshell.util.element.get_psets(element)
+            data = {
                 "Name": name,
                 "AuthorOrganizationName": element.OwnerHistory.OwningUser.TheOrganization.Name,
                 "AuthorDate": ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat(),
-                "Category": category,
-                "ProcurementMethod": None,
+                "Category": self.get_classification(element),
                 "Description": element.Description,
-                "ManufacturerOrganizationName": None,
-                "SupplierOrganizationName": None,
-                "ModelNumber": None,
-                "WarrantyOrganizationName": None,
-                "WarrantyDuration": None,
                 "ModelSoftware": element.OwnerHistory.OwningApplication.ApplicationFullName,
                 "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
                 "ModelID": element.GlobalId,
-                "SpecificationSection": None,
-                "SubmittalID": None,
-                "ProductURL": None,
             }
+            self.get_custom_parameters("types", data, element, psets)
+            self.types[name] = data
 
     def get_components(self):
         for discipline, ifc in self.files.items():
@@ -292,31 +328,23 @@ class Parser:
                 space = ifcopenshell.util.element.get_container(element)
                 space_name = space.Name if space.is_a("IfcSpace") else None
 
-                self.components[name] = {
+                psets = ifcopenshell.util.element.get_psets(element)
+
+                data = {
                     "Name": name,
                     "AuthorOrganizationName": element.OwnerHistory.OwningUser.TheOrganization.Name,
                     "AuthorDate": ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat(),
                     "TypeName": element_type.Name,
                     "SpaceName": space_name,
-                    "InstallationDate": None,
-                    "WarrantyStartDate": None,
-                    "ModelSoftware": element.OwnerHistory.OwningApplication.ApplicationFullName,
-                    "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
-                    "ModelID": element.GlobalId,
-                    "InstalledModelNumber": None,
-                    "SerialNumber": None,
-                    "BarCode": None,
-                    "TagNumber": None,
-                    "OwnerAssetID": None,
                     "SystemName": system,
-                    "FluidHotFeedName": None,
-                    "FluidColdFeedName": None,
-                    "ElectricPanelName": None,
-                    "ElectricCircuitName": None,
-                    "ControlledByName": None,
-                    "InterlockedWithName": None,
-                    "PartOfAssemblyName": None,
+                    "ModelSoftware": element.OwnerHistory.OwningApplication.ApplicationFullName,
+                    "ModelObject": "{}[{}]".format(
+                        element.is_a(), ifcopenshell.util.element.get_predefined_type(element)
+                    ),
+                    "ModelID": element.GlobalId,
                 }
+                self.get_custom_parameters("components", data, element, psets)
+                self.components[name] = data
 
     def get_documents(self):
         for ifc in self.files.values():
@@ -325,17 +353,18 @@ class Parser:
                 if element.is_a("IfcDocumentInformation"):
                     continue
                 for related_object in rel.RelatedObjects:
-                    name = element.Name
                     worksheet_row = related_object.Name
                     if ifc.schema == "IFC2X3":
-                        submittal_id = element.ItemReference
                         referenced_document = element.ReferenceToDocument[0]
+                        identification = referenced_document.ItemReference
                         author_date = None
                         if referenced_document.CreationTime:
-                            author_date = ifcopenshell.util.date.ifc2datetime(referenced_document.CreationTime).isoformat()
+                            author_date = ifcopenshell.util.date.ifc2datetime(
+                                referenced_document.CreationTime
+                            ).isoformat()
                     else:
-                        submittal_id = element.Identification
                         referenced_document = element.ReferencedDocument
+                        identification = referenced_document.Identification
                         author_date = referenced_document.CreationTime
 
                     worksheet_name = None
@@ -344,17 +373,17 @@ class Parser:
                     elif related_object.is_a("IfcTypeObject"):
                         worksheet_name = "Type"
 
-                    self.documents[element.Name + worksheet_name + worksheet_row] = {
-                        "Name": name,
+                    self.documents[identification + worksheet_name + worksheet_row] = {
+                        "Name": identification,
                         "AuthorOrganizationName": referenced_document.DocumentOwner.Name,
                         "AuthorDate": author_date,
                         "Category": referenced_document.Purpose,
                         "WorksheetName": worksheet_name,
                         "WorksheetRow": worksheet_row,
                         "Revision": referenced_document.Revision,
-                        "Location": referenced_document.Name,
-                        "Description": referenced_document.Description,
+                        "Location": referenced_document.Location,
+                        "Description": referenced_document.Name,
                         "SpecificationSection": None,
-                        "SubmittalID": submittal_id,
+                        "SubmittalID": None,
                         "SourceURL": None,
                     }

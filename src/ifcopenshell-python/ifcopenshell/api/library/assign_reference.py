@@ -20,14 +20,44 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, reference=None):
+        """Associates a product with a library reference
+
+        A product may be associated with zero, one, or many references across
+        multiple libraries. See ifcopenshell.api.library.add_reference for more
+        detail about how references work.
+
+        :param product: The IfcProduct you want to associate with the reference
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :param reference: The IfcLibraryReference you want the product to be
+            associated with.
+        :type reference: ifcopenshell.entity_instance.entity_instance
+        :return: The IfcRelAssociatesLibrary relationship entity
+        :rtype: ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+
+            # Let's create a reference to a single AHU in our Brickschema dataset
+            reference = ifcopenshell.api.run("library.add_reference", model, library=library)
+            ifcopenshell.api.run("library.edit_reference", model,
+                reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
+
+            # Let's assume we have an AHU in our model.
+            ahu = ifcopenshell.api.run("root.create_entity", model,
+                ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
+
+            # And now assign the IFC model's AHU with its Brickschema counterpart
+            ifcopenshell.api.run("library.assign_reference", model, reference=reference, product=ahu)
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "reference": None,
+            "product": product,
+            "reference": reference,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         if self.file.schema == "IFC2X3":

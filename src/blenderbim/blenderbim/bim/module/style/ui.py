@@ -20,6 +20,7 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
+from bl_ui.properties_material import MaterialButtonsPanel
 
 
 class BIM_PT_styles(Panel):
@@ -64,7 +65,7 @@ class BIM_PT_styles(Panel):
         self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
 
 
-class BIM_PT_style(Panel):
+class BIM_PT_style(MaterialButtonsPanel, Panel):
     bl_label = "IFC Style"
     bl_idname = "BIM_PT_style"
     bl_space_type = "PROPERTIES"
@@ -81,12 +82,16 @@ class BIM_PT_style(Panel):
 
     def draw(self, context):
         props = context.active_object.active_material.BIMMaterialProperties
+        mat = context.material
         row = self.layout.row(align=True)
         if props.ifc_style_id:
             row.operator("bim.update_style_colours", icon="GREASEPENCIL")
             row.operator("bim.update_style_textures", icon="TEXTURE", text="")
             row.operator("bim.unlink_style", icon="UNLINKED", text="")
             row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
+            row = self.layout.row(align=True)
+            row.prop(mat, "diffuse_color", text="Color")
+
         else:
             row.operator("bim.add_style", icon="ADD")
 
@@ -109,6 +114,11 @@ class BIM_PT_style_attributes(Panel):
 
     def draw(self, context):
         if not StyleAttributesData.is_loaded:
+            StyleAttributesData.load()
+        elif (
+            context.active_object.active_material.BIMMaterialProperties.ifc_style_id
+            != StyleAttributesData.data["ifc_style_id"]
+        ):
             StyleAttributesData.load()
 
         obj = context.active_object.active_material

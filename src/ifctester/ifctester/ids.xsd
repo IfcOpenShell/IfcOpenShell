@@ -1,6 +1,6 @@
-<!-- edited with XMLSpy v2022 (x64) (http://www.altova.com) by Leon van Berlo (Overleaf Investments B.V.) -->
-<!-- August 2, 2022 - DRAFT  -->
-<xs:schema xmlns:ids="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://standards.buildingsmart.org/IDS" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.9.0">
+<!-- edited with XMLSpy v2022 (x64) (http://www.altova.com)  -->
+<!-- September 26, 2022 - DRAFT  -->
+<xs:schema xmlns:ids="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://standards.buildingsmart.org/IDS" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.9.3">
 	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
 	<xs:import namespace="http://www.w3.org/2001/XMLSchema" schemaLocation="https://www.w3.org/2001/XMLSchema.xsd"/>
 	<xs:import namespace="http://www.w3.org/2001/XMLSchema-instance" schemaLocation="http://www.w3.org/2001/XMLSchema-instance"/>
@@ -58,7 +58,7 @@
 	</xs:complexType>
 	<xs:complexType name="partOfType">
 		<xs:sequence>
-			<xs:element name="entity" type="ids:idsValue" minOccurs="0"/>
+			<xs:element name="entity" type="ids:entityType" minOccurs="0"/>
 		</xs:sequence>
 		<xs:attribute name="relation" type="ids:relations" use="required"/>
 	</xs:complexType>
@@ -92,7 +92,7 @@
 		</xs:sequence>
 		<xs:attribute name="measure" type="xs:string">
 			<xs:annotation>
-				<xs:documentation>This is the name of an IFC Defined Types. See the documentation and default units on https://github.com/buildingSMART/IDS/blob/master/Documentation/Physical_Quantities_and_Units.md</xs:documentation>
+				<xs:documentation>This is the name of an IFC Defined Types. See the documentation and default units on https://github.com/buildingSMART/IDS/blob/master/Documentation/units.md</xs:documentation>
 			</xs:annotation>
 			<!-- there is a request to make this an ids:value -->
 		</xs:attribute>
@@ -198,7 +198,7 @@
 	<xs:complexType name="specificationType">
 		<xs:sequence>
 			<xs:element name="applicability" type="ids:applicabilityType"/>
-			<xs:element name="requirements">
+			<xs:element name="requirements" minOccurs="0">
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:requirementsType">

@@ -22,7 +22,8 @@ You will need to choose which build to download.
 - If you are on Blender >=3.1, choose py310
 - If you are on Blender >=2.93 and <3.1, choose py39
 - If you are on Blender <2.93, choose py37
-- Choose linux, macos, or win depending on your operating system
+- Choose ``linux``, ``macos``, ``macosm1`` (for Apple M1 devices), or ``win``
+  depending on your operating system
 
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.
@@ -41,8 +42,8 @@ IfcOpenShell (using an IfcOpenBot build) for convenience. Instructions on how to
 compile IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
-choose between a ``PLATFORM`` of ``linux``, ``macos``, and ``win``. You can
-choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
+choose between a ``PLATFORM`` of ``linux``, ``macos``, ``macosm1``, and ``win``.
+You can choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
 ::
 
     $ cd src/blenderbim
@@ -101,37 +102,50 @@ For Linux or Mac:
     $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
     $ wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
-Or, if you're on Windows:
+Or, if you're on Windows, you can use the batch script below. 
+Before running it follow the instructions descibed after `rem` tags.
 
-::
+.. code-block:: bat
 
-    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    $ cd IfcOpenShell
+    @echo off
 
-    # Remove the Blender add-on Python code
-    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\core\"
-    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\tool\"
-    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\bim\"
+    rem SETUP BLENDER-BIM LIVE DEVELOPMENT ENVIRONMENT
+    rem Setup blenderbim addon location below (probably just need to change "x.x" for your Blender version).
+    rem Put the script to the folder where IfcOpenShell git repository is located
+    rem (script will try to clone IfcOpenShell.git if it's not present).
+    SET blenderbim=%appdata%\Blender Foundation\Blender\x.x\scripts\addons\blenderbim
 
-    # Replace them with links to the Git repository
-    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\core" "src\blenderbim\blenderbim\core"
-    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\tool" "src\blenderbim\blenderbim\tool"
-    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\bim" "src\blenderbim\blenderbim\bim"
+    git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    cd IfcOpenShell
 
-    # Remove the IfcOpenShell dependency Python code
-    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api"
-    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util"
+    echo Removing the Blender add-on Python code...
+    rd /S /Q "%blenderbim%\core\"
+    rd /S /Q "%blenderbim%\tool\"
+    rd /S /Q "%blenderbim%\bim\"
 
-    # Replace them with links to the Git repository
-    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api" "src\ifcopenshell-python\ifcopenshell\api"
-    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util" "src\ifcopenshell-python\ifcopenshell\util"
 
-    # Manually download some third party dependencies
-    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/data/gantt
-    $ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -outfile jsgantt.js
-    $ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -outfile jsgantt.css
-    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
-    $ curl https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o Brick.ttl
+    echo Replacing them with links to the Git repository...
+    mklink /D "%blenderbim%\core" "%cd%\src\blenderbim\blenderbim\core"
+    mklink /D "%blenderbim%\tool" "%cd%\src\blenderbim\blenderbim\tool"
+    mklink /D "%blenderbim%\bim" "%cd%\src\blenderbim\blenderbim\bim"
+
+
+    echo Remove the IfcOpenShell dependency Python code...
+    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell\api"
+    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell\util"
+
+
+    echo Replacing them with links to the Git repository...
+    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell\api" "%cd%\src\ifcopenshell-python\ifcopenshell\api"
+    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell\util" "%cd%\src\ifcopenshell-python\ifcopenshell\util"
+
+
+    echo Manually downloading some third party dependencies...
+    curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%blenderbim%\bim\data\gantt\jsgantt.js"
+    curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%blenderbim%\bim\data\gantt\jsgantt.css"
+    curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%blenderbim%\bim\schema\Brick.ttl"
+
+    pause
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect.
@@ -139,6 +153,7 @@ Blender for the changes to take effect.
 The downside with this approach is that if a new dependency is added, or a
 compiled dependency version requirement has changed, or the build system
 changes, you'll need to fix your setup manually. But this is relatively rare.
+Reviewing the Makefile history, `here <https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.7.0/src/blenderbim/Makefile>`__, is one quick way to see if a dependency has changed.  
 
 .. seealso::
 
@@ -206,6 +221,7 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     dateutil
     isodate
     networkx
+    https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
     deepdiff
     jsonpickle
     ordered_set

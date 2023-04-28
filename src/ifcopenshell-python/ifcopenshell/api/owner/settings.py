@@ -20,10 +20,30 @@
 
 
 def get_application(ifc):
+    """Returns the application representing the authoring software
+
+    It is expected for you to overload this function with your own
+    IfcApplication. See ifcopenshell.api.owner.create_owner_history for details.
+
+    :param ifc: The IFC file object that is being edited.
+    :type ifc: ifcopenshell.file.file
+    :return: The IfcApplication with metadata of the authoring software.
+    :rtype: ifcopenshell.entity_instance.entity_instance
+    """
     return (ifc.by_type("IfcApplication") or [None])[0]
 
 
 def get_user(ifc):
+    """Returns the active authoring user
+
+    It is expected for you to overload this function with your own
+    IfcApplication. See ifcopenshell.api.owner.create_owner_history for details.
+
+    :param ifc: The IFC file object that is being edited.
+    :type ifc: ifcopenshell.file.file
+    :return: The IfcPersonAndOrganization with metadata of the authoring user.
+    :rtype: ifcopenshell.entity_instance.entity_instance
+    """
     return (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
 
 

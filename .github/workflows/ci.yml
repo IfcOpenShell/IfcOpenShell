@@ -57,6 +57,8 @@ jobs:
           
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${GITHUB_WORKFLOW}
 
       - name: Build ifcopenshell
         run: |
@@ -73,7 +75,7 @@ jobs:
                -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
                -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
                -DCOLLADA_SUPPORT=Off \
-               "-DSCHEMA_VERSIONS=2x3;4;4x3" \
+               "-DSCHEMA_VERSIONS=2x3;4;4x3_add1" \
                -DGLTF_SUPPORT=On \
                -DJSON_INCLUDE_DIR=/usr/include \
                -DCGAL_INCLUDE_DIR=/usr/include \
@@ -86,15 +88,32 @@ jobs:
           sudo make -j $(nproc)
           sudo make install
 
+      - name: Run IfcConvert on Sample files
+        run: |
+          (find test/input src/blenderbim/test/files -name '*.ifc' | while read i; do \
+            echo $i | tee -a log; \
+            timeout 1m "$(which IfcConvert)" -yv "$i" "$i.obj" --validate >> log 2>&1; \
+            echo $i $? >> statuses; \
+          done) || true
+          echo Failed 
+          grep -v 0$ statuses
+          grep -v 0$ statuses | wc -l
+          echo Succeeded
+          grep 0$ statuses
+          grep 0$ statuses | wc -l
+
       - name: Install Python dependencies
         run: |
           sudo /usr/bin/python -m pip install -U pip
-          sudo /usr/bin/python -m pip install xmlschema numpy lxml
-          sudo /usr/bin/python -m pip install src/bcf
+          sudo /usr/bin/python -m pip install xmlschema xsdata numpy lxml
+          sudo /usr/bin/python -m pip install src/bcf --no-deps
           sudo /usr/bin/python -m pip install pytest
           sudo /usr/bin/python -m pip install isodate
           sudo /usr/bin/python -m pip install lark
           sudo /usr/bin/python -m pip install networkx
+          sudo /usr/bin/python -m pip install https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
+          sudo /usr/bin/python -m pip install tabulate
+          sudo /usr/bin/python -m pip install python-dateutil
 
       - name: Test
         run: |

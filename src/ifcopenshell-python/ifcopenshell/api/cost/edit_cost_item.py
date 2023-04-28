@@ -18,11 +18,29 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, cost_item=None, attributes=None):
+        """Edits the attributes of an IfcCostItem
+
+        For more information about the attributes and data types of an
+        IfcCostItem, consult the IFC documentation.
+
+        :param cost_item: The IfcCostItem entity you want to edit
+        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+            item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+            ifcopenshell.api.run("cost.edit_cost_item", model, cost_item=item, attributes={"Name": "Foo"})
+        """
         self.file = file
-        self.settings = {"cost_item": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"cost_item": cost_item, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

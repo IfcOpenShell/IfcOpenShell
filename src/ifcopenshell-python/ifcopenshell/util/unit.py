@@ -325,6 +325,25 @@ def get_unit_assignment(ifc_file):
         return unit_assignments[0]
 
 
+def get_project_unit(ifc_file, unit_type):
+    """Get the default project unit of a particular unit type
+
+    :param ifc_file: The IFC file.
+    :type ifc_file: ifcopenshell.file.file
+    :param unit_type: The type of unit, taken from the list of IFC unit types,
+        such as "LENGTHUNIT".
+    :type unit_type: str
+    :return: The IFC unit entity, or nothing if there is no default project unit
+        defined.
+    :rtype: ifcopenshell.entity_instance,None
+    """
+    unit_assignment = get_unit_assignment(ifc_file)
+    if unit_assignment:
+        for unit in unit_assignment.Units or []:
+            if getattr(unit, "UnitType", None) == unit_type:
+                return unit
+
+
 def get_property_unit(prop, ifc_file):
     unit = getattr(prop, "Unit", None)
     if unit:
@@ -431,19 +450,42 @@ def get_unit_symbol(unit):
     return "?"
 
 
+def convert_unit(value, from_unit, to_unit):
+    """Convert from one unit to another unit
+
+    :param value: The numeric value you want to convert
+    :type value: float
+    :param from_unit: The IfcNamedUnit to confirm from.
+    :type from_unit: ifcopenshell.entity_instance.entity_instance
+    :param to_unit: The IfcNamedUnit to confirm from.
+    :type to_unit: ifcopenshell.entity_instance.entity_instance
+    :return: The converted value.
+    :rtype: float
+    """
+    return convert(
+        value, getattr(from_unit, "Prefix", None), from_unit.Name, getattr(to_unit, "Prefix", None), to_unit.Name
+    )
+
+
 def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     """Converts between length, area, and volume units
+
+    In this case, you manually specify the names and (optionally) prefixes to
+    convert to and from. In case you want to automatically convert to units
+    already available as IFC entities, consider using convert_unit() instead.
 
     :param value: The numeric value you want to convert
     :type value: float
     :param from_prefix: A prefix from IfcSIPrefix. Can be None.
-    :type from_prefix: string
+    :type from_prefix: str,optional
     :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
-    :type from_unit: string
+    :type from_unit: str
     :param to_prefix: A prefix from IfcSIPrefix. Can be None.
-    :type to_prefix: string
+    :type to_prefix: str,optional
     :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
-    :type to_unit: string
+    :type to_unit: str
+    :return: The converted value.
+    :rtype: float
     """
     if from_unit in si_conversions:
         value *= si_conversions[from_unit]
@@ -469,7 +511,9 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
 def calculate_unit_scale(file):
     """Returns a unit scale factor to convert to and from IFC project length units and SI meters
 
-    Example::
+    Example:
+
+    .. code:: python
 
         ifc_project_length * unit_scale = si_meters
         si_meters / unit_scale = ifc_project_length
@@ -477,6 +521,8 @@ def calculate_unit_scale(file):
     :returns: The scale factor
     :rtype: float
     """
+    if not file.by_type("IfcUnitAssignment"):
+        return 1
     units = file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:

@@ -21,11 +21,51 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, relating_structure=None):
+        """Dereferences the a product and space
+
+        :param product: The physical IfcElement that exists in the space.
+        :type product: ifcopenshell.entity_instance.entity_instance
+        :param relating_structure: The IfcSpatialStructureElement element, such
+            as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
+            exists in.
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
+            site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
+            building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+            storey1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
+            storey2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
+            storey3 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
+
+            # The project contains a site (note that project aggregation is a special case in IFC)
+            ifcopenshell.api.run("aggregate.assign_object", model, product=site, relating_object=project)
+
+            # The site has a building, the building has a storey, and the storey has a space
+            ifcopenshell.api.run("aggregate.assign_object", model, product=building, relating_object=site)
+            ifcopenshell.api.run("aggregate.assign_object", model, product=storey, relating_object=building)
+            ifcopenshell.api.run("aggregate.assign_object", model, product=space, relating_object=storey)
+
+            # Create a column, this column spans 3 storeys
+            column = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+            # The column is contained in the lowermost storey
+            ifcopenshell.api.run("spatial.assign_container", model, product=column, relating_structure=storey1)
+
+            # And referenced in the others
+            ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey2)
+            ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey3)
+
+            # Actually, it only goes up to storey 2.
+            ifcopenshell.api.run("spatial.dereference_structure", model, product=column, relating_structure=storey3)
+        """
         self.file = file
-        self.settings = {"product": None, "relating_structure": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"product": product, "relating_structure": relating_structure}
 
     def execute(self):
         for rel in self.settings["product"].ReferencedInStructures:

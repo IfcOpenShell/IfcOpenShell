@@ -148,12 +148,6 @@ class TestGetSceneUnitSIPrefix:
         assert subject.get_scene_unit_si_prefix() is None
 
 
-class TestGetSINameFromUnitType:
-    def test_run(self):
-        for key, value in ifcopenshell.util.unit.si_type_names.items():
-            assert subject.get_si_name_from_unit_type(key) == value
-
-
 class TestImportUnitAttributes(NewFile):
     def test_importing_derived_units(self):
         ifc = ifcopenshell.file()

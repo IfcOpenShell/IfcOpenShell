@@ -26,6 +26,8 @@ classes = (
     operator.CalculateObjectVolumes,
     operator.ExecuteQtoMethod,
     operator.QuantifyObjects,
+    operator.AssignBaseQto,
+    operator.CalculateAllQuantities,
     prop.BIMQtoProperties,
     ui.BIM_PT_qto_utilities,
 )

@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -22,11 +21,27 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger):
+        """Downgrade indexed polycurves to simple polylines
+
+        Low quality IFC viewers like Navisworks do not support various IFC4
+        geometry, such as indexed polycurves. These can result in missing
+        geometry or geometric glitches (such as arcs being displayed as full
+        circles). This is pretty common when viewing IFCs from ArchiCAD that
+        include site boundaries (incorrectly drawn using the ArchiCAD grid tool,
+        as ArchiCAD has no site boundary tool).
+
+        This will downgrade specifically the indexed polycurve geometry types in
+        an IFC4 model (IFC2X3 does not have this geometry type) to help
+        compatibility in viewers like Navisworks.
+
+        Example:
+
+            ifcpatch.execute({"input": model, "recipe": "DowngradeIndexedPolyCurve", "arguments": []})
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
 
     def patch(self):
         if self.file.schema == "IFC2X3":

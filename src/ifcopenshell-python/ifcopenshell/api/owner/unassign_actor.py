@@ -21,14 +21,44 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relating_actor=None, related_object=None):
+        """Unassigns an actor to an object
+
+        This means that the actor is no longer responsible for the object.
+
+        :param relating_actor: The IfcActor who is responsible for the object.
+        :type relating_actor: ifcopenshell.entity_instance.entity_instance
+        :param related_object: The object the actor is responsible for.
+        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :return: The updated IfcRelAssignsToActor relationship or none if there
+            is no more valid relationship.
+        :rtype: None, ifcopenshell.entity_instance.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # We need to procure and install 2 of this particular pump type in our facility.
+            pump_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcPumpType")
+
+            # Define who the manufacturer is
+            manufacturer = ifcopenshell.api.run("owner.add_organisation", model,
+                identification="PWP", name="Pumps With Power")
+            ifcopenshell.api.run("owner.add_role", model, assigned_object=manufacturer, role="MANUFACTURER")
+
+            # Make the manufacturer responsible for that pump type.
+            ifcopenshell.api.run("owner.assign_actor", model,
+                relating_actor=manufacturer, related_object=pump_type)
+
+            # Undo the assignment
+            ifcopenshell.api.run("owner.unassign_actor", model,
+                relating_actor=manufacturer, related_object=pump_type)
+        """
         self.file = file
         self.settings = {
-            "relating_actor": None,
-            "related_object": None,
+            "relating_actor": relating_actor,
+            "related_object": related_object,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         for rel in self.settings["related_object"].HasAssignments or []:

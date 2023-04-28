@@ -21,11 +21,23 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, relating_structural_member=None, related_structural_connection=None):
+        """Relates a structural member and a structural connection
+
+        :param relating_structural_member: The IfcStructuralMember to have a
+            connection added to it.
+        :type relating_structural_member: ifcopenshell.entity_instance.entity_instance
+        :param related_structural_connection: The IfcStructuralConnection to add
+            to the IfcStructuralMember.
+        :type related_structural_connection: ifcopenshell.entity_instance.entity_instance
+        :return: The IfcRelConnectsStructuralMember relationship
+        :rtype: ifcopenshell.entity_instance.entity_instance
+        """
         self.file = file
-        self.settings = {"relating_structural_member": None, "related_structural_connection": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {
+            "relating_structural_member": relating_structural_member,
+            "related_structural_connection": related_structural_connection,
+        }
 
     def execute(self):
         for connection in self.settings["related_structural_connection"].ConnectsStructuralMembers or []:

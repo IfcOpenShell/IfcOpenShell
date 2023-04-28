@@ -19,6 +19,7 @@
 from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
+from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
@@ -37,11 +38,12 @@ class IfcClassData:
         cls.data = {}
         cls.data["ifc_products"] = cls.ifc_products()
         cls.data["ifc_classes"] = cls.ifc_classes()
-        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()
+        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()  # Call AFTER cls.ifc_classes()
         cls.data["contexts"] = cls.contexts()
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
         cls.data["ifc_class"] = cls.ifc_class()
+        cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
 
     @classmethod
     def ifc_products(cls):
@@ -49,13 +51,15 @@ class IfcClassData:
             "IfcElement",
             "IfcElementType",
             "IfcSpatialElement",
+            "IfcSpatialElementType",
             "IfcGroup",
             "IfcStructuralItem",
             "IfcContext",
             "IfcAnnotation",
             "IfcRelSpaceBoundary",
         ]
-        if tool.Ifc.get_schema() == "IFC2X3":
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
             products = [
                 "IfcElement",
                 "IfcElementType",
@@ -65,7 +69,7 @@ class IfcClassData:
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             ]
-        return [(e, e, "") for e in products]
+        return [(e, e, (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
 
     @classmethod
     def ifc_classes(cls):
@@ -73,9 +77,32 @@ class IfcClassData:
         declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
-        if ifc_product == "IfcElementType":
+        if ifc_product == "IfcElementType" and tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-        return [(c, c, "") for c in sorted(names)]
+        if ifc_product == "IfcElement":
+            names.remove("IfcOpeningElement")
+            if tool.Ifc.get_schema() == "IFC4":
+                # Yeah, weird isn't it.
+                names.remove("IfcOpeningStandardCase")
+        version = tool.Ifc.get_schema()
+        return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
+
+    @classmethod
+    def ifc_predefined_types(cls):
+        types_enum = []
+        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
+        version = tool.Ifc.get_schema()
+        for attribute in declaration.attributes():
+            if attribute.name() == "PredefinedType":
+                types_enum.extend(
+                    [
+                        (e, e, get_predefined_type_doc(version, ifc_class, e) or "")
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                    ]
+                )
+                break
+        return types_enum
 
     @classmethod
     def ifc_classes_suggestions(cls):
@@ -96,20 +123,11 @@ class IfcClassData:
                 "IfcUnitaryEquipment": ["Fan Coil Unit"],
             }
         )
-        file = IfcStore.get_file()
-        if file:
-            for ifc_class in cls.ifc_classes():
-                ifc_class = ifc_class[0]
-                declaration = IfcStore.get_schema().declaration_by_name(ifc_class)
-                for attribute in declaration.attributes():
-                    if attribute.name() == "PredefinedType":
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items():
-                            if e in (
-                                "NOTDEFINED",
-                                "USERDEFINED",
-                            ):
-                                continue
-                            suggestions[ifc_class].append(e.title())
+        version = tool.Ifc.get_schema()
+        for ifc_class, _, _ in cls.data["ifc_classes"]:
+            class_doc = get_entity_doc(version, ifc_class) or {}
+            predefined_types = class_doc.get("predefined_types", {})
+            suggestions[ifc_class].extend(predefined_types.keys())
         return suggestions
 
     @classmethod

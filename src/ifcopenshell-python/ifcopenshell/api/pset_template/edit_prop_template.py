@@ -18,11 +18,34 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, prop_template=None, attributes=None):
+        """Edits the attributes of an IfcSimplePropertyTemplate
+
+        For more information about the attributes and data types of an
+        IfcSimplePropertyTemplate, consult the IFC documentation.
+
+        :param prop_template: The IfcSimplePropertyTemplate entity you want to edit
+        :type prop_template: ifcopenshell.entity_instance.entity_instance
+        :param attributes: a dictionary of attribute names and values.
+        :type attributes: dict, optional
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
+
+            # Here's a property with just default values.
+            prop = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template)
+
+            # Let's edit it to give the actual values we need.
+            ifcopenshell.api.run("pset_template.edit_prop_template", model,
+                prop_template=prop, attributes={"Name": "DemoA", "PrimaryMeasureType": "IfcLengthMeasure"})
+        """
         self.file = file
-        self.settings = {"prop_template": None, "attributes": {}}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"prop_template": prop_template, "attributes": attributes or {}}
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

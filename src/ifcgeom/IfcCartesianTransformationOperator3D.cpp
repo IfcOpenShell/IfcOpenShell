@@ -22,6 +22,7 @@
 #include <gp_Trsf.hxx>
 #include <gp_Ax3.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -38,7 +39,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 	gp_Ax3 ax3 (origin,axis3,axis1);
 	if ( axis2.Dot(ax3.YDirection()) < 0 ) ax3.YReverse();
 	
-	if (!axis_equal(ax3, (gp_Ax3) gp::XOY(), getValue(GV_PRECISION))) {
+	if (!util::axis_equal(ax3, (gp_Ax3) gp::XOY(), getValue(GV_PRECISION))) {
 		trsf.SetTransformation(ax3);
 		trsf.Invert();
 	}

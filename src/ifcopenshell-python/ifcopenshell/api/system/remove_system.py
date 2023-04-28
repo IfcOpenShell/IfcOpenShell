@@ -16,15 +16,50 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.api
+
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, system=None):
+        """Removes a distribution system
+
+        All the distribution elements within the system are retained.
+
+        :param system: The IfcSystem to remove.
+        :type system: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # A completely empty distribution system
+            system = ifcopenshell.api.run("system.add_system", model)
+
+            # Delete it.
+            ifcopenshell.api.run("system.remove_system", model, system=system)
+        """
         self.file = file
-        self.settings = {"system": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"system": system}
 
     def execute(self):
-        for rel in self.settings["system"].IsGroupedBy or []:
-            self.file.remove(rel)
+        for inverse_id in [i.id() for i in self.file.get_inverse(self.settings["system"])]:
+            try:
+                inverse = self.file.by_id(inverse_id)
+            except:
+                continue
+            if inverse.is_a("IfcRelDefinesByProperties"):
+                ifcopenshell.api.run(
+                    "pset.remove_pset",
+                    self.file,
+                    product=self.settings["system"],
+                    pset=inverse.RelatingPropertyDefinition,
+                )
+            elif inverse.is_a("IfcRelAssignsToGroup"):
+                if inverse.RelatingGroup == self.settings["system"]:
+                    self.file.remove(inverse)
+                elif len(inverse.RelatedObjects) == 1:
+                    self.file.remove(inverse)
         self.file.remove(self.settings["system"])

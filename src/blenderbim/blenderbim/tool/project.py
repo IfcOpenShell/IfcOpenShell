@@ -18,6 +18,8 @@
 
 import os
 import bpy
+import ifcopenshell
+import ifcopenshell.util.unit
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
@@ -35,6 +37,12 @@ class Project(blenderbim.core.tool.Project):
     @classmethod
     def create_empty(cls, name):
         return bpy.data.objects.new(name, None)
+
+    @classmethod
+    def load_default_thumbnails(cls):
+        if tool.Ifc.get().by_type("IfcElementType"):
+            ifc_class = sorted(tool.Ifc.get().by_type("IfcElementType"), key=lambda e: e.is_a())[0].is_a()
+            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
 
     @classmethod
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None):
@@ -114,3 +122,21 @@ class Project(blenderbim.core.tool.Project):
     def set_context(cls, context):
         blenderbim.bim.handler.refresh_ui_data()
         bpy.context.scene.BIMRootProperties.contexts = str(context.id())
+
+    @classmethod
+    def set_default_context(cls):
+        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        if context:
+            bpy.context.scene.BIMRootProperties.contexts = str(context.id())
+
+    @classmethod
+    def set_default_modeling_dimensions(cls):
+        props = bpy.context.scene.BIMModelProperties
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        props.extrusion_depth = 3 / unit_scale
+        props.length = 1 / unit_scale
+        props.rl1 = 0
+        props.rl2 = 1 / unit_scale
+        props.x = 0.5 / unit_scale
+        props.y = 0.5 / unit_scale
+        props.z = 0.5 / unit_scale

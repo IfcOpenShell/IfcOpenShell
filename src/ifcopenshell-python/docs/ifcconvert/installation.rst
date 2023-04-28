@@ -14,22 +14,17 @@ Pre-built packages
 
 1. Download the appropriate version for your operating system.
 
-   +----------------+----------------+----------------+----------------+
-   | Linux 64bit    | Windows 32bit  | Windows 64bit  | MacOS 64bit    |
-   +================+================+================+================+
-   | build-linux64_ | build-win32_   | build-win64_   | build-macos64_ |
-   +----------------+----------------+----------------+----------------+
+   +----------------+----------------+----------------+----------------+------------------+
+   | Linux 64bit    | Windows 32bit  | Windows 64bit  | MacOS 64bit    | MacOS M1 64bit   |
+   +================+================+================+================+==================+
+   | build-linux64_ | build-win32_   | build-win64_   | build-macos64_ | build-macosm164_ |
+   +----------------+----------------+----------------+----------------+------------------+
 
-.. _build-linux64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dc67287-linux64.zip
-.. _build-win32: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dc67287-win32.zip
-.. _build-win64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dc67287-win64.zip
-.. _build-macos64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dc67287-macos64.zip
-
-.. warning::
-
-   Versions for Mac ARM devices (M1 chip) are not yet available. You are free to
-   compile it yourself manually, but this requires a level of technical
-   expertise.
+.. _build-linux64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-476ab50-linux64.zip
+.. _build-win32: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-476ab50-win32.zip
+.. _build-win64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-476ab50-win64.zip
+.. _build-macos64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-476ab50-macos64.zip
+.. _build-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-476ab50-macosm164.zip
 
 2. Unzip the downloaded file and run IfcConvert using the command line.
 

@@ -47,8 +47,9 @@ class Ifc(blenderbim.core.tool.Ifc):
             return IfcStore.get_file().schema
 
     @classmethod
-    def is_deleted(cls, element):
-        return element.id() in IfcStore.deleted_ids
+    def has_changed_shading(cls, obj):
+        checksum = obj.BIMMaterialProperties.shading_checksum
+        return checksum != repr(np.array(obj.diffuse_color).tobytes())
 
     @classmethod
     def is_edited(cls, obj):
@@ -56,6 +57,9 @@ class Ifc(blenderbim.core.tool.Ifc):
 
     @classmethod
     def is_moved(cls, obj):
+        element = cls.get_entity(obj)
+        if not element or element.is_a("IfcTypeProduct") or element.is_a("IfcProject"):
+            return False
         if not obj.BIMObjectProperties.location_checksum:
             return True  # Let's be conservative
         loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
@@ -89,16 +93,43 @@ class Ifc(blenderbim.core.tool.Ifc):
         IfcStore.link_element(element, obj)
 
     @classmethod
-    def delete(cls, element):
-        IfcStore.delete_element(element)
+    def edit(cls, obj):
+        IfcStore.edited_objs.add(obj)
 
     @classmethod
     def resolve_uri(cls, uri):
-        return uri if not uri or os.path.isabs(uri) else os.path.join(os.path.dirname(cls.get_path()), uri)
+        if os.path.isabs(uri):
+            return uri
+        ifc_path = cls.get_path()
+        if os.path.isfile(ifc_path):
+            ifc_path = os.path.dirname(ifc_path)
+        return uri if not uri or os.path.isabs(uri) else os.path.join(ifc_path, uri)
+
+    @classmethod
+    def get_relative_uri(cls, uri):
+        if not os.path.isabs(uri):
+            return uri
+        ifc_path = cls.get_path()
+        if os.path.isfile(ifc_path):
+            ifc_path = os.path.dirname(ifc_path)
+        return os.path.relpath(uri, ifc_path)
 
     @classmethod
     def unlink(cls, element=None, obj=None):
         IfcStore.unlink_element(element, obj)
+
+    @classmethod
+    def get_all_element_occurences(cls, element):
+        if element.is_a("IfcElementType"):
+            element_type = element
+            occurences = ifcopenshell.util.element.get_types(element_type)
+        else:
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type:
+                occurences = ifcopenshell.util.element.get_types(element_type)
+            else:
+                occurences = [element]
+        return occurences
 
     class Operator:
         def execute(self, context):

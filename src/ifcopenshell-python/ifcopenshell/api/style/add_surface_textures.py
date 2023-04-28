@@ -21,12 +21,25 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, material=None, uv_maps=None):
+        """Add a surface texture based on a Blender material definition
+
+        Warning: this API can only be used with Blender data structures.
+
+        :param material: The Blender material definition with a node tree that
+            is compatible with glTF. See one of the valid combinations here:
+            https://docs.blender.org/manual/en/dev/addons/import_export/scene_gltf2.html
+        :type material: bpy.types.Material
+        :param uv_maps: A list of IfcIndexedTextureMap for any
+            IfcTessellatedFaceSets that the representation has, obtained from
+            the HasTextures attribute.
+        :type uv_maps: list[ifcopenshell.entity_instance.entity_instance]
+        :return: A list of IfcImageTexture
+        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        """
         # TODO: This usecase currently depends on Blender's data model
         self.file = file
-        self.settings = {"material": None, "uv_maps": []}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"material": material, "uv_maps": uv_maps or []}
 
     def execute(self):
         if self.file.schema == "IFC2X3":
@@ -133,7 +146,6 @@ class Usecase:
             self.apply_uv_map_to_texture(texture)
 
     def apply_uv_map_to_texture(self, texture):
-        print('texture', texture)
         for uv_map in self.settings["uv_maps"]:
             maps = set(uv_map.Maps or [])
             maps.add(texture)

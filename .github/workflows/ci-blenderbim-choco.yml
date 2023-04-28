@@ -8,7 +8,7 @@ on:
     #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
     #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
     #         *  * * * *
-    - cron: "55 23 * * *" # 5min before utc midnight
+    - cron:  "30 0 * * *" # 30min past utc midnight
 
 env:
   major: 0
@@ -20,6 +20,8 @@ env:
 jobs:
   activate:
     runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
     - name: Set env
       run: echo ok go
@@ -41,7 +43,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
         with:
-          python-version: '3.7.7' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          python-version: '3.10.9' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - run: echo ${{ env.DATE }}
 
@@ -50,19 +52,10 @@ jobs:
         run: |
           echo "::set-output name=choco_release::$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --do_choco_release?)"
 
-      - name: Compile
-        if: ${{steps.do_choco.outputs.choco_release}} == 'do_choco_release'
-        run: |
-          target_os=${{ matrix.config.short_name }} &&
-          pyver=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --pyver?) &&
-          cp -r src/blenderbim src/blenderbim_$target_os_$pyver &&
-          cd src/blenderbim_$target_os_$pyver &&
-          make dist PLATFORM=$target_os PYVERSION=$pyver
-
       - name: Fill chocolatey scripts on win with latest blender python
         if: ${{steps.do_choco.outputs.choco_release}} == 'do_choco_release'
         run: |
-          today_non_iso="$(date +'%y%m%d' | tr -d '\n')" &&
+          yesterday_non_iso="$(date  --date='yesterday' +'%y%m%d' | tr -d '\n')" &&
           target_os=${{ matrix.config.short_name }} &&
           latest_blender_python_version_maj_min=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_python_version_maj_min?) &&
           echo "latest_blender_python_version_maj_min?: $latest_blender_python_version_maj_min" &&
@@ -70,9 +63,10 @@ jobs:
           export latest_blender_version_maj_min=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_release_maj_min?) &&
           export latest_blender_version_maj_min_pat=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_release_maj_min_pat?) &&
           echo   latest_blender_version_maj_min_pat?: $latest_blender_version_maj_min_pat &&
-          export blenderbim_build_version="${{ env.major }}.${{ env.minor }}.$today_non_iso" &&
-          export url_blenderbim_py310_win_zip="https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-$today_non_iso/blenderbim-$today_non_iso-$pyver-$target_os.zip" &&
-          export sha256sum_blenderbim_py310_win_zip=$( sha256sum src/blenderbim_$target_os_$pyver/dist/blenderbim-$today_non_iso-$pyver-$target_os.zip  --tag | cut -d ' ' -f 4  | tr -d '\n') &&
+          export blenderbim_build_version="${{ env.major }}.${{ env.minor }}.$yesterday_non_iso" &&
+          export url_blenderbim_py310_win_zip="https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-$yesterday_non_iso/blenderbim-$yesterday_non_iso-$pyver-$target_os.zip" &&
+          wget $url_blenderbim_py310_win_zip --no-verbose &&
+          export sha256sum_blenderbim_py310_win_zip=$( sha256sum blenderbim-$yesterday_non_iso-$pyver-$target_os.zip  --tag | cut -d ' ' -f 4  | tr -d '\n') &&
           echo   sha256sum_blenderbim_py310_win_zip: $sha256sum_blenderbim_py310_win_zip &&
           python3 choco/blenderbim/fill_dynamic_parameters.py &&
           echo __build choco with mono &&

@@ -1,12 +1,18 @@
-name: Publish-ifcopenshell-multiplatform
+name: ci-ifcopenshell-pypi
 
 on:
+  schedule:
+    #         ┌───────────── minute (0 - 59)
+    #         │  ┌───────────── hour (0 - 23)
+    #         │  │ ┌───────────── day of the month (1 - 31)
+    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         *  * * * *
+    - cron: "0 0 18 * *"
   push:
     paths:
       - '.github/workflows/ci-ifcopenshell-pypi.yml'
-      - 'src/ifcopenshell-python/ifcopenshell/**'
-    branches:
-      - v0.7.0
+
 
 env:
   major: 0
@@ -29,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py36, py37, py38, py39, py310]
+        pyver: [py36, py37, py38, py39, py310, py311]
         config:
           - {
             name: "Windows Build",
@@ -51,7 +57,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
         with:
-          python-version: '3.7.7' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          python-version: '3.10' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - run: echo ${{ env.DATE }}
       - name: Get current date
@@ -60,12 +66,12 @@ jobs:
       - name: Compile
         run: |
           pip install build
-          cp -r src/ifcopenshell-python src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          cd src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
       - name: Publish a Python distribution to PyPI
         uses: ortega2247/pypi-upload-action@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist
+          packages_dir: src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist

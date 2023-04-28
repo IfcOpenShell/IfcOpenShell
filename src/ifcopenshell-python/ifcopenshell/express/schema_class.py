@@ -84,7 +84,7 @@ class LateBoundSchemaInstantiator:
         for attr_name, decl_type, optional in attribute_definitions:
             attributes.append(w.attribute(attr_name, decl_type, optional))
         self.declarations[str(name)].set_attributes(attributes, is_derived)
-        self.cache.append(attributes)
+        self.cache.extend(attributes)
 
     def inverse_attributes(self, name, inv_attrs):
         attributes = []
@@ -100,6 +100,7 @@ class LateBoundSchemaInstantiator:
                     en.attributes()[attribute_entity_index],
                 )
             )
+        self.cache.extend(attributes)
         self.declarations[str(name)].set_inverse_attributes(attributes)
 
     def entity_subtypes(self, name, tys):
@@ -109,6 +110,10 @@ class LateBoundSchemaInstantiator:
         self.schema = w.schema_definition(
             override_schema_name or self.schema_name, list(self.declarations.values()), None
         )
+
+    def disown(self):
+        for elem in self.cache + list(self.declarations.values()):
+            elem.this.disown()
 
 
 class EarlyBoundCodeWriter:
@@ -372,9 +377,10 @@ class SchemaClass(codegen.Base):
                 else:
                     return x.simple_type(type)
             else:
-                raise ValueError("No mapping for '%s'" % type)
+                raise ValueError("No declared type for <%r>" % type)
 
         def find_inverse_name_and_index(entity_name, attribute_name):
+            entity_name_orig = entity_name
             attributes_per_subtype = []
             while True:
                 entity = mapping.schema.entities[entity_name]
@@ -392,7 +398,7 @@ class SchemaClass(codegen.Base):
                     pass
 
             else:
-                raise Exception("No declared type for <%r>" % type)
+                raise Exception("No attribute named %s.%s" % (entity_name_orig, attribute_name))
 
         collections_by_type = (
             ("entity", mapping.schema.entities),
@@ -410,7 +416,7 @@ class SchemaClass(codegen.Base):
         x.begin_schema()
 
         emitted = set()
-        len_to_emit = len(mapping.schema)
+        len_to_emit = len(mapping.schema) - len(mapping.schema.rules) - len(mapping.schema.functions)
 
         def write_simpletype(schema_name, name, type):
             try:
@@ -446,6 +452,10 @@ class SchemaClass(codegen.Base):
                 fn = write_entity
             elif mapping.schema.is_select(name):
                 fn = write_select
+            elif name in mapping.schema.rules:
+                return
+            elif name in mapping.schema.functions:
+                return
 
             decl = mapping.schema[name]
             if isinstance(decl, nodes.TypeDeclaration):

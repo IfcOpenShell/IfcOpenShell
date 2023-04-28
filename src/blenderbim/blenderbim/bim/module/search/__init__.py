@@ -31,7 +31,7 @@ classes = (
     operator.SelectGlobalId,
     operator.SelectIfcClass,
     operator.SelectPset,
-    operator.UnhideAllElements,
+    operator.ShowAllElements,
     operator.FilterModelElements,
     operator.IfcSelector,
     operator.SaveSelectorQuery,

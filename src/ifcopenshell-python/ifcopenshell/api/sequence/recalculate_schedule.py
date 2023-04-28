@@ -24,11 +24,33 @@ import ifcopenshell.util.sequence
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, work_schedule=None):
+        """Calculate the critical path and floats for a work schedule
+
+        This implements critical path analysis, using the forward pass and
+        backward pass method. When run, any tasks that have no float will be
+        marked as critical, and both the total and free floats will be
+        populated for all task times.
+
+        Cyclical relationships are detected and will result in a recursion
+        error.
+
+        :param work_schedule: The IfcWorkSchedule to perform the calculation on.
+        :type work_schedule: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            # See the example for ifcopenshell.api.sequence.cascade_schedule for
+            # details of how to set up a basic set of tasks and calculate the
+            # critical path. Typically cascade_schedule is run prior to ensure
+            # that dates are correct.
+        """
         self.file = file
-        self.settings = {"work_schedule": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"work_schedule": work_schedule}
 
     def execute(self):
         # The method implemented is the same as shown here:

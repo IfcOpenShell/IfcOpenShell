@@ -1,4 +1,3 @@
-
 # IfcFM - IFC for facility management
 # Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -70,7 +69,6 @@ class Writer:
     def __init__(self, parser, filename=None):
         self.filename = filename
         self.parser = parser
-        self.sheets = []
         self.sheet_data = {}
         self.colours = {
             "r": "fdff8e",  # Required
@@ -90,423 +88,170 @@ class Writer:
             "p": "b8dd73",  # Project specific
             "n": "000000",  # Not used
         }
+        self.sheets = {
+            "Actor": {
+                "data": self.parser.actors,
+                "fields": [
+                    "Name",
+                    "Category",
+                    "Email",
+                    "Phone",
+                    "CompanyURL",
+                    "Department",
+                    "Address1",
+                    "Address2",
+                    "StateRegion",
+                    "PostalCode",
+                    "Country",
+                ],
+                "colours": "rirrrrrrrrr",
+                "order": ["Name"],
+            },
+            "Facility": {
+                "data": self.parser.facilities,
+                "fields": [
+                    "Name",
+                    "AuthorOrganizationName",
+                    "AuthorDate",
+                    "Category",
+                    "ProjectName",
+                    "SiteName",
+                    "LinearUnits",
+                    "AreaUnits",
+                    "AreaMeasurement",
+                    "Phase",
+                    "ModelSoftware",
+                    "ModelProjectID",
+                    "ModelSiteID",
+                    "ModelBuildingID",
+                ],
+                "colours": "ririrrrrrreeee",
+                "order": ["Name"],
+            },
+            "Floor": {
+                "data": self.parser.floors,
+                "fields": [
+                    "Name",
+                    "AuthorOrganizationName",
+                    "AuthorDate",
+                    "Category",
+                    "ModelSoftware",
+                    "ModelObject",
+                    "ModelID",
+                    "Elevation",
+                ],
+                "colours": "ririeeer",
+                "order": ["Elevation"],
+            },
+            "Space": {
+                "data": self.parser.spaces,
+                "fields": [
+                    "Name",
+                    "AuthorOrganizationName",
+                    "AuthorDate",
+                    "Category",
+                    "LevelName",
+                    "Description",
+                    "ModelSoftware",
+                    "ModelID",
+                    "BuildingRoomNumber",
+                    "UsableHeight",
+                    "AreaGross",
+                    "AreaNet",
+                ],
+                "colours": "ririireerrrr",
+                "order": ["LevelName", "Name"],
+            },
+            "Zone": {
+                "data": self.parser.zones,
+                "fields": [
+                    "Name",
+                    "AuthorOrganizationName",
+                    "AuthorDate",
+                    "Category",
+                    "SpaceName",
+                    "ModelSoftware",
+                    "ModelID",
+                    "ParentZoneName",
+                ],
+                "colours": "ririieei",
+                "order": ["Name", "SpaceName"],
+            },
+            "Type": {
+                "data": self.parser.types,
+                "fields": [
+                    "Name",
+                    "AuthorOrganizationName",
+                    "AuthorDate",
+                    "Category",
+                    "Description",
+                    "ModelSoftware",
+                    "ModelObject",
+                    "ModelID",
+                ],
+                "colours": "ririreee",
+                "order": ["ModelObject", "Name"],
+            },
+            "Component": {
+                "data": self.parser.components,
+                "fields": [
+                    "Name",
+                    "AuthorOrganizationName",
+                    "AuthorDate",
+                    "TypeName",
+                    "SpaceName",
+                    "SystemName",
+                    "ModelSoftware",
+                    "ModelObject",
+                    "ModelID",
+                ],
+                "colours": "ririiieee",
+                "order": ["ModelObject", "Name"],
+            },
+            "System": {
+                "data": self.parser.systems,
+                "fields": [
+                    "Name",
+                    "AuthorOrganizationName",
+                    "AuthorDate",
+                    "Category",
+                    "ModelSoftware",
+                    "ModelID",
+                    "ParentSystemName",
+                ],
+                "colours": "ririeei",
+                "order": ["Name"],
+            },
+            "Document": {
+                "data": self.parser.documents,
+                "fields": [
+                    "Name",
+                    "AuthorOrganizationName",
+                    "AuthorDate",
+                    "Category",
+                    "WorksheetName",
+                    "WorksheetRow",
+                    "Revision",
+                    "Location",
+                    "Description",
+                    "SpecificationSection",
+                    "SubmittalID",
+                    "SourceURL",
+                ],
+                "colours": "ririiirrrrer",
+                "order": ["Name"],
+            },
+        }
 
     def write(self):
-        self.sheets = [
-            "Actor",
-            "Facility",
-            "Floor",
-            "Space",
-            "Zone",
-            "Type",
-            "Component",
-            "System",
-            # "Assembly",
-            # "Connection",
-            # "Spare",
-            # "Resource",
-            # "Job",
-            # "Impact",
-            "Document",
-            # "Attribute",
-            # "Coordinate",
-            # "Issue",
-        ]
-        self.write_data(
-            "Actor",
-            self.parser.actors,
-            [
-                "Name",
-                "Category",
-                "Email",
-                "Phone",
-                "CompanyURL",
-                "Department",
-                "Address1",
-                "Address2",
-                "StateRegion",
-                "PostalCode",
-                "Country",
-            ],
-            "rirrrrrrrrr",
-            ["Name"],
-        )
-        self.write_data(
-            "Facility",
-            self.parser.facilities,
-            [
-                "Name",
-                "AuthorOrganizationName",
-                "AuthorDate",
-                "Category",
-                "ProjectName",
-                "SiteName",
-                "LinearUnits",
-                "AreaUnits",
-                "AreaMeasurement",
-                "Phase",
-                "ModelSoftware",
-                "ModelProjectID",
-                "ModelSiteID",
-                "ModelBuildingID",
-            ],
-            "ririrrrrrreeee",
-            ["Name"],
-        )
-        self.write_data(
-            "Floor",
-            self.parser.floors,
-            [
-                "Name",
-                "AuthorOrganizationName",
-                "AuthorDate",
-                "Category",
-                "ModelSoftware",
-                "ModelObject",
-                "ModelID",
-                "Elevation",
-            ],
-            "ririeeer",
-            ["Elevation"],
-        )
-        self.write_data(
-            "Space",
-            self.parser.spaces,
-            [
-                "Name",
-                "AuthorOrganizationName",
-                "AuthorDate",
-                "Category",
-                "LevelName",
-                "Description",
-                "ModelSoftware",
-                "ModelID",
-                "BuildingRoomNumber",
-                "UsableHeight",
-                "AreaGross",
-                "AreaNet",
-            ],
-            "ririireerrrr",
-            ["LevelName", "Name"],
-        )
-        self.write_data(
-            "Zone",
-            self.parser.zones,
-            [
-                "Name",
-                "AuthorOrganizationName",
-                "AuthorDate",
-                "Category",
-                "SpaceName",
-                "ModelSoftware",
-                "ModelID",
-                "ParentZoneName",
-            ],
-            "ririieei",
-            ["Name", "SpaceName"],
-        )
-        self.write_data(
-            "Type",
-            self.parser.types,
-            [
-                "Name",
-                "AuthorOrganizationName",
-                "AuthorDate",
-                "Category",
-                "ProcurementMethod",
-                "Description",
-                "ManufacturerOrganizationName",
-                "SupplierOrganizationName",
-                "ModelNumber",
-                "WarrantyOrganizationName",
-                "WarrantyDuration",
-                "ModelSoftware",
-                "ModelObject",
-                "ModelID",
-                "SpecificationSection",
-                "SubmittalID",
-                "ProductURL",
-            ],
-            "ririiriirireeerrr",
-            ["ModelObject", "Name"],
-        )
-        self.write_data(
-            "Component",
-            self.parser.components,
-            [
-                "Name",
-                "AuthorOrganizationName",
-                "AuthorDate",
-                "TypeName",
-                "SpaceName",
-                "InstallationDate",
-                "WarrantyStartDate",
-                "ModelSoftware",
-                "ModelObject",
-                "ModelID",
-                "InstalledModelNumber",
-                "SerialNumber",
-                "BarCode",
-                "TagNumber",
-                "OwnerAssetID",
-                "SystemName",
-                "FluidHotFeedName",
-                "FluidColdFeedName",
-                "ElectricPanelName",
-                "ElectricCircuitName",
-                "ControlledByName",
-                "InterlockedWithName",
-                "PartOfAssemblyName",
-            ],
-            "ririirreeerrrrriiiiiiii",
-            ["ModelObject", "Name"],
-        )
-        self.write_data(
-            "System",
-            self.parser.systems,
-            [
-                "Name",
-                "AuthorOrganizationName",
-                "AuthorDate",
-                "Category",
-                "ModelSoftware",
-                "ModelID",
-                "ParentSystemName",
-            ],
-            "ririeei",
-            ["Name"],
-        )
-        # self.write_data(
-        #    "Assembly",
-        #    self.parser.assemblies,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "SheetName",
-        #        "ParentName",
-        #        "ChildNames",
-        #        "AssemblyType",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #        "Description",
-        #    ],
-        #    "rirrrrreeeo",
-        #    self.parser.custom_data["assemblies"],
-        # )
-        # self.write_data(
-        #    "Connection",
-        #    self.parser.connections,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "ConnectionType",
-        #        "SheetName",
-        #        "RowName1",
-        #        "RowName2",
-        #        "RealizingElement",
-        #        "PortName1",
-        #        "PortName2",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #        "Description",
-        #    ],
-        #    "ririiiiiiieeeo",
-        #    self.parser.custom_data["connections"],
-        # )
-        # self.write_data(
-        #    "Spare",
-        #    self.parser.spares,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "Category",
-        #        "TypeName",
-        #        "Suppliers",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #        "Description",
-        #        "SetNumber",
-        #        "PartNumber",
-        #    ],
-        #    "ririiieeeooo",
-        #    self.parser.custom_data["spares"],
-        # )
-        # self.write_data(
-        #    "Resource",
-        #    self.parser.resources,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "Category",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #        "Description",
-        #    ],
-        #    "ririeeeo",
-        #    self.parser.custom_data["resources"],
-        # )
-        # self.write_data(
-        #    "Job",
-        #    self.parser.jobs,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "Category",
-        #        "Status",
-        #        "TypeName",
-        #        "Description",
-        #        "Duration",
-        #        "DurationUnit",
-        #        "Start",
-        #        "TaskStartUnit",
-        #        "Frequency",
-        #        "FrequencyUnit",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #        "TaskNumber",
-        #        "Priors",
-        #        "ResourceNames",
-        #    ],
-        #    "ririiirriririeeeoii",
-        #    self.parser.custom_data["jobs"],
-        # )
-        # self.write_data(
-        #    "Impact",
-        #    self.parser.impacts,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "ImpactType",
-        #        "ImpactStage",
-        #        "SheetName",
-        #        "RowName",
-        #        "Value",
-        #        "Unit",
-        #        "LeadInTime",
-        #        "Duration",
-        #        "LeadOutTime",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #        "Description",
-        #    ],
-        #    "ririiiirioooeeeo",
-        #    self.parser.custom_data["impacts"],
-        # )
-        self.write_data(
-            "Document",
-            self.parser.documents,
-            [
-                "Name",
-                "AuthorOrganizationName",
-                "AuthorDate",
-                "Category",
-                "WorksheetName",
-                "WorksheetRow",
-                "Revision",
-                "Location",
-                "Description",
-                "SpecificationSection",
-                "SubmittalID",
-                "SourceURL",
-            ],
-            "ririiirrrrer",
-            ["Name"],
-        )
-        # self.write_data(
-        #    "Attribute",
-        #    self.parser.attributes,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "Category",
-        #        "SheetName",
-        #        "RowName",
-        #        "Value",
-        #        "Unit",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #        "Description",
-        #        "AllowedValues",
-        #    ],
-        #    "ririiirreeeoo",
-        # )
-        # self.write_data(
-        #    "Coordinate",
-        #    self.parser.coordinates,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "Category",
-        #        "SheetName",
-        #        "RowName",
-        #        "CoordinateXAxis",
-        #        "CoordinateYAxis",
-        #        "CoordinateZAxis",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #        "ClockwiseRotation",
-        #        "ElevationalRotation",
-        #        "YawRotation",
-        #    ],
-        #    "ririiooooeeeooo",
-        # )
-        # self.write_data(
-        #    "Issue",
-        #    self.parser.issues,
-        #    "Name",
-        #    [
-        #        "Name",
-        #        "CreatedBy",
-        #        "CreatedOn",
-        #        "Type",
-        #        "Risk",
-        #        "Chance",
-        #        "Impact",
-        #        "SheetName1",
-        #        "RowName1",
-        #        "SheetName2",
-        #        "RowName2",
-        #        "Description",
-        #        "Owner",
-        #        "Mitigation",
-        #        "ExtSystem",
-        #        "ExtObject",
-        #        "ExtIdentifier",
-        #    ],
-        #    "ririooooooooooeee",
-        # )
+        for category, spec in self.sheets.items():
+            self.write_data(category, spec["data"], spec["fields"], spec["colours"], spec["order"])
 
-    def write_data(self, sheet, data, fieldnames, colours, sort_fields, custom_data={}):
-        self.sheet_data[sheet] = {"headers": fieldnames + list(custom_data.keys()), "colours": colours, "rows": []}
+    def write_data(self, sheet, data, fieldnames, colours, sort_fields):
+        self.sheet_data[sheet] = {"headers": fieldnames, "colours": colours, "rows": []}
         for row in multikeysort(list(data.values()), sort_fields):
             values = []
             for fieldname in fieldnames:
-                values.append(row[fieldname])
-            for fieldname in custom_data.keys():
                 values.append(row[fieldname])
             self.sheet_data[sheet]["rows"].append(values)
 
@@ -532,7 +277,7 @@ class XlsWriter(Writer):
             self.cell_formats[key] = self.workbook.add_format()
             self.cell_formats[key].set_bg_color(value)
 
-        for sheet in self.sheets:
+        for sheet in self.sheets.keys():
             self.write_worksheet(sheet)
         self.workbook.close()
 
@@ -569,7 +314,7 @@ class OdsWriter(Writer):
             self.doc.automaticstyles.addElement(style)
             self.cell_formats[key] = style
 
-        for sheet in self.sheets:
+        for sheet in self.sheets.keys():
             self.write_table(sheet)
         self.doc.save(self.filename, True)
 

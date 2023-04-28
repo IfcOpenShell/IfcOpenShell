@@ -20,8 +20,9 @@ import bpy
 import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import blenderbim.tool as tool
+import blenderbim.core.sequence as core
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.resource.data import Data as ResourceData
 from blenderbim.bim.module.sequence.data import SequenceData
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
@@ -37,7 +38,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-
 
 taskcolumns_enum = []
 tasktimecolumns_enum = []
@@ -93,11 +93,23 @@ def update_active_task_index(self, context):
     blenderbim.bim.module.pset.data.refresh()
 
 
+def update_active_task_outputs(self, context):
+    bpy.ops.bim.load_task_outputs()
+
+
+def update_active_task_resources(self, context):
+    bpy.ops.bim.load_task_resources()
+
+
+def update_active_task_inputs(self, context):
+    bpy.ops.bim.load_task_inputs()
+
+
 def updateTaskName(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled or self.name == "Unnamed":
         return
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     ifcopenshell.api.run(
         "sequence.edit_task",
         self.file,
@@ -113,7 +125,7 @@ def updateTaskIdentification(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled or self.identification == "XXX":
         return
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     ifcopenshell.api.run(
         "sequence.edit_task",
         self.file,
@@ -149,7 +161,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
     if startfinish_value == "-":
         return
 
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
 
     try:
         startfinish_datetime = parser.isoparse(startfinish_value)
@@ -197,7 +209,7 @@ def updateTaskDuration(self, context):
         self.duration = "-"
         return
 
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     task = self.file.by_id(self.ifc_definition_id)
     if task.TaskTime:
         task_time = task.TaskTime
@@ -215,6 +227,12 @@ def updateTaskDuration(self, context):
         if attribute:
             attribute.string_value = self.duration
     bpy.ops.bim.load_task_properties()
+
+
+def get_schedule_predefined_types(self, context):
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["predefined_types"]
 
 
 def update_visualisation_start(self, context):
@@ -245,6 +263,31 @@ def update_visualisation_start_finish(self, context, startfinish):
         setattr(self, startfinish, canonical_value)
 
 
+def update_color_full(self, context):
+    material = bpy.data.materials.get("color_full")
+    if material:
+        color_full = bpy.context.scene.BIMAnimationProperties.color_full
+        inputs = material.node_tree.nodes["Principled BSDF"].inputs
+        color = inputs["Base Color"].default_value
+        color[0] = color_full.r
+        color[1] = color_full.g
+        color[2] = color_full.b
+
+
+def update_color_progress(self, context):
+    material = bpy.data.materials.get("color_progress")
+    if material:
+        color_progress = bpy.context.scene.BIMAnimationProperties.color_progress
+        inputs = material.node_tree.nodes["Principled BSDF"].inputs
+        color = inputs["Base Color"].default_value
+        color[0] = color_progress.r
+        color[1] = color_progress.g
+        color[2] = color_progress.b
+
+def update_sort_reversed(self, context):
+    if context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+        core.create_task_tree(tool.Sequence, work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id))
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -252,6 +295,7 @@ class Task(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     is_selected: BoolProperty(name="Is Selected")
     is_expanded: BoolProperty(name="Is Expanded")
+    has_bar_visual: BoolProperty(name="Show Task Bar Animation", default=False)
     level_index: IntProperty(name="Level Index")
     duration: StringProperty(name="Duration", update=updateTaskDuration)
     start: StringProperty(name="Start", update=updateTaskTimeStart)
@@ -273,6 +317,7 @@ class WorkPlan(PropertyGroup):
 class TaskResource(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    schedule_usage: FloatProperty(name="Schedule Usage")
 
 
 class TaskProduct(PropertyGroup):
@@ -289,7 +334,21 @@ class BIMWorkPlanProperties(PropertyGroup):
     work_schedules: EnumProperty(items=getWorkSchedules, name="Work Schedules")
 
 
+class ISODuration(PropertyGroup):
+    name: StringProperty(name="Name")
+    years: IntProperty(name="Years", default=0)
+    months: IntProperty(name="Months", default=0)
+    days: IntProperty(name="Days", default=0)
+    hours: IntProperty(name="Hours", default=0)
+    minutes: IntProperty(name="Minutes", default=0)
+    seconds: IntProperty(name="Seconds", default=0)
+
+
 class BIMWorkScheduleProperties(PropertyGroup):
+    work_schedule_predefined_types: EnumProperty(
+        items=get_schedule_predefined_types, name="Predefined Type", default=None
+    )
+    durations_attributes: CollectionProperty(name="Durations Attributes", type=ISODuration)
     work_calendars: EnumProperty(items=getWorkCalendars, name="Work Calendars")
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)
     editing_type: StringProperty(name="Editing Type")
@@ -300,11 +359,12 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
+    should_show_bar_visual_option: BoolProperty(name="Add to task bar", default=False)
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
     columns: CollectionProperty(name="Columns", type=Attribute)
     active_column_index: IntProperty(name="Active Column Index")
     sort_column: StringProperty(name="Sort Column")
-    is_sort_reversed: BoolProperty(name="Is Sort Reversed")
+    is_sort_reversed: BoolProperty(name="Is Sort Reversed", update=update_sort_reversed)
     column_types: EnumProperty(
         items=[
             ("IfcTask", "IfcTask", ""),
@@ -350,12 +410,13 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_input_index: IntProperty(name="Active Task Input Index")
     task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
     active_task_output_index: IntProperty(name="Active Task Output Index")
-
-
-class BIMDuration(PropertyGroup):
-    duration_days: IntProperty(name="Days ")
-    duration_hours: IntProperty(name="Hours")
-    duration_minutes: IntProperty(name="Minutes")
+    show_nested_outputs: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_outputs)
+    show_nested_resources: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_resources)
+    show_nested_inputs: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_inputs)
+    product_input_tasks: CollectionProperty(name="Product Task Inputs", type=TaskProduct)
+    product_output_tasks: CollectionProperty(name="Product Task Outputs", type=TaskProduct)
+    active_product_output_task_index: IntProperty(name="Active Product Output Task Index")
+    active_product_input_task_index: IntProperty(name="Active Product Input Task Index")
 
 
 class BIMTaskTreeProperties(PropertyGroup):
@@ -414,3 +475,43 @@ class BIMDateTextProperties(PropertyGroup):
     total_frames: IntProperty(name="Total Frames")
     start: StringProperty(name="Start")
     finish: StringProperty(name="Finish")
+
+
+class BIMTaskTypeColor(PropertyGroup):
+    name: StringProperty(name="Name")
+    animation_type: StringProperty(name="Type")
+    color: FloatVectorProperty(
+        name="Color",
+        subtype="COLOR",
+        default=(1, 0, 0),
+        min=0.0,
+        max=1.0,
+        # update=update_task_animation_color,
+    )
+
+
+class BIMAnimationProperties(PropertyGroup):
+    is_editing: BoolProperty(name="Is Loaded", default=False)
+    active_color_component_outputs_index: IntProperty(name="Active Color Component Index")
+    active_color_component_inputs_index: IntProperty(name="Active Color Component Index")
+    task_colors_components_inputs: CollectionProperty(name="Groups", type=BIMTaskTypeColor)
+    task_colors_components_outputs: CollectionProperty(name="Groups", type=BIMTaskTypeColor)
+    color_full: FloatVectorProperty(
+        name="Full Bar",
+        subtype="COLOR",
+        default=(1.0, 0.0, 0.0),
+        min=0.0,
+        max=1.0,
+        description="color picker",
+        update=update_color_full,
+    )
+    color_progress: FloatVectorProperty(
+        name="Progress Bar",
+        subtype="COLOR",
+        default=(0.0, 1.0, 0.0),
+        min=0.0,
+        max=1.0,
+        description="color picker",
+        update=update_color_progress,
+    )
+    should_show_task_bar_options: BoolProperty(name="Show Task Bar Options", default=False)

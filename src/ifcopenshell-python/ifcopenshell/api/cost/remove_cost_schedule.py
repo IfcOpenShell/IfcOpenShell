@@ -18,11 +18,27 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, cost_schedule=None):
+        """Removes a cost schedule
+
+        All associated relationships with the cost schedule are also removed,
+        including all cost items.
+
+        :param cost_schedule: The IfcCostSchedule entity you want to remove
+        :type cost_schedule: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+
+        Example:
+
+        .. code:: python
+
+            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+            item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+            ifcopenshell.api.run("cost.remove_cost_schedule", model, cost_schedule=schedule)
+        """
         self.file = file
-        self.settings = {"cost_schedule": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"cost_schedule": cost_schedule}
 
     def execute(self):
         # TODO: do a deep purge

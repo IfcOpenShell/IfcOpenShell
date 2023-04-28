@@ -29,7 +29,7 @@ jobs:
         sudo apt-get install --no-install-recommends \
         git cmake gcc g++ libboost-all-dev python3-all-dev swig libpcre3-dev libxml2-dev \
         libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
-        libhdf5-dev libcgal-dev
+        libhdf5-dev libcgal-dev nlohmann-json3-dev
 
     -
       name: ccache
@@ -61,6 +61,8 @@ jobs:
          -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
          -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
          -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
+         -DGLTF_SUPPORT=On \
+         -DJSON_INCLUDE_DIR=/usr/include \
          ../cmake
         make -j $(nproc)
         make install

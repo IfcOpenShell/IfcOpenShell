@@ -19,7 +19,7 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from ifcopenshell.api.constraint.data import Data
+from blenderbim.bim.module.constraint.data import ConstraintsData, ObjectConstraintsData
 
 
 class BIM_PT_constraints(Panel):
@@ -36,14 +36,14 @@ class BIM_PT_constraints(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not ConstraintsData.is_loaded:
+            ConstraintsData.load()
 
         self.props = context.scene.BIMConstraintProperties
 
         if not self.props.is_editing or self.props.is_editing == "IfcObjective":
             row = self.layout.row(align=True)
-            row.label(text="{} Objectives Found".format(len(Data.objectives)), icon="LIGHT")
+            row.label(text=f"{ConstraintsData.data['total_objectives']} Objectives Found", icon="LIGHT")
             if self.props.is_editing == "IfcObjective":
                 row.operator("bim.disable_constraint_editing_ui", text="", icon="CHECKMARK")
                 row.operator("bim.add_objective", text="", icon="ADD")
@@ -74,6 +74,7 @@ class BIM_PT_object_constraints(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
@@ -85,33 +86,29 @@ class BIM_PT_object_constraints(Panel):
         return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
 
     def draw(self, context):
+        if not ObjectConstraintsData.is_loaded:
+            ObjectConstraintsData.load()
+
         obj = context.active_object
         self.oprops = obj.BIMObjectProperties
         self.sprops = context.scene.BIMConstraintProperties
         self.props = obj.BIMObjectConstraintProperties
         self.file = IfcStore.get_file()
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-        if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         self.draw_add_ui()
 
-        constraint_ids = Data.products[self.oprops.ifc_definition_id]
-
-        if not constraint_ids:
+        if not ObjectConstraintsData.data["constraints"]:
             row = self.layout.row(align=True)
             row.label(text="No Constraints", icon="LIGHT")
 
-        for constraint_id in constraint_ids:
-            try:
-                constraint = Data.objectives[constraint_id]
+        for constraint in ObjectConstraintsData.data["constraints"]:
+            if constraint["type"] == "IfcObjective":
                 icon = "LIGHT"
-            except:
-                pass  # Metric not implemented
+            else:
+                continue # Metric not implemented
             row = self.layout.row(align=True)
-            row.label(text=constraint.get("Name") or "Unnamed")
-            row.operator("bim.unassign_constraint", text="", icon="X").constraint = constraint_id
+            row.label(text=constraint["name"])
+            row.operator("bim.unassign_constraint", text="", icon="X").constraint = constraint["id"]
 
     def draw_add_ui(self):
         if self.props.is_adding:

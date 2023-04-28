@@ -20,15 +20,20 @@ import os
 import bpy
 import bcf
 import bcf.bcfxml
-import bcf.v2.data
+import bcf.v2.model
+import uuid
 import numpy as np
+import tempfile
+import webbrowser
 import ifcopenshell
 import ifcopenshell.util.unit
-from . import bcfstore
 import blenderbim.bim.module.bcf.prop as bcf_prop
+from . import bcfstore
+from pathlib import Path
 from blenderbim.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
 from mathutils import Vector, Matrix, Euler, geometry
+from xsdata.models.datatype import XmlDateTime
 
 
 class NewBcfProject(bpy.types.Operator):
@@ -38,8 +43,8 @@ class NewBcfProject(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BCFProperties.is_loaded = False
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.new_project()
+        bcfxml = bcf.v2.bcfxml.BcfXml.create_new("New Project")
+        bcfstore.BcfStore.set(bcfxml)
         bpy.ops.bim.load_bcf_project()
         context.scene.BCFProperties.is_loaded = True
         return {"FINISHED"}
@@ -57,7 +62,6 @@ class LoadBcfProject(bpy.types.Operator):
         if self.filepath:
             bcfstore.BcfStore.bcfxml = bcf.bcfxml.load(self.filepath)
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.get_project()
         context.scene.BCFProperties.name = bcfxml.project.name
         bpy.ops.bim.load_bcf_topics()
         context.scene.BCFProperties.is_loaded = True
@@ -75,7 +79,6 @@ class LoadBcfTopics(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.get_topics()
         context.scene.BCFProperties.topics.clear()
         for index, topic_guid in enumerate(bcfxml.topics.keys()):
             new = context.scene.BCFProperties.topics.add()
@@ -92,51 +95,51 @@ class LoadBcfTopic(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        topic = bcfxml.get_topic(self.topic_guid)
+        topic = bcfxml.topics[self.topic_guid]
         bcfxml.get_header(self.topic_guid)
         new = context.scene.BCFProperties.topics[self.topic_index]
         data_map = {
             "name": topic.guid,
-            "title": topic.title,
-            "type": topic.topic_type,
-            "status": topic.topic_status,
-            "priority": topic.priority,
-            "stage": topic.stage,
-            "creation_date": topic.creation_date,
-            "creation_author": topic.creation_author,
-            "modified_date": topic.modified_date,
-            "modified_author": topic.modified_author,
-            "assigned_to": topic.assigned_to,
-            "due_date": topic.due_date,
-            "description": topic.description,
+            "title": topic.topic.title,
+            "type": topic.topic.topic_type,
+            "status": topic.topic.topic_status,
+            "priority": topic.topic.priority,
+            "stage": topic.topic.stage,
+            "creation_date": topic.topic.creation_date,
+            "creation_author": topic.topic.creation_author,
+            "modified_date": topic.topic.modified_date,
+            "modified_author": topic.topic.modified_author,
+            "assigned_to": topic.topic.assigned_to,
+            "due_date": topic.topic.due_date,
+            "description": topic.topic.description,
         }
         for key, value in data_map.items():
             if value is not None:
                 setattr(new, key, str(value))
 
         new.reference_links.clear()
-        for reference_link in topic.reference_links:
+        for reference_link in topic.topic.reference_link:
             new_reference_link = new.reference_links.add()
             new_reference_link.name = reference_link
 
         new.labels.clear()
-        for label in topic.labels:
+        for label in topic.topic.labels:
             new_label = new.labels.add()
             new_label.name = label
 
-        if topic.bim_snippet:
+        if topic.topic.bim_snippet:
             data_map = {
-                "type": topic.bim_snippet.snippet_type,
-                "is_external": topic.bim_snippet.is_external,
-                "reference": topic.bim_snippet.reference,
-                "schema": topic.bim_snippet.reference_schema,
+                "type": topic.topic.bim_snippet.snippet_type,
+                "is_external": topic.topic.bim_snippet.is_external,
+                "reference": topic.topic.bim_snippet.reference,
+                "schema": topic.topic.bim_snippet.reference_schema,
             }
             for key, value in data_map.items():
                 if value is not None:
                     setattr(new.bim_snippet, key, value)
 
         new.document_references.clear()
-        for doc in topic.document_references:
+        for doc in topic.topic.document_reference:
             new_document_references = new.document_references.add()
             data_map = {
                 "reference": doc.referenced_document,
@@ -149,7 +152,7 @@ class LoadBcfTopic(bpy.types.Operator):
                     setattr(new_document_references, key, value)
 
         new.related_topics.clear()
-        for related_topic in topic.related_topics:
+        for related_topic in topic.topic.related_topic:
             new_related_topic = new.related_topics.add()
             new_related_topic.name = related_topic.guid
 
@@ -165,10 +168,9 @@ class LoadBcfComments(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.get_comments(self.topic_guid)
         blender_topic = context.scene.BCFProperties.topics.get(self.topic_guid)
         blender_topic.comments.clear()
-        for comment in bcfxml.topics[self.topic_guid].comments.values():
+        for comment in bcfxml.topics[self.topic_guid].comments:
             new = blender_topic.comments.add()
             data_map = {
                 "name": comment.guid,
@@ -193,7 +195,6 @@ class EditBcfProjectName(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcfxml.project.name = context.scene.BCFProperties.name
-        bcfxml.edit_project()
         return {"FINISHED"}
 
 
@@ -217,9 +218,8 @@ class EditBcfTopicName(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        topic = bcfxml.topics[blender_topic.name]
+        topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title
-        bcfxml.edit_topic(topic)
         return {"FINISHED"}
 
 
@@ -233,7 +233,7 @@ class EditBcfTopic(bpy.types.Operator):
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
 
-        topic = bcfxml.topics[blender_topic.name]
+        topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title or None
         topic.priority = blender_topic.priority or None
         topic.due_date = blender_topic.due_date or None
@@ -243,7 +243,6 @@ class EditBcfTopic(bpy.types.Operator):
         topic.topic_status = blender_topic.status or None
         topic.topic_type = blender_topic.type or None
 
-        bcfxml.edit_topic(topic)
         props.refresh_topic(context)
         return {"FINISHED"}
 
@@ -257,7 +256,7 @@ class SaveBcfProject(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.save_project(self.filepath)
+        bcfxml.save(self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -276,7 +275,7 @@ class AddBcfTopic(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.add_topic()
+        bcfxml.add_topic("New Topic", "", context.scene.BCFProperties.author)
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
 
@@ -300,15 +299,17 @@ class AddBcfBimSnippet(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        bim_snippet = bcf.v2.data.BimSnippet()
-        bim_snippet.reference = props.bim_snippet_reference
-        bim_snippet.reference_schema = props.bim_snippet_schema
-        bim_snippet.snippet_type = props.bim_snippet_type
-        bcfxml.add_bim_snippet(topic, bim_snippet)
+        is_external = "://" in props.bim_snippet_reference
+        bim_snippet = bcf.v2.model.BimSnippet(
+            reference=props.bim_snippet_reference if is_external else Path(props.bim_snippet_reference).name,
+            reference_schema=props.bim_snippet_schema,
+            snippet_type=props.bim_snippet_type,
+            is_external=is_external,
+        )
+        topic.topic.bim_snippet = bim_snippet
+        with open(props.bim_snippet_reference, "r") as f:
+            topic.bim_snippet = f.read()
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
-        bim_snippet.reference = ""
-        bim_snippet.reference_schema = ""
-        bim_snippet.snippet_type = ""
         return {"FINISHED"}
 
 
@@ -327,15 +328,14 @@ class AddBcfRelatedTopic(bpy.types.Operator):
         if props.related_topic == blender_topic.title:
             # Prevent adding self as related topic
             return False
-        related_topic = None
+        related_topic_guid = None
         for topic in bcfxml.topics.values():
-            if topic.title == props.related_topic:
-                related_topic = bcf.v2.data.RelatedTopic()
-                related_topic.guid = topic.guid
+            if topic.topic.title == props.related_topic:
+                related_topic_guid = topic.guid
                 break
-        if not related_topic:
+        if not related_topic_guid:
             return False
-        if str(related_topic.guid) in [t.name for t in blender_topic.related_topics]:
+        if str(related_topic_guid) in [t.name for t in blender_topic.related_topics]:
             # Prevent adding the same related topic more than once
             return False
         return True
@@ -344,11 +344,12 @@ class AddBcfRelatedTopic(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
-        related_topic = bcf.v2.data.RelatedTopic()
-        related_topic.guid = next((t for t in bcfxml.topics.values() if t.title == props.related_topic)).guid
         topic = bcfxml.topics[blender_topic.name]
-        topic.related_topics.append(related_topic)
-        bcfxml.edit_topic(topic)
+        topic.topic.related_topic.append(
+            bcf.v2.model.TopicRelatedTopic(
+                guid=next((t for t in bcfxml.topics.values() if t.topic.title == props.related_topic)).guid
+            )
+        )
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         props.related_topic = ""
         return {"FINISHED"}
@@ -368,15 +369,24 @@ class AddBcfHeaderFile(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        header_file = bcf.v2.data.HeaderFile()
-        header_file.reference = props.file_reference
-        if not os.path.exists(header_file.reference):
-            header_file.filename = header_file.reference
-        if len(props.file_ifc_project) == 22:
-            header_file.ifc_project = props.file_ifc_project
-        if len(props.file_ifc_spatial_structure_element) == 22:
-            header_file.ifc_spatial_structure_element = props.file_ifc_spatial_structure_element
-        bcfxml.add_file(topic, header_file)
+
+        is_external = "://" in props.file_reference
+        filename = Path(props.file_reference).name if os.path.exists(props.file_reference) else None
+
+        if filename:
+            with open(props.file_reference, "r") as f:
+                topic.reference_files[filename] = f.read()
+
+        header_file = bcf.v2.model.HeaderFile(
+            filename=filename,
+            date=XmlDateTime.now(),
+            reference=props.file_reference if is_external else Path(props.file_reference).name,
+            ifc_project=props.file_ifc_project,
+            ifc_spatial_structure_element=props.file_ifc_spatial_structure_element,
+            is_external=is_external,
+        )
+        topic.header.file.append(header_file)
+
         props.refresh_topic(context)
         return {"FINISHED"}
 
@@ -410,27 +420,34 @@ class AddBcfViewpoint(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        viewpoint = bcf.v2.data.Viewpoint()
 
-        if blender_camera.data.type == "ORTHO":
-            camera = bcf.v2.data.OrthogonalCamera()
-            camera.view_to_world_scale = blender_camera.data.ortho_scale
-            viewpoint.orthogonal_camera = camera
-        elif blender_camera.data.type == "PERSP":
-            camera = bcf.v2.data.PerspectiveCamera()
-            camera.field_of_view = degrees(blender_camera.data.angle)
-            viewpoint.perspective_camera = camera
-        camera.camera_view_point.x = blender_camera.location.x
-        camera.camera_view_point.y = blender_camera.location.y
-        camera.camera_view_point.z = blender_camera.location.z
         direction = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
-        camera.camera_direction.x = direction.x
-        camera.camera_direction.y = direction.y
-        camera.camera_direction.z = direction.z
         up = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 1.0, 0.0))
-        camera.camera_up_vector.x = up.x
-        camera.camera_up_vector.y = up.y
-        camera.camera_up_vector.z = up.z
+
+        camera_view_point = bcf.v2.model.Point(
+            x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
+        )
+        camera_direction = bcf.v2.model.Direction(x=direction.x, y=direction.y, z=direction.z)
+        camera_up_vector = bcf.v2.model.Direction(x=up.x, y=up.y, z=up.z)
+        if blender_camera.data.type == "ORTHO":
+            camera = bcf.v2.model.OrthogonalCamera(
+                view_to_world_scale=blender_camera.data.ortho_scale,
+                camera_view_point=camera_view_point,
+                camera_direction=camera_direction,
+                camera_up_vector=camera_up_vector,
+            )
+            visualization_info = bcf.v2.model.VisualizationInfo(orthogonal_camera=camera)
+        elif blender_camera.data.type == "PERSP":
+            camera = bcf.v2.model.PerspectiveCamera(
+                field_of_view=degrees(blender_camera.data.angle),
+                camera_view_point=camera_view_point,
+                camera_direction=camera_direction,
+                camera_up_vector=camera_up_vector,
+            )
+            visualization_info = bcf.v2.model.VisualizationInfo(guid=str(uuid.uuid4()), perspective_camera=camera)
+
+        # TODO allow the user to enable or disable snapshotting
+        snapshot = None
 
         blender_render = context.scene.render
         old_file_format = blender_render.image_settings.file_format
@@ -438,9 +455,17 @@ class AddBcfViewpoint(bpy.types.Operator):
         old_filepath = blender_render.filepath
         blender_render.filepath = os.path.join(context.scene.BIMProperties.data_dir, "snapshot.png")
         bpy.ops.render.opengl(write_still=True)
-        viewpoint.snapshot = blender_render.filepath
+        with open(blender_render.filepath, "rb") as f:
+            snapshot = f.read()
+        # viewpoint.snapshot = blender_render.filepath
 
-        bcfxml.add_viewpoint(topic, viewpoint)
+        # TODO we should handle selection and visibility state
+        vizinfo = bcf.v2.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
+        topic.viewpoints[vizinfo.guid + ".bcfv"] = vizinfo
+        topic.markup.viewpoints.append(
+            bcf.v2.model.ViewPoint(viewpoint=vizinfo.guid + ".bcfv", guid=vizinfo.guid, snapshot=vizinfo.guid + ".png")
+        )
+
         blender_render.filepath = old_filepath
         blender_render.image_settings.file_format = old_file_format
         props.refresh_topic(context)
@@ -460,9 +485,15 @@ class RemoveBcfViewpoint(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
-        viewpoint_guid = blender_topic.viewpoints
         topic = bcfxml.topics[blender_topic.name]
-        bcfxml.delete_viewpoint(viewpoint_guid, topic)
+        for key, viewpoint in topic.viewpoints.items():
+            if viewpoint.guid == blender_topic.viewpoints:
+                break
+        del topic.viewpoints[key]
+        for i, viewpoint in enumerate(topic.markup.viewpoints):
+            if viewpoint.guid == blender_topic.viewpoints:
+                break
+        del topic.markup.viewpoints[i]
         props.refresh_topic(context)
         return {"FINISHED"}
 
@@ -478,7 +509,7 @@ class RemoveBcfFile(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        bcfxml.delete_file(topic, self.index)
+        del topic.header.file[self.index]
         props.refresh_topic(context)
         return {"FINISHED"}
 
@@ -496,8 +527,7 @@ class RemoveBcfTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = context.scene.BCFProperties
-        topic_to_delete = props.active_topic
-        bcfxml.delete_topic(topic_to_delete.name)
+        del bcfxml.topics[props.active_topic.name]
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
 
@@ -516,8 +546,7 @@ class AddBcfReferenceLink(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        topic.reference_links.append(props.reference_link)
-        bcfxml.edit_topic(topic)
+        topic.topic.reference_link.append(props.reference_link)
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         props.reference_link = ""
         return {"FINISHED"}
@@ -537,10 +566,23 @@ class AddBcfDocumentReference(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        document_reference = bcf.v2.data.DocumentReference()
-        document_reference.referenced_document = props.document_reference
-        document_reference.description = props.document_reference_description or None
-        bcfxml.add_document_reference(topic, document_reference)
+
+        is_external = "://" in props.document_reference
+        filename = Path(props.document_reference).name if os.path.exists(props.document_reference) else None
+
+        if filename:
+            with open(props.document_reference, "rb") as f:
+                topic.document_references[filename] = f.read()
+
+        document_reference = bcf.v2.model.TopicDocumentReference(
+            referenced_document=props.document_reference if is_external else filename,
+            description=props.document_reference_description or None,
+            guid=str(uuid.uuid4()),
+            is_external=is_external,
+        )
+
+        topic.topic.document_reference.append(document_reference)
+
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         props.document_reference = ""
         props.document_reference_description = ""
@@ -563,8 +605,7 @@ class AddBcfLabel(bpy.types.Operator):
         topic = bcfxml.topics[blender_topic.name]
         new = blender_topic.labels.add()
         new.name = props.label
-        topic.labels.append(props.label)
-        bcfxml.edit_topic(topic)
+        topic.topic.labels.append(props.label)
         props.label = ""
         return {"FINISHED"}
 
@@ -579,11 +620,10 @@ class EditBcfReferenceLinks(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        for index, reference_link in enumerate(topic.reference_links):
+        for index, reference_link in enumerate(topic.topic.reference_link):
             if reference_link == blender_topic.reference_links[index].name:
                 continue
-            topic.reference_links[index] = blender_topic.reference_links[index].name
-        bcfxml.edit_topic(topic)
+            topic.topic.reference_link[index] = blender_topic.reference_links[index].name
         return {"FINISHED"}
 
 
@@ -598,12 +638,11 @@ class EditBcfLabels(bpy.types.Operator):
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
         for index, label in enumerate(blender_topic.labels):
-            if index >= len(topic.labels):
+            if index >= len(topic.topic.labels):
                 break
-            if label.name == topic.labels[index]:
+            if label.name == topic.topic.labels[index]:
                 continue
-            topic.labels[index] = blender_topic.labels[index].name
-        bcfxml.edit_topic(topic)
+            topic.topic.labels[index] = blender_topic.labels[index].name
         return {"FINISHED"}
 
 
@@ -618,8 +657,7 @@ class RemoveBcfReferenceLink(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.reference_links[self.index]
-        bcfxml.edit_topic(topic)
+        del topic.topic.reference_link[self.index]
         blender_topic.reference_links.remove(self.index)
         return {"FINISHED"}
 
@@ -635,8 +673,7 @@ class RemoveBcfLabel(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.labels[self.index]
-        bcfxml.edit_topic(topic)
+        del topic.topic.labels[self.index]
         blender_topic.labels.remove(self.index)
         return {"FINISHED"}
 
@@ -651,7 +688,7 @@ class RemoveBcfBimSnippet(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        bcfxml.delete_bim_snippet(topic)
+        topic.topic.bim_snippet = None
         blender_topic.bim_snippet.schema = ""
         blender_topic.bim_snippet.reference = ""
         blender_topic.bim_snippet.type = ""
@@ -669,7 +706,7 @@ class RemoveBcfDocumentReference(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        bcfxml.delete_document_reference(topic, self.index)
+        del topic.topic.document_reference[self.index]
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         return {"FINISHED"}
 
@@ -685,8 +722,7 @@ class RemoveBcfRelatedTopic(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.related_topics[self.index]
-        bcfxml.edit_topic(topic)
+        del topic.topic.related_topic[self.index]
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         return {"FINISHED"}
 
@@ -702,7 +738,10 @@ class RemoveBcfComment(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        bcfxml.delete_comment(self.comment_guid, topic)
+        for i, comment in enumerate(topic.comments):
+            if comment.guid == self.comment_guid:
+                break
+        del topic.comments[i]
         bpy.ops.bim.load_bcf_comments(topic_guid=topic.guid)
         return {"FINISHED"}
 
@@ -719,9 +758,11 @@ class EditBcfComment(bpy.types.Operator):
         blender_topic = props.active_topic
         blender_comment = blender_topic.comments.get(self.comment_guid)
         topic = bcfxml.topics[blender_topic.name]
-        comment = topic.comments[self.comment_guid]
-        comment.comment = blender_comment.comment
-        bcfxml.edit_comment(comment, topic)
+        for i, comment in enumerate(topic.comments):
+            if comment.guid == self.comment_guid:
+                comment.comment = blender_comment.comment
+                comment.modified_date = XmlDateTime.now()
+                comment.modified_author = context.scene.BCFProperties.author
         bpy.ops.bim.load_bcf_comments(topic_guid=topic.guid)
         return {"FINISHED"}
 
@@ -746,12 +787,15 @@ class AddBcfComment(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        comment = bcf.v2.data.Comment()
-        comment.comment = props.comment
+        comment = bcf.v2.model.Comment(
+            date=XmlDateTime.now(),
+            author=context.scene.BCFProperties.author,
+            comment=props.comment,
+            guid=str(uuid.uuid4()),
+        )
         if props.has_related_viewpoint:
-            comment.viewpoint = bcf.v2.data.Viewpoint()
-            comment.viewpoint.guid = blender_topic.viewpoints
-        bcfxml.add_comment(topic, comment)
+            comment.viewpoint = bcf.v2.model.CommentViewpoint(guid=blender_topic.viewpoints)
+        topic.comments.append(comment)
         bpy.ops.bim.load_bcf_comments(topic_guid=topic.guid)
         props.comment = ""
         props.has_related_viewpoint = False
@@ -792,11 +836,13 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         cam_height = context.scene.render.resolution_y
         cam_aspect = cam_width / cam_height
 
+        obj.data.background_images.clear()
         if viewpoint.snapshot:
             obj.data.show_background_images = True
-            obj.data.background_images.clear()
             background = obj.data.background_images.new()
-            background.image = bpy.data.images.load(os.path.join(bcfxml.filepath, topic.guid, viewpoint.snapshot))
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                f.write(viewpoint.snapshot)
+                background.image = bpy.data.images.load(f.name)
             src_width = background.image.size[0]
             src_height = background.image.size[1]
             src_aspect = src_width / src_height
@@ -806,6 +852,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             else:
                 background.frame_method = "CROP"
             background.display_depth = "FRONT"
+        else:
+            obj.data.show_background_images = False
+
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].region_3d.view_perspective = "CAMERA"
 
@@ -815,27 +864,27 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         gp = bpy.data.grease_pencils.get("BCF")
         if gp:
             bpy.data.grease_pencils.remove(gp)
-        if viewpoint.lines:
+        if viewpoint.visualization_info.lines:
             self.draw_lines(viewpoint, context)
 
         self.delete_clipping_planes(context)
-        if viewpoint.clipping_planes:
+        if viewpoint.visualization_info.clipping_planes:
             self.create_clipping_planes(viewpoint)
 
         self.delete_bitmaps(context)
-        if viewpoint.bitmaps:
+        if viewpoint.visualization_info.bitmap:
             self.create_bitmaps(bcfxml, viewpoint, topic)
 
         self.setup_camera(viewpoint, obj, cam_aspect, context)
         return {"FINISHED"}
 
     def setup_camera(self, viewpoint, obj, cam_aspect, context):
-        if viewpoint.orthogonal_camera:
-            camera = viewpoint.orthogonal_camera
+        if viewpoint.visualization_info.orthogonal_camera:
+            camera = viewpoint.visualization_info.orthogonal_camera
             obj.data.type = "ORTHO"
-            obj.data.ortho_scale = viewpoint.orthogonal_camera.view_to_world_scale
-        elif viewpoint.perspective_camera:
-            camera = viewpoint.perspective_camera
+            obj.data.ortho_scale = viewpoint.visualization_info.orthogonal_camera.view_to_world_scale
+        elif viewpoint.visualization_info.perspective_camera:
+            camera = viewpoint.visualization_info.perspective_camera
             obj.data.type = "PERSP"
             if cam_aspect >= 1:
                 obj.data.angle = radians(camera.field_of_view)
@@ -876,22 +925,22 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         obj.matrix_world = Matrix(matrix.tolist())
 
     def set_viewpoint_components(self, viewpoint, context):
-        if not viewpoint.components:
+        if not viewpoint.visualization_info.components:
             return
 
         # Operators with context overrides are used because they are
         # significantly faster than looping through all objects
 
-        exception_global_ids = {v.ifc_guid for v in viewpoint.components.visibility.exceptions}
+        exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions or []}
 
-        if viewpoint.components.visibility.default_visibility:
+        if viewpoint.visualization_info.components.visibility.default_visibility:
             old = context.area.type
             context.area.type = "VIEW_3D"
             bpy.ops.object.hide_view_clear()
             context.area.type = old
             for global_id in exception_global_ids:
                 obj = IfcStore.get_element(global_id)
-                if obj:
+                if obj and bpy.context.view_layer.objects.get(obj.name):
                     obj.hide_set(True)
         else:
             objs = []
@@ -908,11 +957,13 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 bpy.ops.object.hide_view_set(context_override, unselected=True)
                 context.area.type = old
 
-        if viewpoint.components.view_setup_hints:
-            if not viewpoint.components.view_setup_hints.spaces_visible:
+        if viewpoint.visualization_info.components.view_setup_hints:
+            if not viewpoint.visualization_info.components.view_setup_hints.spaces_visible:
                 self.hide_spaces(context)
-            if viewpoint.components.view_setup_hints.openings_visible is not None:
-                self.set_openings_visibility(viewpoint.components.view_setup_hints.openings_visible, context)
+            if viewpoint.visualization_info.components.view_setup_hints.openings_visible is not None:
+                self.set_openings_visibility(
+                    viewpoint.visualization_info.components.view_setup_hints.openings_visible, context
+                )
         else:
             self.hide_spaces(context)
             self.set_openings_visibility(False, context)
@@ -928,11 +979,12 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         context.area.type = old
 
     def set_openings_visibility(self, is_visible, context):
-        for collection in self.get_opening_collections(context):
-            collection.hide_viewport = not is_visible
+        pass # We no longer have an openings collection
 
     def set_selection(self, viewpoint):
-        selected_global_ids = [s.ifc_guid for s in viewpoint.components.selection]
+        if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.selection:
+            return
+        selected_global_ids = [s.ifc_guid for s in viewpoint.visualization_info.components.selection.component or []]
         bpy.ops.object.select_all(action="DESELECT")
         for global_id in selected_global_ids:
             obj = IfcStore.get_element(global_id)
@@ -941,21 +993,13 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
     def set_colours(self, viewpoint):
         global_id_colours = {}
-        for coloring in viewpoint.components.coloring:
+        for coloring in viewpoint.visualization_info.components.coloring or []:
             for component in coloring.components:
                 global_id_colours.setdefault(component.ifc_guid, coloring.color)
         for global_id, color in global_id_colours.items():
             obj = IfcStore.get_element(global_id)
             if obj:
                 obj.color = self.hex_to_rgb(color)
-
-    def get_opening_collections(self, context):
-        collections = []
-        for collection in context.view_layer.layer_collection.children:
-            opening_collection = collection.children.get("IfcOpeningElements")
-            if opening_collection:
-                collections.append(opening_collection)
-        return collections
 
     def draw_lines(self, viewpoint, context):
         gp = bpy.data.grease_pencils.new("BCF")
@@ -968,9 +1012,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         frame = layer.frames.new(1)
         stroke = frame.strokes.new()
         stroke.display_mode = "3DSPACE"
-        stroke.points.add(len(viewpoint.lines) * 2)
+        stroke.points.add(len(viewpoint.visualization_info.lines.line) * 2)
         coords = []
-        for l in viewpoint.lines:
+        for l in viewpoint.visualization_info.lines.line:
             coords.extend(
                 [l.start_point.x, l.start_point.y, l.start_point.z, l.end_point.x, l.end_point.y, l.end_point.z]
             )
@@ -978,7 +1022,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
     def create_clipping_planes(self, viewpoint):
         n = 0
-        for plane in viewpoint.clipping_planes:
+        for plane in viewpoint.visualization_info.clipping_planes.clipping_plane:
             bpy.ops.bim.add_section_plane()
             if n == 0:
                 obj = bpy.data.objects["Section"]
@@ -1011,10 +1055,14 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         collection = bpy.data.collections.get("Bitmaps")
         if not collection:
             collection = bpy.data.collections.new("Bitmaps")
-        for bitmap in viewpoint.bitmaps:
+        for bitmap in viewpoint.visualization_info.bitmap:
             obj = bpy.data.objects.new("Bitmap", None)
             obj.empty_display_type = "IMAGE"
-            image = bpy.data.images.load(os.path.join(bcfxml.filepath, topic.guid, bitmap.reference))
+            # image = bpy.data.images.load(os.path.join(bcfxml.filepath, topic.guid, bitmap.reference))
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                topic.extract_file(bitmap, f.name)
+                # f.write(bitmap.what)
+                image = bpy.data.images.load(f.name)
             src_width = image.size[0]
             src_height = image.size[1]
             if src_height > src_width:
@@ -1053,6 +1101,7 @@ class SelectBcfHeaderFile(bpy.types.Operator):
     bl_label = "Select BCF Header File"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
 
     def execute(self, context):
         if self.filepath:
@@ -1094,3 +1143,25 @@ class SelectBcfDocumentReference(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class ExtractBcfFile(bpy.types.Operator):
+    bl_idname = "bim.extract_bcf_file"
+    bl_label = "Extract BCF Header File"
+    bl_options = {"REGISTER", "UNDO"}
+    entity_type: bpy.props.StringProperty()
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
+
+        if self.entity_type == "HEADER_FILE":
+            entity = topic.header.file[self.index]
+        elif self.entity_type == "BIM_SNIPPET":
+            entity = topic.markup.topic.bim_snippet
+        elif self.entity_type == "DOCUMENT_REFERENCE":
+            entity = topic.markup.topic.document_reference[self.index]
+
+        webbrowser.open(str(topic.extract_file(entity).parent))
+        return {"FINISHED"}

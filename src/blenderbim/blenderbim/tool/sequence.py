@@ -15,17 +15,27 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
-from dateutil import parser
+
 import bpy
 import re
+import os
 import isodate
-from datetime import datetime
 import ifcopenshell
+import ifcopenshell.util.sequence
+import ifcopenshell.util.date
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
 import json
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
+from dateutil import parser
+from datetime import datetime
+import mathutils
+import pystache
+import webbrowser
+from datetime import timedelta
 
 
 class Sequence(blenderbim.core.tool.Sequence):
@@ -123,28 +133,40 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def create_task_tree(cls, work_schedule):
-        def get_root_tasks_ids(work_schedule):
-            related_objects_ids = []
-            if work_schedule.Controls:
-                for rel in work_schedule.Controls:
-                    for obj in rel.RelatedObjects:
-                        if obj.is_a("IfcTask"):
-                            related_objects_ids.append(obj.id())
-            return related_objects_ids
-
         bpy.context.scene.BIMTaskTreeProperties.tasks.clear()
         props = bpy.context.scene.BIMWorkScheduleProperties
         cls.contracted_tasks = json.loads(props.contracted_tasks)
 
-        related_objects_ids = get_root_tasks_ids(work_schedule)
-        if not related_objects_ids:
-            return
-        cls.sort_keys = {i: cls.get_sort_key(tool.Ifc.get().by_id(i)) for i in related_objects_ids}
-        related_objects_ids = sorted(cls.sort_keys, key=cls.natural_sort_key)
-        if props.is_sort_reversed:
-            related_objects_ids.reverse()
+        related_objects_ids = cls.get_sorted_tasks_ids(ifcopenshell.util.sequence.get_root_tasks(work_schedule))
         for related_object_id in related_objects_ids:
             cls.create_new_task_li(related_object_id, 0)
+
+    @classmethod
+    def get_sorted_tasks_ids(cls, tasks):
+        def get_sort_key(task):
+            # Sorting only applies to actual tasks, not the WBS
+            for rel in task.IsNestedBy:
+                for object in rel.RelatedObjects:
+                    if object.is_a("IfcTask"):
+                        return "0000000000" + (task.Identification or "")
+            if not bpy.context.scene.BIMWorkScheduleProperties.sort_column:
+                return task.Identification or ""
+            column_type, name = bpy.context.scene.BIMWorkScheduleProperties.sort_column.split(".")
+            if column_type == "IfcTask":
+                return task.Name or ""
+            elif column_type == "IfcTaskTime" and task.TaskTime:
+                return task.TaskTime.Name or ""
+            return task.Identification or ""
+
+        def natural_sort_key(i, _nsre=re.compile("([0-9]+)")):
+            s = sort_keys[i]
+            return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
+
+        sort_keys = {task.id(): get_sort_key(task) for task in tasks}
+        related_object_ids = sorted(sort_keys, key=natural_sort_key)
+        if bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed:
+            related_object_ids.reverse()
+        return related_object_ids
 
     @classmethod
     def create_new_task_li(cls, related_object_id, level_index):
@@ -156,33 +178,8 @@ class Sequence(blenderbim.core.tool.Sequence):
         if task.IsNestedBy:
             new.has_children = True
             if new.is_expanded:
-                cls.sort_keys = {subtask.id(): cls.get_sort_key(subtask) for subtask in helper.get_nested_tasks(task)}
-                related_object_ids = sorted(cls.sort_keys, key=cls.natural_sort_key)
-                if bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed:
-                    related_object_ids.reverse()
-                for related_object_id in related_object_ids:
+                for related_object_id in cls.get_sorted_tasks_ids(ifcopenshell.util.sequence.get_nested_tasks(task)):
                     cls.create_new_task_li(related_object_id, level_index + 1)
-
-    @classmethod
-    def natural_sort_key(cls, i, _nsre=re.compile("([0-9]+)")):
-        s = cls.sort_keys[i]
-        return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
-
-    @classmethod
-    def get_sort_key(cls, task):
-        # Sorting only applies to actual tasks, not the WBS
-        for rel in task.IsNestedBy:
-            for object in rel.RelatedObjects:
-                if object.is_a("IfcTask"):
-                    return "0000000000" + (task.Identification or "")
-        if not bpy.context.scene.BIMWorkScheduleProperties.sort_column:
-            return task.Identification or ""
-        column_type, name = bpy.context.scene.BIMWorkScheduleProperties.sort_column.split(".")
-        if column_type == "IfcTask":
-            return task.Name or ""
-        elif column_type == "IfcTaskTime" and task.TaskTime:
-            return task.TaskTime.Name or ""
-        return task.Identification or ""
 
     @classmethod
     def load_task_properties(cls, task=None):
@@ -204,15 +201,14 @@ class Sequence(blenderbim.core.tool.Sequence):
             if props.active_task_id:
                 item.is_predecessor = props.active_task_id in [rel.RelatedProcess.id() for rel in task.IsPredecessorTo]
                 item.is_successor = props.active_task_id in [rel.RelatingProcess.id() for rel in task.IsSuccessorFrom]
-
             calendar = ifcopenshell.util.sequence.derive_calendar(task)
             if task.HasAssignments:
                 for rel in task.HasAssignments:
                     if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar"):
-                        item.calendar = calendar.Name if calendar else ""
+                        item.calendar = calendar.Name or "Unnamed" if calendar else ""
             else:
                 item.calendar = ""
-                item.derived_calendar = calendar.Name if calendar else ""
+                item.derived_calendar = calendar.Name or "Unnamed" if calendar else ""
 
             if task.TaskTime:
                 task_time = task.TaskTime
@@ -232,8 +228,8 @@ class Sequence(blenderbim.core.tool.Sequence):
                     else "-"
                 )
             else:
-                derived_start = helper.derive_date(task, "ScheduleStart", is_earliest=True)
-                derived_finish = helper.derive_date(task, "ScheduleFinish", is_latest=True)
+                derived_start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+                derived_finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
                 item.derived_start = canonicalise_time(derived_start) if derived_start else ""
                 item.derived_finish = canonicalise_time(derived_finish) if derived_finish else ""
                 if derived_start and derived_finish and calendar:
@@ -307,7 +303,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             tool.Ifc.get().by_id(task.ifc_definition_id)
             for task in bpy.context.scene.BIMTaskTreeProperties.tasks
             if task.is_selected
-        ]
+        ] or []
 
     @classmethod
     def get_task_attribute_value(cls, attribute_name):
@@ -332,14 +328,6 @@ class Sequence(blenderbim.core.tool.Sequence):
         blenderbim.bim.helper.import_attributes2(task, props.task_attributes)
 
     @classmethod
-    def get_selected_products(cls):
-        return [
-            tool.Ifc.get_entity(obj)
-            for obj in bpy.context.selected_objects
-            if obj.BIMObjectProperties.ifc_definition_id
-        ] or []
-
-    @classmethod
     def enable_editing_task(cls, task):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.active_task_id = task.id()
@@ -352,31 +340,25 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def load_task_time_attributes(cls, task_time):
         def callback(name, prop, data):
-            if prop.data_type == "string":
-                if name == "ScheduleDuration" and data[name] and isinstance(data[name], str):
-                    time_object = ifcopenshell.util.date.ifc2datetime(data[name])
-                    minutes = int(round(time_object.seconds / 60 % 60))
-                    hours = (time_object.seconds - minutes * 60) / 60 / 60
-                    bpy.context.scene.BIMDuration.duration_days = int(time_object.days)
-                    bpy.context.scene.BIMDuration.duration_hours = round(hours)
-                    bpy.context.scene.BIMDuration.duration_minutes = (
-                        minutes  # should consider years, months and seconds.
-                    )
-                if isinstance(data[name], datetime):
-                    prop.string_value = "" if prop.is_null else data[name].isoformat()
-                    if name == "ScheduleDuration":
-                        bpy.context.scene.BIMDuration.duration_days = data[name].days
-                        bpy.context.scene.BIMDuration.duration_hours = round(data[name].seconds / 60 / 60)
-                        bpy.context.scene.BIMDuration.duration_minutes = data[name].seconds / 60 % 60
+            if prop and prop.data_type == "string":
+                duration_props = bpy.context.scene.BIMWorkScheduleProperties.durations_attributes.add()
+                duration_props.name = name
+                if prop.is_null:
+                    for key in duration_props.keys():
+                        if key != "name":
+                            setattr(duration_props, key, 0)
                     return True
-                elif isinstance(data[name], isodate.Duration):
-                    prop.string_value = (
-                        "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
-                    )
+                if name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"] and data[name]:
+                    for key, value in helper.parse_duration_as_blender_props(data[name]).items():
+                        duration_props[key] = value
                     return True
+            if isinstance(data[name], datetime):
+                prop.string_value = "" if prop.is_null else data[name].isoformat()
+                return True
 
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_time_attributes.clear()
+        props.durations_attributes.clear()
         blenderbim.bim.helper.import_attributes2(task_time, props.task_time_attributes, callback)
 
     @classmethod
@@ -394,26 +376,29 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def get_task_time_attributes(cls):
         def callback(attributes, prop):
+
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
                 if prop.is_null:
                     attributes[prop.name] = None
                     return True
                 attributes[prop.name] = helper.parse_datetime(prop.string_value)
                 return True
-            elif prop.name == "ScheduleDuration":
+            elif prop.name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"]:
+                props = bpy.context.scene.BIMWorkScheduleProperties
                 if prop.is_null:
+                    attributes[prop.name] = None
+                    for value in props.durations_attributes.values():
+                        value = 0
                     return True
-                # TODO make this parse PT32 as P4D
-                attributes[prop.name] = helper.parse_duration(prop.string_value)
-                dprops = bpy.context.scene.BIMDuration
-                duration_days = dprops.duration_days if dprops.duration_days else 0
-                duration_hours = dprops.duration_hours if dprops.duration_hours else 0
-                duration_minutes = dprops.duration_minutes if dprops.duration_minutes else 0
-                dprops.duration_days = 0
-                dprops.duration_hours = 0
-                dprops.duration_minutes = 0
-                attributes[prop.name] = helper.parse_duration(f"P{duration_days}DT{duration_hours}H{duration_minutes}M")
-                return True
+                else:
+                    duration_type = attributes["DurationType"] if "DurationType" in attributes else None
+                    time_split_iso_duration = helper.simplify_duration(
+                        props.durations_attributes, duration_type, prop.name
+                    )
+                    attributes[prop.name] = time_split_iso_duration
+                    for value in props.durations_attributes.values():
+                        value = 0
+                    return True
 
         props = bpy.context.scene.BIMWorkScheduleProperties
         return blenderbim.bim.helper.export_attributes(props.task_time_attributes, callback)
@@ -427,6 +412,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 new = props.task_resources.add()
                 new.ifc_definition_id = resource.id()
                 new.name = resource.Name or "Unnamed"
+                new.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
 
     @classmethod
     def load_resources(cls):
@@ -434,12 +420,18 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_task_inputs(cls, task):
-        inputs = []
-        for rel in task.OperatesOn:
-            for object in rel.RelatedObjects:
-                if object.is_a("IfcProduct"):
-                    inputs.append(object)
-        return inputs
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_inputs
+        return ifcopenshell.util.sequence.get_task_inputs(task, is_deep)
+
+    @classmethod
+    def get_task_outputs(cls, task):
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
+        return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
+
+    @classmethod
+    def get_task_resources(cls, task):
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_resources
+        return ifcopenshell.util.sequence.get_task_resource(task, is_deep)
 
     @classmethod
     def load_task_inputs(cls, inputs):
@@ -467,8 +459,17 @@ class Sequence(blenderbim.core.tool.Sequence):
         return tool.Ifc.get().by_id(task_props.tasks[props.active_task_index].ifc_definition_id)
 
     @classmethod
+    def get_direct_nested_tasks(cls, task):
+        return ifcopenshell.util.sequence.get_nested_tasks(task)
+
+    @classmethod
+    def get_direct_task_outputs(cls, task):
+        return ifcopenshell.util.sequence.get_direct_task_outputs(task)
+
+    @classmethod
     def get_task_outputs(cls, task):
-        return [rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
+        return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
 
     @classmethod
     def get_task_resources(cls, task):
@@ -690,11 +691,11 @@ class Sequence(blenderbim.core.tool.Sequence):
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes)
 
     @classmethod
-    def select_task_products(cls, products):
-        for obj in bpy.context.visible_objects:
-            obj.select_set(False)
-            if obj.BIMObjectProperties.ifc_definition_id in [product.id() for product in products]:
-                obj.select_set(True)
+    def select_products(cls, products):
+        [obj.select_set(False) for obj in bpy.context.selected_objects]
+        for product in products:
+            obj = tool.Ifc.get_object(product)
+            obj.select_set(True) if obj else None
 
     @classmethod
     def add_task_column(cls, column_type, name, data_type):
@@ -702,6 +703,30 @@ class Sequence(blenderbim.core.tool.Sequence):
         new = props.columns.add()
         new.name = f"{column_type}.{name}"
         new.data_type = data_type
+
+    @classmethod
+    def setup_default_task_columns(cls):
+        items = [
+            {
+                "column_type": "IfcTaskTime",
+                "name": "ScheduleStart",
+            },
+            {
+                "column_type": "IfcTaskTime",
+                "name": "ScheduleFinish",
+            },
+            {
+                "column_type": "IfcTaskTime",
+                "name": "ScheduleDuration",
+            },
+        ]
+
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        props.columns.clear()
+        for item in items:
+            new = props.columns.add()
+            new.name = f"{item['column_type']}.{item['name']}"
+            new.data_type = "string"
 
     @classmethod
     def remove_task_column(cls, name):
@@ -714,17 +739,17 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.sort_column = column
 
     @classmethod
-    def find_related_input_tasks(cls, object):
+    def find_related_input_tasks(cls, product):
         related_tasks = []
-        for assignment in object.HasAssignments:
+        for assignment in product.HasAssignments:
             if assignment.is_a("IfcRelAssignsToProcess") and assignment.RelatingProcess.is_a("IfcTask"):
                 related_tasks.append(assignment.RelatingProcess)
         return related_tasks
 
     @classmethod
-    def find_related_output_tasks(cls, object):
+    def find_related_output_tasks(cls, product):
         related_tasks = []
-        for reference in object.ReferencedBy:
+        for reference in product.ReferencedBy:
             if reference.is_a("IfcRelAssignsToProduct") and reference.RelatedObjects[0].is_a("IfcTask"):
                 related_tasks.append(reference.RelatedObjects[0])
         return related_tasks
@@ -744,25 +769,6 @@ class Sequence(blenderbim.core.tool.Sequence):
         )
 
     @classmethod
-    def get_work_schedule(cls, task):
-        for rel in task.HasAssignments or []:
-            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
-                return rel.RelatingControl
-        for rel in task.Nests or []:
-            return cls.get_work_schedule(rel.RelatingObject)
-
-    @classmethod
-    def expand_ancestors(cls, task):
-        for rel in task.Nests or []:
-            parent_task = rel.RelatingObject if rel.RelatingObject.is_a("IfcTask") else None
-            print(parent_task)
-            contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
-            if parent_task and parent_task.id() in contracted_tasks:
-                contracted_tasks.remove(parent_task.id())
-                bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
-                cls.expand_ancestors(parent_task)
-
-    @classmethod
     def highlight_task(cls, task):
         def expand_ancestors(task):
             for rel in task.Nests or []:
@@ -780,5 +786,757 @@ class Sequence(blenderbim.core.tool.Sequence):
         displayed_tasks = [item.ifc_definition_id for item in task_props.tasks]
         if not task.id() in displayed_tasks:
             expand_ancestors(task)
-        task_index = [item.ifc_definition_id for item in task_props.tasks].index(task.id()) or 0
+        task_index = displayed_tasks.index(task.id()) or 0
         bpy.context.scene.BIMWorkScheduleProperties.active_task_index = task_index
+
+    @classmethod
+    def guess_date_range(cls, work_schedule):
+        return ifcopenshell.util.sequence.guess_date_range(work_schedule)
+
+    @classmethod
+    def update_visualisation_date(cls, start_date, finish_date):
+        def canonicalise_time(time):
+            if not time:
+                return "-"
+            return time.strftime("%d/%m/%y")
+
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        props.visualisation_start = canonicalise_time(start_date)
+        props.visualisation_finish = canonicalise_time(finish_date)
+
+    @classmethod
+    def get_animation_bar_tasks(cls):
+        return [
+            tool.Ifc.get().by_id(item.ifc_definition_id)
+            for item in bpy.context.scene.BIMTaskTreeProperties.tasks
+            if item.has_bar_visual
+        ] or []
+
+    @classmethod
+    def create_bars(cls, tasks):
+        full_bar_thickness = 0.2
+        size = 1.0
+        vertical_spacing = 3.5
+        vertical_increment = 0
+        size_to_duration_ratio = 1 / 30
+        margin = 0.2
+
+        def process_task_data(task, settings):
+            task_start_date = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+            finish_date = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
+
+            if not (task_start_date and finish_date):
+                return
+            else:
+                total_frames = settings["end_frame"] - settings["start_frame"]
+                duration = settings["viz_finish"] - settings["viz_start"]
+                task_start_frame = round(
+                    settings["start_frame"] + (((task_start_date - settings["viz_start"]) / duration) * total_frames)
+                )
+                task_finish_frame = round(
+                    settings["start_frame"] + (((finish_date - settings["viz_start"]) / duration) * total_frames)
+                )
+                return {
+                    "name": task.Name if task.Name else "Unnamed",
+                    "start_date": task_start_date,
+                    "finish_date": finish_date,
+                    "start_frame": task_start_frame,
+                    "finish_frame": task_finish_frame,
+                }
+
+        def create_task_bar_data(tasks, vertical_increment, collection):
+            props = bpy.context.scene.BIMWorkScheduleProperties
+            settings = {
+                "viz_start": parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
+                if props.visualisation_start
+                else None,
+                "viz_finish": parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
+                if props.visualisation_finish
+                else None,
+                "start_frame": bpy.context.scene.frame_start,
+                "end_frame": bpy.context.scene.frame_end,
+            }
+
+            material_progress, material_full = get_animation_materials()
+            empty = bpy.data.objects.new("collection_origin", None)
+            link_collection(empty, collection)
+            for task in tasks:
+                task_data = process_task_data(task, settings)
+                if task_data:
+                    position_shift = task_data["start_frame"] * size_to_duration_ratio
+                    bar_size = (task_data["finish_frame"] - task_data["start_frame"]) * size_to_duration_ratio
+
+                    color_progress = bpy.context.scene.BIMAnimationProperties.color_progress
+                    bar = add_bar(
+                        material=material_progress,
+                        vertical_increment=vertical_increment,
+                        collection=collection,
+                        parent=empty,
+                        task=task_data,
+                        scale=True,
+                        color=(color_progress.r, color_progress.g, color_progress.b, 1.0),
+                        shift_x=position_shift,
+                        name=task_data["name"] + "/Progress Bar",
+                    )
+
+                    color_full = bpy.context.scene.BIMAnimationProperties.color_full
+                    bar2 = add_bar(
+                        material=material_full,
+                        vertical_increment=vertical_increment,
+                        parent=empty,
+                        collection=collection,
+                        task=task_data,
+                        color=(color_full.r, color_full.g, color_full.b, 1.0),
+                        shift_x=position_shift,
+                        name=task_data["name"] + "/Full Bar",
+                    )
+                    bar2.color = (color_full.r, color_full.g, color_full.b, 1.0)
+
+                    bar2.scale = (full_bar_thickness, bar_size, 1)
+                    shift_object(bar2, y=((size + full_bar_thickness) / 2))
+
+                    start_text = add_text(
+                        task_data["start_date"].strftime("%d/%m/%y"),
+                        0,
+                        "RIGHT",
+                        vertical_increment,
+                        parent=empty,
+                        collection=collection,
+                    )
+                    start_text.name = task_data["name"] + "/Start Date"
+                    shift_object(start_text, x=position_shift - margin, y=-(size + full_bar_thickness))
+
+                    task_text = add_text(
+                        task_data["name"],
+                        0,
+                        "RIGHT",
+                        vertical_increment,
+                        parent=empty,
+                        collection=collection,
+                    )
+                    task_text.name = task_data["name"] + "/Task Name"
+                    shift_object(task_text, x=position_shift, y=0.2)
+                    finish_text = add_text(
+                        task_data["finish_date"].strftime("%d/%m/%y"),
+                        bar_size,
+                        "LEFT",
+                        vertical_increment,
+                        parent=empty,
+                        collection=collection,
+                    )
+                    finish_text.name = task_data["name"] + "/Finish Date"
+                    shift_object(finish_text, x=position_shift + margin, y=-(size + full_bar_thickness))
+                vertical_increment += vertical_spacing
+            return empty.select_set(True) if empty else None
+
+        def set_material(name, r, g, b):
+            material = bpy.data.materials.new(name)
+            material.use_nodes = True
+            material.node_tree.nodes["Principled BSDF"].inputs[0].default_value = (r, g, b, 1.0)
+            return material
+
+        def get_animation_materials():
+            if "color_progress" in bpy.data.materials:
+                material_progress = bpy.data.materials["color_progress"]
+            else:
+                material_progress = set_material("color_progress", 0.0, 1.0, 0.0)
+            if "color_full" in bpy.data.materials:
+                material_full = bpy.data.materials["color_full"]
+            else:
+                material_full = set_material("color_full", 1.0, 0.0, 0.0)
+            return material_progress, material_full
+
+        def animate_scale(bar, task):
+            scale = (1, size_to_duration_ratio, 1)
+            bar.scale = scale
+            bar.keyframe_insert(data_path="scale", frame=task["start_frame"])
+            scale2 = (1, (task["finish_frame"] - task["start_frame"]) * size_to_duration_ratio, 1)
+            bar.scale = scale2
+            bar.keyframe_insert(data_path="scale", frame=task["finish_frame"])
+
+        def animate_color(bar, task, color):
+            bar.keyframe_insert(data_path="color", frame=task["start_frame"])
+            bar.color = color
+            bar.keyframe_insert(data_path="color", frame=task["start_frame"] + 1)
+            bar.color = color
+
+        def place_bar(bar, vertical_increment):
+            for vertex in bar.data.vertices:
+                vertex.co[1] += 0.5
+            bar.rotation_euler[2] = -1.5708
+            shift_object(bar, y=-vertical_increment)
+
+        def shift_object(obj, x=0.0, y=0.0, z=0.0):
+            vec = mathutils.Vector((x, y, z))
+            inv = obj.matrix_world.copy()
+            inv.invert()
+            vec_rot = vec @ inv
+            obj.location = obj.location + vec_rot
+
+        def link_collection(obj, collection):
+            if collection:
+                collection.objects.link(obj)
+                if obj.name in bpy.context.scene.collection.objects.keys():
+                    bpy.context.scene.collection.objects.unlink(obj)
+            return obj
+
+        def create_plane(material, collection, vertical_increment):
+            x = 0.5
+            y = 0.5
+            vert = [(-x, -y, 0.0), (x, -y, 0.0), (-x, y, 0.0), (x, y, 0.0)]
+            fac = [(0, 1, 3, 2)]
+            mesh = bpy.data.meshes.new("PL")
+            mesh.from_pydata(vert, [], fac)
+            obj = bpy.data.objects.new("PL", mesh)
+            obj.data.materials.append(material)
+            place_bar(obj, vertical_increment)
+            link_collection(obj, collection)
+            return obj
+
+        def add_text(text, x_position, align, vertical_increment, parent=None, collection=None):
+            data = bpy.data.curves.new(type="FONT", name="Timeline")
+            data.align_x = align
+            data.align_y = "CENTER"
+
+            data.body = text
+            obj = bpy.data.objects.new(name="Unnamed", object_data=data)
+            link_collection(obj, collection)
+            shift_object(obj, x=x_position, y=-(vertical_increment - 1))
+            if parent:
+                obj.parent = parent
+            return obj
+
+        def add_bar(
+            material,
+            vertical_increment,
+            parent=None,
+            collection=None,
+            task=None,
+            color=False,
+            scale=False,
+            shift_x=None,
+            name=None,
+        ):
+            plane = create_plane(material, collection, vertical_increment)
+            if parent:
+                plane.parent = parent
+            if color:
+                animate_color(plane, task, color)
+            if scale:
+                animate_scale(plane, task)
+            if shift_x:
+                shift_object(plane, x=shift_x)
+            if name:
+                plane.name = name
+            return plane
+
+        if "Bar Visual" in bpy.data.collections:
+            collection = bpy.data.collections["Bar Visual"]
+            for obj in collection.objects:
+                bpy.data.objects.remove(obj)
+
+        else:
+            collection = bpy.data.collections.new("Bar Visual")
+            bpy.context.scene.collection.children.link(collection)
+
+        if tasks:
+            create_task_bar_data(tasks, vertical_increment, collection)
+
+    @classmethod
+    def enable_editing_task_animation_colors(cls):
+        bpy.context.scene.BIMAnimationProperties.is_editing = True
+
+    @classmethod
+    def load_task_animation_colors(cls):
+        props = bpy.context.scene.BIMAnimationProperties
+        if not props.task_colors_components_inputs:
+            if tool.Ifc.schema():
+                # for attribute in tool.Ifc.schema().declaration_by_name("IfcTask").all_attributes():
+                #     if attribute.name() != "PredefinedType":
+                #         continue
+                #     task_types = ifcopenshell.util.attribute.get_enum_items(attribute)
+                # return [(e, e, "") for e in enum_items]
+                groups = {
+                    "CREATION": {
+                        "PredefinedType": ["CONSTRUCTION", "INSTALLATION"],
+                        "Color": (0.0, 1.0, 0.0),
+                    },
+                    "OPERATION": {
+                        "PredefinedType": ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"],
+                        "Color": (0.0, 0.0, 1.0),
+                    },
+                    "MOVEMENT_TO": {
+                        "PredefinedType": ["LOGISTIC", "MOVE"],
+                        "Color": (1.0, 1.0, 0.0),
+                    },
+                    "DESTRUCTION": {
+                        "PredefinedType": ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"],
+                        "Color": (1.0, 0.0, 0.0),
+                    },
+                    "MOVEMENT_FROM": {
+                        "PredefinedType": ["LOGISTIC", "MOVE"],
+                        "Color": (1.0, 0.5, 0.0),
+                    },
+                    "USERDEFINED": {
+                        "PredefinedType": ["USERDEFINED", "NOTDEFINED"],
+                        "Color": (0.2, 0.2, 0.2),
+                    },
+                }
+                for group, data in groups.items():
+                    for predefined_type in data["PredefinedType"]:
+                        if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
+                            predefined_type_item = props.task_colors_components_outputs.add()
+                        elif group in ["MOVEMENT_FROM", "DESTRUCTION"]:
+                            predefined_type_item = props.task_colors_components_inputs.add()
+                        elif group == "USERDEFINED":
+                            predefined_type_item = props.task_colors_components_inputs.add()
+                            predefined_type_item2 = props.task_colors_components_outputs.add()
+                            predefined_type_item2.name = predefined_type
+                            predefined_type_item2.color = data["Color"]
+                        # TO DO: consider cases where users confuses inputs and outputs
+                        predefined_type_item.name = predefined_type
+                        predefined_type_item.color = data["Color"]
+
+    @classmethod
+    def disable_editing_task_animation_colors(cls):
+        bpy.context.scene.BIMAnimationProperties.is_editing = False
+
+    @classmethod
+    def get_start_date(cls):
+        start = parser.parse(bpy.context.scene.BIMWorkScheduleProperties.visualisation_start, dayfirst=True, fuzzy=True)
+        return start if start else None
+
+    @classmethod
+    def get_finish_date(cls):
+        finish = parser.parse(
+            bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish, dayfirst=True, fuzzy=True
+        )
+        return finish if finish else None
+
+    @classmethod
+    def process_construction_state(cls, work_schedule, date):
+        cls.to_build = set()
+        cls.in_construction = set()
+        cls.completed = set()
+        cls.to_demolish = set()
+        cls.in_demolition = set()
+        cls.demolished = set()
+        for rel in work_schedule.Controls or []:
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcTask"):
+                    cls.process_task_status(related_object, date)
+        return {
+            "TO_BUILD": cls.to_build,
+            "IN_CONSTRUCTION": cls.in_construction,
+            "COMPLETED": cls.completed,
+            "TO_DEMOLISH": cls.to_demolish,
+            "IN_DEMOLITION": cls.in_demolition,
+            "DEMOLISHED": cls.demolished,
+        }
+
+    @classmethod
+    def process_task_status(cls, task, date):
+        for rel in task.IsNestedBy or []:
+            [cls.process_task_status(related_object, date) for related_object in rel.RelatedObjects]
+        start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+        finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
+        if not start or not finish:
+            return
+        outputs = ifcopenshell.util.sequence.get_task_outputs(task) or []
+        inputs = cls.get_task_inputs(task) or []
+        if date < start:
+            [cls.to_build.add(tool.Ifc.get_object(output)) for output in outputs]
+            [cls.to_demolish.add(tool.Ifc.get_object(input)) for input in inputs]
+        elif date < finish:
+            [cls.in_construction.add(tool.Ifc.get_object(output)) for output in outputs]
+            [cls.in_demolition.add(tool.Ifc.get_object(input)) for input in inputs]
+        else:
+            [cls.completed.add(tool.Ifc.get_object(output)) for output in outputs]
+            [cls.demolished.add(tool.Ifc.get_object(input)) for input in inputs]
+
+    @classmethod
+    def show_snapshot(cls, product_states):
+        print(product_states)
+        bpy.context.scene.frame_start = 1
+        bpy.context.scene.frame_end = 2
+        for obj in bpy.data.objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.hide_viewport = False
+            obj.hide_render = False
+
+        for obj in cls.to_build:
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=1)
+            obj.keyframe_insert(data_path="hide_render", frame=1)
+
+        for obj in cls.in_construction:
+            obj.color = (1.0, 0.7, 0.0, 1)
+            obj.keyframe_insert(data_path="color", frame=1)
+
+        for obj in cls.completed:
+            obj.color = (0.0, 1.0, 0.0, 1)
+            obj.keyframe_insert(data_path="color", frame=1)
+
+        for obj in cls.to_demolish:
+            if obj in cls.to_build:
+                continue
+            elif obj.animation_data:
+                obj.animation_data_clear()
+            obj.hide_viewport = False
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="hide_viewport", frame=1)
+            obj.keyframe_insert(data_path="hide_render", frame=1)
+        for obj in cls.in_demolition:
+            obj.color = (1.0, 0.0, 0.0, 1)
+            obj.keyframe_insert(data_path="color", frame=1)
+        for obj in cls.demolished:
+            if obj.animation_data:
+                obj.animation_data_clear()
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=1)
+            obj.keyframe_insert(data_path="hide_render", frame=1)
+
+    @classmethod
+    def set_object_shading(cls):
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area.spaces[0].shading.color_type = "OBJECT"
+
+    @classmethod
+    def get_animation_settings(cls):
+        def calculate_total_frames(fps):
+            if props.speed_types == "FRAME_SPEED":
+                return calculate_using_frames(
+                    start,
+                    finish,
+                    props.speed_animation_frames,
+                    isodate.parse_duration(props.speed_real_duration),
+                )
+            elif props.speed_types == "DURATION_SPEED":
+                return calculate_using_duration(
+                    start,
+                    finish,
+                    fps,
+                    isodate.parse_duration(props.speed_animation_duration),
+                    isodate.parse_duration(props.speed_real_duration),
+                )
+            elif props.speed_types == "MULTIPLIER_SPEED":
+                return calculate_using_multiplier(
+                    start,
+                    finish,
+                    fps,
+                    props.speed_multiplier,
+                )
+
+        def calculate_using_multiplier(start, finish, fps, multiplier):
+            animation_time = (finish - start) / multiplier
+            return animation_time.total_seconds() * fps
+
+        def calculate_using_duration(start, finish, fps, animation_duration, real_duration):
+            return calculate_using_multiplier(start, finish, fps, real_duration / animation_duration)
+
+        def calculate_using_frames(start, finish, animation_frames, real_duration):
+            return ((finish - start) / real_duration) * animation_frames
+
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        if not (props.visualisation_start and props.visualisation_finish):
+            return
+
+        start = cls.get_start_date()
+        finish = cls.get_finish_date()
+        duration = finish - start
+        start_frame = 1
+        total_frames = calculate_total_frames(bpy.context.scene.render.fps)
+        return {
+            "start": start,
+            "finish": finish,
+            "duration": duration,
+            "start_frame": start_frame,
+            "total_frames": total_frames,
+        }
+
+    @classmethod
+    def get_animation_product_frames(cls, work_schedule, settings):
+        def preprocess_task(task):
+            for subtask in ifcopenshell.util.sequence.get_nested_tasks(task):
+                preprocess_task(subtask)
+            start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+            finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
+            if not start or not finish:
+                return
+            for output in ifcopenshell.util.sequence.get_task_outputs(task):
+                add_product_frame(output.id(), task.PredefinedType, start, finish, "output")
+            for input in cls.get_task_inputs(task):
+                add_product_frame(input.id(), task.PredefinedType, start, finish, "input")
+
+        def add_product_frame(product_id, type, product_start, product_finish, relationship):
+            product_frames.setdefault(product_id, []).append(
+                {
+                    "type": type,
+                    "relationship": relationship,
+                    "STARTED": round(
+                        settings["start_frame"]
+                        + (((product_start - settings["start"]) / settings["duration"]) * settings["total_frames"])
+                    ),
+                    "COMPLETED": round(
+                        settings["start_frame"]
+                        + (((product_finish - settings["start"]) / settings["duration"]) * settings["total_frames"])
+                    ),
+                }
+            )
+
+        product_frames = {}
+        for root_task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+            preprocess_task(root_task)
+        return product_frames
+
+    @classmethod
+    def clear_object_animation(cls, obj):
+        if obj.animation_data:
+            obj.animation_data_clear()
+            print("Cleared animation for", obj.name)
+
+    @classmethod
+    def clear_objects_animation(cls, include_blender_objects=True):
+        for obj in bpy.data.objects:
+            if not include_blender_objects and not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            cls.clear_object_animation(obj)
+            if not obj.visible_get():
+                obj.hide_viewport = False
+                obj.hide_render = False
+
+    @classmethod
+    def animate_objects(cls, settings, frames, clear_previous=True, animation_type=""):
+        for obj in bpy.data.objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            if clear_previous:
+                cls.clear_object_animation(obj)
+            cls.earliest_frame = None
+            product_frames = frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
+            for product_frame in product_frames:
+                if product_frame["relationship"] == "input":
+                    cls.animate_input(obj, settings["start_frame"], product_frame, animation_type)
+                elif product_frame["relationship"] == "output":
+                    cls.animate_output(obj, settings["start_frame"], product_frame)
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area.spaces[0].shading.color_type = "OBJECT"
+        bpy.context.scene.frame_start = settings["start_frame"]
+        bpy.context.scene.frame_end = int(settings["start_frame"] + settings["total_frames"] + 1)
+
+    @classmethod
+    def animate_input(cls, obj, start_frame, product_frame, animation_type):
+        props = bpy.context.scene.BIMAnimationProperties
+        color = props.task_colors_components_inputs[product_frame["type"]].color
+        cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
+
+    @classmethod
+    def animate_output(cls, obj, start_frame, product_frame):
+        props = bpy.context.scene.BIMAnimationProperties
+        color = props.task_colors_components_outputs[product_frame["type"]].color
+        if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
+            cls.animate_creation(obj, start_frame, product_frame, color)
+        elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
+            cls.animate_operation(obj, start_frame, product_frame, color)
+        elif product_frame["type"] in ["LOGISTIC", "MOVE"]:
+            cls.animate_movement_to(obj, start_frame, product_frame, color)
+        else:
+            cls.animate_operation(obj, start_frame, product_frame, color)
+
+    @classmethod
+    def animate_destruction(cls, obj, start_frame, product_frame, color, animation_type):
+        if cls.earliest_frame is None or product_frame["STARTED"] < cls.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.hide_viewport = False
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="color", frame=start_frame)
+            obj.keyframe_insert(data_path="hide_viewport", frame=start_frame)
+            obj.keyframe_insert(data_path="hide_render", frame=start_frame)
+            cls.earliest_frame = product_frame["STARTED"]
+        if animation_type == "snapshot":
+            start = product_frame["STARTED"]
+        else:
+            start = product_frame["STARTED"] - 1
+        obj.keyframe_insert(data_path="color", frame=start)
+        obj.keyframe_insert(data_path="hide_viewport", frame=start)
+        obj.keyframe_insert(data_path="hide_render", frame=start)
+        obj.color = (color.r, color.g, color.b, 1)
+        obj.keyframe_insert(data_path="color", frame=start + 1)
+        obj.hide_viewport = True
+        obj.hide_render = True
+        obj.color = (0.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
+
+    @classmethod
+    def animate_movement_from(cls, obj, start_frame, product_frame, color, animation_type):
+        cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
+
+    @classmethod
+    def animate_consumption(cls, obj, start_frame, product_frame, color, animation_type):
+        cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
+
+    @classmethod
+    def animate_creation(cls, obj, start_frame, product_frame, color):
+        if cls.earliest_frame is None or product_frame["STARTED"] < cls.earliest_frame:
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=start_frame)
+            obj.keyframe_insert(data_path="hide_render", frame=start_frame)
+            cls.earliest_frame = product_frame["STARTED"]
+        obj.hide_viewport = False
+        obj.hide_render = False
+        obj.color = (color.r, color.g, color.b, 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+
+    @classmethod
+    def animate_operation(cls, obj, start_frame, product_frame, color):
+        if cls.earliest_frame is None or product_frame["STARTED"] < cls.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.keyframe_insert(data_path="color", frame=start_frame)
+            cls.earliest_frame = product_frame["STARTED"]
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.color = (color.r, color.g, color.b, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+
+    @classmethod
+    def animate_movement_to(cls, obj, start_frame, product_frame, color):
+        cls.animate_creation(obj, start_frame, product_frame, color)
+
+    @classmethod
+    def add_text_animation_handler(cls, settings):
+        def remove_handler(function):
+            bpy.app.handlers.frame_change_post.remove(function)
+
+        def append_handler(function):
+            bpy.app.handlers.frame_change_post.append(function)
+
+        def animate_text_handler(scene):
+            data = bpy.data.curves.get("Timeline")
+            if not data or not bpy.data.objects.get("Timeline"):
+                remove_handler(animate_text_handler)
+            data.body = get_frame_date(scene, data.BIMDateTextProperties)
+
+        def get_frame_date(scene, props):
+            start = parser.parse(props.start, dayfirst=True, fuzzy=True)
+            finish = parser.parse(props.finish, dayfirst=True, fuzzy=True)
+            duration = finish - start
+            frame_date = (((scene.frame_current - props.start_frame) / props.total_frames) * duration) + start
+            return frame_date.date().isoformat()
+
+        data = bpy.data.curves.get("Timeline")
+        if not data:
+            data = bpy.data.curves.new(type="FONT", name="Timeline")
+        obj = bpy.data.objects.get("Timeline")
+        if not obj:
+            obj = bpy.data.objects.new(name="Timeline", object_data=data)
+            bpy.context.scene.collection.objects.link(obj)
+
+        obj.data.BIMDateTextProperties.start_frame = settings["start_frame"]
+        obj.data.BIMDateTextProperties.total_frames = int(settings["total_frames"])
+        obj.data.BIMDateTextProperties.start = bpy.context.scene.BIMWorkScheduleProperties.visualisation_start
+        obj.data.BIMDateTextProperties.finish = bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish
+        append_handler(animate_text_handler)
+
+    @classmethod
+    def create_tasks_json(cls, work_schedule=None):
+        sequence_type_map = {
+            None: "FS",
+            "START_START": "SS",
+            "START_FINISH": "SF",
+            "FINISH_START": "FS",
+            "FINISH_FINISH": "FF",
+            "USERDEFINED": "FS",
+            "NOTDEFINED": "FS",
+        }
+
+        tasks_json = []
+        for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+            cls.create_new_task_json(task, tasks_json, sequence_type_map)
+        return tasks_json
+
+    @classmethod
+    def create_new_task_json(cls, task, json, type_map=None):
+        task_time = task.TaskTime
+        data = {
+            "pID": task.id(),
+            "pName": task.Name,
+            "pCaption": task.Name,
+            "pStart": task_time.ScheduleStart if task_time else "",
+            "pEnd": task_time.ScheduleFinish if task_time else "",
+            "pPlanStart": task_time.ScheduleStart if task_time else "",
+            "pPlanEnd": task_time.ScheduleFinish if task_time else "",
+            "pMile": 1 if task.IsMilestone else 0,
+            "pComp": 0,
+            "pGroup": 1 if task.IsNestedBy else 0,
+            "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
+            "pOpen": 1,
+            "pCost": 1,
+            "ifcduration": task_time.ScheduleDuration if task_time else "",
+        }
+
+        if task_time and task_time.IsCritical:
+            data["pClass"] = "gtaskred"
+        elif data["pGroup"]:
+            data["pClass"] = "ggroupblack"
+        elif data["pMile"]:
+            data["pClass"] = "gmilestone"
+        else:
+            data["pClass"] = "gtaskblue"
+
+        data["pDepend"] = ",".join(
+            [f"{rel.RelatingProcess.id()}{type_map[rel.SequenceType]}" for rel in task.IsSuccessorFrom or []]
+        )
+        json.append(data)
+        for nested_task in ifcopenshell.util.sequence.get_nested_tasks(task):
+            cls.create_new_task_json(nested_task, json, type_map)
+
+    @classmethod
+    def generate_gantt_browser_chart(cls, task_json):
+        with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
+            with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
+                f.write(pystache.render(t.read(), {"json_data": json.dumps(task_json)}))
+        webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
+
+    @classmethod
+    def load_product_tasks(cls, product):
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        props.is_task_update_enabled = False
+        props.product_input_tasks.clear()
+        props.product_output_tasks.clear()
+        task_inputs, task_ouputs = ifcopenshell.util.sequence.get_tasks_for_product(product)
+        for task in task_inputs or []:
+            new = props.product_input_tasks.add()
+            new.name = task.Name or "Unnamed"
+            new.ifc_definition_id = task.id()
+        for task in task_ouputs or []:
+            new = props.product_output_tasks.add()
+            new.name = task.Name or "Unnamed"
+            new.ifc_definition_id = task.id()
+
+    @classmethod
+    def get_work_schedule_products(cls, work_schedule):
+        products = []
+        for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+            products.extend(ifcopenshell.util.sequence.get_task_inputs(task, is_deep=True))
+            products.extend(ifcopenshell.util.sequence.get_task_outputs(task, is_deep=True))
+        return products
+
+    @classmethod
+    def has_task_assignments(cls, product, work_schedule=None):
+        task_inputs, task_ouputs = ifcopenshell.util.sequence.get_tasks_for_product(product)
+        if work_schedule:
+            task_inputs = [task for task in task_inputs or [] if cls.get_work_schedule(task) == work_schedule]
+            task_ouputs = [task for task in task_ouputs or [] if cls.get_work_schedule(task) == work_schedule]
+        return bool(task_inputs or task_ouputs)

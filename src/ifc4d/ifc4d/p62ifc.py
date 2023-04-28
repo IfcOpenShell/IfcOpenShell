@@ -91,7 +91,7 @@ class P62Ifc:
         root = tree.getroot()
         self.ns = {"pr": root.tag[1:].partition("}")[0]}
         project = root.find("pr:Project", self.ns)
-        self.project["Name"] = project.find("pr:Name", self.ns).text
+        self.project["Name"] = project.findtext("pr:Name") or "Unnamed"
         self.parse_calendar_xml(root)
         self.parse_calendar_xml(project)
         self.parse_wbs_xml(project)

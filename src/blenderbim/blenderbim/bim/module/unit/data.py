@@ -20,6 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
+from ifcopenshell.util.doc import get_entity_doc
 import blenderbim.tool as tool
 
 
@@ -44,8 +45,20 @@ class UnitsData:
     @classmethod
     def unit_classes(cls):
         declarations = ifcopenshell.util.schema.get_subtypes(tool.Ifc.schema().declaration_by_name("IfcNamedUnit"))
-        results = [(c, c, "") for c in sorted([d.name() for d in declarations])]
-        results.extend([("IfcDerivedUnit", "IfcDerivedUnit", ""), ("IfcMonetaryUnit", "IfcMonetaryUnit", "")])
+        version = tool.Ifc.get_schema()
+        results = [
+            (c, c, get_entity_doc(version, c).get("description", "")) for c in sorted([d.name() for d in declarations])
+        ]
+        results.extend(
+            [
+                ("IfcDerivedUnit", "IfcDerivedUnit", get_entity_doc(version, "IfcDerivedUnit").get("description", "")),
+                (
+                    "IfcMonetaryUnit",
+                    "IfcMonetaryUnit",
+                    get_entity_doc(version, "IfcMonetaryUnit").get("description", ""),
+                ),
+            ]
+        )
         return results
 
     @classmethod

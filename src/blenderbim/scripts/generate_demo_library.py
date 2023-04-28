@@ -41,7 +41,7 @@ class LibraryGenerator:
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
         plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
         self.representations = {
-            "body": ifcopenshell.api.run(
+            "model_body": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
                 context_type="Model",
@@ -49,11 +49,11 @@ class LibraryGenerator:
                 target_view="MODEL_VIEW",
                 parent=model,
             ),
-            "annotation": ifcopenshell.api.run(
+            "plan_body": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
                 context_type="Plan",
-                context_identifier="Annotation",
+                context_identifier="Body",
                 target_view="PLAN_VIEW",
                 parent=plan,
             ),
@@ -61,47 +61,48 @@ class LibraryGenerator:
 
         self.material = ifcopenshell.api.run("material.add_material", self.file, name="Unknown")
 
-        self.create_layer_type("IfcWallType", "DEMO50", 0.05)
-        self.create_layer_type("IfcWallType", "DEMO100", 0.1)
-        self.create_layer_type("IfcWallType", "DEMO200", 0.2)
-        self.create_layer_type("IfcWallType", "DEMO300", 0.3)
+        self.create_layer_type("IfcWallType", "WAL50", 0.05)
+        self.create_layer_type("IfcWallType", "WAL100", 0.1)
+        self.create_layer_type("IfcWallType", "WAL200", 0.2)
+        self.create_layer_type("IfcWallType", "WAL300", 0.3)
 
-        self.create_layer_type("IfcCoveringType", "DEMO10", 0.01)
+        self.create_layer_type("IfcCoveringType", "COV10", 0.01)
 
-        product = self.create_layer_type("IfcCoveringType", "DEMO20", 0.02)
+        product = self.create_layer_type("IfcCoveringType", "COV20", 0.02)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=product, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"LayerSetDirection": "AXIS2"})
 
-        product = self.create_layer_type("IfcCoveringType", "DEMO30", 0.03)
+        product = self.create_layer_type("IfcCoveringType", "COV30", 0.03)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=product, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"LayerSetDirection": "AXIS3"})
 
-        self.create_layer_type("IfcRampType", "DEMO200", 0.2)
+        self.create_layer_type("IfcRampType", "RAM200", 0.2)
 
         profile = self.file.create_entity("IfcCircleProfileDef", ProfileType="AREA", Radius=0.3)
-        self.create_profile_type("IfcPileType", "DEMO1", profile)
+        self.create_profile_type("IfcPileType", "P1", profile)
 
-        self.create_layer_type("IfcSlabType", "DEMO150", 0.2)
-        self.create_layer_type("IfcSlabType", "DEMO250", 0.3)
+        self.create_layer_type("IfcSlabType", "FLR150", 0.2)
+        self.create_layer_type("IfcSlabType", "FLR250", 0.3)
 
-        profile = self.file.create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=0.5, YDim=0.6)
-        self.create_profile_type("IfcColumnType", "DEMO1", profile)
+        profile = self.file.create_entity("IfcRectangleProfileDef", ProfileName="500x600", ProfileType="AREA", XDim=0.5, YDim=0.6)
+        self.create_profile_type("IfcColumnType", "C1", profile)
 
         profile = self.file.create_entity(
-            "IfcCircleHollowProfileDef", ProfileType="AREA", Radius=0.25, WallThickness=0.005
+            "IfcCircleHollowProfileDef", ProfileName="500.0x5.0 CHS", ProfileType="AREA", Radius=0.25, WallThickness=0.005
         )
-        self.create_profile_type("IfcColumnType", "DEMO2", profile)
+        self.create_profile_type("IfcColumnType", "C2", profile)
 
         profile = self.file.create_entity(
             "IfcRectangleHollowProfileDef",
+            ProfileName="150x75x2.0 RHS",
             ProfileType="AREA",
             XDim=0.075,
             YDim=0.15,
-            WallThickness=0.005,
+            WallThickness=0.002,
             InnerFilletRadius=0.005,
             OuterFilletRadius=0.005,
         )
-        self.create_profile_type("IfcColumnType", "DEMO3", profile)
+        self.create_profile_type("IfcColumnType", "C3", profile)
 
         profile = self.file.create_entity(
             "IfcIShapeProfileDef",
@@ -113,7 +114,7 @@ class LibraryGenerator:
             FlangeThickness=0.01,
             FilletRadius=0.005,
         )
-        self.create_profile_type("IfcBeamType", "DEMO1", profile)
+        self.create_profile_type("IfcBeamType", "B1", profile)
 
         profile = self.file.create_entity(
             "IfcCShapeProfileDef",
@@ -125,13 +126,13 @@ class LibraryGenerator:
             Girth=0.03,
             InternalFilletRadius=0.005,
         )
-        self.create_profile_type("IfcBeamType", "DEMO2", profile)
+        self.create_profile_type("IfcBeamType", "B2", profile)
 
-        self.create_type("IfcWindowType", "DEMO1", {"body": "Window", "annotation": "Window-Annotation"})
-        self.create_type("IfcDoorType", "DEMO1", {"body": "Door", "annotation": "Door-Annotation"})
-        self.create_type("IfcFurnitureType", "BUNNY", {"body": "Bunny", "annotation": "Bunny-Annotation"})
+        self.create_type("IfcWindowType", "WT01", {"model_body": "Window", "plan_body": "Window-Plan"})
+        self.create_type("IfcDoorType", "DT01", {"model_body": "Door", "plan_body": "Door-Plan"})
+        self.create_type("IfcFurnitureType", "BUN01", {"model_body": "Bunny", "plan_body": "Bunny-Plan"})
 
-        self.file.write("blenderbim-demo-library.ifc")
+        self.file.write("IFC4 Demo Library.ifc")
 
     def create_layer_type(self, ifc_class, name, thickness):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)

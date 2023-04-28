@@ -18,11 +18,19 @@
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, structural_analysis_model=None):
+        """Removes an analysis model
+
+        Note that the contents of an analysis model are currently preserved.
+
+        :param structural_analysis_model: The IfcStructuralAnalysisModel to
+            remove.
+        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
+        :return: None
+        :rtype: None
+        """
         self.file = file
-        self.settings = {"structural_analysis_model": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"structural_analysis_model": structural_analysis_model}
 
     def execute(self):
         for rel in self.settings["structural_analysis_model"].IsGroupedBy or []:

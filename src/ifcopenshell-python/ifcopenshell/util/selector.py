@@ -16,10 +16,36 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+import lark
 import ifcopenshell.util
 import ifcopenshell.util.fm
 import ifcopenshell.util.element
-import lark
+
+
+def get_element_value(element, query):
+    l = lark.Lark(
+        """start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
+                keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
+                keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
+                keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
+
+                // Embed common.lark for packaging
+                _STRING_INNER: /.*?/
+                _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
+                ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
+                LCASE_LETTER: "a".."z"
+                UCASE_LETTER: "A".."Z"
+                LETTER: UCASE_LETTER | LCASE_LETTER
+                WORD: LETTER+
+                WS: /[ \\t\\f\\r\\n]/+
+
+                %ignore WS // Disregard spaces in text
+             """
+    )
+    start = l.parse(query)
+    filter_query = Selector.parse_filter_query(start.children[0])
+    return Selector.get_element_value(element, filter_query["keys"], filter_query["is_regex"])
 
 
 class Selector:
@@ -35,14 +61,17 @@ class Selector:
                     guid_selector: "#" /[0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$]{22}/
                     class_selector: "." WORD filter ?
                     filter: "[" filter_key (comparison filter_value)? "]"
-                    filter_key: WORD | pset_or_qto
+                    filter_key: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
-                    pset_or_qto: /[^\W][^.=<>]*[^\W]/ "." /[^\W][^.=<>]*[^\W]/
+                    keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
+                    keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
+                    keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
                     lfunction: and | or
-                    inverse_relationship: types | decomposed_by | bounded_by
+                    inverse_relationship: types | decomposed_by | bounded_by | grouped_by
                     types: "*"
                     decomposed_by: "@"
                     bounded_by: "@@"
+                    grouped_by: "@@@"
                     and: "&"
                     or: "|"
                     not: "!"
@@ -130,7 +159,9 @@ class Selector:
 
         if not inverse_relationship:
             return results
-        return cls.parse_inverse_relationship(results, inverse_relationship.children[0].data)
+        return cls.parse_inverse_relationship(
+            results, inverse_relationship.children[0].data
+        )
 
     @classmethod
     def parse_inverse_relationship(cls, elements, inverse_relationship):
@@ -143,6 +174,8 @@ class Selector:
                     results.extend(element.ObjectTypeOf[0].RelatedObjects)
             elif inverse_relationship == "decomposed_by":
                 results.extend(ifcopenshell.util.element.get_decomposition(element))
+            elif inverse_relationship == "grouped_by":
+                results.extend(ifcopenshell.util.element.get_grouped_by(element))
             elif inverse_relationship == "bounded_by" and hasattr(element, "BoundedBy"):
                 for relationship in element.BoundedBy:
                     results.append(relationship.RelatedBuildingElement)
@@ -160,17 +193,20 @@ class Selector:
             if cls.elements is None:
                 elements = cls.file.by_type(class_selector.children[0])
             else:
-                elements = [e for e in cls.elements if e.is_a(class_selector.children[0])]
-        if len(class_selector.children) > 1 and class_selector.children[1].data == "filter":
+                elements = [
+                    e for e in cls.elements if e.is_a(class_selector.children[0])
+                ]
+        if (
+            len(class_selector.children) > 1
+            and class_selector.children[1].data == "filter"
+        ):
             return cls.filter_elements(elements, class_selector.children[1])
         return elements
 
     @classmethod
     def filter_elements(cls, elements, filter_rule):
         results = []
-        key = filter_rule.children[0].children[0]
-        if not isinstance(key, str):
-            key = key.children[0] + "." + key.children[1]
+        filter_query = cls.parse_filter_query(filter_rule.children[0].children[0])
         comparison = value = None
         if len(filter_rule.children) > 1:
             comparison = filter_rule.children[1].children[0].data
@@ -188,51 +224,100 @@ class Selector:
             elif token_type == "NULL":
                 value = None
         for element in elements:
-            element_value = cls.get_element_value(element, key)
+            element_value = cls.get_element_value(element, filter_query["keys"], is_regex=filter_query["is_regex"])
             if element_value is None and value is not None and "not" not in comparison:
                 continue
-            if comparison and cls.filter_element(element, element_value, comparison, value):
+            if comparison and cls.filter_element(
+                element, element_value, comparison, value
+            ):
                 results.append(element)
             elif not comparison and element_value:
                 results.append(element)
         return results
 
     @classmethod
-    def get_element_value(cls, element, key):
-        if "." in key and key.split(".")[0] == "type":
-            try:
-                element = ifcopenshell.util.element.get_type(element)
-                if not element:
-                    return None
-            except:
+    def parse_filter_query(cls, filter_query):
+        keys = filter_query
+        is_regex = False
+        if isinstance(keys, str):
+            keys = [keys]
+        elif keys.data == "keys_regex":
+            is_regex = True
+            keys = [k[1:-1].replace("\\\"", '"') for k in keys.children]
+        elif keys.data == "keys_quoted":
+            keys = [k[1:-1].replace("\\\"", '"') for k in keys.children]
+        elif keys.data == "keys_simple":
+            keys = keys.children
+        return {"keys": keys, "is_regex": is_regex}
+
+    @classmethod
+    def get_element_value(cls, element, keys, is_regex=False):
+        value = element
+        for key in keys:
+            key = key.strip()
+            if value is None:
                 return
-            key = ".".join(key.split(".")[1:])
-        elif "." in key and key.split(".")[0] == "material":
-            try:
-                element = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-                if not element:
-                    return None
-            except:
-                return
-            key = ".".join(key.split(".")[1:])
-        elif "." in key and key.split(".")[0] == "container":
-            try:
-                element = ifcopenshell.util.element.get_container(element)
-                if not element:
-                    return None
-            except:
-                return
-            key = ".".join(key.split(".")[1:])
-        info = element.get_info()
-        if key in info:
-            return info[key]
-        elif "." in key:
-            key_components = key.split(".")
-            pset_name = key_components[0]
-            prop = ".".join(key_components[1:])
-            psets = ifcopenshell.util.element.get_psets(element)
-            if pset_name in psets and prop in psets[pset_name]:
-                return psets[pset_name][prop]
+            if key == "type":
+                value = ifcopenshell.util.element.get_type(value)
+            elif key in ("material", "mat"):
+                value = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
+            elif key in ("item", "i"):
+                if value.is_a("IfcMaterialLayerSet"):
+                    value = value.MaterialLayers
+                elif value.is_a("IfcMaterialProfileSet"):
+                    value = value.MaterialProfiles
+                elif value.is_a("IfcMaterialConstituentSet"):
+                    value = value.MaterialConstituents
+            elif key == "container":
+                value = ifcopenshell.util.element.get_container(value)
+            elif key == "class":
+                value = value.is_a()
+            elif isinstance(value, ifcopenshell.entity_instance):
+                attribute = value.get_info().get(key, None)
+
+                if attribute is not None:
+                    value = attribute
+                else:
+                    # Try to extract pset
+                    if is_regex:
+                        psets = ifcopenshell.util.element.get_psets(value)
+                        matching_psets = []
+                        for pset_name, pset in psets.items():
+                            if re.match(key, pset_name):
+                                matching_psets.append(pset)
+                        result = matching_psets or None
+                    else:
+                        result = ifcopenshell.util.element.get_pset(value, key)
+
+                    value = result
+            elif isinstance(value, dict): # Such as from the result of a prior get_pset
+                if is_regex:
+                    results = []
+                    for prop_name, prop_value in value.items():
+                        if re.match(key, prop_name):
+                            if isinstance(prop_value, (list, tuple)):
+                                results.extend(prop_value)
+                            else:
+                                results.append(prop_value)
+                    value = results
+                else:
+                    value = value.get(key, None)
+            elif isinstance(value, (list, tuple)): # If we use regex
+                if key.isnumeric():
+                    try:
+                        value = value[int(key)]
+                    except IndexError:
+                        return
+                else:
+                    results = []
+                    for v in value:
+                        subvalue = cls.get_element_value(v, [key], is_regex=is_regex)
+                        if isinstance(subvalue, list):
+                            results.extend(subvalue)
+                        else:
+                            results.append(subvalue)
+                    value = results
+        return value
 
     @classmethod
     def filter_element(cls, element, element_value, comparison, value):
