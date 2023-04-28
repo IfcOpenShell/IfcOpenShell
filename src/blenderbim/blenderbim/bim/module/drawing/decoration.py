@@ -1993,6 +1993,8 @@ class CutDecorator:
 
         if verts is False:
             return None, None
+        elif verts:
+            return verts, edges
 
         if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
             DecoratorData.cut_cache[element.id()] = (False, False)
@@ -2004,14 +2006,35 @@ class CutDecorator:
         return verts, edges
 
     def slice_layersets(self, context, obj, cut_verts, cut_edges):
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-
-        imat = obj.matrix_world.inverted()
         element = tool.Ifc.get_entity(obj)
-        if tool.Model.get_usage_type(element) != "LAYER2":
+
+        # Currently selected objects shall not be cached as they may be being moved / edited.
+        # If the camera is selected, we also disable the cache as the user may be moving the camera.
+        if obj.select_get() or context.scene.camera.select_get():
+            verts, edges = None, None
+        else:
+            verts, edges = DecoratorData.layerset_cache.get(element.id(), (None, None))
+
+        if verts is False:
+            return None, None
+        elif verts is not None:
+            return verts, edges
+
+        if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
+            DecoratorData.layerset_cache[element.id()] = (False, False)
             return None, None
 
+        if tool.Model.get_usage_type(element) != "LAYER2":
+            DecoratorData.layerset_cache[element.id()] = (False, False)
+            return None, None
+
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layers = self.get_layer_data(element)
+
+        if not layers:
+            DecoratorData.layerset_cache[element.id()] = (False, False)
+            return None, None
+
         minx = min([co[0] for co in obj.bound_box])
         maxx = max([co[0] for co in obj.bound_box])
         min_edge = [Vector((minx, layers["offset"])), Vector((maxx, layers["offset"]))]
@@ -2106,6 +2129,7 @@ class CutDecorator:
             edges.extend([(i + offset, i + 1 + offset) for i in range(0, len(linestring) - 1)])
             offset += len(linestring)
 
+        DecoratorData.layerset_cache[element.id()] = (verts, edges)
         return verts, edges
 
     def bisect_mesh(self, obj, bm, camera):
@@ -2140,6 +2164,10 @@ class CutDecorator:
         usage = ifcopenshell.util.element.get_material(element)
         offset = usage.OffsetFromReferenceLine * self.unit_scale
         layer_set = usage.ForLayerSet
+
+        if len(layer_set.MaterialLayers) == 1:
+            return  # No use slicing if there's only one layer
+
         total_thickness = layer_set.TotalThickness
         half_thickness = total_thickness / 2
         min_layers = []
@@ -2224,7 +2252,6 @@ class CutDecorator:
         return connections
 
     def get_connection_metadata(self, obj, rel_element, centerline, min_edge, max_edge):
-        imat = obj.matrix_world.inverted()
         rel_obj = tool.Ifc.get_object(rel_element)
         layers = self.get_layer_data(rel_element)
         minx = min([co[0] for co in rel_obj.bound_box])

@@ -32,6 +32,7 @@ def refresh():
     AnnotationData.is_loaded = False
     DecoratorData.data = {}
     DecoratorData.cut_cache = {}
+    DecoratorData.layerset_cache = {}
 
 
 class ProductAssignmentsData:
@@ -155,6 +156,7 @@ class DecoratorData:
     # stores 1 type of data per object
     data = {}
     cut_cache = {}
+    layerset_cache = {}
 
     # used by Ifc Annotations with ObjectType = "BATTING"
     @classmethod
