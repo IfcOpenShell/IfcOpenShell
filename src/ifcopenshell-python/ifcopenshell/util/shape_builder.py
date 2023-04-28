@@ -568,3 +568,18 @@ class ShapeBuilder:
             "position_z_axis": Vector((0, -1, 0)),
             "extrusion_vector": Vector((0, 0, -1)),
         }
+
+    def rotate_extrusion_kwargs_by_z(self, kwargs, angle, counter_clockwise=False):
+        """shortcut to rotate extrusion kwargs by z axis
+
+        `kwargs` expected to have `position_x_axis` and `position_z_axis` keys
+
+        `angle` is a rotation value in radians
+
+        by default rotation is clockwise, to make it counter clockwise use `counter_clockwise` flag
+        """
+        rot = Matrix.Rotation(-angle, 3, "Z")
+        kwargs = kwargs.copy()  # prevent mutation of original kwargs
+        kwargs["position_x_axis"].rotate(rot)
+        kwargs["position_z_axis"].rotate(rot)
+        return kwargs

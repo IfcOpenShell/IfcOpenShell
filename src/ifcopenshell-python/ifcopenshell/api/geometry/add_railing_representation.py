@@ -19,7 +19,7 @@
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from itertools import chain
-from mathutils import Vector
+from mathutils import Vector, Matrix
 import collections
 import mathutils
 from pprint import pprint
@@ -106,8 +106,11 @@ class Usecase:
             solid = builder.create_swept_disk_solid(polyline, support_radius)
 
             support_disk_circle = builder.circle(radius=support_disk_radius)
+
+            angle = V(0, 1).angle_signed(ortho_dir.xy)
+            y_extrusion_kwargs = builder.rotate_extrusion_kwargs_by_z(builder.extrude_by_y_kwargs(), angle)
             support_disk = builder.extrude(
-                support_disk_circle, support_disk_depth, position=support_points[-1], **builder.extrude_by_y_kwargs()
+                support_disk_circle, support_disk_depth, position=support_points[-1], **y_extrusion_kwargs
             )
             return [solid, support_disk]
 
