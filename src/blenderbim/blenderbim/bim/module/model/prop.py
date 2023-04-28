@@ -499,12 +499,12 @@ class BIMRailingProperties(PropertyGroup):
         ("WALL_MOUNTED_HANDRAIL", "WALL_MOUNTED_HANDRAIL", ""),
     )
     cap_types = (
-        ("none", "none", ""),
+        ("TO_END_POST_AND_FLOOR", "TO_END_POST_AND_FLOOR", ""),
+        ("TO_END_POST", "TO_END_POST", ""),
+        ("TO_FLOOR", "TO_FLOOR", ""),
+        ("TO_WALL", "TO_WALL", ""),
         ("180", "180", ""),
-        ("to_wall", "to_wall", ""),
-        ("to_floor", "to_floor", ""),
-        ("to_end_post", "to_end_post", ""),
-        ("to_end_post_and_floor", "to_end_post_and_floor", ""),
+        ("NONE", "NONE", ""),
     )
 
     railing_added_previously: bpy.props.BoolProperty(default=False)
