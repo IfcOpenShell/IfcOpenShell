@@ -317,7 +317,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def is_edited(cls, obj):
-        return list(obj.scale) != [1.0, 1.0, 1.0] or obj in IfcStore.edited_objs
+        return not all([tool.Cad.is_x(o, 1.0) for o in obj.scale]) or obj in IfcStore.edited_objs
 
     @classmethod
     def is_mapped_representation(cls, representation):
