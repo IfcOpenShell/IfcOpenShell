@@ -133,8 +133,8 @@ class Project(blenderbim.core.tool.Project):
     def set_default_modeling_dimensions(cls):
         props = bpy.context.scene.BIMModelProperties
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        props.extrusion_depth = 3 / unit_scale
-        props.length = 1 / unit_scale
+        props.extrusion_depth = 3
+        props.length = 1
         props.rl1 = 0
         props.rl2 = 1 / unit_scale
         props.x = 0.5 / unit_scale
