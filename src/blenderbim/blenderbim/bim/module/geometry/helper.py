@@ -38,7 +38,7 @@ class Helper:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
         face = None
@@ -62,7 +62,7 @@ class Helper:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
         potential_faces = []
@@ -90,7 +90,7 @@ class Helper:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
         potential_faces = []
@@ -292,7 +292,7 @@ class Helper:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
         potential_faces = []
@@ -389,7 +389,7 @@ class Helper:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
         faces = bm.faces
