@@ -1347,15 +1347,16 @@ class Drawing(blenderbim.core.tool.Drawing):
         """returns a set of elements that are included in the drawing"""
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
+        elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include))
+            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
         else:
             if tool.Ifc.get_schema() == "IFC2X3":
-                elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
+                base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
-                elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
-            elements = {e for e in elements if e.is_a() != "IfcSpace"}
+                base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
+            elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
             annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
             elements.update(annotations)
 
@@ -1370,7 +1371,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
-        elements = set(ifc_file.by_type("IfcSpace"))
+        elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")])
         if include:
             elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
         exclude = pset.get("Exclude", None)
@@ -1449,13 +1450,12 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
-        all_elements = set(tool.Ifc.get().by_type("IfcElement")) - set(tool.Ifc.get().by_type("IfcOpeningElement"))
-        filtered_elements = cls.get_drawing_elements(drawing)
-        hidden_elements = list(all_elements - filtered_elements)
-        hidden_objs = [tool.Ifc.get_object(e) for e in hidden_elements]
 
         # Running operators is much more efficient in this scenario than looping through each element
         bpy.ops.object.hide_view_clear()
+
+        filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
+        hidden_objs = [o for o in bpy.context.visible_objects if tool.Ifc.get_entity(o) not in filtered_elements]
 
         for hidden_obj in hidden_objs:
             if bpy.context.view_layer.objects.get(hidden_obj.name):
@@ -1491,6 +1491,36 @@ class Drawing(blenderbim.core.tool.Drawing):
                             should_sync_changes_first=True,
                         )
                     break
+
+    @classmethod
+    def get_elements_in_camera_view(cls, camera, objs):
+        if bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y:
+            x = camera.data.ortho_scale / 2
+            y = (camera.data.BIMCameraProperties.raster_y / camera.data.BIMCameraProperties.raster_x) * x
+        else:
+            y = camera.data.ortho_scale / 2
+            x = (camera.data.BIMCameraProperties.raster_x / camera.data.BIMCameraProperties.raster_y) * y
+
+        camera_inverse_matrix = camera.matrix_world.inverted()
+        return set([
+            tool.Ifc.get_entity(o)
+            for o in objs
+            if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
+            and tool.Ifc.get_entity(o)
+        ])
+
+    @classmethod
+    def is_in_camera_view(cls, obj, camera_inverse_matrix, x, y, clip_start, clip_end):
+        local_bbox = [camera_inverse_matrix @ obj.matrix_world @ Vector(v) for v in obj.bound_box]
+        for v in local_bbox:
+            if v.z < -clip_start and v.z > -clip_end and abs(v.x) < x and abs(v.y) < y:
+                return True
+        if any([v.z > -clip_start for v in local_bbox]) and any([v.z < -clip_end for v in local_bbox]):
+            return True
+        elif any([v.x < -x for v in local_bbox]) and any([v.x > x for v in local_bbox]):
+            return True
+        elif any([v.y < -y for v in local_bbox]) and any([v.y > y for v in local_bbox]):
+            return True
 
     @classmethod
     def is_intersecting_camera(cls, obj, camera):
