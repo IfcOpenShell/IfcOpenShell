@@ -49,8 +49,9 @@ class Usecase:
         self.settings = {"task": task}
 
     def execute(self):
-        result = ifcopenshell.util.element.copy(self.file, self.settings["task"])
+        result = ifcopenshell.util.element.copy_deep(self.file, self.settings["task"])
         self.copy_indirect_attributes(self.settings["task"], result)
+        self.copy_sequence_relationship([self.settings["task"]], [result])
         return result
 
     def copy_sequence_relationship(self, original_tasks, duplicated_tasks):
