@@ -865,7 +865,11 @@ class CreateDrawing(bpy.types.Operator):
                 if is_closed_polygon:
                     el.getparent().remove(el)
 
-            merged_polygons = shapely.ops.unary_union(polygons)
+            try:
+                merged_polygons = shapely.ops.unary_union(polygons)
+            except:
+                print("Warning. Portions of the merge failed. Please report a bug!", polygons)
+                merged_polygons = polygons
 
             if type(merged_polygons) == shapely.MultiPolygon:
                 merged_polygons = merged_polygons.geoms
