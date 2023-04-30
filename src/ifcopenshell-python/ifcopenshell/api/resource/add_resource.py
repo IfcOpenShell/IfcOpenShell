@@ -21,7 +21,12 @@ import ifcopenshell.api
 
 class Usecase:
     def __init__(
-        self, file, parent_resource=None, ifc_class="IfcCrewResource", name=None, predefined_type="NOTDEFINED"
+        self,
+        file,
+        parent_resource=None,
+        ifc_class="IfcCrewResource",
+        name=None,
+        predefined_type="NOTDEFINED",
     ):
         """Add a new construction resource
 

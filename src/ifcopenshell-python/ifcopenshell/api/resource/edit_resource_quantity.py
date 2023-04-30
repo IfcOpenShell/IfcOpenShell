@@ -51,7 +51,10 @@ class Usecase:
                 physical_quantity=time, attributes={"TimeValue": 8.0})
         """
         self.file = file
-        self.settings = {"physical_quantity": physical_quantity, "attributes": attributes or {}}
+        self.settings = {
+            "physical_quantity": physical_quantity,
+            "attributes": attributes or {},
+        }
 
     def execute(self):
         for name, value in self.settings["attributes"].items():
