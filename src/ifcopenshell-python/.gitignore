@@ -1,1 +1,5 @@
 tests/
+
+test/fixtures/UT*
+UT*.png
+update_virtualenv.sh

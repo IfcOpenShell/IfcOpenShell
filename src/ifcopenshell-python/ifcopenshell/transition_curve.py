@@ -17,28 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from enum import Enum
 from dataclasses import dataclass
 import math
 
 import numpy as np
-from scipy import integrate
 
+from ifcopenshell.alignment import AlignmentHorizontalSegmentTypeEnum
 
-class IfcAlignmentHorizontalSegmentTypeEnum(Enum):
-    """IFC 4x3_RC3 Section 8.7.2.2
-    [https://standards.buildingsmart.org/IFC/DEV/IFC4_3/RC3/HTML/schema/ifcgeometricconstraintresource/lexical/ifcalignmenthorizontalsegmenttypeenum.htm]
-    """
-
-    LINE = 1
-    CIRCULARARC = 2
-    CLOTHOID = 3
-    CUBIC = 4
-    BIQUADRATICPARABOLA = 5  # Helmert transition. NOTE also referred to as Schramm curve.
-    BLOSSCURVE = 6
-    COSINECURVE = 7
-    SINECURVE = 8  # NOTE also referred to as Klein curve
-    VIENNESEBEND = 9
 
 
 @dataclass
@@ -53,18 +38,18 @@ class TransitionCurve:
     StartRadiusOfCurvature: float  # IfcSchema::IfcLengthMeasure
     EndRadiusOfCurvature: float  # IfcSchema::IfcPositiveLengthMeasure
     SegmentLength: float  # IfcSchema::IfcNonNegativeLengthMeasure
-    PredefinedType: IfcAlignmentHorizontalSegmentTypeEnum
+    PredefinedType: AlignmentHorizontalSegmentTypeEnum
     GravityCenterLineHeight: float = None  # IfcSchema::IfcPositiveLengthMeasure
 
 
-def isCCW(R) -> bool:
-    if R >= 0:
+def isCCW(radius: float) -> bool:
+    if radius >= 0:
         return True
     else:
         return False
 
 
-def calc_transition_curve_point_BIQUADRATICPARABOLA(lpt, L, R) -> np.array:
+def calc_transition_curve_point_HELMERTCURVE(lpt : float, L: float, R: float) -> np.array:
     """
     Calculate the x, y coordinates of a point on a
     BIQUADRATICPARABOLA horizontal alignment segment.
@@ -104,6 +89,7 @@ def calc_transition_curve_point_BLOSSCURVE(lpt, L, R):
     @param L: transition curve segment total length
     @param R: radius of curvature
     """
+    from scipy import integrate
     ccw = isCCW(R)
     R = abs(R)
 
@@ -242,6 +228,7 @@ def calc_transition_curve_point_SINECURVE(lpt, L, R):
     @param L: transition curve segment total length
     @param R: radius of curvature
     """
+    from scipy import integrate
     ccw = isCCW(R)
     R = abs(R)
 
@@ -284,7 +271,7 @@ def calc_transition_curve_point_SINECURVE(lpt, L, R):
     return np.array([x, y, np.NaN], dtype="float64")
 
 
-def curve_to_array(L, R, trans_type, stroking_interval=5.0) -> np.array:
+def curve_to_array(L: float, R: float, trans_type, stroking_interval=5.0) -> np.array:
     """return array of [x, y, NaN] coordinates for a semantic horizontal segment definition
 
     :param stroking_interval: maximum curve length between points to be calculated
