@@ -562,32 +562,37 @@ class Qto:
 
 @interface
 class Resource:
-    def load_resources(cls): pass
-    def load_resource_properties(cls): pass
+    def clear_productivity_data(cls, props): pass
+    def contract_resource(cls, resource): pass
+    def disable_editing_resource_cost_value(cls): pass
+    def disable_editing_resource_quantity(cls): pass
     def disable_editing_resource(cls): pass
     def disable_resource_editing_ui(cls): pass
-    def load_resource_attributes(cls, resource): pass
-    def enable_editing_resource(cls, resource): pass
-    def get_resource_attributes(cls): pass
-    def enable_editing_resource_time(cls, resource): pass
-    def get_resource_time(cls, resource): pass
-    def load_resource_time_attributes(cls, resource_time): pass
-    def get_resource_time_attributes(cls): pass
-    def enable_editing_resource_costs(cls, resource): pass
-    def disable_editing_resource_cost_value(cls): pass
-    def enable_editing_resource_cost_value_formula(cls, cost_value): pass
-    def load_cost_value_attributes(cls, cost_value): pass
+    def edit_productivity_pset(cls, resource, attributes): pass
     def enable_editing_cost_value_attributes(cls, cost_value): pass
-    def get_resource_cost_value_formula(cls): pass
-    def get_resource_cost_value_attributes(cls): pass
     def enable_editing_resource_base_quantity(cls, resource): pass
+    def enable_editing_resource_cost_value_formula(cls, cost_value): pass
+    def enable_editing_resource_costs(cls, resource): pass
     def enable_editing_resource_quantity(cls, resource_quantity): pass
-    def disable_editing_resource_quantity(cls): pass
-    def get_resource_quantity_attributes(cls): pass
+    def enable_editing_resource_time(cls, resource): pass
+    def enable_editing_resource(cls, resource): pass
     def expand_resource(cls, resource): pass
-    def contract_resource(cls, resource): pass
+    def get_highlighted_resource(cls): pass
+    def get_productivity_attributes(cls): pass
+    def get_productivity(cls, resource, should_inherit): pass
+    def get_resource_attributes(cls): pass
+    def get_resource_cost_value_attributes(cls): pass
+    def get_resource_cost_value_formula(cls): pass
+    def get_resource_quantity_attributes(cls): pass
+    def get_resource_time_attributes(cls): pass
+    def get_resource_time(cls, resource): pass
     def import_resources(cls, file_path): pass
-
+    def load_cost_value_attributes(cls, cost_value): pass
+    def load_productivity_data(cls): pass
+    def load_resource_attributes(cls, resource): pass
+    def load_resource_properties(cls): pass
+    def load_resource_time_attributes(cls, resource_time): pass
+    def load_resources(cls): pass
 
 @interface
 class Root:
@@ -635,7 +640,7 @@ class Sequence:
     def contract_task(cls, task): pass
     def create_bars(cls, tasks): pass
     def create_new_task_json(cls, task, json, type_map=None): pass
-    def create_task_tree(cls, work_schedule): pass
+    def load_task_tree(cls, work_schedule): pass
     def create_tasks_json(cls, work_schedule=None): pass
     def disable_editing_rel_sequence(cls): pass
     def disable_editing_task_animation_colors(cls): pass
@@ -653,7 +658,7 @@ class Sequence:
     def enable_editing_task_calendar(cls, task): pass
     def enable_editing_task_sequence(cls, task): pass
     def enable_editing_task_time(cls, task): pass
-    def enable_editing_task(cls, task): pass
+    def enable_editing_task_attributes(cls, task): pass
     def enable_editing_work_calendar_times(cls, work_calendar): pass
     def enable_editing_work_calendar(cls, work_calendar): pass
     def enable_editing_work_plan_schedules(cls, work_plan): pass
@@ -700,7 +705,7 @@ class Sequence:
     def highlight_task(cls, task): pass
     def is_work_schedule_active(cls, work_schedule): pass
     def load_lag_time_attributes(cls, lag_time): pass
-    def load_product_tasks(cls, product): pass
+    def load_product_related_tasks(cls, product): pass
     def load_rel_sequence_attributes(cls, rel_sequence): pass
     def load_resources(cls): pass
     def load_task_animation_colors(cls): pass

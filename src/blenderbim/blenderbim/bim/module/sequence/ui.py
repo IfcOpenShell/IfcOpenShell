@@ -170,7 +170,9 @@ class BIM_PT_work_schedules(Panel):
                 row1 = col.row(align=True)
                 row1.alignment = "RIGHT"
                 row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
-                row1.prop(self.props, "should_show_visualisation_ui", text="Animation Options", icon="CAMERA_STEREO")
+                row2 = col.row(align=True)
+                row2.prop(self.props, "should_show_visualisation_ui", text="Animation Options", icon="CAMERA_STEREO")
+                row2.prop(self.props, "should_show_snapshot_ui", text="Snapshot Options", icon="CAMERA_STEREO")
             row.operator("bim.disable_editing_work_schedule", text="Disable editing", icon="CANCEL")
         else:
             row.operator(
@@ -189,6 +191,8 @@ class BIM_PT_work_schedules(Panel):
                     self.draw_column_ui()
                 if self.props.should_show_visualisation_ui:
                     self.draw_visualisation_ui()
+                if self.props.should_show_snapshot_ui:
+                    self.draw_snapshot_ui()
                 self.draw_editable_task_ui(work_schedule_id)
 
     def draw_task_operators(self):
@@ -206,14 +210,23 @@ class BIM_PT_work_schedules(Panel):
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")
             else:
-                row.prop(self.props, "should_show_bar_visual_option", text="", icon="NLA_PUSHDOWN")
-                row.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = ifc_definition_id
-                row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
-                row.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = ifc_definition_id
-                row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = ifc_definition_id
-                row.operator("bim.add_task", text="", icon="ADD").task = ifc_definition_id
-                row.operator("bim.duplicate_task", text="", icon="DUPLICATE").task = ifc_definition_id
-                row.operator("bim.remove_task", text="", icon="X").task = ifc_definition_id
+                row.prop(self.props, "show_task_operators", text="Edit", icon="GREASEPENCIL")
+                if self.props.show_task_operators:
+                    row2 = self.layout.row(align=True)
+                    row2.alignment = "RIGHT"
+
+                    row2.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
+                    row2.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = ifc_definition_id
+                    row2.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
+                    row2.operator(
+                        "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
+                    ).task = ifc_definition_id
+                    row2.operator(
+                        "bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL"
+                    ).task = ifc_definition_id
+                row.operator("bim.add_task", text="Add", icon="ADD").task = ifc_definition_id
+                row.operator("bim.duplicate_task", text="Copy", icon="DUPLICATE").task = ifc_definition_id
+                row.operator("bim.remove_task", text="Delete", icon="X").task = ifc_definition_id
 
     def draw_column_ui(self):
         row = self.layout.row()
@@ -281,26 +294,35 @@ class BIM_PT_work_schedules(Panel):
         row.prop(self.animation_props, "should_show_task_bar_options", text="Task Bar", icon="NLA_PUSHDOWN")
         if self.animation_props.should_show_task_bar_options:
             row = self.layout.row()
-            row.operator("bim.add_task_bars", text="Add Bar Visual", icon="NLA_PUSHDOWN")
+            row.label(text="Task Bar Options", icon="NLA_PUSHDOWN")
+            row.alignment = "LEFT"
+            row = self.layout.row(align=True)
+            row.prop(self.props, "should_show_task_bar_selection", text="Enable Selection", icon="NLA_PUSHDOWN")
+            row.operator("bim.add_task_bars", text="Generate bars", icon="NLA_PUSHDOWN")
 
             grid = self.layout.grid_flow(columns=2, even_columns=True)
             # Column1
             col = grid.column()
-            row1 = col.row(align=True)
-            row1.label(text="Bar Colors", icon="NLA_PUSHDOWN")
 
-            row2 = col.row(align=True)
-            row2.prop(self.animation_props, "color_progress")
+            row = col.row(align=True)
+            row.prop(self.animation_props, "color_progress")
 
-            row3 = col.row(align=True)
-            row3.prop(self.animation_props, "color_full")
+            row = col.row(align=True)
+            row.prop(self.animation_props, "color_full")
 
         if self.animation_props.is_editing:
             self.draw_visualisation_settings_ui()
 
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         op = row.operator("bim.visualise_work_schedule_date_range", text="Create Animation", icon="OUTLINER_OB_CAMERA")
         op.work_schedule = self.props.active_work_schedule_id
+
+    def draw_snapshot_ui(self):
+        row = self.layout.row(align=True)
+        row.label(text="Create Construction Snapshot:")
+        row = self.layout.row(align=True)
+        op = row.operator("bim.datepicker", text=self.props.visualisation_start or "Date", icon="REW")
+        op.target_prop = "BIMWorkScheduleProperties.visualisation_start"
         op = row.operator("bim.visualise_work_schedule_date", text="Create SnapShot", icon="RESTRICT_RENDER_OFF")
         op.work_schedule = self.props.active_work_schedule_id
 
@@ -572,7 +594,7 @@ class BIM_UL_task_resources(UIList):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
-            row.prop(item, "schedule_usage", emboss=False, text="")
+            row.label(text=str(item.schedule_usage))
 
 
 class BIM_UL_animation_colors(UIList):
@@ -636,7 +658,7 @@ class BIM_UL_tasks(UIList):
                     text="",
                     emboss=False,
                 )
-            if self.props.should_show_bar_visual_option:
+            if self.props.should_show_task_bar_selection:
                 row.prop(
                     item,
                     "has_bar_visual",
@@ -644,6 +666,8 @@ class BIM_UL_tasks(UIList):
                     text="",
                     emboss=False,
                 )
+            if self.props.enable_reorder:
+                self.draw_order_operator(row, item.ifc_definition_id)
             if self.props.active_task_id:
                 if self.props.editing_task_type == "SEQUENCE" and self.props.active_task_id != item.ifc_definition_id:
                     if item.is_predecessor:
@@ -657,6 +681,18 @@ class BIM_UL_tasks(UIList):
                     else:
                         op = row.operator("bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False)
                     op.task = item.ifc_definition_id
+
+    def draw_order_operator(self, row, ifc_definition_id):
+        task = SequenceData.data["tasks"][ifc_definition_id]
+        if task["NestingIndex"] is not None:
+            if task["NestingIndex"] == 0:
+                op = row.operator("bim.reorder_task_nesting", icon="TRIA_DOWN", text="")
+                op.task = ifc_definition_id
+                op.new_index = task["NestingIndex"] + 1
+            elif task["NestingIndex"] > 0:
+                op = row.operator("bim.reorder_task_nesting", icon="TRIA_UP", text="")
+                op.task = ifc_definition_id
+                op.new_index = task["NestingIndex"] - 1
 
     def draw_hierarchy(self, row, item):
         for i in range(0, item.level_index):
@@ -878,7 +914,7 @@ class BIM_PT_4D_Tools(Panel):
     def draw(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
         row = self.layout.row()
-        row.operator("bim.load_product_tasks", text="Load Tasks", icon="FILE_REFRESH")
+        row.operator("bim.load_product_related_tasks", text="Load Tasks", icon="FILE_REFRESH")
 
         grid = self.layout.grid_flow(columns=2, even_columns=True)
         col1 = grid.column()
