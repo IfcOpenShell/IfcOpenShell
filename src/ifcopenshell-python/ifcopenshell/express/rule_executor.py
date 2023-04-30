@@ -9,7 +9,7 @@ from codegen import indent
 
 def reverse_compile(s):
     return re.sub(
-        "\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
+        r"\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
         "",
         re.sub(
             ", )?+.(, INDETERMINATE)\\"[::-1],
