@@ -116,6 +116,56 @@ class Model(blenderbim.core.tool.Model):
         return profile
 
     @classmethod
+    def export_surface(cls, obj):
+        p1, p2, p3 = [v.co.copy() for v in obj.data.vertices[0:3]]
+
+        edge1 = p2 - p1
+        edge2 = p3 - p1
+        normal = edge1.cross(edge2)
+        z_axis = normal.normalized()
+        x_axis = p2 - p1
+        x_axis.normalize()
+        y_axis = z_axis.cross(x_axis)
+
+        position = Matrix()
+        position.col[0][:3] = x_axis
+        position.col[1][:3] = y_axis
+        position.col[2][:3] = z_axis
+        position.col[3][:3] = p1
+
+        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        helper = Helper(tool.Ifc.get())
+        indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
+
+        if isinstance(indices, tuple) and indices[0] is False:  # Ugly
+            return
+
+        cls.bm = bmesh.new()
+        cls.bm.from_mesh(obj.data)
+        cls.bm.verts.ensure_lookup_table()
+        cls.bm.edges.ensure_lookup_table()
+
+        surface = tool.Ifc.get().createIfcCurveBoundedPlane()
+        surface.BasisSurface = tool.Ifc.get().createIfcPlane(tool.Ifc.get().createIfcAxis2Placement3D(
+            tool.Ifc.get().createIfcCartesianPoint([o / cls.unit_scale for o in p1]),
+            tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
+            tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
+        ))
+
+        if tool.Ifc.get().schema != "IFC2X3":
+            cls.points = cls.export_points(position, indices["points"])
+
+        surface.OuterBoundary = cls.export_curve(position, indices["profile"])
+        results = []
+        for inner_curve in indices["inner_curves"]:
+            results.append(cls.export_curve(position, inner_curve))
+        surface.InnerBoundaries = results
+
+        cls.bm.free()
+        return surface
+
+    @classmethod
     def generate_occurrence_name(cls, element_type, ifc_class):
         props = bpy.context.scene.BIMModelProperties
         if props.occurrence_name_style == "CLASS":
@@ -219,6 +269,40 @@ class Model(blenderbim.core.tool.Model):
         return obj
 
     @classmethod
+    def import_surface(cls, surface, obj=None):
+        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        cls.vertices = []
+        cls.edges = []
+        cls.arcs = []
+        cls.circles = []
+
+        if surface.is_a("IfcCurveBoundedPlane"):
+            position = Matrix(ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist())
+            cls.import_curve(obj, position, surface.OuterBoundary)
+            for inner_boundary in surface.InnerBoundaries:
+                cls.import_curve(obj, position, inner_boundary)
+
+        mesh = bpy.data.meshes.new("Surface")
+        mesh.from_pydata(cls.vertices, cls.edges, [])
+        mesh.BIMMeshProperties.subshape_type = "PROFILE"
+
+        if obj is None:
+            obj = bpy.data.objects.new("Surface", mesh)
+        else:
+            obj.data = mesh
+
+        for arc in cls.arcs:
+            group = obj.vertex_groups.new(name="IFCARCINDEX")
+            group.add(arc, 1, "REPLACE")
+
+        for circle in cls.circles:
+            group = obj.vertex_groups.new(name="IFCCIRCLE")
+            group.add(circle, 1, "REPLACE")
+
+        return obj
+
+    @classmethod
     def import_curve(cls, obj, position, curve):
         offset = len(cls.vertices)
 
@@ -232,6 +316,10 @@ class Model(blenderbim.core.tool.Model):
                 cls.vertices.append(global_point)
             cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices))])
             cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+        elif curve.is_a("IfcCompositeCurve"):
+            # This is a first pass incomplete implementation only for simple polylines, and misses many details.
+            for segment in curve.Segments:
+                cls.import_curve(obj, position, segment.ParentCurve)
         elif curve.is_a("IfcIndexedPolyCurve"):
             is_arc = False
             is_closed = False
