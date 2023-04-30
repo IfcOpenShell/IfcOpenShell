@@ -170,3 +170,15 @@ def unassign_resource(ifc, spatial, resource=None, products=None):
         products = spatial.get_selected_products()
     for product in products:
         ifc.run("resource.unassign_resource", relating_resource=resource, related_object=product)
+
+
+def edit_productivity_pset(ifc, resource_tool):
+    resource = resource_tool.get_highlighted_resource()
+    if resource is None:
+        return
+    productivity = resource_tool.get_productivity(resource)
+    if productivity:
+        pset = ifc.get().by_id(productivity["id"])
+    else:
+        pset = ifc.run("pset.add_pset", product=resource, name="EPset_Productivity")
+    ifc.run("pset.edit_pset", pset=pset, properties=resource_tool.get_productivity_attributes())

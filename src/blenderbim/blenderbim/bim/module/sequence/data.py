@@ -223,6 +223,9 @@ class SequenceData:
                 if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl:
                     if rel.RelatingControl.is_a("IfcWorkCalendar"):
                         data["HasAssignmentsWorkCalendar"].append(rel.RelatingControl.id())
+            data["NestingIndex"] = None
+            for rel in task.Nests or []:
+                data["NestingIndex"] = rel.RelatedObjects.index(task)
             cls.data["tasks"][task.id()] = data
 
     @classmethod

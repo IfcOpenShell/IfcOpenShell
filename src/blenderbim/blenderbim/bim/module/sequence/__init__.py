@@ -97,6 +97,7 @@ classes = (
     operator.RemoveWorkPlan,
     operator.RemoveWorkSchedule,
     operator.RemoveWorkTime,
+    operator.ReorderTask,
     operator.SelectTaskRelatedProducts,
     operator.SelectTaskRelatedInputs,
     operator.SelectWorkScheduleProducts,
