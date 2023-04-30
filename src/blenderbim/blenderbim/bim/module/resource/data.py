@@ -52,8 +52,24 @@ class ResourceData:
             if resource.BaseQuantity:
                 base_quantity = resource.BaseQuantity.get_info()
                 del base_quantity["Unit"]
-            results[resource.id()] = {"type": resource.is_a(), "BaseQuantity": base_quantity}
+            results[resource.id()] = {
+                "type": resource.is_a(),
+                "BaseQuantity": base_quantity,
+            }
+            if resource.is_a() in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
+                results[resource.id()]["Productivity"] = {}
+                productivity = cls.get_productivity(resource)
+                if productivity:
+                    results[resource.id()]["Productivity"] = {
+                        "QuantityProduced": ifcopenshell.util.resource.get_quantity_produced(productivity),
+                        "TimeConsumed": ifcopenshell.util.resource.get_unit_consumed(productivity),
+                        "QuantityProducedName": ifcopenshell.util.resource.get_quantity_produced_name(productivity),
+                    }
         return results
+
+    @classmethod
+    def get_productivity(cls, resource):
+        return ifcopenshell.util.resource.get_productivity(resource, should_inherit=False)
 
     @classmethod
     def cost_values(cls):

@@ -67,9 +67,11 @@ def parse_duration_as_blender_props(dt, simplify=True):
 
 
 def simplify_duration(durations_attributes, duration_type, prop_name):
-    for item in durations_attributes:
-        if item.name == prop_name:
-            duration_props = item
+    duration_props = None
+    for collection in durations_attributes:
+        if collection.name == prop_name:
+            duration_props = collection
+            break
     if duration_props and not duration_type or duration_type == "ELAPSEDTIME":
         duration_string = "P{}Y{}M{}DT{}H{}M{}S".format(
             duration_props.years if duration_props.years else 0,
@@ -114,11 +116,19 @@ def simplify_duration(durations_attributes, duration_type, prop_name):
         hours, seconds = divmod(seconds_left, 3600)
         minutes, seconds = divmod(seconds, 60)
 
-        return "P{}Y{}M{}DT{}H{}M{}S".format(
-            int(years),
-            int(months),
-            int(days),
-            int(hours),
-            int(minutes),
-            int(seconds),
-        )
+        duration_string = "P"
+        if years > 0:
+            duration_string += "{}Y".format(int(years))
+        if months > 0:
+            duration_string += "{}M".format(int(months))
+        if total_days > 0:
+            duration_string += "{}D".format(int(total_days))
+        if hours > 0 or minutes > 0 or seconds > 0:
+            duration_string += "T"
+            if hours > 0:
+                duration_string += "{}H".format(int(hours))
+            if minutes > 0:
+                duration_string += "{}M".format(int(minutes))
+            if seconds > 0:
+                duration_string += "{}S".format(int(seconds))
+        return duration_string
