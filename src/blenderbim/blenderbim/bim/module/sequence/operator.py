@@ -275,13 +275,13 @@ class EditTaskTime(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class EnableEditingTask(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_task"
-    bl_label = "Enable Editing Task"
+    bl_idname = "bim.enable_editing_task_attributes"
+    bl_label = "Enable Editing Task Attributes"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        core.enable_editing_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        core.enable_editing_task_attributes(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         return {"FINISHED"}
 
 
@@ -1295,7 +1295,7 @@ class CopyTask(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class LoadProductTasks(bpy.types.Operator):
-    bl_idname = "bim.load_product_tasks"
+    bl_idname = "bim.load_product_related_tasks"
     bl_label = "Load Product Tasks"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1310,7 +1310,7 @@ class LoadProductTasks(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        core.load_product_tasks(
+        core.load_product_related_tasks(
             tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
         )
         return {"FINISHED"}
@@ -1355,3 +1355,18 @@ class SelectUnassignedWorkScheduleProducts(bpy.types.Operator):
         if isinstance(r, str):
             self.report({"WARNING"}, r)
         return {"FINISHED"}
+
+
+class ReorderTask(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reorder_task_nesting"
+    bl_label = "Reorder Nesting"
+    bl_options = {"REGISTER", "UNDO"}
+    new_index: bpy.props.IntProperty()
+    task: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        r = core.reorder_task_nesting(
+            tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task), new_index=self.new_index
+        )
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)

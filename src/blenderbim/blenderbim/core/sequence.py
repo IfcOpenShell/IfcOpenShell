@@ -74,47 +74,47 @@ def enable_editing_work_schedule(sequence, work_schedule=None):
 
 def enable_editing_work_schedule_tasks(sequence, work_schedule=None):
     sequence.enable_editing_work_schedule_tasks(work_schedule)
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
-def create_task_tree(sequence, work_schedule):
-    sequence.create_task_tree(work_schedule)
+def load_task_tree(sequence, work_schedule):
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def expand_task(sequence, task=None):
     sequence.expand_task(task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def expand_all_tasks(sequence):
     sequence.expand_all_tasks()
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def contract_task(sequence, task=None):
     sequence.contract_task(task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def contract_all_tasks(sequence):
     sequence.contract_all_tasks()
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def remove_task(ifc, sequence, task=None):
     ifc.run("sequence.remove_task", task=task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
     sequence.disable_selecting_deleted_task()
 
@@ -129,20 +129,23 @@ def disable_editing_work_schedule(sequence):
 
 def add_summary_task(ifc, sequence, work_schedule=None):
     ifc.run("sequence.add_task", work_schedule=work_schedule)
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def add_task(ifc, sequence, parent_task=None):
     ifc.run("sequence.add_task", parent_task=parent_task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def enable_editing_task(sequence, task=None):
-    sequence.load_task_attributes(task)
     sequence.enable_editing_task(task)
+
+def enable_editing_task_attributes(sequence, task=None):
+    sequence.load_task_attributes(task)
+    sequence.enable_editing_task_attributes(task)
 
 
 def edit_task(ifc, sequence, task=None):
@@ -165,7 +168,7 @@ def copy_task_attribute(ifc, sequence, attribute_name=None):
 def duplicate_task(ifc, sequence, task=None):
     ifc.run("sequence.duplicate_task", task=task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
@@ -464,7 +467,7 @@ def calculate_task_duration(ifc, sequence, task=None):
     ifc.run("sequence.calculate_task_duration", task=task)
     work_schedule = sequence.get_active_work_schedule()
     if work_schedule:
-        sequence.create_task_tree(work_schedule)
+        sequence.load_task_tree(work_schedule)
         sequence.load_task_properties()
 
 
@@ -473,6 +476,8 @@ def highlight_task(sequence, task=None):
     is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
     if is_work_schedule_active:
         sequence.highlight_task(task)
+    else:
+        return "Work schedule is not active"
 
 
 def highlight_product_related_task(sequence, spatial, product_type=None):
@@ -537,5 +542,17 @@ def generate_gantt_chart(sequence, work_schedule):
     sequence.generate_gantt_browser_chart(json)
 
 
-def load_product_tasks(sequence, product=None):
-    sequence.load_product_tasks(product)
+def load_product_related_tasks(sequence, product=None):
+    sequence.load_product_related_tasks(product)
+
+
+def reorder_task_nesting(ifc, sequence, task, new_index):
+    is_sorting_enabled = sequence.is_sorting_enabled()
+    is_sort_reversed = sequence.is_sort_reversed()
+    if is_sorting_enabled or is_sort_reversed:
+        return "Remove manual sorting"
+    else:
+        ifc.run("nest.reorder_nesting", item= task, new_index= new_index)
+        work_schedule= sequence.get_active_work_schedule()
+        sequence.load_task_tree(work_schedule)
+        sequence.load_task_properties()

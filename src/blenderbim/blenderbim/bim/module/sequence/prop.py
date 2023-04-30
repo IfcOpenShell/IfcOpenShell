@@ -284,9 +284,14 @@ def update_color_progress(self, context):
         color[1] = color_progress.g
         color[2] = color_progress.b
 
+
 def update_sort_reversed(self, context):
     if context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
-        core.create_task_tree(tool.Sequence, work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id))
+        core.load_task_tree(
+            tool.Sequence,
+            work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id),
+        )
+
 
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
@@ -359,7 +364,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
-    should_show_bar_visual_option: BoolProperty(name="Add to task bar", default=False)
+    should_show_task_bar_selection: BoolProperty(name="Add to task bar", default=False)
+    should_show_snapshot_ui: BoolProperty(name="Should Show Snapshot UI", default=False)
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
     columns: CollectionProperty(name="Columns", type=Attribute)
     active_column_index: IntProperty(name="Active Column Index")
@@ -417,6 +423,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     product_output_tasks: CollectionProperty(name="Product Task Outputs", type=TaskProduct)
     active_product_output_task_index: IntProperty(name="Active Product Output Task Index")
     active_product_input_task_index: IntProperty(name="Active Product Input Task Index")
+    enable_reorder: BoolProperty(name="Enable Reorder", default=False)
+    show_task_operators: BoolProperty(name="Show Task Options", default=True)
 
 
 class BIMTaskTreeProperties(PropertyGroup):
