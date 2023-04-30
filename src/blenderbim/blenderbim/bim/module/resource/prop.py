@@ -18,7 +18,9 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.resource
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -71,6 +73,18 @@ def get_quantity_types(self, context):
 
 def update_active_resource_index(self, context):
     blenderbim.bim.module.pset.data.refresh()
+    if self.should_show_productivity:
+        tool.Resource.load_productivity_data()
+
+
+class ISODuration(PropertyGroup):
+    name: StringProperty(name="Name")
+    years: IntProperty(name="Years", default=0)
+    months: IntProperty(name="Months", default=0)
+    days: IntProperty(name="Days", default=0)
+    hours: IntProperty(name="Hours", default=0)
+    minutes: IntProperty(name="Minutes", default=0)
+    seconds: IntProperty(name="Seconds", default=0)
 
 
 class Resource(PropertyGroup):
@@ -113,3 +127,11 @@ class BIMResourceProperties(PropertyGroup):
     quantity_types: EnumProperty(items=get_quantity_types, name="Quantity Types")
     is_editing_quantity: BoolProperty(name="Is Editing Quantity")
     quantity_attributes: CollectionProperty(name="Quantity Attributes", type=Attribute)
+    should_show_productivity: BoolProperty(name="Edit Productivity", update=update_active_resource_index)
+
+
+class BIMResourceProductivity(PropertyGroup):
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    quantity_consumed: CollectionProperty(name="Duration", type=ISODuration)
+    quantity_produced: FloatProperty(name="Quantity Produced")
+    quantity_produced_name: StringProperty(name="Quantity Produced Name")

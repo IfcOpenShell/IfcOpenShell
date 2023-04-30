@@ -49,9 +49,12 @@ classes = (
     operator.DisableEditingResourceCostValue,
     operator.CalculateResourceWork,
     operator.ImportResources,
+    operator.EditProductivityData,
     prop.Resource,
     prop.BIMResourceProperties,
     prop.BIMResourceTreeProperties,
+    prop.ISODuration,
+    prop.BIMResourceProductivity,
     ui.BIM_PT_resources,
     ui.BIM_UL_resources,
 )
@@ -60,8 +63,10 @@ classes = (
 def register():
     bpy.types.Scene.BIMResourceProperties = bpy.props.PointerProperty(type=prop.BIMResourceProperties)
     bpy.types.Scene.BIMResourceTreeProperties = bpy.props.PointerProperty(type=prop.BIMResourceTreeProperties)
+    bpy.types.Scene.BIMResourceProductivity = bpy.props.PointerProperty(type=prop.BIMResourceProductivity)
 
 
 def unregister():
     del bpy.types.Scene.BIMResourceProperties
     del bpy.types.Scene.BIMResourceTreeProperties
+    del bpy.types.Scene.BIMResourceProductivity

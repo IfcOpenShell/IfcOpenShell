@@ -65,7 +65,11 @@ class BIM_PT_resources(Panel):
             self.props,
             "active_resource_index",
         )
-
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.prop(self.props, "should_show_productivity", icon="RECOVER_LAST")
+        if self.props.should_show_productivity:
+            self.draw_productivity_ui(context)
         if self.props.active_resource_id and self.props.editing_resource_type == "ATTRIBUTES":
             self.draw_editable_resource_attributes_ui()
         elif self.props.active_resource_id and self.props.editing_resource_type == "QUANTITY":
@@ -74,6 +78,45 @@ class BIM_PT_resources(Panel):
             self.draw_editable_resource_costs_ui()
         elif self.props.active_resource_id and self.props.editing_resource_type == "USAGE":
             self.draw_editable_resource_time_attributes_ui()
+
+    def draw_productivity_ui(self, context):
+        total_resources = len(self.tprops.resources)
+        if not total_resources or self.props.active_resource_index >= total_resources:
+            return
+
+        ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
+        resource = ResourceData.data["resources"][ifc_definition_id]
+
+        if not resource["type"] in ["IfcConstructionEquipmentResource", "IfcLaborResource"]:
+            row = self.layout.row(align=True)
+            row.label(text="Resource type cannot have productivity data", icon="ERROR")
+            return
+
+        self.productivity_props = context.scene.BIMResourceProductivity
+
+        if resource["Productivity"]:
+            produtivitiy_rate_message = "Current Rate: {}/{}".format(
+                resource["Productivity"]["QuantityProduced"], resource["Productivity"]["TimeConsumed"]
+            )
+            row = self.layout.row()
+            row.alignment = "LEFT"
+            row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
+        else:
+            row = self.layout.row(align=True)
+            row.alignment = "LEFT"
+            produtivitiy_rate_message = "No productivity data found"
+            row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
+
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.prop(self.productivity_props, "quantity_produced", text="Quantity Produced")
+        row.prop(self.productivity_props, "quantity_produced_name", text="Quantity Name")
+        row = self.layout.row()
+        row.alignment = "RIGHT"
+        self.draw_duration_property(self.productivity_props.quantity_consumed, row)
+        row = self.layout.row()
+        row.alignment = "RIGHT"
+        row.operator("bim.edit_productivity_data", text="Apply", icon="CHECKMARK")
 
     def draw_resource_operators(self):
         row = self.layout.row(align=True)
@@ -111,8 +154,9 @@ class BIM_PT_resources(Panel):
 
         if not self.props.active_resource_id:
             if resource["type"] in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
-                op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
-                op.resource = ifc_definition_id
+                if resource["Productivity"]:
+                    op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
+                    op.resource = ifc_definition_id
                 row.operator("bim.enable_editing_resource_time", text="", icon="TIME").resource = ifc_definition_id
             op = row.operator("bim.enable_editing_resource_base_quantity", text="", icon="PROPERTIES")
             op.resource = ifc_definition_id
@@ -204,10 +248,20 @@ class BIM_PT_resources(Panel):
             op.parent = parent_id
             op.cost_value = cost_value_id
 
+    def draw_duration_property(self, duration_props, layout):
+        for duration_prop in duration_props:
+            if duration_prop.name == "BaseQuantityConsumed":
+                layout.label(text=duration_prop.name)
+                layout.prop(duration_prop, "years", text="Y")
+                layout.prop(duration_prop, "months", text="M")
+                layout.prop(duration_prop, "days", text="D")
+                layout.prop(duration_prop, "hours", text="H")
+                layout.prop(duration_prop, "minutes", text="Min")
+                layout.prop(duration_prop, "seconds", text="S")
+
 
 class BIM_UL_resources(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        resource = ResourceData.data["resources"][item.ifc_definition_id]
         icon_map = {
             "IfcSubContractResource": "TEXT",
             "IfcCrewResource": "COMMUNITY",
@@ -217,6 +271,7 @@ class BIM_UL_resources(UIList):
             "IfcConstructionProductResource": "PACKAGE",
         }
         if item:
+            resource = ResourceData.data["resources"][item.ifc_definition_id]
             props = context.scene.BIMResourceProperties
             row = layout.row(align=True)
             for i in range(0, item.level_index):
