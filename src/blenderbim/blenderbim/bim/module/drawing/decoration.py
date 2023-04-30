@@ -2254,6 +2254,8 @@ class CutDecorator:
     def get_connection_metadata(self, obj, rel_element, centerline, min_edge, max_edge):
         rel_obj = tool.Ifc.get_object(rel_element)
         layers = self.get_layer_data(rel_element)
+        if not layers:
+            return
         minx = min([co[0] for co in rel_obj.bound_box])
         maxx = max([co[0] for co in rel_obj.bound_box])
         rel_centerline = [
