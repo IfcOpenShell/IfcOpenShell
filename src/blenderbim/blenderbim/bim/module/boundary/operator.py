@@ -24,8 +24,9 @@ import ifcopenshell.api
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
 import blenderbim.bim.import_ifc as import_ifc
+from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
 def get_boundaries_collection(blender_space):
@@ -36,6 +37,20 @@ def get_boundaries_collection(blender_space):
         boundaries_collection = bpy.data.collections.new(collection_name)
         space_collection.children.link(boundaries_collection)
     return boundaries_collection
+
+
+def disable_editing_boundary_geometry(context):
+    ProfileDecorator.uninstall()
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    obj = context.active_object
+    element = tool.Ifc.get_entity(obj)
+
+    old_mesh = obj.data
+    loader = Loader()
+    obj.data = loader.create_mesh(element)
+    tool.Geometry.delete_data(old_mesh)
+    return {"FINISHED"}
 
 
 class Loader:
@@ -376,3 +391,80 @@ class UpdateBoundaryGeometry(bpy.types.Operator):
         settings = tool.Boundary.get_assign_connection_geometry_settings(context.active_object)
         ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
         return {"FINISHED"}
+
+
+class EnableEditingBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_boundary_geometry"
+    bl_label = "Enable Editing Boundary Geometry"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        if element.ConnectionGeometry.is_a("IfcConnectionSurfaceGeometry"):
+            surface = element.ConnectionGeometry.SurfaceOnRelatingElement
+            tool.Model.import_surface(surface, obj)
+
+        bpy.ops.object.mode_set(mode="EDIT")
+        ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_boundary_geometry(context))
+        if not bpy.app.background:
+            bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
+        return {"FINISHED"}
+
+
+class EditBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_boundary_geometry"
+    bl_label = "Edit Boundary Geometry"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        ProfileDecorator.uninstall()
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        if element.ConnectionGeometry.is_a("IfcConnectionSurfaceGeometry"):
+            surface = tool.Model.export_surface(obj)
+
+            if not surface:
+
+                def msg(self, context):
+                    self.layout.label(text="INVALID PROFILE")
+
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                ProfileDecorator.install(
+                    context, exit_edit_mode_callback=lambda: disable_editing_boundary_geometry(context)
+                )
+                bpy.ops.object.mode_set(mode="EDIT")
+                return
+
+            old_surface = element.ConnectionGeometry.SurfaceOnRelatingElement
+            for inverse in tool.Ifc.get().get_inverse(old_surface):
+                ifcopenshell.util.element.replace_attribute(inverse, old_surface, surface)
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_surface)
+
+            old_mesh = obj.data
+            loader = Loader()
+            obj.data = loader.create_mesh(element)
+            tool.Geometry.delete_data(old_mesh)
+
+
+class DisableEditingBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_boundary_geometry"
+    bl_label = "Disable Editing Boundary Geometry"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        return disable_editing_boundary_geometry(context)
