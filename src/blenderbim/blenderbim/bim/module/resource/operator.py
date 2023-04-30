@@ -346,3 +346,13 @@ class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
     def _execute(self, context):
         core.import_resources(tool.Resource, file_path=self.filepath)
+
+
+class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_productivity_data"
+    bl_description = "Apply"
+    bl_label = "Edit Productivity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.edit_productivity_pset(tool.Ifc, tool.Resource)
