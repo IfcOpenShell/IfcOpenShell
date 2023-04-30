@@ -16,75 +16,96 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from enum import Enum
-from dataclasses import dataclass
+"""
+Transition curves are required when the definition of an `IfcAlignment`
+is expressed via parameter segments and does not contain an explicit
+geometric representation.
+"""
 import math
 
 import numpy as np
-from scipy import integrate
 
 
-class IfcAlignmentHorizontalSegmentTypeEnum(Enum):
-    """IFC 4x3_RC3 Section 8.7.2.2
-    [https://standards.buildingsmart.org/IFC/DEV/IFC4_3/RC3/HTML/schema/ifcgeometricconstraintresource/lexical/ifcalignmenthorizontalsegmenttypeenum.htm]
+def rotate_points(coords: tuple, angle: float) -> np.ndarray:
     """
+    rotate points by provided angle
 
-    LINE = 1
-    CIRCULARARC = 2
-    CLOTHOID = 3
-    CUBIC = 4
-    BIQUADRATICPARABOLA = 5  # Helmert transition. NOTE also referred to as Schramm curve.
-    BLOSSCURVE = 6
-    COSINECURVE = 7
-    SINECURVE = 8  # NOTE also referred to as Klein curve
-    VIENNESEBEND = 9
-
-
-@dataclass
-class TransitionCurve:
+    @param points: x, y tuple of cartestian coordinates
     """
-    A curve that transitions between a straight line and a circular arc
-    (or the reverse).
+    x, y = coords
+    rot_mat = np.array(
+        [
+            [math.cos(angle), -math.sin(angle)],
+            [math.sin(angle), math.cos(angle)],
+        ]
+    )
+    return np.array([x, y]) @ rot_mat
+
+
+def point_on_LINE(segment, u: float) -> np.ndarray:
     """
+    2D point at distance u along a LINE segment
 
-    StartPoint: np.array  # IfcSchema::IfcCartesianPoint
-    StartDirection: float  # IfcSchema::IfcPlaneAngleMeasure
-    StartRadiusOfCurvature: float  # IfcSchema::IfcLengthMeasure
-    EndRadiusOfCurvature: float  # IfcSchema::IfcPositiveLengthMeasure
-    SegmentLength: float  # IfcSchema::IfcNonNegativeLengthMeasure
-    PredefinedType: IfcAlignmentHorizontalSegmentTypeEnum
-    GravityCenterLineHeight: float = None  # IfcSchema::IfcPositiveLengthMeasure
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
+    """
+    return np.array(
+        [
+            u * math.cos(segment.StartDirection),
+            u * math.sin(segment.StartDirection),
+            np.nan,
+        ]
+    )
 
 
-def isCCW(R) -> bool:
-    if R >= 0:
-        return True
+def point_on_CIRCULARARC(segment, u: float) -> np.ndarray:
+    """
+    Point at distance u along a CIRCULARARC segment
+
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
+    """
+    # calc local point on circle with forward tangent of start point
+    # on positive x-axis
+
+    R = abs(segment.StartRadiusOfCurvature)
+    x = R * math.cos(u / R)
+    y = R * math.sin(u / R)
+
+    # move calculated point so that rotation is about StartPoint
+    x -= R
+
+    if segment.is_CCW:
+        rot_angle = (math.pi / 2) - segment.StartDirection
     else:
-        return False
+        y = -y
+        rot_angle = (3 * math.pi / 2) - segment.StartDirection
+
+    rotated = rotate_points(coords=(x, y), angle=rot_angle)
+
+    return np.array([rotated[0], rotated[1], np.nan])
 
 
-def calc_transition_curve_point_BIQUADRATICPARABOLA(lpt, L, R) -> np.array:
+def point_on_HELMERTCURVE(segment, u: float) -> np.array:
     """
-    Calculate the x, y coordinates of a point on a
-    BIQUADRATICPARABOLA horizontal alignment segment.
+    2D point at distance u along a HELMERTCURVE segment
 
-    @param lpt: distance along the transition curve segment to the point
-    to be calculated (in the range of 0 to L)
-    @param L: transition curve segment total length
-    @param R: radius of curvature
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
-    ccw = isCCW(R)
-    R = abs(R)
-    x = lpt
+    ccw = segment.is_CCW
+    R = abs(segment.StartRadiusOfCurvature)
+    R2 = abs(segment.EndRadiusOfCurvature)
+    L = segment.SegmentLength
+    x = u
     if x <= (L / 2):
-        y = x ** 4 / (6 * R * L ** 2)
+        y = x**4 / (6 * R * L**2)
     else:
-        yterm_1 = (-1 * x ** 4) / (6 * R * L ** 2)
-        yterm_2 = (2 * x ** 3) / (3 * R * L)
-        yterm_3 = x ** 2 / (2 * R)
+        yterm_1 = (-1 * x**4) / (6 * R * L**2)
+        yterm_2 = (2 * x**3) / (3 * R * L)
+        yterm_3 = x**2 / (2 * R)
         yterm_4 = (L * x) / (6 * R)
-        yterm_5 = L ** 2 / (48 * R)
+        yterm_5 = L**2 / (48 * R)
 
         y = yterm_1 + yterm_2 - yterm_3 + yterm_4 - yterm_5
 
@@ -94,66 +115,32 @@ def calc_transition_curve_point_BIQUADRATICPARABOLA(lpt, L, R) -> np.array:
     return np.array([x, y, np.NaN], dtype="float64")
 
 
-def calc_transition_curve_point_BLOSSCURVE(lpt, L, R):
+def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
     """
-    Calculate the x, y coordinates of a point on a
-    BLOSSCURVE horizontal alignment segment.
+    2D point at distance u along a BLOSSCURVE segment
 
-    @param lpt: distance along the transition curve segment to the point
-    to be calculated (in the range of 0 to L)
-    @param L: transition curve segment total length
-    @param R: radius of curvature
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
-    ccw = isCCW(R)
-    R = abs(R)
+    from scipy import integrate
+
+    ccw = segment.is_CCW
+    R = abs(segment.StartRadiusOfCurvature)
+    L = abs(segment.SegmentLength)
 
     def theta(lpt, L, R):
-        term1 = lpt ** 3 / (R * L ** 2)
-        term2 = lpt ** 4 / (2 * R * L ** 3)
+        term1 = lpt**3 / (R * L**2)
+        term2 = lpt**4 / (2 * R * L**3)
         return term1 - term2
 
-    def fx(lpt):
-        return math.cos(theta(lpt, L, R))
+    def fx(u):
+        return math.cos(theta(u, L, R))
 
-    def fy(lpt):
-        return math.sin(theta(lpt, L, R))
+    def fy(u):
+        return math.sin(theta(u, L, R))
 
-    x = integrate.quad(fx, 0, lpt)[0]
-    y = integrate.quad(fy, 0, lpt)[0]
-
-    if ccw:
-        y = -y
-
-    return np.array([x, y, np.NaN], dtype="float64")
-
-
-def calc_transition_curve_point_CLOTHOID(lpt, L, R):
-    """
-    Calculate the x, y coordinates of a point on a
-    CLOTHOID horizontal alignment segment.
-
-    @param lpt: distance along the transition curve segment to the point
-    to be calculated (in the range of 0 to L)
-    @param L: transition curve segment total length
-    @param R: radius of curvature
-    """
-    ccw = isCCW(R)
-    R = abs(R)
-
-    RL = R * L
-    xterm_1 = 1
-    xterm_2 = lpt ** 4 / (40 * RL ** 2)
-    xterm_3 = lpt ** 8 / (3456 * RL ** 4)
-    xterm_4 = lpt ** 12 / (599040 * RL ** 6)
-    x = lpt * (xterm_1 - xterm_2 + xterm_3 - xterm_4)
-
-    factor = lpt ** 3 / (6 * RL)
-    yterm_1 = 1
-    yterm_2 = lpt ** 4 / (56 * RL ** 2)
-    yterm_3 = lpt ** 8 / (7040 * RL ** 4)
-    yterm_4 = lpt ** 12 / (1612800 * RL ** 6)
-
-    y = factor * (yterm_1 - yterm_2 + yterm_3 - yterm_4)
+    x = integrate.quad(fx, 0, u)[0]
+    y = integrate.quad(fy, 0, u)[0]
 
     if not ccw:
         y = -y
@@ -161,47 +148,162 @@ def calc_transition_curve_point_CLOTHOID(lpt, L, R):
     return np.array([x, y, np.NaN], dtype="float64")
 
 
-def calc_transition_curve_point_COSINECURVE(lpt, L, R):
+def local_point_on_CLOTHOID(segment, u: float) -> np.ndarray:
     """
-    Calculate the x, y coordinates of a point on a
-    COSINECURVE horizontal alignment segment.
+    2D point at distance u along a CLOTHOID segment with specific parameters:
+    counter-clockwise deflection and StartRadius = 0 (starting from a line).
 
-    @param lpt: distance along the transition curve segment to the point
-    to be calculated (in the range of 0 to L)
-    @param L: transition curve segment total length
-    @param R: radius of curvature
+    Ref: https://pwayblog.com/2016/07/03/the-clothoid/
+
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
-    ccw = isCCW(R)
-    R = abs(R)
+    L = segment.SegmentLength
+    if segment.StartRadiusOfCurvature == 0:
+        R = abs(segment.EndRadiusOfCurvature)
+    elif segment.EndRadiusOfCurvature == 0:
+        R = abs(segment.StartRadiusOfCurvature)
+
+    try:
+        R
+    except UnboundLocalError:
+        if segment.EndRadiusOfCurvature < segment.StartRadiusOfCurvature:
+            R = abs(segment.EndRadiusOfCurvature)
+        else:
+            R = abs(segment.StartRadiusOfCurvature)
+
+    RL = R * L
+
+    xterm_1 = u
+    xterm_2 = u**5 / (40 * RL**2)
+    xterm_3 = u**9 / (3456 * RL**4)
+    xterm_4 = u**13 / (599040 * RL**6)
+    x = xterm_1 - xterm_2 + xterm_3 - xterm_4
+
+    yterm_1 = u**3 / (6 * RL)
+    yterm_2 = u**7 / (336 * RL**3)
+    yterm_3 = u**11 / (42240 * RL**5)
+    yterm_4 = u**15 / (9676800 * RL**7)
+
+    y = yterm_1 - yterm_2 + yterm_3 - yterm_4
+
+    return (x, y)
+
+
+def point_on_CLOTHOID(segment, u: float) -> np.ndarray:
+    """
+    2D point at distance u along a CLOTHOID segment, adjusted for specific case
+
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
+    """
+    ccw = segment.is_CCW
+    L = segment.SegmentLength
+    if segment.StartRadiusOfCurvature == 0:
+        R = abs(segment.EndRadiusOfCurvature)
+        curvature_is_increasing = True
+    elif segment.EndRadiusOfCurvature == 0:
+        R = abs(segment.StartRadiusOfCurvature)
+        curvature_is_increasing = False
+        u = L - u
+
+    try:
+        R
+    except UnboundLocalError:
+        if segment.EndRadiusOfCurvature < segment.StartRadiusOfCurvature:
+            R = abs(segment.EndRadiusOfCurvature)
+            curvature_is_increasing = True
+        else:
+            R = abs(segment.StartRadiusOfCurvature)
+            curvature_is_increasing = False
+            u = L - u
+
+    end_point = local_point_on_CLOTHOID(segment=segment, u=segment.SegmentLength)
+    x_end, y_end = end_point
+    RL = R * L
+
+    # clothoid constant
+    A = math.sqrt(RL)
+    total_deflection_angle = L / (2 * R)
+
+    (x, y) = local_point_on_CLOTHOID(segment=segment, u=u)
+
+    if ccw:
+        if curvature_is_increasing:
+            pass
+        else:
+            x = -x
+            (x, y) = rotate_points(coords=(x, y), angle=-total_deflection_angle)
+            x += x_end
+            y += 2 * y_end
+    else:
+        if curvature_is_increasing:
+            y = -y
+        else:
+            x = -x
+            (x, y) = rotate_points(coords=(x, y), angle=-total_deflection_angle)
+            x += x_end
+            y += 2 * y_end
+            y = -y
+
+    rot_angle = 0 - segment.StartDirection
+
+    rotated = rotate_points(coords=(x, y), angle=rot_angle)
+
+    # return np.array([x, y, np.nan])
+    return np.array([rotated[0], rotated[1], np.nan])
+
+
+def pt_on_COSINECURVE(segment, u: float) -> np.ndarray:
+    """
+    2D point at distance u along a COSINECURVE segment
+
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
+    """
+
+    ccw = segment.is_CCW
+    R = abs(segment.StartRadiusOfCurvature)
+    L = segment.SegmentLength
 
     pi = math.pi
-    psi = (pi * lpt) / L
+    psi = (pi * u) / L
 
-    xterm_1 = (L ** 2) / (8.0 * pi ** 2 * R ** 2)
+    xterm_1 = (L**2) / (8.0 * pi**2 * R**2)
     xterm_2 = L / pi
-    xterm_3 = psi ** 3 / (3.0)
+    xterm_3 = psi**3 / (3.0)
     xterm_4 = psi / (2.0)
     xterm_5 = (math.sin(psi) * math.cos(psi)) / (2.0)
     xterm_6 = psi * math.cos(psi)
 
-    x = lpt - xterm_1 * xterm_2 * (xterm_3 + xterm_4 - xterm_5 - (2.0 * xterm_6))
+    x = u - xterm_1 * xterm_2 * (xterm_3 + xterm_4 - xterm_5 - (2.0 * xterm_6))
 
-    yfactor_1 = L / (2 * pi ** 2 * R)
-    yterm_11 = psi ** 2 / 2
+    yfactor_1 = L / (2 * pi**2 * R)
+    yterm_11 = psi**2 / 2
     yterm_12 = math.cos(psi)
     ycoeff_1 = yterm_11 + yterm_12 - 1
     yterm_1 = yfactor_1 * ycoeff_1
 
-    yfactor_2 = L ** 3 / (48 * pi ** 4 * R ** 3)
-    yterm_21 = psi ** 4 / 4
+    yfactor_2 = L**3 / (48 * pi**4 * R**3)
+    yterm_21 = psi**4 / 4
     yterm_22 = (((math.sin(psi)) ** 2) * (math.cos(psi))) / 3
     yterm_23 = 16 * math.cos(psi) / 3
-    yterm_24 = (3 * psi ** 2) * (math.cos(psi))
+    yterm_24 = (3 * psi**2) * (math.cos(psi))
     yterm_25 = 6 * psi * math.sin(psi)
-    yterm_26 = 3 * psi ** 2 / 4
+    yterm_26 = 3 * psi**2 / 4
     yterm_27 = (3 * psi * math.sin(2 * psi)) / 4
     yterm_28 = (3 * math.cos(2 * psi)) / 8
-    ycoeff_2 = yterm_21 + yterm_22 - yterm_23 + yterm_24 - yterm_25 + yterm_26 - yterm_27 - yterm_28 + (137 / 24)
+    ycoeff_2 = (
+        yterm_21
+        + yterm_22
+        - yterm_23
+        + yterm_24
+        - yterm_25
+        + yterm_26
+        - yterm_27
+        - yterm_28
+        + (137 / 24)
+    )
     yterm_2 = yfactor_2 * ycoeff_2
     y = L * (yterm_1 - yterm_2)
 
@@ -211,54 +313,52 @@ def calc_transition_curve_point_COSINECURVE(lpt, L, R):
     return np.array([x, y, np.NaN], dtype="float64")
 
 
-def calc_transition_curve_point_CUBIC(lpt, L, R):
+def point_on_CUBIC(segment, u: float) -> np.ndarray:
     """
-    Calculate the x, y coordinates of a point on a
-    CUBIC horizontal alignment segment.
+    2D point at distance u along a CUBIC segment
 
-    @param lpt: distance along the transition curve segment to the point
-    to be calculated (in the range of 0 to L)
-    @param L: transition curve segment total length
-    @param R: radius of curvature
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
-    ccw = isCCW(R)
+    ccw = segment.is_CCW
     R = abs(R)
+    L = segment.SegmentLength
 
-    x = lpt
-    y = x ** 3 / (6 * R * L)
+    x = u
+    y = x**3 / (6 * R * L)
     if not ccw:
         y = -y
 
     return np.array([x, y, np.NaN], dtype="float64")
 
 
-def calc_transition_curve_point_SINECURVE(lpt, L, R):
+def point_on_SINECURVE(segment, u: float) -> np.ndarray:
     """
-    Calculate the x, y coordinates of a point on a
-    SINECURVE horizontal alignment segment.
+    2D point at distance u along a SINECURVE segment
 
-    @param lpt: distance along the transition curve segment to the point
-    to be calculated (in the range of 0 to L)
-    @param L: transition curve segment total length
-    @param R: radius of curvature
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
-    ccw = isCCW(R)
-    R = abs(R)
+    from scipy import integrate
+
+    ccw = segment.is_CCW
+    R = abs(segment.StartRadiusOfCurvature)
+    L = segment.SegmentLength
 
     # TODO
     pi = math.pi
-    psi = (2 * pi * lpt) / L
+    psi = (2 * pi * u) / L
 
-    xfactor_1 = lpt
-    xterm_11 = L ** 2 / (32 * pi ** 4 * R ** 2)
+    xfactor_1 = u
+    xterm_11 = L**2 / (32 * pi**4 * R**2)
     xcoeff_1 = 1 - xterm_11
     xterm_1 = xfactor_1 * xcoeff_1
 
-    xfactor_2 = L ** 3 / (3840 * pi ** 5 * R ** 2)
-    xterm_21 = 3 * psi ** 5
-    xterm_22 = 20 * psi ** 3
+    xfactor_2 = L**3 / (3840 * pi**5 * R**2)
+    xterm_21 = 3 * psi**5
+    xterm_22 = 20 * psi**3
     xterm_23 = 30 * psi
-    xterm_24 = (240 - 60 * psi ** 2) * math.sin(psi)
+    xterm_24 = (240 - 60 * psi**2) * math.sin(psi)
     xterm_25 = 30 * math.cos(psi) * math.sin(psi)
     xterm_26 = 120 * psi * math.cos(psi)
     xcoeff_2 = xterm_21 - xterm_22 + xterm_23 - xterm_24 + xterm_25 + xterm_26
@@ -267,8 +367,8 @@ def calc_transition_curve_point_SINECURVE(lpt, L, R):
     x = xterm_1 - xterm_2
 
     def theta(lpt, L, R):
-        term1 = lpt ** 2 / (2 * R * L)
-        factor2 = L / (4 * pi ** 2 * R)
+        term1 = lpt**2 / (2 * R * L)
+        factor2 = L / (4 * pi**2 * R)
         coeff2 = math.cos((2 * pi * lpt) / L)
         term2 = factor2 * (coeff2 - 1)
         return term1 + term2
@@ -276,29 +376,9 @@ def calc_transition_curve_point_SINECURVE(lpt, L, R):
     def fy(lpt):
         return math.sin(theta(lpt, L, R))
 
-    y = integrate.quad(fy, 0, lpt)[0]
+    y = integrate.quad(fy, 0, u)[0]
 
     if ccw:
         y = -y
 
     return np.array([x, y, np.NaN], dtype="float64")
-
-
-def curve_to_array(L, R, trans_type, stroking_interval=5.0) -> np.array:
-    """return array of [x, y, NaN] coordinates for a semantic horizontal segment definition
-
-    :param stroking_interval: maximum curve length between points to be calculated
-    :type stroking_interval: float
-    :return: numpy ndarray containing interpolated points
-    """
-    points = list()
-
-    num_intervals = math.ceil(L / stroking_interval)
-    interval_dist = L / num_intervals
-    lpt = 0.0  # length along the curve at the point to be calculated
-
-    for _ in range(num_intervals):
-        points.append(globals()[f"calc_transition_curve_point_{trans_type}"](lpt, L, R))
-        lpt += interval_dist
-
-    return np.array(points)
