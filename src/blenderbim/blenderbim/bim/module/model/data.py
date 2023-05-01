@@ -59,6 +59,7 @@ class AuthoringData:
         cls.data["type_thumbnail"] = cls.type_thumbnail()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
+        cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
         cls.data["active_representation_type"] = cls.active_representation_type()
@@ -162,6 +163,17 @@ class AuthoringData:
         return False
 
     @classmethod
+    def has_visible_boundaries(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            if element.is_a("IfcRelSpaceBoundary"):
+                return True
+            for boundary in getattr(element, "BoundedBy", []):
+                if tool.Ifc.get_object(boundary):
+                    return True
+        return False
+
+    @classmethod
     def active_class(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if element:
@@ -177,7 +189,7 @@ class AuthoringData:
     def active_representation_type(cls):
         if bpy.context.active_object:
             representation = tool.Geometry.get_active_representation(bpy.context.active_object)
-            if representation:
+            if representation and representation.is_a("IfcShapeRepresentation"):
                 return representation.RepresentationType
 
     @classmethod

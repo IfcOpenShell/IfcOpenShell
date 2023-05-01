@@ -657,7 +657,7 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
         props = bpy.context.scene.BIMModelProperties
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
-            if not element:
+            if not element or not getattr(element, "HasOpenings", None):
                 continue
             if tool.Ifc.is_moved(obj):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
@@ -682,7 +682,6 @@ class HideOpenings(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMModelProperties
         to_delete = set()
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -694,7 +693,7 @@ class HideOpenings(Operator, tool.Ifc.Operator):
                 if opening_obj:
                     to_delete.add(opening_obj)
         for opening_obj in to_delete:
-            tool.Ifc.unlink(element=opening, obj=opening_obj)
+            tool.Ifc.unlink(obj=opening_obj)
             bpy.data.objects.remove(opening_obj)
         tool.Model.clear_scene_openings()
         return {"FINISHED"}
