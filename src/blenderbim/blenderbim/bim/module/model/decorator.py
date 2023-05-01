@@ -82,14 +82,14 @@ class ProfileDecorator:
         bmesh.ops.triangulate(traingulated_bm, faces=traingulated_bm.faces)
 
         face_indices = [[v.index for v in f.verts] for f in traingulated_bm.faces]
-        faces_color = transparent_color(self.model_props.decorator_color_special)
+        faces_color = transparent_color(self.addon_prefs.decorator_color_special)
         self.draw_batch("TRIS", vertices_coords, faces_color, face_indices)
 
     def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
-        self.model_props = context.scene.BIMModelProperties
-        selected_elements_color = self.model_props.decorator_color_selected
-        unselected_elements_color = self.model_props.decorator_color_unselected
-        special_elements_color = self.model_props.decorator_color_special
+        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        selected_elements_color = self.addon_prefs.decorator_color_selected
+        unselected_elements_color = self.addon_prefs.decorator_color_unselected
+        special_elements_color = self.addon_prefs.decorator_color_special
 
         obj = context.active_object
 
@@ -214,8 +214,8 @@ class ProfileDecorator:
 
         self.draw_batch("POINTS", unselected_vertices, transparent_color(unselected_elements_color, 0.5))
         self.draw_batch("POINTS", error_vertices, ERROR_ELEMENTS_COLOR)
-        self.draw_batch("POINTS", special_vertices, self.model_props.decorator_color_special)
-        self.draw_batch("POINTS", selected_vertices, self.model_props.decorator_color_selected)
+        self.draw_batch("POINTS", special_vertices, special_elements_color)
+        self.draw_batch("POINTS", selected_vertices, selected_elements_color)
 
         # Draw arcs
         arc_centroids = []
