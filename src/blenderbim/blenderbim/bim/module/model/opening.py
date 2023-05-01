@@ -793,10 +793,10 @@ class DecorationsHandler:
         batch.draw(shader)
 
     def __call__(self, context):
-        self.model_props = context.scene.BIMModelProperties
-        selected_elements_color = self.model_props.decorator_color_selected
-        unselected_elements_color = self.model_props.decorator_color_unselected
-        special_elements_color = self.model_props.decorator_color_special
+        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        selected_elements_color = self.addon_prefs.decorator_color_selected
+        unselected_elements_color = self.addon_prefs.decorator_color_unselected
+        special_elements_color = self.addon_prefs.decorator_color_special
 
         def transparent_color(color, alpha=0.1):
             color = [i for i in color]

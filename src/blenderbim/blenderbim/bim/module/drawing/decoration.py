@@ -268,7 +268,7 @@ class BaseDecorator:
 
         region = context.region
         region3d = context.region_data
-        color = context.scene.DocProperties.decorations_colour
+        color = context.preferences.addons["blenderbim"].preferences.decorations_colour
 
         fmt = GPUVertFormat()
         fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
@@ -341,7 +341,7 @@ class BaseDecorator:
 
         dpi = context.preferences.system.dpi
 
-        color = context.scene.DocProperties.decorations_colour
+        color = context.preferences.addons["blenderbim"].preferences.decorations_colour
 
         ang = -Vector((1, 0)).angle_signed(text_dir)
         cos = math.cos(ang)
@@ -1910,8 +1910,8 @@ class CutDecorator:
         cls.installed = None
 
     def __call__(self, context):
-        self.model_props = context.scene.BIMModelProperties
-        selected_elements_color = self.model_props.decorator_color_selected
+        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        selected_elements_color = self.addon_prefs.decorator_color_selected
 
         all_vertices = []
         all_edges = []
