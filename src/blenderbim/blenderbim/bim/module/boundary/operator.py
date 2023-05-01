@@ -27,6 +27,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.import_ifc as import_ifc
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.decorator import ProfileDecorator
+from blenderbim.bim.module.boundary.decorator import BoundaryDecorator
 
 
 def get_boundaries_collection(blender_space):
@@ -468,3 +469,55 @@ class DisableEditingBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         return disable_editing_boundary_geometry(context)
+
+
+class ShowBoundaries(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.show_boundaries"
+    bl_label = "Show Boundaries"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMBoundaryProperties
+        loader = Loader()
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not getattr(element, "BoundedBy", None):
+                continue
+            if tool.Ifc.is_moved(obj):
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            element = tool.Ifc.get_entity(context.active_object)
+            for rel in element.BoundedBy or []:
+                boundary_obj = loader.load_boundary(rel, context.active_object)
+                new = props.boundaries.add()
+                new.obj = boundary_obj
+        BoundaryDecorator.install(bpy.context)
+        return {"FINISHED"}
+
+
+class HideBoundaries(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.hide_boundaries"
+    bl_label = "Hide Boundaries"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        to_delete = set()
+        spaces = set()
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if element.is_a("IfcSpace"):
+                spaces.add(element)
+            elif element.is_a("IfcRelSpaceBoundary"):
+                spaces.add(element.RelatingSpace)
+
+        for element in spaces:
+            for boundary in element.BoundedBy or []:
+                boundary_obj = tool.Ifc.get_object(boundary)
+                if boundary_obj:
+                    to_delete.add(boundary_obj)
+        for boundary_obj in to_delete:
+            tool.Ifc.unlink(obj=boundary_obj)
+            bpy.data.objects.remove(boundary_obj)
+        context.scene.BIMBoundaryProperties.boundaries.clear()
+        return {"FINISHED"}
