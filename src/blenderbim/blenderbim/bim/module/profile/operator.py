@@ -136,6 +136,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMProfileProperties
         profile = tool.Ifc.get().by_id(props.active_profile_id)
         obj = tool.Model.import_profile(profile)
+        tool.Ifc.link(profile, obj)
         bpy.context.scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode="EDIT")
