@@ -46,7 +46,7 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
     )
 
-    def draw_settings(context, layout, tool):
+    def draw_settings(context, layout, workspace_tool):
         obj = context.active_object
         if not obj or not obj.data:
             return
@@ -54,14 +54,19 @@ class CadTool(WorkSpaceTool):
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_Q")
-            if obj.BIMObjectProperties.ifc_definition_id:
-                row.operator("bim.edit_extrusion_profile", text="Save Profile")
-                row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
-                row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
-            else:
-                row.operator("bim.edit_arbitrary_profile", text="Save Profile")
-                row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
-                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                if element.is_a("IfcProfileDef"):
+                    row.operator("bim.edit_arbitrary_profile", text="Save Profile")
+                    row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
+                    row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+                elif element.is_a("IfcRelSpaceBoundary"):
+                    row.operator("bim.edit_boundary_geometry", text="Save Profile")
+                    row.operator("bim.disable_editing_boundary_geometry", text="", icon="CANCEL")
+                else:
+                    row.operator("bim.edit_extrusion_profile", text="Save Profile")
+                    row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
+                    row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -255,28 +260,30 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_offset(distance=self.props.distance)
 
     def hotkey_S_Q(self):
-        if tool.Ifc.get_entity(bpy.context.active_object):
-            if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
+            if element.is_a("IfcProfileDef"):
+                bpy.ops.bim.edit_arbitrary_profile()
+            elif element.is_a("IfcProfileDef"):
+                bpy.ops.bim.edit_boundary_geometry()
+            else:
                 bpy.ops.bim.edit_extrusion_profile()
-            elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
-                bpy.ops.bim.edit_extrusion_axis()
+        elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
+            bpy.ops.bim.edit_extrusion_axis()
 
-            elif (
-                (RailingData.is_loaded or not RailingData.load())
-                and RailingData.data["parameters"]
-                and bpy.context.active_object.BIMRailingProperties.is_editing_path
-            ):
-                bpy.ops.bim.finish_editing_railing_path()
+        elif (
+            (RailingData.is_loaded or not RailingData.load())
+            and RailingData.data["parameters"]
+            and bpy.context.active_object.BIMRailingProperties.is_editing_path
+        ):
+            bpy.ops.bim.finish_editing_railing_path()
 
-            elif (
-                (RoofData.is_loaded or not RoofData.load())
-                and RoofData.data["parameters"]
-                and bpy.context.active_object.BIMRoofProperties.is_editing_path
-            ):
-                bpy.ops.bim.finish_editing_roof_path()
-
-        else:
-            bpy.ops.bim.edit_arbitrary_profile()
+        elif (
+            (RoofData.is_loaded or not RoofData.load())
+            and RoofData.data["parameters"]
+            and bpy.context.active_object.BIMRoofProperties.is_editing_path
+        ):
+            bpy.ops.bim.finish_editing_roof_path()
 
     def hotkey_S_R(self):
         if self.is_profile():
