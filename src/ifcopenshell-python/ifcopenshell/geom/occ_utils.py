@@ -216,6 +216,11 @@ def get_bounding_box_center(bbox):
 
 def serialize_shape(shape):
     shapes = BRepTools.BRepTools_ShapeSet()
+
+    # @todo provide method to get ifcopenshell's built-in occt version to
+    # see whether this is necessary
+    shapes.SetFormatNb(2)
+
     shapes.Add(shape)
     return shapes.WriteToString()
 
