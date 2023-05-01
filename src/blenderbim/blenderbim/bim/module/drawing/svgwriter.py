@@ -673,7 +673,6 @@ class SvgWriter:
         text_dir = (self.camera.matrix_world.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
         angle = math.degrees(-text_dir.angle_signed(Vector((1, 0))))
 
-        transform = "rotate({}, {}, {})".format(angle, *text_position_svg)
         classes = self.get_attribute_classes(text_obj)
         classes_str = " ".join(classes)
 
@@ -687,7 +686,7 @@ class SvgWriter:
                 # if there is a symbol with template text fields
                 # then we just populate it's fields with the data from text literals
                 if template_text_fields:
-                    symbol_xml.attrib["transform"] = f"translate({', '.join(map(str, text_position_svg))})"
+                    symbol_xml.attrib["transform"] = f"translate({', '.join(map(str, text_position_svg))}) rotate({angle})"
                     symbol_xml.attrib.pop("id")
                     # note: zip makes sure that we iterate over the shortest list
                     for field, text_literal in zip(template_text_fields, text_literals):
@@ -699,6 +698,7 @@ class SvgWriter:
             if not symbol_svg or not template_text_fields:
                 self.svg.add(self.svg.use(f"#{symbol}", insert=text_position_svg))
 
+        transform = "rotate({}, {}, {})".format(angle, *text_position_svg)
         for text_literal in text_literals:
             # after pretty indentation some redundant spaces can occur in svg tags
             # this is why we apply "font-size: 0;" to the text tag to remove those spaces
