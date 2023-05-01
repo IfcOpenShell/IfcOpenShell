@@ -228,9 +228,11 @@ class DecoratorData:
 
         props = obj.BIMTextProperties
         # getting font size
-        classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+        pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
         # use `regular` as default
-        if classes:
+
+        # get font size
+        if classes := pset_data.get("Classes", None):
             classes_split = classes.split()
             # prioritize smaller font sizes just like in svg
             font_size_type = next(
@@ -239,6 +241,9 @@ class DecoratorData:
         else:
             font_size_type = "regular"
         font_size = FONT_SIZES[font_size_type]
+
+        # get symbol
+        symbol = pset_data.get("Symbol", None)
 
         # other attributes
         props_literals = props.literals
@@ -257,7 +262,7 @@ class DecoratorData:
 
             literals_data.append(literal_data)
 
-        text_data = {"Literals": literals_data, "FontSize": font_size}
+        text_data = {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol}
         cls.data[obj.name] = text_data
         return text_data
 

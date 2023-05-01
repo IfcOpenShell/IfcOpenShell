@@ -437,12 +437,16 @@ class BaseDecorator:
         props = obj.BIMTextProperties
         text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
         literals_data = text_data["Literals"]
+        symbol = text_data["Symbol"]
+        text_scale = 1.0
 
-        # draw asterisk symbol to visually indicate that there are multiple literals
-        if len(literals_data) > 1:
+        # draw asterisk symbol to indicate that there is some symbol that's not shown in viewport
+        if symbol:
             verts = [text_world_position]
             idxs = [(0, 0)]
             self.draw_lines(context, obj, verts, idxs)
+            # NOTE: for now we assume that scale is uniform
+            text_scale = obj.scale.x
 
         line_i = 0
         for literal_data in literals_data:
@@ -457,7 +461,7 @@ class BaseDecorator:
                     gap=0,
                     center=False,
                     vcenter=False,
-                    font_size_mm=text_data["FontSize"],
+                    font_size_mm=text_data["FontSize"] * text_scale,
                     line_no=line_i,
                     box_alignment=box_alignment,
                 )

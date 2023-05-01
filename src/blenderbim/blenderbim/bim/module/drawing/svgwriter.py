@@ -686,7 +686,13 @@ class SvgWriter:
                 # if there is a symbol with template text fields
                 # then we just populate it's fields with the data from text literals
                 if template_text_fields:
-                    symbol_xml.attrib["transform"] = f"translate({', '.join(map(str, text_position_svg))}) rotate({angle})"
+                    # NOTE: for now we assume that scale is uniform
+                    symbol_transform = (
+                        f"translate({', '.join(map(str, text_position_svg))})"
+                        f" rotate({angle})"
+                        f" scale({text_obj.scale.x})"
+                    )
+                    symbol_xml.attrib["transform"] = symbol_transform
                     symbol_xml.attrib.pop("id")
                     # note: zip makes sure that we iterate over the shortest list
                     for field, text_literal in zip(template_text_fields, text_literals):
@@ -731,7 +737,6 @@ class SvgWriter:
             if "fill-bg" in classes:
                 add_text_tag(True)
             add_text_tag(False)
-
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
