@@ -436,8 +436,8 @@ class DumbWallGenerator:
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
         self.width = self.layers["thickness"]
-        self.height = props.extrusion_depth * self.unit_scale
-        self.length = props.length * self.unit_scale
+        self.height = props.extrusion_depth
+        self.length = props.length
         self.rotation = 0.0
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
