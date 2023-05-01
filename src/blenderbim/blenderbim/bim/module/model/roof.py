@@ -47,6 +47,10 @@ def float_is_zero(f):
 
 
 def bm_mesh_clean_up(bm):
+    # leave only object's footprint
+    min_z = min([v.co.z for v in bm.verts])
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not float_is_zero(v.co.z - min_z)], context="VERTS")
+
     # remove internal edges and faces
     # adding missing faces so we could rely on `e.is_boundary` later
     bmesh.ops.contextual_create(bm, geom=bm.edges[:])
