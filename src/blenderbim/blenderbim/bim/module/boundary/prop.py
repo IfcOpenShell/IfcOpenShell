@@ -18,6 +18,7 @@
 
 import bpy
 from bpy.types import PropertyGroup
+from blenderbim.bim.prop import ObjProperty
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -52,9 +53,13 @@ def element_filter(self, object):
     return False
 
 
-class BIMBoundaryProperties(PropertyGroup):
+class BIMObjectBoundaryProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     relating_space: PointerProperty(name="RelatingSpace", type=bpy.types.Object, poll=space_filter)
     related_building_element: PointerProperty(name="RelatedBuildingElement", type=bpy.types.Object, poll=element_filter)
     parent_boundary: PointerProperty(name="ParentBoundary", type=bpy.types.Object, poll=boundary_filter)
     corresponding_boundary: PointerProperty(name="CorrespondingBoundary", type=bpy.types.Object, poll=boundary_filter)
+
+
+class BIMBoundaryProperties(PropertyGroup):
+    boundaries: bpy.props.CollectionProperty(type=ObjProperty)
