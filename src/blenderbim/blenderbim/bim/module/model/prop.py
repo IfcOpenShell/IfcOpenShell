@@ -141,33 +141,6 @@ class BIMModelProperties(PropertyGroup):
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
-    decorator_color_selected: bpy.props.FloatVectorProperty(
-        name="Selected Elements Color",
-        subtype="COLOR",
-        default=(0.545, 0.863, 0, 1),  # green
-        min=0.0,
-        max=1.0,
-        size=4,
-        description="Color of selected verts/edges (used in profile editing mode)",
-    )
-    decorator_color_unselected: bpy.props.FloatVectorProperty(
-        name="Not Selected Elements Color",
-        subtype="COLOR",
-        default=(1, 1, 1, 1),  # green
-        min=0.0,
-        max=1.0,
-        size=4,
-        description="Color of not selected verts/edges (used in profile editing mode)",
-    )
-    decorator_color_special: bpy.props.FloatVectorProperty(
-        name="Special Elements Color",
-        subtype="COLOR",
-        default=(0.157, 0.565, 1, 1),  # blue
-        min=0.0,
-        max=1.0,
-        size=4,
-        description="Color of special selected verts/edges (openings, preview verts/edges in roof editing, verts with arcs/circles in profile editing)",
-    )
 
 
 class BIMArrayProperties(PropertyGroup):

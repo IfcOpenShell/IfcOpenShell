@@ -120,6 +120,36 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
     lock_grids_on_import: BoolProperty(name="Should Lock Grids By Default", default=True)
+    decorations_colour: bpy.props.FloatVectorProperty(
+        name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
+    )
+    decorator_color_selected: bpy.props.FloatVectorProperty(
+        name="Selected Elements Color",
+        subtype="COLOR",
+        default=(0.545, 0.863, 0, 1),  # green
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of selected verts/edges (used in profile editing mode)",
+    )
+    decorator_color_unselected: bpy.props.FloatVectorProperty(
+        name="Not Selected Elements Color",
+        subtype="COLOR",
+        default=(1, 1, 1, 1),  # white
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of not selected verts/edges (used in profile editing mode)",
+    )
+    decorator_color_special: bpy.props.FloatVectorProperty(
+        name="Special Elements Color",
+        subtype="COLOR",
+        default=(0.157, 0.565, 1, 1),  # blue
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of special selected verts/edges (openings, preview verts/edges in roof editing, verts with arcs/circles in profile editing)",
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -172,13 +202,13 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
 
         row = self.layout.row()
-        row.prop(context.scene.DocProperties, "decorations_colour")
+        row.prop(self, "decorations_colour")
         row = self.layout.row()
-        row.prop(context.scene.BIMModelProperties, "decorator_color_selected")
+        row.prop(self, "decorator_color_selected")
         row = self.layout.row()
-        row.prop(context.scene.BIMModelProperties, "decorator_color_unselected")
+        row.prop(self, "decorator_color_unselected")
         row = self.layout.row()
-        row.prop(context.scene.BIMModelProperties, "decorator_color_special")
+        row.prop(self, "decorator_color_special")
 
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "schema_dir")
