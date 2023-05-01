@@ -751,6 +751,14 @@ def saving_sample_test_files(and_open_in_blender=None):
     bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
 
 
+@given(parsers.parse("I load test blend file"))
+@when(parsers.parse("I load test blend file"))
+@then(parsers.parse("I load test blend file"))
+def opening_sample_test_files_in_blender():
+    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file.blend"
+    bpy.ops.wm.open_mainfile(filepath=filepath, display_file_selector=False)
+
+
 # TODO: merge to single fixture with `saving_sample_test_files`; add "and wait"
 @given(parsers.parse("I save sample test files and open in blender"))
 @when(parsers.parse("I save sample test files and open in blender"))
