@@ -20,11 +20,14 @@ import bpy
 import bmesh
 import mathutils
 import logging
+import numpy as np
 import ifcopenshell.api
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc as import_ifc
+from math import pi, inf
+from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.boundary.decorator import BoundaryDecorator
@@ -485,9 +488,9 @@ class ShowBoundaries(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             if tool.Ifc.is_moved(obj):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-            element = tool.Ifc.get_entity(context.active_object)
+            element = tool.Ifc.get_entity(obj)
             for rel in element.BoundedBy or []:
-                boundary_obj = loader.load_boundary(rel, context.active_object)
+                boundary_obj = loader.load_boundary(rel, obj)
                 new = props.boundaries.add()
                 new.obj = boundary_obj
         BoundaryDecorator.install(bpy.context)
@@ -521,3 +524,108 @@ class HideBoundaries(bpy.types.Operator, tool.Ifc.Operator):
             bpy.data.objects.remove(boundary_obj)
         context.scene.BIMBoundaryProperties.boundaries.clear()
         return {"FINISHED"}
+
+
+class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_boundary"
+    bl_label = "Add Boundary"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        relating_space = None
+        related_building_element = None
+        relating_space_obj = None
+        related_building_element_obj = None
+
+        objs = context.selected_objects
+        if len(objs) == 2:
+            # The user may select two objects, a space and its related building element
+            for obj in objs:
+                element = tool.Ifc.get_entity(obj)
+                if not element:
+                    continue
+                if element.is_a("IfcSpace"):
+                    relating_space = element
+                    relating_space_obj = obj
+                else:
+                    related_building_element = element
+                    related_building_element_obj = obj
+        elif len(objs) == 1:
+            # Optionally the user may select just the space, and the building element shall be auto-detected
+
+            def msg(self, context):
+                self.layout.label(text="NO ACTIVE STOREY")
+
+            element = tool.Ifc.get_entity(objs[0])
+            if element.is_a("IfcSpace"):
+                relating_space = element
+                relating_space_obj = objs[0]
+
+            target = bpy.context.scene.cursor.location
+
+            collection = context.view_layer.active_layer_collection.collection
+            collection_obj = bpy.data.objects.get(collection.name)
+            if not collection_obj:
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                return
+            spatial_element = tool.Ifc.get_entity(collection_obj)
+            if not spatial_element:
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                return
+
+            for subelement in ifcopenshell.util.element.get_decomposition(spatial_element):
+                if not (subelement.is_a("IfcWall") or subelement.is_a("IfcSlab")):
+                    continue
+                obj = tool.Ifc.get_object(subelement)
+                if obj:
+                    raycast = obj.closest_point_on_mesh(obj.matrix_world.inverted() @ target, distance=0.1)
+                    if raycast[0]:
+                        related_building_element = subelement
+                        related_building_element_obj = obj
+                        break
+
+        if not relating_space or not related_building_element:
+            return
+
+        bm = bmesh.new()
+        bm.from_mesh(relating_space_obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi * 2 / 360, verts=bm.verts, edges=bm.edges)
+
+        target_distance = inf
+        target_face = None
+        for face in bm.faces:
+            centroid = relating_space_obj.matrix_world @ face.calc_center_median()
+            raycast = related_building_element_obj.closest_point_on_mesh(related_building_element_obj.matrix_world.inverted() @ centroid, distance=1)
+            if raycast[0]:
+                distance = (related_building_element_obj.matrix_world @ raycast[1] - centroid).length
+                if distance < target_distance:
+                    target_face = face
+                    target_distance = distance
+
+        if not target_face:
+            return
+
+        bm2 = bmesh.new()
+        bm2.faces.new([bm2.verts.new(v.co.copy()) for v in target_face.verts])
+        mesh = bpy.data.meshes.new("Boundary")
+        bm2.to_mesh(mesh)
+
+        bm2.free()
+        bm.free()
+
+        obj = bpy.data.objects.new("Boundary", mesh)
+        obj.matrix_world = relating_space_obj.matrix_world.copy()
+        bpy.context.scene.collection.objects.link(obj)
+        surface = tool.Model.export_surface(obj)
+        connection_geometry = tool.Ifc.get().createIfcConnectionSurfaceGeometry(surface)
+
+        boundary = tool.Ifc.run("root.create_entity", ifc_class="IfcRelSpaceBoundary")
+        boundary.RelatingSpace = relating_space
+        boundary.RelatedBuildingElement = related_building_element
+        boundary.ConnectionGeometry = connection_geometry
+
+        bpy.data.objects.remove(obj)
+
+        bpy.ops.bim.show_boundaries()
+        obj = tool.Ifc.get_object(boundary)
+        obj.select_set(True)
