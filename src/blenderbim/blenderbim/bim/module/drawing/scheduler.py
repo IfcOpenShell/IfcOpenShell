@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from blenderbim.bim.module.drawing.svgwriter import SvgWriter
 import svgwrite
 
 from odf.opendocument import load
@@ -24,6 +25,7 @@ from odf.text import P
 from odf.style import Style
 
 FONT_SIZE = 4.13
+
 
 class Scheduler:
     def schedule(self, infile, outfile):
@@ -41,7 +43,16 @@ class Scheduler:
             # looking for table-column-properties or table-row-properties
             if not style.firstChild:
                 continue
-            styles[name] = {key[1]: value for key, value in style.firstChild.attributes.items()}
+            if style.firstChild.tagName in ["style:table-column-properties", "style:table-row-properties"]:
+                style_children = [style.firstChild]
+            else:
+                # for style:table-cell-properties we need to collect also text and paragraph properties
+                style_children = style.childNodes
+
+            styles[name] = {}
+            for child in style_children:
+                child_params = {key[1]: value for key, value in child.attributes.items()}
+                styles[name].update(child_params)
 
         table = doc.getElementsByType(Table)[0]
 
@@ -77,7 +88,7 @@ class Scheduler:
             x = self.margin
             height = row_heights[tri]
             tdi = 0
-            
+
             for td in tr.getElementsByType(TableCell):
                 column_span = td.getAttribute("numbercolumnsspanned")
                 column_span = int(column_span) if column_span else 1
@@ -85,8 +96,35 @@ class Scheduler:
                 repeat = td.getAttribute("numbercolumnsrepeated")
                 repeat = int(repeat) if repeat else 1
 
+                # figuring text alignment
+                style_name = td.getAttribute("stylename")
+                if (
+                    style_name
+                    and "vertical-align" in styles[style_name]
+                    and styles[style_name]["vertical-align"] != "automatic"
+                ):
+                    vertical_align = styles[style_name]["vertical-align"]
+                else:
+                    vertical_align = "bottom"
+
+                if (
+                    style_name
+                    and "text-align" in styles[style_name]
+                    and styles[style_name]["text-align"] != "automatic"
+                ):
+                    horizontal_align = styles[style_name]["text-align"]
+                    horizontal_align = "middle" if horizontal_align == "center" else horizontal_align
+                else:
+                    horizontal_align = "left"
+
+                if vertical_align == "middle" and horizontal_align == "middle":
+                    box_alignment = "center"
+                else:
+                    box_alignment = f"{vertical_align}-{horizontal_align}"
+
+                # drawing cells and text
                 for i in range(0, repeat):
-                    width = sum(column_widths[tdi:tdi + int(column_span)])
+                    width = sum(column_widths[tdi : tdi + int(column_span)])
                     self.svg.add(
                         self.svg.rect(
                             insert=(x, y),
@@ -96,7 +134,23 @@ class Scheduler:
                     )
                     value = td.getElementsByType(P)
                     if value:
-                        self.add_text(value[0], x + self.padding, y + height - self.padding)
+                        # figuring text position based on alignment
+                        text_position = [0, 0]
+                        if box_alignment.endswith("left"):
+                            text_position[0] = x + self.padding
+                        elif box_alignment.endswith("middle") or box_alignment == "center":
+                            text_position[0] = x + width / 2
+                        elif box_alignment.endswith("right"):
+                            text_position[0] = x + width - self.padding
+
+                        if box_alignment.startswith("top"):
+                            text_position[1] = y + self.padding
+                        elif box_alignment == "center":
+                            text_position[1] = y + height / 2
+                        elif box_alignment.startswith("bottom"):
+                            text_position[1] = y + height - self.padding
+
+                        self.add_text(value[0], *text_position, box_alignment=box_alignment)
                     x += width
                     tdi += column_span
 
@@ -107,21 +161,16 @@ class Scheduler:
         self.svg["viewBox"] = "0 0 {} {}".format(total_width, y)
         self.svg.save(pretty=True)
 
-    def add_text(self, text, x, y):
-        bottom_left_alignment = {
-            "alignment-baseline": "baseline",
-            "dominant-baseline": "baseline",
+    def add_text(self, text, x, y, box_alignment="bottom-left"):
+        box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)
+        text_params = {
+            "font-size": FONT_SIZE,
+            "font-family": "OpenGost Type B TT",
+            "text-anchor": "start",
         }
-        text_tag = self.svg.text(
-            str(text).upper(),
-            insert=tuple((x, y)),
-            **({
-                "font-size": FONT_SIZE,
-                "font-family": "OpenGost Type B TT",
-                "text-anchor": "start",
-            } | bottom_left_alignment)
-        )
-        self.svg.add(text_tag)            
+        text_params.update(box_alignment_params)
+        text_tag = self.svg.text(str(text).upper(), insert=tuple((x, y)), **text_params)
+        self.svg.add(text_tag)
 
     def convert_to_mm(self, value):
         # XSL is what defines the units of measurements in ODF

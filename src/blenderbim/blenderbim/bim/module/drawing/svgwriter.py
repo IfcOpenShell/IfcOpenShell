@@ -234,7 +234,7 @@ class SvgWriter:
                 rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
-            text_style = self.get_box_alignment_parameters("bottom-left")
+            text_style = SvgWriter.get_box_alignment_parameters("bottom-left")
             self.svg.add(self.svg.text(f"RL +{rl}", insert=tuple(text_position), class_="SECTIONLEVEL", **text_style))
             if tag:
                 self.svg.add(self.svg.text(tag, insert=(text_position[0], text_position[1] - 5), **text_style))
@@ -263,7 +263,7 @@ class SvgWriter:
                     "UP",
                     insert=tuple(text_position),
                     class_="STAIR",
-                    **self.get_box_alignment_parameters("center"),
+                    **SvgWriter.get_box_alignment_parameters("center"),
                 )
             )
 
@@ -287,7 +287,7 @@ class SvgWriter:
             )
             line["stroke-dasharray"] = "12.5, 3, 3, 3"
             axis_tag = tool.Ifc.get_entity(obj).Name
-            text_style = self.get_box_alignment_parameters("center")
+            text_style = SvgWriter.get_box_alignment_parameters("center")
             self.svg.add(
                 self.svg.text(
                     axis_tag,
@@ -557,7 +557,7 @@ class SvgWriter:
 
                     reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
                     text_position = symbol_position_svg
-                    text_style = self.get_box_alignment_parameters("center")
+                    text_style = SvgWriter.get_box_alignment_parameters("center")
                     self.svg.add(
                         self.svg.text(
                             reference_id,
@@ -590,7 +590,7 @@ class SvgWriter:
 
         reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
         text_position = symbol_position_svg
-        text_style = self.get_box_alignment_parameters("center")
+        text_style = SvgWriter.get_box_alignment_parameters("center")
         self.svg.add(
             self.svg.text(
                 reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="ELEVATION", **text_style
@@ -617,7 +617,8 @@ class SvgWriter:
                 return (reference_id, sheet_id)
         return ("-", "-")
 
-    def get_box_alignment_parameters(self, box_alignment):
+    @staticmethod
+    def get_box_alignment_parameters(box_alignment):
         """Convenience method to get svg parameters for text alignment
         in a readable way.
 
@@ -721,7 +722,7 @@ class SvgWriter:
                 text_tag = self.svg.text(
                     "",
                     **(attribs | {"filter": "url(#fill-background)"}) if add_fill_bg else attribs,
-                    **self.get_box_alignment_parameters(text_literal.BoxAlignment),
+                    **SvgWriter.get_box_alignment_parameters(text_literal.BoxAlignment),
                 )
                 self.svg.add(text_tag)
 
@@ -795,7 +796,7 @@ class SvgWriter:
                 rl = "{:.3f}m".format(rl)
 
             box_alignment = "bottom-left" if projected_points[0].x <= projected_points[-1].x else "bottom-right"
-            text_style = self.get_box_alignment_parameters(box_alignment)
+            text_style = SvgWriter.get_box_alignment_parameters(box_alignment)
             self.svg.add(
                 self.svg.text(
                     "RL +{}".format(rl),
@@ -917,7 +918,7 @@ class SvgWriter:
         text_offset = (text_position - center_position).xy.normalized() * 5
         text_position += text_offset
 
-        text_style = self.get_box_alignment_parameters("center")
+        text_style = SvgWriter.get_box_alignment_parameters("center")
         angle_text = abs(round(math.degrees(angle), 3))
         if is_reflex:
             angle_text = 360 - angle_text
@@ -978,7 +979,7 @@ class SvgWriter:
             )
             text_position += text_offset
 
-            text_style = self.get_box_alignment_parameters("center")
+            text_style = SvgWriter.get_box_alignment_parameters("center")
             radius = (points[-1].co - points[-2].co).length
             radius = helper.format_distance(radius, precision=self.precision, decimal_places=self.decimal_places)
             tag = element.Description or f"R{radius}"
@@ -1051,7 +1052,7 @@ class SvgWriter:
             )
             text_position += text_offset
 
-            text_style = self.get_box_alignment_parameters("center")
+            text_style = SvgWriter.get_box_alignment_parameters("center")
             self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
 
     def draw_diameter_annotations(self, obj):
@@ -1151,7 +1152,7 @@ class SvgWriter:
                 text_format(text),
                 insert=text_position,
                 class_="DIMENSION",
-                **(text_kwargs | self.get_box_alignment_parameters(box_alignment)),
+                **(text_kwargs | SvgWriter.get_box_alignment_parameters(box_alignment)),
             )
 
         if not show_description_only:
