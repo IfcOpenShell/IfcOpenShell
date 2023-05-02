@@ -55,10 +55,32 @@ class Usecase:
             definition=self.settings["work_schedule"],
             relating_context=self.file.by_type("IfcContext")[0],
         )
-        for rel in self.settings["work_schedule"].Controls:
-            for related_object in rel.RelatedObjects:
-                if related_object.is_a("IfcTask"):
+        if self.settings["work_schedule"].Declares:
+            for rel in self.settings["work_schedule"].Declares:
+                for work_schedule in rel.RelatedObjects:
+                    ifcopenshell.api.run(
+                        "sequence.remove_work_schedule",
+                        self.file,
+                        work_schedule=work_schedule,
+                    )
+        for inverse in self.file.get_inverse(self.settings["work_schedule"]):
+            if inverse.is_a("IfcRelDefinesByObject"):
+                if (
+                    inverse.RelatingObject == self.settings["work_schedule"]
+                    or len(inverse.RelatedObjects) == 1
+                ):
+                    self.file.remove(inverse)
+                else:
+                    related_objects = list(inverse.RelatedObjects)
+                    related_objects.remove(self.settings["work_schedule"])
+                    inverse.RelatedObjects = related_objects
+            elif inverse.is_a("IfcRelAssignsToControl"):
+                [
                     ifcopenshell.api.run(
                         "sequence.remove_task", self.file, task=related_object
                     )
+                    for related_object in inverse.RelatedObjects
+                    if related_object.is_a("IfcTask")
+                ]
+
         self.file.remove(self.settings["work_schedule"])
