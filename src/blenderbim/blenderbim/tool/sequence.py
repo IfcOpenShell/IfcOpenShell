@@ -1498,7 +1498,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
             "pOpen": 1,
             "pCost": 1,
-            "ifcduration": task_time.ScheduleDuration if task_time else "",
+            "ifcduration": str(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration)) if (task_time and task_time.ScheduleDuration) else "",
         }
 
         if task_time and task_time.IsCritical:
@@ -1519,9 +1519,10 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def generate_gantt_browser_chart(cls, task_json):
+        active_work_schedule = cls.get_active_work_schedule()
         with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
             with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
-                f.write(pystache.render(t.read(), {"json_data": json.dumps(task_json)}))
+                f.write(pystache.render(t.read(), {"json_data": json.dumps(task_json), "name":active_work_schedule.Name or "Unnamed"}))
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
     @classmethod
