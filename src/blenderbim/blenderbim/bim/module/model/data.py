@@ -70,7 +70,10 @@ class AuthoringData:
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
 
-        declaration = tool.Ifc.schema().declaration_by_name("IfcSpatialElementType")
+        if tool.Ifc.get_schema() == "IFC2X3":
+            declaration = tool.Ifc.schema().declaration_by_name("IfcSpatialStructureElementType")
+        else:
+            declaration = tool.Ifc.schema().declaration_by_name("IfcSpatialElementType")
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names.extend([d.name() for d in declarations])
 
