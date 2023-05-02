@@ -47,10 +47,6 @@ def float_is_zero(f):
 
 
 def bm_mesh_clean_up(bm):
-    # leave only object's footprint
-    min_z = min([v.co.z for v in bm.verts])
-    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not float_is_zero(v.co.z - min_z)], context="VERTS")
-
     # remove internal edges and faces
     # adding missing faces so we could rely on `e.is_boundary` later
     bmesh.ops.contextual_create(bm, geom=bm.edges[:])
@@ -452,18 +448,30 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         if not props.roof_added_previously:
             convert_property_group_from_si(props, skip_props=NON_SI_ROOF_PROPS)
 
+        # rejecting original roof shape to be safe
+        # taking into account only it's bounding box dimensions
+        if obj.dimensions.x == 0 or obj.dimensions.y == 0:
+            min_x, min_y = -5, -5
+            max_x, max_y = 5, 5
+            min_z = 0
+        else:
+            bbox = tool.Blender.get_object_bounding_box(obj)
+            min_x = bbox["min_x"]
+            min_y = bbox["min_y"]
+            max_x = bbox["max_x"]
+            max_y = bbox["max_y"]
+            min_z = bbox["min_z"]
+
         roof_data = props.get_general_kwargs()
-        path_data = get_path_data(obj)
-        if not path_data:
-            path_data = {
-                "edges": [[0, 1], [1, 2], [2, 3], [3, 0]],
-                "verts": [
-                    Vector([-5.0, -5.0, 0.0]) / si_conversion,
-                    Vector([-5.0, 5.0, 0.0]) / si_conversion,
-                    Vector([5.0, 5.0, 0.0]) / si_conversion,
-                    Vector([5.0, -5.0, 0.0]) / si_conversion,
-                ],
-            }
+        path_data = {
+            "edges": [[0, 1], [1, 2], [2, 3], [3, 0]],
+            "verts": [
+                Vector([min_x, min_y, min_z]) / si_conversion,
+                Vector([min_x, max_y, min_z]) / si_conversion,
+                Vector([max_x, max_y, min_z]) / si_conversion,
+                Vector([max_x, min_y, min_z]) / si_conversion,
+            ],
+        }
         roof_data["path_data"] = path_data
 
         update_bbim_roof_pset(element, roof_data)
