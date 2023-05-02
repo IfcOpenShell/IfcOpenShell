@@ -117,6 +117,7 @@ classes = (
     operator.DisableEditingTaskAnimationColors,
     operator.LoadProductTasks,
     operator.HighlightTask,
+    operator.CreateBaseline,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
