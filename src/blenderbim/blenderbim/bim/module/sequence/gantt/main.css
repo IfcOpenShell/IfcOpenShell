@@ -1,0 +1,122 @@
+.gtaskcellwkend,
+.gtaskcellcurrent,
+.gminorheadingwkend {
+  background-color: #e1e1e1;
+}
+
+.gitemhighlight td {
+  background-color: #ffdaaa;
+}
+
+.gtaskblue {
+  background: #4281A4;
+}
+
+.gtaskred {
+  background: #C1666B;
+}
+
+.gtaskgreen {
+  background: #48A9A6;
+}
+
+.gtaskyellow {
+  background: #D4B483;
+}
+
+.gmainleft {
+  overflow: visible;
+  flex: 0 1 auto;
+}
+
+.gname.ggroupitem {
+  background-color: #4c92ec;
+  font-weight: bold;
+}
+
+.gtaskcellwkend,
+.gtaskcellcurrent,
+.gminorheadingwkend {
+  background-color: #e1e1e1;
+}
+
+.gitemhighlight td {
+  background-color: #ffdaaa;
+}
+
+.gtaskblue {
+  background: #4281A4;
+}
+
+.gtaskred {
+  background: #C1666B;
+}
+
+.gtaskgreen {
+  background: #48A9A6;
+}
+
+.gtaskyellow {
+  background: #D4B483;
+}
+
+.gmainleft {
+  resize: horizontal;
+  height:100%;
+  overflow-x: visible;
+  flex: 0 1 auto;
+}
+
+.gmainright {
+  height:100%;
+  overflow: auto;
+  font-size: 1.5rem;
+}
+
+.gcaption {
+  /* github style header 3 */
+  font-size: 0.75rem;
+  font-weight: 200;
+  line-height: 1.25;
+  color: black;
+}
+
+.gchartgrid {
+  background-color: transparent;
+  height: fit-content;
+}
+
+.gchartcontainer {
+  border: 1px solid #e1e1e1;
+  height: fit-content;
+}
+
+@media print {
+  .no-print {
+    display: none;
+  }
+}
+
+button, .sweet_button {
+  border: none;
+  background-color: #ffffff;
+  color: black;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 1rem;
+  margin: 0.25rem 0.5rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  /* add shadow */
+  box-shadow: 0 0 0.7rem rgba(95, 95, 95, 0.4);
+}
+
+h4 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: black;
+}
+
