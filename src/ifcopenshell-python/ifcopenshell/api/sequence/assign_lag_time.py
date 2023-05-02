@@ -20,7 +20,9 @@ import ifcopenshell.util.date
 
 
 class Usecase:
-    def __init__(self, file, rel_sequence=None, lag_value=None, duration_type="WORKTIME"):
+    def __init__(
+        self, file, rel_sequence=None, lag_value=None, duration_type="WORKTIME"
+    ):
         """Assign a lag time to a sequence relationship between tasks
 
         A task sequence (e.g. finish to start) may optionally have a lag time
