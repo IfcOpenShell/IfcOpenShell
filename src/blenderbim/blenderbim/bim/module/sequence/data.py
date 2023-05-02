@@ -20,12 +20,14 @@ import bpy
 import blenderbim.tool as tool
 import ifcopenshell
 from ifcopenshell.util.doc import get_predefined_type_doc
+import ifcopenshell.util.date as dateutil
 
 
 def refresh():
     SequenceData.is_loaded = False
     WorkPlansData.is_loaded = False
     TaskICOMData.is_loaded = False
+    WorkScheduleData.is_loaded = False
 
 
 class SequenceData:
@@ -242,6 +244,45 @@ class SequenceData:
                     ]
                 )
                 break
+        return results
+
+
+class WorkScheduleData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "can_have_baselines": cls.can_have_baselines(),
+            "active_work_schedule_baselines": cls.active_work_schedule_baselines(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def can_have_baselines(cls):
+        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+            return False
+        return (
+            tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id).PredefinedType
+            == "PLANNED"
+        )
+
+    @classmethod
+    def active_work_schedule_baselines(cls):
+        results = []
+        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+            return []
+        for rel in tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id).Declares:
+            for work_schedule in rel.RelatedObjects:
+                if work_schedule.PredefinedType == "BASELINE":
+                    results.append(
+                        {
+                            "id": work_schedule.id(),
+                            "name": work_schedule.Name or "Unnamed",
+                            "date": str(dateutil.ifc2datetime(work_schedule.CreationDate)),
+                        }
+                    )
         return results
 
 
