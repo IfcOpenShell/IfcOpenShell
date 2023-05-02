@@ -21,7 +21,7 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.module.sequence.data import WorkPlansData, SequenceData, TaskICOMData
+from blenderbim.bim.module.sequence.data import WorkPlansData, WorkScheduleData, SequenceData, TaskICOMData
 
 
 class BIM_PT_work_plans(Panel):
@@ -113,6 +113,8 @@ class BIM_PT_work_schedules(Panel):
     def draw(self, context):
         if not SequenceData.is_loaded:
             SequenceData.load()
+        if not WorkScheduleData.is_loaded:
+            WorkScheduleData.load()
         self.props = context.scene.BIMWorkScheduleProperties
         self.tprops = context.scene.BIMTaskTreeProperties
         self.animation_props = context.scene.BIMAnimationProperties
@@ -132,68 +134,80 @@ class BIM_PT_work_schedules(Panel):
             row.operator("bim.add_work_schedule", text="Add new", icon="ADD")
 
         for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
+
             self.draw_work_schedule_ui(work_schedule_id, work_schedule)
 
     def draw_work_schedule_ui(self, work_schedule_id, work_schedule):
-        row = self.layout.row(align=True)
-        row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
-        if self.props.active_work_schedule_id == work_schedule_id:
-            if self.props.editing_type == "WORK_SCHEDULE":
-                row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
-            elif self.props.editing_type == "TASKS":
-                grid = self.layout.grid_flow(columns=2, even_columns=True)
+        if not work_schedule["PredefinedType"] == "BASELINE":
+            row = self.layout.row(align=True)
+            row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
+            if self.props.active_work_schedule_id == work_schedule_id:
+                if self.props.editing_type == "WORK_SCHEDULE":
+                    row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
+                elif self.props.editing_type == "TASKS":
+                    grid = self.layout.grid_flow(columns=2, even_columns=True)
 
-                col = grid.column()
-                row1 = col.row(align=True)
-                row1.alignment = "LEFT"
-                row1.label(text="Schedule tools")
-                row1 = col.row(align=True)
-                row1.alignment = "RIGHT"
-                row1.operator(
-                    "bim.generate_gantt_chart", text="Generate Gantt", icon="NLA"
+                    col = grid.column()
+                    row1 = col.row(align=True)
+                    row1.alignment = "LEFT"
+                    row1.label(text="Schedule tools")
+                    row1 = col.row(align=True)
+                    row1.alignment = "RIGHT"
+                    row1.operator(
+                        "bim.generate_gantt_chart", text="Generate Gantt", icon="NLA"
+                    ).work_schedule = work_schedule_id
+                    row1.operator(
+                        "bim.recalculate_schedule", text="Re-calculate Schedule", icon="FILE_REFRESH"
+                    ).work_schedule = work_schedule_id
+                    row2 = col.row(align=True)
+                    row2.alignment = "RIGHT"
+                    row2.operator(
+                        "bim.select_work_schedule_products", text="Select Assigned", icon="RESTRICT_SELECT_OFF"
+                    ).work_schedule = work_schedule_id
+                    row2.operator(
+                        "bim.select_unassigned_work_schedule_products",
+                        text="Select Unassigned",
+                        icon="RESTRICT_SELECT_OFF",
+                    ).work_schedule = work_schedule_id
+                    if WorkScheduleData.data["can_have_baselines"]:
+                        row3 = col.row()
+                        row3.alignment = "RIGHT"
+                        row3.prop(self.props, "should_show_schedule_baseline_ui", icon="RESTRICT_INSTANCED_OFF")
+                    col = grid.column()
+                    row1 = col.row(align=True)
+                    row1.alignment = "LEFT"
+                    row1.label(text="Settings")
+                    row1 = col.row(align=True)
+                    row1.alignment = "RIGHT"
+                    row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
+                    row2 = col.row(align=True)
+                    row2.prop(
+                        self.props, "should_show_visualisation_ui", text="Animation Options", icon="CAMERA_STEREO"
+                    )
+                    row2.prop(self.props, "should_show_snapshot_ui", text="Snapshot Options", icon="CAMERA_STEREO")
+                row.operator("bim.disable_editing_work_schedule", text="Disable editing", icon="CANCEL")
+            else:
+                row.operator(
+                    "bim.enable_editing_work_schedule_tasks", text="", icon="ACTION"
                 ).work_schedule = work_schedule_id
-                row1.operator(
-                    "bim.recalculate_schedule", text="Re-calculate Schedule", icon="FILE_REFRESH"
+                row.operator(
+                    "bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL"
                 ).work_schedule = work_schedule_id
-                row2 = col.row(align=True)
-                row2.alignment = "RIGHT"
-                row2.operator(
-                    "bim.select_work_schedule_products", text="Select Assigned", icon="RESTRICT_SELECT_OFF"
-                ).work_schedule = work_schedule_id
-                row2.operator(
-                    "bim.select_unassigned_work_schedule_products", text="Select Unassigned", icon="RESTRICT_SELECT_OFF"
-                ).work_schedule = work_schedule_id
-                col = grid.column()
-                row1 = col.row(align=True)
-                row1.alignment = "LEFT"
-                row1.label(text="Settings")
-                row1 = col.row(align=True)
-                row1.alignment = "RIGHT"
-                row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
-                row2 = col.row(align=True)
-                row2.prop(self.props, "should_show_visualisation_ui", text="Animation Options", icon="CAMERA_STEREO")
-                row2.prop(self.props, "should_show_snapshot_ui", text="Snapshot Options", icon="CAMERA_STEREO")
-            row.operator("bim.disable_editing_work_schedule", text="Disable editing", icon="CANCEL")
-        else:
-            row.operator(
-                "bim.enable_editing_work_schedule_tasks", text="", icon="ACTION"
-            ).work_schedule = work_schedule_id
-            row.operator(
-                "bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL"
-            ).work_schedule = work_schedule_id
-            row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
+                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
-        if self.props.active_work_schedule_id == work_schedule_id:
-            if self.props.editing_type == "WORK_SCHEDULE":
-                self.draw_editable_work_schedule_ui()
-            elif self.props.editing_type == "TASKS":
-                if self.props.should_show_column_ui:
+            if self.props.active_work_schedule_id == work_schedule_id:
+                if self.props.editing_type == "WORK_SCHEDULE":
+                    self.draw_editable_work_schedule_ui()
+                elif self.props.editing_type == "TASKS":
+                    self.draw_baseline_ui(work_schedule_id)
                     self.draw_column_ui()
-                if self.props.should_show_visualisation_ui:
-                    self.draw_visualisation_ui()
-                if self.props.should_show_snapshot_ui:
-                    self.draw_snapshot_ui()
-                self.draw_editable_task_ui(work_schedule_id)
+                    if self.props.should_show_visualisation_ui:
+                        self.draw_visualisation_ui()
+                    if self.props.should_show_snapshot_ui:
+                        self.draw_snapshot_ui()
+                    self.draw_editable_task_ui(work_schedule_id)
+        else:
+            self.draw_readonly_work_schedule_ui(work_schedule_id)
 
     def draw_task_operators(self):
         row = self.layout.row(align=True)
@@ -229,6 +243,8 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.remove_task", text="Delete", icon="X").task = ifc_definition_id
 
     def draw_column_ui(self):
+        if not self.props.should_show_column_ui:
+            return
         row = self.layout.row()
         row.operator("bim.setup_default_task_columns", text="Add Default Columns", icon="ANCHOR_BOTTOM")
         row.alignment = "RIGHT"
@@ -456,6 +472,48 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_task_time_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
 
+    def draw_baseline_ui(self, work_schedule_id):
+        if not self.props.should_show_schedule_baseline_ui:
+            return
+        row3 = self.layout.row()
+        row3.alignment = "RIGHT"
+        row3.operator("bim.create_baseline", text="Add Baseline", icon="ADD").work_schedule = work_schedule_id
+        if WorkScheduleData.data["active_work_schedule_baselines"]:
+            for baseline in WorkScheduleData.data["active_work_schedule_baselines"]:
+                baseline_row = self.layout.row()
+                baseline_row.alignment = "RIGHT"
+                baseline_row.label(
+                    text="{} @ {}".format(baseline["name"], baseline["date"]), icon="RESTRICT_INSTANCED_OFF"
+                )
+                baseline_row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = baseline["id"]
+                baseline_row.operator(
+                    "bim.enable_editing_work_schedule_tasks", text="", icon="ACTION"
+                ).work_schedule = baseline["id"]
+
+    def draw_readonly_work_schedule_ui(self, work_schedule_id):
+        if self.props.active_work_schedule_id == work_schedule_id:
+            row = self.layout.row()
+            row.alignment = "RIGHT"
+            row.operator("bim.disable_editing_work_schedule", text="Disable editing", icon="CANCEL")
+            grid = self.layout.grid_flow(columns=2, even_columns=True)
+            col = grid.column()
+            row1 = col.row(align=True)
+            row1.alignment = "LEFT"
+            row1.label(text="Settings")
+            row1 = col.row(align=True)
+            row1.alignment = "RIGHT"
+            row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
+            row2 = col.row(align=True)
+            if self.props.editing_type == "TASKS":
+                self.draw_column_ui()
+                self.layout.template_list(
+                    "BIM_UL_tasks",
+                    "",
+                    self.tprops,
+                    "tasks",
+                    self.props,
+                    "active_task_index",
+                )
 
 class BIM_PT_task_icom(Panel):
     bl_label = "IFC Task ICOM"
