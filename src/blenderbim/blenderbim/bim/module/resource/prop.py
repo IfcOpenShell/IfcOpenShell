@@ -46,13 +46,12 @@ def purge():
 
 def updateResourceName(self, context):
     props = context.scene.BIMResourceProperties
-    if not props.is_resource_update_enabled or self.name == "Unnamed":
+    if not props.is_resource_update_enabled:
         return
-    self.file = IfcStore.get_file()
-    ifcopenshell.api.run(
+    tool.Ifc.run(
         "resource.edit_resource",
-        self.file,
-        **{"resource": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
+        resource=tool.Ifc.get().by_id(self.ifc_definition_id),
+        attributes={"Name": self.name},
     )
     if props.active_resource_id == self.ifc_definition_id:
         attribute = props.resource_attributes.get("Name")
@@ -77,6 +76,24 @@ def update_active_resource_index(self, context):
         tool.Resource.load_productivity_data()
 
 
+def updateResourceUsage(self, context):
+    props = context.scene.BIMResourceProperties
+    if not props.is_resource_update_enabled:
+        return
+
+    if self.schedule_usage == "":
+        return
+    resource = tool.Ifc.get().by_id(self.ifc_definition_id)
+    if not resource.Usage:
+        tool.Ifc.run(
+            "resource.add_resource_time",
+            resource=resource,
+        )
+    resource.Usage.ScheduleUsage = self.schedule_usage
+    blenderbim.bim.module.pset.data.refresh()
+    tool.Resource.load_resource_properties()
+
+
 class ISODuration(PropertyGroup):
     name: StringProperty(name="Name")
     years: IntProperty(name="Years", default=0)
@@ -90,7 +107,7 @@ class ISODuration(PropertyGroup):
 class Resource(PropertyGroup):
     name: StringProperty(name="Name", update=updateResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    schedule_usage: FloatProperty(name="Schedule Usage")
+    schedule_usage: FloatProperty(name="Schedule Usage", update=updateResourceUsage)
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
