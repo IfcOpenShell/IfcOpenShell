@@ -21,7 +21,13 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, relating_process=None, related_process=None, sequence_type="FINISH_START"):
+    def __init__(
+        self,
+        file,
+        relating_process=None,
+        related_process=None,
+        sequence_type="FINISH_START",
+    ):
         """Assign a sequential relationship between tasks
 
         Tasks in construction sequencing typically have sequence relationships
@@ -118,7 +124,9 @@ class Usecase:
             "IfcRelSequence",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                "OwnerHistory": ifcopenshell.api.run(
+                    "owner.create_owner_history", self.file
+                ),
                 "RelatingProcess": self.settings["relating_process"],
                 "RelatedProcess": self.settings["related_process"],
                 "SequenceType": self.settings["sequence_type"],

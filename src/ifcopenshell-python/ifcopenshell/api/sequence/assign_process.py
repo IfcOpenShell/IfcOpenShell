@@ -93,7 +93,6 @@ class Usecase:
             "related_object": related_object,
         }
 
-
     def execute(self):
         if self.settings["related_object"].HasAssignments:
             for assignment in self.settings["related_object"].HasAssignments:
