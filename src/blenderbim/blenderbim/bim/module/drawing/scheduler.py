@@ -79,10 +79,14 @@ class Scheduler:
             tdi = 0
             
             for td in tr.getElementsByType(TableCell):
+                column_span = td.getAttribute("numbercolumnsspanned")
+                column_span = int(column_span) if column_span else 1
+
                 repeat = td.getAttribute("numbercolumnsrepeated")
                 repeat = int(repeat) if repeat else 1
+
                 for i in range(0, repeat):
-                    width = column_widths[tdi]
+                    width = sum(column_widths[tdi:tdi + int(column_span)])
                     self.svg.add(
                         self.svg.rect(
                             insert=(x, y),
@@ -94,7 +98,7 @@ class Scheduler:
                     if value:
                         self.add_text(value[0], x + self.padding, y + height - self.padding)
                     x += width
-                    tdi += 1
+                    tdi += column_span
 
             y += height
         total_width = sum(column_widths) + (self.margin * 2)
