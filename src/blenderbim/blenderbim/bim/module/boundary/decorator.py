@@ -80,7 +80,7 @@ class BoundaryDecorator:
 
         for boundary in context.scene.BIMBoundaryProperties.boundaries:
             obj = boundary.obj
-            if not obj:
+            if not obj or not obj.data:  # A boundary may not have data if it has no connection geometry
                 continue
 
             if obj.mode == "EDIT":
