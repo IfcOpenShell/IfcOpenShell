@@ -279,6 +279,10 @@ class Model(blenderbim.core.tool.Model):
 
         if surface.is_a("IfcCurveBoundedPlane"):
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist())
+            position[0][3] *= cls.unit_scale
+            position[1][3] *= cls.unit_scale
+            position[2][3] *= cls.unit_scale
+
             cls.import_curve(obj, position, surface.OuterBoundary)
             for inner_boundary in surface.InnerBoundaries:
                 cls.import_curve(obj, position, inner_boundary)
