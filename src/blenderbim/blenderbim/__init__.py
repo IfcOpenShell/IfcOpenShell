@@ -34,7 +34,8 @@ bl_info = {
 if sys.modules.get("bpy", None):
     # Process *.pth in /libs/site/packages to setup globally importable modules
     # This is 3 levels deep as required by the static RPATH of ../../ from dependencies taken from Anaconda
-    site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
+    # site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
 
     import blenderbim.bim
 
