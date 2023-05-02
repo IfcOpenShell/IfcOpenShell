@@ -336,7 +336,6 @@ class Resource(blenderbim.core.tool.Resource):
         current_resource = tool.Resource.get_highlighted_resource()
         if current_resource:
             productivity = cls.get_productivity(current_resource)
-            print("Resource:", current_resource, "productivity", productivity)
             if productivity:
                 bpy.context.scene.BIMResourceProductivity.quantity_produced = (
                     ifcopenshell.util.resource.get_quantity_produced(productivity)

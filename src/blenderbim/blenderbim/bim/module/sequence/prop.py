@@ -425,6 +425,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_product_input_task_index: IntProperty(name="Active Product Input Task Index")
     enable_reorder: BoolProperty(name="Enable Reorder", default=False)
     show_task_operators: BoolProperty(name="Show Task Options", default=True)
+    should_show_schedule_baseline_ui: BoolProperty(name="Baselines", default=False)
 
 
 class BIMTaskTreeProperties(PropertyGroup):

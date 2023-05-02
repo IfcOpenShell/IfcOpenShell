@@ -143,6 +143,7 @@ def add_task(ifc, sequence, parent_task=None):
 def enable_editing_task(sequence, task=None):
     sequence.enable_editing_task(task)
 
+
 def enable_editing_task_attributes(sequence, task=None):
     sequence.load_task_attributes(task)
     sequence.enable_editing_task_attributes(task)
@@ -248,7 +249,10 @@ def unassign_input_products(ifc, sequence, spatial, task=None, products=None):
 def assign_resource(ifc, sequence, task=None):
     resource = sequence.get_selected_resource()
     sub_resource = ifc.run(
-        "resource.add_resource", parent_resource=resource, ifc_class=resource.is_a(), name=resource.Name
+        "resource.add_resource",
+        parent_resource=resource,
+        ifc_class=resource.is_a(),
+        name="{}/{}".format(resource.Name or "Unnamed", task.Name or ""),
     )
     ifc.run("sequence.assign_process", relating_process=task, related_object=sub_resource)
     resources = sequence.get_task_resources(task)
@@ -552,7 +556,11 @@ def reorder_task_nesting(ifc, sequence, task, new_index):
     if is_sorting_enabled or is_sort_reversed:
         return "Remove manual sorting"
     else:
-        ifc.run("nest.reorder_nesting", item= task, new_index= new_index)
-        work_schedule= sequence.get_active_work_schedule()
+        ifc.run("nest.reorder_nesting", item=task, new_index=new_index)
+        work_schedule = sequence.get_active_work_schedule()
         sequence.load_task_tree(work_schedule)
         sequence.load_task_properties()
+
+
+def create_baseline(ifc, sequence, work_schedule, name):
+    ifc.run("sequence.create_baseline", work_schedule=work_schedule, name=name)

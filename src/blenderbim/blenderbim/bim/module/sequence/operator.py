@@ -168,15 +168,14 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingWorkScheduleTasks(bpy.types.Operator):
+class EnableEditingWorkScheduleTasks(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_work_schedule_tasks"
     bl_label = "Enable Editing Work Schedule Tasks"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         core.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
-        return {"FINISHED"}
 
 
 class LoadTaskProperties(bpy.types.Operator):
@@ -1370,3 +1369,23 @@ class ReorderTask(bpy.types.Operator, tool.Ifc.Operator):
         )
         if isinstance(r, str):
             self.report({"WARNING"}, r)
+
+
+class CreateBaseline(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.create_baseline"
+    bl_label = "Create Schedule Baseline"
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()
+    name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.create_baseline(
+            tool.Ifc, tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule), name=self.name
+        )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "name", text="Baseline Name")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
