@@ -44,6 +44,7 @@ class BimTool(WorkSpaceTool):
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
         # ("bim.sync_modeling", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
+        ("bim.hotkey", {"type": "B", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_B")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
@@ -260,6 +261,11 @@ class BimToolUI:
             row.operator("bim.add_opening", text="Apply Void")
         else:
             row.operator("bim.add_potential_opening", text="Add Void")
+
+        row = cls.layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="", icon="EVENT_B")
+        row.operator("bim.add_boundary", text="Add Boundary")
 
         if AuthoringData.data["is_voidable_element"]:
             if AuthoringData.data["has_visible_openings"]:
@@ -569,6 +575,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.join_wall(join_type="V")
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")
+
+    def hotkey_S_B(self):
+        bpy.ops.bim.add_boundary()
 
     def hotkey_S_O(self):
         if len(bpy.context.selected_objects) == 2:
