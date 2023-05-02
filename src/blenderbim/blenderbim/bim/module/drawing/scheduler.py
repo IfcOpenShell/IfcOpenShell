@@ -98,21 +98,14 @@ class Scheduler:
 
                 # figuring text alignment
                 style_name = td.getAttribute("stylename")
-                if (
-                    style_name
-                    and "vertical-align" in styles[style_name]
-                    and styles[style_name]["vertical-align"] != "automatic"
-                ):
-                    vertical_align = styles[style_name]["vertical-align"]
+                style = styles[style_name] if style_name else {}
+                if style_name and "vertical-align" in style and style["vertical-align"] != "automatic":
+                    vertical_align = style["vertical-align"]
                 else:
                     vertical_align = "bottom"
 
-                if (
-                    style_name
-                    and "text-align" in styles[style_name]
-                    and styles[style_name]["text-align"] != "automatic"
-                ):
-                    horizontal_align = styles[style_name]["text-align"]
+                if style_name and "text-align" in style and style["text-align"] != "automatic":
+                    horizontal_align = style["text-align"]
                     horizontal_align = "middle" if horizontal_align == "center" else horizontal_align
                 else:
                     horizontal_align = "left"
@@ -121,6 +114,9 @@ class Scheduler:
                     box_alignment = "center"
                 else:
                     box_alignment = f"{vertical_align}-{horizontal_align}"
+
+                # for future use
+                wrap_text = style.get("wrap-option", None) == "wrap"
 
                 # drawing cells and text
                 for i in range(0, repeat):
@@ -145,7 +141,7 @@ class Scheduler:
 
                         if box_alignment.startswith("top"):
                             text_position[1] = y + self.padding
-                        elif box_alignment == "center":
+                        elif box_alignment.startswith("middle") or box_alignment == "center":
                             text_position[1] = y + height / 2
                         elif box_alignment.startswith("bottom"):
                             text_position[1] = y + height - self.padding
