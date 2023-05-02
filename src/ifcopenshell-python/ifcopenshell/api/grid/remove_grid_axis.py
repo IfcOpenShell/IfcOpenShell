@@ -37,7 +37,7 @@ class Usecase:
             axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
                 axis_tag="1", uvw_axes="VAxes", grid=grid)
 
-            # Let's create a third so we can remvoe it later
+            # Let's create a third so we can remove it later
             axis_2 = ifcopenshell.api.run("grid.create_grid_axis", model,
                 axis_tag="2", uvw_axes="VAxes", grid=grid)
 

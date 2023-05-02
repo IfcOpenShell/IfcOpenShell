@@ -105,7 +105,7 @@ class Usecase:
                 else:
                     ifcopenshell.api.run("type.unassign_type", self.file, related_object=self.settings["product"])
             elif inverse.is_a("IfcRelSpaceBoundary"):
-                self.file.remove(inverse)
+                ifcopenshell.api.run("boundary.remove_boundary", self.file, boundary=inverse)
             elif inverse.is_a("IfcRelFillsElement"):
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelVoidsElement"):
