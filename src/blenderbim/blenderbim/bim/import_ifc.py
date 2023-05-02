@@ -178,6 +178,11 @@ class IfcImporter:
         self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
         self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
         self.settings.set(self.settings.STRICT_TOLERANCE, True)
+        self.settings_curve = ifcopenshell.geom.settings()
+        self.settings_curve.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
+        self.settings_curve.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
+        self.settings_curve.set(self.settings_curve.STRICT_TOLERANCE, True)
+        self.settings_curve.set(self.settings_curve.INCLUDE_CURVES, True)
         self.settings_native = ifcopenshell.geom.settings()
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
@@ -683,28 +688,31 @@ class IfcImporter:
 
     def create_generic_elements(self, elements):
         # Based on my experience in viewing BIM models, representations are prioritised as follows:
-        # 1. 3D Body, 2. 2D Plans, 3. Point clouds, 4. No representation
-        # If an element has a representation that doesn't follow 1, 2, or 3, it will not show by default.
+        # 1. 3D Body, 2. 2D Body, 3. 2D Plans / annotations, 4. Point clouds, 5. No representation
+        # If an element has a representation that doesn't follow 1, 2, 3, or 4, it will not show by default.
         # The user can load them later if they want to view them.
         products = self.create_products(elements)
         elements -= products
-        products = self.create_curve_products(elements)
+        products = self.create_products(elements, settings=self.settings_curve)
+        elements -= products
+        products = self.create_products(elements, settings=self.settings_2d)
         elements -= products
         products = self.create_pointclouds(elements)
         elements -= products
         for element in elements:
             self.create_product(element)
 
-    def create_products(self, products):
+    def create_products(self, products, settings=None):
+        if settings is None:
+            settings = self.settings
+
         results = set()
         if not products:
             return results
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(
-                self.settings, self.file, multiprocessing.cpu_count(), include=products
-            )
+            iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
         else:
-            iterator = ifcopenshell.geom.iterator(self.settings, self.file, include=products)
+            iterator = ifcopenshell.geom.iterator(settings, self.file, include=products)
         if self.ifc_import_settings.should_cache:
             cache = IfcStore.get_cache()
             if cache:
@@ -771,10 +779,10 @@ class IfcImporter:
         self.structural_collection.children.link(self.structural_connection_collection)
         self.project["blender"].children.link(self.structural_collection)
 
-        self.create_curve_products(self.file.by_type("IfcStructuralCurveMember"))
-        self.create_curve_products(self.file.by_type("IfcStructuralCurveConnection"))
-        self.create_curve_products(self.file.by_type("IfcStructuralSurfaceMember"))
-        self.create_curve_products(self.file.by_type("IfcStructuralSurfaceConnection"))
+        self.create_products(self.file.by_type("IfcStructuralCurveMember"), settings=self.settings_2d)
+        self.create_products(self.file.by_type("IfcStructuralCurveConnection"), settings=self.settings_2d)
+        self.create_products(self.file.by_type("IfcStructuralSurfaceMember"), settings=self.settings_2d)
+        self.create_products(self.file.by_type("IfcStructuralSurfaceConnection"), settings=self.settings_2d)
         self.create_structural_point_connections()
 
     def create_structural_point_connections(self):
@@ -861,40 +869,6 @@ class IfcImporter:
         self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
         self.link_element(product, obj)
         return product
-
-    def create_curve_products(self, products):
-        results = set()
-        if not products:
-            return results
-        if self.ifc_import_settings.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(
-                self.settings_2d, self.file, multiprocessing.cpu_count(), include=products
-            )
-        else:
-            iterator = ifcopenshell.geom.iterator(self.settings_2d, self.file, include=products)
-        if self.ifc_import_settings.should_cache:
-            cache = IfcStore.get_cache()
-            if cache:
-                iterator.set_cache(cache)
-        valid_file = iterator.initialize()
-        if not valid_file:
-            return results
-        checkpoint = time.time()
-        total = 0
-        while True:
-            total += 1
-            if total % 250 == 0:
-                print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
-                checkpoint = time.time()
-            shape = iterator.get()
-            if shape:
-                product = self.file.by_id(shape.id)
-                self.create_product(product, shape)
-                results.add(product)
-            if not iterator.next():
-                break
-        print("Done creating geometry")
-        return results
 
     def create_product(self, element, shape=None, mesh=None):
         if element is None:
