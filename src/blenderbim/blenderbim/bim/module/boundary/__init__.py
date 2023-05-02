@@ -20,6 +20,7 @@ import bpy
 from . import ui, operator, prop
 
 classes = (
+    operator.AddBoundary,
     operator.ColourByRelatedBuildingElement,
     operator.DisableEditingBoundary,
     operator.DisableEditingBoundaryGeometry,
