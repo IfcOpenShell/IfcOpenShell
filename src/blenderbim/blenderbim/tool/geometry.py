@@ -71,6 +71,9 @@ class Geometry(blenderbim.core.tool.Geometry):
             return
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+        if element.is_a("IfcRelSpaceBoundary"):
+            ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
+            return bpy.data.objects.remove(obj)
         if obj.users_collection and obj.users_collection[0].name == obj.name:
             parent = ifcopenshell.util.element.get_aggregate(element)
             if not parent:
