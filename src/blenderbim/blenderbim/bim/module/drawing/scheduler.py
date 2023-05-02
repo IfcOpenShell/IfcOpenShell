@@ -23,6 +23,7 @@ from odf.table import Table, TableRow, TableColumn, TableCell
 from odf.text import P
 from odf.style import Style
 
+FONT_SIZE = 4.13
 
 class Scheduler:
     def schedule(self, infile, outfile):
@@ -37,27 +38,46 @@ class Scheduler:
         styles = {}
         for style in doc.getElementsByType(Style):
             name = style.getAttribute("name")
+            # looking for table-column-properties or table-row-properties
             if not style.firstChild:
                 continue
             styles[name] = {key[1]: value for key, value in style.firstChild.attributes.items()}
 
         table = doc.getElementsByType(Table)[0]
+
+        # collect columns width
         column_widths = []
         for col in table.getElementsByType(TableColumn):
             style_name = col.getAttribute("stylename")
             repeat = col.getAttribute("numbercolumnsrepeated")
             repeat = int(repeat) if repeat else 1
-            for i in range(0, repeat):
+            for i in range(repeat):
                 if not style_name or "column-width" not in styles[style_name]:
-                    column_widths.append(50)
+                    column_width = 50
                 else:
-                    column_widths.append(self.convert_to_mm(styles[style_name]["column-width"]))
+                    column_width = self.convert_to_mm(styles[style_name]["column-width"])
+                column_widths.append(column_width)
 
+        # collect rows height
+        row_heights = []
+        for col in table.getElementsByType(TableRow):
+            style_name = col.getAttribute("stylename")
+            repeat = col.getAttribute("numberrowsrepeated")
+            repeat = int(repeat) if repeat else 1
+            for i in range(repeat):
+                if not style_name or "row-height" not in styles[style_name]:
+                    row_height = 6
+                else:
+                    row_height = self.convert_to_mm(styles[style_name]["row-height"])
+                row_heights.append(row_height)
+
+        # draw table
         y = self.margin
         for tri, tr in enumerate(table.getElementsByType(TableRow)):
             x = self.margin
-            height = 6
+            height = row_heights[tri]
             tdi = 0
+            
             for td in tr.getElementsByType(TableCell):
                 repeat = td.getAttribute("numbercolumnsrepeated")
                 repeat = int(repeat) if repeat else 1
@@ -72,9 +92,10 @@ class Scheduler:
                     )
                     value = td.getElementsByType(P)
                     if value:
-                        self.add_text(value[0], x + self.padding, y + self.padding)
+                        self.add_text(value[0], x + self.padding, y + height - self.padding)
                     x += width
                     tdi += 1
+
             y += height
         total_width = sum(column_widths) + (self.margin * 2)
         self.svg["width"] = "{}mm".format(total_width)
@@ -83,19 +104,20 @@ class Scheduler:
         self.svg.save(pretty=True)
 
     def add_text(self, text, x, y):
-        self.svg.add(
-            self.svg.text(
-                str(text).upper(),
-                insert=tuple((x, y)),
-                **{
-                    "font-size": 4.13,
-                    "font-family": "OpenGost Type B TT",
-                    "text-anchor": "start",
-                    "alignment-baseline": "baseline",
-                    "dominant-baseline": "hanging",
-                }
-            )
+        bottom_left_alignment = {
+            "alignment-baseline": "baseline",
+            "dominant-baseline": "baseline",
+        }
+        text_tag = self.svg.text(
+            str(text).upper(),
+            insert=tuple((x, y)),
+            **({
+                "font-size": FONT_SIZE,
+                "font-family": "OpenGost Type B TT",
+                "text-anchor": "start",
+            } | bottom_left_alignment)
         )
+        self.svg.add(text_tag)            
 
     def convert_to_mm(self, value):
         # XSL is what defines the units of measurements in ODF
