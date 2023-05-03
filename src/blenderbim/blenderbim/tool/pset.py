@@ -52,7 +52,6 @@ class Pset(blenderbim.core.tool.Pset):
     @classmethod
     def get_pset_name(cls, obj, obj_type):
         pset = cls.get_pset_props(obj, obj_type)
-        print(pset.pset_name)
         return pset.pset_name
 
     @classmethod
