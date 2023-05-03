@@ -42,16 +42,18 @@ class Scheduler:
         styles = {}
         for style in doc.getElementsByType(Style):
             name = style.getAttribute("name")
-            # looking for table-column-properties or table-row-properties
+            styles[name] = {}
+
+            # NOTE: there are also styles that inherit from parent styles that we do not process atm
             if not style.firstChild:
                 continue
+
             if style.firstChild.tagName in ["style:table-column-properties", "style:table-row-properties"]:
                 style_children = [style.firstChild]
             else:
                 # for style:table-cell-properties we need to collect also text and paragraph properties
                 style_children = style.childNodes
 
-            styles[name] = {}
             for child in style_children:
                 child_params = {key[1]: value for key, value in child.attributes.items()}
                 styles[name].update(child_params)
