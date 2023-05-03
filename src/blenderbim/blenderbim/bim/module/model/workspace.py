@@ -262,17 +262,18 @@ class BimToolUI:
         else:
             row.operator("bim.add_potential_opening", text="Add Void")
 
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_B")
-        row.operator("bim.add_boundary", text="Add Boundary")
-
         if AuthoringData.data["is_voidable_element"]:
             if AuthoringData.data["has_visible_openings"]:
                 row.operator("bim.edit_openings", icon="CHECKMARK", text="")
                 row.operator("bim.hide_openings", icon="CANCEL", text="")
             else:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
+
+        row = cls.layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="", icon="EVENT_B")
+        row.prop(cls.props, "boundary_class", text="")
+        row.operator("bim.add_boundary", text="Add Boundary")
 
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
