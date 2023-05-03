@@ -68,8 +68,7 @@ class Cost(blenderbim.core.tool.Cost):
         props.is_cost_update_enabled = False
         cost_schedule = tool.Ifc.get().by_id(props.active_cost_schedule_id)
         props.cost_items.clear()
-        if not hasattr(cls, "contracted_cost_items"):
-            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         [
             cls.create_new_cost_item_li(props.cost_items, cost_item, 0, type="cost")
             for rel in cost_schedule.Controls or []
@@ -614,7 +613,7 @@ class Cost(blenderbim.core.tool.Cost):
                     return True
 
     @classmethod
-    def toggle_cost_item_parent(cls, cost_item=None):
+    def toggle_cost_item_parent_change(cls, cost_item=None):
         props = bpy.context.scene.BIMCostProperties
         if props.change_cost_item_parent:
             props.active_cost_item_id = cost_item.id()
