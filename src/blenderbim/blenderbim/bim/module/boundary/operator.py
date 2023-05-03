@@ -18,16 +18,20 @@
 
 import bpy
 import bmesh
-import mathutils
 import logging
+import shapely
+import mathutils
 import numpy as np
 import ifcopenshell.api
-import ifcopenshell.util.placement
 import ifcopenshell.util.unit
+import ifcopenshell.util.shape
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc as import_ifc
 from math import pi, inf
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.boundary.decorator import BoundaryDecorator
@@ -594,7 +598,9 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         target_face = None
         for face in bm.faces:
             centroid = relating_space_obj.matrix_world @ face.calc_center_median()
-            raycast = related_building_element_obj.closest_point_on_mesh(related_building_element_obj.matrix_world.inverted() @ centroid, distance=1)
+            raycast = related_building_element_obj.closest_point_on_mesh(
+                related_building_element_obj.matrix_world.inverted() @ centroid, distance=1
+            )
             if raycast[0]:
                 distance = (related_building_element_obj.matrix_world @ raycast[1] - centroid).length
                 if distance < target_distance:
@@ -604,29 +610,132 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         if not target_face:
             return
 
-        bm2 = bmesh.new()
-        bm2.faces.new([bm2.verts.new(v.co.copy()) for v in target_face.verts])
-        mesh = bpy.data.meshes.new("Boundary")
-        bm2.to_mesh(mesh)
+        parent_boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
 
-        bm2.free()
-        bm.free()
+        # Is this right? Or should I use loop?
+        target_face_verts = [v.co.copy() for v in target_face.verts]
+        target_face_matrix = self.get_face_matrix(*[v.copy() for v in target_face_verts[0:3]])
+        target_face_matrix_i = target_face_matrix.inverted()
 
-        obj = bpy.data.objects.new("Boundary", mesh)
-        obj.matrix_world = relating_space_obj.matrix_world.copy()
-        bpy.context.scene.collection.objects.link(obj)
-        surface = tool.Model.export_surface(obj)
-        connection_geometry = tool.Ifc.get().createIfcConnectionSurfaceGeometry(surface)
+        target_face_polygon = shapely.Polygon([tuple((target_face_matrix_i @ v).xy) for v in target_face_verts])
 
-        boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
-        boundary.RelatingSpace = relating_space
-        boundary.RelatedBuildingElement = related_building_element
-        boundary.ConnectionGeometry = connection_geometry
-        boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
-        boundary.InternalOrExternalBoundary = "INTERNAL"
+        related_building_element_polygon = self.get_flattened_polygon(
+            related_building_element, relating_space_obj, target_face_matrix_i
+        )
 
-        bpy.data.objects.remove(obj)
+        gross_boundary_polygon = target_face_polygon.intersection(related_building_element_polygon)
+        net_boundary_polygon = shapely.Polygon(gross_boundary_polygon)
+
+        inner_boundaries = []
+
+        for rel in getattr(related_building_element, "HasOpenings", []):
+            opening = rel.RelatedOpeningElement
+            filling = None
+            if opening.HasFillings:
+                filling = opening.HasFillings[0].RelatedBuildingElement
+
+            opening_polygon = self.get_flattened_polygon(opening, relating_space_obj, target_face_matrix_i)
+
+            net_boundary_polygon = net_boundary_polygon.difference(opening_polygon)
+            opening_polygon = opening_polygon.intersection(gross_boundary_polygon)
+            if opening_polygon.area == 0:
+                continue
+
+            connection_geometry = self.create_connection_geometry_from_polygon(opening_polygon, target_face_matrix)
+            boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
+            boundary.RelatingSpace = relating_space
+            boundary.RelatedBuildingElement = filling or related_building_element
+            boundary.ConnectionGeometry = connection_geometry
+            boundary.PhysicalOrVirtualBoundary = "PHYSICAL" if filling else "VIRTUAL"
+            boundary.InternalOrExternalBoundary = "INTERNAL"
+
+            if boundary.is_a("IfcRelSpaceBoundary2ndLevel"):
+                boundary.ParentBoundary = parent_boundary
+
+        connection_geometry = self.create_connection_geometry_from_polygon(net_boundary_polygon, target_face_matrix)
+        parent_boundary.RelatingSpace = relating_space
+        parent_boundary.RelatedBuildingElement = related_building_element
+        parent_boundary.ConnectionGeometry = connection_geometry
+        parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
+        parent_boundary.InternalOrExternalBoundary = "INTERNAL"
 
         bpy.ops.bim.show_boundaries()
-        obj = tool.Ifc.get_object(boundary)
+        obj = tool.Ifc.get_object(parent_boundary)
         obj.select_set(True)
+
+    def get_face_matrix(self, p1, p2, p3):
+        edge1 = p2 - p1
+        edge2 = p3 - p1
+        normal = edge1.cross(edge2)
+        z_axis = normal.normalized()
+        x_axis = p2 - p1
+        x_axis.normalize()
+        y_axis = z_axis.cross(x_axis)
+
+        mat = Matrix()
+        mat.col[0][:3] = x_axis
+        mat.col[1][:3] = y_axis
+        mat.col[2][:3] = z_axis
+        mat.col[3][:3] = p1
+
+        return mat
+
+    def get_flattened_polygon(self, element, relating_space_obj, target_face_matrix_i):
+        obj = tool.Ifc.get_object(element)
+        if obj and tool.Ifc.is_moved(obj):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+        space_matrix_i = relating_space_obj.matrix_world.inverted()
+
+        settings = ifcopenshell.geom.settings()
+        if not element.is_a("IfcOpeningElement"):
+            settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        settings.set(settings.STRICT_TOLERANCE, True)
+        # geometry = ifcopenshell.geom.create_shape(settings, body)
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        m = shape.transformation.matrix.data
+        mat = Matrix(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+        verts = [space_matrix_i @ mat @ Vector(v) for v in ifcopenshell.util.shape.get_vertices(shape.geometry)]
+        faces = ifcopenshell.util.shape.get_faces(shape.geometry)
+        polygons = []
+        for face in faces:
+            polygon = shapely.Polygon([tuple((target_face_matrix_i @ verts[vi]).xy) for vi in face])
+            polygons.append(polygon)
+        return shapely.ops.unary_union(polygons)
+
+    def create_connection_geometry_from_polygon(self, polygon, target_face_matrix):
+        surface = self.export_surface(polygon, target_face_matrix)
+        return tool.Ifc.get().createIfcConnectionSurfaceGeometry(surface)
+
+    def export_surface(self, polygon, target_face_matrix):
+        x_axis = target_face_matrix.col[0][:3]
+        z_axis = target_face_matrix.col[2][:3]
+        p1 = target_face_matrix.col[3][:3]
+
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        tool.Model.unit_scale = self.unit_scale
+
+        surface = tool.Ifc.get().createIfcCurveBoundedPlane()
+        surface.BasisSurface = tool.Ifc.get().createIfcPlane(tool.Ifc.get().createIfcAxis2Placement3D(
+            tool.Ifc.get().createIfcCartesianPoint([o / self.unit_scale for o in p1]),
+            tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
+            tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
+        ))
+
+        if tool.Ifc.get().schema != "IFC2X3":
+            points = [tool.Model.convert_si_to_unit(list(co)) for co in polygon.exterior.coords]
+            point_list = tool.Ifc.get().createIfcCartesianPointList2D(points)
+            outer_boundary = tool.Ifc.get().createIfcIndexedPolyCurve(point_list, None, False)
+
+            inner_boundaries = []
+            for interior in polygon.interiors:
+                points = [tool.Model.convert_si_to_unit(list(co)) for co in interior.coords]
+                point_list = tool.Ifc.get().createIfcCartesianPointList2D(points)
+                inner_boundaries.append(tool.Ifc.get().createIfcIndexedPolyCurve(point_list, None, False))
+        else:
+            pass # TODO
+
+        surface.OuterBoundary = outer_boundary
+        surface.InnerBoundaries = inner_boundaries
+
+        return surface
