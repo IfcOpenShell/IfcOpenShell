@@ -23,6 +23,7 @@ function create_gantt_chart(json_data) {
     JSGantt.parseJSONString(json_data, g);
     g.Draw();
 }
+
 function set_language(e){
     lang = e && e.target ? e.target.value : "en";
     g.setOptions({
@@ -31,7 +32,27 @@ function set_language(e){
     g.Draw();
 }
 
-function setupPage(name){
+
+function draw_table(json_object){
+    let table = document.createElement("table");
+    table.classList.add("table-description");
+    for (let key in json_object){
+        let row = document.createElement("tr");
+        let key_cell = document.createElement("td");
+        let key_text = document.createTextNode(key);
+        key_cell.appendChild(key_text);
+        row.appendChild(key_cell);
+        let value_cell = document.createElement("td");
+        let value_text = document.createTextNode(json_object[key]);
+        value_cell.appendChild(value_text);
+        row.appendChild(value_cell);
+        table.appendChild(row);
+    }
+    return table;
+}
+
+function setupPage(workScheduleData){
+    workScheduleData = JSON.parse(workScheduleData);
     let print_button = document.createElement("button");
     print_button.id = "print-schedule";
     print_button.innerHTML = "Print";
@@ -40,18 +61,37 @@ function setupPage(name){
         g.Draw();
         var values = document.getElementById("print_page_size").value.split(",")
         let css = 
-            "@media print {\n        @page {\n          size: " + values[0] + "mm " + values[1] + "mm;\n        }\n        /* set gantt container to the same width as the page */\n        .gantt {\n            width: " + values[0] + "mm;\n        }\n    };";
+            "@media print {\n        @page {\n          size: " + values[0] + "mm " + values[1] + "mm;\n        }\n";
         g.printChart(values[0], values[1], css);
         g.setTotalHeight(900);
         g.Draw();
     });
     document.getElementById("print_options").appendChild(print_button);
 
-    // add a nice layout to show the schedule name
-    let schedule_name = document.createElement("h1");
-    // create string to say "Schedule: <name>"
-    let schedule_name_string = document.createTextNode("Schedule: " + name);
-    // add the string to the h1 element
+    let table = draw_table(workScheduleData)
+    document.getElementById("schedule-data").appendChild(table);
+    table.style.display = "none";
+    let toggle_button = document.createElement("button");
+    toggle_button.id = "toggle-table";
+    toggle_button.innerHTML = "Show Schedule Information";
+    toggle_button.onclick = function(){
+        if (table.style.display === "none"){
+            table.style.display = "table";
+            toggle_button.innerHTML = "Hide Schedule Information";
+        } else {
+            toggle_button.innerHTML = "Show Schedule Information";
+            table.style.display = "none";
+        }
+    }
+    document.getElementById("options").appendChild(toggle_button);
+
+    let schedule_name = document.createElement("h2");
+    let schedule_name_string = document.createTextNode("Schedule: " + workScheduleData.Name);
     schedule_name.appendChild(schedule_name_string);
-    document.getElementById("schedule-data").appendChild(schedule_name);
+    document.getElementById("schedule-header").appendChild(schedule_name);
+
+    let creation_date = document.createElement("h2");
+    let creation_date_string = document.createTextNode("Created: " + new Date(workScheduleData.CreationDate).toLocaleDateString());
+    creation_date.appendChild(creation_date_string);
+    document.getElementById("schedule-header").appendChild(creation_date);
 }

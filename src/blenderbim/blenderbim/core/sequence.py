@@ -543,7 +543,7 @@ def visualise_work_schedule_date(sequence, work_schedule=None):
 
 def generate_gantt_chart(sequence, work_schedule):
     json = sequence.create_tasks_json(work_schedule)
-    sequence.generate_gantt_browser_chart(json)
+    sequence.generate_gantt_browser_chart(json, work_schedule)
 
 
 def load_product_related_tasks(sequence, product=None):
