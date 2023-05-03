@@ -724,7 +724,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
             context.active_object.select_set(True)
 
             element = tool.Ifc.get_entity(context.active_object)
-            if element.is_a("IfcRelSpaceBoundary"):
+            if element and element.is_a("IfcRelSpaceBoundary"):
                 return bpy.ops.bim.enable_editing_boundary_geometry()
 
         for obj in objs:
@@ -843,7 +843,7 @@ class OverrideModeSetObject(bpy.types.Operator):
 
         if context.active_object:
             element = tool.Ifc.get_entity(context.active_object)
-            if element.is_a("IfcRelSpaceBoundary"):
+            if element and element.is_a("IfcRelSpaceBoundary"):
                 return bpy.ops.bim.edit_boundary_geometry()
 
         objs = context.selected_objects or [context.active_object]
