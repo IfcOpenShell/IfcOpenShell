@@ -203,9 +203,8 @@ def updateTaskDuration(self, context):
     if self.duration == "-":
         return
 
-    try:
-        isodate.parse_duration(self.duration),
-    except:
+    duration = ifcopenshell.util.date.parse_duration(self.duration)
+    if not duration:
         self.duration = "-"
         return
 
@@ -215,17 +214,12 @@ def updateTaskDuration(self, context):
         task_time = task.TaskTime
     else:
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        SequenceData.load()
     ifcopenshell.api.run(
         "sequence.edit_task_time",
         self.file,
-        **{"task_time": task_time, "attributes": {"ScheduleDuration": self.duration}},
+        **{"task_time": task_time, "attributes": {"ScheduleDuration": duration}},
     )
     SequenceData.load()
-    if props.active_task_id == self.ifc_definition_id:
-        attribute = props.task_time_attributes.get("Duration")
-        if attribute:
-            attribute.string_value = self.duration
     bpy.ops.bim.load_task_properties()
 
 
