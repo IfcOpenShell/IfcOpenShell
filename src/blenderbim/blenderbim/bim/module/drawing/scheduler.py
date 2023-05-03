@@ -106,9 +106,15 @@ class Scheduler:
                 else:
                     vertical_align = "bottom"
 
+                alignment_translation = {
+                    "center": "middle",
+                    "end": "right",
+                    "start": "left",
+                }
+
                 if style_name and "text-align" in style and style["text-align"] != "automatic":
                     horizontal_align = style["text-align"]
-                    horizontal_align = "middle" if horizontal_align == "center" else horizontal_align
+                    horizontal_align = alignment_translation.get(horizontal_align, horizontal_align)
                 else:
                     horizontal_align = "left"
 
@@ -130,10 +136,11 @@ class Scheduler:
                             style="fill: #ffffff; stroke-width:.125; stroke: #000000;",
                         )
                     )
-                    value = td.getElementsByType(P)
-                    if value:
+                    p_tags = td.getElementsByType(P)
+
+                    if p_tags:
                         # figuring text position based on alignment
-                        text_position = [0, 0]
+                        text_position = [0.0, 0.0]
                         if box_alignment.endswith("left"):
                             text_position[0] = x + self.padding
                         elif box_alignment.endswith("middle") or box_alignment == "center":
@@ -149,7 +156,7 @@ class Scheduler:
                             text_position[1] = y + height - self.padding
 
                         self.add_text(
-                            value[0], *text_position, box_alignment=box_alignment, wrap_text=wrap_text, cell_width=width
+                            p_tags, *text_position, box_alignment=box_alignment, wrap_text=wrap_text, cell_width=width
                         )
                     x += width
                     tdi += column_span
@@ -161,41 +168,47 @@ class Scheduler:
         self.svg["viewBox"] = "0 0 {} {}".format(total_width, y)
         self.svg.save(pretty=True)
 
-    def add_text(self, text, x, y, box_alignment="bottom-left", wrap_text=False, cell_width=100):
+    def add_text(self, p_tags, x, y, box_alignment="bottom-left", wrap_text=False, cell_width=100):
         """
         Adds text to svg.
 
         Args:
+            p_tags: list of cell's P tags from odt file
             box_alignment: alignment of text in box
             wrap_text: if True, text will be wrapped to fit in cell
             cell_width: width of cell, used for wrapping text
         """
-        text = str(text).upper()
+        text_lines = [str(p).upper() for p in p_tags]
         box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)
         text_params = {
             "font-size": FONT_SIZE,
             "font-family": "OpenGost Type B TT",
         }
-        if wrap_text:
-            text_tag = self.svg.text(
-                "",
-                **({"style": "font-size: 0;"} | box_alignment_params),
-            )
-
-            # TODO: should be done in less naive way
-            # without using magic number for FONT_WIDTH
-            # currently it might not work for all fonts and font sizes
-            text_lines = wrap(text, width=int(cell_width // FONT_WIDTH), break_long_words=False)
-
-            for line_number, text_line in enumerate(text_lines[::-1]):
-                # position has to be inserted at tspan to avoid x offset between tspans
-                tspan = self.svg.tspan(text_line, insert=(x, y), **text_params)
-                # doing it here and not in tspan constructor because constructor adds unnecessary spaces
-                tspan.update({"dy": f"-{line_number}em"})
-                text_tag.add(tspan)
-        else:
+        if len(text_lines) == 1 and not wrap_text:
             text_params.update(box_alignment_params)
-            text_tag = self.svg.text(text, insert=(x, y), **text_params)
+            text_tag = self.svg.text(text_lines[0], insert=(x, y), **text_params)
+            self.svg.add(text_tag)
+            return
+
+        text_tag = self.svg.text("", **({"style": "font-size: 0;"} | box_alignment_params))
+
+        # TODO: should be done in less naive way
+        # without using magic number for FONT_WIDTH
+        # currently it might not work for all fonts and font sizes
+        if wrap_text:
+            wrapped_lines = []
+            for line in text_lines:
+                wrapped_line = wrap(line, width=int(cell_width // FONT_WIDTH), break_long_words=False)
+                wrapped_lines.extend(wrapped_line)
+        else:
+            wrapped_lines = text_lines
+
+        for line_number, text_line in enumerate(wrapped_lines[::-1]):
+            # position has to be inserted at tspan to avoid x offset between tspans
+            tspan = self.svg.tspan(text_line, insert=(x, y), **text_params)
+            # doing it here and not in tspan constructor because constructor adds unnecessary spaces
+            tspan.update({"dy": f"-{line_number}em"})
+            text_tag.add(tspan)
         self.svg.add(text_tag)
 
     def convert_to_mm(self, value):
