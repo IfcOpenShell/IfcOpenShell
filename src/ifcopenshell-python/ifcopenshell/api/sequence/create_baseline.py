@@ -69,13 +69,20 @@ class Usecase:
         )
         baseline_work_schedule.Name = self.settings["name"]
         self.create_baseline_reference(work_schedule, baseline_work_schedule)
-        self.task_tracker = {"current": [], "duplicate": []}
-        self.copy_tasks_with_reference(
-            work_schedule, baseline_work_schedule
-        )  # TODO: Fix task nesting order when duplicating children
-        self.copy_sequence_relationship(
-            self.task_tracker["current"], self.task_tracker["duplicate"]
-        )
+        for summary_task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+            current, duplicate = ifcopenshell.api.run(
+                "sequence.duplicate_task",
+                self.file,
+                task=summary_task,
+            )
+            ifcopenshell.api.run(
+                "control.assign_control",
+                self.file,
+                relating_control=baseline_work_schedule,
+                related_object=duplicate[0],
+            )
+            for i, task in enumerate(current):
+                self.create_baseline_reference(task, duplicate[i])
 
     def create_baseline_reference(self, relating_object, related_object):
         referenced_by = None
@@ -101,116 +108,3 @@ class Usecase:
                 }
             )
         return referenced_by
-
-    def copy_tasks_with_reference(self, work_schedule, baseline_work_schedule):
-        for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
-            new_task = self.copy_task(task)
-            self.file.create_entity(
-                "IfcRelAssignsToControl",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run(
-                        "owner.create_owner_history", self.file
-                    ),
-                    "RelatedObjects": [new_task],
-                    "RelatingControl": baseline_work_schedule,
-                }
-            )
-
-    def copy_task(self, task):
-        new_task = ifcopenshell.util.element.copy_deep(self.file, task)
-        self.task_tracker["current"].append(task)
-        self.task_tracker["duplicate"].append(new_task)
-        self.create_baseline_reference(task, new_task)
-        self.copy_indirect_attributes(task, new_task)
-        return new_task
-
-    def copy_indirect_attributes(self, from_element, to_element):
-        for inverse in self.file.get_inverse(from_element):
-            if inverse.is_a("IfcRelDefinesByProperties"):
-                inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                inverse.RelatedObjects = [to_element]
-                pset = ifcopenshell.util.element.copy_deep(
-                    self.file, inverse.RelatingPropertyDefinition
-                )
-                inverse.RelatingPropertyDefinition = pset
-            elif inverse.is_a("IfcRelNests") and inverse.RelatingObject == from_element:
-                nested_tasks = [e for e in inverse.RelatedObjects]
-                if nested_tasks:
-                    new_tasks = []
-                    for t in nested_tasks:
-                        new_task = self.copy_task(t)
-                        new_tasks.append(new_task)
-                    inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                    inverse.RelatingObject = to_element
-                    inverse.RelatedObjects = new_tasks
-                    for t in new_tasks:
-                        ifcopenshell.api.run(
-                            "nest.unassign_object", self.file, related_object=t
-                        )
-                        rel = ifcopenshell.api.run(
-                            "nest.assign_object",
-                            self.file,
-                            related_object=t,
-                            relating_object=to_element,
-                        )
-            elif inverse.is_a("IfcRelSequence") and (
-                inverse.RelatingProcess == from_element
-                or inverse.RelatedProcess == from_element
-            ):
-                continue
-            elif inverse.is_a(
-                "IfcRelAssignsToControl"
-            ) and inverse.RelatingControl.is_a("IfcWorkSchedule"):
-                continue
-            elif inverse.is_a("IfcRelDefinesByObject"):
-                continue
-            else:
-                for i, value in enumerate(inverse):
-                    if value == from_element:
-                        new_inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                        new_inverse[i] = to_element
-                    elif isinstance(value, (tuple, list)) and from_element in value:
-                        new_value = list(value)
-                        new_value.append(to_element)
-                        inverse[i] = new_value
-
-    def copy_sequence_relationship(self, original_tasks, duplicated_tasks):
-        for i, original_task in enumerate(original_tasks):
-            for inverse in self.file.get_inverse(original_task):
-                if inverse.is_a("IfcRelSequence") and (
-                    inverse.RelatingProcess == original_task
-                    or inverse.RelatedProcess == original_task
-                ):
-                    original_task_index = original_tasks.index(original_task)
-                    duplicated_task = duplicated_tasks[original_task_index]
-                    relating_process, related_process = None, None
-                    if inverse.RelatingProcess == original_task:
-                        relating_process = duplicated_task
-                    else:
-                        related_process = duplicated_task
-                    if inverse.RelatedProcess in original_tasks:
-                        related_process_index = original_tasks.index(
-                            inverse.RelatedProcess
-                        )
-                        related_process = duplicated_tasks[related_process_index]
-                    if inverse.RelatingProcess in original_tasks:
-                        relating_process_index = original_tasks.index(
-                            inverse.RelatingProcess
-                        )
-                        relating_process = duplicated_tasks[relating_process_index]
-                    if relating_process and related_process:
-                        rel = ifcopenshell.api.run(
-                            "sequence.assign_sequence",
-                            self.file,
-                            relating_process=relating_process,
-                            related_process=related_process,
-                        )
-                        if inverse.TimeLag:
-                            ifcopenshell.api.run(
-                                "sequence.assign_lag_time",
-                                self.file,
-                                rel_sequence=rel,
-                                lag_value= ifcopenshell.util.date.ifc2datetime(inverse.TimeLag.LagValue.wrappedValue) if inverse.TimeLag.LagValue else None,
-                                duration_type=inverse.TimeLag.DurationType,
-                            )
