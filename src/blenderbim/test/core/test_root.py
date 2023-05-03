@@ -28,6 +28,7 @@ class TestCopyClass:
 
     def test_copy_with_new_geometry_derived_from_the_type(self, ifc, collector, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(False)
         root.get_object_representation("obj").should_be_called().will_return("representation")
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
@@ -37,7 +38,7 @@ class TestCopyClass:
         ifc.get_object("type").should_be_called().will_return("type_obj")
         root.link_object_data("type_obj", "obj").should_be_called()
         collector.assign("obj").should_be_called()
-        root.is_opening_element("element").should_be_called().will_return(False)
+        root.is_element_a("element", "IfcOpeningElement").should_be_called().will_return(False)
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
     def test_copy_with_new_geometry_copied_from_the_old(self, ifc, collector, geometry, root):
@@ -45,6 +46,7 @@ class TestCopyClass:
         # copied. This was faster (though I cannot recreate it now) but had the
         # bigger problem of not preserving non-mesh geometry and openings.
         ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(False)
         root.get_object_representation("obj").should_be_called().will_return("representation")
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
@@ -60,22 +62,24 @@ class TestCopyClass:
         root.assign_body_styles("element", "obj").should_be_called()
         geometry.duplicate_object_data("obj").should_be_called().will_return("data")
         collector.assign("obj").should_be_called()
-        root.is_opening_element("element").should_be_called().will_return(False)
+        root.is_element_a("element", "IfcOpeningElement").should_be_called().will_return(False)
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
     def test_copy_with_no_new_geometry(self, ifc, collector, geometry, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(False)
         root.get_object_representation("obj").should_be_called().will_return(None)
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
         root.get_element_type("element").should_be_called().will_return("type")
         root.does_type_have_representations("type").should_be_called().will_return(False)
         collector.assign("obj").should_be_called()
-        root.is_opening_element("element").should_be_called().will_return(False)
+        root.is_element_a("element", "IfcOpeningElement").should_be_called().will_return(False)
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
-    def test_copied_openings_are_tracked_for_special_visualiation(self, ifc, collector, root):
+    def test_copied_openings_are_tracked_for_special_visualiation(self, ifc, collector, geometry, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(False)
         root.get_object_representation("obj").should_be_called().will_return(None)
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
@@ -85,9 +89,16 @@ class TestCopyClass:
         ifc.get_object("type").should_be_called().will_return("type_obj")
         root.link_object_data("type_obj", "obj").should_be_called()
         collector.assign("obj").should_be_called()
-        root.is_opening_element("element").should_be_called().will_return(True)
+        root.is_element_a("element", "IfcOpeningElement").should_be_called().will_return(True)
         root.add_tracked_opening("obj").should_be_called()
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
+
+    def test_copying_boundaries_are_dealt_with_specially(self, ifc, collector, geometry, root):
+        ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(True)
+        ifc.run("boundary.copy_boundary", boundary="original_element").should_be_called().will_return("element")
+        ifc.link("element", "obj").should_be_called()
+        assert subject.copy_class(ifc, collector, geometry, root, obj="obj") == "element"
 
 
 class TestAssignClass:
