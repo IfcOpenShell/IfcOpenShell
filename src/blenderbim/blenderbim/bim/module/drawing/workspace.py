@@ -179,8 +179,7 @@ class AnnotationToolUI:
 
         if context.active_object and context.selected_objects:
             cls.draw_edit_object_interface(context)
-        elif not context.selected_objects:
-            cls.draw_create_object_interface()
+        cls.draw_create_object_interface()
 
     @classmethod
     def draw_create_object_interface(cls):
