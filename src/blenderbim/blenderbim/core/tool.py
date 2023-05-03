@@ -606,7 +606,7 @@ class Root:
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
-    def is_opening_element(cls, element): pass
+    def is_element_a(cls, element, ifc_class): pass
     def link_object_data(cls, source_obj, destination_obj): pass
     def recreate_decompositions(cls, relationships, old_to_new): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass

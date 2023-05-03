@@ -491,8 +491,7 @@ class ShowBoundaries(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             for rel in element.BoundedBy or []:
                 boundary_obj = loader.load_boundary(rel, obj)
-                new = props.boundaries.add()
-                new.obj = boundary_obj
+                tool.Boundary.decorate_boundary(boundary_obj)
         BoundaryDecorator.install(bpy.context)
         return {"FINISHED"}
 

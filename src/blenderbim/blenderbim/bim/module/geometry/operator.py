@@ -527,6 +527,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     array_pset = tool.Ifc.get().by_id(array_pset["id"])
                     ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new, pset=array_pset)
                 old_to_new[tool.Ifc.get_entity(obj)] = [new]
+                if new.is_a("IfcRelSpaceBoundary"):
+                    tool.Boundary.decorate_boundary(new_obj)
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
         blenderbim.bim.handler.purge_module_data()
