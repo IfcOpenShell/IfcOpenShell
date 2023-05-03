@@ -21,7 +21,8 @@ Add-on compatibility
 
 The BlenderBIM Add-on is a non-trivial add-on. By turning Blender into a
 graphical front-end to a native IFC authoring platform, some fundamental Blender
-features (such as object deletion and object duplication) have been patched.
+features (such as hotkeys for basic functionality like object deletion or
+duplication) have been patched and many dependencies have been introduced.
 
 Other add-ons may no longer work as intended when the BlenderBIM Add-on is
 enabled, or vice versa, the BlenderBIM Add-on may no longer work as intended
@@ -29,7 +30,12 @@ when other add-ons are enabled.
 
 Known scenarios which will lead to add-on incompatibility include:
 
-- The add-on overrides object deletion or duplication
+- The add-on also overrides the same hotkeys. For example, if an add-on
+  overrides the "X" key to delete an object, you will need to manually trigger
+  (either via menu or custom hotkey) the BlenderBIM Add-on equivalent operator
+  (e.g. IFC Delete).
 - The add-on uses object deletion or duplication macros with dictionary
   override. Note that this is also deprecated in Blender, so the other add-on
   should be updated to fix this.
+- The add-on requires a conflicting dependency, or a conflicting version of the
+  same dependency. Neither add-on may work simultaneously.
