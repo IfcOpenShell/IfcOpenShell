@@ -70,3 +70,9 @@ class Boundary(blenderbim.core.tool.Boundary):
         translation = obj.matrix_world.translation - space.matrix_world.translation
         obj.data.transform(mathutils.Matrix.Translation(translation))
         obj.matrix_world = space.matrix_world
+
+    @classmethod
+    def decorate_boundary(cls, obj):
+        new = bpy.context.scene.BIMBoundaryProperties.boundaries.add()
+        new.obj = obj
+        obj.show_in_front = True
