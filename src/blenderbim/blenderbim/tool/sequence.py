@@ -394,7 +394,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                     return True
                 else:
                     duration_type = attributes["DurationType"] if "DurationType" in attributes else None
-                    time_split_iso_duration = helper.simplify_duration(
+                    time_split_iso_duration = helper.blender_props_to_iso_duration(
                         props.durations_attributes, duration_type, prop.name
                     )
                     attributes[prop.name] = time_split_iso_duration
