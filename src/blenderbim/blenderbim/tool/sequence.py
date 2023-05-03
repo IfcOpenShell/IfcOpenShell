@@ -225,7 +225,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                     else "-"
                 )
                 item.duration = (
-                    isodate.duration_isoformat(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration))
+                    str(ifcopenshell.util.date.readable_ifc_duration(task_time.ScheduleDuration))
                     if task_time.ScheduleDuration
                     else "-"
                 )
@@ -243,7 +243,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 item.finish = "-"
                 item.duration = "-"
 
-        bpy.context.scene.BIMWorkScheduleProperties.is_task_update_enabled = True
+        props.is_task_update_enabled = True
 
     @classmethod
     def get_active_work_schedule(cls):
