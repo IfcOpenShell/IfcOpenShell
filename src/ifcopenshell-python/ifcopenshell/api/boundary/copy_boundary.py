@@ -21,12 +21,9 @@ import ifcopenshell.util.element
 
 class Usecase:
     def __init__(self, file, boundary=None):
-        """Removes a space boundary
+        """Copies a space boundary
 
-        The relating space or related building element is untouched. Only the
-        boundary and its connection geometry is removed.
-
-        :param boundary: The IfcRelSpaceBoundary you want to remove.
+        :param boundary: The IfcRelSpaceBoundary you want to copy.
         :type boundary: ifcopenshell.entity_instance.entity_instance
         :return: None
         :rtype: None
@@ -37,15 +34,14 @@ class Usecase:
             # invalid and does not relate to any space or building element.
             boundary = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcRelSpaceBoundary")
 
-            # Let's remove it!
-            ifcopenshell.api.run("boundary.remove_boundary", model, boundary=boundary)
+            # And now we have two
+            boundary_copy = ifcopenshell.api.run("boundary.copy_boundary", model, boundary=boundary)
         """
         self.file = file
         self.settings = {"boundary": boundary}
 
     def execute(self):
-        geometry = self.settings["boundary"].ConnectionGeometry
-        if geometry:
-            self.settings["boundary"].ConnectionGeometry = None
-            ifcopenshell.util.element.remove_deep2(self.file, geometry)
-        self.file.remove(self.settings["boundary"])
+        result = ifcopenshell.util.element.copy(self.file, self.settings["boundary"])
+        if result.ConnectionGeometry:
+            result.ConnectionGeometry = ifcopenshell.util.element.copy_deep(self.file, result.ConnectionGeometry)
+        return result

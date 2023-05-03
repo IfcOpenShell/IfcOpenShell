@@ -119,8 +119,8 @@ class Root(blenderbim.core.tool.Root):
         return representation.ContextOfItems
 
     @classmethod
-    def is_opening_element(cls, element):
-        return element.is_a("IfcOpeningElement")
+    def is_element_a(cls, element, ifc_class):
+        return element.is_a(ifc_class)
 
     @classmethod
     def link_object_data(cls, source_obj, destination_obj):
