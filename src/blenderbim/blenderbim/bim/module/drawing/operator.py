@@ -1018,6 +1018,8 @@ class OpenSheet(bpy.types.Operator, Operator):
     def _execute(self, context):
         self.props = context.scene.DocProperties
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.update_sheet_drawing_sizes(sheet)
         core.open_sheet(tool.Drawing, sheet=sheet)
 
 
