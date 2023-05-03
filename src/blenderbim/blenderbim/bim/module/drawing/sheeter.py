@@ -99,6 +99,7 @@ class SheetBuilder:
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
 
+        # add background
         if os.path.isfile(underlay_path):
             background = ET.SubElement(view, "image")
             background.attrib["data-type"] = "background"
@@ -108,6 +109,7 @@ class SheetBuilder:
             background.attrib["width"] = str(view_width)
             background.attrib["height"] = str(view_height)
 
+        # add foreground
         if os.path.isfile(drawing_path):
             foreground = ET.SubElement(view, "image")
             foreground.attrib["data-type"] = "foreground"
@@ -118,6 +120,36 @@ class SheetBuilder:
             foreground.attrib["height"] = str(view_height)
 
         self.add_view_title(30, view_height + 35, view, layout_dir)
+        layout_tree.write(layout_path)
+
+    def update_sheet_drawing_sizes(self, sheet):
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        SVG = "{http://www.w3.org/2000/svg}"
+
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        layout_tree = ET.parse(layout_path)
+        layout_root = layout_tree.getroot()
+        ifc_file = tool.Ifc.get()
+
+        # iterate over all drawings in the sheet
+        drawings_views = layout_root.findall(f'{SVG}g[@data-type="drawing"]')
+
+        for drawing_view in drawings_views:
+            # find drawing in ifc file to get the drawing dimensions
+            drawing = ifc_file.by_guid(drawing_view.attrib.get("data-drawing"))
+            drawing_path = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_reference(drawing))
+            drawing_tree = ET.parse(drawing_path)
+            drawing_root = drawing_tree.getroot()
+            view_width = self.convert_to_mm(drawing_root.attrib.get("width"))
+            view_height = self.convert_to_mm(drawing_root.attrib.get("height"))
+
+            for image in drawing_view.findall(f"{SVG}image"):
+                if image.attrib["data-type"] == "view-title":
+                    image.attrib["y"] = str(view_height + 35)
+                else:
+                    image.attrib["width"] = str(view_width)
+                    image.attrib["height"] = str(view_height)
+
         layout_tree.write(layout_path)
 
     def remove_drawing(self, reference, sheet):
