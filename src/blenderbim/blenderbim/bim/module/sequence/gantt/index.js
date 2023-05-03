@@ -13,11 +13,12 @@ function create_gantt_chart(json_data) {
         vShowEndWeekDate: 0,  // Show/Hide the date for the last day of the week in header for daily
         vUseSingleCell: 10000, // Set the threshold cell per table row (Helps performance for large data.
         vFormatArr: ['Day', 'Week', 'Month', 'Quarter'], // Even with setUseSingleCell using Hour format on such a large chart can cause issues in some browsers,
-        vShowRes: false, // Disable the resource column.
+        vShowRes: true, // Disable the resource column.
         vShowComp: false, // Disable the completion column.
         vShowDur: false, // Disable the duration column, because jsgantt doesn't calculate durations the way we want.
-        vAdditionalHeaders: {ifcduration: {title: 'Duration'}},
-        vUseToolTip: false, // Disable tooltips.
+        vAdditionalHeaders: {ifcduration: {title: 'Duration'}, "resourceUsage": {title: 'Resource Usage'}},
+        vUseToolTip: true, // Disable tooltips.
+        vTooltipTemplate: generateTooltip,
         vTotalHeight: 900,
     });
     JSGantt.parseJSONString(json_data, g);
@@ -32,6 +33,20 @@ function set_language(e){
     g.Draw();
 }
 
+function generateTooltip(task) {
+    var dataObject = task.getDataObject();
+    var numberResources = dataObject.resourceUsage ? dataObject.resourceUsage : "NULL"; ;
+    return `
+    <dl>
+        <dt>Name:</dt><dd>{{pName}}</dd>
+        <dt>Start:</dt><dd>{{pStart}}</dd>
+        <dt>End:</dt><dd>{{pEnd}}</dd>
+        <dt>Duration:</dt><dd>${dataObject.ifcduration}</dd>
+        <dt>Number of Resources:</dt><dd>${numberResources}</dd>
+        <dt>Resources:</dt><dd>{{pRes}}</dd>
+    </dl>
+    `;
+}
 
 function draw_table(json_object){
     let table = document.createElement("table");
