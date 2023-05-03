@@ -622,6 +622,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         boundary.RelatingSpace = relating_space
         boundary.RelatedBuildingElement = related_building_element
         boundary.ConnectionGeometry = connection_geometry
+        boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
+        boundary.InternalOrExternalBoundary = "INTERNAL"
 
         bpy.data.objects.remove(obj)
 

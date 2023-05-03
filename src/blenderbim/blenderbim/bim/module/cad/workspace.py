@@ -264,7 +264,7 @@ class CadHotkey(bpy.types.Operator):
         if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
             if element.is_a("IfcProfileDef"):
                 bpy.ops.bim.edit_arbitrary_profile()
-            elif element.is_a("IfcProfileDef"):
+            elif element.is_a("IfcRelSpaceBoundary"):
                 bpy.ops.bim.edit_boundary_geometry()
             else:
                 bpy.ops.bim.edit_extrusion_profile()
