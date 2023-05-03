@@ -665,6 +665,7 @@ class SvgWriter:
         text_position = self.project_point_onto_camera(position)
         text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
         text_position_svg = text_position * self.svg_scale
+        text_position_svg_str = ", ".join(map(str, text_position_svg))
 
         def get_basis_vector(matrix, i=0):
             """returns basis vector for i in world space, unaffected by object scale"""
@@ -679,7 +680,13 @@ class SvgWriter:
 
         symbol = tool.Drawing.get_annotation_symbol(element)
         template_text_fields = []
-        if symbol:
+        if not symbol:
+            text_transform = f"translate({text_position_svg_str}) rotate({angle})"
+        else:
+            # NOTE: for now we assume that scale is uniform
+            symbol_transform = f"translate({text_position_svg_str}) rotate({angle}) scale({text_obj.scale.x})"
+            text_transform = symbol_transform
+
             symbol_svg = self.find_xml_symbol_by_id(symbol)
             if symbol_svg:
                 symbol_xml = symbol_svg.get_xml()
@@ -687,12 +694,6 @@ class SvgWriter:
                 # if there is a symbol with template text fields
                 # then we just populate it's fields with the data from text literals
                 if template_text_fields:
-                    # NOTE: for now we assume that scale is uniform
-                    symbol_transform = (
-                        f"translate({', '.join(map(str, text_position_svg))})"
-                        f" rotate({angle})"
-                        f" scale({text_obj.scale.x})"
-                    )
                     symbol_xml.attrib["transform"] = symbol_transform
                     symbol_xml.attrib.pop("id")
                     # note: zip makes sure that we iterate over the shortest list
@@ -703,9 +704,8 @@ class SvgWriter:
                     return None
 
             if not symbol_svg or not template_text_fields:
-                self.svg.add(self.svg.use(f"#{symbol}", insert=text_position_svg))
+                self.svg.add(self.svg.use(f"#{symbol}", transform=symbol_transform))
 
-        transform = "rotate({}, {}, {})".format(angle, *text_position_svg)
         for text_literal in text_literals:
             # after pretty indentation some redundant spaces can occur in svg tags
             # this is why we apply "font-size: 0;" to the text tag to remove those spaces
@@ -714,7 +714,7 @@ class SvgWriter:
 
             text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
             attribs = {
-                "transform": transform,
+                "transform": text_transform,
                 "style": "font-size: 0;",
             }
 
@@ -730,7 +730,9 @@ class SvgWriter:
 
                 for line_number, text_line in enumerate(text_lines):
                     # position has to be inserted at tspan to avoid x offset between tspans
-                    tspan = self.svg.tspan(text_line, class_=classes_str, insert=text_position_svg)
+                    # note that tspan doesn't support using `transform` attribute
+                    # so we use (0,0) position because tspan is already offseted by text transform
+                    tspan = self.svg.tspan(text_line, class_=classes_str, insert=(0, 0))
                     # doing it here and not in tspan constructor because constructor adds unnecessary spaces
                     tspan.update({"dy": f"{line_number}em"})
                     text_tag.add(tspan)
