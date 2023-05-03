@@ -1,7 +1,7 @@
 # IfcOpenShell - IFC toolkit and geometry engine
 # Copyright (C) 2021-2022 Dion Moult <dion@thinkmoult.com>, Yassine Oualid <yassine@sigmadimensions.com>
 #
-# This file is part of IfcOpenShell.
+# This self.file is part of IfcOpenShell.
 #
 # IfcOpenShell is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,8 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util.system
-import ifcopenshell.util.element
+import ifcopenshell.util.sequence
 
 
 class Usecase:
@@ -33,8 +32,8 @@ class Usecase:
 
         :param task: The task to be duplicated
         :type task: ifcopenshell.entity_instance.entity_instance
-        :return: The duplicated task
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :return: The duplicated task or the list of duplicated tasks if the latter has children
+        :rtype: ifcopenshell.entity_instance.entity_instance or list of ifcopenshell.entity_instance.entity_instance
 
         Example:
         .. code:: python
@@ -49,10 +48,69 @@ class Usecase:
         self.settings = {"task": task}
 
     def execute(self):
-        result = ifcopenshell.util.element.copy_deep(self.file, self.settings["task"])
-        self.copy_indirect_attributes(self.settings["task"], result)
-        self.copy_sequence_relationship([self.settings["task"]], [result])
-        return result
+        self.tracker = {"current": [], "duplicate": []}
+        self.duplicate_task(self.settings["task"])
+        self.copy_sequence_relationship(
+            self.tracker["current"], self.tracker["duplicate"]
+        )
+        return self.tracker["current"], self.tracker["duplicate"]
+
+    def duplicate_task(self, task):
+        new_task = ifcopenshell.util.element.copy_deep(self.file, task)
+        self.tracker["current"].append(task)
+        self.tracker["duplicate"].append(new_task)
+        self.copy_indirect_attributes(task, new_task)
+        return new_task
+
+    def copy_indirect_attributes(self, from_element, to_element):
+        for inverse in self.file.get_inverse(from_element):
+            if inverse.is_a("IfcRelDefinesByProperties"):
+                inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                inverse.RelatedObjects = [to_element]
+                pset = ifcopenshell.util.element.copy_deep(
+                    self.file, inverse.RelatingPropertyDefinition
+                )
+                inverse.RelatingPropertyDefinition = pset
+            elif inverse.is_a("IfcRelNests") and inverse.RelatingObject == from_element:
+                nested_tasks = [e for e in inverse.RelatedObjects]
+                if nested_tasks:
+                    new_tasks = []
+                    for t in nested_tasks:
+                        new_task = self.duplicate_task(t)
+                        new_tasks.append(new_task)
+                    inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                    inverse.RelatingObject = to_element
+                    inverse.RelatedObjects = new_tasks
+                    for t in new_tasks:
+                        ifcopenshell.api.run(
+                            "nest.unassign_object", self.file, related_object=t
+                        )
+                        rel = ifcopenshell.api.run(
+                            "nest.assign_object",
+                            self.file,
+                            related_object=t,
+                            relating_object=to_element,
+                        )
+            elif inverse.is_a("IfcRelSequence") and (
+                inverse.RelatingProcess == from_element
+                or inverse.RelatedProcess == from_element
+            ):
+                continue
+            elif inverse.is_a(
+                "IfcRelAssignsToControl"
+            ) and inverse.RelatingControl.is_a("IfcWorkSchedule"):
+                continue
+            elif inverse.is_a("IfcRelDefinesByObject"):
+                continue
+            else:
+                for i, value in enumerate(inverse):
+                    if value == from_element:
+                        new_inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                        new_inverse[i] = to_element
+                    elif isinstance(value, (tuple, list)) and from_element in value:
+                        new_value = list(value)
+                        new_value.append(to_element)
+                        inverse[i] = new_value
 
     def copy_sequence_relationship(self, original_tasks, duplicated_tasks):
         for i, original_task in enumerate(original_tasks):
@@ -73,11 +131,15 @@ class Usecase:
                             inverse.RelatedProcess
                         )
                         related_process = duplicated_tasks[related_process_index]
+                    else:  # thus the related process is not part of the duplicated tasks
+                        related_process = inverse.RelatedProcess
                     if inverse.RelatingProcess in original_tasks:
                         relating_process_index = original_tasks.index(
                             inverse.RelatingProcess
                         )
                         relating_process = duplicated_tasks[relating_process_index]
+                    else:  # thus the relating process is not part of the duplicated tasks
+                        relating_process = inverse.RelatingProcess
                     if relating_process and related_process:
                         rel = ifcopenshell.api.run(
                             "sequence.assign_sequence",
@@ -89,55 +151,36 @@ class Usecase:
                             ifcopenshell.api.run(
                                 "sequence.assign_lag_time",
                                 self.file,
-                                sequence=rel,
-                                lag_time=inverse.TimeLag.LagValue,
+                                rel_sequence=rel,
+                                lag_value=ifcopenshell.util.date.ifc2datetime(
+                                    inverse.TimeLag.LagValue.wrappedValue
+                                )
+                                if inverse.TimeLag.LagValue
+                                else None,
                                 duration_type=inverse.TimeLag.DurationType,
                             )
 
-    def copy_indirect_attributes(self, from_element, to_element):
-        for inverse in self.file.get_inverse(from_element):
-            if inverse.is_a("IfcRelDefinesByProperties"):
-                inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                inverse.RelatedObjects = [to_element]
-                pset = ifcopenshell.util.element.copy_deep(
-                    self.file, inverse.RelatingPropertyDefinition
-                )
-                inverse.RelatingPropertyDefinition = pset
-            elif inverse.is_a("IfcRelNests") and inverse.RelatingObject == from_element:
-                nested_tasks = [e for e in inverse.RelatedObjects if e.is_a("IfcTask")]
-                if nested_tasks:
-                    new_tasks = [
-                        ifcopenshell.api.run(
-                            "sequence.duplicate_task", self.file, task=t
-                        )
-                        for t in nested_tasks
-                    ]
-                    inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                    inverse.RelatingObject = to_element
-                    inverse.RelatedObjects = new_tasks
-                    for task in new_tasks:
-                        ifcopenshell.api.run(
-                            "nest.unassign_object", self.file, related_object=task
-                        )
-                        rel = ifcopenshell.api.run(
-                            "nest.assign_object",
-                            self.file,
-                            related_object=task,
-                            relating_object=to_element,
-                        )
-                    self.copy_sequence_relationship(nested_tasks, new_tasks)
-
-            elif inverse.is_a("IfcRelSequence") and (
-                inverse.RelatingProcess == from_element
-                or inverse.RelatedProcess == from_element
-            ):
-                continue
-            else:
-                for i, value in enumerate(inverse):
-                    if value == from_element:
-                        new_inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                        new_inverse[i] = to_element
-                    elif isinstance(value, (tuple, list)) and from_element in value:
-                        new_value = list(value)
-                        new_value.append(to_element)
-                        inverse[i] = new_value
+    def create_object_reference(self, relating_object, related_object):
+        referenced_by = None
+        if relating_object.Declares:
+            referenced_by = relating_object.Declares[0]
+        if referenced_by:
+            related_objects = list(referenced_by.RelatedObjects)
+            related_objects.append(related_object)
+            referenced_by.RelatedObjects = related_objects
+            ifcopenshell.api.run(
+                "owner.update_owner_history", self.file, **{"element": referenced_by}
+            )
+        else:
+            referenced_by = self.file.create_entity(
+                "IfcRelDefinesByObject",
+                **{
+                    "GlobalId": ifcopenshell.guid.new(),
+                    "OwnerHistory": ifcopenshell.api.run(
+                        "owner.create_owner_history", self.file
+                    ),
+                    "RelatedObjects": [related_object],
+                    "RelatingObject": relating_object,
+                }
+            )
+        return referenced_by
