@@ -618,7 +618,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         surface = tool.Model.export_surface(obj)
         connection_geometry = tool.Ifc.get().createIfcConnectionSurfaceGeometry(surface)
 
-        boundary = tool.Ifc.run("root.create_entity", ifc_class="IfcRelSpaceBoundary")
+        boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
         boundary.RelatingSpace = relating_space
         boundary.RelatedBuildingElement = related_building_element
         boundary.ConnectionGeometry = connection_geometry
