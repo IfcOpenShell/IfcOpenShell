@@ -6,7 +6,7 @@
 var json_data = `{{{json_data}}}`;
 </script>
 
-<div class="no-print">
+<div id="options" class="no-print">
   <h4>Choose a language:
   <select id="lang" class="sweet_button" onchange="set_language(event)">
     <option value='cn'>Chinese (cn)</option>
@@ -25,29 +25,31 @@ var json_data = `{{{json_data}}}`;
     <option value='sv'>Swedish (sv)</option>
     <option value='tr'>Turkish (tr)</option>
   </select>
-  <h4>
-  <div id="print_options">
-    <select class="sweet_button" id="print_page_size">
-      <option value="210,297">A4 Portrait</option>
-      <option value="297,210">A4 Landscape</option>
-      <option value="297,420">A3 Portrait</option>
-      <option value="420,297">A3 Landscape</option>
-      <option value="420,594">A2 Portrait</option>
-      <option value="594,420">A2 Landscape</option>
-      <option value="594,841">A1 Portrait</option>
-      <option value="841,594">A1 Landscape</option>
-      <option value="841,1189">A0 Portrait</option>
-      <option value="1189,841">A0 Landscape</option>
-    </select>
-  </div>
+  </h4>
+
   <br>
 </div>
+<div class="top-right no-print" id="print_options">
+  <select class="sweet_button" id="print_page_size">
+    <option value="210,297">A4 Portrait</option>
+    <option value="297,210">A4 Landscape</option>
+    <option value="297,420">A3 Portrait</option>
+    <option value="420,297">A3 Landscape</option>
+    <option value="420,594">A2 Portrait</option>
+    <option value="594,420">A2 Landscape</option>
+    <option value="594,841">A1 Portrait</option>
+    <option value="841,594">A1 Landscape</option>
+    <option value="841,1189">A0 Portrait</option>
+    <option value="1189,841">A0 Landscape</option>
+  </select>
+</div>
 
-<div id="schedule-data"></div>
+<div id="schedule-data" class="no-print"></div>
+<div id="schedule-header" style=""></div>
 <div style="position:relative" class="gantt" id="GanttChartDIV"></div>
 
 <script>
-var name = `{{{name}}}`;
-setupPage(name);
+var data = `{{{data}}}`;
+setupPage(data);
 create_gantt_chart(json_data)
 </script>

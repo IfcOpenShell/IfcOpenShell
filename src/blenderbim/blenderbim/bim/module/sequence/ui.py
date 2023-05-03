@@ -485,10 +485,13 @@ class BIM_PT_work_schedules(Panel):
                 baseline_row.label(
                     text="{} @ {}".format(baseline["name"], baseline["date"]), icon="RESTRICT_INSTANCED_OFF"
                 )
-                baseline_row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = baseline["id"]
+                baseline_row.operator("bim.generate_gantt_chart", text="Compare", icon="NLA").work_schedule = baseline[
+                    "id"
+                ]
                 baseline_row.operator(
                     "bim.enable_editing_work_schedule_tasks", text="", icon="ACTION"
                 ).work_schedule = baseline["id"]
+                baseline_row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = baseline["id"]
 
     def draw_readonly_work_schedule_ui(self, work_schedule_id):
         if self.props.active_work_schedule_id == work_schedule_id:
@@ -514,6 +517,7 @@ class BIM_PT_work_schedules(Panel):
                     self.props,
                     "active_task_index",
                 )
+
 
 class BIM_PT_task_icom(Panel):
     bl_label = "IFC Task ICOM"
