@@ -358,7 +358,7 @@ class Resource(blenderbim.core.tool.Resource):
         props = bpy.context.scene.BIMResourceProductivity
         productivity = {}
         if props.quantity_consumed:
-            productivity["BaseQuantityConsumed"] = helper.simplify_duration(
+            productivity["BaseQuantityConsumed"] = helper.blender_props_to_iso_duration(
                 props.quantity_consumed, "ELAPSEDTIME", "BaseQuantityConsumed"
             )
         productivity["BaseQuantityProducedValue"] = props.quantity_produced
