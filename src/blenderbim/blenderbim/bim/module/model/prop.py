@@ -37,6 +37,12 @@ def get_type_class(self, context):
     return AuthoringData.data["type_class"]
 
 
+def get_boundary_class(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["boundary_class"]
+
+
 def get_relating_type_id(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
@@ -141,6 +147,7 @@ class BIMModelProperties(PropertyGroup):
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
+    boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
 
 
 class BIMArrayProperties(PropertyGroup):

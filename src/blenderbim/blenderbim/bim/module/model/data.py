@@ -63,6 +63,15 @@ class AuthoringData:
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
         cls.data["active_representation_type"] = cls.active_representation_type()
+        cls.data["boundary_class"] = cls.boundary_class()
+
+    @classmethod
+    def boundary_class(cls):
+        declaration = tool.Ifc.schema().declaration_by_name("IfcRelSpaceBoundary")
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        names = [d.name() for d in declarations]
+        version = tool.Ifc.get_schema()
+        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def type_class(cls):
