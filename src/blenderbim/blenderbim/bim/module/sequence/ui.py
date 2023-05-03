@@ -374,7 +374,7 @@ class BIM_PT_work_schedules(Panel):
 
     def draw_editable_task_ui(self, work_schedule_id):
         row = self.layout.row(align=True)
-        row.label(text="")
+        row.label(text="Task Tools")
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.operator("bim.add_summary_task", text="Add Summary Task", icon="ADD").work_schedule = work_schedule_id
