@@ -95,6 +95,16 @@ def get_vertices(geometry):
     return np.array([np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
 
 
+def get_edges(geometry):
+    edges = geometry.edges
+    return [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+
+
+def get_faces(geometry):
+    faces = geometry.faces
+    return [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
+
+
 def get_shape_vertices(shape, geometry):
     m = shape.transformation.matrix.data
     mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
