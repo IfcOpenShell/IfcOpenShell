@@ -210,7 +210,7 @@ class Usecase:
                             ifcopenshell.api.run(
                                 "sequence.assign_lag_time",
                                 self.file,
-                                sequence=rel,
-                                lag_time=inverse.TimeLag.LagValue,
+                                rel_sequence=rel,
+                                lag_value= ifcopenshell.util.date.ifc2datetime(inverse.TimeLag.LagValue.wrappedValue) if inverse.TimeLag.LagValue else None,
                                 duration_type=inverse.TimeLag.DurationType,
                             )
