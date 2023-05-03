@@ -1171,7 +1171,6 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def show_snapshot(cls, product_states):
-        print(product_states)
         bpy.context.scene.frame_start = 1
         bpy.context.scene.frame_end = 2
         for obj in bpy.data.objects:
@@ -1312,7 +1311,6 @@ class Sequence(blenderbim.core.tool.Sequence):
     def clear_object_animation(cls, obj):
         if obj.animation_data:
             obj.animation_data_clear()
-            print("Cleared animation for", obj.name)
 
     @classmethod
     def clear_objects_animation(cls, include_blender_objects=True):
@@ -1475,32 +1473,60 @@ class Sequence(blenderbim.core.tool.Sequence):
             "USERDEFINED": "FS",
             "NOTDEFINED": "FS",
         }
-
+        is_baseline = False
+        if work_schedule.PredefinedType == "BASELINE":
+            is_baseline = True
         tasks_json = []
         for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
-            cls.create_new_task_json(task, tasks_json, sequence_type_map)
+            cls.create_new_task_json(task, tasks_json, sequence_type_map, is_baseline=is_baseline)
         return tasks_json
 
     @classmethod
-    def create_new_task_json(cls, task, json, type_map=None):
+    def create_new_task_json(cls, task, json, type_map=None, is_baseline=False):
         task_time = task.TaskTime
+        resources = ifcopenshell.util.sequence.get_task_resources(task, is_deep=False)
+
+        string_resources = ""
+        resources_usage = ""
+        for resource in resources:
+            string_resources += resource.Name + ", "
+            resources_usage += str(resource.Usage.ScheduleUsage) + ", " if resource.Usage else "-, "
+
+        schedule_start = task_time.ScheduleStart if task_time else ""
+        schedule_finish = task_time.ScheduleFinish if task_time else ""
+
+        declared_by_task = task.IsDeclaredBy[0].RelatingObject if is_baseline else None
+        if declared_by_task and declared_by_task.TaskTime:
+            compare_start = declared_by_task.TaskTime.ScheduleStart
+            compare_finish = declared_by_task.TaskTime.ScheduleFinish
+        else:
+            compare_start = schedule_start
+            compare_finish = schedule_finish
+
         data = {
             "pID": task.id(),
             "pName": task.Name,
             "pCaption": task.Name,
-            "pStart": task_time.ScheduleStart if task_time else "",
-            "pEnd": task_time.ScheduleFinish if task_time else "",
-            "pPlanStart": task_time.ScheduleStart if task_time else "",
-            "pPlanEnd": task_time.ScheduleFinish if task_time else "",
+            "pStart": declared_by_task.TaskTime.ScheduleStart
+            if declared_by_task and declared_by_task.TaskTime
+            else schedule_start,
+            "pEnd": declared_by_task.TaskTime.ScheduleFinish
+            if declared_by_task and declared_by_task.TaskTime
+            else schedule_finish,
+            "pPlanStart": schedule_start,
+            "pPlanEnd": schedule_finish,
             "pMile": 1 if task.IsMilestone else 0,
+            "pRes": string_resources,
             "pComp": 0,
             "pGroup": 1 if task.IsNestedBy else 0,
             "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
             "pOpen": 1,
             "pCost": 1,
-            "ifcduration": str(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration)) if (task_time and task_time.ScheduleDuration) else "",
+            "ifcduration": str(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration))
+            if (task_time and task_time.ScheduleDuration)
+            else "",
+            "resourceUsage": resources_usage,
         }
-
         if task_time and task_time.IsCritical:
             data["pClass"] = "gtaskred"
         elif data["pGroup"]:
@@ -1515,14 +1541,17 @@ class Sequence(blenderbim.core.tool.Sequence):
         )
         json.append(data)
         for nested_task in ifcopenshell.util.sequence.get_nested_tasks(task):
-            cls.create_new_task_json(nested_task, json, type_map)
+            cls.create_new_task_json(nested_task, json, type_map, is_baseline)
 
     @classmethod
-    def generate_gantt_browser_chart(cls, task_json):
-        active_work_schedule = cls.get_active_work_schedule()
+    def generate_gantt_browser_chart(cls, task_json, work_schedule):
         with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
             with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
-                f.write(pystache.render(t.read(), {"json_data": json.dumps(task_json), "name":active_work_schedule.Name or "Unnamed"}))
+                f.write(
+                    pystache.render(
+                        t.read(), {"json_data": json.dumps(task_json), "data": json.dumps(work_schedule.get_info())}
+                    )
+                )
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
     @classmethod
