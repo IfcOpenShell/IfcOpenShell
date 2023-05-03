@@ -1034,7 +1034,7 @@ class AddDrawingToSheet(bpy.types.Operator, Operator):
     def _execute(self, context):
         props = context.scene.DocProperties
         active_drawing = props.drawings[props.active_drawing_index]
-        active_sheet = props.sheets[props.active_sheet_index]
+        active_sheet = tool.Drawing.get_active_sheet(context)
         drawing = tool.Ifc.get().by_id(active_drawing.ifc_definition_id)
         drawing_reference = tool.Drawing.get_drawing_document(drawing)
 
@@ -1574,7 +1574,7 @@ class AddScheduleToSheet(bpy.types.Operator, Operator):
     def _execute(self, context):
         props = context.scene.DocProperties
         active_schedule = props.schedules[props.active_schedule_index]
-        active_sheet = props.sheets[props.active_sheet_index]
+        active_sheet = tool.Drawing.get_active_sheet(context)
         schedule = tool.Ifc.get().by_id(active_schedule.ifc_definition_id)
         if tool.Ifc.get_schema() == "IFC2X3":
             schedule_location = tool.Drawing.get_path_with_ext(schedule.DocumentReferences[0].Location, "svg")
