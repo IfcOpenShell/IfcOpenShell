@@ -672,6 +672,11 @@ class Drawing(blenderbim.core.tool.Drawing):
                 new.reference_type = reference.Description
 
     @classmethod
+    def get_active_sheet(cls, context):
+        props = context.scene.DocProperties
+        return next(s for s in props.sheets[: props.active_sheet_index + 1][::-1] if s.is_sheet)
+
+    @classmethod
     def import_text_attributes(cls, obj):
         props = obj.BIMTextProperties
         props.literals.clear()
