@@ -51,37 +51,35 @@ class Unit(blenderbim.core.tool.Unit):
 
     @classmethod
     def get_scene_unit_name(cls, unit_type):
-        props = bpy.context.scene.unit_settings
-        is_metric = props.system == "METRIC" or props.system == "NONE"
-
-        if is_metric:
-            name = "METRE"
-        elif props.length_unit == "MILES":
-            name = "mile"
-        elif props.length_unit == "FEET" or props.length_unit == "ADAPTIVE":
-            name = "foot"
-        elif props.length_unit == "INCHES":
-            name = "inch"
-        elif props.length_unit == "THOU":
-            name = "thou"
-
-        if unit_type == "length":
-            return name
-        elif unit_type == "area":
-            if is_metric:
-                return f"SQUARE_{name}"
-            return f"square {name}"
-        elif unit_type == "volume":
-            if is_metric:
-                return f"CUBIC_{name}"
-            return f"cubic {name}"
+        if unit_type == "LENGTHUNIT":
+            props = bpy.context.scene.unit_settings
+            if props.length_unit == "MILES":
+                return "mile"
+            elif props.length_unit == "FEET" or props.length_unit == "ADAPTIVE":
+                return "foot"
+            elif props.length_unit == "INCHES":
+                return "inch"
+            elif props.length_unit == "THOU":
+                return "thou"
+            return "foot"
+        elif unit_type == "AREAUNIT":
+            return bpy.context.scene.BIMProperties.area_unit
+        elif unit_type == "VOLUMEUNIT":
+            return bpy.context.scene.BIMProperties.volume_unit
 
     @classmethod
-    def get_scene_unit_si_prefix(cls):
-        props = bpy.context.scene.unit_settings
-        if props.length_unit == "ADAPTIVE" or props.length_unit == "METERS":
-            return
-        return props.length_unit.replace("METERS", "")
+    def get_scene_unit_si_prefix(cls, unit_type):
+        if unit_type == "LENGTHUNIT":
+            props = bpy.context.scene.unit_settings
+            if props.length_unit == "ADAPTIVE" or props.length_unit == "METERS":
+                return
+            return props.length_unit.replace("METERS", "")
+        elif unit_type == "AREAUNIT":
+            unit = bpy.context.scene.BIMProperties.area_unit
+        elif unit_type == "VOLUMEUNIT":
+            unit = bpy.context.scene.BIMProperties.volume_unit
+        if "/" in unit:
+            return unit.split("/")[0]
 
     @classmethod
     def import_unit_attributes(cls, unit):
