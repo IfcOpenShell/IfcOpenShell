@@ -1307,14 +1307,20 @@ class IfcImporter:
                         bpy.context.scene.unit_settings.length_unit = "FEET"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "AREAUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
-                bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
-                    unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
-                )
+                try:
+                    bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
+                        unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
+                    )
+                except:  # Probably an invalid unit.
+                    bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "VOLUMEUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
-                bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
-                    unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
-                )
+                try:
+                    bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
+                        unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
+                    )
+                except:  # Probably an invalid unit.
+                    bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
 
     def create_project(self):
         project = self.file.by_type("IfcProject")[0]
