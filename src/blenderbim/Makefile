@@ -664,6 +664,10 @@ endif
 	cp -r dist/working/bpypolyskel-master/bpypolyskel dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Remove dependencies also bundled with Blender
+	rm -rf dist/blenderbim/libs/site/packages/numpy
+	rm -rf dist/blenderbim/libs/site/packages/numpy.libs
+
 	cd dist/blenderbim && $(SED) "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
