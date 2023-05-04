@@ -139,7 +139,7 @@ class DumbSlabGenerator:
         self.length = 3
         self.rotation = 0
         self.location = Vector((0, 0, 0))
-        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
+        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
         return self.derive_from_cursor()
 
     def derive_from_cursor(self):
@@ -274,7 +274,7 @@ class DumbSlabPlaner:
                 extrusion.Depth = thickness
             else:
                 props = bpy.context.scene.BIMModelProperties
-                x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
+                x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
                 new_rep = ifcopenshell.api.run(
                     "geometry.add_slab_representation",
                     tool.Ifc.get(),
@@ -299,7 +299,7 @@ class DumbSlabPlaner:
                 return
         else:
             props = bpy.context.scene.BIMModelProperties
-            x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
+            x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
             representation = ifcopenshell.api.run(
                 "geometry.add_slab_representation",
                 tool.Ifc.get(),

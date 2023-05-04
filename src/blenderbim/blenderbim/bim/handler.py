@@ -140,11 +140,11 @@ def update_bim_tool_props():
         axis = tool.Model.get_wall_axis(obj)["reference"]
         props.extrusion_depth = extrusion.Depth * si_conversion * cos(x_angle)
         props.length = (axis[1] - axis[0]).length
-        props.x_angle = degrees(x_angle)
+        props.x_angle = x_angle
 
     elif AuthoringData.data["active_material_usage"] == "LAYER3":
         x_angle = get_x_angle(extrusion)
-        props.x_angle = degrees(x_angle)
+        props.x_angle = x_angle
 
     elif AuthoringData.data["active_material_usage"] == "PROFILE":
         props.extrusion_depth = extrusion.Depth * si_conversion
