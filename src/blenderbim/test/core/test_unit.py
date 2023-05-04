@@ -23,16 +23,15 @@ from test.core.bootstrap import ifc, unit
 class TestAssignSceneUnits:
     def test_creating_and_assigning_metric_units(self, ifc, unit):
         unit.is_scene_unit_metric().should_be_called().will_return(True)
-        unit.get_scene_unit_name("length").should_be_called().will_return("name")
-        unit.get_scene_unit_si_prefix().should_be_called().will_return("prefix")
+        unit.get_scene_unit_si_prefix("LENGTHUNIT").should_be_called().will_return("prefix")
+        unit.get_scene_unit_si_prefix("AREAUNIT").should_be_called().will_return("prefix")
+        unit.get_scene_unit_si_prefix("VOLUMEUNIT").should_be_called().will_return("prefix")
         ifc.run(
             "unit.add_si_unit", unit_type="LENGTHUNIT", prefix="prefix"
         ).should_be_called().will_return("lengthunit")
 
-        unit.get_scene_unit_name("area").should_be_called().will_return("name")
         ifc.run("unit.add_si_unit", unit_type="AREAUNIT", prefix="prefix").should_be_called().will_return("areaunit")
 
-        unit.get_scene_unit_name("volume").should_be_called().will_return("name")
         ifc.run(
             "unit.add_si_unit", unit_type="VOLUMEUNIT", prefix="prefix"
         ).should_be_called().will_return("volumeunit")
@@ -44,13 +43,13 @@ class TestAssignSceneUnits:
 
     def test_creating_and_assigning_imperial_units(self, ifc, unit):
         unit.is_scene_unit_metric().should_be_called().will_return(False)
-        unit.get_scene_unit_name("length").should_be_called().will_return("lengthname")
+        unit.get_scene_unit_name("LENGTHUNIT").should_be_called().will_return("lengthname")
         ifc.run("unit.add_conversion_based_unit", name="lengthname").should_be_called().will_return("lengthunit")
 
-        unit.get_scene_unit_name("area").should_be_called().will_return("areaname")
+        unit.get_scene_unit_name("AREAUNIT").should_be_called().will_return("areaname")
         ifc.run("unit.add_conversion_based_unit", name="areaname").should_be_called().will_return("areaunit")
 
-        unit.get_scene_unit_name("volume").should_be_called().will_return("volumename")
+        unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return("volumename")
         ifc.run("unit.add_conversion_based_unit", name="volumename").should_be_called().will_return("volumeunit")
 
         ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
