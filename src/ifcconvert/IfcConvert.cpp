@@ -34,6 +34,7 @@
 #include "../serializers/WavefrontObjSerializer.h"
 #include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
+#include "../serializers/USDSerializer.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -113,6 +114,9 @@ void print_usage(bool suggest_help = true)
 #endif
 #ifdef WITH_GLTF
 		<< "  .glb   glTF           Binary glTF v2.0\n"
+#endif
+#ifdef WITH_USD
+		<< "  .usd   USD            Universal Scene Description\n"
 #endif
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
@@ -823,6 +827,10 @@ int main(int argc, char** argv) {
 #ifdef WITH_GLTF
 	} else if (output_extension == GLB) {
 		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
+#endif
+#ifdef WITH_USD
+	} else if (output_extension == USD) {
+		serializer = boost::make_shared<UsdSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 #endif
 #ifdef IFOPSH_WITH_OPENCASCADE
 	} else if (output_extension == STP) {
