@@ -29,6 +29,7 @@ Learn how to model a small building and create simple architectural plans, secti
    users/creating_an_ifc_model
    users/georeferencing
    users/dealing_with_large_models
+   users/git_support
    users/other_addons
    users/general_usage
 
