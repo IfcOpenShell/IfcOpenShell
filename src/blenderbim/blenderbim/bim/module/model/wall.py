@@ -249,7 +249,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         layer2_objs = []
         other_objs = []
-        x_angle = radians(self.x_angle)
+        x_angle = self.x_angle
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -440,7 +440,7 @@ class DumbWallGenerator:
         self.length = props.length
         self.rotation = 0.0
         self.location = Vector((0, 0, 0))
-        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
+        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
 
         return self.derive_from_cursor()
 

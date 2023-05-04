@@ -126,7 +126,7 @@ class BIMModelProperties(PropertyGroup):
     z: bpy.props.FloatProperty(name="Z", default=0.5)
     rl1: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like walls, doors, flooring, skirting, etc
     rl2: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like windows, other hosted furniture
-    x_angle: bpy.props.FloatProperty(name="X Angle", default=0)
+    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE")
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_template: bpy.props.EnumProperty(
         items=(
