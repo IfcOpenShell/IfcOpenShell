@@ -27,14 +27,13 @@ import ifcopenshell
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
-from math import pi, sin, cos, tan, acos, atan, degrees
+from math import pi, sin, cos, tan, acos, atan, degrees, radians, ceil
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
 from blenderbim.bim.module.drawing.data import DecoratorData
-from blenderbim.bim.module.drawing.shaders import BASE_LIB_GLSL, BASE_DEF_GLSL
+from blenderbim.bim.module.drawing.shaders import BASE_LIB_GLSL, BASE_DEF_GLSL, add_verts_sequence, add_offsets
 
 
 def ccw(A, B, C):
@@ -42,74 +41,103 @@ def ccw(A, B, C):
     return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
 
 
+def worldspace_to_winspace(verts, context):
+    """Convert world space verts to window space"""
+    region = context.region
+    region3d = context.region_data
+    clipspace_verts = [region3d.perspective_matrix @ Vector(v) for v in verts]
+    winspace_vector = Vector([region.width / 2, region.height / 2, 1])
+    winspace_vector_offset = Vector([region.width / 2, region.height / 2, 0])
+    winspace_verts = [v * winspace_vector + winspace_vector_offset for v in clipspace_verts]
+    return winspace_verts
+
+
+def winspace_to_worldspace(verts, context):
+    """Convert winspace verts to world space"""
+    region = context.region
+    region3d = context.region_data
+    # clipspace_vector = 1 / winspace_vector
+    clipspace_vector = Vector([1 / (region.width / 2), 1 / (region.height / 2), 1])
+    winspace_vector_offset = Vector([region.width / 2, region.height / 2, 0])
+    clipspace_verts = [(v - winspace_vector_offset) * clipspace_vector for v in verts]
+    worldspace_verts = [region3d.perspective_matrix.inverted() @ v for v in clipspace_verts]
+    return worldspace_verts
+
+
+def get_arrow_head(edge_dir, size, rot_matrix_cw, rot_matrix_ccw):
+    head = []
+    head.append(edge_dir * size)
+    head.append((rot_matrix_cw @ head[0].xy).to_3d())
+    head.append((rot_matrix_ccw @ head[0].xy).to_3d())
+    return head
+
+
+def get_triangle_head(edge_dir, side, length, width):
+    head = [
+        edge_dir * length * (-0.5),
+        side * width,
+        edge_dir * length * (0.5),
+    ]
+    return head
+
+
+def get_callout_head(edge_dir, edge_side, callout_size, callout_gap):
+    head = [
+        # callout handle
+        edge_dir * -callout_size + edge_side * callout_gap,
+        # callout triangle
+        edge_dir * callout_gap * 2 + edge_side * callout_gap,
+        edge_dir * callout_gap,
+        edge_side * callout_gap,
+    ]
+    return head
+
+
+def get_circle_head(size, segments=12):
+    angle_d = 2 * pi / segments
+    head = []
+    for i in range(segments):
+        angle = angle_d * i
+        head.append(Vector([cos(angle), sin(angle), 0]) * size)
+    return head
+
+
+def get_circle_head_asterisk(size, segments=6):
+    circle_head = get_circle_head(size, segments)
+    middle = segments // 2
+    return zip(circle_head[:middle], circle_head[middle:])
+
+
+def get_angle_circle(circle_start, circle_angle, counterclockwise, segments=12):
+    angle_d = 2 * pi / segments
+    angle_segs = max(1, ceil(circle_angle / angle_d))
+    angle_d = circle_angle / angle_segs
+    head = []
+    circle_start = circle_start.xy
+
+    for i in range(angle_segs + 1):
+        angle = angle_d * i
+        if counterclockwise:
+            rot_matrix_ccw = Matrix.Rotation(angle, 2)
+            head.append((rot_matrix_ccw @ circle_start).to_3d())
+        else:
+            rot_matrix_cw = Matrix.Rotation(-angle, 2)
+            head.append((rot_matrix_cw @ circle_start).to_3d())
+    return head
+
+
 class BaseDecorator:
     # base name of objects to decorate
     objecttype = "NOTDEFINED"
 
-    DEF_GLSL = BASE_DEF_GLSL
-    LIB_GLSL = BASE_LIB_GLSL
-
-    VERT_GLSL = """
-    uniform mat4 viewMatrix;
-    in vec3 pos;
-    in uint topo;
-    in vec3 next_vert;
-    out uint type;
-    out vec4 v_next_vert;
-
-    void main() {
-        gl_Position = viewMatrix * vec4(pos, 1.0);
-        type = topo;
-        v_next_vert = viewMatrix * vec4(next_vert, 1.0);
-    }
-    """
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices = 4) out;
-
-    void main() {
-        // default setup for macro to work
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-        vec2 EDGE_DIR;
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        do_edge_verts(p0, p1);
-        EndPrimitive();
-    }
-    """
-
-    FRAG_GLSL = """
-    uniform vec4 color;
-    uniform float lineWidth;
-
-    in float smoothline;
-    out vec4 fragColor;
-    void main() {
-        vec2 co = gl_FragCoord.xy;
-
-        fragColor = color;
-        if (lineSmooth) {
-            fragColor.a *= clamp((lineWidth + SMOOTH_WIDTH) * 0.5 - abs(smoothline), 0.0, 1.0); //test
-        }
-    }
-    """
-
     def __init__(self):
-        # NB: libcode param doesn't work
-        self.shader = GPUShader(
-            vertexcode=self.VERT_GLSL,
-            fragcode=self.FRAG_GLSL,
-            geocode=self.LIB_GLSL + self.GEOM_GLSL,
-            defines=self.DEF_GLSL,
-        )
-
         self.font_id = blf.load(
             os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
         )
+
+        # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+        self.base_shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
 
     def get_camera_width_mm(self):
         # Horrific prototype code to ensure bgl draws at drawing scales
@@ -188,6 +216,20 @@ class BaseDecorator:
                     results.append(obj)
         return results
 
+    def get_splines(self, obj):
+        """Iterates through splines
+        Args:
+          obj: Blender object with Curve data
+
+        Yields:
+          verts: points of each spline, world coords
+        """
+        for spline in obj.data.splines:
+            spline_points = spline.bezier_points if spline.bezier_points else spline.points
+            if len(spline_points) < 2:
+                continue
+            yield [obj.matrix_world @ p.co for p in spline_points]
+
     def get_path_geom(self, obj, topo=True):
         """Parses path geometry into line segments
 
@@ -224,7 +266,7 @@ class BaseDecorator:
 
         return vertices, indices, topology
 
-    def get_mesh_geom(self, obj):
+    def get_mesh_geom(self, obj, check_mode=True):
         """Parses mesh geometry into line segments
 
         Args:
@@ -234,6 +276,9 @@ class BaseDecorator:
           vertices: 3-tuples of coords
           indices: 2-tuples of each segment verices' indices
         """
+        if check_mode and obj.data.is_editmode:
+            return self.get_editmesh_geom(obj)
+
         vertices = [obj.matrix_world @ v.co for v in obj.data.vertices]
         indices = [e.vertices for e in obj.data.edges]
         return vertices, indices
@@ -249,69 +294,76 @@ class BaseDecorator:
         """perform actual drawing stuff"""
         raise NotImplementedError()
 
-    def draw_lines(
-        self,
-        context,
-        obj,
-        vertices,
-        indices,
-        topology=None,
-        is_scale_dependant=True,
-        fill_next_vertices=False,
-        extra_float_kwargs={},
-        smoothing=True,
-    ):
-        """use `is_scale_dependant` = `False` if shader is not using uniform viewportDrawingScale
-        otherwise uniform will be discarded during the optimization process
-        and you will get `ValueError: GPUShader.uniform_float: uniform viewportDrawingScale not found`
-        """
+    def draw_arrow(self, context, obj):
+        # gather geometry data and convert to winspace
+        verts, edges_original, _ = self.get_path_geom(obj, topo=False)
+        if not edges_original:
+            return
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
 
+        # setup geometry parameters
+        arrow_size = viewportDrawingScale * 16
+        angle = radians(15)
+        rot_matrix_cw = Matrix.Rotation(-angle, 2)
+        rot_matrix_ccw = Matrix.Rotation(angle, 2)
+
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+        last_vert = len(winspace_verts) - 1
+
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            start_i = len(output_verts)
+
+            # arrow head on last vert
+            if edge[1] == last_vert:
+                edge_dir = (v1 - v0).normalized()
+                arrow_head = get_arrow_head(edge_dir, arrow_size, rot_matrix_cw, rot_matrix_ccw)
+                add_verts_sequence([v1, v1 - arrow_head[1], v1 - arrow_head[2]], start_i, **out_kwargs, closed=True)
+                start_i += 3
+                gap = edge_dir * arrow_size
+                # stem with gaps for arrows
+                add_verts_sequence([v0, v1 - gap], start_i, **out_kwargs)
+            else:
+                # stem with gaps for arrows
+                add_verts_sequence([v0, v1], start_i, **out_kwargs)
+
+        self.draw_lines(context, obj, output_verts, output_edges)
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        shader = self.line_shader if shader_type == "LINES" else self.base_shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    def draw_lines(self, context, obj, vertices, indices, color=None):
+        """`verts` should be in winspace with `(0,0,0)` in the screen left bottom corner, not in the center"""
         region = context.region
-        region3d = context.region_data
-        color = context.preferences.addons["blenderbim"].preferences.decorations_colour
+        if not color:
+            color = context.preferences.addons["blenderbim"].preferences.decorations_colour
 
-        fmt = GPUVertFormat()
-        fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
-        if topology:
-            fmt.attr_add(id="topo", comp_type="U8", len=1, fetch_mode="INT")
-        if fill_next_vertices:
-            fmt.attr_add(id="next_vert", comp_type="F32", len=3, fetch_mode="FLOAT")
-
-        vbo = GPUVertBuf(len=len(vertices), format=fmt)
-        vbo.attr_fill(id="pos", data=vertices)
-        if topology:
-            vbo.attr_fill(id="topo", data=topology)
-
-        if fill_next_vertices:
-            shifted_vertices = vertices[1:] + [vertices[0]]
-            vbo.attr_fill(id="next_vert", data=shifted_vertices)
-
-        ibo = GPUIndexBuf(type="LINES", seq=indices)
-
-        batch = GPUBatch(type="LINES", buf=vbo, elem=ibo)
-
-        self.shader.bind()
-        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float("winsize", (region.width, region.height))
-        self.shader.uniform_float("color", color)
-        if smoothing:
-            self.shader.uniform_float("lineWidth", 1.0)
-
-        if is_scale_dependant:
-            # Horrific prototype code
-            factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
-            camera_width_px = factor * context.region.width
-            mm_to_px = camera_width_px / self.get_camera_width_mm()
-            # 0.00025 is a magic constant number I visually discovered to get the right number.
-            # It probably should be dynamically calculated using system.dpi or something.
-            viewport_drawing_scale = 0.00025 * mm_to_px
-            self.shader.uniform_float("viewportDrawingScale", viewport_drawing_scale)
-
-        for kwarg, value in extra_float_kwargs.items():
-            self.shader.uniform_float(kwarg, value)
-
+        self.line_shader.bind()
+        # POLYLINE_UNIFORM_COLOR specific uniforms
+        self.line_shader.uniform_float("viewportSize", (region.width, region.height))
+        self.line_shader.uniform_float("lineWidth", 1.0)
         gpu.state.blend_set("ALPHA")
-        batch.draw(self.shader)
+        self.draw_batch("LINES", vertices, color, indices)
+
+    def get_viewport_drawing_scale(self, context):
+        # Horrific prototype code
+        factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
+        camera_width_px = factor * context.region.width
+        mm_to_px = camera_width_px / self.get_camera_width_mm()
+        # 0.00025 is a magic constant number I visually discovered to get the right number.
+        # It probably should be dynamically calculated using system.dpi or something.
+        viewport_drawing_scale = 0.00025 * mm_to_px
+        return viewport_drawing_scale
 
     def draw_label(
         self,
@@ -385,16 +437,16 @@ class BaseDecorator:
 
             pos -= rotation_matrix.transposed() @ box_alignment_offset
         else:
+            # horizontal centering
             if center:
-                # horizontal centering
                 pos -= Vector((cos, sin)) * w * 0.5
 
+            # vertical centering
             if vcenter:
-                # vertical centering
                 pos -= Vector((-sin, cos)) * h * 0.5
 
+            # side-shifting
             if gap:
-                # side-shifting
                 pos += Vector((-sin, cos)) * gap
 
         blf.enable(font_id, blf.ROTATION)
@@ -416,6 +468,29 @@ class BaseDecorator:
             precision=4,
             split_unit=context.scene.unit_settings.system == "IMPERIAL",
         )
+
+    def draw_asterisk(self, context, obj):
+        # gather geometry data and convert to winspace
+        verts = [obj.location]
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
+
+        # setup geometry parameters
+        circle_size = viewportDrawingScale * 4
+
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+
+        v0 = winspace_verts[0]
+        asterisk_head = get_circle_head_asterisk(circle_size)
+        start_i = 0
+        for segment in asterisk_head:
+            start_i = add_verts_sequence(add_offsets(v0, segment), start_i, **out_kwargs)
+        self.draw_lines(context, obj, output_verts, output_edges)
 
     def draw_text(self, context, obj, text_world_position=None):
         """if `text_world_position` is not provided, the object's location will be used"""
@@ -442,9 +517,7 @@ class BaseDecorator:
 
         # draw asterisk symbol to indicate that there is some symbol that's not shown in viewport
         if symbol:
-            verts = [text_world_position]
-            idxs = [(0, 0)]
-            self.draw_lines(context, obj, verts, idxs)
+            self.draw_asterisk(context, obj)
             # NOTE: for now we assume that scale is uniform
             text_scale = obj.scale.x
 
@@ -476,102 +549,70 @@ class DimensionDecorator(BaseDecorator):
 
     objecttype = "DIMENSION"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define OBLIQUE_SYMBOL_ANGLE PI / 4.0
-        #define OLBIQUE_SYMBOL_SIZE 10.0
-        #define OBLIQUE_HEAD_VERTS 7
-
-        #define ARROW_ANGLE PI / 12.0
-        #define ARROW_SIZE 16.0
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-    uniform float use_oblique_style;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-
-    void oblique_dimension_head(in vec4 dir, in float size,
-        in float angle, out vec4 head[OBLIQUE_HEAD_VERTS]) {
-        float c = cos(angle), s = sin(angle);
-        vec4 ortho = vec4(-dir.y, dir.x, 0, 0);
-        head[0] = -dir * size*0.66;
-        head[1] = vec4(0);
-        head[2] = ortho * size;
-        head[3] = -ortho * size;
-        head[4] = vec4(0);
-        head[5] = vec4((mat2(c, +s, -s, c) * dir.xy) * size * 0.47, 0, 0);
-        head[6] = -head[5];
-    }
-
-    void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-
-        vec4 p, p_next;
-        vec2 EDGE_DIR;
-
-        if (use_oblique_style > 0) {
-            vec4 head[OBLIQUE_HEAD_VERTS];
-            oblique_dimension_head(dir, viewportDrawingScale * OLBIQUE_SYMBOL_SIZE, OBLIQUE_SYMBOL_ANGLE, head);
-
-            // start edge arrow
-            p_next = WIN2CLIP( (p0w + head[0]) );
-            for (int i = 0; i < OBLIQUE_HEAD_VERTS-1; i++) {
-                do_edge_verts_win( (p0w + head[i]),  (p0w + head[i+1]) );
-            }
-            EndPrimitive();
-
-            // end edge arrow
-            p_next = WIN2CLIP( (p1w + head[0]) );
-            for (int i = 0; i < OBLIQUE_HEAD_VERTS-1; i++) {
-                do_edge_verts_win( (p1w + head[i]),  (p1w + head[i+1]) );
-            }
-            EndPrimitive();
-
-            // stem
-            do_edge_verts(p0, p1);
-            EndPrimitive();
-
-        } else {
-            vec4 head[3];
-            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
-
-            // start edge arrow
-            do_edge_verts( p0, WIN2CLIP( (p0w + head[1]) ) );
-            do_edge_verts_win( p0w + head[1], p0w + head[2] );
-            do_edge_verts( WIN2CLIP( p0w + head[2] ), p0 );
-            EndPrimitive();
-
-            // end edge arrow
-            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) );
-            do_edge_verts_win( p1w - head[1], p1w - head[2] );
-            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 );
-            EndPrimitive();
-
-            // stem, with gaps for arrows
-            do_edge_verts_win( p0w + head[0], p1w - head[0] );
-            EndPrimitive();
-        }
-    }
-    """
-
     def decorate(self, context, obj):
-        verts, idxs, _ = self.get_path_geom(obj, topo=False)
+        # gather geometry data and convert to winspace
+        verts_original, edges_original, _ = self.get_path_geom(obj, topo=False)
+        if not edges_original:
+            return
+        winspace_verts = worldspace_to_winspace(verts_original, context)
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+
+        # setup geometry parameters
         dimension_style = DecoratorData.get_dimension_data(obj)["dimension_style"]
-        self.draw_lines(
-            context, obj, verts, idxs, extra_float_kwargs={"use_oblique_style": float(dimension_style == "oblique")}
-        )
-        self.draw_labels(context, obj, verts, idxs)
+        if dimension_style == "oblique":
+            size = viewportDrawingScale * 10  # OLBIQUE_SYMBOL_SIZE
+            angle = radians(45)
+        else:
+            size = viewportDrawingScale * 16  # ARROW_SIZE
+            angle = radians(15)
+        rot_matrix_cw = Matrix.Rotation(-angle, 2)
+        rot_matrix_ccw = Matrix.Rotation(angle, 2)
+
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            edge_dir = (v1 - v0).normalized()
+            start_i = len(output_verts)
+
+            if dimension_style == "oblique":
+                ortho = Vector((-edge_dir.y, edge_dir.x)).to_3d()
+                # oblique dimension head
+                head = []
+                head.append(-edge_dir * size * 0.66)
+                head.append(Vector([0] * 3))
+                head.append(ortho * size)
+                head.append(-head[-1])
+                head.append(Vector([0] * 3))
+                head.append(((rot_matrix_ccw @ edge_dir.xy) * size * 0.47).to_3d())
+                head.append(-head[-1])
+
+                n_segments = len(head) - 1
+                # start edge arrow
+                add_verts_sequence([v0 + v for v in head], start_i, **out_kwargs)
+                # end edge arrow
+                add_verts_sequence([v1 + v for v in head], start_i + n_segments + 1, **out_kwargs)
+                # stem
+                add_verts_sequence([v0, v1], start_i + n_segments * 2 + 2, **out_kwargs)
+
+            else:
+                # arrow dimension head
+                head = get_arrow_head(edge_dir, size, rot_matrix_cw, rot_matrix_ccw)
+                # start edge arrow
+                add_verts_sequence([v0, v0 + head[1], v0 + head[2]], start_i, **out_kwargs, closed=True)
+                # end edge arrow
+                add_verts_sequence([v1, v1 - head[1], v1 - head[2]], start_i + 3, **out_kwargs, closed=True)
+                # stem with gaps for arrows
+                add_verts_sequence([v0 + head[0], v1 - head[0]], start_i + 6, **out_kwargs)
+
+        self.draw_lines(context, obj, output_verts, output_edges)
+        self.draw_labels(context, obj, verts_original, edges_original)
 
     def draw_labels(self, context, obj, vertices, indices):
         region = context.region
@@ -614,82 +655,58 @@ class AngleDecorator(BaseDecorator):
 
     objecttype = "ANGLE"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define ARROW_ANGLE PI / 12.0
-        #define ARROW_SIZE 8.0
-        #define CIRCLE_SIZE 6.0
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-    in uint type[];
-    in vec4 v_next_vert[];
-
-    // per edge shader
-    void main() {
-        // default setup for macro to work
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-        vec2 EDGE_DIR;
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        vec4 p2 = v_next_vert[1];
-        uint t0 = type[0], t1 = type[1];
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 p2w = CLIP2WIN(p2);
-        vec4 edge0 = p1w - p0w, dir = normalize(edge0);
-        vec4 p;
-
-        // draw a segment line
-        do_edge_verts(p0, p1);
-        EndPrimitive();
-
-        // end edge with angle circle for the non-last segment
-        if (t1 == 0u) { // draws only on internal vertex
-            edge0 = p0w - p1w;
-            vec4 dir0 = normalize(edge0);
-            vec4 edge1 = p2w - p1w;
-            vec4 dir1 = normalize(edge1);
-
-            float angle_circle_size = min( length(edge0), length(edge1) );
-            vec4 circle_start = dir0 * angle_circle_size;
-            vec4 circle_end = dir1 * angle_circle_size;
-
-            float cos_a = dot( edge0, edge1 ) / ( length(edge0) * length(edge1) );
-            float circle_angle = acos(cos_a);
-
-            vec4 circle_head_data[CIRCLE_SEGS+1];
-            float angle_segs;
-            bool counterclockwise = check_counterclockwise(p2w, p1w, p0w);
-            angle_circle_head(
-                circle_start,
-                circle_angle,
-                counterclockwise,
-                circle_head_data,
-                angle_segs);
-
-            for(int i=0; i<angle_segs; i++) {
-                do_edge_verts_win( p1w + circle_head_data[i], p1w + circle_head_data[i+1] );
-                EmitVertex();
-            }
-            EndPrimitive();
-        }
-    }
-    """
-
     def decorate(self, context, obj):
-        verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(context, obj, verts, idxs, topo, fill_next_vertices=True, is_scale_dependant=False)
-        self.draw_labels(context, obj, verts, idxs)
+        # gather geometry data and convert to winspace
+        verts, edges_original, _ = self.get_path_geom(obj, topo=False)
+        if not edges_original:
+            return
+        winspace_verts = worldspace_to_winspace(verts, context)
+
+        # setup geometry parameters
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+        last_vert = len(winspace_verts) - 1
+
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            start_i = len(output_verts)
+
+            # draw edge
+            add_verts_sequence([v0, v1], start_i, **out_kwargs)
+
+            # draw angle only on interal verts
+            if edge[1] != last_vert:
+                v2 = winspace_verts[edge[1] + 1]
+                edge0 = v0 - v1  # note that order is reversed
+                edge1 = v2 - v1
+                edge_dir0 = edge0.normalized()
+                edge_dir1 = edge1.normalized()
+                edge0_length = edge0.length
+                edge1_length = edge1.length
+
+                angle_circle_size = min(edge0_length, edge1_length)
+                circle_start = edge_dir0 * angle_circle_size
+                circle_end = edge_dir1 * angle_circle_size
+
+                try:
+                    cos_a = edge0.dot(edge1) / (edge0_length * edge1_length)
+                except ZeroDivisionError:
+                    continue
+                circle_angle = acos(cos_a)
+                counter_clockwise = ccw(v2, v1, v0)
+                angle_circle = get_angle_circle(circle_start, circle_angle, counter_clockwise)
+                add_verts_sequence([v1 + v for v in angle_circle], start_i + 2, **out_kwargs)
+
+        self.draw_lines(context, obj, output_verts, output_edges)
+        self.draw_labels(context, obj, verts, edges_original)
 
     def draw_labels(self, context, obj, vertices, indices):
+        # TODO: merge with code from .decorate
         region = context.region
         region3d = context.region_data
 
@@ -709,7 +726,10 @@ class AngleDecorator(BaseDecorator):
 
             edge0 = p0 - p1
             edge1 = p2 - p1
-            cos_a = edge0.dot(edge1) / (edge0.length * edge1.length)
+            try:
+                cos_a = edge0.dot(edge1) / (edge0.length * edge1.length)
+            except ZeroDivisionError:
+                continue
             circle_angle = acos(cos_a) / pi * 180
 
             text = f"{int(circle_angle)}d"
@@ -737,54 +757,6 @@ class LeaderDecorator(BaseDecorator):
 
     objecttype = "TEXT_LEADER"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define ARROW_ANGLE PI / 12.0
-        #define ARROW_SIZE 16.0
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-    in uint type[];
-
-    void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-        vec2 EDGE_DIR;
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        uint t0 = type[0], t1 = type[1];
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap1 = vec4(0);
-
-        vec4 p;
-
-        // end edge arrow for last segment
-        if (t1 == 2u) {
-            vec4 head[3];
-            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
-
-            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) );
-            do_edge_verts_win( p1w - head[1], p1w - head[2] );
-            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 );
-            EndPrimitive();
-
-            gap1 = dir * viewportDrawingScale * ARROW_SIZE;
-        }
-
-        // stem, adjusted for an arrow
-        do_edge_verts_win( p0w, p1w - gap1 );
-        EndPrimitive();
-    }
-    """
-
     def get_spline_end(self, obj):
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
@@ -793,8 +765,7 @@ class LeaderDecorator(BaseDecorator):
         return (obj.matrix_world @ spline_points[0].co).to_3d()
 
     def decorate(self, context, obj):
-        verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(context, obj, verts, idxs, topo)
+        self.draw_arrow(context, obj)
         self.draw_text(context, obj, self.get_spline_end(obj))
 
 
@@ -805,54 +776,6 @@ class RadiusDecorator(BaseDecorator):
 
     objecttype = "RADIUS"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define ARROW_ANGLE PI / 12.0
-        #define ARROW_SIZE 16.0
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-    in uint type[];
-
-    void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-        vec2 EDGE_DIR;
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        uint t0 = type[0], t1 = type[1];
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap1 = vec4(0);
-
-        vec4 p;
-
-        // end edge arrow for last segment
-        if (t1 == 2u) {
-            vec4 head[3];
-            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
-
-            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) );
-            do_edge_verts_win( p1w - head[1], p1w - head[2] );
-            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 );
-            EndPrimitive();
-
-            gap1 = dir * viewportDrawingScale * ARROW_SIZE;
-        }
-
-        // stem, adjusted for an arrow
-        do_edge_verts_win( p0w, p1w - gap1 );
-        EndPrimitive();
-    }
-    """
-
     def get_spline_end(self, obj):
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
@@ -861,8 +784,7 @@ class RadiusDecorator(BaseDecorator):
         return obj.matrix_world @ spline_points[0].co
 
     def decorate(self, context, obj):
-        verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(context, obj, verts, idxs, topo)
+        self.draw_arrow(context, obj)
         self.draw_labels(context, obj)
 
     def draw_labels(self, context, obj):
@@ -886,57 +808,8 @@ class FallDecorator(BaseDecorator):
 
     objecttype = "FALL"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define ARROW_ANGLE PI / 12.0
-        #define ARROW_SIZE 16.0
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-    in uint type[];
-
-    void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-        vec2 EDGE_DIR;
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        uint t0 = type[0], t1 = type[1];
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap1 = vec4(0);
-
-        vec4 p;
-
-        // end edge arrow for last segment
-        if (t1 == 2u) {
-            vec4 head[3];
-            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
-
-            do_edge_verts( p1, WIN2CLIP( p1w - head[1] ) );
-            do_edge_verts_win( p1w - head[1], p1w - head[2] );
-            do_edge_verts( WIN2CLIP( p1w - head[2] ), p1 );
-            EndPrimitive();
-
-            gap1 = dir * viewportDrawingScale * ARROW_SIZE;
-        }
-
-        // stem, adjusted for an arrow
-        do_edge_verts_win( p0w, p1w - gap1 );
-        EndPrimitive();
-    }
-    """
-
     def decorate(self, context, obj):
-        verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(context, obj, verts, idxs, topo)
+        self.draw_arrow(context, obj)
         self.draw_labels(context, obj)
 
     def draw_labels(self, context, obj):
@@ -996,276 +869,129 @@ class StairDecorator(BaseDecorator):
 
     objecttype = "STAIR_ARROW"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define CIRCLE_SIZE 6.0
-        #define ARROW_ANGLE PI / 3.0
-        #define ARROW_SIZE 24.0
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-    in uint type[];
-
-    void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-        vec2 EDGE_DIR;
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        uint t0 = type[0], t1 = type[1];
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap0 = vec4(0), gap1 = vec4(0);
-
-        vec4 p;
-
-        // start edge circle for first segment
-        if (t0 == 1u) {
-            vec4 head[CIRCLE_SEGS];
-            circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
-
-            for(int i=0; i<CIRCLE_SEGS-1; i++) {
-                do_edge_verts_win(p0w + head[i], p0w + head[i+1]);
-            }
-            do_edge_verts_win( p0w + head[CIRCLE_SEGS-1], p0w + head[0] );
-            EndPrimitive();
-
-            gap0 = dir * viewportDrawingScale * CIRCLE_SIZE;
-        }
-
-        // end edge arrow for last segment
-        if (t1 == 2u) {
-            vec4 head[3];
-            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
-
-            do_edge_verts( WIN2CLIP( p1w - head[1] ), p1 );
-            do_edge_verts( p1, WIN2CLIP( p1w - head[2] ) );
-            EndPrimitive();
-        }
-
-        // stem, with gaps for edge decoration
-        do_edge_verts( p0, p1 );
-        EndPrimitive();
-    }
-    """
-
     def decorate(self, context, obj):
-        verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(context, obj, verts, idxs, topo)
+        # very similar to the draw_arrow function
 
+        # gather geometry data and convert to winspace
+        verts, edges_original, _ = self.get_path_geom(obj, topo=False)
+        if not edges_original:
+            return
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
 
-class HiddenDecorator(BaseDecorator):
-    objecttype = "HIDDEN_LINE"
+        # setup geometry parameters
+        arrow_size = viewportDrawingScale * 24
+        circle_size = viewportDrawingScale * 6
+        angle = radians(60)
+        rot_matrix_cw = Matrix.Rotation(-angle, 2)
+        rot_matrix_ccw = Matrix.Rotation(angle, 2)
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define DASH_SIZE 16.0
-        #define DASH_PATTERN 0x0000FFFFU
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-
-    out float dist; // distance from starging point along segment
-
-    void main() {
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-        vec2 EDGE_DIR;
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * 1;
-
-        vec4 p;
-
-        // NB: something should be used to affect position, otherwise compiler eliminates winsize
-
-        dist = 0;
-        do_vertex_win( p0w + gap, dir.xy);
-
-        dist = length(edge);
-        do_vertex_win( p1w - gap, dir.xy);
-        EndPrimitive();
-    }
-    """
-
-    FRAG_GLSL = """
-    uniform float viewportDrawingScale;
-    uniform vec4 color;
-    uniform float lineWidth;
-
-    in float dist;
-    in float smoothline;
-    out vec4 fragColor;
-
-    void main() {
-        uint bit = uint(fract(dist / (viewportDrawingScale * DASH_SIZE)) * 32);
-        if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
-
-        fragColor = color;
-        if (lineSmooth) {
-            fragColor.a *= clamp((lineWidth + SMOOTH_WIDTH) * 0.5 - abs(smoothline), 0.0, 1.0);
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
         }
-    }
-    """
+        last_vert = len(winspace_verts) - 1
 
-    def decorate(self, context, obj):
-        if obj.data.is_editmode:
-            verts, idxs = self.get_editmesh_geom(obj)
-        else:
-            verts, idxs = self.get_mesh_geom(obj)
-        self.draw_lines(context, obj, verts, idxs)
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            start_i = len(output_verts)
+
+            # circle head on first vert
+            if edge[0] == 0:
+                circle_head = get_circle_head(circle_size)
+                add_verts_sequence([v + v0 for v in circle_head], start_i, **out_kwargs, closed=True)
+                start_i += 12
+
+            # arrow head on last vert
+            if edge[1] == last_vert:
+                edge_dir = (v1 - v0).normalized()
+                arrow_head = get_arrow_head(edge_dir, arrow_size, rot_matrix_cw, rot_matrix_ccw)
+                add_verts_sequence([v1 - arrow_head[1], v1, v1 - arrow_head[2]], start_i, **out_kwargs)
+                start_i += 3
+
+            # stem with gaps for arrows
+            add_verts_sequence([v0, v1], start_i, **out_kwargs)
+
+        self.draw_lines(context, obj, output_verts, output_edges)
 
 
 class MiscDecorator(BaseDecorator):
     objecttype = "MISC"
 
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
+    def decorate(self, context, obj):
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
+        winspace_verts = worldspace_to_winspace(verts, context)
+        self.draw_lines(context, obj, winspace_verts, idxs)
 
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
 
-    out float dist; // distance from starging point along segment
-
-    void main() {
-        DEFAULT_SETUP();
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * 1;
-
-        vec4 p;
-
-        // NB: something should be used to affect position, otherwise compiler eliminates winsize
-
-        dist = 0;
-        do_vertex_win( p0w + gap, dir.xy);
-
-        dist = length(edge);
-        do_vertex_win( p1w - gap, dir.xy);
-        EndPrimitive();
-    }
-    """
-
-    FRAG_GLSL = """
-    uniform vec4 color;
-    uniform float lineWidth;
-
-    in float dist;
-    in float smoothline;
-    out vec4 fragColor;
-
-    void main() {
-        fragColor = color;
-        if (lineSmooth) {
-            fragColor.a *= clamp((lineWidth + SMOOTH_WIDTH) * 0.5 - abs(smoothline), 0.0, 1.0);
-        }
-    }
-    """
+# TODO: custom frag shader to support dashed lines?
+class HiddenDecorator(BaseDecorator):
+    objecttype = "HIDDEN_LINE"
 
     def decorate(self, context, obj):
         if obj.data.is_editmode:
             verts, idxs = self.get_editmesh_geom(obj)
         else:
             verts, idxs = self.get_mesh_geom(obj)
-        self.draw_lines(context, obj, verts, idxs, is_scale_dependant=False)
+        winspace_verts = worldspace_to_winspace(verts, context)
+        color = [i for i in context.preferences.addons["blenderbim"].preferences.decorations_colour]
+        color[3] = 0.5
+        self.draw_lines(context, obj, winspace_verts, idxs, color)
 
 
-# TODO: outdated code?
-class LevelDecorator(BaseDecorator):
-    def get_splines(self, obj):
-        """Iterates through splines
-        Args:
-          obj: Blender object with Curve data
-
-        Yields:
-          verts: points of each spline, world coords
-        """
-        for spline in obj.data.splines:
-            spline_points = spline.bezier_points if spline.bezier_points else spline.points
-            if len(spline_points) < 2:
-                continue
-            yield [obj.matrix_world @ p.co for p in spline_points]
-
-    def decorate(self, context, obj):
-        verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(context, obj, verts, idxs, topo)
-        self.draw_labels(context, obj, self.get_splines(obj))
-
-
-class PlanLevelDecorator(LevelDecorator):
+class PlanLevelDecorator(BaseDecorator):
     objecttype = "PLAN_LEVEL"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define CIRCLE_SIZE 8.0
-        #define CROSS_SIZE 16.0
-    """
-    )
+    def decorate(self, context, obj):
+        # gather geometry data and convert to winspace
+        verts, edges_original, _ = self.get_path_geom(obj, topo=False)
+        if not edges_original:
+            return
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
 
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
+        # setup geometry parameters
+        cross_size = viewportDrawingScale * 16
+        circle_size = viewportDrawingScale * 8
 
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-    in uint type[];
-
-    void main() {
-        DEFAULT_SETUP();
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        uint t0 = type[0], t1 = type[1];
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap1 = vec4(0);
-
-        vec4 p;
-
-        // end edge cross+circle for last segment
-        if (t1 == 2u) {
-            vec4 head_o[CIRCLE_SEGS];
-            circle_head(viewportDrawingScale * CIRCLE_SIZE, head_o);
-
-            for(int i=0; i<CIRCLE_SEGS-1; i++) {
-                do_edge_verts_win(p1w + head_o[i], p1w + head_o[i+1]);
-            }
-            do_edge_verts_win( p1w + head_o[CIRCLE_SEGS-1], p1w + head_o[0] );
-            EndPrimitive();
-
-            vec4 head_x[3];
-            cross_head(dir, viewportDrawingScale * CROSS_SIZE, head_x);
-
-            do_edge_verts_win( p1w + head_x[1], p1w + head_x[2] );
-            EndPrimitive();
-
-            gap1 = head_x[0];
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
         }
+        last_vert = len(winspace_verts) - 1
 
-        // stem, adjusted for an arrow
-        do_edge_verts_win( p0w, p1w + gap1 );
-        EndPrimitive();
-    }
-    """
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            start_i = len(output_verts)
+            gap = Vector((0, 0, 0))
+
+            # arrow head on last vert
+            if edge[1] == last_vert:
+                circle_head = get_circle_head(circle_size)
+                start_i = add_verts_sequence(add_offsets(v1, circle_head), start_i, **out_kwargs, closed=True)
+
+                edge_dir = (v1 - v0).normalized()
+                side = (edge_dir.yx * Vector((1, -1))).to_3d()
+                start_i = add_verts_sequence(
+                    add_offsets(v1, [side * cross_size, side * -cross_size]), start_i, **out_kwargs
+                )
+
+                gap = edge_dir * cross_size
+
+            # stem with gaps for arrows
+            add_verts_sequence([v0, v1 + gap], start_i, **out_kwargs)
+
+        self.draw_lines(context, obj, output_verts, output_edges)
+        self.draw_labels(context, obj, self.get_splines(obj))
 
     def draw_labels(self, context, obj, splines):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -1290,89 +1016,57 @@ class PlanLevelDecorator(LevelDecorator):
             self.draw_label(context, text, p0, dir, gap=8, center=False, box_alignment=box_alignment)
 
 
-class SectionLevelDecorator(LevelDecorator):
+class SectionLevelDecorator(BaseDecorator):
     objecttype = "SECTION_LEVEL"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define CALLOUT_GAP 8.0
-        #define CALLOUT_SIZE 64.0
-    """
-    )
+    def decorate(self, context, obj):
+        # gather geometry data and convert to winspace
+        verts, edges_original, _ = self.get_path_geom(obj, topo=False)
+        if not edges_original:
+            return
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
 
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
+        # setup geometry parameters
+        callout_gap = viewportDrawingScale * 8
+        callout_size = viewportDrawingScale * 64
 
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-    in uint type[];
-    out float dist; // distance from starging point along segment
-
-    void callout_head(in vec4 dir, out vec4 head[4]) {
-        vec2 gap = dir.xy * viewportDrawingScale * CALLOUT_GAP;
-        vec2 tail = dir.xy * viewportDrawingScale * -CALLOUT_SIZE;
-        vec2 side = cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy * CALLOUT_GAP;
-
-        head[0] = vec4(tail + side, 0, 0);
-        head[1] = vec4(gap * 2 + side, 0, 0);
-        head[2] = vec4(gap, 0, 0);
-        head[3] = vec4(side, 0, 0);
-    }
-
-    void main() {
-        DEFAULT_SETUP();
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        uint t0 = type[0], t1 = type[1];
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * 16.0;
-
-        vec4 p;
-
-        dist = 0; // make sure dist is defined to prevent flickering
-        // start edge callout
-        if (t0 == 1u) {
-            vec4 head[4];
-            callout_head(dir, head);
-
-            for(int i=0; i<3; i++) {
-                do_edge_verts_win( p0w + head[i], p0w + head[i+1] );
-            }
-            EndPrimitive();
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
         }
 
-        // stem
-        dist = 0;
-        do_vertex_win( p0w + gap, dir.xy);
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            start_i = len(output_verts)
+            edge_dir = (v1 - v0).normalized()
+            gap = edge_dir * callout_gap
 
-        dist = length(edge);
-        do_vertex_win( p1w - gap, dir.xy);
-        EndPrimitive();
-    }
-    """
+            # callout head on first vert
+            if edge[0] == 0:
+                side = (edge_dir.yx * Vector((1, -1))).to_3d()
+                text_position = v0 + gap + side * callout_gap
+                text_dir = -edge_dir
+                callout_head = get_callout_head(edge_dir, side, callout_size, callout_gap)
+                start_i = add_verts_sequence([v + v0 for v in callout_head], start_i, **out_kwargs, closed=False)
 
-    def draw_labels(self, context, obj, splines):
+            # stem with gaps for arrows
+            add_verts_sequence([v0 + gap, v1 - gap], start_i, **out_kwargs)
+
+        self.draw_lines(context, obj, output_verts, output_edges)
+        self.draw_labels(context, obj, self.get_splines(obj), text_position.to_2d(), text_dir.to_2d())
+
+    def draw_labels(self, context, obj, splines, text_position, text_dir):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        region = context.region
-        region3d = context.region_data
 
         element = tool.Ifc.get_entity(obj)
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
 
         for verts in splines:
-            v0 = verts[0]
-            v1 = verts[1]
-            p0 = location_3d_to_region_2d(region, region3d, v0)
-            p1 = location_3d_to_region_2d(region, region3d, v1)
-            if not p0 or not p1:
-                continue
-            text_dir = p1 - p0
-            if text_dir.length < 1:
-                continue
             z = verts[-1].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
@@ -1385,13 +1079,13 @@ class SectionLevelDecorator(LevelDecorator):
                 self.draw_label(
                     context,
                     line,
-                    p0 + text_dir.normalized() * 16,
-                    -text_dir,
-                    gap=16,
+                    text_position,
+                    text_dir,
                     center=False,
                     vcenter=False,
                     line_no=line_i,
                 )
+            break  # support only 1 label
 
 
 class BreakDecorator(BaseDecorator):
@@ -1403,252 +1097,153 @@ class BreakDecorator(BaseDecorator):
 
     objecttype = "BREAKLINE"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define BREAK_LENGTH 32.0
-        #define BREAK_WIDTH 16.0
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-
-    void main() {
-        DEFAULT_SETUP();
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1), pmw = (p0w + p1w) * .5;
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * 16.0;
-
-        vec4 p;
-
-        vec4 quart = dir * viewportDrawingScale * BREAK_LENGTH * .25;
-        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0) * viewportDrawingScale * BREAK_WIDTH;
-
-        // TODO: check if there's enough length for zigzag
-
-        do_edge_verts( p0, WIN2CLIP(pmw) );
-        do_edge_verts_win ( pmw, pmw + quart - side );
-        do_edge_verts_win ( pmw + quart - side, pmw + quart * 3 + side );
-        do_edge_verts_win ( pmw + quart * 3 + side, pmw + quart * 4 );
-        do_edge_verts( WIN2CLIP(pmw + quart * 4), p1 );
-        EndPrimitive();
-    }
-    """
-
     def decorate(self, context, obj):
+        # gather geometry data and convert to winspace
         if obj.data.is_editmode:
-            verts, idxs = self.get_editmesh_geom(obj)
+            verts, edges_original = self.get_editmesh_geom(obj)
         else:
-            verts, idxs = self.get_mesh_geom(obj)
-        self.draw_lines(context, obj, verts, idxs)
+            verts, edges_original = self.get_mesh_geom(obj)
+        if not edges_original:
+            return
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
+
+        # setup geometry parameters
+        break_length = viewportDrawingScale * 32
+        break_width = viewportDrawingScale * 16
+
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            middle = (v0 + v1) * 0.5
+            edge_dir = (v1 - v0).normalized()
+            start_i = len(output_verts)
+
+            quart = edge_dir * break_length * 0.25
+            side = (edge_dir.yx * Vector((1, -1)) * break_width).to_3d()
+
+            # draw edge with zigzag
+            add_verts_sequence(
+                [v0, middle, middle + quart - side, middle + quart * 3 + side, middle + quart * 4, v1],
+                start_i,
+                **out_kwargs,
+            )
+
+        self.draw_lines(context, obj, output_verts, output_edges)
 
 
 class BattingDecorator(BaseDecorator):
-    """Decorator for batting objects
-
-    Uses first two vertices in verts list.
-    """
+    """Decorator for batting objects"""
 
     objecttype = "BATTING"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define PATTERN_SEGMENT_LENGTH 2
-        #define vert_batting_space(ref, vert) (ref) + vec4(m_edge_space * ( (vert) * batting_dimensions ), 0, 0)
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-    uniform float batting_thickness_winspace;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=256) out;
-
-    void place_vert(vec4 ref_point, vec2 win_space_vert) {
-        vec4 win2clip = matWIN2CLIP();
-        vec4 p = ref_point + vec4(win_space_vert, 0, 0);
-        gl_Position = WIN2CLIP(p);
-        EmitVertex();
-    }
-
-    void main() {
-        DEFAULT_SETUP();
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1), pmw = (p0w + p1w) * .5;
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-
-        float segment_width = batting_thickness_winspace / 2.5;
-        vec2 batting_dimensions = vec2(segment_width, batting_thickness_winspace);
-        // need to multiply by viewportDrawingScale
-        // so the drawing will stay consistent on zoom in / zoom out
-        // but since we use winspace batting dimensions we skip it
-        mat2 m_edge_space = mat2( dir.xy, dir.yx*vec2(1,-1) );
-
-        // simplified rectangle + cross version to indicate batting
-        vec4 off_y = vec4(m_edge_space * ( vec2(0, 0.5) * batting_dimensions ), 0, 0);
-        do_edge_verts_win( p0w + off_y, p0w - off_y );
-        do_edge_verts_win( p0w - off_y, p1w - off_y );
-        do_edge_verts_win( p1w - off_y, p1w + off_y );
-        do_edge_verts_win( p1w + off_y, p0w + off_y );
-        EndPrimitive();
-        do_edge_verts_win( p0w - off_y, p1w + off_y );
-        EndPrimitive();
-        do_edge_verts_win( p0w + off_y, p1w - off_y );
-        EndPrimitive();
-
-        // TODO: more fancy pattern? possibly use of frag shader?
-        // we're not using complicated patterns because of the
-        // hardware shader limit:
-        // Error: C6033: Hardware limitation reached, can only emit 256 vertices of this size
-        // vec2 pattern_segment_data[PATTERN_SEGMENT_LENGTH];
-        // simplified insulation pattern
-        // pattern_segment_data[0] = vec2(0, 1);
-        // pattern_segment_data[1] = vec2(0.5, 0.8);
-        // pattern_segment_data[2] = vec2(0, 0.2);
-        // pattern_segment_data[3] = vec2(0.5, 0);
-        // pattern_segment_data[4] = vec2(1.0, 0.2);
-        // pattern_segment_data[5] = vec2(0.5, 0.8);
-        // pattern_segment_data[6] = vec2(1.0, 1.0);
-        // zigzag pattern
-        // pattern_segment_data[0] = vec2(0, 1);
-        // pattern_segment_data[1] = vec2(0, 0);
-        // int segs = int( ceil( length(edge) / (batting_dimensions.x * viewportDrawingScale) ) ); // amount of segments
-        // vec4 p;
-        // vec2 p_base, p_cur_ver;
-        // for (int i = 0; i < segs; i++) {
-        //     p_base = m_edge_space * (vec2(i, -0.5) * batting_dimensions);
-        //     for(int j=0; j<PATTERN_SEGMENT_LENGTH; j++) {
-        //         p_cur_ver = p_base + m_edge_space * (pattern_segment_data[j] * batting_dimensions);
-        //         place_vert(p0w, p_cur_ver);
-        //     }
-        // }
-        // gl_Position = p1;
-        // EmitVertex();
-        // EndPrimitive();
-    }
-    """
-
     def decorate(self, context, obj):
+        def get_winspace_batting_thickness():
+            # TODO: find the less ugly way to figure thickness
+            thickness = DecoratorData.get_batting_thickness(obj)
+            region = context.region
+            region3d = context.region_data
+            original_edge_length = (verts[1] - verts[0]).length
+            clipspace_verts = [region3d.perspective_matrix @ v for v in verts[:2]]
+            winspace_verts = [v * Vector([region.width / 2, region.height / 2, 1]) for v in clipspace_verts]
+            win_space_edge_length = (winspace_verts[1] - winspace_verts[0]).xy.length
+            k = win_space_edge_length / original_edge_length
+            batting_thickness = k * thickness
+            return batting_thickness
+
+        # gather geometry data and convert to winspace
         if obj.data.is_editmode:
-            verts, idxs = self.get_editmesh_geom(obj)
+            verts, edges_original = self.get_editmesh_geom(obj)
         else:
-            verts, idxs = self.get_mesh_geom(obj)
+            verts, edges_original = self.get_mesh_geom(obj)
+        if not edges_original:
+            return
+        winspace_verts = worldspace_to_winspace(verts, context)
 
-        # TODO: find the less ugly way to figure thickness
-        thickness = DecoratorData.get_batting_thickness(obj)
-        region = context.region
-        region3d = context.region_data
-        original_edge_length = (verts[1] - verts[0]).length
-        clipspace_verts = [region3d.perspective_matrix @ v for v in verts[:2]]
-        winspace_verts = [v * Vector([region.width / 2, region.height / 2, 1]) for v in clipspace_verts]
-        win_space_edge_length = (winspace_verts[1] - winspace_verts[0]).xy.length
-        k = win_space_edge_length / original_edge_length
-        winspace_thickness = k * thickness
+        # setup geometry parameters
+        batting_thickness = get_winspace_batting_thickness()
 
-        self.draw_lines(
-            context,
-            obj,
-            verts[:2],
-            idxs,
-            extra_float_kwargs={"batting_thickness_winspace": winspace_thickness},
-            is_scale_dependant=False,
-        )
+        output_verts = []
+        output_edges = []
+
+        # process edges
+        for edge in edges_original[:1]:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            edge_dir = (v1 - v0).normalized()
+            side = (edge_dir.yx * Vector((1, -1)) * batting_thickness * 0.5).to_3d()
+            start_i = len(output_verts)
+
+            # simplified rectangle + cross to indicate batting
+            output_verts.extend(
+                [
+                    v0 + side,
+                    v0 - side,
+                    v1 - side,
+                    v1 + side,
+                ]
+            )
+            output_edges.extend(
+                [
+                    (start_i, start_i + 1),
+                    (start_i + 1, start_i + 2),
+                    (start_i + 2, start_i + 3),
+                    (start_i + 3, start_i),
+                    (start_i, start_i + 2),
+                    (start_i + 1, start_i + 3),
+                ]
+            )
+
+        self.draw_lines(context, obj, output_verts, output_edges)
 
 
+# TODO: custom shader to support dashed lines
 class GridDecorator(BaseDecorator):
     objecttype = "GRID"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define CIRCLE_SIZE 16.0
-        #define DASH_SIZE 48.0
-        // dash pattern "----------------      ----      "
-        #define DASH_PATTERN 0x03C0FFFFU
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=256) out;
-
-    out float dist; // distance from starging point along segment
-
-    void main() {
-        DEFAULT_SETUP();
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * CIRCLE_SIZE * viewportDrawingScale;
-
-        dist = 0; // make sure dist is defined to prevent flickering
-        vec4 head[CIRCLE_SEGS];
-        circle_head(CIRCLE_SIZE * viewportDrawingScale, head);
-
-        // start edge circle
-        do_circle_head(p0w, head);
-        EndPrimitive();
-
-        // end edge circle
-        do_circle_head(p1w, head);
-        EndPrimitive();
-
-        // stem
-        dist = 0;
-        do_vertex_win( p0w + gap, dir.xy);
-        dist = length(edge);
-        do_vertex_win( p1w - gap, dir.xy);
-        EndPrimitive();
-    }
-    """
-
-    FRAG_GLSL = """
-    uniform vec4 color;
-    uniform float lineWidth;
-    in float smoothline;
-    in float dist;
-    out vec4 fragColor;
-
-    void main() {
-        uint bit = uint(fract(dist / DASH_SIZE) * 32);
-        if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
-
-        fragColor = color;
-        if (lineSmooth) {
-            fragColor.a *= clamp((lineWidth + SMOOTH_WIDTH) * 0.5 - abs(smoothline), 0.0, 1.0);
-        }
-    }
-    """
-
-    def get_mesh_geom(self, obj):
-        # first vertices only
-        vertices = [obj.matrix_world @ obj.data.vertices[i].co for i in (0, 1)]
-        return vertices
-
-    def get_editmesh_geom(self, obj):
-        # first vertices only
-        mesh = bmesh.from_edit_mesh(obj.data)
-        vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
-        return vertices
-
     def decorate(self, context, obj):
-        if obj.data.is_editmode:
-            verts = self.get_editmesh_geom(obj)
-        else:
-            verts = self.get_mesh_geom(obj)
-        self.draw_lines(context, obj, verts, [(0, 1)], smoothing=True)
+        # gather geometry data and convert to winspace
+        verts, edges_original = self.get_mesh_geom(obj)
+        if not edges_original:
+            return
+        verts = verts[:2]
+        edges_original = [(0, 1)]
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
+
+        # setup geometry parameters
+        circle_size = viewportDrawingScale * 16
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            start_i = len(output_verts)
+            circle_head = get_circle_head(circle_size)
+            edge_dir = (v1 - v0).normalized()
+            gap = edge_dir * circle_size
+
+            # circle head on first vert
+            start_i = add_verts_sequence(add_offsets(v0, circle_head), start_i, **out_kwargs, closed=True)
+            start_i = add_verts_sequence(add_offsets(v1, circle_head), start_i, **out_kwargs, closed=True)
+
+            # stem with gaps for circles
+            add_verts_sequence([v0 + gap, v1 - gap], start_i, **out_kwargs)
+
+        color = [i for i in context.preferences.addons["blenderbim"].preferences.decorations_colour]
+        color[3] = 0.5
+        self.draw_lines(context, obj, output_verts, output_edges, color)
         self.draw_labels(context, obj, verts)
 
     def draw_labels(self, context, obj, vertices):
@@ -1664,181 +1259,129 @@ class GridDecorator(BaseDecorator):
         self.draw_label(context, text, p1, dir, vcenter=True, gap=0)
 
 
-class ElevationDecorator(LevelDecorator):
+class ElevationDecorator(BaseDecorator):
     objecttype = "ELEVATION"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define CIRCLE_SIZE 8.0
-        #define TRIANGLE_L 22.63
-        #define TRIANGLE_W 11.31
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=128) out;
-
-    void main() {
-        DEFAULT_SETUP();
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
-        vec4 p;
-
-        vec4 head[CIRCLE_SEGS];
-        circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
-
-        vec4 head5[5];
-
-        // start edge circle
-        do_circle_head(p0w, head);
-        EndPrimitive();
-
-        // edge triangle
-        triangle_head(side, dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
-        do_triangle_head(p0w, head5);
-        EndPrimitive();
-
-        // reference divider
-        vec4 offset = vec4(1, 0, 0, 0) * viewportDrawingScale * CIRCLE_SIZE;
-        do_edge_verts_win( p0w + offset, p0w - offset );
-        EndPrimitive();
-    }
-    """
-
     def decorate(self, context, obj):
-        center = obj.matrix_world.translation
-        v1 = obj.matrix_world @ Vector((0, 0, 0))
-        v2 = obj.matrix_world @ Vector((0, 0, -1))
-        self.draw_lines(context, obj, [v1, v2], [(0, 1)])
+        # gather geometry data and convert to winspace
+        verts = [obj.matrix_world @ v for v in [Vector((0, 0, 0)), Vector((0, 0, -1))]]
+        edges_original = [(0, 1)]
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
+
+        # setup geometry parameters
+        triangle_length = viewportDrawingScale * 22.63
+        triangle_width = viewportDrawingScale * 11.31
+        circle_size = viewportDrawingScale * 8
+
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            start_i = len(output_verts)
+
+            circle_head = get_circle_head(circle_size)
+            start_i = add_verts_sequence(add_offsets(v0, circle_head), start_i, **out_kwargs, closed=True)
+
+            edge_dir = (v1 - v0).normalized()
+            side = (edge_dir.yx * Vector((1, -1))).to_3d()
+            triangle_head = get_triangle_head(side, edge_dir, triangle_length, triangle_width)
+            start_i = add_verts_sequence(add_offsets(v0, triangle_head), start_i, **out_kwargs, closed=True)
+
+            # # stem with gaps for arrows
+            # add_verts_sequence([v0, v1], start_i, **out_kwargs)
+
+        self.draw_lines(context, obj, output_verts, output_edges)
 
 
-class SectionDecorator(LevelDecorator):
+class SectionDecorator(BaseDecorator):
     objecttype = "SECTION"
 
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define CIRCLE_SIZE 8.0
-        #define TRIANGLE_L 22.63
-        #define TRIANGLE_W 11.31
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-    uniform float connect_markers;
-    uniform float display_start_symbol;
-    uniform float display_end_symbol;
-    uniform float display_start_circle;
-    uniform float display_end_circle;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=256) out;
-
-    void main() {
-        DEFAULT_SETUP();
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
-        vec4 edge = p1w - p0w, side = normalize(edge);
-        vec4 edge_ortho_dir = -vec4(cross(vec3(side.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
-        vec4 p;
-
-        vec4 head[CIRCLE_SEGS];
-        circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
-
-        vec4 head5[5];
-        triangle_head(side, edge_ortho_dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head5);
-
-        // start edge circle
-        if (display_start_circle > 0) {
-            do_circle_head(p0w, head);
-            EndPrimitive();
-        }
-
-        if (display_start_symbol > 0) {
-            // start edge triangle
-            do_triangle_head(p0w, head5);
-            EndPrimitive();
-        }
-
-        // end edge circle
-        if (display_end_circle > 0) {
-            do_circle_head(p1w, head);
-            EndPrimitive();
-        }
-
-        // end edge triangle
-        if (display_end_symbol > 0) {
-            do_triangle_head(p1w, head5);
-            EndPrimitive();
-        }
-
-        vec4 divider_line_size[2];
-        divider_line_size[0] = side * viewportDrawingScale * CIRCLE_SIZE;
-        divider_line_size[1] = side * viewportDrawingScale * CIRCLE_SIZE;
-        if (connect_markers == 0) {
-            divider_line_size[0] = divider_line_size[0] * 3;
-        }
-
-        // NOTE: basically we consider first vertex to be
-        // start and the second to be the end marker
-        // which is a bit inconsistent with svg
-        // but not that anyone will use multiple edge section annotation
-
-        vec4 gap[2];
-
-        // start reference divider
-        if (display_start_symbol > 0) {
-            do_edge_verts_win( p0w + divider_line_size[0], p0w - divider_line_size[1] );
-            EndPrimitive();
-        }
-
-        // end reference divider
-        if (display_end_symbol > 0) {
-            do_edge_verts_win( p1w + divider_line_size[1], p1w - divider_line_size[0] );
-            EndPrimitive();
-        }
-
-        // stem
-        if (connect_markers > 0) {
-            gap[0] = (display_start_symbol > 0 ? (side * viewportDrawingScale * CIRCLE_SIZE) : vec4(0));
-            gap[1] = (display_end_symbol > 0 ? (side * viewportDrawingScale * CIRCLE_SIZE) : vec4(0));
-            do_edge_verts_win( p0w + gap[0], p1w - gap[1] );
-            EndPrimitive();
-        }
-    }
-    """
-
     def decorate(self, context, obj):
+        # gather geometry data and convert to winspace
         if obj.data.is_editmode:
-            verts, idxs = self.get_editmesh_geom(obj)
+            verts, edges_original = self.get_editmesh_geom(obj)
         else:
-            verts, idxs = self.get_mesh_geom(obj)
+            verts, edges_original = self.get_mesh_geom(obj)
+        if not edges_original:
+            return
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        winspace_verts = worldspace_to_winspace(verts, context)
+
+        # setup geometry parameters
+        triangle_length = viewportDrawingScale * 22.63
+        triangle_width = viewportDrawingScale * 11.31
+        circle_size = viewportDrawingScale * 8
+
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+
+        display_data = DecoratorData.get_section_markers_display_data(obj)
+        connect_markers = display_data["connect_markers"]
+        display_start_symbol = display_data["start"]["add_symbol"]
+        display_end_symbol = display_data["end"]["add_symbol"]
+        display_start_circle = display_data["start"]["add_circle"]
+        display_end_circle = display_data["end"]["add_circle"]
+
+        # process edges
+        for edge in edges_original:
+            v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
+            start_i = len(output_verts)
+
+            if display_start_circle or display_end_circle:
+                circle_head = get_circle_head(circle_size)
+
+            if display_start_symbol or display_end_symbol or connect_markers:
+                edge_dir = (v1 - v0).normalized()
+                side = (edge_dir.yx * Vector((1, -1))).to_3d()
+                edge_dir_circle = edge_dir * circle_size
+
+            if display_start_symbol or display_end_symbol:
+                triangle_head = get_triangle_head(edge_dir, -side, triangle_length, triangle_width)
+                divider_offset = []
+                divider_offset.append(edge_dir_circle if connect_markers else edge_dir_circle * 3)
+                divider_offset.append(edge_dir_circle)
+
+            if display_start_circle:
+                start_i = add_verts_sequence([v + v0 for v in circle_head], start_i, **out_kwargs, closed=True)
+                # circle middle divider
+                if not display_start_symbol:
+                    start_i = add_verts_sequence(
+                        [v0 + divider_offset[0], v0 - divider_offset[1]], start_i, **out_kwargs
+                    )
+
+            if display_start_symbol:
+                start_i = add_verts_sequence([v + v0 for v in triangle_head], start_i, **out_kwargs, closed=True)
+
+            if display_end_circle:
+                start_i = add_verts_sequence([v + v1 for v in circle_head], start_i, **out_kwargs, closed=True)
+                # circle middle divider
+                if not display_end_symbol:
+                    start_i = add_verts_sequence(
+                        [v1 + divider_offset[1], v1 - divider_offset[0]], start_i, **out_kwargs
+                    )
+
+            if display_end_symbol:
+                start_i = add_verts_sequence([v + v1 for v in triangle_head], start_i, **out_kwargs, closed=True)
+
+            if connect_markers:
+                gap = []
+                gap.append(edge_dir_circle if display_start_symbol else Vector((0, 0, 0)))
+                gap.append(edge_dir_circle if display_end_symbol else Vector((0, 0, 0)))
+                add_verts_sequence([v0 + gap[0], v1 - gap[1]], start_i, **out_kwargs)
 
         # TODO: add dashed line to shader with frag shader
-        display_data = DecoratorData.get_section_markers_display_data(obj)
-        self.draw_lines(
-            context,
-            obj,
-            verts,
-            idxs,
-            extra_float_kwargs={
-                "connect_markers": float(display_data["connect_markers"]),
-                "display_start_symbol": float(display_data["start"]["add_symbol"]),
-                "display_end_symbol": float(display_data["end"]["add_symbol"]),
-                "display_start_circle": float(display_data["start"]["add_circle"]),
-                "display_end_circle": float(display_data["end"]["add_circle"]),
-            },
-        )
+        self.draw_lines(context, obj, output_verts, output_edges)
 
 
 class TextDecorator(BaseDecorator):
@@ -1847,48 +1390,6 @@ class TextDecorator(BaseDecorator):
     """
 
     objecttype = "TEXT"
-
-    DEF_GLSL = (
-        BaseDecorator.DEF_GLSL
-        + """
-        #define CIRCLE_SIZE 4.0
-        #define CIRCLE_SEGS_ASTERISK 6
-    """
-    )
-
-    GEOM_GLSL = """
-    uniform float viewportDrawingScale;
-
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
-
-    void circle_head_asterisk(in float size, out vec4 head[CIRCLE_SEGS_ASTERISK]) {
-        float angle_d = PI * 2 / CIRCLE_SEGS_ASTERISK;
-        for(int i = 0; i<CIRCLE_SEGS_ASTERISK; i++) {
-            float angle = angle_d * i;
-            head[i] = vec4(cos(angle), sin(angle), 0, 0) * size;
-        }
-    }
-
-    void main() {
-        // default setup for macro to work
-        vec4 clip2win = matCLIP2WIN();
-        vec4 win2clip = matWIN2CLIP();
-        vec2 EDGE_DIR;
-
-        vec4 p0 = gl_in[0].gl_Position;
-        vec4 p0w = CLIP2WIN(p0);
-        vec4 p;
-
-        vec4 head[CIRCLE_SEGS_ASTERISK];
-        circle_head_asterisk(viewportDrawingScale * CIRCLE_SIZE, head);
-
-        for (int i=0; i < CIRCLE_SEGS_ASTERISK/2; i++) {
-            do_edge_verts_win( p0w + head[i], p0w + head[i+CIRCLE_SEGS_ASTERISK/2] );
-            EndPrimitive();
-        }
-    }
-    """
 
     def decorate(self, context, obj):
         self.draw_text(context, obj)
@@ -2317,6 +1818,8 @@ class DecorationsHandler:
         if cls.installed:
             cls.uninstall()
         handler = cls()
+        # NOTE: that we USE POST_PIXEL here so that we can draw use both 3D_POLYLINE_UNIFORM_COLOR
+        # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
 
     @classmethod
