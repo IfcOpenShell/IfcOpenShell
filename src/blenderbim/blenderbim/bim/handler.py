@@ -27,6 +27,8 @@ from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
 from blenderbim.bim.module.model.data import AuthoringData
+from mathutils import Vector
+from math import cos, degrees
 
 
 global_subscription_owner = object()
@@ -99,6 +101,53 @@ def color_callback(obj, data):
 
 def active_object_callback():
     refresh_ui_data()
+    update_bim_tool_props()
+
+
+def update_bim_tool_props():
+    """update BIM Tools props (such as extrusion_depth, length and x_angle) when active object changes"""
+    obj = bpy.context.active_object
+
+    # bunch of checks to see if we're in a valid state
+    if not obj:
+        return
+    mode = bpy.context.mode
+    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode).idname
+    if current_tool != "bim.bim_tool":
+        return
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return
+    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+    if not representation:
+        return
+    extrusion = tool.Model.get_extrusion(representation)
+    if not extrusion:
+        return
+
+    def get_x_angle(extrusion):
+        x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+        x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+        return x_angle
+
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    props = bpy.context.scene.BIMModelProperties
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+
+    if AuthoringData.data["active_material_usage"] == "LAYER2":
+        x_angle = get_x_angle(extrusion)
+        axis = tool.Model.get_wall_axis(obj)["reference"]
+        props.extrusion_depth = extrusion.Depth * si_conversion * cos(x_angle)
+        props.length = (axis[1] - axis[0]).length
+        props.x_angle = degrees(x_angle)
+
+    elif AuthoringData.data["active_material_usage"] == "LAYER3":
+        x_angle = get_x_angle(extrusion)
+        props.x_angle = degrees(x_angle)
+
+    elif AuthoringData.data["active_material_usage"] == "PROFILE":
+        props.extrusion_depth = extrusion.Depth * si_conversion
 
 
 def active_material_index_callback(obj, data):
