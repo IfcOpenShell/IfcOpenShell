@@ -1522,7 +1522,10 @@ class AddSchedule(bpy.types.Operator, Operator):
             ifc_path = tool.Ifc.get_path()
             if os.path.isfile(ifc_path):
                 ifc_path = os.path.dirname(ifc_path)
-            filepath = os.path.relpath(filepath, ifc_path)
+
+            # taking into account different drives on windows
+            if Path(filepath).drive == Path(ifc_path).drive:
+                filepath = os.path.relpath(filepath, ifc_path)
         core.add_schedule(
             tool.Ifc,
             tool.Drawing,
