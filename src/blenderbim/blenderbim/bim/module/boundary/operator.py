@@ -624,6 +624,20 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         )
 
         gross_boundary_polygon = target_face_polygon.intersection(related_building_element_polygon)
+
+        if type(gross_boundary_polygon) == shapely.GeometryCollection:
+            for geom in gross_boundary_polygon.geoms:
+                if type(geom) == shapely.Polygon:
+                    gross_boundary_polygon = geom
+                    break
+
+        # The gross boundary polygon may not be a true gross boundary since it
+        # may have openings already removed, such as in IFC4 Reference View. So
+        # we cheat by using the exterior boundary to mean "gross". Later, we
+        # can use this to check whether or not the opening is relevant to our
+        # space.
+        exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
+
         net_boundary_polygon = shapely.Polygon(gross_boundary_polygon)
 
         inner_boundaries = []
@@ -637,8 +651,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             opening_polygon = self.get_flattened_polygon(opening, relating_space_obj, target_face_matrix_i)
 
             net_boundary_polygon = net_boundary_polygon.difference(opening_polygon)
-            opening_polygon = opening_polygon.intersection(gross_boundary_polygon)
-            if opening_polygon.area == 0:
+            # Only openings that are projected onto our exterior boundary are relevant.
+            if opening_polygon.intersection(exterior_boundary_polygon).area == 0:
                 continue
 
             connection_geometry = self.create_connection_geometry_from_polygon(opening_polygon, target_face_matrix)
