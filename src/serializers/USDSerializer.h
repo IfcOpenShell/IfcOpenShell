@@ -35,8 +35,8 @@ private:
     bool ready_ = false;
     pxr::UsdStageRefPtr stage_;
 
-	int writeMaterial(const IfcGeom::Material& style);
-    void writeLighting();
+	int writeMaterial(const IfcGeom::Material&);
+    void createLighting();
 public:
 	USDSerializer(const std::string&, const SerializerSettings&);
 	virtual ~USDSerializer();
