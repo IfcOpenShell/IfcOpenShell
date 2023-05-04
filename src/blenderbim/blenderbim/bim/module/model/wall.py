@@ -240,7 +240,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_x_angle"
     bl_label = "Change Extrusion X Angle"
     bl_options = {"REGISTER", "UNDO"}
-    x_angle: bpy.props.FloatProperty()
+    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE")
 
     @classmethod
     def poll(cls, context):
