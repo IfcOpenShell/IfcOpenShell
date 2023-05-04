@@ -23,7 +23,7 @@ from bpy import types
 from mathutils import Vector
 from mathutils import geometry
 from bpy_extras import view3d_utils
-from blenderbim.bim.module.drawing.shaders import DotsGizmoShader, ExtrusionGuidesShader, BaseLinesShader
+from blenderbim.bim.module.drawing.shaders import DotsGizmoShader, ExtrusionGuidesShader
 from ifcopenshell.util.unit import si_conversions
 
 
@@ -251,11 +251,12 @@ X3DISC = (
 class CustomGizmo:
     # FIXME: highliting/selection doesnt work
     def draw_very_custom_shape(self, ctx, custom_shape, select_id=None):
-        # similar to draw_custom_shape
-        shape, batch, shader = custom_shape
+        # create shader and batch
+        shader_wrapper, batch = custom_shape
+        shader = shader_wrapper.get_shader()
 
+        # setup params
         shader.bind()
-
         if select_id is not None:
             gpu.select.load_id(select_id)
         else:
@@ -264,13 +265,17 @@ class CustomGizmo:
             else:
                 color = (*self.color, self.alpha)
             shader.uniform_float("color", color)
-            shape.glenable()
+            shader_wrapper.glenable()
+        shader_wrapper.uniform_region(ctx)
 
-        shape.uniform_region(ctx)
-        # shader.uniform_float('modelMatrix', self.matrix_world)
+        # using `with` block to make sure matrix multiplication
+        # won't affect other shaders
         with gpu.matrix.push_pop():
-            gpu.matrix.multiply_matrix(self.matrix_world)
-            batch.draw()
+            # using matrix_world seems to be unaffected by matrix_offset
+            # therefore we use basis @ offset
+            matrix = self.matrix_basis @ self.matrix_offset
+            gpu.matrix.multiply_matrix(matrix)
+            batch.draw(shader)
 
         gpu.state.blend_set("NONE")
 
@@ -360,6 +365,7 @@ class UglyDotGizmo(OffsetHandle, types.Gizmo):
         self.draw_custom_shape(self.custom_shape, select_id=select_id)
 
 
+# TODO: dead code?
 class DotGizmo(CustomGizmo, OffsetHandle, types.Gizmo):
     """Single dot viewport-aligned"""
 
@@ -389,10 +395,6 @@ class DotGizmo(CustomGizmo, OffsetHandle, types.Gizmo):
         self.refresh()
         self.draw_very_custom_shape(ctx, self.custom_shape, select_id=select_id)
 
-    # doesn't get called
-    # def test_select(self, ctx, location):
-    #     pass
-
 
 class ExtrusionGuidesGizmo(CustomGizmo, types.Gizmo):
     """Extrusion guides
@@ -407,19 +409,25 @@ class ExtrusionGuidesGizmo(CustomGizmo, types.Gizmo):
     __slots__ = ("scale_value", "custom_shape")
 
     def setup(self):
-        shader = ExtrusionGuidesShader()
-        self.custom_shape = shader, shader.batch(pos=((0, 0, 0), (0, 0, 1))), shader.prog
-        self.use_draw_scale = False
-
-    def refresh(self):
-        depth = self.target_get_value("depth") / self.scale_value
-        self.matrix_offset.col[2][2] = depth  # z-scaled
+        """setup `custom_shape`"""
+        shader_wrapper = ExtrusionGuidesShader()
+        verts = [Vector((0, 0, 0)), Vector((0, 0, 1))]
+        verts, edges = shader_wrapper.process_geometry(verts)
+        self.custom_shape = shader_wrapper, shader_wrapper.batch(
+            pos=verts,
+            indices=edges,
+        )
 
     def draw(self, ctx):
         self.refresh()
         self.draw_very_custom_shape(ctx, self.custom_shape)
 
+    def refresh(self):
+        depth = self.target_get_value("depth") / self.scale_value
+        self.matrix_offset.col[2][2] = depth  # z-scaled
 
+
+# TODO: dead code?
 class DimensionLabelGizmo(types.Gizmo):
     """Text label for a dimension"""
 
@@ -486,6 +494,7 @@ class ExtrusionWidget(types.GizmoGroup):
         theme = ctx.preferences.themes[0].user_interface
         scale_value = self.get_scale_value(ctx.scene.unit_settings.system, ctx.scene.unit_settings.length_unit)
 
+        # setup handle
         gz = self.handle = self.gizmos.new("BIM_GT_uglydot_3d")
         gz.matrix_basis = basis
         gz.scale_basis = 0.1
@@ -496,6 +505,7 @@ class ExtrusionWidget(types.GizmoGroup):
         gz.target_set_prop("offset", prop, "value")
         gz.scale_value = scale_value
 
+        # setup guides
         gz = self.guides = self.gizmos.new("BIM_GT_extrusion_guides")
         gz.matrix_basis = basis
         gz.color = gz.color_highlight = tuple(theme.gizmo_secondary)
