@@ -292,6 +292,7 @@ class Drawing:
     def get_reference_description(cls, reference): pass
     def get_reference_document(cls, reference): pass
     def get_reference_location(cls, reference): pass
+    def get_references_with_location(cls, location): pass
     def get_text_literal(cls, obj): pass
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
@@ -848,7 +849,7 @@ class Unit:
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
-    def get_scene_unit_si_prefix(cls): pass
+    def get_scene_unit_si_prefix(cls, unit_type): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
     def is_scene_unit_metric(cls): pass

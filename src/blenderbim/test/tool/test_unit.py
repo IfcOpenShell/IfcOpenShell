@@ -97,55 +97,59 @@ class TestExportUnitAttributes(NewFile):
 
 
 class TestGetSceneUnitName(NewFile):
-    def test_getting_a_metric_name(self):
-        bpy.context.scene.unit_settings.system = "METRIC"
-        assert subject.get_scene_unit_name("length") == "METRE"
-        assert subject.get_scene_unit_name("area") == "SQUARE_METRE"
-        assert subject.get_scene_unit_name("volume") == "CUBIC_METRE"
-
     def test_getting_an_imperial_name(self):
         bpy.context.scene.unit_settings.system = "IMPERIAL"
         bpy.context.scene.unit_settings.length_unit = "MILES"
-        assert subject.get_scene_unit_name("length") == "mile"
-        assert subject.get_scene_unit_name("area") == "square mile"
-        assert subject.get_scene_unit_name("volume") == "cubic mile"
+        bpy.context.scene.BIMProperties.area_unit = "square foot"
+        bpy.context.scene.BIMProperties.volume_unit = "cubic inch"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "mile"
+        assert subject.get_scene_unit_name("AREAUNIT") == "square foot"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
         bpy.context.scene.unit_settings.length_unit = "FEET"
-        assert subject.get_scene_unit_name("length") == "foot"
-        assert subject.get_scene_unit_name("area") == "square foot"
-        assert subject.get_scene_unit_name("volume") == "cubic foot"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "foot"
+        assert subject.get_scene_unit_name("AREAUNIT") == "square foot"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
         bpy.context.scene.unit_settings.length_unit = "INCHES"
-        assert subject.get_scene_unit_name("length") == "inch"
-        assert subject.get_scene_unit_name("area") == "square inch"
-        assert subject.get_scene_unit_name("volume") == "cubic inch"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "inch"
+        assert subject.get_scene_unit_name("AREAUNIT") == "square foot"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
         bpy.context.scene.unit_settings.length_unit = "THOU"
-        assert subject.get_scene_unit_name("length") == "thou"
-        assert subject.get_scene_unit_name("area") == "square thou"
-        assert subject.get_scene_unit_name("volume") == "cubic thou"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "thou"
+        assert subject.get_scene_unit_name("AREAUNIT") == "square foot"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
         bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
-        assert subject.get_scene_unit_name("length") == "foot"
-        assert subject.get_scene_unit_name("area") == "square foot"
-        assert subject.get_scene_unit_name("volume") == "cubic foot"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "foot"
+        assert subject.get_scene_unit_name("AREAUNIT") == "square foot"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
 
     def test_getting_a_name_with_no_unit_system(self):
         bpy.context.scene.unit_settings.system = "NONE"
-        assert subject.get_scene_unit_name("length") == "METRE"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "foot"
 
 
 class TestGetSceneUnitSIPrefix:
     def test_run(self):
         bpy.context.scene.unit_settings.system = "METRIC"
         bpy.context.scene.unit_settings.length_unit = "METERS"
-        assert subject.get_scene_unit_si_prefix() is None
+        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") is None
         bpy.context.scene.unit_settings.length_unit = "MICROMETERS"
-        assert subject.get_scene_unit_si_prefix() == "MICRO"
+        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "MICRO"
         bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
-        assert subject.get_scene_unit_si_prefix() == "MILLI"
+        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "MILLI"
         bpy.context.scene.unit_settings.length_unit = "CENTIMETERS"
-        assert subject.get_scene_unit_si_prefix() == "CENTI"
+        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "CENTI"
         bpy.context.scene.unit_settings.length_unit = "KILOMETERS"
-        assert subject.get_scene_unit_si_prefix() == "KILO"
+        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "KILO"
         bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
-        assert subject.get_scene_unit_si_prefix() is None
+        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") is None
+        bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+        assert subject.get_scene_unit_si_prefix("AREAUNIT") is None
+        bpy.context.scene.BIMProperties.area_unit = "MILLI/SQUARE_METRE"
+        assert subject.get_scene_unit_si_prefix("AREAUNIT") == "MILLI"
+        bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+        assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") is None
+        bpy.context.scene.BIMProperties.volume_unit = "MILLI/CUBIC_METRE"
+        assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") == "MILLI"
 
 
 class TestImportUnitAttributes(NewFile):
