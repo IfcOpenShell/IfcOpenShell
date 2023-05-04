@@ -16,9 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from gpu.types import GPUShader
 from gpu_extras.batch import batch_for_shader
 import gpu
+from mathutils import Vector
+
+
+# NOTES:
+# Since Metal doesn't support geometry shaders we stick to builtin shaders
+# and generate all geometry data in python before passing it to the shader.
+# This way was considered to be the most reliable atm.
+# More: https://blender.stackexchange.com/questions/291674/migrating-geometry-shaders-to-metal
+#
+# BGL deprecation:
+# since `bgl` is deprecated, creating smoothing lines became tricky
+# Notes for creating shaders with smoothed lines:
+# in geom shader - use triangle_strip, DEFAULT_SETUP, do_edge_verts or do_vertex to emit vertices
+# in frag shader - use lineWidth uniform, smoothline flaot in, smoothing shader code from base shader
+# mind the vertex limit since emitting vertices for smoothed lines produces twice as much vertices
 
 
 BASE_DEF_GLSL = """
@@ -28,12 +42,6 @@ BASE_DEF_GLSL = """
 #define SMOOTH_WIDTH 1.0
 #define lineSmooth true
 """
-
-# since `bgl` is deprecated, creating smoothing lines became tricky
-# Notes for creating shaders with smoothed lines:
-# in geom shader - use triangle_strip, DEFAULT_SETUP, do_edge_verts or do_vertex to emit vertices
-# in frag shader - use lineWidth uniform, smoothline flaot in, smoothing shader code from base shader
-# mind the vertex limit since emitting vertices for smoothed lines produces twice as much vertices
 
 BASE_LIB_GLSL = """
 // TODO: redefine as macor instead
@@ -160,12 +168,11 @@ void do_vertex_util(vec4 pos, vec2 ofs)
 
 // geometry utils
 void triangle_head(in vec4 side, in vec4 dir, in float length, in float width, in float radius, out vec4 head[5]) {
-    vec4 nose = side * length;
-    vec4 ear = dir * width;
+    // TODO: radius is unnecessary?
     head[0] = side * -radius;
-    head[1] = nose * -.5;
-    head[2] = vec4(0) + ear;
-    head[3] = nose * .5;
+    head[1] = side * length * -.5;
+    head[2] = dir * width;
+    head[3] = side * length * .5;
     head[4] = side * radius;
 }
 
@@ -187,6 +194,22 @@ void do_circle_head(vec4 pos_w, vec4 head[CIRCLE_SEGS]) {
 }
 
 """
+
+
+def add_verts_sequence(verts, start_i, output_verts, output_edges, closed=False):
+    """Add sequence of verts to output lists, returns next vertex index"""
+    for i, v in enumerate(verts[:-1], start_i):
+        output_verts.append(v)
+        output_edges.append((i, i + 1))
+    output_verts.append(verts[-1])
+    if closed:
+        output_edges.append((i + 1, start_i))
+    return i + 2
+
+
+def add_offsets(v, offsets):
+    """returns list of verts with offsets added"""
+    return [v + offset for offset in offsets]
 
 
 class BaseShader:
@@ -265,48 +288,49 @@ class BaseShader:
     """
 
     def __init__(self):
-        # NB: libcode arg doesn't work
-        # TODO: rename to .shader
-        self.prog = GPUShader(
-            vertexcode=self.VERT_GLSL,
-            fragcode=self.FRAG_GLSL,
-            geocode=self.LIB_GLSL + self.GEOM_GLSL,
-            defines=self.DEF_GLSL,
-        )
+        # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+        self.base_shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+
+    def get_shader(self):
+        """Returns shader for this type"""
+        return self.line_shader if self.TYPE == "LINES" else self.base_shader
 
     def batch(self, indices=None, **data):
         """Returns automatic GPUBatch filled with provided parameters"""
-        batch = batch_for_shader(self.prog, self.TYPE, data, indices=indices)
-        batch.program_set(self.prog)
+        shader = self.get_shader()
+        batch = batch_for_shader(shader, self.TYPE, data, indices=indices)
         return batch
 
     def bind(self):
-        self.prog.bind()
+        """need to bind shader before changing it's uniforms"""
+        shader = self.get_shader()
+        shader.bind()
+        return shader
 
     def glenable(self):
         gpu.state.blend_set("ALPHA")
         gpu.state.depth_test_set("LESS_EQUAL")
 
     def uniform_region(self, ctx):
+        shader = self.bind()
+
         region = ctx.region
         region3d = ctx.region_data
 
         uniform_floats = {
-            "viewMatrix": region3d.perspective_matrix,
-            "winsize": (region.width, region.height),
+            "ModelViewProjectionMatrix": region3d.perspective_matrix,
+            # POLYLINE_UNIFORM_COLOR specific uniforms
+            "viewportSize": (region.width, region.height),
             "lineWidth": 2.5,
         }
 
         for name, value in uniform_floats.items():
-            try:
-                self.prog.uniform_float(name, value)
-                # TODO: shouldn't just try'n'catch them
-                # because they may indicate errors in code
-            except ValueError:  # unused uniform
-                pass
+            shader.uniform_float(name, value)
 
 
-# TODO: add smoothing if this shades is going to be used
+# TODO: add smoothing if this shader is going to be used
+# TODO: dead code?
 class BaseLinesShader(BaseShader):
     """Draws line segments with gaps around vertices at endpoints"""
 
@@ -429,37 +453,24 @@ class ExtrusionGuidesShader(GizmoShader):
 
     TYPE = "LINES"
 
-    DEF_GLSL = (
-        BaseShader.DEF_GLSL
-        + """
-    #define CROSS_SIZE .5
-    """
-    )
+    def process_geometry(self, verts):
+        CROSS_SIZE = 0.5
 
-    GEOM_GLSL = """
-    uniform mat4 ModelViewProjectionMatrix;
+        p0, p1 = verts
+        bx = Vector((1, 0, 0)) * CROSS_SIZE
+        by = Vector((0, 1, 0)) * CROSS_SIZE
 
-    layout(lines) in;
-    layout(triangle_strip, max_vertices=MAX_POINTS) out;
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
 
-    void main() {
-        // default setup for macro to work
-        vec2 EDGE_DIR;
+        start_i = 0
+        start_i = add_verts_sequence(add_offsets(p0, [-bx, bx]), start_i, **out_kwargs)
+        start_i = add_verts_sequence(add_offsets(p0, [-by, by]), start_i, **out_kwargs)
+        start_i = add_verts_sequence(add_offsets(p1, [-bx, bx]), start_i, **out_kwargs)
+        start_i = add_verts_sequence(add_offsets(p1, [-by, by]), start_i, **out_kwargs)
 
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        do_edge_verts(p0, p1);
-        EndPrimitive();
-
-        vec4 bx = ModelViewProjectionMatrix[0] * CROSS_SIZE;
-        vec4 by = ModelViewProjectionMatrix[1] * CROSS_SIZE;
-
-        do_edge_verts(p0 - bx, p0 + bx);
-        EndPrimitive();
-        do_edge_verts(p0 - by, p0 + by);
-        EndPrimitive();
-        do_edge_verts(p1 - bx, p1 + bx);
-        EndPrimitive();
-        do_edge_verts(p1 - by, p1 + by);
-        EndPrimitive();
-    }
-    """
+        return output_verts, output_edges
