@@ -553,7 +553,13 @@ def generate_gantt_chart(sequence, work_schedule):
 
 
 def load_product_related_tasks(sequence, product=None):
-    sequence.load_product_related_tasks(product)
+    filter_by_schedule = sequence.is_filter_by_active_schedule()
+    if filter_by_schedule:
+        work_schedule = sequence.get_active_work_schedule()
+        task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
+    else:
+        task_inputs, task_ouputs = sequence.get_tasks_for_product(product)
+    sequence.load_product_related_tasks(task_inputs, task_ouputs)
 
 
 def reorder_task_nesting(ifc, sequence, task, new_index):

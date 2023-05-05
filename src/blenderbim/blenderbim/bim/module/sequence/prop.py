@@ -420,6 +420,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     enable_reorder: BoolProperty(name="Enable Reorder", default=False)
     show_task_operators: BoolProperty(name="Show Task Options", default=True)
     should_show_schedule_baseline_ui: BoolProperty(name="Baselines", default=False)
+    filter_by_active_schedule: BoolProperty(name="Filter By Active Schedule", default=False)
 
 
 class BIMTaskTreeProperties(PropertyGroup):

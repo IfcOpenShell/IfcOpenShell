@@ -1555,11 +1555,18 @@ class Sequence(blenderbim.core.tool.Sequence):
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
     @classmethod
-    def load_product_related_tasks(cls, product):
+    def is_filter_by_active_schedule(cls):
+        return bpy.context.scene.BIMWorkScheduleProperties.filter_by_active_schedule
+
+    @classmethod
+    def get_tasks_for_product(cls, product, work_schedule=None):
+        return ifcopenshell.util.sequence.get_tasks_for_product(product, work_schedule)
+
+    @classmethod
+    def load_product_related_tasks(cls, task_inputs, task_ouputs):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.product_input_tasks.clear()
         props.product_output_tasks.clear()
-        task_inputs, task_ouputs = ifcopenshell.util.sequence.get_tasks_for_product(product)
         for task in task_inputs or []:
             new = props.product_input_tasks.add()
             new.name = task.Name or "Unnamed"
