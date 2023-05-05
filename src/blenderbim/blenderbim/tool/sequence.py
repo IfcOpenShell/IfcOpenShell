@@ -1479,8 +1479,11 @@ class Sequence(blenderbim.core.tool.Sequence):
             relating_work_schedule = work_schedule.IsDeclaredBy[0].RelatingObject
             work_schedule = relating_work_schedule
         tasks_json = []
-        for task in ifcopenshell.util.sequence.get_root_tasks(relating_work_schedule):
-            cls.create_new_task_json(task, tasks_json, sequence_type_map, baseline_schedule=work_schedule)
+        for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+            if is_baseline:
+                cls.create_new_task_json(task, tasks_json, sequence_type_map, baseline_schedule=work_schedule)
+            else:
+                cls.create_new_task_json(task, tasks_json, sequence_type_map)
         return tasks_json
 
     @classmethod
