@@ -237,15 +237,14 @@ def is_work_time_applicable_to_day(work_time, day):
 def get_task_work_schedule(task):
     parent_task = get_parent_task(task)
     if parent_task:
-        get_task_work_schedule(parent_task)
+        return get_task_work_schedule(parent_task) or get_task_work_schedule(task)
     else:
-        schedules = [
-            rel.RelatingControl
-            for rel in task.HasAssignments
-            if rel.is_a("IfcRelAssignsToControl")
-            and rel.RelatingControl.is_a("IfcWorkSchedule")
-        ]
-        return schedules
+        for rel in task.HasAssignments:
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a(
+                "IfcWorkSchedule"
+            ):
+                return rel.RelatingControl
+        return None
 
 
 def get_nested_tasks(task):
@@ -332,39 +331,98 @@ def get_task_outputs(task, is_deep=False):
             for output in get_direct_task_outputs(nested_task)
         ]
 
+
 def get_task_inputs(task, is_deep=False):
     if not is_deep:
-        return [object for rel in task.OperatesOn if rel.is_a("IfcRelAssignsToProcess")  for object in rel.RelatedObjects if object.is_a("IfcProduct")]
+        return [
+            object
+            for rel in task.OperatesOn
+            if rel.is_a("IfcRelAssignsToProcess")
+            for object in rel.RelatedObjects
+            if object.is_a("IfcProduct")
+        ]
     else:
         return [
             output
             for nested_task in get_all_nested_tasks(task)
-            for output in [object for rel in nested_task.OperatesOn if rel.is_a("IfcRelAssignsToProcess") for object in rel.RelatedObjects if object.is_a("IfcProduct")]
+            for output in [
+                object
+                for rel in nested_task.OperatesOn
+                if rel.is_a("IfcRelAssignsToProcess")
+                for object in rel.RelatedObjects
+                if object.is_a("IfcProduct")
+            ]
         ]
+
 
 def get_task_resources(task, is_deep=False):
     if not is_deep:
-        return [object for rel in task.OperatesOn if rel.is_a("IfcRelAssignsToProcess")  for object in rel.RelatedObjects if object.is_a("IfcResource")]
+        return [
+            object
+            for rel in task.OperatesOn
+            if rel.is_a("IfcRelAssignsToProcess")
+            for object in rel.RelatedObjects
+            if object.is_a("IfcResource")
+        ]
     else:
         return [
-            output
+            resource
             for nested_task in get_all_nested_tasks(task)
-            for output in [object for rel in nested_task.OperatesOn if rel.is_a("IfcRelAssignsToProcess") for object in rel.RelatedObjects if object.is_a("IfcResource")]
+            for resource in [
+                object
+                for rel in nested_task.OperatesOn
+                if rel.is_a("IfcRelAssignsToProcess")
+                for object in rel.RelatedObjects
+                if object.is_a("IfcResource")
+            ]
         ]
+
 
 def has_task_outputs(task):
     return len(get_task_outputs(task)) > 0
 
+
 def has_task_inputs(task):
     return len(get_task_inputs(task)) > 0
 
-def get_tasks_for_product(product):
-    inputs = []
-    outputs = []
-    for assignment in product.HasAssignments:
-        if assignment.is_a("IfcRelAssignsToProcess") and assignment.RelatingProcess.is_a("IfcTask"):
-            inputs.append(assignment.RelatingProcess)
-    for reference in product.ReferencedBy:
-        if reference.is_a("IfcRelAssignsToProduct") and reference.RelatedObjects[0].is_a("IfcTask"):
-            outputs.extend([obj for obj in reference.RelatedObjects if obj.is_a("IfcTask")])
+
+def get_tasks_for_product(product, schedule=None):
+    """
+    Get all tasks assigned to or referenced by the given product.
+
+    Args:
+        product: An object that is assigned tasks or references tasks.
+        schedule: An optional string representing the schedule name to filter tasks by.
+
+    Returns:
+        A tuple of two lists:
+        - The first list contains all tasks assigned to the product.
+        - The second list contains all tasks referenced by the product that are part of the given schedule.
+    """
+    inputs = [
+        assignement.RelatingProcess
+        for assignement in product.HasAssignments
+        if assignement.is_a("IfcRelAssignsToProcess")
+        and assignement.RelatingProcess.is_a("IfcTask")
+    ]
+    outputs = [
+        obj
+        for ref in product.ReferencedBy
+        if ref.is_a("IfcRelAssignsToProduct")
+        for obj in ref.RelatedObjects
+        if obj.is_a("IfcTask")
+    ]
+
+    if schedule:
+        inputs = [
+            task
+            for task in inputs
+            if get_task_work_schedule(task).id() == schedule.id()
+        ]
+        outputs = [
+            task
+            for task in outputs
+            if get_task_work_schedule(task).id() == schedule.id()
+        ]
+
     return inputs, outputs
