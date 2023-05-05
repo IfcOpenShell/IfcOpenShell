@@ -457,7 +457,10 @@ def recalculate_schedule(ifc, work_schedule=None):
 
 def add_task_column(sequence, column_type=None, name=None, data_type=None):
     sequence.add_task_column(column_type, name, data_type)
-
+    work_schedule = sequence.get_active_work_schedule()
+    if work_schedule:
+        sequence.load_task_tree(work_schedule)
+        sequence.load_task_properties()
 
 def remove_task_column(sequence, name=None):
     sequence.remove_task_column(name)
@@ -465,7 +468,10 @@ def remove_task_column(sequence, name=None):
 
 def set_task_sort_column(sequence, column=None):
     sequence.set_task_sort_column(column)
-
+    work_schedule = sequence.get_active_work_schedule()
+    if work_schedule:
+        sequence.load_task_tree(work_schedule)
+        sequence.load_task_properties()
 
 def calculate_task_duration(ifc, sequence, task=None):
     ifc.run("sequence.calculate_task_duration", task=task)
