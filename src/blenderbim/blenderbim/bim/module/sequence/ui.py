@@ -977,7 +977,7 @@ class BIM_PT_4D_Tools(Panel):
         self.props = context.scene.BIMWorkScheduleProperties
         row = self.layout.row()
         row.operator("bim.load_product_related_tasks", text="Load Tasks", icon="FILE_REFRESH")
-
+        row.prop(self.props, "filter_by_active_schedule", text="Filter by Active Schedule")
         grid = self.layout.grid_flow(columns=2, even_columns=True)
         col1 = grid.column()
         col1.label(text="Product Input Tasks")
