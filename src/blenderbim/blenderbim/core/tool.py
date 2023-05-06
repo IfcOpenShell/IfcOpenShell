@@ -314,6 +314,7 @@ class Drawing:
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
+    def update_embedded_svg_location(cls, uri, old_location, new_location): pass
     def update_text_size_pset(cls, obj): pass
     def update_text_value(cls, obj): pass
 

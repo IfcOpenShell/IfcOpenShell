@@ -1457,7 +1457,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         drawing = tool.Ifc.get_entity(camera)
 
         # Running operators is much more efficient in this scenario than looping through each element
-        bpy.ops.object.hide_view_clear()
+        if not bpy.app.background:
+            bpy.ops.object.hide_view_clear()
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         hidden_objs = [o for o in bpy.context.visible_objects if tool.Ifc.get_entity(o) not in filtered_elements]

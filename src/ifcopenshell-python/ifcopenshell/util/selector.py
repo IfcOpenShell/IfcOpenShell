@@ -159,9 +159,7 @@ class Selector:
 
         if not inverse_relationship:
             return results
-        return cls.parse_inverse_relationship(
-            results, inverse_relationship.children[0].data
-        )
+        return cls.parse_inverse_relationship(results, inverse_relationship.children[0].data)
 
     @classmethod
     def parse_inverse_relationship(cls, elements, inverse_relationship):
@@ -193,13 +191,8 @@ class Selector:
             if cls.elements is None:
                 elements = cls.file.by_type(class_selector.children[0])
             else:
-                elements = [
-                    e for e in cls.elements if e.is_a(class_selector.children[0])
-                ]
-        if (
-            len(class_selector.children) > 1
-            and class_selector.children[1].data == "filter"
-        ):
+                elements = [e for e in cls.elements if e.is_a(class_selector.children[0])]
+        if len(class_selector.children) > 1 and class_selector.children[1].data == "filter":
             return cls.filter_elements(elements, class_selector.children[1])
         return elements
 
@@ -227,9 +220,7 @@ class Selector:
             element_value = cls.get_element_value(element, filter_query["keys"], is_regex=filter_query["is_regex"])
             if element_value is None and value is not None and "not" not in comparison:
                 continue
-            if comparison and cls.filter_element(
-                element, element_value, comparison, value
-            ):
+            if comparison and cls.filter_element(element, element_value, comparison, value):
                 results.append(element)
             elif not comparison and element_value:
                 results.append(element)
@@ -243,9 +234,9 @@ class Selector:
             keys = [keys]
         elif keys.data == "keys_regex":
             is_regex = True
-            keys = [k[1:-1].replace("\\\"", '"') for k in keys.children]
+            keys = [k[1:-1].replace('\\"', '"') for k in keys.children]
         elif keys.data == "keys_quoted":
-            keys = [k[1:-1].replace("\\\"", '"') for k in keys.children]
+            keys = [k[1:-1].replace('\\"', '"') for k in keys.children]
         elif keys.data == "keys_simple":
             keys = keys.children
         return {"keys": keys, "is_regex": is_regex}
@@ -273,6 +264,9 @@ class Selector:
             elif key == "class":
                 value = value.is_a()
             elif isinstance(value, ifcopenshell.entity_instance):
+                if key == "Name" and value.is_a("IfcMaterialLayerSet"):
+                    key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
+
                 attribute = value.get_info().get(key, None)
 
                 if attribute is not None:
@@ -290,7 +284,7 @@ class Selector:
                         result = ifcopenshell.util.element.get_pset(value, key)
 
                     value = result
-            elif isinstance(value, dict): # Such as from the result of a prior get_pset
+            elif isinstance(value, dict):  # Such as from the result of a prior get_pset
                 if is_regex:
                     results = []
                     for prop_name, prop_value in value.items():
@@ -302,7 +296,7 @@ class Selector:
                     value = results
                 else:
                     value = value.get(key, None)
-            elif isinstance(value, (list, tuple)): # If we use regex
+            elif isinstance(value, (list, tuple)):  # If we use regex
                 if key.isnumeric():
                     try:
                         value = value[int(key)]
