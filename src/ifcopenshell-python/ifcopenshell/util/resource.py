@@ -21,19 +21,16 @@ import ifcopenshell.util.date
 
 
 def get_productivity(resource, should_inherit=True):
-    productivity = ifcopenshell.util.element.get_psets(
-        resource
-    ).get("EPset_Productivity", None)
+    productivity = ifcopenshell.util.element.get_psets(resource).get("EPset_Productivity", None)
     if should_inherit and not productivity:
         # Proposal for Schema - If instance doesn't have any productivity, inherit it's parent's productivity
         if not resource.Nests:
             return None
         else:
             parent_resource = resource.Nests[0].RelatingObject
-            productivity = ifcopenshell.util.element.get_psets(
-                parent_resource
-            ).get("EPset_Productivity", None)
+            productivity = ifcopenshell.util.element.get_psets(parent_resource).get("EPset_Productivity", None)
     return productivity
+
 
 def get_unit_consumed(productivity):
     duration = productivity.get("BaseQuantityConsumed", None)
@@ -41,15 +38,18 @@ def get_unit_consumed(productivity):
         return
     return ifcopenshell.util.date.ifc2datetime(duration)
 
+
 def get_quantity_produced(productivity):
     if not productivity:
         return 0
     return productivity.get("BaseQuantityProducedValue", 0)
 
+
 def get_quantity_produced_name(productivity):
     if not productivity:
         return ""
     return productivity.get("BaseQuantityProducedName", "")
+
 
 def get_total_quantity_produced(resource, quantity_name_in_process):
     def get_product_quantity(product, quantity_name):
@@ -65,8 +65,9 @@ def get_total_quantity_produced(resource, quantity_name_in_process):
         total = len(products)
     else:
         for product in products:
-            total += get_product_quantity(product, quantity_name_in_process)
+            total += get_product_quantity(product, quantity_name_in_process) or 0
     return total
+
 
 def get_parametric_resource_products(resource):
     products = []
@@ -78,6 +79,7 @@ def get_parametric_resource_products(resource):
                 continue
             products.append(rel2.RelatingProduct)
     return products
+
 
 def get_resource_required_work(resource):
     productivity = get_productivity(resource)
@@ -92,11 +94,11 @@ def get_resource_required_work(resource):
         if "T" in productivity.get("BaseQuantityConsumed", ""):
             seconds = (time_consumed.days * 24 * 60 * 60) + time_consumed.seconds
             productivity_ratio = seconds / quantity_produced
-            required_work = total_quantity_to_produce  * productivity_ratio
+            required_work = total_quantity_to_produce * productivity_ratio
             iso_string = f"PT{required_work / 60 / 60}H"
         else:
             days = time_consumed.days + (time_consumed.seconds / (24 * 60 * 60))
-            productivity_ratio = days / quantity_produced 
+            productivity_ratio = days / quantity_produced
             required_work = total_quantity_to_produce * productivity_ratio
             iso_string = f"P{required_work}D"
         return iso_string

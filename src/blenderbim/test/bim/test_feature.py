@@ -431,8 +431,9 @@ def the_object_name_is_an_ifc_class(name, ifc_class):
 
 @then(parsers.parse('the object "{name}" is not an IFC element'))
 def the_object_name_is_not_an_ifc_element(name):
-    id = the_object_name_exists(name).BIMObjectProperties.ifc_definition_id
-    assert id == 0, f"The ID is {id}"
+    obj = the_object_name_exists(name)
+    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    assert ifc_definition_id == 0, f"The object {obj} has an ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the object "{name}" has no data'))
@@ -447,21 +448,31 @@ def the_object_name_is_not_an_ifc_element(name):
 
 
 @then(parsers.parse('the material "{name}" is an IFC material'))
-def the_material_name_is_not_an_ifc_material(name):
-    id = the_material_name_exists(name).BIMObjectProperties.ifc_definition_id
-    assert id != 0, f"The ID is {id}"
+def the_material_name_is_an_ifc_material(name):
+    obj = the_material_name_exists(name)
+    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    assert ifc_definition_id != 0, f"The material {obj} has no ID: {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is not an IFC material'))
 def the_material_name_is_not_an_ifc_material(name):
-    id = the_material_name_exists(name).BIMObjectProperties.ifc_definition_id
-    assert id == 0, f"The ID is {id}"
+    obj = the_material_name_exists(name)
+    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    assert ifc_definition_id == 0, f"The material {obj} has an ID of {ifc_definition_id}"
+
+
+@then(parsers.parse('the material "{name}" is an IFC style'))
+def the_material_name_is_an_ifc_style(name):
+    obj = the_material_name_exists(name)
+    ifc_definition_id = obj.BIMMaterialProperties.ifc_style_id
+    assert ifc_definition_id != 0, f"The material {obj} has a style ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is not an IFC style'))
-def the_material_name_is_not_an_ifc_material(name):
-    id = the_material_name_exists(name).BIMMaterialProperties.ifc_style_id
-    assert id == 0, f"The ID is {id}"
+def the_material_name_is_not_an_ifc_style(name):
+    obj = the_material_name_exists(name)
+    ifc_definition_id = obj.BIMMaterialProperties.ifc_style_id
+    assert ifc_definition_id == 0, f"The material {obj} has a style ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" colour is "{colour}"'))
@@ -636,7 +647,7 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
     actual_dimensions = list(the_object_name_exists(name).dimensions)
     expected_dimensions = [float(co) for co in dimensions.split(",")]
     for i, number in enumerate(actual_dimensions):
-        assert is_x(number, expected_dimensions[i])
+        assert is_x(number, expected_dimensions[i]), f"Expected {actual_dimensions[i]} but got {number}"
 
 
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
