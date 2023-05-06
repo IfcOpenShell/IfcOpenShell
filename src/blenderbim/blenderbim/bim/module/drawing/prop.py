@@ -336,6 +336,8 @@ class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)
     custom_diagram_scale: StringProperty(name="Custom Scale", update=update_diagram_scale)
+    custom_diagram_scale_input1: StringProperty(name="Custom Scale Input 1", update=update_diagram_scale)
+    custom_diagram_scale_input2: StringProperty(name="Custom Scale Input 2", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
     is_nts: BoolProperty(name="Is NTS")
