@@ -194,8 +194,8 @@ Scenario: Change the height of a wall
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcWall/Wall" is selected
-    And I set "scene.BIMModelProperties.extrusion_depth" to "2000.0"
-    When I press "bim.change_extrusion_depth(depth=2000.0)"
+    And I set "scene.BIMModelProperties.extrusion_depth" to "2.0"
+    When I press "bim.change_extrusion_depth(depth=2.0)"
     Then the object "IfcWall/Wall" dimensions are "1,0.1,2"
 
 Scenario: Change the length of a wall
@@ -206,8 +206,8 @@ Scenario: Change the length of a wall
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcWall/Wall" is selected
-    And I set "scene.BIMModelProperties.length" to "2000.0"
-    When I press "bim.change_layer_length(length=2000.0)"
+    And I set "scene.BIMModelProperties.length" to "2.0"
+    When I press "bim.change_layer_length(length=2.0)"
     Then the object "IfcWall/Wall" dimensions are "2,0.1,3"
 
 Scenario: Flip a wall
@@ -438,8 +438,8 @@ Scenario: Change the length of a beam
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcBeam/Beam" is selected
-    And I set "scene.BIMModelProperties.extrusion_depth" to "2000.0"
-    When I press "bim.change_profile_depth(depth=2000.0)"
+    And I set "scene.BIMModelProperties.extrusion_depth" to "2.0"
+    When I press "bim.change_profile_depth(depth=2.0)"
     Then the object "IfcBeam/Beam" dimensions are "0.1,0.2,2"
 
 Scenario: Rotate a beam by 90 degrees

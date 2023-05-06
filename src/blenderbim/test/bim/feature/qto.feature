@@ -47,7 +47,7 @@ Scenario: Execute qto method - side formwork areas
     And I press "bim.execute_qto_method"
     Then "scene.BIMQtoProperties.qto_result" is "16.0"
 
- Scenario: Execute assign_objects_base_qto
+ Scenario: Assign objects base qto
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -55,7 +55,7 @@ Scenario: Execute qto method - side formwork areas
     When I press "bim.assign_objects_base_qto"
     Then "active_object.PsetProperties.qto_name" is "Qto_WallBaseQuantities"
 
-Scenario: Execute calculate_all_quantities
+Scenario: Calculate all quantities
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -65,5 +65,4 @@ Scenario: Execute calculate_all_quantities
     And I press "bim.enable_pset_editing(pset_id={qset_id}, obj='IfcWall/Cube', obj_type='Object')"
     And I press "bim.disable_pset_editing(obj='IfcWall/Cube', obj_type='Object')"
     Then "active_object.PsetProperties.qto_name" is "Qto_WallBaseQuantities"
-    Then "active_object.PsetProperties.properties['Length'].metadata.float_value" is "2.0"
-
+    Then "active_object.PsetProperties.properties['Length'].metadata.float_value" is "2000.0"
