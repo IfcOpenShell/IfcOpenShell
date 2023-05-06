@@ -486,6 +486,14 @@ class CreateDrawing(bpy.types.Operator):
         results = self.svg_buffer.get_value()
 
         root = etree.fromstring(results)
+
+        group = root.find("{http://www.w3.org/2000/svg}g")
+        if not group:
+            with open(svg_path, "wb") as svg:
+                svg.write(etree.tostring(root))
+
+            return svg_path
+
         self.move_projection_to_bottom(root)
         self.merge_linework_and_add_metadata(root)
 
