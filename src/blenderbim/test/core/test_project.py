@@ -57,6 +57,12 @@ class TestCreateProject:
             context_type="Model", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent="model"
         ).should_be_called()
         project.run_context_add_context(
+            context_type="Model", context_identifier="Annotation", target_view="MODEL_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Model", context_identifier="Profile", target_view="ELEVATION_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
             context_type="Plan", context_identifier="", target_view="", parent=0
         ).should_be_called().will_return("plan")
         project.run_context_add_context(
@@ -115,6 +121,12 @@ class TestCreateProject:
         ).should_be_called()
         project.run_context_add_context(
             context_type="Model", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Model", context_identifier="Annotation", target_view="MODEL_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Model", context_identifier="Profile", target_view="ELEVATION_VIEW", parent="model"
         ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="", target_view="", parent=0
@@ -184,6 +196,12 @@ class TestCreateProject:
         ).should_be_called()
         project.run_context_add_context(
             context_type="Model", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Model", context_identifier="Annotation", target_view="MODEL_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Model", context_identifier="Profile", target_view="ELEVATION_VIEW", parent="model"
         ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="", target_view="", parent=0

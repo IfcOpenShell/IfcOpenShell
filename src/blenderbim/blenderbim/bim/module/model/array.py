@@ -22,22 +22,30 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import blenderbim.tool as tool
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 
 class AddArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_array"
     bl_label = "Add Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
-        array = {"children": [], "count": 1, "x": 0.0, "y": 0.0, "z": 0.0}
+        array = {
+            "children": [],
+            "count": 1,
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0,
+            "use_local_space": True,
+            "sync_children": False,
+            "method": "OFFSET",
+        }
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets.get("BBIM_Array", None)
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
 
         if pset:
             data = json.loads(pset["Data"])
@@ -59,17 +67,39 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_array"
     bl_label = "Disable Editing Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.active_object.BIMArrayProperties.is_editing = -1
+        context.active_object.BIMArrayProperties.is_editing = -1
+        return {"FINISHED"}
+
+
+class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_array"
+    bl_label = "Enable Editing Array"
+    bl_options = {"REGISTER", "UNDO"}
+    item: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
+        props = obj.BIMArrayProperties
+        props.count = data["count"]
+        props.x = data["x"]
+        props.y = data["y"]
+        props.z = data["z"]
+        props.use_local_space = data.get("use_local_space", False)
+        props.sync_children = data.get("sync_children", False)
+        props.method = data.get("method", "OFFSET")
+        props.is_editing = self.item
         return {"FINISHED"}
 
 
 class EditArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_array"
     bl_label = "Edit Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -77,8 +107,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets["BBIM_Array"]
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item] = {
             "children": data[self.item]["children"],
@@ -86,6 +115,9 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
             "x": props.x,
             "y": props.y,
             "z": props.z,
+            "use_local_space": props.use_local_space,
+            "sync_children": props.sync_children,
+            "method": props.method,
         }
 
         props.is_editing = -1
@@ -103,30 +135,10 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_array"
-    bl_label = "Enable Editing Array"
-    bl_options = {"REGISTER"}
-    item: bpy.props.IntProperty()
-
-    def _execute(self, context):
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        psets = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(psets["BBIM_Array"]["Data"])[self.item]
-        props = obj.BIMArrayProperties
-        props.count = data["count"]
-        props.x = data["x"]
-        props.y = data["y"]
-        props.z = data["z"]
-        props.is_editing = self.item
-        return {"FINISHED"}
-
-
 class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_array"
     bl_label = "Remove Array"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -134,8 +146,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets["BBIM_Array"]
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item]["count"] = 1
 
@@ -174,4 +185,49 @@ class SelectArrayParent(bpy.types.Operator):
         if obj:
             context.view_layer.objects.active = obj
             obj.select_set(True)
+        return {"FINISHED"}
+
+class Input3DCursorXArray(bpy.types.Operator):
+    bl_idname = "bim.input_cursor_x_array"
+    bl_label = "Get 3d Cursor X Input for Array"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        props = obj.BIMArrayProperties
+        cursor = context.scene.cursor
+        if props.use_local_space:
+            props.x = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).x
+        else:
+            props.x = cursor.location.x - obj.location.x
+        return {"FINISHED"}
+
+class Input3DCursorYArray(bpy.types.Operator):
+    bl_idname = "bim.input_cursor_y_array"
+    bl_label = "Get 3d Cursor Y Input for Array"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        props = obj.BIMArrayProperties
+        cursor = context.scene.cursor
+        if props.use_local_space:
+            props.y = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).y
+        else:
+            props.y = cursor.location.y - obj.location.y
+        return {"FINISHED"}
+
+class Input3DCursorZArray(bpy.types.Operator):
+    bl_idname = "bim.input_cursor_z_array"
+    bl_label = "Get 3d Cursor Z Input for Array"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        props = obj.BIMArrayProperties
+        cursor = context.scene.cursor
+        if props.use_local_space:
+            props.z = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).z
+        else:
+            props.z = cursor.location.z - obj.location.z
         return {"FINISHED"}

@@ -63,4 +63,5 @@ class Usecase:
     def execute(self):
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["layer"], name, value)
-        self.settings["layer"].Material = self.settings["material"]
+        if self.settings["material"]:
+            self.settings["layer"].Material = self.settings["material"]

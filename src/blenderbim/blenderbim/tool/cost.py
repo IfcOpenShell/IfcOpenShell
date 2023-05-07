@@ -68,8 +68,7 @@ class Cost(blenderbim.core.tool.Cost):
         props.is_cost_update_enabled = False
         cost_schedule = tool.Ifc.get().by_id(props.active_cost_schedule_id)
         props.cost_items.clear()
-        if not hasattr(cls, "contracted_cost_items"):
-            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         [
             cls.create_new_cost_item_li(props.cost_items, cost_item, 0, type="cost")
             for rel in cost_schedule.Controls or []
@@ -82,14 +81,14 @@ class Cost(blenderbim.core.tool.Cost):
         props = bpy.context.scene.BIMCostProperties
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        cls.contracted_cost_items.remove(cost_item.id())
-        props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
+        if cost_item.id() in cls.contracted_cost_items:
+            cls.contracted_cost_items.remove(cost_item.id())
+            props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
     def expand_cost_items(cls):
         props = bpy.context.scene.BIMCostProperties
-        if not hasattr(cls, "contracted_cost_items"):
-            cls.contracted_cost_items = json.loads(props.contracted_cost_items)
+        cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         for cost_item in props.cost_items:
             if cost_item.ifc_definition_id in cls.contracted_cost_items:
                 cls.contracted_cost_items.remove(cost_item.ifc_definition_id)
@@ -123,7 +122,7 @@ class Cost(blenderbim.core.tool.Cost):
         if props.active_cost_item_index in cls.contracted_cost_items:
             cls.contracted_cost_items.remove(props.active_cost_item_index)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
-        bpy.ops.bim.enable_editing_cost_items(cost_schedule=props.active_cost_schedule_id)
+        cls.enable_editing_cost_items(cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id))
 
     @classmethod
     def enable_editing_cost_item_attributes(cls, cost_item):
@@ -139,6 +138,7 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def disable_editing_cost_item(cls):
         bpy.context.scene.BIMCostProperties.active_cost_item_id = 0
+        bpy.context.scene.BIMCostProperties.change_cost_item_parent = False
 
     @classmethod
     def get_cost_item_attributes(cls):
@@ -148,7 +148,7 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def get_active_cost_item(cls):
         props = bpy.context.scene.BIMCostProperties
-        if props.active_cost_item_id == 0:
+        if not props.active_cost_item_id:
             return None
         return tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_item_id)
 
@@ -181,36 +181,45 @@ class Cost(blenderbim.core.tool.Cost):
                 new.name = related_object.Name or "Unnamed"
 
     @classmethod
-    def load_cost_item_quantities(cls, cost_item=None):
-        if not cost_item:
-            cost_item = cls.get_active_cost_item()
-        if not cost_item:
-            return
-        props = bpy.context.scene.BIMCostProperties
-        props.cost_item_products.clear()
-        props.cost_item_processes.clear()
-        props.cost_item_resources.clear()
+    def load_cost_item_quantity_assignments(cls, cost_item, related_object_type):
+        def create_list_items(collection, cost_item, is_deep):
+            products = cls.get_cost_item_assignments(cost_item, filter_by_type=related_object_type, is_deep=False)
+            for product in products:
+                new = collection.add()
+                new.ifc_definition_id = product.id()
+                new.name = product.Name or "Unnamed"
+                total_quantity = cls.calculate_parametric_quantity(cost_item, product)
+                new.total_quantity = total_quantity if total_quantity else 1
+            if is_deep:
+                for cost_item in ifcopenshell.util.cost.get_nested_cost_items(cost_item, is_deep):
+                    create_list_items(collection, cost_item, is_deep=False)
 
-        # for control_id, quantity_ids in cost_item.Controls.items() or {}:
-        for rel in cost_item.Controls or []:
-            # control_id, quantity_ids
-            for related_object in rel.RelatedObjects:
-                if related_object.is_a("IfcProduct"):
-                    new = props.cost_item_products.add()
-                elif related_object.is_a("IfcProcess"):
-                    new = props.cost_item_processes.add()
-                elif related_object.is_a("IfcResource"):
-                    new = props.cost_item_resources.add()
-                new.ifc_definition_id = related_object.id()
-                new.name = related_object.Name or "Unnamed"
-                total_quantity = 0
-                qtos = ifcopenshell.util.element.get_psets(related_object, qtos_only=True)
-                for qset_name, quantities in qtos.items():
-                    qto = tool.Ifc.get().by_id(quantities["id"])
-                    for quantity in qto.Quantities:
-                        if quantity in cost_item.CostQuantities:
-                            total_quantity += quantity[3]
-                new.total_quantity = total_quantity
+        props = bpy.context.scene.BIMCostProperties
+        if related_object_type == "PRODUCT":
+            props.cost_item_products.clear()
+            is_deep = bpy.context.scene.BIMCostProperties.show_nested_elements
+            create_list_items(props.cost_item_products, cost_item, is_deep)
+        elif related_object_type == "PROCESS":
+            props.cost_item_processes.clear()
+            is_deep = bpy.context.scene.BIMCostProperties.show_nested_tasks
+            create_list_items(props.cost_item_processes, cost_item, is_deep)
+        elif related_object_type == "RESOURCE":
+            props.cost_item_resources.clear()
+            is_deep = bpy.context.scene.BIMCostProperties.show_nested_resources
+            create_list_items(props.cost_item_resources, cost_item, is_deep)
+
+    @classmethod
+    def calculate_parametric_quantity(cls, cost_item=None, product=None):
+        if not cost_item.CostQuantities:
+            return
+        total_quantity = sum(
+            quantity[3]
+            for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values()
+            for qto in (tool.Ifc.get().by_id(quantities["id"]).Quantities or [])
+            for quantity in cost_item.CostQuantities
+            if quantity == qto
+        )
+        return total_quantity
 
     @classmethod
     def get_products(cls, related_object_type=None):
@@ -258,7 +267,7 @@ class Cost(blenderbim.core.tool.Cost):
     def get_attributes_for_cost_value(cls, cost_type, cost_category):
         if cost_type == "FIXED":
             category = None
-            attributes = {"AppliedValue": 0.0}
+            attributes = {"AppliedValue": bpy.context.scene.BIMCostProperties.fixed_cost_value}
         elif cost_type == "SUM":
             category = "*"
             attributes = {"Category": category}
@@ -379,51 +388,36 @@ class Cost(blenderbim.core.tool.Cost):
         )
 
     @classmethod
-    def get_direct_cost_item_products(cls, cost_item):
-        return [related_object for r in cost_item.Controls or [] for related_object in r.RelatedObjects]
+    def get_cost_item_assignments(cls, cost_item, filter_by_type=None, is_deep=False):
+        return ifcopenshell.util.cost.get_cost_item_assignments(
+            cost_item, filter_by_type=filter_by_type, is_deep=is_deep
+        )
 
     @classmethod
-    def get_cost_item_products(cls, cost_item, include_nested=False):
-        if not include_nested:
-            return cls.get_direct_cost_item_products(cost_item)
-        else:
-            return [
-                product
-                for nested_cost_item in cls.get_all_nested_cost_items(cost_item)
-                for product in cls.get_direct_cost_item_products(nested_cost_item)
-            ]
+    def show_nested_cost_item_elements(cls):
+        return bpy.context.scene.BIMCostProperties.show_nested_elements
 
     @classmethod
-    def get_all_nested_cost_items(cls, cost_item):
-        for cost_item in cls.get_nested_cost_items(cost_item):
-            yield cost_item
-            yield from cls.get_all_nested_cost_items(cost_item)
+    def get_cost_item_products(cls, cost_item, is_deep=False):
+        return cls.get_cost_item_assignments(cost_item, filter_by_type="PRODUCT", is_deep=is_deep)
 
     @classmethod
-    def get_nested_cost_items(cls, cost_item):
-        return [obj for rel in cost_item.IsNestedBy for obj in rel.RelatedObjects]
+    def get_cost_item_resources(cls, cost_item, is_deep=False):
+        return cls.get_cost_item_assignments(cost_item, filter_by_type="RESOURCE", is_deep=is_deep)
 
+    @classmethod
+    def get_cost_item_processes(cls, cost_item, is_deep=False):
+        return cls.get_cost_item_assignments(cost_item, filter_by_type="PROCESS", is_deep=is_deep)
 
     @classmethod
     def get_schedule_cost_items(cls, cost_schedule):
-        for cost_item in cls.get_root_cost_items(cost_schedule):
-            yield cost_item
-            yield from cls.get_all_nested_cost_items(cost_item)
-
-    @classmethod
-    def get_root_cost_items(cls, cost_schedule):
-        return [
-            related_object
-            for rel in cost_schedule.Controls or []
-            for related_object in rel.RelatedObjects
-            if related_object.is_a("IfcCostItem")
-        ]
+        return ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule)
 
     @classmethod
     def get_cost_schedule_products(cls, cost_schedule):
         products = []
-        for cost_item in cls.get_root_cost_items(cost_schedule):
-            products.extend(cls.get_cost_item_products(cost_item, include_nested=True))
+        for cost_item in ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule):
+            products.extend(cls.get_cost_item_products(cost_item))
         return products
 
     @classmethod
@@ -548,3 +542,122 @@ class Cost(blenderbim.core.tool.Cost):
             if unit.get_info().get("Prefix", None):
                 name = f"{unit.Prefix} {name}"
             return f"{unit.UnitType} / {name}"
+
+
+    @classmethod
+    def get_cost_schedule(cls, cost_item):
+        for rel in cost_item.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
+                return rel.RelatingControl
+        for rel in cost_item.Nests or []:
+            return cls.get_cost_schedule(rel.RelatingObject)
+
+    @classmethod
+    def is_cost_schedule_active(cls, cost_schedule):
+        return True if cost_schedule.id() == bpy.context.scene.BIMCostProperties.active_cost_schedule_id else False
+
+    @classmethod
+    def get_active_cost_schedule(cls):
+        if not bpy.context.scene.BIMCostProperties.active_cost_schedule_id:
+            return None
+        return tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id)
+
+    @classmethod
+    def highlight_cost_item(cls, cost_item):
+        def expand_ancestors(cost_item):
+            cls.expand_cost_item(cost_item)
+            for rel in cost_item.Nests or []:
+                parent_cost = rel.RelatingObject if rel.RelatingObject.is_a("IfcCostItem") else None
+                if parent_cost:
+                    expand_ancestors(parent_cost)
+            cls.load_cost_schedule_tree()
+
+        cost_props = bpy.context.scene.BIMCostProperties
+        if not cost_item.id() in [item.ifc_definition_id for item in cost_props.cost_items]:
+            expand_ancestors(cost_item)
+        cost_item_index = [item.ifc_definition_id for item in bpy.context.scene.BIMCostProperties.cost_items].index(
+            cost_item.id()
+        ) or 0
+        bpy.context.scene.BIMCostProperties.active_cost_item_index = cost_item_index
+
+    @classmethod
+    def get_cost_items_for_product(cls, product):
+        return ifcopenshell.util.cost.get_cost_items_for_product(product)
+
+    @classmethod
+    def has_cost_assignments(cls, product, cost_schedule=None):
+        cost_items = ifcopenshell.util.cost.get_cost_items_for_product(product)
+        if cost_schedule:
+            cost_items = [
+                cost_item for cost_item in cost_items or [] if cls.get_cost_schedule(cost_item) == cost_schedule
+            ]
+        return bool(cost_items)
+
+    @classmethod
+    def load_product_cost_items(cls, product):
+        props = bpy.context.scene.BIMCostProperties
+        props.is_cost_update_enabled = False
+        props.product_cost_items.clear()
+        cost_items = ifcopenshell.util.cost.get_cost_items_for_product(product)
+        if cost_items:
+            for cost_item in cost_items:
+                new = props.product_cost_items.add()
+                new.name = cost_item.Name or "Unnamed"
+                new.ifc_definition_id = cost_item.id()
+
+    @classmethod
+    def is_root_cost_item(cls, cost_item):
+        if cost_item.HasAssignments:
+            for rel in cost_item.HasAssignments:
+                if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
+                    return True
+
+    @classmethod
+    def toggle_cost_item_parent_change(cls, cost_item=None):
+        props = bpy.context.scene.BIMCostProperties
+        if props.change_cost_item_parent:
+            props.active_cost_item_id = cost_item.id()
+            props.cost_item_editing_type = "PARENT"
+        else:
+            cls.disable_editing_cost_item_parent()
+
+    @classmethod
+    def change_parent_cost_item(cls, cost_item, new_parent):
+        ifcopenshell.api.run("nest.change_nest", tool.Ifc.get(), item=cost_item, new_parent=new_parent)
+
+    @classmethod
+    def disable_editing_cost_item_parent(cls):
+        bpy.context.scene.BIMCostProperties.active_cost_item_id = 0
+        bpy.context.scene.BIMCostProperties.change_cost_item_parent = False
+
+    @classmethod
+    def load_cost_item_quantities(cls, cost_item=None):
+        if not cost_item:
+            cost_item = cls.get_highlighted_cost_item()
+        if not cost_item:
+            return
+        cls.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
+        cls.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
+        cls.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
+
+    @classmethod
+    def update_cost_items(cls, product=None, pset=None):
+        cost_items = []
+        if product:
+            cost_items = ifcopenshell.util.cost.get_cost_items_for_product(product)
+        if pset:
+            def get_products_from_pset(pset):
+                products = []
+                for rel in pset.DefinesOccurrence or []:
+                    if rel.is_a("IfcRelDefinesByProperties"):
+                        products.extend(rel.RelatedObjects)
+                return products
+            products = get_products_from_pset(pset)
+            for product in products or []:
+                cost_items.extend(ifcopenshell.util.cost.get_cost_items_for_product(product))
+        for cost_item in cost_items:
+            cls.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
+
+    @classmethod
+    def has_schedules(cls):
+        return bool(tool.Ifc.get().by_type("IfcCostSchedule"))

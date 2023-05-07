@@ -30,6 +30,8 @@ from datetime import datetime
 from dateutil import parser
 import ifcopenshell.util.date as ifcdateutils
 import ifcopenshell.util.cost
+import ifcopenshell.util.resource
+import blenderbim.bim.schema
 
 
 class Resource(blenderbim.core.tool.Resource):
@@ -58,6 +60,7 @@ class Resource(blenderbim.core.tool.Resource):
             if not resource.HasContext:
                 continue
             create_new_resource_li(resource, 0)
+        cls.load_productivity_data()
         props.is_editing = True
 
     @classmethod
@@ -299,8 +302,82 @@ class Resource(blenderbim.core.tool.Resource):
 
     @classmethod
     def get_highlighted_resource(cls):
-        return tool.Ifc.get().by_id(
-            bpy.context.scene.BIMResourceTreeProperties.resources[
-                bpy.context.scene.BIMResourceProperties.active_resource_index
+        resources = len(bpy.context.scene.BIMResourceTreeProperties.resources)
+        if resources and resources > bpy.context.scene.BIMResourceProperties.active_resource_index:
+            return tool.Ifc.get().by_id(
+                bpy.context.scene.BIMResourceTreeProperties.resources[
+                    bpy.context.scene.BIMResourceProperties.active_resource_index
                 ].ifc_definition_id
             )
+
+    @classmethod
+    def clear_productivity_data(cls, props):
+        for duration_prop in props.quantity_consumed or []:
+            if duration_prop.name == "BaseQuantityConsumed":
+                duration_prop.years = 0
+                duration_prop.months = 0
+                duration_prop.days = 0
+                duration_prop.hours = 0
+                duration_prop.minutes = 0
+                duration_prop.seconds = 0
+        props.quantity_produced = 0
+        props.quantity_produced_name = ""
+
+    @classmethod
+    def load_productivity_data(cls):
+        duration_props = None
+        for collection_prop in bpy.context.scene.BIMResourceProductivity.quantity_consumed:
+            duration_props = collection_prop if collection_prop.name == "BaseQuantityConsumed" else None
+            break
+        if not duration_props:
+            duration_props = bpy.context.scene.BIMResourceProductivity.quantity_consumed.add()
+            duration_props.name = "BaseQuantityConsumed"
+        cls.clear_productivity_data(bpy.context.scene.BIMResourceProductivity)
+        current_resource = tool.Resource.get_highlighted_resource()
+        if current_resource:
+            productivity = cls.get_productivity(current_resource)
+            if productivity:
+                bpy.context.scene.BIMResourceProductivity.quantity_produced = (
+                    ifcopenshell.util.resource.get_quantity_produced(productivity)
+                )
+                bpy.context.scene.BIMResourceProductivity.quantity_produced_name = (
+                    ifcopenshell.util.resource.get_quantity_produced_name(productivity)
+                )
+                time_consumed = ifcopenshell.util.resource.get_unit_consumed(productivity)
+                if time_consumed:
+                    durations_attributes = helper.parse_duration_as_blender_props(time_consumed)
+                    duration_props.years = durations_attributes["years"]
+                    duration_props.months = durations_attributes["months"]
+                    duration_props.days = durations_attributes["days"]
+                    duration_props.hours = durations_attributes["hours"]
+                    duration_props.minutes = durations_attributes["minutes"]
+                    duration_props.seconds = durations_attributes["seconds"]
+
+    @classmethod
+    def get_productivity_attributes(cls):
+        props = bpy.context.scene.BIMResourceProductivity
+        productivity = {}
+        if props.quantity_consumed:
+            productivity["BaseQuantityConsumed"] = helper.blender_props_to_iso_duration(
+                props.quantity_consumed, "ELAPSEDTIME", "BaseQuantityConsumed"
+            )
+        productivity["BaseQuantityProducedValue"] = props.quantity_produced
+        productivity["BaseQuantityProducedName"] = props.quantity_produced_name
+        return productivity
+
+    @classmethod
+    def get_productivity(cls, resource, should_inherit=False):
+        return ifcopenshell.util.resource.get_productivity(resource, should_inherit=should_inherit)
+
+    @classmethod
+    def edit_productivity_pset(cls, resource, attributes):
+        productivity = cls.get_productivity(resource)
+        if productivity:
+            pset = tool.Ifc.get().by_id(productivity["id"])
+        else:
+            pset = tool.Ifc.run("pset.add_pset", product=resource, name="EPset_Productivity")
+        tool.Ifc.run(
+            "pset.edit_pset",
+            pset=pset,
+            properties=attributes,
+        )

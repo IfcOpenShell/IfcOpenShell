@@ -92,6 +92,7 @@ class BIM_PT_material(Panel):
         material_id = context.active_object.active_material.BIMObjectProperties.ifc_definition_id
         if bool(material_id):
             row.operator("bim.remove_material", icon="X", text="Remove IFC Material").material = material_id
+            row.operator("bim.copy_material", icon="DUPLICATE", text="")
             row.operator("bim.unlink_material", icon="UNLINKED", text="")
         else:
             op = row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
@@ -158,8 +159,6 @@ class BIM_PT_object_material(Panel):
                 op.material_set_usage = ObjectMaterialData.data["material_id"]
             row.operator("bim.disable_editing_assigned_material", icon="CANCEL", text="")
         else:
-            if ObjectMaterialData.data["material_class"] == "IfcMaterial":
-                row.operator("bim.copy_material", icon="COPYDOWN", text="")
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
             row.operator("bim.unassign_material", icon="X", text="")
 
@@ -197,7 +196,7 @@ class BIM_PT_object_material(Panel):
         else:
             row = self.layout.row(align=True)
             if ObjectMaterialData.data["set_item_name"] == "profile":
-                row.prop(self.mprops, "profiles", icon="ITALIC", text="")
+                prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
             prop_with_search(row, self.props, "material", icon="MATERIAL", text="")
             op = row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
@@ -231,11 +230,11 @@ class BIM_PT_object_material(Panel):
         draw_attributes(self.props.material_set_item_attributes, box)
 
         row = box.row()
-        row.prop(self.props, "material_set_item_material", icon="MATERIAL", text="Material")
+        prop_with_search(row, self.props, "material_set_item_material", icon="MATERIAL", text="Material")
 
         if ObjectMaterialData.data["set_item_name"] == "profile":
             row = box.row()
-            row.prop(self.mprops, "profiles", icon="ITALIC", text="Profile")
+            prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="Profile")
 
     def draw_read_only_set_item_ui(self, set_item, index, is_first=False, is_last=False):
         if ObjectMaterialData.data["material_class"] == "IfcMaterialList":

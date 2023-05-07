@@ -132,11 +132,11 @@ class TestGetRepresentationContext(NewFile):
         assert subject.get_representation_context(representation) == context
 
 
-class TestIsOpeningElement(NewFile):
+class TestIsElementA(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        assert subject.is_opening_element(ifc.createIfcWall()) is False
-        assert subject.is_opening_element(ifc.createIfcOpeningElement()) is True
+        assert subject.is_element_a(ifc.createIfcWall(), "IfcSlab") is False
+        assert subject.is_element_a(ifc.createIfcOpeningElement(), "IfcOpeningElement") is True
 
 
 class TestLinkObjectData(NewFile):
@@ -152,15 +152,6 @@ class TestLinkObjectData(NewFile):
 class TestRunGeometryAddRepresntation(NewFile):
     def test_nothing(self):
         pass
-
-
-class TestSetElementSpecificDisplaySettings(NewFile):
-    def test_opening_elements_display_as_wire(self):
-        ifc = ifcopenshell.file()
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        element = ifc.createIfcOpeningElement()
-        subject.set_element_specific_display_settings(obj, element)
-        assert obj.display_type == "WIRE"
 
 
 class TestSetObjectName(NewFile):

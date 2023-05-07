@@ -18,7 +18,6 @@
 
 import bpy
 import copy
-import math
 import bmesh
 import mathutils.geometry
 import ifcopenshell
@@ -29,66 +28,11 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.type
 import blenderbim.core.geometry
-from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees, inf
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
-
-
-def element_listener(element, obj):
-    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
-
-
-def mode_callback(obj, data):
-    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
-        if (
-            not obj.data
-            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
-            or not obj.BIMObjectProperties.ifc_definition_id
-            or not bpy.context.scene.BIMProjectProperties.is_authoring
-        ):
-            return
-        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbProfile":
-            return
-        if obj.mode == "EDIT":
-            IfcStore.edited_objs.add(obj)
-            bm = bmesh.from_edit_mesh(obj.data)
-            bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-            bmesh.update_edit_mesh(obj.data)
-            bm.free()
-        else:
-            material_usage = ifcopenshell.util.element.get_material(product)
-            x, y = obj.dimensions[0:2]
-            if not material_usage.CardinalPoint:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[0]) + (Vector((x, y, 0)) / 2))
-            elif material_usage.CardinalPoint == 1:
-                new_origin = obj.matrix_world @ Vector(obj.bound_box[4])
-            elif material_usage.CardinalPoint == 2:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[0]) + (Vector((x, 0, 0)) / 2))
-            elif material_usage.CardinalPoint == 3:
-                new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
-            elif material_usage.CardinalPoint == 4:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[4]) + (Vector((0, y, 0)) / 2))
-            elif material_usage.CardinalPoint == 5:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[0]) + (Vector((x, y, 0)) / 2))
-            elif material_usage.CardinalPoint == 6:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[0]) + (Vector((0, y, 0)) / 2))
-            elif material_usage.CardinalPoint == 7:
-                new_origin = obj.matrix_world @ Vector(obj.bound_box[7])
-            elif material_usage.CardinalPoint == 8:
-                new_origin = obj.matrix_world @ (Vector(obj.bound_box[3]) + (Vector((x, 0, 0)) / 2))
-            elif material_usage.CardinalPoint == 9:
-                new_origin = obj.matrix_world @ Vector(obj.bound_box[3])
-            if (obj.matrix_world.translation - new_origin).length < 0.001:
-                return
-            obj.data.transform(
-                Matrix.Translation(
-                    (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
-                )
-            )
-            obj.matrix_world.translation = new_origin
+from blenderbim.bim.module.model.wall import DumbWallRecalculator
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
 class DumbProfileGenerator:
@@ -96,9 +40,9 @@ class DumbProfileGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self, link_to_scene=True):
-        self.file = IfcStore.get_file()
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+    def generate(self):
+        self.file = tool.Ifc.get()
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         material = ifcopenshell.util.element.get_material(self.relating_type)
         if material and material.is_a("IfcMaterialProfileSet"):
             self.profile_set = material
@@ -110,17 +54,17 @@ class DumbProfileGenerator:
         props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
-        self.depth = props.extrusion_depth * self.unit_scale
+        self.depth = props.extrusion_depth
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)
-        return self.derive_from_cursor(link_to_scene=link_to_scene)
+        return self.derive_from_cursor()
 
-    def derive_from_cursor(self, link_to_scene):
+    def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
-        return self.create_profile(link_to_scene)
+        return self.create_profile()
 
-    def create_profile(self, link_to_scene):
+    def create_profile(self):
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
@@ -132,10 +76,9 @@ class DumbProfileGenerator:
         if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
         matrix_world.col[3] = self.location.to_4d()
-        if link_to_scene and self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             matrix_world[2][3] = self.collection_obj.location[2]
-        if link_to_scene:
-            self.collection.objects.link(obj)
+        self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -190,8 +133,7 @@ class DumbProfileGenerator:
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
 
-        if link_to_scene:
-            obj.select_set(True)
+        obj.select_set(True)
 
         return obj
 
@@ -318,7 +260,7 @@ class DumbProfileJoiner:
         body[1 if connection == "ATEND" else 0] = intersect
         self.recreate_profile(element1, profile1, axis, body)
 
-    def set_depth(self, profile1, length):
+    def set_depth(self, profile1, si_length):
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
@@ -328,9 +270,7 @@ class DumbProfileJoiner:
         axis1 = self.get_profile_axis(profile1)
         axis = copy.deepcopy(axis1)
         body = copy.deepcopy(axis1)
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        si_length = unit_scale * length
-        end = profile1.matrix_world @ Vector((si_length, 0, 0))
+        end = profile1.matrix_world @ Vector((0, 0, si_length))
         axis[1] = end
         body[1] = end
         self.recreate_profile(element1, profile1, axis, body)
@@ -502,9 +442,7 @@ class DumbProfileJoiner:
             # Openings should move with the host overall ...
             # ... except their position should stay the same along the local Z axis of the wall
             for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
-                percent = tool.Cad.edge_percent(
-                    self.body[0], (previous_origin, (previous_matrix @ Vector((0, 0, 1))))
-                )
+                percent = tool.Cad.edge_percent(self.body[0], (previous_origin, (previous_matrix @ Vector((0, 0, 1)))))
                 is_z_offset_increased = True if percent < 0 else False
 
                 change_in_z = (self.body[0] - previous_origin).length / self.unit_scale
@@ -806,14 +744,7 @@ class DumbProfileJoiner:
         return self.create_matrix(p, x_axis, y_axis, z_axis)
 
     def create_matrix(self, p, x, y, z):
-        return Matrix(
-            (
-                (x[0], y[0], z[0], p[0]),
-                (x[1], y[1], z[1], p[1]),
-                (x[2], y[2], z[2], p[2]),
-                (0.0, 0.0, 0.0, 1.0),
-            )
-        )
+        return Matrix([x, y, z, p]).to_4x4().transposed()
 
     def get_profile_axis(self, obj):
         z_values = [v[2] for v in obj.bound_box]
@@ -905,13 +836,144 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        objs = []
+        profile_objs = []
+        layer2_objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
+            usage = tool.Model.get_usage_type(element)
+            if usage == "PROFILE":
+                profile_objs.append(obj)
+            elif usage == "LAYER2":
+                layer2_objs.append(obj)
             if element.ConnectedTo or element.ConnectedFrom:
-                objs.append(obj)
+                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATSTART")
+                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATEND")
+                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATPATH")
             rotate_matrix = Matrix.Rotation(pi / 2, 4, self.axis)
             obj.matrix_world @= rotate_matrix
         bpy.context.view_layer.update()
-        DumbProfileRecalculator().recalculate(objs)
+        DumbProfileRecalculator().recalculate(profile_objs)
+        DumbWallRecalculator().recalculate(layer2_objs)
+        return {"FINISHED"}
+
+
+class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_extrusion_axis"
+    bl_label = "Enable Editing Extrusion Axis"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        axis = ifcopenshell.util.representation.get_representation(element, "Model", "Axis", "GRAPH_VIEW")
+        if axis:
+            position = obj.matrix_world.copy()
+            tool.Model.import_axis(axis.Items[0], obj=obj)
+        else:
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            extrusion = tool.Model.get_extrusion(body)
+
+            if extrusion.Position:
+                position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+                position[0][3] *= self.unit_scale
+                position[1][3] *= self.unit_scale
+                position[2][3] *= self.unit_scale
+            else:
+                position = Matrix()
+
+            direction = Vector(extrusion.ExtrudedDirection.DirectionRatios).normalized()
+            tool.Model.import_axis([Vector((0, 0, 0)), direction * extrusion.Depth], obj=obj, position=position)
+
+        bpy.ops.object.mode_set(mode="EDIT")
+        ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_axis(context))
+        if not bpy.app.background:
+            bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
+        return {"FINISHED"}
+
+
+def disable_editing_extrusion_axis(context):
+    ProfileDecorator.uninstall()
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    obj = context.active_object
+    element = tool.Ifc.get_entity(obj)
+    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+
+    blenderbim.core.geometry.switch_representation(
+        tool.Ifc,
+        tool.Geometry,
+        obj=obj,
+        representation=body,
+        should_reload=True,
+        is_global=True,
+        should_sync_changes_first=False,
+    )
+    return {"FINISHED"}
+
+
+class DisableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_extrusion_axis"
+    bl_label = "Disable Editing Extrusion Axis"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        return disable_editing_extrusion_axis()
+
+
+class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_extrusion_axis"
+    bl_label = "Edit Extrusion Axis"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        ProfileDecorator.uninstall()
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        start = obj.matrix_world @ obj.data.vertices[0].co.copy()
+        end = obj.matrix_world @ obj.data.vertices[1].co.copy()
+        depth = (end - start).length
+        z_axis = (end - start).normalized()
+        y_axis = Vector((0, 0, 1))
+        x_axis = y_axis.cross(z_axis).normalized()
+        y_axis = z_axis.cross(x_axis).normalized()
+
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
+        matrix = Matrix(
+            (
+                [x_axis[0], y_axis[0], z_axis[0], start.x],
+                [x_axis[1], y_axis[1], z_axis[1], start.y],
+                [x_axis[2], y_axis[2], z_axis[2], start.z],
+                [0, 0, 0, 1],
+            )
+        )
+
+        obj.matrix_world = matrix
+        bpy.context.view_layer.update()
+
+        joiner = DumbProfileJoiner()
+        joiner.set_depth(obj, depth)
         return {"FINISHED"}

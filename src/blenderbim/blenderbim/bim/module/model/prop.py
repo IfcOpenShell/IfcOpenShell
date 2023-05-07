@@ -21,8 +21,8 @@ import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
 from bpy.types import PropertyGroup, NodeTree
+from math import pi
 
 
 def get_ifc_class(self, context):
@@ -37,16 +37,16 @@ def get_type_class(self, context):
     return AuthoringData.data["type_class"]
 
 
-def get_relating_type(self, context):
+def get_boundary_class(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
-    return AuthoringData.data["relating_types_ids"]
+    return AuthoringData.data["boundary_class"]
 
 
-def get_relating_type_browser(self, context):
+def get_relating_type_id(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
-    return AuthoringData.data["relating_types_ids_browser"]
+    return AuthoringData.data["relating_type_id"]
 
 
 def get_type_predefined_type(self, context):
@@ -55,41 +55,9 @@ def get_type_predefined_type(self, context):
     return AuthoringData.data["type_predefined_type"]
 
 
-def store_cursor_position(context, event, cursor=True, window=True):
-    browser_state = context.scene.BIMModelProperties.constr_browser_state
-    if cursor:
-        browser_state.cursor_x, browser_state.cursor_y = event.mouse_x, event.mouse_y
-    if window:
-        browser_state.window_x, browser_state.window_y = event.mouse_x, event.mouse_y
-
-
-def update_icon_id(self, context, browser=False):
-    if context == "lost_context" or (context.region is not None and context.region.type != "TOOL_HEADER"):
-        ifc_class = self.ifc_class_browser if browser else self.ifc_class
-        relating_type_id = self.relating_type_id_browser if browser else self.relating_type_id
-        # relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
-
-        if ifc_class not in self.constr_classes or relating_type_id not in self.constr_classes[ifc_class].constr_types:
-            try:
-                AuthoringData.assetize_relating_type_from_selection(browser=browser)
-            except ConstrTypeEntityNotFound:
-                return
-
-        def set_icon(update_interval_seconds=1e-4):
-            if (
-                ifc_class not in self.constr_classes
-                or relating_type_id not in self.constr_classes[ifc_class].constr_types
-            ):
-                return update_interval_seconds
-            else:
-                self.icon_id = self.constr_classes[ifc_class].constr_types[relating_type_id].icon_id
-
-        bpy.app.timers.register(set_icon)
-
-
 def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
-    AuthoringData.data["relating_types_ids"] = AuthoringData.relating_types()
+    AuthoringData.data["relating_type_id"] = AuthoringData.relating_types()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
 
 
@@ -102,21 +70,8 @@ def update_type_class(self, context):
     AuthoringData.data["type_predefined_type"] = AuthoringData.type_predefined_type()
 
 
-def update_ifc_class_browser(self, context):
-    if context.region is not None and context.region.type != "TOOL_HEADER":
-        AuthoringData.load_ifc_classes()
-        AuthoringData.load_relating_types_browser()
-        if self.updating:
-            return
-        ifc_class = self.ifc_class_browser
-        constr_class_info = AuthoringData.constr_class_info(ifc_class)
-
-        if constr_class_info is None or not constr_class_info.fully_loaded:
-            AuthoringData.assetize_constr_class(ifc_class)
-
-
-def update_relating_type(self, context):
-    AuthoringData.load_relating_types()
+def update_relating_type_id(self, context):
+    AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
 
 
@@ -124,81 +79,20 @@ def update_type_page(self, context):
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
 
 
-def update_relating_type_browser(self, context):
-    AuthoringData.load_relating_types_browser()
-    if not self.updating:
-        update_icon_id(self, context, browser=True)
-
-
-def update_relating_type_by_name(self, context):
-    AuthoringData.load_relating_types()
-    relating_type_id = AuthoringData.relating_type_id_by_name(self.ifc_class, self.relating_type)
-    if relating_type_id is not None:
-        self.relating_type_id = relating_type_id
-
-
-def get_constr_class_info(props, ifc_class):
-    return props.constr_classes[ifc_class] if ifc_class in props.constr_classes else None
-
-
-def update_preview_multiple(self, context):
-    if context.region is not None and context.region.type != "TOOL_HEADER":
-        if self.preview_multiple_constr_types:
-            ifc_class = self.ifc_class
-            constr_class_info = get_constr_class_info(self, ifc_class)
-            if constr_class_info is None or not constr_class_info.fully_loaded:
-                AuthoringData.assetize_constr_class(ifc_class)
-        else:
-            update_relating_type(self, context)
-
-
-class ConstrTypeInfo(PropertyGroup):
-    name: bpy.props.StringProperty(name="Construction type ID")
-    icon_id: bpy.props.IntProperty(name="Icon ID")
-    object: bpy.props.PointerProperty(name="Object", type=bpy.types.Object)
-
-
-class ConstrClassInfo(PropertyGroup):
-    name: bpy.props.StringProperty(name="Construction class")
-    constr_types: bpy.props.CollectionProperty(type=ConstrTypeInfo)
-    fully_loaded: bpy.props.BoolProperty(default=False)
-
-
-class ConstrBrowserState(PropertyGroup):
-    cursor_x: bpy.props.IntProperty()
-    cursor_y: bpy.props.IntProperty()
-    window_x: bpy.props.IntProperty()
-    window_y: bpy.props.IntProperty()
-    far_away_x: bpy.props.IntProperty(default=10)  # lower left corner to temporarily warp the mouse
-    far_away_y: bpy.props.IntProperty(default=10)  # useful to close popup operators
-    updating: bpy.props.BoolProperty()
-    update_delay: bpy.props.FloatProperty(default=3e-2)
-
-
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
-    ifc_class_browser: bpy.props.EnumProperty(
-        items=get_ifc_class, name="Construction Class", update=update_ifc_class_browser
-    )
-    relating_type: bpy.props.StringProperty(update=update_relating_type_by_name)
     relating_type_id: bpy.props.EnumProperty(
-        items=get_relating_type, name="Construction Type", update=update_relating_type
-    )
-    relating_type_id_browser: bpy.props.EnumProperty(
-        items=get_relating_type_browser, name="Construction Type", update=update_relating_type_browser
+        items=get_relating_type_id, name="Construction Type", update=update_relating_type_id
     )
     icon_id: bpy.props.IntProperty()
-    preview_multiple_constr_types: bpy.props.BoolProperty(default=False, update=update_preview_multiple)
     updating: bpy.props.BoolProperty(default=False)
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
-    getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type}
-    constr_classes: bpy.props.CollectionProperty(type=ConstrClassInfo)
-    constr_browser_state: bpy.props.PointerProperty(type=ConstrBrowserState)
-    extrusion_depth: bpy.props.FloatProperty(default=42.0)
+    getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
+    extrusion_depth: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
@@ -225,14 +119,14 @@ class BIMModelProperties(PropertyGroup):
         name="Cardinal Point",
         default="5",
     )
-    length: bpy.props.FloatProperty(default=42.0)
+    length: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
     openings: bpy.props.CollectionProperty(type=ObjProperty)
     x: bpy.props.FloatProperty(name="X", default=0.5)
     y: bpy.props.FloatProperty(name="Y", default=0.5)
     z: bpy.props.FloatProperty(name="Z", default=0.5)
     rl1: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like walls, doors, flooring, skirting, etc
     rl2: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like windows, other hosted furniture
-    x_angle: bpy.props.FloatProperty(name="X Angle", default=0)
+    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE")
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_template: bpy.props.EnumProperty(
         items=(
@@ -244,26 +138,48 @@ class BIMModelProperties(PropertyGroup):
             ("WINDOW", "Window", ""),
             ("DOOR", "Door", ""),
             ("STAIR", "Stair", ""),
+            ("RAILING", "Railing", ""),
+            ("ROOF", "Roof", ""),
         ),
         name="Type Template",
         default="MESH",
     )
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
+    type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
+    boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
 
 
 class BIMArrayProperties(PropertyGroup):
-    is_editing: bpy.props.IntProperty(default=-1)
-    count: bpy.props.IntProperty(name="Count", default=0)
+    is_editing: bpy.props.IntProperty(
+        default=-1, description="Currently edited array index. -1 if not in array editing mode."
+    )
+    count: bpy.props.IntProperty(name="Count", default=0, min=0)
     x: bpy.props.FloatProperty(name="X", default=0)
     y: bpy.props.FloatProperty(name="Y", default=0)
     z: bpy.props.FloatProperty(name="Z", default=0)
+    use_local_space: bpy.props.BoolProperty(
+        name="Use Local Space",
+        description="Use local space for array items offset instead of world space",
+        default=True,
+    )
+    method: bpy.props.EnumProperty(
+        items=(("OFFSET", "Offset", ""), ("DISTRIBUTE", "Distribute", "")),
+        name="Method",
+        default="OFFSET",
+    )
+    sync_children: bpy.props.BoolProperty(
+        name="Sync Children",
+        description="Regenerate all children based on the parent object",
+        default=False,
+    )
 
 
 class BIMStairProperties(PropertyGroup):
     stair_types = (
         ("CONCRETE", "Concrete", ""),
         ("WOOD/STEEL", "Wood / Steel", ""),
+        ("GENERIC", "Generic", ""),
     )
 
     stair_added_previously: bpy.props.BoolProperty(default=False)
@@ -284,7 +200,6 @@ class BIMStairProperties(PropertyGroup):
             "width": self.width,
             "height": self.height,
             "number_of_treads": self.number_of_treads,
-            "tread_depth": self.tread_depth,
             "tread_run": self.tread_run,
         }
 
@@ -294,11 +209,20 @@ class BIMStairProperties(PropertyGroup):
                     "base_slab_depth": self.base_slab_depth,
                     "top_slab_depth": self.top_slab_depth,
                     "has_top_nib": self.has_top_nib,
+                    "tread_depth": self.tread_depth,
                 }
             )
             return stair_kwargs
 
         elif self.stair_type == "WOOD/STEEL":
+            stair_kwargs.update(
+                {
+                    "tread_depth": self.tread_depth,
+                }
+            )
+            return stair_kwargs
+
+        elif self.stair_type == "GENERIC":
             return stair_kwargs
 
 
@@ -330,6 +254,7 @@ class BIMWindowProperties(PropertyGroup):
     )
 
     # number of panels and default mullion/transom values
+    # fmt: off
     window_types_panels = {
         "SINGLE_PANEL":            (1, ((0,   0  ), (0,    0  ))),
         "DOUBLE_PANEL_HORIZONTAL": (2, ((0,   0  ), (0.45, 0  ))),
@@ -341,6 +266,7 @@ class BIMWindowProperties(PropertyGroup):
         "TRIPLE_PANEL_HORIZONTAL": (3, ((0,   0  ), (0.3,  0.6))),
         "TRIPLE_PANEL_VERTICAL":   (3, ((0.2, 0.4), (0,    0  ))),
     }
+    # fmt: on
 
     window_added_previously: bpy.props.BoolProperty(default=False)
     is_editing: bpy.props.IntProperty(default=-1)
@@ -443,7 +369,9 @@ class BIMDoorProperties(PropertyGroup):
         ("DOUBLE_SWING_LEFT", "DOUBLE_SWING_LEFT", ""),
         ("DOUBLE_SWING_RIGHT", "DOUBLE_SWING_RIGHT", ""),
         ("DOUBLE_DOOR_SINGLE_SWING", "DOUBLE_DOOR_SINGLE_SWING", ""),
-        ("DOUBLE_DOOR_DOUBLE_SWING", "DOUBLE_DOOR_DOUBLE_SWING", ""),
+        ("SLIDING_TO_LEFT", "SLIDING_TO_LEFT", ""),
+        ("SLIDING_TO_RIGHT", "SLIDING_TO_RIGHT", ""),
+        ("DOUBLE_DOOR_SLIDING", "DOUBLE_DOOR_SLIDING", ""),
     )
 
     door_added_previously: bpy.props.BoolProperty(default=False)
@@ -513,9 +441,11 @@ class BIMDoorProperties(PropertyGroup):
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
             "lining_offset": self.lining_offset,
-            "lining_to_panel_offset_x": self.lining_to_panel_offset_x,
-            "lining_to_panel_offset_y": self.lining_to_panel_offset_y,
         }
+
+        if "SLIDING" not in self.door_type:
+            kwargs["lining_to_panel_offset_x"] = self.lining_to_panel_offset_x
+            kwargs["lining_to_panel_offset_y"] = self.lining_to_panel_offset_y
 
         kwargs["transom_thickness"] = self.transom_thickness
         if self.transom_thickness:
@@ -540,4 +470,97 @@ class BIMDoorProperties(PropertyGroup):
             kwargs["frame_thickness"] = self.frame_thickness
             kwargs["frame_depth"] = self.frame_depth
 
+        return kwargs
+
+
+class BIMRailingProperties(PropertyGroup):
+    railing_types = (
+        ("FRAMELESS_PANEL", "FRAMELESS_PANEL", ""),
+        ("WALL_MOUNTED_HANDRAIL", "WALL_MOUNTED_HANDRAIL", ""),
+    )
+    cap_types = (
+        ("TO_END_POST_AND_FLOOR", "TO_END_POST_AND_FLOOR", ""),
+        ("TO_END_POST", "TO_END_POST", ""),
+        ("TO_FLOOR", "TO_FLOOR", ""),
+        ("TO_WALL", "TO_WALL", ""),
+        ("180", "180", ""),
+        ("NONE", "NONE", ""),
+    )
+
+    railing_added_previously: bpy.props.BoolProperty(default=False)
+    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing_path: bpy.props.BoolProperty(default=False)
+
+    railing_type: bpy.props.EnumProperty(name="Railing Type", items=railing_types, default="FRAMELESS_PANEL")
+    height: bpy.props.FloatProperty(name="Height", default=1.0)
+    thickness: bpy.props.FloatProperty(name="Thickness", default=0.050)
+    spacing: bpy.props.FloatProperty(name="Spacing", default=0.050)
+
+    # wall mounted handrail specific properties
+    use_manual_supports: bpy.props.BoolProperty(
+        name="Use Manual Supports",
+        default=False,
+        description="If enabled, supports are added on every vertex on the edges of the railing path.\n"
+        "If disabled, supports are added automatically based on the support spacing",
+    )
+    support_spacing: bpy.props.FloatProperty(
+        name="Support Spacing", default=1.0, description="Distance between supports if automatic supports are used"
+    )
+    railing_diameter: bpy.props.FloatProperty(name="Railing Diameter", default=0.050)
+    clear_width: bpy.props.FloatProperty(
+        name="Clear Width", default=0.040, description="Clear width between the railing and the wall"
+    )
+    terminal_type: bpy.props.EnumProperty(name="Terminal Type", items=cap_types, default="180")
+
+    def get_general_kwargs(self):
+        base_kwargs = {
+            "railing_type": self.railing_type,
+            "height": self.height,
+        }
+        additional_kwargs = {}
+        if self.railing_type == "FRAMELESS_PANEL":
+            additional_kwargs = {
+                "thickness": self.thickness,
+                "spacing": self.spacing,
+            }
+        elif self.railing_type == "WALL_MOUNTED_HANDRAIL":
+            additional_kwargs = {
+                "railing_diameter": self.railing_diameter,
+                "clear_width": self.clear_width,
+                "use_manual_supports": self.use_manual_supports,
+                "support_spacing": self.support_spacing,
+                "terminal_type": self.terminal_type,
+            }
+        return base_kwargs | additional_kwargs
+
+
+class BIMRoofProperties(PropertyGroup):
+    roof_types = (("HIP/GABLE ROOF", "HIP/GABLE ROOF", ""),)
+    roof_generation_methods = (
+        ("HEIGHT", "HEIGHT", ""),
+        ("ANGLE", "ANGLE", ""),
+    )
+
+    roof_added_previously: bpy.props.BoolProperty(default=False)
+    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing_path: bpy.props.BoolProperty(default=False)
+
+    roof_type: bpy.props.EnumProperty(name="Roof Type", items=roof_types, default="HIP/GABLE ROOF")
+    generation_method: bpy.props.EnumProperty(
+        name="Roof Generation Method", items=roof_generation_methods, default="ANGLE"
+    )
+    height: bpy.props.FloatProperty(
+        name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
+    )
+    angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE")
+
+    def get_general_kwargs(self):
+        kwargs = {
+            "roof_type": self.roof_type,
+            "generation_method": self.generation_method,
+        }
+        if self.generation_method == "HEIGHT":
+            kwargs["height"] = self.height
+        else:
+            kwargs["angle"] = self.angle
         return kwargs

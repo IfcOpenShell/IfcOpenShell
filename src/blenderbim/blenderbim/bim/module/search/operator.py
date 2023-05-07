@@ -518,27 +518,26 @@ class FilterModelElements(Operator):
     def add_filters(self, selection: str, query: str) -> str:
         for f_index, f in enumerate(query.filters):
 
-            comparison_operator = f.comparison
-
             if f_index != 0:
                 selection += " & " if f.and_or == "and" else " | "
                 selection += f".{query.active_option}"
 
+            if f.value in ("True", "False"):
+                value = f.value
+            elif f.value.isnumeric() and str(float(f.value))[0] == f.value[0]:
+                value = f.value
+            else:
+                value = f'"{f.value}"'
+
             selection += "["
 
             if f.selector == "IfcPropertySet":
-                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}{comparison_operator}'
-                if (f.value == "True" or f.value == "False"):
-                    selection += f' {f.value}'
-                else:
-                    selection += f' "{f.value}"'
+                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}{f.comparison} {value}'
             elif f.selector == "Attribute":
                 # we're using the prop_search functionality in blender which returns the index of the option.  Sometimes the user can override this and enter a value that doesn't exist in the list.  In this case there is no index and we need to handle it. @vulevukusej
                 pattern = re.compile(r'^[0-9]+:')
                 match = pattern.search(f.active_option)
-
-                selection += f'{f.active_option.split(": ")[1] if match else f.active_option} {"!" if f.negation else ""}{comparison_operator} "{f.value}"'
-
+                selection += f'{f.active_option.split(": ")[1] if match else f.active_option} {"!" if f.negation else ""}{f.comparison} {value}'
             selection += "]"
         return selection
 

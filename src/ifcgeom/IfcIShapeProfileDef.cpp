@@ -31,7 +31,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	const bool hasSlope = !!l->FlangeSlope();
 #else
 	const bool doFlangeEdgeRadius = false;
-	const bool hasSlope = false;
 #endif
 
 	const double x1 = l->OverallWidth() / 2.0f * getValue(GV_LENGTH_UNIT);

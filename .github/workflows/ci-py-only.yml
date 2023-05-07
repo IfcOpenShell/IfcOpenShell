@@ -7,7 +7,7 @@ on:
       - 'test/**'
       - 'conda/**'
       - 'cmake/**'
-      - '.github/workflows/ci_py_only.yml'
+      - '.github/workflows/ci-py-only.yml'
   pull_request:
 
 jobs:
@@ -46,13 +46,14 @@ jobs:
           
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${GITHUB_WORKFLOW}
 
       - name: Build ifcopenshell
         run: |
+          sudo /usr/sbin/update-ccache-symlinks
           mkdir build && cd build
-          cmake \
-               -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-               -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+          PATH="/usr/lib/ccache:$PATH" cmake \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
@@ -62,7 +63,7 @@ jobs:
                -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
                -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
                -DCOLLADA_SUPPORT=Off \
-               "-DSCHEMA_VERSIONS=2x3;4" \
+               "-DSCHEMA_VERSIONS=2x3;4;4x3_add1" \
                -DBUILD_CONVERT=Off \
                -DGLTF_SUPPORT=On \
                -DJSON_INCLUDE_DIR=/usr/include \
@@ -79,13 +80,14 @@ jobs:
       - name: Install Python dependencies
         run: |
           sudo /usr/bin/python -m pip install -U pip
-          sudo /usr/bin/python -m pip install xmlschema numpy lxml
-          sudo /usr/bin/python -m pip install src/bcf
+          sudo /usr/bin/python -m pip install xmlschema xsdata numpy lxml
+          sudo /usr/bin/python -m pip install src/bcf --no-deps
           sudo /usr/bin/python -m pip install pytest
           sudo /usr/bin/python -m pip install isodate
           sudo /usr/bin/python -m pip install lark
           sudo /usr/bin/python -m pip install networkx
           sudo /usr/bin/python -m pip install tabulate
+          sudo /usr/bin/python -m pip install python-dateutil
 
       - name: Test
         run: |

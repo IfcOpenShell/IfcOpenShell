@@ -24,6 +24,7 @@ import zipfile
 import tempfile
 import ifcopenshell
 import blenderbim.bim.handler
+import blenderbim.tool as tool
 from pathlib import Path
 
 
@@ -35,7 +36,6 @@ class IfcStore:
     cache_path = None
     id_map = {}
     guid_map = {}
-    deleted_ids = set()
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
@@ -62,7 +62,6 @@ class IfcStore:
         IfcStore.cache_path = None
         IfcStore.id_map = {}
         IfcStore.guid_map = {}
-        IfcStore.deleted_ids = set()
         IfcStore.edited_objs = set()
         IfcStore.pset_template_path = ""
         IfcStore.pset_template_file = None
@@ -278,23 +277,6 @@ class IfcStore:
             IfcStore.commit_link_element(data)
 
     @staticmethod
-    def delete_element(element):
-        IfcStore.deleted_ids.add(element.id())
-        if IfcStore.history:
-            data = {"id": element.id()}
-            IfcStore.history[-1]["operations"].append(
-                {"rollback": IfcStore.rollback_delete_element, "commit": IfcStore.commit_delete_element, "data": data}
-            )
-
-    @staticmethod
-    def rollback_delete_element(data):
-        IfcStore.deleted_ids.remove(data["id"])
-
-    @staticmethod
-    def commit_delete_element(data):
-        IfcStore.deleted_ids.add(data["id"])
-
-    @staticmethod
     def link_element(element, obj):
         existing_obj = IfcStore.id_map.get(element.id(), None)
         if existing_obj == obj:
@@ -320,6 +302,7 @@ class IfcStore:
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
         elif isinstance(obj, bpy.types.Object):
             blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+            blenderbim.bim.handler.subscribe_to(obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback)
 
         for listener in IfcStore.element_listeners:
             listener(element, obj)
@@ -370,7 +353,7 @@ class IfcStore:
     def unlink_element(element=None, obj=None):
         if element is None:
             try:
-                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = tool.Ifc.get_entity(obj)
             except:
                 pass
 

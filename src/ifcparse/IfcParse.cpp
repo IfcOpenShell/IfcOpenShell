@@ -2600,7 +2600,7 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
 					);
 
 					IfcUtil::IfcBaseClass* unc = *mu->data().getArgument(
-						mu->declaration().as_entity()->attribute_index("ValueComponent")
+						mu->declaration().as_entity()->attribute_index("UnitComponent")
 					);
 
 					return_value.second *= static_cast<double>(*vlc->data().getArgument(0));

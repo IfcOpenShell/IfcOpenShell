@@ -20,6 +20,7 @@
 
 from __future__ import print_function
 
+import os
 import sys
 import json
 import functools
@@ -125,7 +126,7 @@ def assert_valid_inverse(attr, val, schema):
         aggr = attr.type_of_aggregation_string().upper()
 
         if aggr:
-            aggr_str = f'{aggr} [{b1}:{b2}] OF '
+            aggr_str = f'{aggr} [{b1}:{"?" if b2 == -1 else b2}] OF '
         else:
             aggr_str = ''
 
@@ -153,7 +154,13 @@ def get_select_members(schema, ty):
             for st in ty.subtypes():
                 yield from inner(st)
         elif isinstance(ty, type_declaration):
+            # @todo shouldn't we list subtypes (e.g IfcPositiveLengthMeasure -> IfcLengthMeasure) here as well?
             yield ty.name()
+        elif isinstance(ty, enumeration_type):
+            yield ty.name()
+        else:
+            # @todo raise exception?
+            pass
 
     v = select_members_cache[cache_key] = set(inner(ty))
     return v
@@ -181,33 +188,35 @@ def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
     elif isinstance(attr_type, (entity_type, type_declaration)):
         invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
     elif isinstance(attr_type, select_type):
-        val_to_use = val
-        if isinstance(schema.declaration_by_name(val.is_a()), enumeration_type):
-            if isinstance(val, ifcopenshell.entity_instance):
-                val_to_use = val.wrappedValue
-            else:
-                invalid = True
-        if not invalid:
+        if not isinstance(val, ifcopenshell.entity_instance):
+            invalid = True
+        else:
+            value_type = schema.declaration_by_name(val.is_a())
+            if not isinstance(value_type, entity_type):
+                # we need to check two things: is (enumeration) literal/value valid
+                # for this type and is enumeration/value type valid for this select.
+                assert_valid(value_type, val.wrappedValue, schema, no_throw=no_throw)
+
             # Previously we relied on `is_a(x) for x in attr_type.select_items()`
             # this was linear in the number of select leafs, which is very large
             # for e.g IfcValue, which is an often used select. Therefore, we now
             # calculate (and cache) the select leafs (including entity subtypes)
             # for the select definition and simply check for membership in this
             # set.
-            invalid = val_to_use.is_a() not in get_select_members(schema, attr_type)
+            invalid = val.is_a() not in get_select_members(schema, attr_type)
     elif isinstance(attr_type, enumeration_type):
         invalid = val not in attr_type.enumeration_items()
     elif isinstance(attr_type, aggregation_type):
         b1, b2 = attr_type.bound1(), attr_type.bound2()
         ty = attr_type.type_of_element()
-        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2) or not all(assert_valid(ty, v, schema) for v in val)
+        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2) or not all(assert_valid(ty, v, schema, attr=attr) for v in val)
     else:
         raise NotImplementedError("Not impl %s %s" % (type(attr_type), attr_type))
 
     if no_throw:
         return not invalid
     elif invalid:
-        raise ValidationError(f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n", (attr or attr_type).name())
+        raise ValidationError(f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n", *([attr.name()] if attr else []))
     else:
         return True
 
@@ -291,7 +300,8 @@ def validate(f, logger, express_rules=False):
 
     filename = None
 
-    logger.set_state('type', 'schema')
+    if hasattr(logger, 'set_state'):
+        logger.set_state('type', 'schema')
 
     if not isinstance(f, ifcopenshell.file):
 
@@ -301,7 +311,19 @@ def validate(f, logger, express_rules=False):
         ifcopenshell.ifcopenshell_wrapper.set_log_format_json()
 
         filename = f
-        f = ifcopenshell.open(f)
+        try:
+            f = ifcopenshell.open(f)
+        except ifcopenshell.SchemaError as e:
+            current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
+            schema_name = str(e).split(' ')[-1].lower()
+            exists = current_dir_files.get(schema_name + '.exp')
+            if exists:
+                schema = ifcopenshell.express.parse(exists)
+                ifcopenshell.register_schema(schema)
+
+                f = ifcopenshell.open(f)
+            else:
+                raise e
 
         log_internal_cpp_errors(filename, logger)
 

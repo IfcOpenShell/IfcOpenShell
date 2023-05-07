@@ -530,6 +530,27 @@ In Python, this is set when the iterator is constructed:
     import multiprocessing
     iterator = ifcopenshell.geom.iterator(settings, ifc_file, num_threads=multiprocessing.cpu_count())
 
+offset
+------
+
++---------------+--------------------+---------+
+| Type          | IfcConvert Option  | Default |
++===============+====================+=========+
+| ARRAY<DOUBLE> | ``--model-offset`` | 0,0,0   |
++---------------+--------------------+---------+
+
+Sets an offset to be applied to all the matrixes of geometries returned from
+the iterator.
+
+In Python, this is set in the settings passed to the iterator.
+
+.. code-block:: python
+
+    settings = ifcopenshell.geom.settings()
+    offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
+    offset[0], offset[1], offset[2] = (1, 2, 3)
+    settings.offset = offset
+
 SEW_SHELLS
 ----------
 
@@ -562,7 +583,9 @@ STRICT_TOLERANCE
 +------+------------------------+---------+
 
 Strictly use the tolerance from the IFC model. Typically this value is increased
-10-fold to have more reliable boolean subtraction results.
+10-fold to have more reliable boolean subtraction results. It is recommended to
+always have this set to True and should only be set to False for backwards
+compatibility.
 
 USE_BREP_DATA
 -------------

@@ -54,7 +54,10 @@ class Usecase:
                 recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
         """
         self.file = file
-        self.settings = {"recurrence_pattern": recurrence_pattern, "attributes": attributes or {}}
+        self.settings = {
+            "recurrence_pattern": recurrence_pattern,
+            "attributes": attributes or {},
+        }
 
     def execute(self):
         for name, value in self.settings["attributes"].items():

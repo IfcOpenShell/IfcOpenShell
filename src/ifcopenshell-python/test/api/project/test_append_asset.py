@@ -62,9 +62,70 @@ class TestAppendAsset(test.bootstrap.IFC4):
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert self.file.by_type("IfcWallType")[0].HasAssociations[0].RelatingMaterial.Name == "Material"
 
+    def test_append_two_type_products_sharing_the_same_material_with_properties(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element1 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        element2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+
+        pset = ifcopenshell.api.run("pset.add_pset", library, product=material, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", library, pset=pset, properties={"Foo": "Bar"})
+
+        ifcopenshell.api.run("material.assign_material", library, product=element1, material=material)
+        ifcopenshell.api.run("material.assign_material", library, product=element2, material=material)
+        new1 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element1)
+        new2 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element2)
+
+        assert len(self.file.by_type("IfcMaterialProperties")) == 1
+        material = self.file.by_type("IfcMaterial")[0]
+        assert ifcopenshell.util.element.get_material(new1) == material
+        assert ifcopenshell.util.element.get_material(new2) == material
+        assert ifcopenshell.util.element.get_psets(material)["Foo_Bar"]["Foo"] == "Bar"
+
+    def test_append_two_type_products_sharing_the_same_material_indirectly_via_a_material_set(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element1 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        element2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        pset = ifcopenshell.api.run("pset.add_pset", library, product=material, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", library, pset=pset, properties={"Foo": "Bar"})
+
+        layer_set1 = ifcopenshell.api.run("material.add_material_set", library, set_type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set1, material=material)
+        ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set1, material=material)
+
+        layer_set2 = ifcopenshell.api.run("material.add_material_set", library, set_type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set2, material=material)
+        ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set2, material=material)
+
+        ifcopenshell.api.run("material.assign_material", library, product=element1, material=layer_set1)
+        ifcopenshell.api.run("material.assign_material", library, product=element2, material=layer_set2)
+
+        new1 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element1)
+        new2 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element2)
+
+        assert len(self.file.by_type("IfcMaterialProperties")) == 1
+        material = self.file.by_type("IfcMaterial")[0]
+        assert ifcopenshell.util.element.get_material(new1).MaterialLayers[0].Material == material
+        assert ifcopenshell.util.element.get_material(new1).MaterialLayers[1].Material == material
+        assert ifcopenshell.util.element.get_material(new2).MaterialLayers[0].Material == material
+        assert ifcopenshell.util.element.get_material(new2).MaterialLayers[1].Material == material
+        assert ifcopenshell.util.element.get_psets(material)["Foo_Bar"]["Foo"] == "Bar"
+
     def test_append_a_type_product_with_its_styles(self):
         library = ifcopenshell.api.run("project.create_file")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        history = library.createIfcOwnerHistory()
+        element.OwnerHistory = history
+
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        rel = ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        # We share a history. This ensures that we continue to check all
+        # whitelisted inverses even though one of the subelements (i.e. this
+        # shared history) is already processed. See bug #2837.
+        rel.OwnerHistory = history
+
         item = library.createIfcBoundingBox()
         library.createIfcStyledItem(Item=item)
         mapped_rep = library.createIfcShapeRepresentation(Items=[item])
@@ -240,6 +301,19 @@ class TestAppendAsset(test.bootstrap.IFC4):
         ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert ifcopenshell.util.element.get_material(self.file.by_type("IfcWall")[0]).Name == "Material"
+
+    def test_append_a_product_where_its_inverse_material_relationship_refers_to_product_types_not_in_scope(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        element_type2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", library, product=element_type, material=material)
+        ifcopenshell.api.run("material.assign_material", library, product=element_type2, material=material)
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
+        assert [e.GlobalId for e in self.file.by_type("IfcWallType")] == [element_type.GlobalId]
 
     def test_append_a_product_with_its_styles(self):
         library = ifcopenshell.api.run("project.create_file")

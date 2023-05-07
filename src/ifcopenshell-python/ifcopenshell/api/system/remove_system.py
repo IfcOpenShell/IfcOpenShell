@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.api
+
 
 class Usecase:
     def __init__(self, file, system=None):
@@ -42,6 +45,21 @@ class Usecase:
         self.settings = {"system": system}
 
     def execute(self):
-        for rel in self.settings["system"].IsGroupedBy or []:
-            self.file.remove(rel)
+        for inverse_id in [i.id() for i in self.file.get_inverse(self.settings["system"])]:
+            try:
+                inverse = self.file.by_id(inverse_id)
+            except:
+                continue
+            if inverse.is_a("IfcRelDefinesByProperties"):
+                ifcopenshell.api.run(
+                    "pset.remove_pset",
+                    self.file,
+                    product=self.settings["system"],
+                    pset=inverse.RelatingPropertyDefinition,
+                )
+            elif inverse.is_a("IfcRelAssignsToGroup"):
+                if inverse.RelatingGroup == self.settings["system"]:
+                    self.file.remove(inverse)
+                elif len(inverse.RelatedObjects) == 1:
+                    self.file.remove(inverse)
         self.file.remove(self.settings["system"])

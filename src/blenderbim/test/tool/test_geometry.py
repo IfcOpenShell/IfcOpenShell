@@ -25,7 +25,6 @@ import blenderbim.tool as tool
 from mathutils import Vector
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.geometry import Geometry as subject
-from blenderbim.bim.ifc import IfcStore
 
 
 class TestImplementsTool(NewFile):
@@ -308,7 +307,7 @@ class TestIsEdited(NewFile):
         assert subject.is_edited(obj) is True
         obj.scale[0] = 1
         assert subject.is_edited(obj) is False
-        IfcStore.edited_objs.add(obj)
+        tool.Ifc.edit(obj)
         assert subject.is_edited(obj) is True
 
 

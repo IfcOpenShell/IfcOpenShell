@@ -16,30 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import gpu
-import blf
-import bgl
 import bpy
-import math
 import json
 import bmesh
 import ifcopenshell
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import mathutils.geometry
 import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.geometry
 import blenderbim.tool as tool
-from bpy.types import SpaceView3D
-from blenderbim.bim.ifc import IfcStore
-from math import pi, degrees, sin, cos, radians
+from math import radians
 from mathutils import Vector, Matrix
 from blenderbim.bim.module.geometry.helper import Helper
-from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
-from gpu_extras.batch import batch_for_shader
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
 def calculate_quantities(usecase_path, ifc_file, settings):
@@ -122,9 +113,9 @@ class DumbSlabGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
-    def generate(self, link_to_scene=True):
-        self.file = IfcStore.get_file()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+    def generate(self):
+        self.file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         thicknesses = []
         for rel in self.relating_type.HasAssociations:
             if rel.is_a("IfcRelAssociatesMaterial"):
@@ -148,14 +139,14 @@ class DumbSlabGenerator:
         self.length = 3
         self.rotation = 0
         self.location = Vector((0, 0, 0))
-        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
-        return self.derive_from_cursor(link_to_scene=link_to_scene)
+        self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
+        return self.derive_from_cursor()
 
-    def derive_from_cursor(self, link_to_scene):
+    def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
-        return self.create_slab(link_to_scene)
+        return self.create_slab()
 
-    def create_slab(self, link_to_scene):
+    def create_slab(self):
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
@@ -163,16 +154,15 @@ class DumbSlabGenerator:
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
-        if link_to_scene:
-            matrix_world = Matrix()
-            matrix_world.col[3] = self.location.to_4d()
-            if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-                matrix_world[2][3] = self.collection_obj.location[2] - self.depth
-            else:
-                matrix_world[2][3] -= self.depth
-            obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
-            bpy.context.view_layer.update()
-            self.collection.objects.link(obj)
+        matrix_world = Matrix()
+        matrix_world.col[3] = self.location.to_4d()
+        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+            matrix_world[2][3] = self.collection_obj.location[2] - self.depth
+        else:
+            matrix_world[2][3] -= self.depth
+        obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
+        bpy.context.view_layer.update()
+        self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -248,11 +238,11 @@ class DumbSlabPlaner:
                         if not rel.is_a("IfcRelAssociatesMaterial"):
                             continue
                         for element in rel.RelatedObjects:
-                            self.change_thickness(element, thickness)
+                            self.change_thickness(element, total_thickness)
                 else:
                     for rel in inverse.AssociatedTo:
                         for element in rel.RelatedObjects:
-                            self.change_thickness(element, thickness)
+                            self.change_thickness(element, total_thickness)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         obj = tool.Ifc.get_object(settings["related_object"])
@@ -269,7 +259,7 @@ class DumbSlabPlaner:
 
     def change_thickness(self, element, thickness):
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
-        obj = IfcStore.get_element(element.id())
+        obj = tool.Ifc.get_object(element)
         if not obj:
             return
 
@@ -284,7 +274,7 @@ class DumbSlabPlaner:
                 extrusion.Depth = thickness
             else:
                 props = bpy.context.scene.BIMModelProperties
-                x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
+                x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
                 new_rep = ifcopenshell.api.run(
                     "geometry.add_slab_representation",
                     tool.Ifc.get(),
@@ -309,7 +299,7 @@ class DumbSlabPlaner:
                 return
         else:
             props = bpy.context.scene.BIMModelProperties
-            x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else radians(props.x_angle)
+            x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
             representation = ifcopenshell.api.run(
                 "geometry.add_slab_representation",
                 tool.Ifc.get(),
@@ -564,6 +554,28 @@ class DisableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator
         return {"FINISHED"}
 
 
+def disable_editing_extrusion_profile(context):
+    ProfileDecorator.uninstall()
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    obj = context.active_object
+    element = tool.Ifc.get_entity(obj)
+    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+
+    profile_mesh = obj.data
+    blenderbim.core.geometry.switch_representation(
+        tool.Ifc,
+        tool.Geometry,
+        obj=obj,
+        representation=body,
+        should_reload=True,
+        is_global=True,
+        should_sync_changes_first=False,
+    )
+    tool.Geometry.delete_data(profile_mesh)
+    return {"FINISHED"}
+
+
 class DisableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_extrusion_profile"
     bl_label = "Disable Editing Extrusion Profile"
@@ -574,23 +586,7 @@ class DisableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        DecorationsHandler.uninstall()
-        bpy.ops.object.mode_set(mode="OBJECT")
-
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=body,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-        return {"FINISHED"}
+        return disable_editing_extrusion_profile(context)
 
 
 class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -608,6 +604,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        body = ifcopenshell.util.representation.resolve_representation(body)
         extrusion = tool.Model.get_extrusion(body)
 
         if extrusion.Position:
@@ -621,8 +618,9 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position)
 
         bpy.ops.object.mode_set(mode="EDIT")
-        DecorationsHandler.install(context)
-        bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
+        ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_profile(context))
+        if not bpy.app.background:
+            bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
         return {"FINISHED"}
 
 
@@ -633,14 +631,15 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        DecorationsHandler.uninstall()
+        ProfileDecorator.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
 
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        extrusion = tool.Model.get_extrusion(representation)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        body = ifcopenshell.util.representation.resolve_representation(body)
+        extrusion = tool.Model.get_extrusion(body)
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position[0][3] *= self.unit_scale
@@ -657,7 +656,9 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
                 self.layout.label(text="INVALID PROFILE")
 
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-            DecorationsHandler.install(context)
+            ProfileDecorator.install(
+                context, exit_edit_mode_callback=lambda: disable_editing_extrusion_profile(context)
+            )
             bpy.ops.object.mode_set(mode="EDIT")
             return
 
@@ -666,45 +667,53 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
+        profile_mesh = obj.data
         blenderbim.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
-            representation=representation,
+            representation=body,
             should_reload=True,
             is_global=True,
             should_sync_changes_first=False,
         )
+        bpy.data.meshes.remove(profile_mesh)
+
+        # Only certain classes should have a footprint
+        if element.is_a() not in ("IfcSlab", "IfcRamp"):
+            return
 
         footprint_context = ifcopenshell.util.representation.get_context(
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
         )
-        if footprint_context:
-            curves = [profile.OuterCurve]
-            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
-                curves.extend(profile.InnerCurves)
-            new_footprint = ifcopenshell.api.run(
-                "geometry.add_footprint_representation", tool.Ifc.get(), context=footprint_context, curves=curves
+        if not footprint_context:
+            return
+
+        curves = [profile.OuterCurve]
+        if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+            curves.extend(profile.InnerCurves)
+        new_footprint = ifcopenshell.api.run(
+            "geometry.add_footprint_representation", tool.Ifc.get(), context=footprint_context, curves=curves
+        )
+        old_footprint = ifcopenshell.util.representation.get_representation(
+            element, "Plan", "FootPrint", "SKETCH_VIEW"
+        )
+        if old_footprint:
+            for inverse in tool.Ifc.get().get_inverse(old_footprint):
+                ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
+            blenderbim.core.geometry.remove_representation(
+                tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
             )
-            old_footprint = ifcopenshell.util.representation.get_representation(
-                element, "Plan", "FootPrint", "SKETCH_VIEW"
+        else:
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_footprint
             )
-            if old_footprint:
-                for inverse in tool.Ifc.get().get_inverse(old_footprint):
-                    ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
-                blenderbim.core.geometry.remove_representation(
-                    tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
-                )
-            else:
-                ifcopenshell.api.run(
-                    "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_footprint
-                )
-        return {"FINISHED"}
 
 
 class ResetVertex(bpy.types.Operator):
     bl_idname = "bim.reset_vertex"
     bl_label = "Reset Vertex"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -728,6 +737,7 @@ class ResetVertex(bpy.types.Operator):
 class SetArcIndex(bpy.types.Operator):
     bl_idname = "bim.set_arc_index"
     bl_label = "Set Arc Index"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -735,13 +745,20 @@ class SetArcIndex(bpy.types.Operator):
         return bool(obj) and obj.type == "MESH"
 
     def cancel_message(self, msg):
-        self.report({"WARNING"}, msg)
+        self.report({"ERROR"}, msg)
         return {"CANCELLED"}
 
     def execute(self, context):
+        # NOTE: undo won't remove new verex group
+        # because of jumping between modes
         obj = context.active_object
+
+        bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+        selected_vertices = [v.index for v in bm.verts if v.select]
+        if len(selected_vertices) != 3:
+            return self.cancel_message("Select 3 vertices.")
+
         bpy.ops.object.mode_set(mode="OBJECT")
-        selected_vertices = [v.index for v in obj.data.vertices if v.select]
         in_group = any([bool(obj.data.vertices[v].groups) for v in selected_vertices])
         for group in obj.vertex_groups:
             group.remove(selected_vertices)
@@ -749,245 +766,3 @@ class SetArcIndex(bpy.types.Operator):
         group.add(selected_vertices, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
-
-
-class DecorationsHandler:
-    installed = None
-
-    @classmethod
-    def install(cls, context):
-        if cls.installed:
-            cls.uninstall()
-        handler = cls()
-        cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW")
-
-    @classmethod
-    def uninstall(cls):
-        try:
-            SpaceView3D.draw_handler_remove(cls.installed, "WINDOW")
-        except ValueError:
-            pass
-        cls.installed = None
-
-    def __call__(self, context):
-        obj = context.active_object
-        if obj.mode != "EDIT":
-            return
-
-        bgl.glLineWidth(2)
-        bgl.glPointSize(6)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-
-        all_vertices = []
-        error_vertices = []
-        selected_vertices = []
-        unselected_vertices = []
-        special_vertices = []
-        special_vertex_indices = {}
-        selected_edges = []
-        unselected_edges = []
-        special_edges = []  # edges that have a circle or an arc associated with them
-
-        arc_groups = []
-        circle_groups = []
-        for i, group in enumerate(obj.vertex_groups):
-            if "IFCARCINDEX" in group.name:
-                arc_groups.append(i)
-            elif "IFCCIRCLE" in group.name:
-                circle_groups.append(i)
-
-        arcs = {}
-        circles = {}
-
-        bm = bmesh.from_edit_mesh(obj.data)
-
-        # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
-        # This is how we access vertex groups via bmesh, apparently, it's not very intuitive
-        deform_layer = bm.verts.layers.deform.active
-
-        for vertex in bm.verts:
-            co = tuple(obj.matrix_world @ vertex.co)
-            all_vertices.append(co)
-            if vertex.hide:
-                continue
-
-            is_arc = False
-            for group_index in arc_groups:
-                if group_index in vertex[deform_layer]:
-                    is_arc = True
-                    break
-            if is_arc:
-                arcs.setdefault(group_index, []).append(vertex)
-                special_vertex_indices[vertex.index] = group_index
-
-            is_circle = False
-            for group_index in circle_groups:
-                if group_index in vertex[deform_layer]:
-                    is_circle = True
-                    break
-            if is_circle:
-                circles.setdefault(group_index, []).append(vertex)
-                special_vertex_indices[vertex.index] = group_index
-
-            if vertex.select:
-                selected_vertices.append(co)
-            else:
-                if len(vertex.link_edges) > 1 and is_circle:
-                    error_vertices.append(co)
-                elif is_circle:
-                    special_vertices.append(co)
-                elif len(vertex.link_edges) != 2:
-                    error_vertices.append(co)
-                elif is_arc:
-                    special_vertices.append(co)
-                else:
-                    unselected_vertices.append(co)
-
-        for edge in bm.edges:
-            edge_indices = [v.index for v in edge.verts]
-            if edge.hide:
-                continue
-            if edge.select:
-                selected_edges.append(edge_indices)
-            else:
-                i1, i2 = edge.verts[0].index, edge.verts[1].index
-                if i1 in special_vertex_indices and special_vertex_indices[i1] == special_vertex_indices.get(i2, None):
-                    special_edges.append(edge_indices)
-                else:
-                    unselected_edges.append(edge_indices)
-        indices = [[v.index for v in e.verts] for e in bm.edges]
-
-        white = (1, 1, 1, 1)
-        green = (0.545, 0.863, 0, 1)
-        red = (1, 0.2, 0.322, 1)
-        blue = (0.157, 0.565, 1, 1)
-        grey = (0.2, 0.2, 0.2, 1)
-
-        self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
-
-        batch = batch_for_shader(self.shader, "LINES", {"pos": all_vertices}, indices=unselected_edges)
-        self.shader.bind()
-        self.shader.uniform_float("color", white)
-        batch.draw(self.shader)
-
-        batch = batch_for_shader(self.shader, "LINES", {"pos": all_vertices}, indices=selected_edges)
-        self.shader.uniform_float("color", green)
-        batch.draw(self.shader)
-
-        batch = batch_for_shader(self.shader, "LINES", {"pos": all_vertices}, indices=special_edges)
-        self.shader.uniform_float("color", grey)
-        batch.draw(self.shader)
-
-        batch = batch_for_shader(self.shader, "POINTS", {"pos": unselected_vertices})
-        self.shader.uniform_float("color", white)
-        batch.draw(self.shader)
-
-        batch = batch_for_shader(self.shader, "POINTS", {"pos": error_vertices})
-        self.shader.uniform_float("color", red)
-        batch.draw(self.shader)
-
-        batch = batch_for_shader(self.shader, "POINTS", {"pos": special_vertices})
-        self.shader.uniform_float("color", blue)
-        batch.draw(self.shader)
-
-        batch = batch_for_shader(self.shader, "POINTS", {"pos": selected_vertices})
-        self.shader.uniform_float("color", green)
-        batch.draw(self.shader)
-
-        # Draw arcs
-
-        arc_centroids = []
-        arc_segments = []
-        for arc in arcs.values():
-            if len(arc) != 3:
-                continue
-            sorted_arc = [None, None, None]
-            for v1 in arc:
-                connections = 0
-                for link_edge in v1.link_edges:
-                    v2 = link_edge.other_vert(v1)
-                    if v2 in arc:
-                        connections += 1
-                if connections == 2:  # Midpoint
-                    sorted_arc[1] = v1
-                else:
-                    sorted_arc[2 if sorted_arc[2] is None else 0] = v1
-            points = [tuple(obj.matrix_world @ v.co) for v in sorted_arc]
-            centroid = tool.Cad.get_center_of_arc(points)
-            if centroid:
-                arc_centroids.append(tuple(centroid))
-            arc_segments.append(tool.Cad.create_arc_segments(pts=points, num_verts=17, make_edges=True))
-
-        batch = batch_for_shader(self.shader, "POINTS", {"pos": arc_centroids})
-        self.shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
-        batch.draw(self.shader)
-
-        for verts, edges in arc_segments:
-            batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
-            self.shader.uniform_float("color", (0.157, 0.565, 1, 1))
-            batch.draw(self.shader)
-
-        # Draw circles
-
-        circle_centroids = []
-        circle_segments = []
-        for circle in circles.values():
-            if len(circle) != 2:
-                continue
-            p1 = obj.matrix_world @ circle[0].co
-            p2 = obj.matrix_world @ circle[1].co
-            radius = (p2 - p1).length / 2
-            centroid = p1.lerp(p2, 0.5)
-            circle_centroids.append(tuple(centroid))
-            segments = self.create_circle_segments(360, 20, radius)
-            matrix = obj.matrix_world.copy()
-            matrix.col[3] = centroid.to_4d()
-            segments = [[list(matrix @ Vector(v)) for v in segments[0]], segments[1]]
-            circle_segments.append(segments)
-
-        batch = batch_for_shader(self.shader, "POINTS", {"pos": circle_centroids})
-        self.shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
-        batch.draw(self.shader)
-
-        for verts, edges in circle_segments:
-            batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
-            self.shader.uniform_float("color", (0.157, 0.565, 1, 1))
-            batch.draw(self.shader)
-
-    def create_matrix(self, p, x, y, z):
-        return Matrix([x, y, z, p]).to_4x4().transposed()
-
-    # https://github.com/nortikin/sverchok/blob/master/nodes/generator/basic_3pt_arc.py
-    # This function is taken from Sverchok, licensed under GPL v2-or-later.
-    # This is a combination of the make_verts and make_edges function.
-    def create_circle_segments(self, Angle, Vertices, Radius):
-        if Angle < 360:
-            theta = Angle / (Vertices - 1)
-        else:
-            theta = Angle / Vertices
-        listVertX = []
-        listVertY = []
-        for i in range(Vertices):
-            listVertX.append(Radius * cos(radians(theta * i)))
-            listVertY.append(Radius * sin(radians(theta * i)))
-
-        if Angle < 360 and self.mode_ == 0:
-            sigma = radians(Angle)
-            listVertX[-1] = Radius * cos(sigma)
-            listVertY[-1] = Radius * sin(sigma)
-        elif Angle < 360 and self.mode_ == 1:
-            listVertX.append(0.0)
-            listVertY.append(0.0)
-
-        points = list((x, y, 0) for x, y in zip(listVertX, listVertY))
-
-        listEdg = [(i, i + 1) for i in range(Vertices - 1)]
-
-        if Angle < 360 and self.mode_ == 1:
-            listEdg.append((0, Vertices))
-            listEdg.append((Vertices - 1, Vertices))
-        else:
-            listEdg.append((Vertices - 1, 0))
-
-        return points, listEdg

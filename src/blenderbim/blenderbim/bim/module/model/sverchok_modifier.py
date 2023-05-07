@@ -17,19 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty, BoolProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
 import bmesh
 
 import ifcopenshell
-import blenderbim
 import blenderbim.tool as tool
-from blenderbim.bim.module.model.prop import BIMStairProperties
-from blenderbim.bim.ifc import IfcStore
 
-from mathutils import Vector
-from pprint import pprint
 import json
 import zipfile
 import os.path
@@ -65,7 +57,7 @@ def update_sverchok_modifier(context):
         bm.to_mesh(obj.data)
         bm.free()
     obj.data.update()
-    IfcStore.edited_objs.add(obj)
+    tool.Ifc.edit(obj)
 
 
 # UI operators
@@ -190,7 +182,7 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
 # removed the part that was relying on node graph to be opened at execution
 class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_sverchok_graph"
-    bl_label = "Import sverchok graph"
+    bl_label = "Import Sverchok Graph"
     bl_options = {"REGISTER"}
 
     filepath: bpy.props.StringProperty(
@@ -232,7 +224,7 @@ class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
 # removed the part that was relying on node graph to be opened at execution
 class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.export_sverchok_graph"
-    bl_label = "Export sverchok graph"
+    bl_label = "Export Sverchok Graph"
     bl_options = {"REGISTER"}
 
     filepath: bpy.props.StringProperty(

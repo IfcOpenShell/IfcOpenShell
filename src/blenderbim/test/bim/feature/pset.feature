@@ -38,6 +38,8 @@ Scenario: Enable pset editing - object
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties[0].metadata.string_value" to "Foobar"
+    And I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
     When I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
@@ -53,6 +55,8 @@ Scenario: Enable pset editing - material
     And I press "bim.assign_material"
     And the object "IfcWall/Cube" is selected
     And I press "bim.add_pset(obj='Default', obj_type='Material')"
+    And I set "active_object.active_material.PsetProperties.properties[0].metadata.float_value" to "0.42"
+    And I press "bim.edit_pset(obj='Default', obj_type='Material')"
     And the variable "pset" is "{ifc}.by_type('IfcMaterialProperties')[-1].id()"
     When I press "bim.enable_pset_editing(pset_id={pset}, obj='Default', obj_type='Material')"
     Then nothing happens
@@ -63,6 +67,8 @@ Scenario: Enable pset editing - profile
     And I press "bim.add_profile_def"
     And I set "scene.ProfilePsetProperties.pset_name" to "Pset_ProfileMechanical"
     And I press "bim.add_pset(obj_type='Profile')"
+    And I set "scene.ProfilePsetProperties.properties[0].metadata.float_value" to "0.42"
+    And I press "bim.edit_pset(obj='', obj_type='Profile')"
     And the variable "pset" is "{ifc}.by_type('IfcProfileProperties')[-1].id()"
     When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Profile')"
     Then nothing happens
@@ -74,6 +80,8 @@ Scenario: Enable pset editing - work schedule
     And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
     And I set "scene.WorkSchedulePsetProperties.pset_name" to "Pset_WorkControlCommon"
     And I press "bim.add_pset(obj_type='WorkSchedule')"
+    And I set "scene.WorkSchedulePsetProperties.properties[0].metadata.string_value" to "Foobar"
+    And I press "bim.edit_pset(obj='', obj_type='WorkSchedule')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
     When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='WorkSchedule')"
     Then nothing happens
@@ -83,9 +91,7 @@ Scenario: Enable pset editing - resource with time series properties
     And I press "bim.load_resources"
     And I press "bim.add_resource(ifc_class='IfcSubContractResource', parent_resource=0)"
     And I set "scene.ResourcePsetProperties.pset_name" to "Pset_ConstructionResource"
-    And I press "bim.add_pset(obj_type='Resource')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Resource')"
+    When I press "bim.add_pset(obj_type='Resource')"
     Then nothing happens
 
 Scenario: Enable pset editing - resource with regular single properties
@@ -97,6 +103,8 @@ Scenario: Enable pset editing - resource with regular single properties
     And I set "scene.BIMResourceProperties.active_resource_index" to "1"
     And I set "scene.ResourcePsetProperties.pset_name" to "EPset_Productivity"
     And I press "bim.add_pset(obj_type='Resource')"
+    And I set "scene.ResourcePsetProperties.properties[0].metadata.string_value" to "Foobar"
+    And I press "bim.edit_pset(obj='', obj_type='Resource')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
     When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Resource')"
     Then nothing happens
@@ -109,6 +117,8 @@ Scenario: Enable pset editing - task
     And I press "bim.add_summary_task(work_schedule={work_schedule})"
     And I set "scene.TaskPsetProperties.qto_name" to "Qto_TaskBaseQuantities"
     And I press "bim.add_qto(obj_type='Task')"
+    And I set "scene.TaskPsetProperties.properties[0].metadata.float_value" to "0.42"
+    And I press "bim.edit_pset(obj='', obj_type='Task')"
     And the variable "pset" is "{ifc}.by_type('IfcElementQuantity')[-1].id()"
     When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Task')"
     Then nothing happens
@@ -122,8 +132,6 @@ Scenario: Disable pset editing - object
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcWall/Cube', obj_type='Object')"
     When I press "bim.disable_pset_editing(obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
 
@@ -138,8 +146,6 @@ Scenario: Disable pset editing - material
     And I press "bim.assign_material"
     And the object "IfcWall/Cube" is selected
     And I press "bim.add_pset(obj='Default', obj_type='Material')"
-    And the variable "pset" is "{ifc}.by_type('IfcMaterialProperties')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='Default', obj_type='Material')"
     When I press "bim.disable_pset_editing(obj='Default', obj_type='Material')"
     Then nothing happens
 
@@ -149,8 +155,6 @@ Scenario: Disable pset editing - profile
     And I press "bim.add_profile_def"
     And I set "scene.ProfilePsetProperties.pset_name" to "Pset_ProfileMechanical"
     And I press "bim.add_pset(obj_type='Profile')"
-    And the variable "pset" is "{ifc}.by_type('IfcProfileProperties')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Profile')"
     When I press "bim.disable_pset_editing(obj='', obj_type='Profile')"
     Then nothing happens
 
@@ -161,8 +165,6 @@ Scenario: Disable pset editing - work schedule
     And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
     And I set "scene.WorkSchedulePsetProperties.pset_name" to "Pset_WorkControlCommon"
     And I press "bim.add_pset(obj_type='WorkSchedule')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='WorkSchedule')"
     When I press "bim.disable_pset_editing(obj='', obj_type='WorkSchedule')"
     Then nothing happens
 
@@ -172,8 +174,6 @@ Scenario: Disable pset editing - resource with time series properties
     And I press "bim.add_resource(ifc_class='IfcSubContractResource', parent_resource=0)"
     And I set "scene.ResourcePsetProperties.pset_name" to "Pset_ConstructionResource"
     And I press "bim.add_pset(obj_type='Resource')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Resource')"
     When I press "bim.disable_pset_editing(obj='', obj_type='Resource')"
     Then nothing happens
 
@@ -186,8 +186,6 @@ Scenario: Disable pset editing - resource with regular single properties
     And I set "scene.BIMResourceProperties.active_resource_index" to "1"
     And I set "scene.ResourcePsetProperties.pset_name" to "EPset_Productivity"
     And I press "bim.add_pset(obj_type='Resource')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Resource')"
     When I press "bim.disable_pset_editing(obj='', obj_type='Resource')"
     Then nothing happens
 
@@ -199,8 +197,6 @@ Scenario: Disable pset editing - task
     And I press "bim.add_summary_task(work_schedule={work_schedule})"
     And I set "scene.TaskPsetProperties.qto_name" to "Qto_TaskBaseQuantities"
     And I press "bim.add_qto(obj_type='Task')"
-    And the variable "pset" is "{ifc}.by_type('IfcElementQuantity')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Task')"
     When I press "bim.disable_pset_editing(obj='', obj_type='Task')"
     Then nothing happens
 
@@ -213,9 +209,20 @@ Scenario: Edit pset - object
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcWall/Cube', obj_type='Object')"
     When I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
+    Then nothing happens
+
+Scenario: Edit qto - object
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I set "active_object.PsetProperties.qto_name" to "Qto_WallBaseQuantities"
+    When I press "bim.add_qto(obj='IfcWall/Cube', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties[0].metadata.float_value" to "0.42"
+    And I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
 
 Scenario: Edit pset - material
@@ -229,8 +236,6 @@ Scenario: Edit pset - material
     And I press "bim.assign_material"
     And the object "IfcWall/Cube" is selected
     And I press "bim.add_pset(obj='Default', obj_type='Material')"
-    And the variable "pset" is "{ifc}.by_type('IfcMaterialProperties')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='Default', obj_type='Material')"
     When I press "bim.edit_pset(obj='Default', obj_type='Material')"
     Then nothing happens
 
@@ -240,8 +245,6 @@ Scenario: Edit pset - profile
     And I press "bim.add_profile_def"
     And I set "scene.ProfilePsetProperties.pset_name" to "Pset_ProfileMechanical"
     And I press "bim.add_pset(obj_type='Profile')"
-    And the variable "pset" is "{ifc}.by_type('IfcProfileProperties')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Profile')"
     When I press "bim.edit_pset(obj='', obj_type='Profile')"
     Then nothing happens
 
@@ -252,23 +255,19 @@ Scenario: Edit pset - work schedule
     And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
     And I set "scene.WorkSchedulePsetProperties.pset_name" to "Pset_WorkControlCommon"
     And I press "bim.add_pset(obj_type='WorkSchedule')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='WorkSchedule')"
     When I press "bim.edit_pset(obj='', obj_type='WorkSchedule')"
     Then nothing happens
 
-Scenario: Enable pset editing - resource with time series properties
+Scenario: Edit pset - resource with time series properties
     Given an empty IFC project
     And I press "bim.load_resources"
     And I press "bim.add_resource(ifc_class='IfcSubContractResource', parent_resource=0)"
     And I set "scene.ResourcePsetProperties.pset_name" to "Pset_ConstructionResource"
     And I press "bim.add_pset(obj_type='Resource')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Resource')"
     When I press "bim.edit_pset(obj='', obj_type='Resource')"
     Then nothing happens
 
-Scenario: Enable pset editing - resource with regular single properties
+Scenario: Edit pset - resource with regular single properties
     Given an empty IFC project
     And I press "bim.load_resources"
     And I press "bim.add_resource(ifc_class='IfcCrewResource', parent_resource=0)"
@@ -277,12 +276,10 @@ Scenario: Enable pset editing - resource with regular single properties
     And I set "scene.BIMResourceProperties.active_resource_index" to "1"
     And I set "scene.ResourcePsetProperties.pset_name" to "EPset_Productivity"
     And I press "bim.add_pset(obj_type='Resource')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Resource')"
     When I press "bim.edit_pset(obj='', obj_type='Resource')"
     Then nothing happens
 
-Scenario: Enable pset editing - task
+Scenario: Edit pset - task
     Given an empty IFC project
     And I press "bim.add_work_schedule"
     And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
@@ -290,8 +287,6 @@ Scenario: Enable pset editing - task
     And I press "bim.add_summary_task(work_schedule={work_schedule})"
     And I set "scene.TaskPsetProperties.qto_name" to "Qto_TaskBaseQuantities"
     And I press "bim.add_qto(obj_type='Task')"
-    And the variable "pset" is "{ifc}.by_type('IfcElementQuantity')[-1].id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Task')"
     When I press "bim.edit_pset(obj='', obj_type='Task')"
     Then nothing happens
 
@@ -309,8 +304,6 @@ Scenario: Copy property to selected - copy property
     And additionally the object "IfcWall/Cube.001" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube.001', obj_type='Object')"
-    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
-    And I press "bim.enable_pset_editing(obj='IfcWall/Cube.001', obj_type='Object', pset_id={pset})"
     And I set "active_object.PsetProperties.properties[2].metadata.string_value" to "Foo"
     When I press "bim.copy_property_to_selection(name='FireRating')"
     Then nothing happens
@@ -324,6 +317,8 @@ Scenario: Remove pset - object
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties[0].metadata.string_value" to "Foobar"
+    And I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
     When I press "bim.remove_pset(pset_id={pset}, obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
@@ -342,7 +337,9 @@ Scenario: Remove pset - multiple objects
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcWall/Cube.001" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
-    And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And I press "bim.add_pset(obj='IfcWall/Cube.001', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties[0].metadata.string_value" to "Foobar"
+    And I press "bim.edit_pset(obj='IfcWall/Cube.001', obj_type='Object')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
     When I press "bim.remove_pset(pset_id={pset}, obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens

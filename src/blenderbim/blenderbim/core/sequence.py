@@ -74,47 +74,47 @@ def enable_editing_work_schedule(sequence, work_schedule=None):
 
 def enable_editing_work_schedule_tasks(sequence, work_schedule=None):
     sequence.enable_editing_work_schedule_tasks(work_schedule)
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
-def create_task_tree(sequence, work_schedule):
-    sequence.create_task_tree(work_schedule)
+def load_task_tree(sequence, work_schedule):
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def expand_task(sequence, task=None):
     sequence.expand_task(task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def expand_all_tasks(sequence):
     sequence.expand_all_tasks()
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def contract_task(sequence, task=None):
     sequence.contract_task(task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def contract_all_tasks(sequence):
     sequence.contract_all_tasks()
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def remove_task(ifc, sequence, task=None):
     ifc.run("sequence.remove_task", task=task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
     sequence.disable_selecting_deleted_task()
 
@@ -129,20 +129,24 @@ def disable_editing_work_schedule(sequence):
 
 def add_summary_task(ifc, sequence, work_schedule=None):
     ifc.run("sequence.add_task", work_schedule=work_schedule)
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def add_task(ifc, sequence, parent_task=None):
     ifc.run("sequence.add_task", parent_task=parent_task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def enable_editing_task(sequence, task=None):
-    sequence.load_task_attributes(task)
     sequence.enable_editing_task(task)
+
+
+def enable_editing_task_attributes(sequence, task=None):
+    sequence.load_task_attributes(task)
+    sequence.enable_editing_task_attributes(task)
 
 
 def edit_task(ifc, sequence, task=None):
@@ -165,7 +169,7 @@ def copy_task_attribute(ifc, sequence, attribute_name=None):
 def duplicate_task(ifc, sequence, task=None):
     ifc.run("sequence.duplicate_task", task=task)
     work_schedule = sequence.get_active_work_schedule()
-    sequence.create_task_tree(work_schedule)
+    sequence.load_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
@@ -245,7 +249,10 @@ def unassign_input_products(ifc, sequence, spatial, task=None, products=None):
 def assign_resource(ifc, sequence, task=None):
     resource = sequence.get_selected_resource()
     sub_resource = ifc.run(
-        "resource.add_resource", parent_resource=resource, ifc_class=resource.is_a(), name=resource.Name
+        "resource.add_resource",
+        parent_resource=resource,
+        ifc_class=resource.is_a(),
+        name="{}/{}".format(resource.Name or "Unnamed", task.Name or ""),
     )
     ifc.run("sequence.assign_process", relating_process=task, related_object=sub_resource)
     resources = sequence.get_task_resources(task)
@@ -430,13 +437,30 @@ def select_task_inputs(sequence, spatial, task=None):
     spatial.select_products(products=sequence.get_task_inputs(task))
 
 
+def select_work_schedule_products(sequence, spatial, work_schedule=None):
+    products = sequence.get_work_schedule_products(work_schedule)
+    spatial.select_products(products)
+
+
+def select_unassigned_work_schedule_products(ifc, sequence, spatial):
+    spatial.deselect_all()
+    products = ifc.get().by_type("IfcElement")
+    work_schedule = sequence.get_active_work_schedule()
+    schedule_products = sequence.get_work_schedule_products(work_schedule)
+    selection = [product for product in products if product not in schedule_products]
+    spatial.select_products(selection)
+
+
 def recalculate_schedule(ifc, work_schedule=None):
     ifc.run("sequence.recalculate_schedule", work_schedule=work_schedule)
 
 
 def add_task_column(sequence, column_type=None, name=None, data_type=None):
     sequence.add_task_column(column_type, name, data_type)
-
+    work_schedule = sequence.get_active_work_schedule()
+    if work_schedule:
+        sequence.load_task_tree(work_schedule)
+        sequence.load_task_properties()
 
 def remove_task_column(sequence, name=None):
     sequence.remove_task_column(name)
@@ -444,14 +468,26 @@ def remove_task_column(sequence, name=None):
 
 def set_task_sort_column(sequence, column=None):
     sequence.set_task_sort_column(column)
-
+    work_schedule = sequence.get_active_work_schedule()
+    if work_schedule:
+        sequence.load_task_tree(work_schedule)
+        sequence.load_task_properties()
 
 def calculate_task_duration(ifc, sequence, task=None):
     ifc.run("sequence.calculate_task_duration", task=task)
     work_schedule = sequence.get_active_work_schedule()
     if work_schedule:
-        sequence.create_task_tree(work_schedule)
+        sequence.load_task_tree(work_schedule)
         sequence.load_task_properties()
+
+
+def highlight_task(sequence, task=None):
+    work_schedule = sequence.get_work_schedule(task)
+    is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
+    if is_work_schedule_active:
+        sequence.highlight_task(task)
+    else:
+        return "Work schedule is not active"
 
 
 def highlight_product_related_task(sequence, spatial, product_type=None):
@@ -513,4 +549,30 @@ def visualise_work_schedule_date(sequence, work_schedule=None):
 
 def generate_gantt_chart(sequence, work_schedule):
     json = sequence.create_tasks_json(work_schedule)
-    sequence.generate_gantt_browser_chart(json)
+    sequence.generate_gantt_browser_chart(json, work_schedule)
+
+
+def load_product_related_tasks(sequence, product=None):
+    filter_by_schedule = sequence.is_filter_by_active_schedule()
+    if filter_by_schedule:
+        work_schedule = sequence.get_active_work_schedule()
+        task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
+    else:
+        task_inputs, task_ouputs = sequence.get_tasks_for_product(product)
+    sequence.load_product_related_tasks(task_inputs, task_ouputs)
+
+
+def reorder_task_nesting(ifc, sequence, task, new_index):
+    is_sorting_enabled = sequence.is_sorting_enabled()
+    is_sort_reversed = sequence.is_sort_reversed()
+    if is_sorting_enabled or is_sort_reversed:
+        return "Remove manual sorting"
+    else:
+        ifc.run("nest.reorder_nesting", item=task, new_index=new_index)
+        work_schedule = sequence.get_active_work_schedule()
+        sequence.load_task_tree(work_schedule)
+        sequence.load_task_properties()
+
+
+def create_baseline(ifc, sequence, work_schedule, name):
+    ifc.run("sequence.create_baseline", work_schedule=work_schedule, name=name)

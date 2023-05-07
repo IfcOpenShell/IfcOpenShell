@@ -25,8 +25,8 @@ Scenario: Unlink object
     And I press "bim.add_material"
     When I press "bim.unlink_object(obj='IfcWall/Cube')"
     Then the object "Cube" is not an IFC element
-    And the material "Material" is not an IFC material
-    And the material "Material" is not an IFC style
+    And the material "Material" is an IFC style
+    And the material "Material.001" is not an IFC style
 
 Scenario: Copy class
     Given an empty IFC project
@@ -81,18 +81,6 @@ Scenario: Assign a spatial class to a cube already in a collection
     And the object "IfcSpace/Cube" is in the collection "IfcSpace/Cube"
     And the collection "IfcSpace/Cube" is in the collection "IfcBuildingStorey/My Storey"
     And the object "IfcSpace/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-
-Scenario: Assign an opening class to a cube
-    Given an empty IFC project
-    And I add a cube
-    When the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
-    And I press "bim.assign_class"
-    Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
-    And the object "IfcOpeningElement/Cube" should display as "WIRE"
-    And the object "IfcOpeningElement/Cube" is in the collection "IfcOpeningElements"
-    And the object "IfcOpeningElement/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign a class to a cube in a collection
     Given an empty IFC project

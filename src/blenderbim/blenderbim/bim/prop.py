@@ -173,6 +173,18 @@ def update_section_color(self, context):
         pass
 
 
+def update_section_line_decorator(self, context):
+    compare_node_group = bpy.data.node_groups.get("Section Compare")
+    if compare_node_group is None:
+        return
+    for node in compare_node_group.nodes:
+        if not hasattr(node, "operation"):
+            continue
+        if node.operation == "COMPARE":
+            node.inputs[2].default_value = self.section_line_decorator_width
+            break
+
+
 class StrProperty(PropertyGroup):
     pass
 
@@ -313,12 +325,19 @@ class BIMProperties(PropertyGroup):
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
-        name="Temporary Section Cutaway Colour",
+        name="Cutaway Colour",
         subtype="COLOR",
         default=(1, 0, 0),
         min=0.0,
         max=1.0,
         update=update_section_color,
+    )
+    section_line_decorator_width: FloatProperty(
+        name="Line Decorator Width",
+        default=0.04,
+        min=0.0,
+        soft_max=1.0,
+        update=update_section_line_decorator,
     )
     area_unit: EnumProperty(
         default="SQUARE_METRE",
@@ -352,22 +371,6 @@ class BIMProperties(PropertyGroup):
             ("cubic yard", "Cubic Yard", ""),
         ],
         name="IFC Volume Unit",
-    )
-    metric_precision: FloatProperty(default=0, name="Drawing Metric Precision")
-    imperial_precision: EnumProperty(
-        items=[
-            ("NONE", "No rounding", ""),
-            ("1", 'Nearest 1"', ""),
-            ("1/2", 'Nearest 1/2"', ""),
-            ("1/4", 'Nearest 1/4"', ""),
-            ("1/8", 'Nearest 1/8"', ""),
-            ("1/16", 'Nearest 1/16"', ""),
-            ("1/32", 'Nearest 1/32"', ""),
-            ("1/64", 'Nearest 1/64"', ""),
-            ("1/128", 'Nearest 1/128"', ""),
-            ("1/256", 'Nearest 1/256"', ""),
-        ],
-        name="Drawing Imperial Precision",
     )
 
 
@@ -412,6 +415,7 @@ class BIMMaterialProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
+    shading_checksum: StringProperty(name="Shading Checksum")
 
 
 class BIMMeshProperties(PropertyGroup):
@@ -421,7 +425,8 @@ class BIMMeshProperties(PropertyGroup):
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    is_profile: BoolProperty(name="Is Profile", default=False)
+    subshape_type: StringProperty(name="Subshape Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
+    mesh_checksum: StringProperty(name="Mesh Checksum", default="")

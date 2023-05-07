@@ -3,7 +3,7 @@ So, here are some note needed to know about how quantities are calculated.
 NET VOLUME AND GROSS VOLUME
 The difference between gross volume and net volume is that the gross volume is calculated
 without the related IFC opening.
-So, if an object is created lets say with a hole but without defining the opening, the hole is counted into net volume (so get volume and net volume are the same).
+So, if an object is created lets say with a hole but without defining the opening, the hole is counted into net volume (so gross volume and net volume are the same).
 This is in order to follow the native IFC approach.
 
 WALLS 
@@ -30,6 +30,14 @@ GrossFloorArea: following the definition, it should exclude the wall claddings, 
 NetFloorArea: it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall. Just add other entities into 'get_net_floor_area' if it's needed
 NetVolume: like NetFloorArea, it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall
 Also, the entire IfcColumn (or IfcWall) object volume is substracted, so it should be better to substract only the shared volume between IfcSpace and IfcColumn. Look at todo list
+
+WEIGHT
+The object weight is calculated by multiplying the object mass density with the object volume (net or gross).
+It's only calculated if the object material has a MassDensity property in the Pset_MaterialCommon.
+It's calculated also only if the material is a "IfcMaterial" or a "IfcMaterialLayerSetUsage" or a "IfcMaterialProfileSetUsage".
+If the object material is a "IfcMaterialLayerSetUsage" the weight is calculated based on the average of layer thicknesses.
+If the object material is a "IfcMaterialProfileSetUsage", the weight is calculated only if there is only one profile (for simplicity).
+Also, at the moment there is no control over the measure unit so pay attention about that.
 
 
 

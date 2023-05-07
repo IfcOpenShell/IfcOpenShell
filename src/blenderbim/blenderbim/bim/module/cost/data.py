@@ -89,8 +89,15 @@ class CostSchedulesData:
             data = {}
             cls._load_cost_item_quantities(cost_item, data)
             cls._load_cost_values(cost_item, data)
+            cls._load_nesting_index(cost_item, data)
             results[cost_item.id()] = data
         return results
+
+    @classmethod
+    def _load_nesting_index(cls, cost_item, data):
+        data["NestingIndex"] = None
+        for rel in cost_item.Nests or []:
+            data["NestingIndex"] = rel.RelatedObjects.index(cost_item)
 
     @classmethod
     def _load_cost_values(cls, root_element, data):
@@ -119,33 +126,50 @@ class CostSchedulesData:
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item, data):
-        parametric_quantities = []
-        for rel in cost_item.Controls:
-            for related_object in rel.RelatedObjects or []:
-                quantities = cls._get_object_quantities(cost_item, related_object)
-                # data["Controls"][related_object.id()] = quantities
-                parametric_quantities.extend(quantities)
-
-        # data["CostQuantities"] = []
+        # parametric_quantities = []
+        # for rel in cost_item.Controls:
+        #     for related_object in rel.RelatedObjects or []:
+        #         quantities = cls._get_object_quantities(cost_item, related_object)
+        #         parametric_quantities.extend(quantities)
         data["TotalCostQuantity"] = ifcopenshell.util.cost.get_total_quantity(cost_item)
-        for quantity in cost_item.CostQuantities or []:
-            if quantity.id() in parametric_quantities:
-                continue
-            # quantity_data = quantity.get_info()
-            # del quantity_data["Unit"]
-            # cls.physical_quantities[quantity.id()] = quantity_data
-            # data["CostQuantities"].append(quantity.id())
-        # data["Unit"] = None
-        data["UnitSymbol"] = "?"
+        data["UnitSymbol"] = "-"
         if cost_item.CostQuantities:
             quantity = cost_item.CostQuantities[0]
             unit = ifcopenshell.util.unit.get_property_unit(quantity, tool.Ifc.get())
             if unit:
-                # data["Unit"] = unit.id()
                 data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
             else:
-                # data["Unit"] = None
                 data["UnitSymbol"] = None
+
+        # same_unit_nested_cost_item = set()
+        # data["DerivedTotalCostQuantity"] = None
+        # if cost_item.IsNestedBy:
+        #     data["TotalCostQuantity"] = 0.0
+        #     derived_quantity = 0
+        #     derived_unit = None
+        #     should_sum = False
+        #     for rel in cost_item.IsNestedBy:
+        #         for related_object in rel.RelatedObjects or []:
+        #             for quantity in related_object.CostQuantities or []:
+        #                 nested_unit = ifcopenshell.util.unit.get_property_unit(quantity, tool.Ifc.get())
+        #                 if derived_unit is None:
+        #                     derived_unit = nested_unit
+        #                 elif nested_unit and nested_unit.id() == derived_unit.id():
+        #                     same_unit_nested_cost_item.add(related_object)
+        #                 else:
+        #                     derived_unit = None
+        #                     break
+        #     for cost in same_unit_nested_cost_item:
+        #         qto = ifcopenshell.util.cost.get_total_quantity(cost)
+        #         derived_quantity += qto
+        #         print(derived_quantity)
+        #     if derived_quantity not in [0, None]:
+        #         data["DerivedTotalCostQuantity"] = derived_quantity
+        #         if derived_unit:
+        #             data["DerivedUnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(derived_unit)
+        #         else:
+        #             data["DerivedUnitSymbol"] = "?"
+        #         print("Total Cost", data["DerivedTotalCostQuantity"], cost_item.Name)
 
     @classmethod
     def _get_object_quantities(cls, cost_item, element):
@@ -235,6 +259,7 @@ class CostSchedulesData:
                 )
                 break
         return results
+
 
 class CostItemRatesData:
     data = {}

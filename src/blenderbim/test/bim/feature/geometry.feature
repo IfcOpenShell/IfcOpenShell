@@ -20,7 +20,7 @@ Scenario: Add representation
     And the object "IfcWall/Cube" is selected
     Then the object "IfcWall/Cube" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     When the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.ContextType == 'Plan' and c.ContextIdentifier == 'Body' and c.TargetView == 'PLAN_VIEW'][0].id()"
-    And I set "scene.BIMRootProperties.contexts" to "{context}"
+    And I set "active_object.BIMGeometryProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     Then the object "IfcWall/Cube" data is a "Annotation2D" representation of "Plan/Body/PLAN_VIEW"
 
@@ -37,7 +37,7 @@ Scenario: Add representation - add a new representation to a typed instance
     And the object "IfcWall/Wall.001" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     When the object "IfcWall/Wall" is selected
     And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.ContextType == 'Plan' and c.ContextIdentifier == 'Body' and c.TargetView == 'PLAN_VIEW'][0].id()"
-    And I set "scene.BIMRootProperties.contexts" to "{context}"
+    And I set "active_object.BIMGeometryProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Body/PLAN_VIEW"
     And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Body/PLAN_VIEW"
@@ -80,14 +80,14 @@ Scenario: Switch representation - current edited representation is updated prior
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.ContextType == 'Plan' and c.ContextIdentifier=='Annotation'][0].id()"
-    And I set "scene.BIMRootProperties.contexts" to "{context}"
+    And I set "active_object.BIMGeometryProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     When the object "IfcWall/Cube" is scaled to "2"
     And the variable "representation" is "[r for r in {ifc}.by_type('IfcShapeRepresentation') if r.RepresentationType=='Tessellation'][0].id()"
     And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
     And the variable "representation" is "[r for r in {ifc}.by_type('IfcShapeRepresentation') if r.RepresentationType=='Annotation2D'][0].id()"
     And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "4,4,0"
 
 Scenario: Switch representation - current edited representation is discarded if switching to a box
@@ -101,7 +101,7 @@ Scenario: Switch representation - current edited representation is discarded if 
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
     And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "2,2,2"
 
 Scenario: Switch representation - existing Blender modifiers must be purged
@@ -262,7 +262,7 @@ Scenario: Override delete - without active IFC data
     Given an empty Blender session
     And I add a cube
     And the object "Cube" is selected
-    When I press "object.delete"
+    When I press "bim.override_object_delete"
     Then the object "Cube" does not exist
 
 Scenario: Override delete - with active IFC data
@@ -272,7 +272,7 @@ Scenario: Override delete - with active IFC data
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    When I press "object.delete"
+    When I press "bim.override_object_delete"
     Then the object "IfcWall/Cube" does not exist
 
 Scenario: Override outliner delete
@@ -285,7 +285,7 @@ Scenario: Override duplicate move - without active IFC data
     And I add an empty
     And the object "Cube" is selected
     And additionally the object "Empty" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "Cube" exists
     And the object "Cube.001" exists
 
@@ -297,7 +297,7 @@ Scenario: Override duplicate move - with active IFC data
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcBuildingStorey/My Storey" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "IfcWall/Cube" exists
     And the object "IfcWall/Cube" is an "IfcWall"
     And the object "IfcWall/Cube.001" exists
@@ -315,10 +315,10 @@ Scenario: Override duplicate move - copying a coloured representation
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And the material "Material" colour is set to "1,0,0,1"
-    When I press "object.duplicate_move"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    When I duplicate the selected objects
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the material "Material" colour is "1,0,0,1"
     And the object "IfcWall/Cube" has the material "Material"
     And the object "IfcWall/Cube.001" has the material "Material"
@@ -335,7 +335,7 @@ Scenario: Override duplicate move - copying a type instance with a representatio
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
     And I press "bim.add_constr_type_instance"
     And the object "IfcWall/Wall" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "IfcWall/Wall.001" exists
     And the object "IfcWall/Wall.001" has a "MappedRepresentation" representation of "Model/Body/MODEL_VIEW"
 
@@ -364,7 +364,7 @@ Scenario: Override duplicate move - copying a layered extrusion
     And the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     And the object "IfcWall/Cube" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "IfcWall/Cube.001" exists
     Then the object "IfcWall/Cube.001" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
 
@@ -390,7 +390,7 @@ Scenario: Override duplicate move - copying a profiled extrusion
     And the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     And the object "IfcWall/Cube" is selected
-    When I press "object.duplicate_move"
+    When I duplicate the selected objects
     Then the object "IfcWall/Cube.001" exists
     Then the object "IfcWall/Cube.001" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
 

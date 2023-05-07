@@ -27,7 +27,7 @@ with load("/path/to/file.bcf") as bcfxml:
     # Get a dictionary of topics
     topics = bcfxml.topics
 
-    for topic_handler in bcfxml.topics:
+    for topic_guid, topic_handler in bcfxml.topics.items():
         topic = topic_handler.topic
         print("Topic guid is", topic.guid)
         print("Topic title is", topic.title)

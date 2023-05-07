@@ -64,19 +64,50 @@ class UnassignType(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        def exclude_callback(attribute):
+            return attribute.is_a("IfcProfileDef") and attribute.ProfileName
+
         self.file = IfcStore.get_file()
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        )
-        for related_object in related_objects:
-            oprops = related_object.BIMObjectProperties
-            ifcopenshell.api.run(
-                "type.unassign_type",
-                self.file,
-                **{
-                    "related_object": self.file.by_id(oprops.ifc_definition_id),
-                },
-            )
+        objs = [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element or element.is_a("IfcElementType"):
+                continue
+            ifcopenshell.api.run("type.unassign_type", self.file, related_object=element)
+
+            active_representation = tool.Geometry.get_active_representation(obj)
+            active_context = active_representation.ContextOfItems
+            new_active_representation = None
+
+            if element.Representation:
+                representations = []
+                for representation in element.Representation.Representations:
+                    resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
+                    if representation == resolved_representation:
+                        representations.append(representation)
+                    else:
+                        # We must unmap representations.
+                        copied_representation = ifcopenshell.util.element.copy_deep(
+                            tool.Ifc.get(),
+                            resolved_representation,
+                            exclude=["IfcGeometricRepresentationContext"],
+                            exclude_callback=exclude_callback,
+                        )
+                        representations.append(copied_representation)
+                        if representation.ContextOfItems == active_context:
+                            new_active_representation = copied_representation
+                element.Representation.Representations = representations
+
+            if new_active_representation:
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=new_active_representation,
+                    should_reload=False,
+                    is_global=False,
+                    should_sync_changes_first=False,
+                )
         return {"FINISHED"}
 
 
@@ -162,6 +193,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMModelProperties
         ifc_class = props.type_class
         predefined_type = props.type_predefined_type
+        name = props.type_name
         template = props.type_template
         ifc_file = tool.Ifc.get()
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
@@ -176,14 +208,14 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 if element:
                     mesh = obj.data.copy()
                     mesh.BIMMeshProperties.ifc_definition_id = 0
-                    obj = bpy.data.objects.new(element.Name or "TYPEX", mesh)
+                    obj = bpy.data.objects.new(element.Name or name, mesh)
             else:
-                mesh = bpy.data.meshes.new("TYPEX")
+                mesh = bpy.data.meshes.new(name)
                 bm = bmesh.new()
                 bmesh.ops.create_cube(bm, size=1)
                 bm.to_mesh(mesh)
                 bm.free()
-                obj = bpy.data.objects.new("TYPEX", mesh)
+                obj = bpy.data.objects.new(name, mesh)
             obj.matrix_world.col[3] = location.to_4d()
             blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -196,9 +228,10 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 context=body,
                 ifc_representation_class=None,
             )
+
         elif template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            obj = bpy.data.objects.new("TYPEX", None)
+            obj = bpy.data.objects.new(name, None)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -229,9 +262,10 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             elif template == "LAYERSET_AXIS3":
                 axis = "AXIS3"
             ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={"LayerSetDirection": axis})
+
         elif template == "PROFILESET":
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            obj = bpy.data.objects.new("TYPEX", None)
+            obj = bpy.data.objects.new(name, None)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -267,7 +301,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 "material.assign_profile", ifc_file, material_profile=material_profile, profile=profile
             )
         elif template == "EMPTY":
-            obj = bpy.data.objects.new("TYPEX", None)
+            obj = bpy.data.objects.new(name, None)
             blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -279,9 +313,10 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 context=body,
                 ifc_representation_class=None,
             )
+
         elif template == "WINDOW":
             mesh = bpy.data.meshes.new("IfcWindow")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -296,9 +331,10 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
             bpy.ops.bim.add_window()
+
         elif template == "DOOR":
             mesh = bpy.data.meshes.new("IfcDoor")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -316,7 +352,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "STAIR":
             mesh = bpy.data.meshes.new("IfcStairFlight")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -332,6 +368,44 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
             bpy.ops.bim.add_stair()
+
+        elif template == "RAILING":
+            mesh = bpy.data.meshes.new("IfcRailing")
+            obj = bpy.data.objects.new("TYPEX", mesh)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                predefined_type=predefined_type,
+                ifc_class="IfcRailingType",
+                should_add_representation=True,
+                context=body,
+            )
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.objects.active = None
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.bim.add_railing()
+
+        elif template == "ROOF":
+            mesh = bpy.data.meshes.new("IfcRoof")
+            obj = bpy.data.objects.new("TYPEX", mesh)
+            element = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                predefined_type=predefined_type,
+                ifc_class="IfcRoofType",
+                should_add_representation=True,
+                context=body,
+            )
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.objects.active = None
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         return {"FINISHED"}

@@ -92,6 +92,7 @@ class BIM_PT_structural_boundary_conditions(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
@@ -126,6 +127,7 @@ class BIM_PT_connected_structural_members(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
@@ -178,6 +180,7 @@ class BIM_PT_structural_member(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
@@ -220,6 +223,7 @@ class BIM_PT_structural_connection(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod

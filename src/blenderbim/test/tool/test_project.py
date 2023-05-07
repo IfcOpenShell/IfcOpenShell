@@ -127,8 +127,8 @@ class TestSetDefaultModelingDimensions(NewFile):
         ifcopenshell.api.run("unit.assign_unit", ifc)
         subject.set_default_modeling_dimensions()
         props = bpy.context.scene.BIMModelProperties
-        assert props.extrusion_depth == 3000
-        assert props.length == 1000
+        assert props.extrusion_depth == 3
+        assert props.length == 1
         assert props.rl1 == 0
         assert props.rl2 == 1000
         assert props.x == 500

@@ -45,8 +45,8 @@ void InitDefaultMaterials() {
 	default_materials["IfcPlate"]->Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.8, 0.8, 0.8));
 
 	default_materials.insert(std::make_pair("IfcSpace", std::make_shared<IfcGeom::SurfaceStyle>("IfcSpace")));
-	default_materials["IfcWindow"]->Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.65, 0.75, 0.8));
-	default_materials["IfcWindow"]->Transparency().reset(0.8);
+	default_materials["IfcSpace"]->Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.65, 0.75, 0.8));
+	default_materials["IfcSpace"]->Transparency().reset(0.8);
 
 	default_material = std::make_shared<IfcGeom::SurfaceStyle>("DefaultMaterial");
 	default_material->Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.7, 0.7, 0.7));

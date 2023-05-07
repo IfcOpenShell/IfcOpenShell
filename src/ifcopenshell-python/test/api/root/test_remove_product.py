@@ -238,3 +238,17 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         )
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert not self.file.by_type("IfcRelSpaceBoundary")
+
+    def test_removing_orphaned_group_relationships(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        group = ifcopenshell.api.run("group.add_group", self.file, Name="Unit 1A")
+        ifcopenshell.api.run("group.assign_group", self.file, products=[element], group=group)
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+
+    def test_removing_product_assignments(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        annotation = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcAnnotation")
+        ifcopenshell.api.run("drawing.assign_product", self.file, relating_product=element, related_object=annotation)
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert not self.file.by_type("IfcRelAssignsToProduct")

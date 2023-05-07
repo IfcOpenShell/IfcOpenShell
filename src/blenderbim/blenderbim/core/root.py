@@ -21,6 +21,10 @@ def copy_class(ifc, collector, geometry, root, obj=None):
     element = ifc.get_entity(obj)
     if not element:
         return
+    if root.is_element_a(element, "IfcRelSpaceBoundary"):
+        new = ifc.run("boundary.copy_boundary", boundary=element)
+        ifc.link(new, obj)
+        return new
     representation = root.get_object_representation(obj)
     new = ifc.run("root.copy_class", product=element)
     ifc.link(new, obj)
@@ -38,7 +42,7 @@ def copy_class(ifc, collector, geometry, root, obj=None):
             geometry.link(new_representation, data)
         root.assign_body_styles(new, obj)
     collector.assign(obj)
-    if root.is_opening_element(new):
+    if root.is_element_a(new, "IfcOpeningElement"):
         root.add_tracked_opening(obj)
     return new
 
@@ -66,8 +70,6 @@ def assign_class(
         root.run_geometry_add_representation(
             obj=obj, context=context, ifc_representation_class=ifc_representation_class, profile_set_usage=None
         )
-
-    root.set_element_specific_display_settings(obj, element)
 
     collector.sync(obj)
     collector.assign(obj)

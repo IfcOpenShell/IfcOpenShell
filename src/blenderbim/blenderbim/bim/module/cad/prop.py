@@ -18,8 +18,8 @@
 
 import bpy
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
 from bpy.types import PropertyGroup
+from math import pi
 
 
 class BIMCadProperties(PropertyGroup):
@@ -28,3 +28,7 @@ class BIMCadProperties(PropertyGroup):
     distance: bpy.props.FloatProperty(name="Distance", default=0.1)
     x: bpy.props.FloatProperty(name="X", default=0.2)
     y: bpy.props.FloatProperty(name="Y", default=0.1)
+    gable_roof_edge_angle: bpy.props.FloatProperty(
+        name="Gable Roof Edge Angle", default=pi / 2, soft_min=0, soft_max=pi / 2, subtype="ANGLE"
+    )
+    gable_roof_separate_verts: bpy.props.BoolProperty(name="Separate Verts", default=True)

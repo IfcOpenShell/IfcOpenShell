@@ -1,8 +1,6 @@
 {% set name = "ifcopenshell" %}
 {% set version = "0.7.0" %}
-{% set occt_version = "7.6.2" %}
-{% set cgal_cpp_version = "5.3" %}
-{% set hdf5_version = "1.12.1" %}
+
 
 package:
   name: {{ name }}
@@ -38,7 +36,7 @@ requirements:
   run:
     - python
     - boost-cpp
-    - occt
+    - {{ pin_compatible('occt', max_pin='x.x.x') }}
     - libxml2
     - cgal-cpp
     - hdf5

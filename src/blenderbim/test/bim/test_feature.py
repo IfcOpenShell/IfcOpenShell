@@ -52,6 +52,11 @@ def is_x(number, x):
     return abs(number - x) < 1e-6
 
 
+def vectors_are_equal(v1, v2):
+    assert len(v1) == len(v2), f"Compared vectors are not equal length: {v1}, {v2}"
+    return all(is_x(v1[i], v2[i]) for i in range(len(v1)))
+
+
 @given("an untestable scenario")
 def an_untestable_scenario():
     pass
@@ -74,6 +79,8 @@ def an_empty_ifc_project():
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    bpy.context.scene.unit_settings.system = "METRIC"
+    bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
     bpy.ops.bim.create_project()
 
 
@@ -166,9 +173,16 @@ def i_press_operator(operator):
         exec(f"bpy.ops.{operator}()")
 
 
+@given(parsers.parse('I evaluate expression "{expression}"'))
+@when(parsers.parse('I evaluate expression "{expression}"'))
+def i_evaluate_expression(expression):
+    expression = replace_variables(expression)
+    exec(expression)
+
+
 @when("I duplicate the selected objects")
 def i_duplicate_the_selected_objects():
-    bpy.ops.object.duplicate_move()
+    bpy.ops.bim.override_object_duplicate_move()
     blenderbim.bim.handler.active_object_callback()
 
 
@@ -194,7 +208,10 @@ def then_the_object_name_is_selected(name):
 @given(parsers.parse('the object "{name}" is moved to "{location}"'))
 @when(parsers.parse('the object "{name}" is moved to "{location}"'))
 def the_object_name_is_moved_to_location(name, location):
-    the_object_name_exists(name).location += Vector([float(co) for co in location.split(",")])
+    location = [float(co) for co in location.split(",")]
+    the_object_name_exists(name).matrix_world[0][3] = location[0]
+    the_object_name_exists(name).matrix_world[1][3] = location[1]
+    the_object_name_exists(name).matrix_world[2][3] = location[2]
 
 
 @given(parsers.parse('the object "{name}" is scaled to "{scale}"'))
@@ -234,7 +251,7 @@ def i_set_prop_to_value(prop, value):
     try:
         eval(f"bpy.context.{prop}")
     except:
-        assert False, "Property does not exist"
+        assert False, f"Property {prop} does not exist when trying to set to value {value}"
     try:
         exec(f'bpy.context.{prop} = r"{value}"')
     except:
@@ -247,7 +264,7 @@ def i_set_prop_to_value(prop):
     try:
         eval(f"bpy.context.{prop}")
     except:
-        assert False, "Property does not exist"
+        assert False, f"Property {prop} does not exist"
     try:
         exec(f'bpy.context.{prop} = r""')
     except:
@@ -261,7 +278,7 @@ def i_am_on_frame_number(number):
 
 @when("I delete the selected objects")
 def i_delete_the_selected_objects():
-    bpy.ops.object.delete()
+    bpy.ops.bim.override_object_delete()
 
 
 @given(parsers.parse('the variable "{key}" is "{value}"'))
@@ -281,6 +298,16 @@ def the_object_name_exists(name) -> bpy.types.Object:
     obj = bpy.data.objects.get(name)
     if not obj:
         assert False, f'The object "{name}" does not exist'
+    return obj
+
+
+@given(parsers.parse('the collection "{name}" exists'))
+@when(parsers.parse('the collection "{name}" exists'))
+@then(parsers.parse('the collection "{name}" exists'))
+def the_collection_name_exists(name) -> bpy.types.Collection:
+    obj = bpy.data.collections.get(name)
+    if not obj:
+        assert False, f'The collection "{name}" does not exist'
     return obj
 
 
@@ -404,8 +431,9 @@ def the_object_name_is_an_ifc_class(name, ifc_class):
 
 @then(parsers.parse('the object "{name}" is not an IFC element'))
 def the_object_name_is_not_an_ifc_element(name):
-    id = the_object_name_exists(name).BIMObjectProperties.ifc_definition_id
-    assert id == 0, f"The ID is {id}"
+    obj = the_object_name_exists(name)
+    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    assert ifc_definition_id == 0, f"The object {obj} has an ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the object "{name}" has no data'))
@@ -420,21 +448,31 @@ def the_object_name_is_not_an_ifc_element(name):
 
 
 @then(parsers.parse('the material "{name}" is an IFC material'))
-def the_material_name_is_not_an_ifc_material(name):
-    id = the_material_name_exists(name).BIMObjectProperties.ifc_definition_id
-    assert id != 0, f"The ID is {id}"
+def the_material_name_is_an_ifc_material(name):
+    obj = the_material_name_exists(name)
+    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    assert ifc_definition_id != 0, f"The material {obj} has no ID: {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is not an IFC material'))
 def the_material_name_is_not_an_ifc_material(name):
-    id = the_material_name_exists(name).BIMObjectProperties.ifc_definition_id
-    assert id == 0, f"The ID is {id}"
+    obj = the_material_name_exists(name)
+    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    assert ifc_definition_id == 0, f"The material {obj} has an ID of {ifc_definition_id}"
+
+
+@then(parsers.parse('the material "{name}" is an IFC style'))
+def the_material_name_is_an_ifc_style(name):
+    obj = the_material_name_exists(name)
+    ifc_definition_id = obj.BIMMaterialProperties.ifc_style_id
+    assert ifc_definition_id != 0, f"The material {obj} has a style ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is not an IFC style'))
-def the_material_name_is_not_an_ifc_material(name):
-    id = the_material_name_exists(name).BIMMaterialProperties.ifc_style_id
-    assert id == 0, f"The ID is {id}"
+def the_material_name_is_not_an_ifc_style(name):
+    obj = the_material_name_exists(name)
+    ifc_definition_id = obj.BIMMaterialProperties.ifc_style_id
+    assert ifc_definition_id == 0, f"The material {obj} has a style ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" colour is "{colour}"'))
@@ -490,7 +528,11 @@ def prop_is_value(prop, value):
                 exec(f"assert list(bpy.context.{prop}) == {value}")
                 is_value = True
             except:
-                pass
+                try:
+                    exec(f"assert vectors_are_equal(bpy.context.{prop}, {value})")
+                    is_value = True
+                except:
+                    pass
     if not is_value:
         print(f"bpy.context.{prop}")
         actual_value = eval(f"bpy.context.{prop}")
@@ -564,7 +606,13 @@ def the_collection_name1_is_in_the_collection_name2(name1, name2):
 @then(parsers.parse('the object "{name}" does not exist'))
 def the_object_name_does_not_exist(name):
     obj = bpy.data.objects.get(name)
-    assert obj is None or len(obj.users_collection) == 0, "Object exists"
+    assert obj is None or len(obj.users_collection) == 0, f"Object {name} exists"
+
+
+@then(parsers.parse('the collection "{name}" does not exist'))
+def the_collection_name_does_not_exist(name):
+    obj = bpy.data.collections.get(name)
+    assert obj is None, f"Collection {name} exists"
 
 
 @then(parsers.parse('objects starting with "{name}" do not exist'))
@@ -599,15 +647,25 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
     actual_dimensions = list(the_object_name_exists(name).dimensions)
     expected_dimensions = [float(co) for co in dimensions.split(",")]
     for i, number in enumerate(actual_dimensions):
-        assert is_x(number, expected_dimensions[i])
+        assert is_x(number, expected_dimensions[i]), f"Expected {actual_dimensions[i]} but got {number}"
+
+
+@then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
+def the_object_name_is_at_location(name, location):
+    obj = the_object_name_exists(name)
+    obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
+    assert (
+        obj_corner - Vector([float(co) for co in location.split(",")])
+    ).length < 0.1, f"Object has top right corner {obj_corner}"
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
 def the_object_name_is_at_location(name, location):
-    obj_corner = Vector(the_object_name_exists(name).bound_box[0])
+    obj = the_object_name_exists(name)
+    obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has corner {obj_corner}"
+    ).length < 0.1, f"Object has bottom left corner {obj_corner}"
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
@@ -639,6 +697,11 @@ def i_add_a_construction_library():
     bpy.ops.bim.select_library_file(filepath=lib_path, append_all=True)
 
 
+@given(parsers.parse('the cursor is at "{location}"'))
+def the_cursor_is_at_location(location):
+    bpy.context.scene.cursor.location = [float(co) for co in location.split(",")]
+
+
 @given("I display the construction type browser")
 @when("I display the construction type browser")
 def i_display_the_construction_type_browser():
@@ -662,3 +725,67 @@ def construction_type(relating_type_name):
 @when("I move the cursor to the bottom left corner")
 def move_cursor_bottom_left():
     bpy.context.window.cursor_warp(10, 10)
+
+
+@given(parsers.parse("I prepare to undo"))
+@when(parsers.parse("I prepare to undo"))
+@then(parsers.parse("I prepare to undo"))
+def hit_undo():
+    bpy.ops.ed.undo_push(message="UNDO STEP")
+
+
+@given(parsers.parse("I undo"))
+@when(parsers.parse("I undo"))
+@then(parsers.parse("I undo"))
+def hit_undo():
+    bpy.ops.ed.undo_push(message="UNDO STEP")
+    bpy.ops.ed.undo()
+
+
+# These definitions are not to be used in tests but simply in debugging failing tests
+
+
+@given(parsers.parse("I run test code"))
+@when(parsers.parse("I run test code"))
+@then(parsers.parse("I run test code"))
+def run_test_code():
+    pass
+
+
+@given(parsers.parse("I save sample test files"))
+@when(parsers.parse("I save sample test files"))
+@then(parsers.parse("I save sample test files"))
+def saving_sample_test_files(and_open_in_blender=None):
+    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
+    blend_filepath = f"{filepath}.blend"
+    bpy.ops.export_ifc.bim(filepath=f"{filepath}.ifc", should_save_as=True)
+    bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
+
+
+@given(parsers.parse("I load test blend file"))
+@when(parsers.parse("I load test blend file"))
+@then(parsers.parse("I load test blend file"))
+def opening_sample_test_files_in_blender():
+    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file.blend"
+    bpy.ops.wm.open_mainfile(filepath=filepath, display_file_selector=False)
+
+
+# TODO: merge to single fixture with `saving_sample_test_files`; add "and wait"
+@given(parsers.parse("I save sample test files and open in blender"))
+@when(parsers.parse("I save sample test files and open in blender"))
+@then(parsers.parse("I save sample test files and open in blender"))
+def saving_sample_test_files_and_open_in_blender():
+    saving_sample_test_files()
+    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file.blend"
+    import subprocess
+
+    subprocess.Popen([bpy.app.binary_path, f"{filepath}"])
+
+
+@given(parsers.parse("I run pdb"))
+@when(parsers.parse("I run pdb"))
+@then(parsers.parse("I run pdb"))
+def run_pdb():
+    import pdb
+
+    pdb.set_trace()

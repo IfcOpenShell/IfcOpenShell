@@ -9,7 +9,7 @@ from codegen import indent
 
 def reverse_compile(s):
     return re.sub(
-        "\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
+        r"\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
         "",
         re.sub(
             ", )?+.(, INDETERMINATE)\\"[::-1],
@@ -67,9 +67,9 @@ def run(f, logger):
 
     if hasattr(logger, "set_instance"):
         # when using the json logger, we notify it of the relevant instance
-        pre_annotate_instance = lambda instance: logger.set_state('instance', instance)
+        pre_annotate_instance = lambda instance: logger.set_state('instance', instance) if hasattr(logger, 'set_state') else None
         post_annotate_instance = lambda instance: instance
-        pre_annotate_attribute = lambda attribute: logger.set_state('attribute', attribute)
+        pre_annotate_attribute = lambda attribute: logger.set_state('attribute', attribute) if hasattr(logger, 'set_state') else None
         post_annotate_attribute = lambda attribute: None
     else:
         # when using the normal text logger the instance is appended to the method
@@ -82,7 +82,22 @@ def run(f, logger):
     ifcopenshell.settings.unpack_non_aggregate_inverses = True
 
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema}.py")
-    source = open(fn, "r").read()
+    try:
+        source = open(fn, "r").read()
+    except FileNotFoundError as e:
+        import sys
+        import time
+        import subprocess
+
+        current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
+        schema_name = str(f.schema).split(' ')[-1].lower()
+        schema_path = current_dir_files.get(schema_name + '.exp')
+        fn = schema_name + '.py'
+        if not os.path.exists(fn):
+            subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
+            time.sleep(1.)
+        source = open(fn, "r").read()
+
     a = ast.parse(source)
     assertion.rewrite.rewrite_asserts(mod=a, source=source)
     cd = compile(a, f"{f.schema}.py", "exec")
@@ -92,7 +107,8 @@ def run(f, logger):
 
     rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
 
-    logger.set_state('type', 'global_rule')
+    if hasattr(logger, 'set_state'):
+        logger.set_state('type', 'global_rule')
 
     for R in [r for r in rules if r.SCOPE == "file"]:
         try:
@@ -110,7 +126,8 @@ def run(f, logger):
                 )
             )
 
-    logger.set_state('type', 'simpletype_rule')
+    if hasattr(logger, 'set_state'):
+        logger.set_state('type', 'simpletype_rule')
 
     types = {}
     subtypes = collections.defaultdict(list)
@@ -208,7 +225,8 @@ def run(f, logger):
             else:
                 check(val, attr.type_of_attribute(), instance=inst)
 
-    logger.set_state('type', 'entity_rule')
+    if hasattr(logger, 'set_state'):
+        logger.set_state('type', 'entity_rule')
 
     for R in [r for r in rules if r.SCOPE == "entity"]:
         for inst in f.by_type(R.TYPE_NAME):

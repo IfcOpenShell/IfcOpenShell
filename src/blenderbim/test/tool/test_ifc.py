@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import test.bim.bootstrap
 import blenderbim.core.tool
+import blenderbim.tool as tool
 from blenderbim.tool.ifc import Ifc as subject
 
 
@@ -62,6 +63,36 @@ class TestGetSchema(test.bim.bootstrap.NewFile):
         ifc = ifcopenshell.file(schema="IFC4")
         subject.set(ifc)
         assert subject.get_schema() == "IFC4"
+
+
+class TestIsMoved(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcWall()
+        subject.link(element, obj)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
+        assert subject.is_moved(obj) is True
+        tool.Geometry.record_object_position(obj)
+        assert subject.is_moved(obj) is False
+        obj.matrix_world[0][2] += 1
+        assert subject.is_moved(obj) is True
+
+    def test_that_a_type_or_project_never_moves_but_a_grid_axis_does(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcWallType()
+        subject.link(element, obj)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
+        assert subject.is_moved(obj) is False
+        element = ifc.createIfcProject()
+        subject.link(element, obj)
+        assert subject.is_moved(obj) is False
+        element = ifc.createIfcGridAxis()
+        subject.link(element, obj)
+        assert subject.is_moved(obj) is True
 
 
 class TestGetEntity(test.bim.bootstrap.NewFile):

@@ -320,7 +320,8 @@
         "IfcColumnType"
     ],
     "IfcDoorStandardCase": [
-        "IfcDoorType"
+        "IfcDoorType",
+        "IfcDoorStyle"
     ],
     "IfcMemberStandardCase": [
         "IfcMemberType"
@@ -341,6 +342,7 @@
         "IfcWallType"
     ],
     "IfcWindowStandardCase": [
-        "IfcWindowType"
+        "IfcWindowType",
+        "IfcWindowStyle"
     ]
 }

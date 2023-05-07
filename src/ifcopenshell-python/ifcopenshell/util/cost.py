@@ -152,6 +152,69 @@ def unserialise_cost_value(formula, cost_value):
     map_element_to_result(cost_value, result)
     return result
 
+def get_cost_items_for_product(product):
+    """
+    Returns a list of cost items related to the given product.
+
+    Args:
+        product: An object of class IfcProduct representing a product.
+
+    Returns:
+        A list of IfcCostItem objects representing the cost items related to the product.
+    """
+    cost_items = []
+    for assignment in product.HasAssignments:
+        if assignment.is_a("IfcRelAssignsToControl") and assignment.RelatingControl.is_a("IfcCostItem"):
+            cost_items.append(assignment.RelatingControl)
+    return cost_items
+
+def get_root_cost_items(cost_schedule):
+    return [
+        related_object
+        for rel in cost_schedule.Controls or []
+        for related_object in rel.RelatedObjects
+        if related_object.is_a("IfcCostItem")
+    ]
+
+def get_all_nested_cost_items(cost_item):
+    for cost_item in get_nested_cost_items(cost_item):
+        yield cost_item
+        yield from get_all_nested_cost_items(cost_item)
+
+def get_nested_cost_items(cost_item, is_deep=False):
+    if is_deep:
+        return list(get_all_nested_cost_items(cost_item))
+    else:
+        return [obj for rel in cost_item.IsNestedBy for obj in rel.RelatedObjects]
+
+def get_schedule_cost_items(cost_schedule):
+    for cost_item in get_root_cost_items(cost_schedule):
+        yield cost_item
+        yield from get_all_nested_cost_items(cost_item)
+
+def get_cost_assignments_by_type(cost_item, filter_by_type=None):
+    if filter_by_type is not None:
+        if filter_by_type == "PRODUCT":
+            filter_by_type = "IfcElement"
+        elif filter_by_type == "RESOURCE":
+            filter_by_type = "IfcResource"
+        elif filter_by_type == "PROCESS":
+            filter_by_type = "IfcProcess"
+    return [
+        related_object
+        for r in cost_item.Controls or []
+        for related_object in r.RelatedObjects
+        if not filter_by_type or related_object.is_a(filter_by_type)
+    ]
+
+def get_cost_item_assignments(cost_item, filter_by_type=None, is_deep=False):
+    if not is_deep:
+        return get_cost_assignments_by_type(cost_item, filter_by_type)
+    else:
+        return [
+            product for nested_cost_item in get_all_nested_cost_items(cost_item)
+            for product in get_cost_assignments_by_type(nested_cost_item, filter_by_type)
+        ]
 
 class CostValueUnserialiser:
     def parse(self, formula):

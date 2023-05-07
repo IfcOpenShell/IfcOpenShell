@@ -31,9 +31,15 @@ import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
-def draw_attributes(props, layout, copy_operator=None):
+def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
+    """you can set attribute active in popup with `active_attribute`
+    meaning you will be able to type into attribute's field without having to click
+    on it first
+    """
     for attribute in props:
         row = layout.row(align=True)
+        if attribute == popup_active_attribute:
+            row.activate_init = True
         draw_attribute(attribute, row, copy_operator)
 
 
@@ -64,14 +70,14 @@ def draw_attribute(attribute, layout, copy_operator=None):
             text=attribute.name,
         )
 
+    if attribute.is_uri:
+        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+        op.data_path = attribute.path_from_id("string_value")
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
-    if attribute.is_uri:
-        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-        op.data_path = attribute.path_from_id("string_value")
 
 
 def import_attributes(ifc_class, props, data, callback=None):

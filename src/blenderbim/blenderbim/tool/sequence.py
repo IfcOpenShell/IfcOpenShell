@@ -27,6 +27,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import json
 import blenderbim.core.tool
+import blenderbim.core
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
@@ -132,7 +133,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             props.editing_type = "TASKS"
 
     @classmethod
-    def create_task_tree(cls, work_schedule):
+    def load_task_tree(cls, work_schedule):
         bpy.context.scene.BIMTaskTreeProperties.tasks.clear()
         props = bpy.context.scene.BIMWorkScheduleProperties
         cls.contracted_tasks = json.loads(props.contracted_tasks)
@@ -143,10 +144,30 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_sorted_tasks_ids(cls, tasks):
-        cls.sort_keys = {task.id(): cls.get_sort_key(task) for task in tasks}
-        related_object_ids = sorted(cls.sort_keys, key=cls.natural_sort_key)
+        def get_sort_key(task):
+            # Sorting only applies to actual tasks, not the WBS
+            # for rel in task.IsNestedBy:
+            #     for object in rel.RelatedObjects:
+            #         if object.is_a("IfcTask"):
+            #             return "0000000000" + (task.Identification or "")
+            column_type, name = bpy.context.scene.BIMWorkScheduleProperties.sort_column.split(".")
+            if column_type == "IfcTask":
+                return task.get_info(task)[name] or ""
+            elif column_type == "IfcTaskTime" and task.TaskTime:
+                return task.TaskTime.get_info(task)[name]
+            return task.Identification or ""
+
+        def natural_sort_key(i, _nsre=re.compile("([0-9]+)")):
+            s = sort_keys[i]
+            return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
+
+        if bpy.context.scene.BIMWorkScheduleProperties.sort_column:
+            sort_keys = {task.id(): get_sort_key(task) for task in tasks}
+            related_object_ids = sorted(sort_keys, key=natural_sort_key)
+        else:
+            related_object_ids = [task.id() for task in tasks]
         if bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed:
-            return related_object_ids.reverse()
+            related_object_ids.reverse()
         return related_object_ids
 
     @classmethod
@@ -161,27 +182,6 @@ class Sequence(blenderbim.core.tool.Sequence):
             if new.is_expanded:
                 for related_object_id in cls.get_sorted_tasks_ids(ifcopenshell.util.sequence.get_nested_tasks(task)):
                     cls.create_new_task_li(related_object_id, level_index + 1)
-
-    @classmethod
-    def natural_sort_key(cls, i, _nsre=re.compile("([0-9]+)")):
-        s = cls.sort_keys[i]
-        return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
-
-    @classmethod
-    def get_sort_key(cls, task):
-        # Sorting only applies to actual tasks, not the WBS
-        for rel in task.IsNestedBy:
-            for object in rel.RelatedObjects:
-                if object.is_a("IfcTask"):
-                    return "0000000000" + (task.Identification or "")
-        if not bpy.context.scene.BIMWorkScheduleProperties.sort_column:
-            return task.Identification or ""
-        column_type, name = bpy.context.scene.BIMWorkScheduleProperties.sort_column.split(".")
-        if column_type == "IfcTask":
-            return task.Name or ""
-        elif column_type == "IfcTaskTime" and task.TaskTime:
-            return task.TaskTime.Name or ""
-        return task.Identification or ""
 
     @classmethod
     def load_task_properties(cls, task=None):
@@ -207,10 +207,10 @@ class Sequence(blenderbim.core.tool.Sequence):
             if task.HasAssignments:
                 for rel in task.HasAssignments:
                     if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar"):
-                        item.calendar = calendar.Name if calendar else ""
+                        item.calendar = calendar.Name or "Unnamed" if calendar else ""
             else:
                 item.calendar = ""
-                item.derived_calendar = calendar.Name if calendar else ""
+                item.derived_calendar = calendar.Name or "Unnamed" if calendar else ""
 
             if task.TaskTime:
                 task_time = task.TaskTime
@@ -225,7 +225,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                     else "-"
                 )
                 item.duration = (
-                    isodate.duration_isoformat(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration))
+                    str(ifcopenshell.util.date.readable_ifc_duration(task_time.ScheduleDuration))
                     if task_time.ScheduleDuration
                     else "-"
                 )
@@ -243,7 +243,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 item.finish = "-"
                 item.duration = "-"
 
-        bpy.context.scene.BIMWorkScheduleProperties.is_task_update_enabled = True
+        props.is_task_update_enabled = True
 
     @classmethod
     def get_active_work_schedule(cls):
@@ -330,7 +330,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         blenderbim.bim.helper.import_attributes2(task, props.task_attributes)
 
     @classmethod
-    def enable_editing_task(cls, task):
+    def enable_editing_task_attributes(cls, task):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.active_task_id = task.id()
         props.editing_task_type = "ATTRIBUTES"
@@ -394,7 +394,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                     return True
                 else:
                     duration_type = attributes["DurationType"] if "DurationType" in attributes else None
-                    time_split_iso_duration = helper.simplify_duration(
+                    time_split_iso_duration = helper.blender_props_to_iso_duration(
                         props.durations_attributes, duration_type, prop.name
                     )
                     attributes[prop.name] = time_split_iso_duration
@@ -409,20 +409,42 @@ class Sequence(blenderbim.core.tool.Sequence):
     def load_task_resources(cls, resources):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_resources.clear()
-        if resources:
-            for resource in resources:
-                new = props.task_resources.add()
-                new.ifc_definition_id = resource.id()
-                new.name = resource.Name or "Unnamed"
-                new.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
+        for resource in resources or []:
+            new = props.task_resources.add()
+            new.ifc_definition_id = resource.id()
+            new.name = resource.Name or "Unnamed"
+            new.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
 
     @classmethod
     def load_resources(cls):
-        bpy.ops.bim.load_resources()  # remove and refactor
+        blenderbim.core.resource.load_resources(tool.Resource)
 
     @classmethod
     def get_task_inputs(cls, task):
-        return ifcopenshell.util.sequence.get_task_inputs(task)
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_inputs
+        return ifcopenshell.util.sequence.get_task_inputs(task, is_deep)
+
+    @classmethod
+    def get_task_outputs(cls, task):
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
+        return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
+
+    @classmethod
+    def are_entities_same_class(cls, entities):
+        if not entities:
+            return False
+        if len(entities) == 1:
+            return True
+        first = entities[0]
+        for entity in entities:
+            if entity.is_a() != first.is_a():
+                return False
+        return True
+
+    @classmethod
+    def get_task_resources(cls, task):
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_resources
+        return ifcopenshell.util.sequence.get_task_resources(task, is_deep)
 
     @classmethod
     def load_task_inputs(cls, inputs):
@@ -459,7 +481,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_task_outputs(cls, task):
-        is_deep = bpy.context.scene.BIMWorkScheduleProperties.is_nested_task_outputs
+        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
         return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
 
     @classmethod
@@ -723,6 +745,8 @@ class Sequence(blenderbim.core.tool.Sequence):
     def remove_task_column(cls, name):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.remove(props.columns.find(name))
+        if props.sort_column == name:
+            props.sort_column = ""
 
     @classmethod
     def set_task_sort_column(cls, column):
@@ -770,14 +794,14 @@ class Sequence(blenderbim.core.tool.Sequence):
                     bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
                     expand_ancestors(parent_task)
             work_schedule = cls.get_active_work_schedule()
-            cls.create_task_tree(work_schedule)
+            cls.load_task_tree(work_schedule)
             cls.load_task_properties()
 
         task_props = bpy.context.scene.BIMTaskTreeProperties
         displayed_tasks = [item.ifc_definition_id for item in task_props.tasks]
         if not task.id() in displayed_tasks:
             expand_ancestors(task)
-        task_index = [item.ifc_definition_id for item in task_props.tasks].index(task.id()) or 0
+        task_index = displayed_tasks.index(task.id()) or 0
         bpy.context.scene.BIMWorkScheduleProperties.active_task_index = task_index
 
     @classmethod
@@ -1147,7 +1171,6 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def show_snapshot(cls, product_states):
-        print(product_states)
         bpy.context.scene.frame_start = 1
         bpy.context.scene.frame_end = 2
         for obj in bpy.data.objects:
@@ -1288,7 +1311,6 @@ class Sequence(blenderbim.core.tool.Sequence):
     def clear_object_animation(cls, obj):
         if obj.animation_data:
             obj.animation_data_clear()
-            print("Cleared animation for", obj.name)
 
     @classmethod
     def clear_objects_animation(cls, include_blender_objects=True):
@@ -1451,32 +1473,68 @@ class Sequence(blenderbim.core.tool.Sequence):
             "USERDEFINED": "FS",
             "NOTDEFINED": "FS",
         }
-
+        is_baseline = False
+        if work_schedule.PredefinedType == "BASELINE":
+            is_baseline = True
+            relating_work_schedule = work_schedule.IsDeclaredBy[0].RelatingObject
+            work_schedule = relating_work_schedule
         tasks_json = []
         for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
-            cls.create_new_task_json(task, tasks_json, sequence_type_map)
+            if is_baseline:
+                cls.create_new_task_json(task, tasks_json, sequence_type_map, baseline_schedule=work_schedule)
+            else:
+                cls.create_new_task_json(task, tasks_json, sequence_type_map)
         return tasks_json
 
     @classmethod
-    def create_new_task_json(cls, task, json, type_map=None):
+    def create_new_task_json(cls, task, json, type_map=None, baseline_schedule=None):
         task_time = task.TaskTime
+        resources = ifcopenshell.util.sequence.get_task_resources(task, is_deep=False)
+
+        string_resources = ""
+        resources_usage = ""
+        for resource in resources:
+            string_resources += resource.Name + ", "
+            resources_usage += str(resource.Usage.ScheduleUsage) + ", " if resource.Usage else "-, "
+
+        schedule_start = task_time.ScheduleStart if task_time else ""
+        schedule_finish = task_time.ScheduleFinish if task_time else ""
+
+        baseline_task = None
+        if baseline_schedule:
+            for rel in task.Declares:
+                for baseline_task in rel.RelatedObjects:
+                    if baseline_schedule.id() == ifcopenshell.util.sequence.get_task_work_schedule(baseline_task).id():
+                        baseline_task = task
+                        break
+
+        if baseline_task and baseline_task.TaskTime:
+            compare_start = baseline_task.TaskTime.ScheduleStart
+            compare_finish = baseline_task.TaskTime.ScheduleFinish
+        else:
+            compare_start = schedule_start
+            compare_finish = schedule_finish
+
         data = {
             "pID": task.id(),
             "pName": task.Name,
             "pCaption": task.Name,
-            "pStart": task_time.ScheduleStart if task_time else "",
-            "pEnd": task_time.ScheduleFinish if task_time else "",
-            "pPlanStart": task_time.ScheduleStart if task_time else "",
-            "pPlanEnd": task_time.ScheduleFinish if task_time else "",
+            "pStart": schedule_start,
+            "pEnd": schedule_finish ,
+            "pPlanStart": compare_start,
+            "pPlanEnd": compare_finish,
             "pMile": 1 if task.IsMilestone else 0,
+            "pRes": string_resources,
             "pComp": 0,
             "pGroup": 1 if task.IsNestedBy else 0,
             "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
             "pOpen": 1,
             "pCost": 1,
-            "ifcduration": task_time.ScheduleDuration if task_time else "",
+            "ifcduration": str(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration))
+            if (task_time and task_time.ScheduleDuration)
+            else "",
+            "resourceUsage": resources_usage,
         }
-
         if task_time and task_time.IsCritical:
             data["pClass"] = "gtaskred"
         elif data["pGroup"]:
@@ -1491,12 +1549,61 @@ class Sequence(blenderbim.core.tool.Sequence):
         )
         json.append(data)
         for nested_task in ifcopenshell.util.sequence.get_nested_tasks(task):
-            cls.create_new_task_json(nested_task, json, type_map)
+            cls.create_new_task_json(nested_task, json, type_map, baseline_schedule)
 
     @classmethod
-    def generate_gantt_browser_chart(cls, task_json):
+    def generate_gantt_browser_chart(cls, task_json, work_schedule):
         with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
             with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
-                f.write(pystache.render(t.read(), {"json_data": json.dumps(task_json)}))
+                f.write(
+                    pystache.render(
+                        t.read(), {"json_data": json.dumps(task_json), "data": json.dumps(work_schedule.get_info())}
+                    )
+                )
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
+    @classmethod
+    def is_filter_by_active_schedule(cls):
+        return bpy.context.scene.BIMWorkScheduleProperties.filter_by_active_schedule
+
+    @classmethod
+    def get_tasks_for_product(cls, product, work_schedule=None):
+        return ifcopenshell.util.sequence.get_tasks_for_product(product, work_schedule)
+
+    @classmethod
+    def load_product_related_tasks(cls, task_inputs, task_ouputs):
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        props.product_input_tasks.clear()
+        props.product_output_tasks.clear()
+        for task in task_inputs or []:
+            new = props.product_input_tasks.add()
+            new.name = task.Name or "Unnamed"
+            new.ifc_definition_id = task.id()
+        for task in task_ouputs or []:
+            new = props.product_output_tasks.add()
+            new.name = task.Name or "Unnamed"
+            new.ifc_definition_id = task.id()
+
+    @classmethod
+    def get_work_schedule_products(cls, work_schedule):
+        products = []
+        for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+            products.extend(ifcopenshell.util.sequence.get_task_inputs(task, is_deep=True))
+            products.extend(ifcopenshell.util.sequence.get_task_outputs(task, is_deep=True))
+        return products
+
+    @classmethod
+    def has_task_assignments(cls, product, work_schedule=None):
+        task_inputs, task_ouputs = ifcopenshell.util.sequence.get_tasks_for_product(product)
+        if work_schedule:
+            task_inputs = [task for task in task_inputs or [] if cls.get_work_schedule(task) == work_schedule]
+            task_ouputs = [task for task in task_ouputs or [] if cls.get_work_schedule(task) == work_schedule]
+        return bool(task_inputs or task_ouputs)
+
+    @classmethod
+    def is_sorting_enabled(cls):
+        return bpy.context.scene.BIMWorkScheduleProperties.sort_column
+
+    @classmethod
+    def is_sort_reversed(cls):
+        return bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed

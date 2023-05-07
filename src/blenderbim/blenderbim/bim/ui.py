@@ -78,11 +78,9 @@ class BIM_PT_section_plane(Panel):
         layout.use_property_split = True
         props = context.scene.BIMProperties
 
-        row = layout.row()
-        row.prop(props, "should_section_selected_objects")
-
-        row = layout.row()
-        row.prop(props, "section_plane_colour")
+        layout.prop(props, "should_section_selected_objects")
+        layout.prop(props, "section_plane_colour")
+        layout.prop(props, "section_line_decorator_width")
 
         row = layout.row(align=True)
         row.operator("bim.add_section_plane")
@@ -122,6 +120,36 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
     lock_grids_on_import: BoolProperty(name="Should Lock Grids By Default", default=True)
+    decorations_colour: bpy.props.FloatVectorProperty(
+        name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
+    )
+    decorator_color_selected: bpy.props.FloatVectorProperty(
+        name="Selected Elements Color",
+        subtype="COLOR",
+        default=(0.545, 0.863, 0, 1),  # green
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of selected verts/edges (used in profile editing mode)",
+    )
+    decorator_color_unselected: bpy.props.FloatVectorProperty(
+        name="Not Selected Elements Color",
+        subtype="COLOR",
+        default=(1, 1, 1, 1),  # white
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of not selected verts/edges (used in profile editing mode)",
+    )
+    decorator_color_special: bpy.props.FloatVectorProperty(
+        name="Special Elements Color",
+        subtype="COLOR",
+        default=(0.157, 0.565, 1, 1),  # blue
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of special selected verts/edges (openings, preview verts/edges in roof editing, verts with arcs/circles in profile editing)",
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -146,6 +174,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator("bim.open_upstream", text="Visit Wiki").page = "wiki"
         row.operator("bim.open_upstream", text="Visit Community").page = "community"
+        row = layout.row()
+        row.operator("bim.file_associate", icon="LOCKVIEW_ON")
+        row.operator("bim.file_unassociate", icon="LOCKVIEW_OFF")
         row = layout.row()
         row.prop(self, "svg2pdf_command")
         row = layout.row()
@@ -174,7 +205,13 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
 
         row = self.layout.row()
-        row.prop(context.scene.DocProperties, "decorations_colour")
+        row.prop(self, "decorations_colour")
+        row = self.layout.row()
+        row.prop(self, "decorator_color_selected")
+        row = self.layout.row()
+        row.prop(self, "decorator_color_unselected")
+        row = self.layout.row()
+        row.prop(self, "decorator_color_special")
 
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "schema_dir")
@@ -183,6 +220,23 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
+
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "sheets_dir")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "layouts_dir")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "titleblocks_dir")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "drawings_dir")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "stylesheet_path")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "markers_path")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "symbols_path")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "patterns_path")
 
         row = layout.row()
         row.operator("bim.configure_visibility")
@@ -198,11 +252,6 @@ def ifc_units(self, context):
     row.prop(props, "area_unit")
     row = layout.row()
     row.prop(props, "volume_unit")
-    row = layout.row()
-    if scene.unit_settings.system == "IMPERIAL":
-        row.prop(props, "imperial_precision")
-    else:
-        row.prop(props, "metric_precision")
 
 
 # Scene panel groups
@@ -341,6 +390,7 @@ class BIM_PT_object_metadata(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
@@ -355,6 +405,7 @@ class BIM_PT_geometry_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -370,6 +421,7 @@ class BIM_PT_services_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -385,6 +437,7 @@ class BIM_PT_utilities_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -400,6 +453,7 @@ class BIM_PT_misc_object(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod

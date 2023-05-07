@@ -29,9 +29,9 @@ bl_info = {
 }
 
 import importlib
-from sverchok.utils.logging import info, debug
+import logging
+logger = logging.getLogger('sverchok.ifc')
 from sverchok.ui.nodeview_space_menu import add_node_menu
-
 
 def nodes_index():
     return [
@@ -126,7 +126,7 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
     """Update current Sverchok node tree"""
 
     bl_idname = "ifc.sverchok_update_current"
-    bl_label = "Update current node tree"
+    bl_label = "Update Current Node Tree"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     node_group: bpy.props.StringProperty(default="")
@@ -234,7 +234,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
 
 class IFC_PT_write_file_panel(bpy.types.Panel):
     bl_idname = "IFC_PT_write_file_panel"
-    bl_label = "Write IFC to file"
+    bl_label = "Write IFC to File"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "NODE_EDITOR"
     bl_region_type = "UI"

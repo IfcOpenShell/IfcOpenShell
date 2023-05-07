@@ -127,7 +127,7 @@ class AssignClass(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         props = context.scene.BIMRootProperties
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects or [context.active_object]
         ifc_class = self.ifc_class or props.ifc_class
         predefined_type = self.userdefined_type if self.predefined_type == "USERDEFINED" else self.predefined_type
         ifc_context = self.context_id
@@ -168,9 +168,14 @@ class UnlinkObject(bpy.types.Operator):
             objects = context.selected_objects
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
+                if obj in IfcStore.edited_objs:
+                    IfcStore.edited_objs.remove(obj)
                 IfcStore.unlink_element(obj=obj)
+                if obj.data:
+                    obj.data = obj.data.copy()
             for material_slot in obj.material_slots:
                 if material_slot.material:
+                    material_slot.material = material_slot.material.copy()
                     blenderbim.core.style.unlink_style(tool.Ifc, tool.Style, obj=material_slot.material)
                     blenderbim.core.material.unlink_material(tool.Ifc, obj=material_slot.material)
             if "Ifc" in obj.name and "/" in obj.name:

@@ -110,6 +110,16 @@ class Usecase:
                     related_objects = list(inverse.RelatedObjects)
                     related_objects.remove(self.settings["task"])
                     inverse.RelatedObjects = related_objects
+            elif inverse.is_a("IfcRelAssignsToObject"):
+                if (
+                    inverse.RelatingObject == self.settings["task"]
+                    or len(inverse.RelatedObjects) == 1
+                ):
+                    self.file.remove(inverse)
+                else:
+                    related_objects = list(inverse.RelatedObjects)
+                    related_objects.remove(self.settings["task"])
+                    inverse.RelatedObjects = related_objects
             elif inverse.is_a("IfcRelAssignsToProcess"):
                 self.file.remove(inverse)
 

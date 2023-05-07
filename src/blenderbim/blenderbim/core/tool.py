@@ -67,10 +67,25 @@ class Aggregate:
     def can_aggregate(cls, relating_object, related_object): pass
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
+    def get_container(cls, element): pass
 
 
 @interface
-class Blender: pass
+class Blender:
+    def set_active_object(cls, obj): pass
+    def get_name(cls, ifc_class, name): pass
+    def get_selected_objects(cls): pass
+    def create_ifc_object(cls, ifc_class: str, name: str = None, data=None): pass
+    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None): pass
+    def is_ifc_object(cls, obj): pass
+    def is_ifc_class_active(cls, ifc_class): pass
+    def get_viewport_context(cls): pass
+    def update_viewport(cls): pass
+    def get_default_selection_keypmap(cls): pass
+    def get_object_bounding_box(cls, obj): pass
+    def apply_bmesh(cls, mesh, bm, obj=None): pass
+    def get_bmesh_for_mesh(cls, mesh, clean=False): pass
+    def bmesh_join(cls, bm_a, bm_b, callback=None): pass
 
 
 @interface
@@ -128,11 +143,13 @@ class Context:
 @interface
 class Cost:
     def add_cost_column(cls, name): pass
+    def change_parent_cost_item(cls, cost_item, new_parent): pass
     def clean_up_cost_item_tree(cls, cost_item): pass
     def contract_cost_item_rate(cls, cost_item): pass
     def contract_cost_item(cls, cost_item): pass
     def contract_cost_items(cls): pass
     def create_new_cost_item_li(props_collection, cost_item, level_index, type): pass
+    def disable_editing_cost_item_parent(cls): pass
     def disable_editing_cost_item_quantity(cls): pass
     def disable_editing_cost_item_value(cls): pass
     def disable_editing_cost_item(cls): pass
@@ -149,36 +166,51 @@ class Cost:
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
     def export_cost_schedules(cls, format): pass
+    def export_cost_schedules(cls, format): pass
+    def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
-    def get_all_nested_cost_items(cls, cost_item): pass
+    def get_active_cost_schedule(cls): pass
+    def get_active_cost_schedule(cls): pass
     def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
     def get_cost_item_attributes(cls, cost_item): pass
     def get_cost_item_products(cls): pass
     def get_cost_item_quantity_attributes(cls): pass
     def get_cost_item_value_formula(cls): pass
+    def get_cost_items_for_product(cls, product, cost_schedule): pass
     def get_cost_schedule_attributes(cls): pass
     def get_cost_schedule_products(cls, cost_schedule): pass
+    def get_cost_schedule(cls, cost_schedule): pass
     def get_cost_value_attributes(cls): pass
     def get_cost_value_unit_component(cls): pass
     def get_direct_cost_item_products(cls): pass
     def get_highlighted_cost_item(cls): pass
-    def get_nested_cost_items(cls, cost_item): pass
+    def get_highlighted_cost_item(cls): pass
     def get_products(cls, related_object_type): pass
-    def get_root_cost_items(cls, cost_schedule): pass
     def get_schedule_cost_items(cls, cost_schedule): pass
+    def get_units(cls): pass
     def get_units(cls):pass
+    def has_cost_assignments(cls, cost_item): pass
+    def has_cost_assignments(cls, product, cost_schedule): pass
+    def has_schedules(cls): pass
+    def highlight_cost_item(cls, cost_item): pass
     def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
     def is_active_schedule_of_rates(cls): pass
+    def is_cost_schedule_active(cls, cost_schedule): pass
+    def is_root_cost_item(cls, cost_item): pass
     def load_cost_item_attributes(cls): pass
-    def load_cost_item_quantities(cls, cost_item): pass
+    def load_cost_item_quantities(cls, cost_item, related_object_type): pass
     def load_cost_item_quantity_attributes(cls, physical_quantity): pass
     def load_cost_item_types(cls, cost_item): pass
     def load_cost_item_value_attributes(cls, cost_value): pass
     def load_cost_item_value_formula_attributes(cls, cost_value): pass
     def load_cost_schedule_tree(cls): pass
+    def load_product_cost_items(cls, product): pass
     def load_schedule_of_rates_tree(cls, schedule_of_rates): pass
     def play_chaching_sound(cls): pass
     def remove_cost_column(cls, name): pass
+    def toggle_cost_item_parent_change(cls, cost_item): pass
+    def update_cost_items(cls, product, pset): pass
+
 
 @interface
 class Debug:
@@ -208,7 +240,8 @@ class Document:
 
 @interface
 class Drawing:
-    def activate_view(cls, camera): pass
+    def activate_drawing(cls, camera): pass
+    def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
     def copy_representation(cls, source, dest): pass
     def create_annotation_object(cls, drawing, object_type): pass
     def create_camera(cls, name, matrix): pass
@@ -216,12 +249,14 @@ class Drawing:
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
     def delete_drawing_elements(cls, elements): pass
+    def delete_file(cls, uri): pass
     def delete_object(cls, obj): pass
     def disable_editing_assigned_product(cls, obj): pass
     def disable_editing_drawings(cls): pass
     def disable_editing_schedules(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
+    def does_file_exist(cls, uri): pass
     def enable_editing(cls, obj): pass
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
@@ -237,16 +272,29 @@ class Drawing:
     def get_annotation_context(cls, target_view): pass
     def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
-    def get_document_uri(cls, document): pass
+    def get_default_drawing_path(cls, name): pass
+    def get_default_drawing_resource_path(cls, resource): pass
+    def get_default_layout_path(cls, identification, name): pass
+    def get_default_sheet_path(cls, identification, name): pass
+    def get_default_sheet_path(cls, identification, name): pass
+    def get_default_titleblock_path(cls, name): pass
+    def get_document_references(cls, document): pass
+    def get_document_uri(cls, document, description=None): pass
     def get_drawing_collection(cls, drawing): pass
+    def get_drawing_document(cls, drawing): pass
     def get_drawing_group(cls, drawing): pass
     def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
-    def get_schedule_location(cls, schedule): pass
+    def get_path_filename(cls, uri): pass
+    def get_reference_description(cls, reference): pass
+    def get_reference_document(cls, reference): pass
+    def get_reference_location(cls, reference): pass
+    def get_references_with_location(cls, location): pass
     def get_text_literal(cls, obj): pass
+    def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
     def import_schedules(cls): pass
@@ -254,14 +302,20 @@ class Drawing:
     def import_text_attributes(cls, obj): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
+    def move_file(cls, src, dest): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
+    def remove_literal_from_annotation(cls, obj, literal): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, group, collection): pass
     def set_name(cls, element, name): pass
+    def setup_annotation_object(cls, obj, object_type): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
+    def synchronise_ifc_and_text_attributes(cls, obj): pass
+    def update_embedded_svg_location(cls, uri, old_location, new_location): pass
+    def update_text_size_pset(cls, obj): pass
     def update_text_value(cls, obj): pass
 
 
@@ -287,7 +341,7 @@ class Geometry:
     def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
-    def import_representation(cls, obj, representation): pass
+    def import_representation(cls, obj, representation, apply_openings=True): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
@@ -338,14 +392,18 @@ class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
     def get_object(cls, entity): pass
+    def get_path(cls): pass
     def get_schema(cls): pass
-    def is_deleted(cls, element): pass
     def is_edited(cls, obj): pass
     def is_moved(cls, obj): pass
     def link(cls, element, obj): pass
+    def schema(cls): pass
+    def edit(cls, obj): pass
+    def resolve_uri(cls, uri): pass
     def run(cls, command, **kwargs): pass
     def set(cls, ifc): pass
     def unlink(cls, element=None, obj=None): pass
+    def get_all_element_occurences(cls, element): pass
 
 
 @interface
@@ -485,6 +543,8 @@ class Profile:
 @interface
 class Pset:
     def get_element_pset(cls, element, pset_name): pass
+    def get_pset_name(cls, obj, obj_type): pass
+    def is_pset_applicable(cls,element, pset_name): pass
 
 
 @interface
@@ -499,36 +559,42 @@ class Qto:
     def add_product_base_qto(cls, product): pass
     def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
     def get_new_guessed_quantity(cls, object, qto_name, quantity_name, ): pass
+    def get_related_cost_item_quantities(cls, product): pass
 
 
 @interface
 class Resource:
-    def load_resources(cls): pass
-    def load_resource_properties(cls): pass
+    def clear_productivity_data(cls, props): pass
+    def contract_resource(cls, resource): pass
+    def disable_editing_resource_cost_value(cls): pass
+    def disable_editing_resource_quantity(cls): pass
     def disable_editing_resource(cls): pass
     def disable_resource_editing_ui(cls): pass
-    def load_resource_attributes(cls, resource): pass
-    def enable_editing_resource(cls, resource): pass
-    def get_resource_attributes(cls): pass
-    def enable_editing_resource_time(cls, resource): pass
-    def get_resource_time(cls, resource): pass
-    def load_resource_time_attributes(cls, resource_time): pass
-    def get_resource_time_attributes(cls): pass
-    def enable_editing_resource_costs(cls, resource): pass
-    def disable_editing_resource_cost_value(cls): pass
-    def enable_editing_resource_cost_value_formula(cls, cost_value): pass
-    def load_cost_value_attributes(cls, cost_value): pass
+    def edit_productivity_pset(cls, resource, attributes): pass
     def enable_editing_cost_value_attributes(cls, cost_value): pass
-    def get_resource_cost_value_formula(cls): pass
-    def get_resource_cost_value_attributes(cls): pass
     def enable_editing_resource_base_quantity(cls, resource): pass
+    def enable_editing_resource_cost_value_formula(cls, cost_value): pass
+    def enable_editing_resource_costs(cls, resource): pass
     def enable_editing_resource_quantity(cls, resource_quantity): pass
-    def disable_editing_resource_quantity(cls): pass
-    def get_resource_quantity_attributes(cls): pass
+    def enable_editing_resource_time(cls, resource): pass
+    def enable_editing_resource(cls, resource): pass
     def expand_resource(cls, resource): pass
-    def contract_resource(cls, resource): pass
+    def get_highlighted_resource(cls): pass
+    def get_productivity_attributes(cls): pass
+    def get_productivity(cls, resource, should_inherit): pass
+    def get_resource_attributes(cls): pass
+    def get_resource_cost_value_attributes(cls): pass
+    def get_resource_cost_value_formula(cls): pass
+    def get_resource_quantity_attributes(cls): pass
+    def get_resource_time_attributes(cls): pass
+    def get_resource_time(cls, resource): pass
     def import_resources(cls, file_path): pass
-
+    def load_cost_value_attributes(cls, cost_value): pass
+    def load_productivity_data(cls): pass
+    def load_resource_attributes(cls, resource): pass
+    def load_resource_properties(cls): pass
+    def load_resource_time_attributes(cls, resource_time): pass
+    def load_resources(cls): pass
 
 @interface
 class Root:
@@ -542,11 +608,10 @@ class Root:
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
-    def is_opening_element(cls, element): pass
+    def is_element_a(cls, element, ifc_class): pass
     def link_object_data(cls, source_obj, destination_obj): pass
     def recreate_decompositions(cls, relationships, old_to_new): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
-    def set_element_specific_display_settings(cls, obj, element): pass
     def set_object_name(cls, obj, element): pass
 
 
@@ -561,11 +626,23 @@ class Search:
 @interface
 class Sequence:
     def add_task_column(cls, column_type, name, data_type): pass
+    def add_text_animation_handler(cls, settings): pass
+    def animate_consumption(cls, obj, start_frame, product_frame, color, animation_type): pass
+    def animate_creation(cls, obj, start_frame, product_frame, color): pass
+    def animate_destruction(cls, obj, start_frame, color, animation_type): pass
+    def animate_input(cls, obj, start_frame, product_frame, animation_type): pass
+    def animate_movement_from(cls, obj, start_frame, color, animation_type): pass
+    def animate_movement_to(cls, obj, start_frame, product_frame, color): pass
+    def animate_objects(cls, settings, frames, clear_previous, animation_type): pass
+    def animate_operation(cls, obj, start_frame, product_frame, color): pass
+    def animate_output(cls, obj, start_frame, product_frame): pass
+    def clear_object_animation(cls, obj): pass
+    def clear_objects_animation(cls, include_blender_objects): pass
     def contract_all_tasks(cls): pass
     def contract_task(cls, task): pass
     def create_bars(cls, tasks): pass
-    def create_bars(cls, tasks):pass
-    def create_task_tree(cls, work_schedule): pass
+    def create_new_task_json(cls, task, json, type_map=None): pass
+    def create_tasks_json(cls, work_schedule=None): pass
     def disable_editing_rel_sequence(cls): pass
     def disable_editing_task_animation_colors(cls): pass
     def disable_editing_task_time(cls): pass
@@ -579,10 +656,10 @@ class Sequence:
     def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
     def enable_editing_sequence_lag_time(cls, rel_sequence): pass
     def enable_editing_task_animation_colors(cls): pass
+    def enable_editing_task_attributes(cls, task): pass
     def enable_editing_task_calendar(cls, task): pass
     def enable_editing_task_sequence(cls, task): pass
     def enable_editing_task_time(cls, task): pass
-    def enable_editing_task(cls, task): pass
     def enable_editing_work_calendar_times(cls, work_calendar): pass
     def enable_editing_work_calendar(cls, work_calendar): pass
     def enable_editing_work_plan_schedules(cls, work_plan): pass
@@ -593,11 +670,13 @@ class Sequence:
     def expand_all_tasks(cls): pass
     def expand_task(cls, task): pass
     def find_related_input_tasks(cls, product): pass
-    def find_related_output_tasks(cls, column): pass
     def find_related_output_tasks(cls, product): pass
+    def generate_gantt_browser_chart(cls, task_json): pass
     def get_active_task(cls): pass
     def get_active_work_schedule(cls): pass
     def get_animation_bar_tasks(cls): pass
+    def get_animation_product_frames(cls, work_schedule, settings): pass
+    def get_animation_settings(cls): pass
     def get_checked_tasks(cls): pass
     def get_direct_nested_tasks(cls, task):pass
     def get_direct_task_outputs(cls, task): pass
@@ -607,7 +686,6 @@ class Sequence:
     def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
     def get_recurrence_pattern_times(cls): pass
     def get_rel_sequence_attributes(cls): pass
-    
     def get_selected_resource(cls): pass
     def get_start_date(cls): pass
     def get_task_attribute_value(cls, attribute_name): pass
@@ -617,15 +695,20 @@ class Sequence:
     def get_task_resources(cls, task):pass
     def get_task_time_attributes(cls): pass
     def get_task_time(cls, task): pass
+    def get_tasks_for_product(cls, product, work_schedule): pass
     def get_work_calendar_attributes(cls): pass
     def get_work_plan_attributes(cls): pass
     def get_work_schedule_attributes(cls): pass
+    def get_work_schedule_products(cls, work_schedule): pass
     def get_work_schedule(cls, task): pass
     def get_work_time_attributes(cls): pass
     def guess_date_range(cls, work_schedule): pass
+    def has_task_assignments(cls, product, cost_schedule=None): pass
     def highlight_task(cls, task): pass
+    def is_filter_by_active_schedule(cls): pass
     def is_work_schedule_active(cls, work_schedule): pass
     def load_lag_time_attributes(cls, lag_time): pass
+    def load_product_related_tasks(cls, product): pass
     def load_rel_sequence_attributes(cls, rel_sequence): pass
     def load_resources(cls): pass
     def load_task_animation_colors(cls): pass
@@ -635,6 +718,7 @@ class Sequence:
     def load_task_properties(cls, task): pass
     def load_task_resources(cls,resources): pass
     def load_task_time_attributes(cls, task_time): pass
+    def load_task_tree(cls, work_schedule): pass
     def load_work_calendar_attributes(cls, work_calendar): pass
     def load_work_plan_attributes(cls, work_plan): pass
     def load_work_schedule_attributes(cls, work_schedule): pass
@@ -648,6 +732,7 @@ class Sequence:
     def setup_default_task_columns(cls): pass
     def show_snapshot(cls, product_states): pass
     def update_visualisation_date(cls, start_date, finish_date): pass
+
 
 @interface
 class Spatial:
@@ -713,6 +798,7 @@ class Style:
     def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style, obj): pass
     def is_editing_styles(cls): pass
+    def record_shading(cls, obj): pass
     def select_elements(cls, elements): pass
 
 
@@ -766,7 +852,7 @@ class Unit:
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
-    def get_scene_unit_si_prefix(cls): pass
+    def get_scene_unit_si_prefix(cls, unit_type): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
     def is_scene_unit_metric(cls): pass

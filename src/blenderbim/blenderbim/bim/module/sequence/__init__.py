@@ -20,7 +20,6 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.HighlightProductRelatedTask,
     operator.ExpandAllTasks,
     operator.ContractAllTasks,
     operator.AddSummaryTask,
@@ -81,6 +80,7 @@ classes = (
     operator.GenerateGanttChart,
     operator.GuessDateRange,
     operator.ImportMSP,
+    operator.ImportCSV,
     operator.ImportP6,
     operator.ImportP6XER,
     operator.ImportPP,
@@ -97,8 +97,11 @@ classes = (
     operator.RemoveWorkPlan,
     operator.RemoveWorkSchedule,
     operator.RemoveWorkTime,
+    operator.ReorderTask,
     operator.SelectTaskRelatedProducts,
     operator.SelectTaskRelatedInputs,
+    operator.SelectWorkScheduleProducts,
+    operator.SelectUnassignedWorkScheduleProducts,
     operator.SetTaskSortColumn,
     operator.SetupDefaultTaskColumns,
     operator.UnassignLagTime,
@@ -112,6 +115,9 @@ classes = (
     operator.VisualiseWorkScheduleDateRange,
     operator.LoadTaskAnimationColors,
     operator.DisableEditingTaskAnimationColors,
+    operator.LoadProductTasks,
+    operator.HighlightTask,
+    operator.CreateBaseline,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
@@ -136,9 +142,11 @@ classes = (
     ui.BIM_UL_task_resources,
     ui.BIM_UL_task_outputs,
     ui.BIM_UL_tasks,
-    ui.BIM_PT_Task_Tools,
+    ui.BIM_PT_4D_Tools,
     ui.BIM_PT_Task_Bar_Creator,
     ui.BIM_UL_animation_colors,
+    ui.BIM_UL_product_input_tasks,
+    ui.BIM_UL_product_output_tasks,
 )
 
 
@@ -148,6 +156,7 @@ def menu_func_export(self, context):
 
 
 def menu_func_import(self, context):
+    self.layout.operator(operator.ImportCSV.bl_idname, text="Work Schedule (.csv)")
     self.layout.operator(operator.ImportP6.bl_idname, text="P6 (.xml)")
     self.layout.operator(operator.ImportP6XER.bl_idname, text="P6 (.xer)")
     self.layout.operator(operator.ImportPP.bl_idname, text="Powerproject (.pp)")

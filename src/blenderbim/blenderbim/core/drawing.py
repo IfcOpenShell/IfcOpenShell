@@ -26,13 +26,10 @@ def disable_editing_text(drawing, obj=None):
     drawing.disable_editing_text(obj)
 
 
-def edit_text(ifc, drawing, obj=None):
-    ifc.run(
-        "drawing.edit_text_literal",
-        text_literal=drawing.get_text_literal(obj),
-        attributes=drawing.export_text_literal_attributes(obj),
-    )
+def edit_text(drawing, obj=None):
+    drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_value(obj)
+    drawing.update_text_size_pset(obj)
     drawing.disable_editing_text(obj)
 
 
@@ -48,13 +45,13 @@ def disable_editing_assigned_product(drawing, obj=None):
 def edit_assigned_product(ifc, drawing, obj=None, product=None):
     element = ifc.get_entity(obj)
     existing_product = drawing.get_assigned_product(element)
-    if existing_product == product:
-        return
-    if existing_product:
-        ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
-    if product:
-        ifc.run("drawing.assign_product", relating_product=product, related_object=element)
-    drawing.update_text_value(obj)
+    if existing_product != product:
+        if existing_product:
+            ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
+        if product:
+            ifc.run("drawing.assign_product", relating_product=product, related_object=element)
+        drawing.update_text_value(obj)
+
     drawing.disable_editing_assigned_product(obj)
 
 
@@ -69,24 +66,69 @@ def disable_editing_sheets(drawing):
 
 def add_sheet(ifc, drawing, titleblock=None):
     sheet = ifc.run("document.add_information")
+    layout = ifc.run("document.add_reference", information=sheet)
+    titleblock_reference = ifc.run("document.add_reference", information=sheet)
     identification = drawing.generate_sheet_identification()
     identification = drawing.ensure_unique_identification(identification)
-    attributes = {"Identification": identification, "Name": "UNTITLED", "Scope": "DOCUMENTATION"}
     if ifc.get_schema() == "IFC2X3":
-        attributes["DocumentId"] = attributes["Identification"]
-        del attributes["Identification"]
+        attributes = {"DocumentId": identification, "Name": "UNTITLED", "Scope": "SHEET"}
+    else:
+        attributes = {"Identification": identification, "Name": "UNTITLED", "Scope": "SHEET"}
     ifc.run("document.edit_information", information=sheet, attributes=attributes)
+    ifc.run(
+        "document.edit_reference",
+        reference=layout,
+        attributes={"Location": drawing.get_default_layout_path(identification, "UNTITLED"), "Description": "LAYOUT"},
+    )
+    ifc.run(
+        "document.edit_reference",
+        reference=titleblock_reference,
+        attributes={"Location": drawing.get_default_titleblock_path(titleblock), "Description": "TITLEBLOCK"},
+    )
     drawing.create_svg_sheet(sheet, titleblock)
     drawing.import_sheets()
 
 
 def open_sheet(drawing, sheet=None):
-    drawing.open_svg(drawing.get_document_uri(sheet))
+    drawing.open_svg(drawing.get_document_uri(sheet, "LAYOUT"))
 
 
 def remove_sheet(ifc, drawing, sheet=None):
+    for reference in drawing.get_document_references(sheet):
+        if drawing.get_reference_description(reference) in ("LAYOUT", "SHEET", "REVISION", "RASTER"):
+            uri = ifc.resolve_uri(drawing.get_document_uri(reference))
+            if drawing.does_file_exist(uri):
+                drawing.delete_file(uri)
     ifc.run("document.remove_information", information=sheet)
     drawing.import_sheets()
+
+
+def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
+    ifc.run(
+        "document.edit_information", information=sheet, attributes={"Identification": identification, "Name": name}
+    )
+    for reference in drawing.get_document_references(sheet):
+        description = drawing.get_reference_description(reference)
+        if description == "SHEET":
+            old_location = drawing.get_reference_location(reference)
+            new_location = drawing.get_default_sheet_path(identification, name)
+            if old_location != new_location:
+                ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
+                old_location = ifc.resolve_uri(old_location)
+                if drawing.does_file_exist(old_location):
+                    drawing.move_file(old_location, ifc.resolve_uri(new_location))
+        elif description == "LAYOUT":
+            old_location = drawing.get_reference_location(reference)
+            new_location = drawing.get_default_layout_path(identification, name)
+            if old_location != new_location:
+                ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
+                old_location = ifc.resolve_uri(old_location)
+                if drawing.does_file_exist(old_location):
+                    drawing.move_file(old_location, ifc.resolve_uri(new_location))
+
+
+def rename_reference(ifc, reference=None, identification=None):
+    ifc.run("document.edit_reference", reference=reference, attributes={"Identification": identification})
 
 
 def load_schedules(drawing):
@@ -101,13 +143,13 @@ def disable_editing_schedules(drawing):
 def add_schedule(ifc, drawing, uri=None):
     schedule = ifc.run("document.add_information")
     reference = ifc.run("document.add_reference", information=schedule)
+    name = drawing.get_path_filename(uri)
     if ifc.get_schema() == "IFC2X3":
-        attributes = {"DocumentId": "X", "Name": "UNTITLED", "Scope": "SCHEDULE"}
-        ifc.run("document.edit_information", information=schedule, attributes=attributes)
-        ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
+        attributes = {"DocumentId": "X", "Name": name, "Scope": "SCHEDULE"}
     else:
-        attributes = {"Identification": "X", "Name": "UNTITLED", "Scope": "SCHEDULE", "Location": uri}
-        ifc.run("document.edit_information", information=schedule, attributes=attributes)
+        attributes = {"Identification": "X", "Name": name, "Scope": "SCHEDULE"}
+    ifc.run("document.edit_information", information=schedule, attributes=attributes)
+    ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
     drawing.import_schedules()
 
 
@@ -117,7 +159,7 @@ def remove_schedule(ifc, drawing, schedule=None):
 
 
 def open_schedule(drawing, schedule=None):
-    drawing.open_spreadsheet(drawing.get_schedule_location(schedule))
+    drawing.open_spreadsheet(drawing.get_document_uri(schedule))
 
 
 def update_schedule_name(ifc, drawing, schedule=None, name=None):
@@ -151,19 +193,39 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     ifc.run("group.assign_group", group=group, products=[element])
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
+    if drawing.get_unit_system() == "METRIC":
+        scale = "1/100"
+        human_scale = "1:100"
+    else:
+        scale = "1/96"
+        human_scale = "1/8\"=1'-0\""
     ifc.run(
         "pset.edit_pset",
         pset=pset,
         properties={
             "TargetView": target_view,
-            "Scale": "1/100",
-            "HumanScale": "1:100",
+            "Scale": scale,
+            "HumanScale": human_scale,
             "HasUnderlay": False,
             "HasLinework": True,
             "HasAnnotation": True,
             "GlobalReferencing": True,
+            "Stylesheet": drawing.get_default_drawing_resource_path("Stylesheet"),
+            "Markers": drawing.get_default_drawing_resource_path("Markers"),
+            "Symbols": drawing.get_default_drawing_resource_path("Symbols"),
+            "Patterns": drawing.get_default_drawing_resource_path("Patterns"),
         },
     )
+    information = ifc.run("document.add_information")
+    uri = drawing.get_default_drawing_path(drawing_name)
+    reference = ifc.run("document.add_reference", information=information)
+    if ifc.get_schema() == "IFC2X3":
+        attributes = {"DocumentId": "X", "Name": drawing_name, "Scope": "DRAWING"}
+    else:
+        attributes = {"Identification": "X", "Name": drawing_name, "Scope": "DRAWING"}
+    ifc.run("document.edit_information", information=information, attributes=attributes)
+    ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
+    ifc.run("document.assign_document", product=element, document=reference)
     drawing.import_drawings()
 
 
@@ -185,24 +247,47 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
             drawing_tool.copy_representation(annotation, new_annotation)
             ifc.run("group.unassign_group", group=group, product=new_annotation)
             ifc.run("group.assign_group", group=new_group, products=[new_annotation])
+
+    old_reference = drawing_tool.get_drawing_document(new_drawing)
+    ifc.run("document.unassign_document", product=new_drawing, document=old_reference)
+
+    information = ifc.run("document.add_information")
+    uri = drawing_tool.get_default_drawing_path(drawing_name)
+    reference = ifc.run("document.add_reference", information=information)
+    if ifc.get_schema() == "IFC2X3":
+        attributes = {"DocumentId": "X", "Name": drawing_name, "Scope": "DRAWING"}
+    else:
+        attributes = {"Identification": "X", "Name": drawing_name, "Scope": "DRAWING"}
+    ifc.run("document.edit_information", information=information, attributes=attributes)
+    ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
+    ifc.run("document.assign_document", product=new_drawing, document=reference)
+
     drawing_tool.import_drawings()
     return new_drawing
 
 
 def remove_drawing(ifc, drawing_tool, drawing=None):
-    group = drawing_tool.get_drawing_group(drawing)
-    if group:
-        drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
-        ifc.run("group.remove_group", group=group)
     collection = drawing_tool.get_drawing_collection(drawing)
     if collection:
         drawing_tool.delete_collection(collection)
+
     for reference in drawing_tool.get_drawing_references(drawing):
         reference_obj = ifc.get_object(reference)
         if reference_obj:
             drawing_tool.delete_object(reference_obj)
         ifc.run("root.remove_product", product=reference)
-    ifc.run("root.remove_product", product=drawing)
+
+    information = drawing_tool.get_reference_document(drawing_tool.get_drawing_document(drawing))
+    uri = ifc.resolve_uri(drawing_tool.get_document_uri(information))
+    if drawing_tool.does_file_exist(uri):
+        drawing_tool.delete_file(uri)
+    ifc.run("document.remove_information", information=information)
+
+    group = drawing_tool.get_drawing_group(drawing)
+    if group:
+        drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
+        ifc.run("group.remove_group", group=group)
+
     drawing_tool.import_drawings()
 
 
@@ -216,11 +301,31 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
     if collection:
         drawing_tool.set_drawing_collection_name(group, collection)
 
+    reference = drawing_tool.get_drawing_document(drawing)
+    information = drawing_tool.get_reference_document(reference)
+    ifc.run("document.edit_information", information=information, attributes={"Name": name})
+    old_location = drawing_tool.get_reference_location(reference)
+    new_location = drawing_tool.get_default_drawing_path(name)
+    if old_location != new_location:
+        ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
+        resolved_old_location = ifc.resolve_uri(old_location)
+        if drawing_tool.does_file_exist(resolved_old_location):
+            drawing_tool.move_file(resolved_old_location, ifc.resolve_uri(new_location))
+
+        for reference in drawing_tool.get_references_with_location(old_location):
+            ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
+            sheet = drawing_tool.get_reference_document(reference)
+            if sheet:
+                uri = ifc.resolve_uri(drawing_tool.get_document_uri(sheet, "LAYOUT"))
+                if drawing_tool.does_file_exist(uri):
+                    drawing_tool.update_embedded_svg_location(uri, old_location, new_location)
+
 
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
-    context = drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))
+    context = drawing_tool.get_annotation_context(target_view := drawing_tool.get_drawing_target_view(drawing))
     if not context:
-        return "No annotation context for drawing"
+        return f"No annotation context Annotation/{target_view} for drawing"
+
     drawing_tool.show_decorations()
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
@@ -240,7 +345,7 @@ def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None)
 
 def build_schedule(drawing, schedule=None):
     drawing.create_svg_schedule(schedule)
-    drawing.open_svg(drawing.get_document_uri(schedule))
+    drawing.open_svg(drawing.get_path_with_ext(drawing.get_document_uri(schedule), "svg"))
 
 
 def sync_references(ifc, collector, drawing_tool, drawing=None):
@@ -260,11 +365,9 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
         should_create_annotation = False
 
         if annotation:
-            if ifc.is_deleted(annotation):
+            if reference_obj and (ifc.is_moved(reference_obj) or ifc.is_edited(reference_obj)):
                 should_delete_existing_annotation = True
-            elif reference_obj and (ifc.is_moved(reference_obj) or ifc.is_edited(reference_obj)):
-                should_delete_existing_annotation = True
-            elif not reference_obj and ifc.is_deleted(reference_element):
+            elif not reference_obj:
                 should_delete_existing_annotation = True
 
         if reference_obj and (should_delete_existing_annotation or not annotation):
@@ -289,12 +392,14 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
         if reference_obj and ifc.is_edited(reference_obj):
             drawing_tool.sync_object_representation(reference_obj)
 
-def select_assigned_product(drawing):
-    drawing.select_assigned_product()
+
+def select_assigned_product(drawing, context):
+    drawing.select_assigned_product(context)
+
 
 def activate_drawing_view(ifc, drawing_tool, drawing):
     camera = ifc.get_object(drawing)
     if not camera:
         camera = drawing_tool.import_drawing(drawing)
         drawing_tool.import_annotations_in_group(drawing_tool.get_drawing_group(drawing))
-    drawing_tool.activate_view(camera)
+    drawing_tool.activate_drawing(camera)

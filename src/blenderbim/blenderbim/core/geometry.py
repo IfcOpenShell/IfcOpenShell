@@ -86,6 +86,7 @@ def switch_representation(
     should_reload=True,
     is_global=True,
     should_sync_changes_first=False,
+    apply_openings=True,
 ):
     """Function can switch to representation that wasn't yet assigned to that object. See #2766."""
     if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
@@ -98,13 +99,14 @@ def switch_representation(
     existing_data = geometry.get_representation_data(representation)
 
     if should_reload or not existing_data:
-        data = geometry.import_representation(obj, representation)
+        data = geometry.import_representation(obj, representation, apply_openings=apply_openings)
         geometry.rename_object(data, geometry.get_representation_name(representation))
         geometry.link(representation, data)
     else:
         data = existing_data
 
     geometry.change_object_data(obj, data, is_global=is_global)
+    geometry.record_object_materials(obj)
 
     if should_reload and existing_data:
         geometry.delete_data(existing_data)
@@ -118,25 +120,24 @@ def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_fi
 
 
 def remove_representation(ifc, geometry, obj=None, representation=None):
-    """Function will produce orphan mesh data, see #2767.
-
-    Also should consider changing obj representation before using the function,
+    """Consider changing obj representation before using the function,
     otherwise it will replace object with empty."""
 
     element = ifc.get_entity(obj)
-    type = geometry.get_element_type(element)
-    if type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
+    element_type = geometry.get_element_type(element)
+    data = None
+    if element_type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
         if data and geometry.has_data_users(data):
-            for element in geometry.get_elements_of_type(type):
+            for element in geometry.get_elements_of_type(element_type):
                 obj = ifc.get_object(element)
                 if obj:
                     obj = geometry.replace_object_with_empty(obj)
-            obj = ifc.get_object(type)
+            obj = ifc.get_object(element_type)
             if obj:
                 obj = geometry.replace_object_with_empty(obj)
-        ifc.run("geometry.unassign_representation", product=type, representation=representation)
+        ifc.run("geometry.unassign_representation", product=element_type, representation=representation)
         ifc.run("geometry.remove_representation", representation=representation)
     else:
         data = geometry.get_representation_data(representation)
@@ -144,6 +145,8 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
             geometry.replace_object_with_empty(obj)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
         ifc.run("geometry.remove_representation", representation=representation)
+    if data:
+        geometry.delete_data(data)
 
 
 def select_connection(geometry, connection=None):

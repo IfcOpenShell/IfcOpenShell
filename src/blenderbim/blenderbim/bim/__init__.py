@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim
 import importlib
 from . import handler, ui, prop, operator, helper
 
@@ -70,6 +71,7 @@ modules = {
     "covetool": None,
     "augin": None,
     "debug": None,
+    "ifcgit": None,
     # Uncomment this line to enable loading of the demo module. Happy hacking!
     # The name "demo" must correlate to a folder name in `bim/module/`.
     # "demo": None,
@@ -93,6 +95,8 @@ classes = [
     operator.SelectIfcFile,
     operator.ReloadSelectedIfcFile,
     operator.SelectSchemaDir,
+    operator.FileAssociate,
+    operator.FileUnassociate,
     operator.SelectURIAttribute,
     operator.EditBlenderCollection,
     operator.BIM_OT_open_webbrowser,
@@ -152,7 +156,7 @@ def register():
     bpy.app.handlers.redo_post.append(handler.redo_post)
     bpy.app.handlers.load_post.append(handler.setDefaultProperties)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
-    bpy.app.handlers.save_pre.append(handler.ensureIfcExported)
+    bpy.app.handlers.save_post.append(handler.ensureIfcExported)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
     bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
     bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
@@ -171,10 +175,14 @@ def register():
 
 def unregister():
     for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+        if getattr(cls, "is_registered", None) is None:
+            bpy.utils.unregister_class(cls)
+        elif cls.is_registered:
+            bpy.utils.unregister_class(cls)
+
     bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
-    bpy.app.handlers.save_pre.remove(handler.ensureIfcExported)
+    bpy.app.handlers.save_post.remove(handler.ensureIfcExported)
     del bpy.types.Scene.BIMProperties
     del bpy.types.Object.BIMObjectProperties
     del bpy.types.Material.BIMObjectProperties

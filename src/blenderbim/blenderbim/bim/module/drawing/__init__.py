@@ -17,11 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, handler, gizmos
+from . import ui, prop, operator, handler, gizmos, workspace
 
 classes = (
+    operator.ActivateDrawing,
     operator.ActivateDrawingStyle,
-    operator.ActivateView,
+    operator.ActivateModel,
     operator.AddAnnotation,
     operator.AddDrawing,
     operator.AddDrawingStyle,
@@ -29,12 +30,11 @@ classes = (
     operator.AddDrawingToSheet,
     operator.AddSchedule,
     operator.AddScheduleToSheet,
-    operator.AddSectionsAnnotations,
     operator.AddSheet,
+    operator.AddTextLiteral,
     operator.BuildSchedule,
     operator.CleanWireframes,
     operator.ContractSheet,
-    operator.CopyGrid,
     operator.CreateDrawing,
     operator.CreateSheets,
     operator.DisableEditingAssignedProduct,
@@ -44,27 +44,30 @@ classes = (
     operator.DisableEditingText,
     operator.DuplicateDrawing,
     operator.EditAssignedProduct,
+    operator.EditSheet,
     operator.EditText,
-    operator.EditVectorStyle,
+    operator.EditTextPopup,
     operator.EnableEditingAssignedProduct,
     operator.EnableEditingText,
     operator.ExpandSheet,
     operator.LoadDrawings,
     operator.LoadSchedules,
     operator.LoadSheets,
+    operator.OpenDrawing,
     operator.OpenSchedule,
     operator.OpenSheet,
-    operator.OpenView,
     operator.RemoveDrawing,
     operator.RemoveDrawingFromSheet,
     operator.RemoveDrawingStyle,
     operator.RemoveDrawingStyleAttribute,
     operator.RemoveSchedule,
     operator.RemoveSheet,
+    operator.RemoveTextLiteral,
+    operator.SelectAllDrawings,
     operator.ResizeText,
     operator.SaveDrawingStyle,
-    operator.SelectDocIfcFile,
     operator.SelectAssignedProduct,
+    operator.SelectDocIfcFile,
     prop.Variable,
     prop.Drawing,
     prop.Schedule,
@@ -72,8 +75,10 @@ classes = (
     prop.Sheet,
     prop.DocProperties,
     prop.BIMCameraProperties,
+    prop.Literal,
     prop.BIMTextProperties,
     prop.BIMAssignedProductProperties,
+    prop.BIMAnnotationProperties,
     ui.BIM_PT_camera,
     ui.BIM_PT_drawing_underlay,
     ui.BIM_PT_annotation_utilities,
@@ -89,11 +94,15 @@ classes = (
     gizmos.DimensionLabelGizmo,
     gizmos.ExtrusionGuidesGizmo,
     gizmos.ExtrusionWidget,
+    workspace.Hotkey,
 )
 
 
 def register():
+    if not bpy.app.background:
+        bpy.utils.register_tool(workspace.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=True)
     bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
+    bpy.types.Scene.BIMAnnotationProperties = bpy.props.PointerProperty(type=prop.BIMAnnotationProperties)
     bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
     bpy.types.Object.BIMAssignedProductProperties = bpy.props.PointerProperty(type=prop.BIMAssignedProductProperties)
     bpy.types.Object.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
@@ -103,7 +112,10 @@ def register():
 
 
 def unregister():
+    if not bpy.app.background:
+        bpy.utils.unregister_tool(workspace.AnnotationTool)
     del bpy.types.Scene.DocProperties
+    del bpy.types.Scene.BIMAnnotationProperties
     del bpy.types.Camera.BIMCameraProperties
     del bpy.types.Object.BIMAssignedProductProperties
     del bpy.types.Object.BIMTextProperties

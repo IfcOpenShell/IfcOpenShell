@@ -18,7 +18,6 @@
 
 import bpy
 import gpu
-import bgl
 import bmesh
 import logging
 import numpy as np
@@ -36,7 +35,6 @@ from bpy.types import Operator
 from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
 
 
@@ -53,38 +51,47 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class FilledOpeningGenerator:
-    def generate(self, filling_obj, voided_obj):
+    def generate(self, filling_obj, voided_obj, target=None):
         props = bpy.context.scene.BIMModelProperties
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         filling = tool.Ifc.get_entity(filling_obj)
+        element = tool.Ifc.get_entity(voided_obj)
 
         if not voided_obj or not filling_obj:
             return
 
-        element = tool.Ifc.get_entity(voided_obj)
-        target = bpy.context.scene.cursor.location
-        raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
-        if not raycast[0]:
-            target = filling_obj.matrix_world.col[3].to_3d().copy()
-            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+        if filling.FillsVoids:
+            ifcopenshell.api.run(
+                "void.remove_opening", tool.Ifc.get(), opening=filling.FillsVoids[0].RelatingOpeningElement
+            )
+
+        if target is None:
+            target = bpy.context.scene.cursor.location
+
+        # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
+        if voided_obj.data:
+            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
             if not raycast[0]:
-                return
+                target = filling_obj.matrix_world.col[3].to_3d().copy()
+                raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+                if not raycast[0]:
+                    return
 
-        # In this prototype, we assume openings are only added to axis-based elements
-        layers = tool.Model.get_material_layer_parameters(element)
-        axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+            # In this prototype, we assume openings are only added to axis-based elements
+            layers = tool.Model.get_material_layer_parameters(element)
+            axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
 
-        new_matrix = voided_obj.matrix_world.copy()
-        new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
+            new_matrix = voided_obj.matrix_world.copy()
+            new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
 
-        if filling.is_a("IfcDoor"):
-            new_matrix[2][3] = voided_obj.matrix_world[2][3]
-        else:
-            new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
+            if filling.is_a("IfcDoor"):
+                new_matrix[2][3] = voided_obj.matrix_world[2][3]
+            else:
+                new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
 
-        filling_obj.matrix_world = new_matrix
-        bpy.context.view_layer.update()
+            filling_obj.matrix_world = new_matrix
+            bpy.context.view_layer.update()
 
         if tool.Ifc.is_moved(voided_obj):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj)
@@ -133,22 +140,29 @@ class FilledOpeningGenerator:
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
         ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
 
-        representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=voided_obj,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
+        voided_objs = [voided_obj]
+        # Openings affect all subelements of an aggregate
+        for subelement in ifcopenshell.util.element.get_decomposition(element):
+            subobj = tool.Ifc.get_object(subelement)
+            if subobj:
+                voided_objs.append(subobj)
 
-        return {"FINISHED"}
+        for voided_obj in voided_objs:
+            if voided_obj.data:
+                representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=voided_obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         filling = settings["related_object"]
-        if not filling.FillsVoids:
+        if not getattr(filling, "FillsVoids", None):
             return
 
         opening = filling.FillsVoids[0].RelatingOpeningElement
@@ -201,8 +215,9 @@ class FilledOpeningGenerator:
 
     def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
         thickness = voided_obj.dimensions[1] + 0.1 + 0.1
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
 
         profile = None
         filling_type = ifcopenshell.util.element.get_type(filling)
@@ -211,23 +226,59 @@ class FilledOpeningGenerator:
                 filling_type, "Model", "Profile", "ELEVATION_VIEW"
             )
             filling_obj = tool.Ifc.get_object(filling_type)
-        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
 
         if profile:
+            curve_3d = ifcopenshell.util.representation.resolve_representation(profile).Items[0]
+
+            def get_curve_2d_from_3d(curve_3d):
+                ifc_segments = [shape_builder.deep_copy(s) for s in curve_3d.Segments]
+                ifc_points = ifc_file.createIfcCartesianPointList2D([Vector(p).xz for p in curve_3d.Points.CoordList])
+                ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
+                return ifc_curve
+
             extrusion = shape_builder.extrude(
-                ifcopenshell.util.representation.resolve_representation(profile).Items[0],
+                get_curve_2d_from_3d(curve_3d),
                 magnitude=thickness / unit_scale,
                 position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-                extrusion_vector=Vector([0.0, 1.0, 0.0]),
+                position_x_axis=Vector((1, 0, 0)),
+                position_z_axis=Vector((0, -1, 0)),
+                extrusion_vector=Vector((0, 0, -1)),
             )
             return shape_builder.get_representation(context, [extrusion])
 
         x, y, z = filling_obj.dimensions
+        opening_position = Vector([0.0, -0.1 / unit_scale, 0.0])
+        opening_size = Vector([x, z]) / unit_scale
+
+        # Windows and doors can have a casing that overlaps the wall
+        # but shouldn't affect the size of the opening.
+        # So we shouldn't use object dimensions in that case. More: #2784
+        # Just keeping it for windows and doors for now to be safe
+        has_width_attribute, has_height_attribute = False, False
+        if filling.is_a() in ["IfcWindow", "IfcDoor"]:
+            if filling.OverallWidth:
+                opening_size.x = filling.OverallWidth
+                has_width_attribute = True
+            if filling.OverallHeight:
+                opening_size.y = filling.OverallHeight
+                has_height_attribute = True
+
+        # making sure if min_x or min_z != 0 to shift the opening accordingly
+        # to prevent something like #2784
+        if not has_width_attribute:
+            opening_position.x = min(v[0] for v in filling_obj.bound_box)
+
+        if not has_height_attribute:
+            opening_position.z = min(v[2] for v in filling_obj.bound_box)
+
         extrusion = shape_builder.extrude(
-            shape_builder.rectangle(size=Vector([x / unit_scale, 0.0, z / unit_scale])),
+            shape_builder.rectangle(size=opening_size),
             magnitude=thickness / unit_scale,
-            position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-            extrusion_vector=Vector([0.0, 1.0, 0.0]),
+            position=opening_position,
+            position_z_axis=Vector((0.0, -1.0, 0.0)),
+            position_x_axis=Vector((1.0, 0.0, 0.0)),
+            extrusion_vector=Vector((0.0, 0.0, -1.0)),
         )
 
         return shape_builder.get_representation(context, [extrusion])
@@ -276,21 +327,26 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                 ifcopenshell.api.run(
                     "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
                 )
+
+            decomposed_building_elements = set()
             for building_element in building_elements:
+                decomposed_building_elements.add(building_element)
+                decomposed_building_elements.update(ifcopenshell.util.element.get_decomposition(building_element))
+
+            for building_element in decomposed_building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
-                body = ifcopenshell.util.representation.get_representation(
-                    building_element, "Model", "Body", "MODEL_VIEW"
-                )
-                if body:
-                    blenderbim.core.geometry.switch_representation(
-                        tool.Ifc,
-                        tool.Geometry,
-                        obj=building_obj,
-                        representation=body,
-                        should_reload=True,
-                        is_global=True,
-                        should_sync_changes_first=False,
-                    )
+                if building_obj and building_obj.data:
+                    representation = tool.Geometry.get_active_representation(building_obj)
+                    if representation:
+                        blenderbim.core.geometry.switch_representation(
+                            tool.Ifc,
+                            tool.Geometry,
+                            obj=building_obj,
+                            representation=representation,
+                            should_reload=True,
+                            is_global=True,
+                            should_sync_changes_first=False,
+                        )
         return {"FINISHED"}
 
 
@@ -601,11 +657,18 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
         props = bpy.context.scene.BIMModelProperties
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
-            if not element:
+            if not element or not getattr(element, "HasOpenings", None):
                 continue
             if tool.Ifc.is_moved(obj):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-            openings = tool.Model.load_openings(element, [r.RelatedOpeningElement for r in element.HasOpenings])
+            openings = tool.Model.load_openings(
+                element,
+                [
+                    r.RelatedOpeningElement
+                    for r in element.HasOpenings
+                    if not tool.Ifc.get_object(r.RelatedOpeningElement)
+                ],
+            )
             for opening in openings:
                 new = props.openings.add()
                 new.obj = opening
@@ -619,7 +682,6 @@ class HideOpenings(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMModelProperties
         to_delete = set()
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -631,7 +693,7 @@ class HideOpenings(Operator, tool.Ifc.Operator):
                 if opening_obj:
                     to_delete.add(opening_obj)
         for opening_obj in to_delete:
-            tool.Ifc.unlink(element=opening, obj=opening_obj)
+            tool.Ifc.unlink(obj=opening_obj)
             bpy.data.objects.remove(opening_obj)
         tool.Model.clear_scene_openings()
         return {"FINISHED"}
@@ -655,28 +717,36 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
-                        building_objs.add(obj)
-                        building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     elif tool.Ifc.is_moved(opening_obj):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
-                        building_objs.add(obj)
+                    building_objs.add(obj)
+                    building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
+        decomposed_building_objs = set()
         for obj in building_objs:
-            element = tool.Ifc.get_entity(obj)
-            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            blenderbim.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=body,
-                should_reload=True,
-                is_global=True,
-                should_sync_changes_first=False,
-            )
+            decomposed_building_objs.add(obj)
+            for subelement in ifcopenshell.util.element.get_decomposition(tool.Ifc.get_entity(obj)):
+                subobj = tool.Ifc.get_object(subelement)
+                if subobj:
+                    decomposed_building_objs.add(subobj)
+
+        for obj in decomposed_building_objs:
+            if obj.data:
+                element = tool.Ifc.get_entity(obj)
+                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=body,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
         return {"FINISHED"}
 
     def get_all_building_objects_of_similar_openings(self, opening):
@@ -696,6 +766,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         return results
 
 
+# TODO: merge with ProfileDecorator?
 class DecorationsHandler:
     installed = None
 
@@ -714,27 +785,38 @@ class DecorationsHandler:
             pass
         cls.installed = None
 
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
     def __call__(self, context):
-        bgl.glLineWidth(2)
-        bgl.glPointSize(6)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        selected_elements_color = self.addon_prefs.decorator_color_selected
+        unselected_elements_color = self.addon_prefs.decorator_color_unselected
+        special_elements_color = self.addon_prefs.decorator_color_special
+
+        def transparent_color(color, alpha=0.1):
+            color = [i for i in color]
+            color[3] = alpha
+            return color
+
+        gpu.state.point_size_set(6)
+        gpu.state.blend_set("ALPHA")
 
         for opening in context.scene.BIMModelProperties.openings:
             obj = opening.obj
-
             if not obj:
                 continue
 
-            white = (1, 1, 1, 1)
-            white_t = (1, 1, 1, 0.1)
-            green = (0.545, 0.863, 0, 1)
-            red = (1, 0.2, 0.322, 1)
-            red_t = (1, 0.2, 0.322, 0.1)
-            blue = (0.157, 0.565, 1, 1)
-            blue_t = (0.157, 0.565, 1, 0.1)
-            grey = (0.2, 0.2, 0.2, 1)
+            self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+            self.line_shader.bind()  # required to be able to change uniforms of the shader
+            # POLYLINE_UNIFORM_COLOR specific uniforms
+            self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+            self.line_shader.uniform_float("lineWidth", 2.0)
 
+            # general shader
             self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
 
             verts = []
@@ -766,41 +848,22 @@ class DecorationsHandler:
                     else:
                         unselected_edges.append(edge_indices)
 
-                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=unselected_edges)
-                self.shader.bind()
-                self.shader.uniform_float("color", white)
-                batch.draw(self.shader)
-
-                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=selected_edges)
-                self.shader.uniform_float("color", green)
-                batch.draw(self.shader)
-
-                batch = batch_for_shader(self.shader, "POINTS", {"pos": unselected_vertices})
-                self.shader.uniform_float("color", white)
-                batch.draw(self.shader)
-
-                batch = batch_for_shader(self.shader, "POINTS", {"pos": selected_vertices})
-                self.shader.uniform_float("color", green)
-                batch.draw(self.shader)
+                self.draw_batch("LINES", verts, transparent_color(unselected_elements_color, 0.5), unselected_edges)
+                self.draw_batch("LINES", verts, selected_elements_color, selected_edges)
+                self.draw_batch("POINTS", unselected_vertices, unselected_elements_color)
+                self.draw_batch("POINTS", selected_vertices, selected_elements_color)
             else:
                 bm = bmesh.new()
                 bm.from_mesh(obj.data)
 
                 verts = [tuple(obj.matrix_world @ v.co) for v in bm.verts]
                 edges = [tuple([v.index for v in e.verts]) for e in bm.edges]
-
-                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
-                self.shader.bind()
-                self.shader.uniform_float("color", green if obj in context.selected_objects else blue)
-                batch.draw(self.shader)
+                color = selected_elements_color if obj in context.selected_objects else special_elements_color
+                self.draw_batch("LINES", verts, color, edges)
 
             obj.data.calc_loop_triangles()
             tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
-
-            batch = batch_for_shader(self.shader, "TRIS", {"pos": verts}, indices=tris)
-            self.shader.bind()
-            self.shader.uniform_float("color", blue_t)
-            batch.draw(self.shader)
+            self.draw_batch("TRIS", verts, transparent_color(special_elements_color), tris)
 
             if "HalfSpaceSolid" in obj.name:
                 # Arrow shape
@@ -813,10 +876,8 @@ class DecorationsHandler:
                     tuple(obj.matrix_world @ Vector((0, -0.05, 0.45))),
                 ]
                 edges = [(0, 1), (1, 2), (1, 3), (1, 4), (1, 5)]
-                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
-                self.shader.bind()
-                self.shader.uniform_float("color", green if obj in context.selected_objects else blue)
-                batch.draw(self.shader)
+                color = selected_elements_color if obj in context.selected_objects else special_elements_color
+                self.draw_batch("LINES", verts, color, edges)
 
             if obj.mode != "EDIT":
                 bm.free()

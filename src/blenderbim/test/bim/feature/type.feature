@@ -87,10 +87,10 @@ Scenario: Assign type - assign to a type with a material layer set, which automa
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Cube" has the material "Default"
-    And the object "IfcWall/Cube" has a "0.1" thick layered material containing the material "Default"
+    And the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
     And the object "IfcWall/Cube" dimensions are "2,.1,3"
 
-Scenario: Assign type - assign to a dfferent type with a material layer set
+Scenario: Assign type - assign to a different type with a material layer set
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -116,16 +116,16 @@ Scenario: Assign type - assign to a dfferent type with a material layer set
     And the variable "layer_set" is "ifcopenshell.util.element.get_material({ifc}.by_id({type2})).id()"
     And the variable "layer" is "{ifc}.by_id({layer_set}).MaterialLayers[0].id()"
     And I press "bim.enable_editing_material_set_item(material_set_item={layer})"
-    And I set "active_object.BIMObjectMaterialProperties.material_set_item_attributes[0].float_value" to "0.2"
+    And I set "active_object.BIMObjectMaterialProperties.material_set_item_attributes[0].float_value" to "200"
     And I press "bim.edit_material_set_item(material_set_item={layer})"
     And I press "bim.edit_assigned_material(material_set={layer_set})"
     When I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Cube" has the material "Default"
-    And the object "IfcWall/Cube" has a "0.1" thick layered material containing the material "Default"
+    And the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
     And the object "IfcWall/Cube" dimensions are "2,.1,3"
     When I press "bim.assign_type(relating_type={type2}, related_object='IfcWall/Cube')"
-    Then the object "IfcWall/Cube" has a "0.2" thick layered material containing the material "Default"
+    Then the object "IfcWall/Cube" has a "200" thick layered material containing the material "Default"
     And the object "IfcWall/Cube" dimensions are "2,.2,3"
 
 Scenario: Assign type - assign to a type with a material profile set

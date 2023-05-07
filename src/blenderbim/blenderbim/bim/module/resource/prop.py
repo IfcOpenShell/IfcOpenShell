@@ -18,7 +18,9 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.resource
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -44,13 +46,12 @@ def purge():
 
 def updateResourceName(self, context):
     props = context.scene.BIMResourceProperties
-    if not props.is_resource_update_enabled or self.name == "Unnamed":
+    if not props.is_resource_update_enabled:
         return
-    self.file = IfcStore.get_file()
-    ifcopenshell.api.run(
+    tool.Ifc.run(
         "resource.edit_resource",
-        self.file,
-        **{"resource": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
+        resource=tool.Ifc.get().by_id(self.ifc_definition_id),
+        attributes={"Name": self.name},
     )
     if props.active_resource_id == self.ifc_definition_id:
         attribute = props.resource_attributes.get("Name")
@@ -71,12 +72,42 @@ def get_quantity_types(self, context):
 
 def update_active_resource_index(self, context):
     blenderbim.bim.module.pset.data.refresh()
+    if self.should_show_productivity:
+        tool.Resource.load_productivity_data()
+
+
+def updateResourceUsage(self, context):
+    props = context.scene.BIMResourceProperties
+    if not props.is_resource_update_enabled:
+        return
+
+    if self.schedule_usage == "":
+        return
+    resource = tool.Ifc.get().by_id(self.ifc_definition_id)
+    if not resource.Usage:
+        tool.Ifc.run(
+            "resource.add_resource_time",
+            resource=resource,
+        )
+    resource.Usage.ScheduleUsage = self.schedule_usage
+    blenderbim.bim.module.pset.data.refresh()
+    tool.Resource.load_resource_properties()
+
+
+class ISODuration(PropertyGroup):
+    name: StringProperty(name="Name")
+    years: IntProperty(name="Years", default=0)
+    months: IntProperty(name="Months", default=0)
+    days: IntProperty(name="Days", default=0)
+    hours: IntProperty(name="Hours", default=0)
+    minutes: IntProperty(name="Minutes", default=0)
+    seconds: IntProperty(name="Seconds", default=0)
 
 
 class Resource(PropertyGroup):
     name: StringProperty(name="Name", update=updateResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    schedule_usage: FloatProperty(name="Schedule Usage")
+    schedule_usage: FloatProperty(name="Schedule Usage", update=updateResourceUsage)
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
@@ -113,3 +144,11 @@ class BIMResourceProperties(PropertyGroup):
     quantity_types: EnumProperty(items=get_quantity_types, name="Quantity Types")
     is_editing_quantity: BoolProperty(name="Is Editing Quantity")
     quantity_attributes: CollectionProperty(name="Quantity Attributes", type=Attribute)
+    should_show_productivity: BoolProperty(name="Edit Productivity", update=update_active_resource_index)
+
+
+class BIMResourceProductivity(PropertyGroup):
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    quantity_consumed: CollectionProperty(name="Duration", type=ISODuration)
+    quantity_produced: FloatProperty(name="Quantity Produced")
+    quantity_produced_name: StringProperty(name="Quantity Produced Name")

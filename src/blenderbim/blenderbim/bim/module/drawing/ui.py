@@ -20,7 +20,13 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.drawing.data import ProductAssignmentsData, TextData, SheetsData, SchedulesData, DrawingsData
+from blenderbim.bim.module.drawing.data import (
+    ProductAssignmentsData,
+    SheetsData,
+    SchedulesData,
+    DrawingsData,
+    DecoratorData,
+)
 
 
 class BIM_PT_camera(Panel):
@@ -57,6 +63,11 @@ class BIM_PT_camera(Panel):
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
         row = layout.row()
+        row.prop(props, "calculate_shapely_surfaces")
+        row = layout.row()
+        row.prop(props, "calculate_svgfill_surfaces")
+
+        row = layout.row()
         row.prop(dprops, "should_extract")
 
         row = layout.row()
@@ -78,7 +89,7 @@ class BIM_PT_camera(Panel):
 
         row = layout.row(align=True)
         row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")
-        op = row.operator("bim.open_view", icon="URL", text="")
+        op = row.operator("bim.open_drawing", icon="URL", text="")
         op.view = context.active_object.name.split("/")[1]
 
 
@@ -117,9 +128,6 @@ class BIM_PT_drawing_underlay(Panel):
                 row = layout.row()
                 row.prop(drawing_style, "render_type")
                 row = layout.row(align=True)
-                row.prop(drawing_style, "vector_style")
-                row.operator("bim.edit_vector_style", text="", icon="GREASEPENCIL")
-                row = layout.row(align=True)
                 row.prop(drawing_style, "include_query")
                 row = layout.row(align=True)
                 row.prop(drawing_style, "exclude_query")
@@ -152,6 +160,14 @@ class BIM_PT_drawings(Panel):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
+        if not DrawingsData.data["has_saved_ifc"]:
+            row = self.layout.row()
+            row.label(text="Project Not Yet Saved", icon="ERROR")
+            row = self.layout.row()
+            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+            op.should_save_as = False
+            return
+
         self.props = context.scene.DocProperties
 
         if not self.props.is_editing_drawings:
@@ -174,12 +190,16 @@ class BIM_PT_drawings(Panel):
                 col.alignment = "LEFT"
                 row2 = col.row(align=True)
                 row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
-                row2.operator("bim.duplicate_drawing", icon="COPYDOWN", text="").drawing = active_drawing.ifc_definition_id
+                row2.operator(
+                    "bim.duplicate_drawing", icon="COPYDOWN", text=""
+                ).drawing = active_drawing.ifc_definition_id
                 col = row.column()
                 col.alignment = "RIGHT"
-                op = row.operator("bim.open_view", icon="URL", text="")
+                op = row.operator("bim.select_all_drawings", icon="SELECT_SUBTRACT", text="")
+                op = row.operator("bim.open_drawing", icon="URL", text="")
                 op.view = active_drawing.name
-                op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
+                row.operator("bim.activate_model", icon="VIEW3D", text="")
+                op = row.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
                 op.drawing = active_drawing.ifc_definition_id
                 row.operator("bim.create_drawing", text="", icon="OUTPUT")
             self.layout.template_list(
@@ -211,6 +231,14 @@ class BIM_PT_schedules(Panel):
     def draw(self, context):
         if not SchedulesData.is_loaded:
             SchedulesData.load()
+
+        if not SchedulesData.data["has_saved_ifc"]:
+            row = self.layout.row()
+            row.label(text="Project Not Yet Saved", icon="ERROR")
+            row = self.layout.row()
+            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+            op.should_save_as = False
+            return
 
         self.props = context.scene.DocProperties
 
@@ -255,6 +283,14 @@ class BIM_PT_sheets(Panel):
         if not SheetsData.is_loaded:
             SheetsData.load()
 
+        if not SheetsData.data["has_saved_ifc"]:
+            row = self.layout.row()
+            row.label(text="Project Not Yet Saved", icon="ERROR")
+            row = self.layout.row()
+            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+            op.should_save_as = False
+            return
+
         self.props = context.scene.DocProperties
 
         if not self.props.is_editing_sheets:
@@ -272,6 +308,7 @@ class BIM_PT_sheets(Panel):
             active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
+            row.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
@@ -291,6 +328,7 @@ class BIM_PT_product_assignments(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
@@ -325,6 +363,7 @@ class BIM_PT_text(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 0
 
     @classmethod
     def poll(cls, context):
@@ -333,27 +372,67 @@ class BIM_PT_text(Panel):
         element = tool.Ifc.get_entity(context.active_object)
         if not element:
             return
-        return element.is_a("IfcAnnotation") and element.ObjectType in ["TEXT", "TEXT_LEADER"]
+        return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
 
     def draw(self, context):
-        if not TextData.is_loaded:
-            TextData.load()
-
-        props = context.active_object.BIMTextProperties
+        obj = context.active_object
+        props = obj.BIMTextProperties
 
         if props.is_editing:
+            # shares most of the code with EditTextPopup.draw()
+            # need to keep them in sync or move to some common function
+
             row = self.layout.row(align=True)
             row.operator("bim.edit_text", icon="CHECKMARK")
+            row.operator("bim.add_text_literal", icon="ADD", text="")
             row.operator("bim.disable_editing_text", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(props.attributes, self.layout)
+
+            row = self.layout.row(align=True)
+            row.prop(props, "font_size")
+
+            for i, literal_props in enumerate(props.literals):
+                box = self.layout.box()
+                row = self.layout.row(align=True)
+
+                row = box.row(align=True)
+                row.label(text=f"Literal[{i}]:")
+                row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
+
+                # skip BoxAlignment since we're going to format it ourselves
+                attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
+                blenderbim.bim.helper.draw_attributes(attributes, box)
+
+                row = box.row(align=True)
+                cols = [row.column(align=True) for i in range(3)]
+                for i in range(9):
+                    cols[i % 3].prop(
+                        literal_props,
+                        "box_alignment",
+                        text="",
+                        index=i,
+                        icon="RADIOBUT_ON" if literal_props.box_alignment[i] else "RADIOBUT_OFF",
+                    )
+
+                col = row.column(align=True)
+                col.label(text="    Text box alignment:")
+                col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
+
         else:
+            text_data = DecoratorData.get_ifc_text_data(obj)
+
             row = self.layout.row()
             row.operator("bim.enable_editing_text", icon="GREASEPENCIL")
 
-            for attribute in TextData.data["attributes"]:
-                row = self.layout.row(align=True)
-                row.label(text=attribute["name"])
-                row.label(text=attribute["value"])
+            row = self.layout.row(align=True)
+            row.label(text="FontSize")
+            row.label(text=str(text_data["FontSize"]))
+
+            for literal_data in text_data["Literals"]:
+                box = self.layout.box()
+                for attribute in literal_data:
+                    row = box.row(align=True)
+                    row.label(text=attribute)
+                    row.label(text=literal_data[attribute])
 
 
 class BIM_PT_annotation_utilities(Panel):
@@ -417,8 +496,17 @@ class BIM_PT_annotation_utilities(Panel):
         op.data_type = "mesh"
 
         row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Batting", icon="FORCE_FORCE")
+        op.object_type = "BATTING"
+        op.data_type = "mesh"
+        op.description = "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set"
         op = row.operator("bim.add_annotation", text="Fill Area", icon="NODE_TEXTURE")
         op.object_type = "FILL_AREA"
+
+        row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Fall", icon="SORT_ASC")
+        op.object_type = "FALL"
+        op.data_type = "curve"
 
         row = layout.row(align=True)
         row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
@@ -429,6 +517,8 @@ class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
+            selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
+            row.prop(item, "is_selected", text="", icon=selected_icon)
             icon = "UV_FACESEL"
             if item.target_view == "ELEVATION_VIEW":
                 icon = "UV_VERTEXSEL"
@@ -445,26 +535,35 @@ class BIM_UL_drawinglist(bpy.types.UIList):
 
 class BIM_UL_sheets(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-
-            if item.is_sheet:
-                if item.is_expanded:
-                    row.operator(
-                        "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                    ).sheet = item.ifc_definition_id
-                else:
-                    row.operator(
-                        "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                    ).sheet = item.ifc_definition_id
-            else:
-                row.label(text="", icon="BLANK1")
-                if item.reference_type == "DRAWING":
-                    row.label(text="", icon="IMAGE_DATA")
-                elif item.reference_type == "SCHEDULE":
-                    row.label(text="", icon="LONGDISPLAY")
-
-            name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
-            row.label(text=name)
-        else:
+        if not item:
             layout.label(text="", translate=False)
+            return
+
+        row = layout.row(align=True)
+        if item.is_sheet:
+            if item.is_expanded:
+                row.operator(
+                    "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                ).sheet = item.ifc_definition_id
+            else:
+                row.operator(
+                    "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                ).sheet = item.ifc_definition_id
+
+            row.label(text=f"{item.identification} - {item.name}")
+        else:
+            row.label(text="", icon="BLANK1")
+            if item.reference_type == "DRAWING":
+                row.label(text="", icon="IMAGE_DATA")
+            elif item.reference_type == "SCHEDULE":
+                row.label(text="", icon="LONGDISPLAY")
+            elif item.reference_type == "TITLEBLOCK":
+                row.label(text="", icon="MENU_PANEL")
+            elif item.reference_type == "REVISION":
+                row.label(text="", icon="RECOVER_LAST")
+
+            if item.identification:
+                name = f"{item.identification} - {item.name or 'Unnamed'}"
+            else:
+                name = item.name or "Unnamed"
+            row.label(text=name)

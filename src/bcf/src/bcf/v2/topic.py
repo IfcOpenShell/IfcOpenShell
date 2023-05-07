@@ -1,5 +1,6 @@
 """BCF XML V2 Topic handler."""
 import datetime
+import tempfile
 import uuid
 import zipfile
 from pathlib import Path
@@ -218,9 +219,56 @@ class TopicHandler:
                 real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
             destination_zip.writestr(real_path.at, self.document_references[doc.referenced_document])
 
-    def add_viewpoint(self, element: entity_instance) -> None:
+    def extract_file(self, entity, outfile: Optional[Path] = None) -> Path:
+        """Extracts an element with a file into a temporary directory
+
+        These include header files, bim snippets, document references, and
+        viewpoint bitmaps. External reference are not downloaded. Instead, the
+        URI reference is returned.
+
+        :param entity: The entity with a file reference to extract
+        :type entity: bcf.v2.model.HeaderFile,bcf.v2.model.BimSnippet,bcf.v2.model.TopicDocumentReference
+        :param outfile: If provided, save the header file to that location.
+            Otherwise, a temporary directory is created and the filename is
+            derived from the header's original filename.
+        :type outfile: pathlib.Path,optional
+        :return: The filepath of the extracted file. It may be a URL if the
+            header file is external.
+        :rtype: Path
         """
-        Add a viewpoint tergeting an IFC element to the topic.
+        if hasattr(entity, "reference"):
+            reference = entity.reference
+        else:
+            reference = entity.referenced_document
+
+        if not reference:
+            return
+
+        if getattr(entity, "is_external", False):
+            return entity.reference
+
+        resolved_reference = self._topic_dir
+
+        for part in Path(reference).parts:
+            if part == "..":
+                resolved_reference = resolved_reference.parent
+            else:
+                resolved_reference = resolved_reference.joinpath(part)
+
+        if not outfile:
+            if getattr(entity, "filename", None):
+                filename = entity.filename
+            else:
+                filename = resolved_reference.name
+            outfile = Path(tempfile.mkdtemp()) / filename
+
+        with open(outfile, "wb") as f:
+            f.write(resolved_reference.read_bytes())
+
+        return outfile
+
+    def add_viewpoint(self, element: entity_instance) -> None:
+        """Add a viewpoint pointed at the placement of an IFC element to the topic.
 
         Args:
             element: The IFC element.
@@ -229,11 +277,11 @@ class TopicHandler:
         self.add_visinfo_handler(new_viewpoint)
 
     def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float_], *guids: str) -> None:
-        """
-        Add a viewpoint tergeting an IFC element to the topic.
+        """Add a viewpoint pointing at an XYZ point in space
 
         Args:
-            element: The IFC element.
+            position: the XYZ point in space
+            guids: one or more element GlobalIds.
         """
         vi_handler = VisualizationInfoHandler.create_from_point_and_guids(
             position, *guids, xml_handler=self._xml_handler
@@ -241,8 +289,8 @@ class TopicHandler:
         self.add_visinfo_handler(vi_handler)
 
     def add_visinfo_handler(self, new_viewpoint: VisualizationInfoHandler) -> None:
-        self.viewpoints[new_viewpoint.guid] = new_viewpoint
-        self.markup.viewpoints.append(mdl.ViewPoint(viewpoint=new_viewpoint.guid, guid=new_viewpoint.guid))
+        self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
+        self.markup.viewpoints.append(mdl.ViewPoint(viewpoint=new_viewpoint.guid + ".bcfv", guid=new_viewpoint.guid))
 
     def __eq__(self, other: object) -> bool | NoReturn:
         return (

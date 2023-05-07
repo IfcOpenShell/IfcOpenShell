@@ -40,6 +40,10 @@ except ImportError as e:
 def set_derived_attribute(*args):
     raise TypeError("Unable to set derived attribute")
 
+    
+def set_unsupported_attribute(*args):
+    raise TypeError("This is an unsupported attribute type")
+
 
 # For every schema and its entities populate a list
 # of functions for every entity attribute (including
@@ -79,6 +83,9 @@ def register_schema_attributes(schema):
             functions = [
                 set_derived_attribute
                 if mname == "setArgumentAsDerived"
+                else
+                set_unsupported_attribute
+                if mname == "setArgumentAsUnknown"
                 else getattr(ifcopenshell_wrapper.entity_instance, mname)
                 for mname in fn_names
             ]

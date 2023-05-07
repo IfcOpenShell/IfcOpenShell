@@ -22,6 +22,7 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -45,14 +46,12 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             ):
                 if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):
                     obj1, obj2 = obj2, obj1
-                bpy.ops.bim.add_filled_opening(voided_obj=obj1.name, filling_obj=obj2.name)
+                FilledOpeningGenerator().generate(obj2, obj1, target=obj2.matrix_world.translation)
             return {"FINISHED"}
         if element2 and not element1:
             obj1, obj2 = obj2, obj1
             element1, element2 = element2, element1
         if element1.is_a("IfcOpeningElement"):
-            return {"FINISHED"}
-        if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
             return {"FINISHED"}
 
         if tool.Ifc.is_moved(obj1):
@@ -76,16 +75,24 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
         )
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=element2, element=element1)
 
-        representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj1,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
+        voided_objs = [obj1]
+        for subelement in ifcopenshell.util.element.get_decomposition(element1):
+            subobj = tool.Ifc.get_object(subelement)
+            if subobj:
+                voided_objs.append(subobj)
+
+        for voided_obj in voided_objs:
+            if voided_obj.data:
+                representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=voided_obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
 
         if not has_visible_openings:
             tool.Ifc.unlink(obj=obj2)
@@ -113,15 +120,24 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
 
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id),
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
+        decomposed_building_elements = set([element])
+        decomposed_building_elements.update(ifcopenshell.util.element.get_decomposition(element))
+
+        for building_element in decomposed_building_elements:
+            building_obj = tool.Ifc.get_object(building_element)
+            if building_obj and building_obj.data:
+                body = ifcopenshell.util.representation.get_representation(
+                    building_element, "Model", "Body", "MODEL_VIEW"
+                )
+                blenderbim.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=building_obj,
+                    representation=body,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
 
         tool.Geometry.clear_cache(element)
         return {"FINISHED"}

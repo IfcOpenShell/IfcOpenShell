@@ -72,4 +72,4 @@ class ProfileData:
     @classmethod
     def is_editing_arbitrary_profile(cls):
         obj = bpy.context.active_object
-        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile
+        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "PROFILE"

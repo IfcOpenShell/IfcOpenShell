@@ -233,9 +233,8 @@ class Ifc5Dwriter:
                 "Unit",
             ]
             cost_rate_categories = IfcDataGetter.get_cost_rates_categories(cost_schedule)
-            self.sheet_data[sheet_id]["headers"].extend(list(cost_rate_categories)).extend(
-                ["Rate Subtotal", "Total Price", "Children"]
-            )
+            self.sheet_data[sheet_id]["headers"].extend(list(cost_rate_categories))
+            self.sheet_data[sheet_id]["headers"].extend(["Rate Subtotal", "Total Price", "Children"])
             self.sheet_data[sheet_id]["cost_items"] = IfcDataGetter.get_cost_items_data(self.file, cost_schedule)
             self.sheet_data[sheet_id]["UpdateDate"] = IfcDataGetter.canonicalise_time(
                 ifcopenshell.util.date.ifc2datetime(cost_schedule.UpdateDate)

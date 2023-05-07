@@ -23,7 +23,6 @@ import time
 import ifcopenshell.api
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 import blenderbim.tool as tool
 import blenderbim.core.cost as core
@@ -36,7 +35,7 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add a new cost schedule"
 
     def _execute(self, context):
-        core.add_cost_schedule(tool.Ifc, predefined_type = context.scene.BIMCostProperties.cost_schedule_predefined_types)
+        core.add_cost_schedule(tool.Ifc, predefined_type=context.scene.BIMCostProperties.cost_schedule_predefined_types)
 
 
 class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -150,7 +149,7 @@ class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
 
 class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_item"
-    bl_label = "Remove Cost item"
+    bl_label = "Remove Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
@@ -456,9 +455,7 @@ class SelectCostItemProducts(bpy.types.Operator, tool.Ifc.Operator):
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.select_cost_item_products(
-            tool.Cost, tool.Spatial, cost_item=tool.Ifc.get().by_id(self.cost_item), include_nested=False
-        )
+        core.select_cost_item_products(tool.Cost, tool.Spatial, cost_item=tool.Ifc.get().by_id(self.cost_item))
         return {"FINISHED"}
 
 
@@ -517,6 +514,36 @@ class LoadCostItemQuantities(bpy.types.Operator):
 
     def execute(self, context):
         core.load_cost_item_quantities(tool.Cost)
+        return {"FINISHED"}
+
+
+class LoadCostItemElementQuantities(bpy.types.Operator):
+    bl_idname = "bim.load_cost_item_element_quantities"
+    bl_label = "Load Cost Item Element Quantities"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.load_cost_item_element_quantities(tool.Cost)
+        return {"FINISHED"}
+
+
+class LoadCostItemTaskQuantities(bpy.types.Operator):
+    bl_idname = "bim.load_cost_item_task_quantities"
+    bl_label = "Load Cost Item Task Quantities"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.load_cost_item_task_quantities(tool.Cost)
+        return {"FINISHED"}
+
+
+class LoadCostItemResourceQuantities(bpy.types.Operator):
+    bl_idname = "bim.load_cost_item_resource_quantities"
+    bl_label = "Load Cost Item Resource Quantities"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.load_cost_item_resource_quantities(tool.Cost)
         return {"FINISHED"}
 
 
@@ -605,3 +632,95 @@ class ExportCostSchedules(bpy.types.Operator):
     def draw(self, context):
         self.layout.label(text="Choose a format")
         self.layout.prop(self, "format")
+
+
+class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.clear_cost_item_assignments"
+    bl_label = "Clear Cost Item Product Assignments"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+    related_object_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.clear_cost_item_assignments(
+            tool.Ifc,
+            tool.Cost,
+            cost_item=tool.Ifc.get().by_id(self.cost_item),
+            related_object_type=self.related_object_type,
+        )
+        return {"FINISHED"}
+
+
+class LoadProductCostItems(bpy.types.Operator):
+    bl_idname = "bim.load_product_cost_items"
+    bl_label = "Get Product Cost Assignments"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        if not context.active_object:
+            return False
+        if not context.active_object.BIMObjectProperties.ifc_definition_id:
+            return False
+        return True
+
+    def execute(self, context):
+        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id))
+        return {"FINISHED"}
+
+
+class HighlightProductCostItem(bpy.types.Operator):
+    bl_idname = "bim.highlight_product_cost_item"
+    bl_label = "Highlight Product Cost Items"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        r = core.highlight_product_cost_item(tool.Spatial, tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+        return {"FINISHED"}
+
+
+class ReorderCostItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reorder_cost_item_nesting"
+    bl_label = "Reorder Nesting"
+    bl_options = {"REGISTER", "UNDO"}
+    new_index: bpy.props.IntProperty()
+    cost_item: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        ifcopenshell.api.run(
+            "nest.reorder_nesting",
+            tool.Ifc.get(),
+            **{
+                "item": tool.Ifc.get().by_id(self.cost_item),
+                "new_index": self.new_index,
+            },
+        )
+        tool.Cost.load_cost_schedule_tree()
+
+
+class SelectUnassignedProducts(bpy.types.Operator):
+    bl_idname = "bim.select_unassigned_products"
+    bl_label = "Select Unassigned Products"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.select_unassigned_products(tool.Ifc, tool.Cost, tool.Spatial)
+        return {"FINISHED"}
+
+
+class ChangeParentCostItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.change_parent_cost_item"
+    bl_label = "Change Parent Cost Item"
+    bl_options = {"REGISTER", "UNDO"}
+    new_parent: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        r = core.change_parent_cost_item(tool.Ifc, tool.Cost, new_parent=tool.Ifc.get().by_id(self.new_parent))
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+        return {"FINISHED"}

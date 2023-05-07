@@ -127,20 +127,21 @@ class BIM_PT_bcf_metadata(Panel):
         layout.label(text="Header Files:")
 
         if bcf_topic.header:
-            for index, f in enumerate(bcf_topic.header.files):
+            for index, f in enumerate(bcf_topic.header.file):
                 box = self.layout.box()
                 row = box.row(align=True)
                 row.label(text=f.filename, icon="FILE_BLANK")
                 if f.is_external:
                     row.operator("bim.open_uri", icon="URL", text="").uri = f.reference
                 else:
-                    op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                    op.uri = os.path.join(bcfxml.filepath, topic.name, f.reference)
+                    op = row.operator("bim.extract_bcf_file", icon="FILE_FOLDER", text="")
+                    op.index = index
+                    op.entity_type = "HEADER_FILE"
                 row.operator("bim.remove_bcf_file", icon="X", text="").index = index
 
                 row = box.row()
                 row.label(text="Date")
-                row.label(text=f.date)
+                row.label(text=str(f.date))
 
                 if f.ifc_project:
                     row = box.row()
@@ -196,8 +197,8 @@ class BIM_PT_bcf_metadata(Panel):
             if topic.bim_snippet.is_external:
                 row.operator("bim.open_uri", icon="URL", text="").uri = topic.bim_snippet.reference
             else:
-                op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                op.uri = os.path.join(bcfxml.filepath, topic.name, topic.bim_snippet.reference)
+                op = row.operator("bim.extract_bcf_file", icon="FILE_FOLDER", text="")
+                op.entity_type = "BIM_SNIPPET"
             row.operator("bim.remove_bcf_bim_snippet", icon="X", text="")
         else:
             row = layout.row(align=True)
@@ -218,8 +219,10 @@ class BIM_PT_bcf_metadata(Panel):
             if doc.is_external:
                 row.operator("bim.open_uri", icon="URL", text="").uri = doc.reference
             else:
-                op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                op.uri = os.path.join(bcfxml.filepath, topic.name, doc.reference)
+                op = row.operator("bim.extract_bcf_file", icon="FILE_FOLDER", text="")
+                op.entity_type = "DOCUMENT_REFERENCE"
+                op.index = index
+
             row.operator("bim.remove_bcf_document_reference", icon="X", text="").index = index
             row = box.row(align=True)
             row.prop(doc, "description")
@@ -236,7 +239,7 @@ class BIM_PT_bcf_metadata(Panel):
             try:
                 row = layout.row(align=True)
                 op = row.operator(
-                    "bim.view_bcf_topic", text=f"Select {bcfxml.topics[related_topic.name.lower()].title}"
+                    "bim.view_bcf_topic", text=f"Select {bcfxml.topics[related_topic.name.lower()].topic.title}"
                 )
                 op.topic_guid = related_topic.name
                 row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index

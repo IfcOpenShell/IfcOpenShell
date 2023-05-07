@@ -165,7 +165,9 @@ class Usecase:
                 "IfcRelAssignsToControl",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "OwnerHistory": ifcopenshell.api.run(
+                        "owner.create_owner_history", self.file
+                    ),
                     "RelatedObjects": [task],
                     "RelatingControl": self.settings["work_schedule"],
                 }
@@ -178,5 +180,9 @@ class Usecase:
                 relating_object=self.settings["parent_task"],
             )
             if self.settings["parent_task"].Identification:
-                task.Identification = self.settings["parent_task"].Identification + "." + str(len(rel.RelatedObjects))
+                task.Identification = (
+                    self.settings["parent_task"].Identification
+                    + "."
+                    + str(len(rel.RelatedObjects))
+                )
         return task

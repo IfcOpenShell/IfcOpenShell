@@ -195,6 +195,7 @@ class IfcProperty(PropertyGroup):
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_pset_names, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_names, name="Qto Name")
@@ -203,6 +204,7 @@ class PsetProperties(PropertyGroup):
 class MaterialPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_material_pset_names, name="Pset Name")
 
@@ -210,6 +212,7 @@ class MaterialPsetProperties(PropertyGroup):
 class MaterialSetPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_material_set_pset_names, name="Pset Name")
 
@@ -217,6 +220,7 @@ class MaterialSetPsetProperties(PropertyGroup):
 class MaterialSetItemPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_material_set_item_pset_names, name="Pset Name")
 
@@ -224,6 +228,7 @@ class MaterialSetItemPsetProperties(PropertyGroup):
 class TaskPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     qto_name: EnumProperty(items=get_task_qto_names, name="Qto Name")
 
@@ -231,6 +236,7 @@ class TaskPsetProperties(PropertyGroup):
 class ResourcePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_resource_pset_names, name="Pset Name")
     qto_name: EnumProperty(items=get_resource_qto_names, name="Qto Name")
@@ -239,6 +245,7 @@ class ResourcePsetProperties(PropertyGroup):
 class ProfilePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_profile_pset_names, name="Pset Name")
 
@@ -246,6 +253,7 @@ class ProfilePsetProperties(PropertyGroup):
 class WorkSchedulePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_work_schedule_pset_names, name="Pset Name")
 

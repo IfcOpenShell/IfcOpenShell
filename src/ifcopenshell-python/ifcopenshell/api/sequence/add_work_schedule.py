@@ -22,7 +22,14 @@ from datetime import datetime
 
 
 class Usecase:
-    def __init__(self, file, name="Unnamed", predefined_type="NOTDEFINED", start_time=None, work_plan=None):
+    def __init__(
+        self,
+        file,
+        name="Unnamed",
+        predefined_type="NOTDEFINED",
+        start_time=None,
+        work_plan=None,
+    ):
         """Add a new work schedule
 
         A work schedule is a group of tasks, where the tasks are typically

@@ -11,9 +11,29 @@ def exists(v):
 
 def nvl(v, default):
     return v if v is not None else default
-sizeof = len
-hiindex = len
-blength = len
+
+def is_entity(inst):
+    if isinstance(inst, ifcopenshell.entity_instance):
+        schema_name = inst.is_a(True).split('.')[0].lower()
+        decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
+        return isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity)
+    return False
+
+def express_len(v):
+    if isinstance(v, ifcopenshell.entity_instance) and (not is_entity(v)):
+        v = v[0]
+    elif v is None or v is INDETERMINATE:
+        return INDETERMINATE
+    return len(v)
+old_range = range
+
+def range(*args):
+    if INDETERMINATE in args:
+        return
+    yield from old_range(*args)
+sizeof = express_len
+hiindex = express_len
+blength = express_len
 loindex = lambda x: 1
 from math import *
 unknown = 'UNKNOWN'
@@ -54,6 +74,8 @@ class express_set(set):
 def express_getitem(aggr, idx, default):
     if aggr is None:
         return default
+    if isinstance(aggr, ifcopenshell.entity_instance) and (not is_entity(aggr)):
+        aggr = aggr[0]
     try:
         return aggr[idx]
     except IndexError as e:
@@ -7360,7 +7382,7 @@ def IfcAddToBeginOfList(ascalar, alist):
         if hiindex(alist) >= 1:
             for i in range(1, hiindex(alist) + 1):
                 temp = list(result)
-                temp[i - EXPRESS_ONE_BASED_INDEXING] = express_getitem(alist, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+                temp[i + 1 - EXPRESS_ONE_BASED_INDEXING] = express_getitem(alist, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
                 result = temp
     return result
 
@@ -7799,7 +7821,7 @@ def IfcListToArray(lis, low, u):
         res = [express_getitem(lis, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)] * n
         for i in range(2, n + 1):
             temp = list(res)
-            temp[low - EXPRESS_ONE_BASED_INDEXING] = express_getitem(lis, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            temp[low + i - 1 - EXPRESS_ONE_BASED_INDEXING] = express_getitem(lis, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
             res = temp
         return res
 
@@ -7807,7 +7829,7 @@ def IfcLoopHeadToTail(aloop):
     p = True
     n = sizeof(getattr(aloop, 'EdgeList', INDETERMINATE))
     for i in range(2, n + 1):
-        p = p and getattr(express_getitem(getattr(aloop, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == getattr(express_getitem(getattr(aloop, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
+        p = p and getattr(express_getitem(getattr(aloop, 'EdgeList', INDETERMINATE), i - 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == getattr(express_getitem(getattr(aloop, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
     return p
 
 def IfcMlsTotalThickness(layerset):
@@ -7865,7 +7887,7 @@ def IfcPathHeadToTail(apath):
     p = unknown
     n = sizeof(getattr(apath, 'EdgeList', INDETERMINATE))
     for i in range(2, n + 1):
-        p = p and getattr(express_getitem(getattr(apath, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == getattr(express_getitem(getattr(apath, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
+        p = p and getattr(express_getitem(getattr(apath, 'EdgeList', INDETERMINATE), i - 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == getattr(express_getitem(getattr(apath, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
     return p
 
 def IfcSameAxis2Placement(ap1, ap2, epsilon):

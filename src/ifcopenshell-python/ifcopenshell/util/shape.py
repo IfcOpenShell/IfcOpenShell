@@ -17,6 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 
 tol = 1e-6
 
@@ -61,6 +64,101 @@ def get_z(geometry):
     return max(z_values) - min(z_values)
 
 
+def get_bbox_centroid(geometry):
+    x_values = [geometry.verts[i] for i in range(0, len(geometry.verts), 3)]
+    y_values = [geometry.verts[i + 1] for i in range(0, len(geometry.verts), 3)]
+    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
+    minx = min(x_values)
+    maxx = max(x_values)
+    miny = min(y_values)
+    maxy = max(y_values)
+    minz = min(z_values)
+    maxz = max(z_values)
+    return (minx + ((maxx - minx) / 2), miny + ((maxy - miny) / 2), minz + ((maxz - minz) / 2))
+
+
+def get_element_bbox_centroid(element, geometry):
+    centroid = get_bbox_centroid(geometry)
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+        return centroid
+    mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    return (mat @ np.array([*centroid, 1.0]))[0:3]
+
+
+def get_shape_bbox_centroid(shape, geometry):
+    centroid = get_bbox_centroid(geometry)
+    m = shape.transformation.matrix.data
+    mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+    return (mat @ np.array([*centroid, 1.0]))[0:3]
+
+
+def get_vertices(geometry):
+    verts = geometry.verts
+    return np.array([np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+
+
+def get_edges(geometry):
+    edges = geometry.edges
+    return [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+
+
+def get_faces(geometry):
+    faces = geometry.faces
+    return [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
+
+
+def get_shape_vertices(shape, geometry):
+    m = shape.transformation.matrix.data
+    mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+    return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+
+
+def get_element_vertices(element, geometry):
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+        return get_shape_vertices(geometry)
+    mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+
+
+def get_bottom_elevation(geometry):
+    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
+    return min(z_values)
+
+
+def get_top_elevation(geometry):
+    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
+    return max(z_values)
+
+
+def get_shape_bottom_elevation(shape, geometry):
+    return min([v[2] for v in get_shape_vertices(shape, geometry)])
+
+
+def get_shape_top_elevation(shape, geometry):
+    return max([v[2] for v in get_shape_vertices(shape, geometry)])
+
+
+def get_element_bottom_elevation(element, geometry):
+    return min([v[2] for v in get_element_vertices(element, geometry)])
+
+
+def get_element_top_elevation(element, geometry):
+    return max([v[2] for v in get_element_vertices(element, geometry)])
+
+
+def get_bbox(vertices):
+    x_values = [v[0] for v in vertices]
+    y_values = [v[1] for v in vertices]
+    z_values = [v[2] for v in vertices]
+    minx = min(x_values)
+    maxx = max(x_values)
+    miny = min(y_values)
+    maxy = max(y_values)
+    minz = min(z_values)
+    maxz = max(z_values)
+    return (np.array([minx, miny, minz]), np.array([maxx, maxy, maxz]))
+
+
 def get_area_vf(vertices, faces):
     # Calculate the triangle normal vectors
     v1 = vertices[faces[:, 1]] - vertices[faces[:, 0]]
@@ -84,7 +182,7 @@ def get_area(geometry):
     return get_area_vf(vertices, faces)
 
 
-def get_side_area(geometry):
+def get_side_area(geometry, axis="Y"):
     verts = geometry.verts
     faces = geometry.faces
     vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
@@ -99,7 +197,8 @@ def get_side_area(geometry):
     triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
 
     # Find the faces with a normal vector pointing in the desired +Y normal direction
-    filtered_face_indices = np.where(triangle_normals[:, 1] > tol)[0]
+    axis = {"X": 0, "Y": 1, "Z": 2}[axis]
+    filtered_face_indices = np.where(triangle_normals[:, axis] > tol)[0]
     filtered_faces = faces[filtered_face_indices]
     return get_area_vf(vertices, filtered_faces)
 
@@ -181,3 +280,28 @@ def get_footprint_perimeter(geometry):
                 all_edges.add(edge)
 
     return sum([np.linalg.norm(vertices[e[0]] - vertices[e[1]]) for e in (all_edges - shared_edges)])
+
+
+def get_profiles(element):
+    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+    if material and material.is_a("IfcMaterialProfileSet"):
+        return [mp.Profile for mp in material.MaterialProfiles]
+    return []
+
+
+def get_extrusions(element):
+    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+    if not representation:
+        return
+    representation = ifcopenshell.util.representation.resolve_representation(representation)
+    extrusions = []
+    for item in representation.Items:
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                extrusion.append(item)
+                break
+            elif item.is_a("IfcBooleanResult"):
+                item = item.FirstOperand
+            else:
+                break
+    return extrusions

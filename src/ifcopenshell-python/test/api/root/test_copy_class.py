@@ -57,6 +57,20 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert pset.HasProperties[0].Name == new_pset.HasProperties[0].Name
         assert pset.HasProperties[0].NominalValue.wrappedValue == new_pset.HasProperties[0].NominalValue.wrappedValue
 
+    def test_copying_type_psets_so_changing_properties_of_the_new_type_does_not_affect_the_old(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"foo": "bar"})
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
+        pset = element.HasPropertySets[0]
+        new_pset = new.HasPropertySets[0]
+        assert element.HasPropertySets[0] != new.HasPropertySets[0]
+        assert pset != new_pset
+        assert pset.Name == new_pset.Name
+        assert pset.HasProperties[0] != new_pset.HasProperties[0]
+        assert pset.HasProperties[0].Name == new_pset.HasProperties[0].Name
+        assert pset.HasProperties[0].NominalValue.wrappedValue == new_pset.HasProperties[0].NominalValue.wrappedValue
+
     def test_copying_a_container_only_and_not_its_contents(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -146,6 +160,14 @@ class TestCopyClass(test.bootstrap.IFC4):
         new = ifcopenshell.api.run("root.copy_class", self.file, product=door)
         assert not new.FillsVoids
 
+    def test_retaining_a_single_material(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = self.file.createIfcMaterial()
+        self.file.createIfcRelAssociatesMaterial(RelatedObjects=[element], RelatingMaterial=material)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
+        assert new.HasAssociations[0].RelatingMaterial == element.HasAssociations[0].RelatingMaterial
+        assert new.HasAssociations[0].RelatingMaterial.is_a("IfcMaterial")
+
     def test_copying_material_set_usages(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = self.file.createIfcMaterialLayerSetUsage()
@@ -156,11 +178,15 @@ class TestCopyClass(test.bootstrap.IFC4):
 
     def test_copying_material_sets_for_type_elements_only(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        material = self.file.createIfcMaterialLayerSet()
+        single_material = self.file.createIfcMaterial()
+        layer = self.file.createIfcMaterialLayer(Material=single_material)
+        material = self.file.createIfcMaterialLayerSet(MaterialLayers=[layer])
         self.file.createIfcRelAssociatesMaterial(RelatedObjects=[element], RelatingMaterial=material)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
-        assert new.HasAssociations[0].RelatingMaterial != element.HasAssociations[0].RelatingMaterial
         assert new.HasAssociations[0].RelatingMaterial.is_a("IfcMaterialLayerSet")
+        assert new.HasAssociations[0].RelatingMaterial != element.HasAssociations[0].RelatingMaterial
+        assert new.HasAssociations[0].RelatingMaterial.MaterialLayers[0] != element.HasAssociations[0].RelatingMaterial.MaterialLayers[0]
+        assert new.HasAssociations[0].RelatingMaterial.MaterialLayers[0].Material == element.HasAssociations[0].RelatingMaterial.MaterialLayers[0].Material
 
     def test_copying_a_type_and_purging_type_relationships(self):
         type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")

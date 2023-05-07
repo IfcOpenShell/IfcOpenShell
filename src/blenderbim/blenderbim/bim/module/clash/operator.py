@@ -31,6 +31,7 @@ from blenderbim.bim.ifc import IfcStore
 class ExportClashSets(bpy.types.Operator):
     bl_idname = "bim.export_clash_sets"
     bl_label = "Export Clash Sets"
+    bl_description = "Export clash sets to a selected file"
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
@@ -64,6 +65,7 @@ class ImportClashSets(bpy.types.Operator):
     bl_idname = "bim.import_clash_sets"
     bl_label = "Import Clash Sets"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Import clash sets from a selected file"
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
@@ -101,6 +103,7 @@ class AddClashSet(bpy.types.Operator):
     bl_idname = "bim.add_clash_set"
     bl_label = "Add Clash Set"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a clash set"
 
     def execute(self, context):
         new = context.scene.BIMClashProperties.clash_sets.add()
@@ -113,6 +116,7 @@ class RemoveClashSet(bpy.types.Operator):
     bl_idname = "bim.remove_clash_set"
     bl_label = "Remove Clash Set"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove the selected clash set"
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -124,6 +128,7 @@ class AddClashSource(bpy.types.Operator):
     bl_idname = "bim.add_clash_source"
     bl_label = "Add Clash Source"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a clash source to this group"
     group: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -136,6 +141,7 @@ class RemoveClashSource(bpy.types.Operator):
     bl_idname = "bim.remove_clash_source"
     bl_label = "Remove Clash Source"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove this clash source"
     index: bpy.props.IntProperty()
     group: bpy.props.StringProperty()
 
@@ -149,6 +155,7 @@ class SelectClashSource(bpy.types.Operator):
     bl_idname = "bim.select_clash_source"
     bl_label = "Select Clash Source"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select an IFC file to add as a clash source"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     index: bpy.props.IntProperty()
@@ -197,6 +204,7 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator):
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
+    bl_description = "Execute clash detection and save the information to a .bcf or .json file"
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.json", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -266,6 +274,7 @@ class SelectIfcClashResults(bpy.types.Operator):
     bl_idname = "bim.select_ifc_clash_results"
     bl_label = "Select IFC Clash Results"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the clashing IFC geometry stored in a file"
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -299,7 +308,8 @@ class SelectIfcClashResults(bpy.types.Operator):
             for scene in obj.users_scene:
                 if scene.BIMProperties.ifc_file:
                     ifc_file = scene.BIMProperties.ifc_file
-                    break
+                    if scene.library:
+                        break
 
             if ifc_file:
                 if ifc_file not in IfcStore.session_files:

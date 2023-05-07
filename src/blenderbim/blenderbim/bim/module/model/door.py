@@ -43,6 +43,7 @@ def update_door_modifier_representation(context):
     props = obj.BIMDoorProperties
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
+    sliding_door = "SLIDING" in props.door_type
 
     representation_data = {
         "operation_type": props.door_type,
@@ -87,13 +88,37 @@ def update_door_modifier_representation(context):
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
-    # PLAN_VIEW representation
-    plan = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
-    if plan:
-        representation_data["context"] = plan
+    # Body/PLAN_VIEW representation
+    plan_body = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
+    if plan_body:
+        representation_data["context"] = plan_body
         plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
-        tool.Model.replace_object_ifc_representation(plan, obj, plan_representation)
+        tool.Model.replace_object_ifc_representation(plan_body, obj, plan_representation)
 
+    # Annotation/PLAN_VIEW representation
+    plan_annotation = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Annotation", "PLAN_VIEW")
+    if plan_annotation:
+        if not sliding_door:
+            # only sliding doors have Annotation/PLAN_VIEW
+            # for other types we just check for old representation and remove it if it's there
+            old_representation = ifcopenshell.util.representation.get_representation(
+                element, "Plan", "Annotation", "PLAN_VIEW"
+            )
+            if old_representation:
+                core.remove_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=old_representation,
+                )
+        else:
+            representation_data["context"] = plan_annotation
+            plan_representation = ifcopenshell.api.run(
+                "geometry.add_door_representation", ifc_file, **representation_data
+            )
+            tool.Model.replace_object_ifc_representation(plan_annotation, obj, plan_representation)
+
+    if plan_body or plan_annotation:
         # adding switch representation at the end instead of changing order of representations
         # to prevent #2744
         core.switch_representation(
@@ -106,11 +131,19 @@ def update_door_modifier_representation(context):
             should_sync_changes_first=True,
         )
 
+    # type attributes
     element.OperationType = props.door_type
+
+    # occurences attributes
+    occurences = tool.Ifc.get_all_element_occurences(element)
+    for occurence in occurences:
+        occurence.OverallWidth = props.overall_width
+        occurence.OverallHeight = props.overall_height
 
     update_simple_openings(element, props.overall_width, props.overall_height)
 
 
+# TODO: move it out to tools
 def bm_sort_out_geom(geom_data):
     geom_dict = {"verts": [], "edges": [], "faces": []}
 
@@ -255,13 +288,17 @@ def update_door_modifier_bmesh(context):
     door_type = props.door_type
     double_swing_door = "DOUBLE_SWING" in door_type
     double_door = "DOUBLE_DOOR" in door_type
+    sliding_door = "SLIDING" in door_type
 
     # lining params
     lining_depth = props.lining_depth * si_conversion
     lining_thickness_default = props.lining_thickness * si_conversion
     lining_offset = props.lining_offset * si_conversion
-    lining_to_panel_offset_x = props.lining_to_panel_offset_x * si_conversion
-    lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion
+    lining_to_panel_offset_x = (
+        props.lining_to_panel_offset_x * si_conversion if not sliding_door else lining_thickness_default
+    )
+    panel_depth = props.panel_depth * si_conversion
+    lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion if not sliding_door else -panel_depth
 
     transom_thickness = props.transom_thickness * si_conversion / 2
     transfom_offset = props.transom_offset * si_conversion
@@ -270,10 +307,10 @@ def update_door_modifier_bmesh(context):
     window_lining_height = overall_height - transfom_offset - transom_thickness
 
     side_lining_thickness = lining_thickness_default
-    panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0)
+    panel_lining_overlap_x = max(lining_thickness_default - lining_to_panel_offset_x, 0) if not sliding_door else 0
 
     top_lining_thickness = transom_thickness or lining_thickness_default
-    panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0)
+    panel_top_lining_overlap_x = max(top_lining_thickness - lining_to_panel_offset_x, 0) if not sliding_door else 0
     door_opening_width = overall_width - lining_to_panel_offset_x * 2
     if double_swing_door:
         side_lining_thickness = side_lining_thickness - panel_lining_overlap_x
@@ -288,7 +325,6 @@ def update_door_modifier_bmesh(context):
     casing_depth = props.casing_depth * si_conversion
 
     # panel params
-    panel_depth = props.panel_depth * si_conversion
     panel_width = door_opening_width * props.panel_width_ratio
     frame_depth = props.frame_depth * si_conversion
     frame_thickness = props.frame_thickness * si_conversion
@@ -381,7 +417,7 @@ def update_door_modifier_bmesh(context):
     panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y, threshold_thickness)
 
     if double_door:
-        # TODO: keep a little space between doors for readibility?
+        # keeping a little space between doors for readibility
         double_door_offset = 0.001 * si_conversion
         panel_size.x = panel_size.x / 2 - double_door_offset
         door_verts.extend(create_bm_door_panel(panel_size, panel_position, "LEFT"))
@@ -432,12 +468,12 @@ def update_door_modifier_bmesh(context):
     obj.data.update()
 
 
-class BIM_OT_add_door(Operator):
+class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_door"
     bl_label = "Door"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a door.")
@@ -452,7 +488,6 @@ class BIM_OT_add_door(Operator):
         mesh = bpy.data.meshes.new("IfcDoor")
         obj = bpy.data.objects.new("IfcDoor", mesh)
         obj.location = spawn_location
-        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
@@ -492,12 +527,9 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         door_data["lining_properties"] = lining_props
         door_data["panel_properties"] = panel_props
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets.get("BBIM_Door", None)
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
 
-        if pset:
-            pset = tool.Ifc.get().by_id(pset["id"])
-        else:
+        if not pset:
             pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Door")
 
         ifcopenshell.api.run(
@@ -512,14 +544,13 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
 
 class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_door"
-    bl_label = "Cancel editing Door"
+    bl_label = "Cancel Editing Door"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        psets = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(psets["BBIM_Door"]["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         props = obj.BIMDoorProperties
         # restore previous settings since editing was canceled
         for prop_name in data:
@@ -542,7 +573,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
 class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_door"
-    bl_label = "Finish editing door"
+    bl_label = "Finish Editing Door"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -550,8 +581,6 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets["BBIM_Door"]
         door_data = props.get_general_kwargs()
         lining_props = props.get_lining_kwargs()
         panel_props = props.get_panel_kwargs()
@@ -563,7 +592,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         update_door_modifier_representation(context)
 
-        pset = tool.Ifc.get().by_id(pset["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = json.dumps(door_data, default=list)
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": door_data})
         return {"FINISHED"}
@@ -578,8 +607,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMDoorProperties
         element = tool.Ifc.get_entity(obj)
-        pset = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(pset["BBIM_Door"]["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
 
@@ -608,8 +636,7 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         obj.BIMDoorProperties.is_editing = -1
 
-        pset = ifcopenshell.util.element.get_psets(element)
-        pset = tool.Ifc.get().by_id(pset["BBIM_Door"]["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
         props.door_added_previously = True
 

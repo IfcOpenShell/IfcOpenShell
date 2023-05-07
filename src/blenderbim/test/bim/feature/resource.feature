@@ -241,6 +241,22 @@ Scenario: Remove Resource Quantity
     When I press "bim.remove_resource_quantity(resource={labor_resource})"
     Then nothing happens
 
+Scenario: Add Productivity data
+    Given an empty IFC project
+    When I press "bim.load_resources"
+    When I press "bim.add_resource(ifc_class="IfcCrewResource")"
+    And the variable "crew_resource" is "IfcStore.get_file().by_type('IfcCrewResource')[0].id()" 
+    When I press "bim.add_resource(ifc_class="IfcLaborResource", parent_resource={crew_resource})"
+    And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()" 
+    And I set "scene.BIMResourceProperties.active_resource_index" to "1"
+    And I set "scene.BIMResourceProperties.should_show_productivity" to "True"
+    And I set "scene.BIMResourceProductivity.quantity_produced" to "5.00"
+    And I set "scene.BIMResourceProductivity.quantity_produced_name" to "GrossSideArea"
+    And I set "scene.BIMResourceProductivity.quantity_consumed[0].hours" to "5"
+    When I press "bim.edit_productivity_data()"
+    And the variable "productivity_data" is "IfcStore.get_file().by_type('IfcPropertySet')[-1].id()"
+
+
 Scenario: Calculate Resource Work
     Given an empty IFC project
     And I press "bim.add_work_schedule"
@@ -248,7 +264,7 @@ Scenario: Calculate Resource Work
     And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
     And I press "bim.add_summary_task(work_schedule={work_schedule})"
     And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
-    And I press "bim.enable_editing_task(task={task})"
+    And I press "bim.enable_editing_task_attributes(task={task})"
     And I set "scene.BIMWorkScheduleProperties.task_attributes.get('PredefinedType').enum_value" to "CONSTRUCTION"
     And I press "bim.edit_task"
     And I press "bim.enable_editing_task_time(task={task})"
@@ -261,12 +277,23 @@ Scenario: Calculate Resource Work
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.qto_name" to "Qto_WallBaseQuantities"
-    When I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
-    And the variable "qto" is "{ifc}.by_type('IfcElementQuantity')[-1].id()"
-    And I press "bim.enable_pset_editing(obj='IfcWall/Cube', obj_type='Object', pset_id={qto})"
-    #And I set "active_object.PsetProperties.properties[2].metadata.float_value" to "3.00"
-    # TO DO: complete
-    Then nothing happens
+    When I press "bim.add_qto(obj='IfcWall/Cube', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties[5].metadata.float_value" to "50.00"
+    And I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
+    When I press "bim.load_resources"
+    When I press "bim.add_resource(ifc_class="IfcCrewResource")"
+    And the variable "crew_resource" is "IfcStore.get_file().by_type('IfcCrewResource')[0].id()" 
+    When I press "bim.add_resource(ifc_class="IfcLaborResource", parent_resource={crew_resource})"
+    And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()" 
+    And I set "scene.BIMResourceProperties.active_resource_index" to "1"
+    And I set "scene.BIMResourceProperties.should_show_productivity" to "True"
+    And I set "scene.BIMResourceProductivity.quantity_produced" to "5.00"
+    And I set "scene.BIMResourceProductivity.quantity_produced_name" to "GrossSideArea"
+    And I set "scene.BIMResourceProductivity.quantity_consumed[0].hours" to "5"
+    When I press "bim.edit_productivity_data()"
+    And the variable "productivity_data" is "IfcStore.get_file().by_type('IfcPropertySet')[-1].id()" 
+    When I press "bim.calculate_resource_work(resource={labor_resource})"
+    Then nothing happens    
 
 
 Scenario: Assign Resource

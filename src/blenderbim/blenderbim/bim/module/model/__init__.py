@@ -25,7 +25,9 @@ from . import (
     array,
     product,
     wall,
+    roof,
     slab,
+    space,
     stair,
     window,
     opening,
@@ -34,6 +36,8 @@ from . import (
     profile,
     sverchok_modifier,
     door,
+    railing,
+    roof,
 )
 
 classes = (
@@ -43,13 +47,15 @@ classes = (
     array.EnableEditingArray,
     array.RemoveArray,
     array.SelectArrayParent,
+    array.Input3DCursorXArray,
+    array.Input3DCursorYArray,
+    array.Input3DCursorZArray,
     product.AddConstrTypeInstance,
     product.AddEmptyType,
     product.AlignProduct,
     product.ChangeTypePage,
-    product.DisplayConstrTypes,
     product.LoadTypeThumbnails,
-    product.ReinvokeOperator,
+    product.MirrorElements,
     workspace.Hotkey,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,
@@ -74,9 +80,13 @@ classes = (
     opening.ShowOpenings,
     profile.ChangeCardinalPoint,
     profile.ChangeProfileDepth,
+    profile.DisableEditingExtrusionAxis,
+    profile.EditExtrusionAxis,
+    profile.EnableEditingExtrusionAxis,
     profile.ExtendProfile,
     profile.RecalculateProfile,
     profile.Rotate90,
+    roof.GenerateHippedRoof,
     slab.DisableEditingExtrusionProfile,
     slab.DisableEditingSketchExtrusionProfile,
     slab.EditExtrusionProfile,
@@ -85,24 +95,25 @@ classes = (
     slab.EnableEditingSketchExtrusionProfile,
     slab.ResetVertex,
     slab.SetArcIndex,
-    prop.ConstrTypeInfo,
-    prop.ConstrClassInfo,
-    prop.ConstrBrowserState,
+    space.GenerateSpace,
+    space.GenerateSpacesFromWalls,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
     prop.BIMSverchokProperties,
     prop.BIMWindowProperties,
     prop.BIMDoorProperties,
+    prop.BIMRailingProperties,
+    prop.BIMRoofProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_sverchok,
     ui.BIM_PT_window,
     ui.BIM_PT_door,
-    ui.DisplayConstrTypesUI,
+    ui.BIM_PT_railing,
+    ui.BIM_PT_roof,
     ui.LaunchTypeManager,
-    ui.HelpConstrTypes,
     ui.BIM_MT_model,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_object,
@@ -134,6 +145,26 @@ classes = (
     door.FinishEditingDoor,
     door.EnableEditingDoor,
     door.RemoveDoor,
+    railing.BIM_OT_add_railing,
+    railing.AddRailing,
+    railing.CancelEditingRailing,
+    railing.FinishEditingRailing,
+    railing.FlipRailingPathOrder,
+    railing.EnableEditingRailing,
+    railing.CancelEditingRailingPath,
+    railing.FinishEditingRailingPath,
+    railing.EnableEditingRailingPath,
+    railing.RemoveRailing,
+    roof.BIM_OT_add_roof,
+    roof.AddRoof,
+    roof.CancelEditingRoof,
+    roof.FinishEditingRoof,
+    roof.EnableEditingRoof,
+    roof.CancelEditingRoofPath,
+    roof.FinishEditingRoofPath,
+    roof.EnableEditingRoofPath,
+    roof.RemoveRoof,
+    roof.SetGableRoofEdgeAngle,
 )
 
 addon_keymaps = []
@@ -148,10 +179,14 @@ def register():
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
     bpy.types.Object.BIMWindowProperties = bpy.props.PointerProperty(type=prop.BIMWindowProperties)
     bpy.types.Object.BIMDoorProperties = bpy.props.PointerProperty(type=prop.BIMDoorProperties)
+    bpy.types.Object.BIMRailingProperties = bpy.props.PointerProperty(type=prop.BIMRailingProperties)
+    bpy.types.Object.BIMRoofProperties = bpy.props.PointerProperty(type=prop.BIMRoofProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(window.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(door.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.append(railing.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.append(roof.add_object_button)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
     wm = bpy.context.window_manager
@@ -171,11 +206,15 @@ def unregister():
     del bpy.types.Object.BIMSverchokProperties
     del bpy.types.Object.BIMWindowProperties
     del bpy.types.Object.BIMDoorProperties
+    del bpy.types.Object.BIMRailingProperties
+    del bpy.types.Object.BIMRoofProperties
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(window.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(door.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.remove(railing.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.remove(roof.add_object_button)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon

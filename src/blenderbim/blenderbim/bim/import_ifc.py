@@ -60,7 +60,6 @@ class MaterialCreator:
 
     def create(self, element, obj, mesh):
         self.mesh = mesh
-        self.obj = obj
         if (hasattr(element, "Representation") and not element.Representation) or (
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
@@ -140,11 +139,11 @@ class MaterialCreator:
     def assign_material_slots_to_faces(self):
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
             return
-        if len(self.obj.material_slots) == 1:
+        if len(self.mesh.materials) == 1:
             return
         material_to_slot = {}
         for i, material in enumerate(self.mesh["ios_materials"]):
-            slot_index = self.obj.material_slots.find(self.styles[material].name)
+            slot_index = self.mesh.materials.find(self.styles[material].name)
             material_to_slot[i] = slot_index
 
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
@@ -179,6 +178,11 @@ class IfcImporter:
         self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
         self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
         self.settings.set(self.settings.STRICT_TOLERANCE, True)
+        self.settings_curve = ifcopenshell.geom.settings()
+        self.settings_curve.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
+        self.settings_curve.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
+        self.settings_curve.set(self.settings_curve.STRICT_TOLERANCE, True)
+        self.settings_curve.set(self.settings_curve.INCLUDE_CURVES, True)
         self.settings_native = ifcopenshell.geom.settings()
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
@@ -242,6 +246,8 @@ class IfcImporter:
         self.profile_code("Create native elements")
         self.create_elements()
         self.profile_code("Create elements")
+        self.create_generic_elements(self.annotations)
+        self.profile_code("Create annotations")
         self.create_grids()
         self.profile_code("Create grids")
         self.create_spatial_elements()
@@ -302,12 +308,12 @@ class IfcImporter:
         )
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
-        # Annotation is to accommodate broken Revit files
+        # Annotation ContextType is to accommodate broken Revit files
         # See https://github.com/Autodesk/revit-ifc/issues/187
         self.plan_contexts = [
             c.id()
             for c in self.file.by_type("IfcGeometricRepresentationContext")
-            if c.ContextType in ["Plan", "Annotation"]
+            if c.ContextType in ["Plan", "Annotation"] or c.ContextIdentifier == "Annotation"
         ]
         if self.plan_contexts:
             self.settings_2d.set_context_ids(self.plan_contexts)
@@ -321,10 +327,13 @@ class IfcImporter:
             if isinstance(self.elements, set):
                 self.elements = list(self.elements)
             # TODO: enable filtering for annotations
-            self.annotations = set(self.file.by_type("IfcAnnotation"))
+            self.annotations = set([a for a in self.file.by_type("IfcAnnotation") if not a.HasAssignments])
         else:
-            self.elements = self.file.by_type("IfcElement")
-            self.annotations = set(self.file.by_type("IfcAnnotation"))
+            if self.file.schema in ("IFC2X3", "IFC4"):
+                self.elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
+            else:
+                self.elements = self.file.by_type("IfcElement")
+            self.annotations = set([a for a in self.file.by_type("IfcAnnotation") if not a.HasAssignments])
 
         self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
         if self.ifc_import_settings.is_coordinating:
@@ -335,14 +344,7 @@ class IfcImporter:
         if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
-            if self.file.schema in ("IFC2X3", "IFC4"):
-                self.element_types = set(
-                    self.file.by_type("IfcElementType")
-                    + self.file.by_type("IfcDoorStyle")
-                    + self.file.by_type("IfcWindowStyle")
-                )
-            else:
-                self.element_types = set(self.file.by_type("IfcElementType"))
+            self.element_types = set(self.file.by_type("IfcTypeProduct"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
@@ -616,36 +618,32 @@ class IfcImporter:
 
     def create_element_type(self, element):
         self.ifc_import_settings.logger.info("Creating object %s", element)
-        representation_map = self.get_type_product_body_representation_map(element)
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            representation = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
+        if not representation:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
         mesh = None
-        if representation_map:
-            representation = representation_map.MappedRepresentation
+        if representation:
             mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
+                shape = None
                 try:
-                    shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
+                    shape = ifcopenshell.geom.create_shape(self.settings, representation)
+                except:
+                    try:
+                        shape = ifcopenshell.geom.create_shape(self.settings_2d, representation)
+                    except:
+                        self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                if shape:
                     mesh = self.create_mesh(element, shape)
                     tool.Loader.link_mesh(shape, mesh)
                     self.meshes[mesh_name] = mesh
-                except:
-                    self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh)
         self.type_products[element.GlobalId] = obj
-
-    def get_type_product_body_representation_map(self, element):
-        if not element.RepresentationMaps:
-            return
-        for representation_map in element.RepresentationMaps:
-            context = representation_map.MappedRepresentation.ContextOfItems
-            if (
-                context.ContextType == "Model"
-                and context.ContextIdentifier == "Body"
-                and context.TargetView == "MODEL_VIEW"
-            ):
-                return representation_map
 
     def create_native_elements(self):
         progress = 0
@@ -690,28 +688,31 @@ class IfcImporter:
 
     def create_generic_elements(self, elements):
         # Based on my experience in viewing BIM models, representations are prioritised as follows:
-        # 1. 3D Body, 2. 2D Plans, 3. Point clouds, 4. No representation
-        # If an element has a representation that doesn't follow 1, 2, or 3, it will not show by default.
+        # 1. 3D Body, 2. 2D Body, 3. 2D Plans / annotations, 4. Point clouds, 5. No representation
+        # If an element has a representation that doesn't follow 1, 2, 3, or 4, it will not show by default.
         # The user can load them later if they want to view them.
         products = self.create_products(elements)
         elements -= products
-        products = self.create_curve_products(elements)
+        products = self.create_products(elements, settings=self.settings_curve)
+        elements -= products
+        products = self.create_products(elements, settings=self.settings_2d)
         elements -= products
         products = self.create_pointclouds(elements)
         elements -= products
         for element in elements:
             self.create_product(element)
 
-    def create_products(self, products):
+    def create_products(self, products, settings=None):
+        if settings is None:
+            settings = self.settings
+
         results = set()
         if not products:
             return results
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(
-                self.settings, self.file, multiprocessing.cpu_count(), include=products
-            )
+            iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
         else:
-            iterator = ifcopenshell.geom.iterator(self.settings, self.file, include=products)
+            iterator = ifcopenshell.geom.iterator(settings, self.file, include=products)
         if self.ifc_import_settings.should_cache:
             cache = IfcStore.get_cache()
             if cache:
@@ -778,10 +779,10 @@ class IfcImporter:
         self.structural_collection.children.link(self.structural_connection_collection)
         self.project["blender"].children.link(self.structural_collection)
 
-        self.create_curve_products(self.file.by_type("IfcStructuralCurveMember"))
-        self.create_curve_products(self.file.by_type("IfcStructuralCurveConnection"))
-        self.create_curve_products(self.file.by_type("IfcStructuralSurfaceMember"))
-        self.create_curve_products(self.file.by_type("IfcStructuralSurfaceConnection"))
+        self.create_products(self.file.by_type("IfcStructuralCurveMember"), settings=self.settings_2d)
+        self.create_products(self.file.by_type("IfcStructuralCurveConnection"), settings=self.settings_2d)
+        self.create_products(self.file.by_type("IfcStructuralSurfaceMember"), settings=self.settings_2d)
+        self.create_products(self.file.by_type("IfcStructuralSurfaceConnection"), settings=self.settings_2d)
         self.create_structural_point_connections()
 
     def create_structural_point_connections(self):
@@ -869,40 +870,6 @@ class IfcImporter:
         self.link_element(product, obj)
         return product
 
-    def create_curve_products(self, products):
-        results = set()
-        if not products:
-            return results
-        if self.ifc_import_settings.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(
-                self.settings_2d, self.file, multiprocessing.cpu_count(), include=products
-            )
-        else:
-            iterator = ifcopenshell.geom.iterator(self.settings_2d, self.file, include=products)
-        if self.ifc_import_settings.should_cache:
-            cache = IfcStore.get_cache()
-            if cache:
-                iterator.set_cache(cache)
-        valid_file = iterator.initialize()
-        if not valid_file:
-            return results
-        checkpoint = time.time()
-        total = 0
-        while True:
-            total += 1
-            if total % 250 == 0:
-                print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
-                checkpoint = time.time()
-            shape = iterator.get()
-            if shape:
-                product = self.file.by_id(shape.id)
-                self.create_product(product, shape)
-                results.add(product)
-            if not iterator.next():
-                break
-        print("Done creating geometry")
-        return results
-
     def create_product(self, element, shape=None, mesh=None):
         if element is None:
             return
@@ -916,9 +883,6 @@ class IfcImporter:
 
         if mesh:
             pass
-        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            mesh = self.create_camera(element, shape)
-            tool.Loader.link_mesh(shape, mesh)
         elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element) and shape:
             mesh = self.create_curve(element, shape)
             tool.Loader.link_mesh(shape, mesh)
@@ -985,9 +949,37 @@ class IfcImporter:
             self.convert_representation(representation)
 
         mesh = bpy.data.meshes.new("Native")
+
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        if props.has_blender_offset and self.is_point_far_away(self.mesh_data["co"][0:3], is_meters=False):
+            offset_point = np.linalg.inv(mat) @ np.array(
+                (
+                    float(props.blender_eastings),
+                    float(props.blender_northings),
+                    float(props.blender_orthogonal_height),
+                    0.0,
+                )
+            )
+            verts = [None] * len(self.mesh_data["co"])
+            for i in range(0, len(self.mesh_data["co"]), 3):
+                verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
+                    self.mesh_data["co"][i] * self.unit_scale,
+                    self.mesh_data["co"][i + 1] * self.unit_scale,
+                    self.mesh_data["co"][i + 2] * self.unit_scale,
+                    offset_point[0] * self.unit_scale,
+                    offset_point[1] * self.unit_scale,
+                    offset_point[2] * self.unit_scale,
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                )
+            mesh["has_cartesian_point_offset"] = True
+        else:
+            verts = [c * self.unit_scale for c in self.mesh_data["co"]]
+            mesh["has_cartesian_point_offset"] = False
+
         mesh.vertices.add(self.mesh_data["total_verts"])
-        mesh.vertices.foreach_set("co", [c * self.unit_scale for c in self.mesh_data["co"]])
-        # mesh.vertices.foreach_set("co", self.mesh_data["co"])
+        mesh.vertices.foreach_set("co", verts)
         mesh.loops.add(len(self.mesh_data["vertex_index"]))
         mesh.loops.foreach_set("vertex_index", self.mesh_data["vertex_index"])
         mesh.polygons.add(self.mesh_data["total_polygons"])
@@ -1315,14 +1307,20 @@ class IfcImporter:
                         bpy.context.scene.unit_settings.length_unit = "FEET"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "AREAUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
-                bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
-                    unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
-                )
+                try:
+                    bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
+                        unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
+                    )
+                except:  # Probably an invalid unit.
+                    bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "VOLUMEUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
-                bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
-                    unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
-                )
+                try:
+                    bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
+                        unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
+                    )
+                except:  # Probably an invalid unit.
+                    bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
 
     def create_project(self):
         project = self.file.by_type("IfcProject")[0]
@@ -1496,6 +1494,8 @@ class IfcImporter:
 
         if rendering_style and texture_style:
             self.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
+
+        tool.Style.record_shading(blender_material)
 
     def create_surface_style_shading(self, blender_material, surface_style):
         alpha = 1.0
@@ -1798,54 +1798,6 @@ class IfcImporter:
                 and representation.RepresentationType == "MappedRepresentation"
             ):
                 return representation.Items[0].MappingTarget
-
-    def create_camera(self, element, shape):
-        if hasattr(shape, "geometry"):
-            geometry = shape.geometry
-        else:
-            geometry = shape
-
-        v = geometry.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        z = [v[i + 2] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
-        depth = max(z) - min(z)
-
-        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name(geometry))
-        camera.type = "ORTHO"
-        camera.ortho_scale = width if width > height else height
-        camera.clip_end = depth
-
-        if width > height:
-            camera.BIMCameraProperties.raster_x = 1000
-            camera.BIMCameraProperties.raster_y = round(1000 * (height / width))
-        else:
-            camera.BIMCameraProperties.raster_x = round(1000 * (width / height))
-            camera.BIMCameraProperties.raster_y = 1000
-
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets.get("EPset_Drawing")
-        if pset:
-            if "TargetView" in pset:
-                camera.BIMCameraProperties.target_view = pset["TargetView"]
-            if "Scale" in pset:
-                valid_scales = [
-                    i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]
-                ]
-                if valid_scales:
-                    camera.BIMCameraProperties.diagram_scale = valid_scales[0]
-                else:
-                    camera.BIMCameraProperties.diagram_scale = "CUSTOM"
-                    camera.BIMCameraProperties.custom_diagram_scale = pset["Scale"]
-            if "HasUnderlay" in pset:
-                camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
-            if "HasLinework" in pset:
-                camera.BIMCameraProperties.has_linework = pset["HasLinework"]
-            if "HasAnnotation" in pset:
-                camera.BIMCameraProperties.has_annotation = pset["HasAnnotation"]
-        return camera
 
     def create_curve(self, element, shape):
         if hasattr(shape, "geometry"):

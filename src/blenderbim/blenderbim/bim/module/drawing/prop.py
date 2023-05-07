@@ -25,7 +25,8 @@ import blenderbim.tool as tool
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
-from blenderbim.bim.module.drawing.data import DrawingsData
+from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
+from blenderbim.bim.module.drawing.data import refresh as refresh_drawing_data
 from pathlib import Path
 from blenderbim.bim.prop import Attribute, StrProperty
 from bpy.types import PropertyGroup
@@ -38,24 +39,19 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     CollectionProperty,
+    BoolVectorProperty,
 )
 
 
 diagram_scales_enum = []
-titleblocks_enum = []
 sheets_enum = []
-vector_styles_enum = []
 
 
 def purge():
     global diagram_scales_enum
-    global titleblocks_enum
     global sheets_enum
-    global vector_styles_enum
     diagram_scales_enum = []
-    titleblocks_enum = []
     sheets_enum = []
-    vector_styles_enum = []
 
 
 def update_target_view(self, context):
@@ -84,7 +80,7 @@ def update_diagram_scale(self, context):
         )
     except:
         return
-    pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
+    pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
@@ -189,20 +185,14 @@ def update_layer(self, context, name, value):
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={name: value})
 
 
-def getTitleblocks(self, context):
-    global titleblocks_enum
-    if len(titleblocks_enum) < 1:
-        titleblocks_enum.clear()
-        files = Path(os.path.join(context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob("*.svg")
-        files = sorted([str(f.stem) for f in files])
-        titleblocks_enum.extend([(f, f, "") for f in files])
-    return titleblocks_enum
+def get_titleblocks(self, context):
+    if not SheetsData.is_loaded:
+        SheetsData.load()
+    return SheetsData.data["titleblocks"]
 
 
-def refreshTitleblocks(self, context):
-    global titleblocks_enum
-    titleblocks_enum.clear()
-    getTitleblocks(self, context)
+def update_titleblocks(self, context):
+    SheetsData.data["titleblocks"] = SheetsData.titleblocks()
 
 
 def toggleDecorations(self, context):
@@ -212,23 +202,10 @@ def toggleDecorations(self, context):
         collection = context.scene.camera.users_collection[0]
         for obj in collection.objects:
             tool.Drawing.update_text_value(obj)
+        refresh_drawing_data()
         decoration.DecorationsHandler.install(context)
     else:
         decoration.DecorationsHandler.uninstall()
-
-
-def getVectorStyles(self, context):
-    global vector_styles_enum
-    if len(vector_styles_enum) < 1:
-        sheets_enum.clear()
-        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, "styles")).glob("*.css"):
-            f = str(filename.stem)
-            vector_styles_enum.append((f, f, ""))
-    return vector_styles_enum
-
-
-def refreshFontSize(self, context):
-    annotation.Annotator.resize_text(context.active_object)
 
 
 class Variable(PropertyGroup):
@@ -240,6 +217,7 @@ class Drawing(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     name: StringProperty(name="Name", update=update_drawing_name)
     target_view: StringProperty(name="Target View")
+    is_selected: BoolProperty(name="Is Selected", default=True)
 
 
 class Schedule(PropertyGroup):
@@ -249,19 +227,9 @@ class Schedule(PropertyGroup):
 
 
 class Sheet(PropertyGroup):
-    def set_name(self, new):
-        old = self.get("name")
-        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets")
-        if old and os.path.isfile(os.path.join(path, old + ".svg")):
-            os.rename(os.path.join(path, old + ".svg"), os.path.join(path, new + ".svg"))
-        self["name"] = new
-
-    def get_name(self):
-        return self.get("name")
-
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     identification: StringProperty(name="Identification")
-    name: StringProperty(name="Name", get=get_name, set=set_name)
+    name: StringProperty(name="Name")
     is_sheet: BoolProperty(name="Is Sheet", default=False)
     reference_type: StringProperty(name="Reference Type")
     is_expanded: BoolProperty(name="Is Expanded", default=False)
@@ -279,7 +247,6 @@ class DrawingStyle(PropertyGroup):
         name="Render Type",
         default="VIEWPORT",
     )
-    vector_style: EnumProperty(items=getVectorStyles, name="Vector Style")
     include_query: StringProperty(name="Include Query")
     exclude_query: StringProperty(name="Exclude Query")
     attributes: CollectionProperty(name="Attributes", type=StrProperty)
@@ -338,19 +305,30 @@ class DocProperties(PropertyGroup):
     current_drawing_index: IntProperty(name="Current Drawing Index")
     schedules: CollectionProperty(name="Schedules", type=Schedule)
     active_schedule_index: IntProperty(name="Active Schedule Index")
-    titleblock: EnumProperty(items=getTitleblocks, name="Titleblock", update=refreshTitleblocks)
+    titleblock: EnumProperty(items=get_titleblocks, name="Titleblock", update=update_titleblocks)
     is_editing_sheets: BoolProperty(name="Is Editing Sheets", default=False)
     sheets: CollectionProperty(name="Sheets", type=Sheet)
     active_sheet_index: IntProperty(name="Active Sheet Index")
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=toggleDecorations)
-    decorations_colour: FloatVectorProperty(
-        name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
+    sheets_dir: StringProperty(default=os.path.join("sheets") + os.path.sep, name="Default Sheets Directory")
+    layouts_dir: StringProperty(default=os.path.join("layouts") + os.path.sep, name="Default Layouts Directory")
+    titleblocks_dir: StringProperty(
+        default=os.path.join("layouts", "titleblocks") + os.path.sep, name="Default Titleblocks Directory"
     )
+    drawings_dir: StringProperty(default=os.path.join("drawings") + os.path.sep, name="Default Drawings Directory")
+    stylesheet_path: StringProperty(
+        default=os.path.join("drawings", "assets", "default.css"), name="Default Stylesheet"
+    )
+    markers_path: StringProperty(default=os.path.join("drawings", "assets", "markers.svg"), name="Default Markers")
+    symbols_path: StringProperty(default=os.path.join("drawings", "assets", "symbols.svg"), name="Default Symbols")
+    patterns_path: StringProperty(default=os.path.join("drawings", "assets", "patterns.svg"), name="Default Patterns")
 
 
 class BIMCameraProperties(PropertyGroup):
+    calculate_shapely_surfaces: BoolProperty(name="Calculate Shapely Surfaces", default=False)
+    calculate_svgfill_surfaces: BoolProperty(name="Calculate SVGFill Surfaces", default=False)
     has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
     has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
     has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)
@@ -381,10 +359,66 @@ class BIMCameraProperties(PropertyGroup):
         return False
 
 
+DEFAULT_BOX_ALIGNMENT = [False] * 6 + [True] + [False] * 2
+BOX_ALIGNMENT_POSITIONS = [
+    "top-left",
+    "top-middle",
+    "top-right",
+    "middle-left",
+    "center",
+    "middle-right",
+    "bottom-left",
+    "bottom-middle",
+    "bottom-right",
+]
+
+
+class Literal(PropertyGroup):
+    def set_box_alignment(self, new_value):
+        markers = new_value.count(True)
+        if not markers:
+            return
+
+        if markers > 1:
+            prev_value = self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
+            # looking for the first value changed to positive
+            first_changed_value = next((i for i in range(9) if new_value[i] and new_value[i] != prev_value[i]), None)
+
+            # if nothing have changed we just keep the previous value
+            if first_changed_value is None:
+                return
+            new_value = [False] * 9
+            new_value[first_changed_value] = True
+
+        self["box_alignment"] = new_value
+        position_string = BOX_ALIGNMENT_POSITIONS[next(i for i in range(9) if new_value[i])]
+        self.attributes["BoxAlignment"].set_value(position_string)
+
+    def get_box_alignment(self):
+        return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
+
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+    # Current text value with evaluated experessions stored in `value`.
+    # The original (Literal) value stored in `attributes['Literal']`
+    # and can be accessed with `get_text()`
+    value: StringProperty(name="Value", default="TEXT")
+    box_alignment: BoolVectorProperty(
+        name="Box alignment", size=9, set=set_box_alignment, get=get_box_alignment, default=DEFAULT_BOX_ALIGNMENT
+    )
+    ifc_definition_id: IntProperty(name="IFC definition ID", default=0)
+
+    def get_literal_edited_data(self):
+        text_data = {
+            "CurrentValue": self.attributes["Literal"].string_value,
+            "Literal": self.attributes["Literal"].string_value,
+            "BoxAlignment": self.attributes["BoxAlignment"].string_value,
+        }
+        return text_data
+
+
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
-    attributes: CollectionProperty(name="Attributes", type=Attribute)
-    value: StringProperty(name="Value", default="TEXT")
+    literals: CollectionProperty(name="Literals", type=Literal)
     font_size: EnumProperty(
         items=[
             ("1.8", "1.8 - Small", ""),
@@ -394,11 +428,79 @@ class BIMTextProperties(PropertyGroup):
             ("7.0", "7.0 - Title", ""),
         ],
         default="2.5",
-        update=refreshFontSize,
         name="Font Size",
     )
+
+    def get_text_edited_data(self):
+        """should be called only if `is_editing`
+        otherwise should use `DecoratorData.get_ifc_text_data(obj)` instead
+        because this data could be out of date
+        """
+        literals_data = []
+        for literal in self.literals:
+            literal_data = literal.get_literal_edited_data()
+            literals_data.append(literal_data)
+        text_data = {
+            "Literals": literals_data,
+            "FontSize": float(self.font_size),
+        }
+        return text_data
 
 
 class BIMAssignedProductProperties(PropertyGroup):
     is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)
+
+
+# ObjectType: annotation_name, description, icon, data_type
+# fmt: off
+ANNOTATION_TYPES_DATA = {
+    "DIMENSION":     ("Dimension",        "Add dimensions annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "FIXED_SIZE", "curve"),
+    "ANGLE":         ("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
+    "RADIUS":        ("Radius",           "", "FORWARD", "curve"),
+    "DIAMETER":      ("Diameter",         "Add diameter annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "ARROW_LEFTRIGHT", "curve"),
+    "TEXT":          ("Text",             "", "SMALL_CAPS", "empty"),
+    "TEXT_LEADER":   ("Leader",           "", "TRACKING_BACKWARDS", "curve"),
+    "STAIR_ARROW":   ("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
+    "HIDDEN_LINE":   ("Hidden",           "", "CON_TRACKTO", "mesh"),
+    "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
+    "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
+    "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
+    "LINEWORK":      ("Line",             "", "MESH_MONKEY", "mesh"),
+    "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
+    "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
+    "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
+}
+# fmt: on
+
+annotation_classes = [(x, *ANNOTATION_TYPES_DATA[x][:3], i) for i, x in enumerate(ANNOTATION_TYPES_DATA)]
+
+
+def get_annotation_data_prop(prop_name):
+    def function(self, context):
+        if not AnnotationData.is_loaded:
+            AnnotationData.load()
+        return AnnotationData.data[prop_name]
+
+    return function
+
+
+def update_annotation_object_type(self, context):
+    self.relating_type_id = "0"
+    # changing enum doesn't trigger refresh by itself
+    AnnotationData.is_loaded = False
+
+
+class BIMAnnotationProperties(PropertyGroup):
+    object_type: bpy.props.EnumProperty(
+        name="Annotation Object Type", items=annotation_classes, default="TEXT", update=update_annotation_object_type
+    )
+    relating_type_id: bpy.props.EnumProperty(
+        name="Relating Annotation Type", items=get_annotation_data_prop("relating_types")
+    )
+    create_representation_for_type: bpy.props.BoolProperty(
+        name="Create Representation For Type",
+        default=False,
+        description='Whether "Add type" should define a representation for the type \n'
+        "or allow occurences to have their own",
+    )

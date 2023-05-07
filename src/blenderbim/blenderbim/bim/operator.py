@@ -22,6 +22,9 @@ import json
 import time
 import logging
 import textwrap
+import shutil
+import platform
+import subprocess
 import tempfile
 import webbrowser
 import ifcopenshell
@@ -101,6 +104,7 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+
 class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.reload_selected_ifc_file"
     bl_label = "Reload selected IFC File"
@@ -113,6 +117,7 @@ class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
         if self.is_existing_ifc_file():
             context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
         return {"FINISHED"}
+
 
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
@@ -144,6 +149,126 @@ class SelectSchemaDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class FileAssociate(bpy.types.Operator):
+    bl_idname = "bim.file_associate"
+    bl_label = "Associate BlenderBIM with *.ifc files"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Creates a Desktop launcher and associates it with IFC files"
+
+    @classmethod
+    def poll(cls, context):
+        if platform.system() == "Linux":
+            return True
+        # TODO Windows and Darwin
+        # https://stackoverflow.com/questions/1082889/how-to-change-filetype-association-in-the-registry
+        return False
+
+    def execute(self, context):
+        src_dir = os.path.join(os.path.dirname(__file__), "../libs/desktop")
+        binary_path = bpy.app.binary_path
+        if platform.system() == "Linux":
+            destdir = os.path.join(os.environ["HOME"], ".local")
+            self.install_desktop_linux(src_dir=src_dir, destdir=destdir, binary_path=binary_path)
+        return {"FINISHED"}
+
+    def install_desktop_linux(self, src_dir=None, destdir="/tmp", binary_path="/usr/bin/blender"):
+        """Creates linux file assocations and launcher icon"""
+
+        for rel_path in (
+            "bin",
+            "share/icons/hicolor/128x128/apps",
+            "share/icons/hicolor/128x128/mimetypes",
+            "share/applications",
+            "share/mime/packages",
+        ):
+            os.makedirs(os.path.join(destdir, rel_path), exist_ok=True)
+
+        shutil.copy(
+            os.path.join(src_dir, "blenderbim.png"),
+            os.path.join(destdir, "share/icons/hicolor/128x128/apps"),
+        )
+        shutil.copy(
+            os.path.join(src_dir, "blenderbim.desktop"),
+            os.path.join(destdir, "share/applications"),
+        )
+        shutil.copy(
+            os.path.join(src_dir, "blenderbim.xml"),
+            os.path.join(destdir, "share/mime/packages"),
+        )
+        shutil.copyfile(
+            os.path.join(src_dir, "x-ifc_128x128.png"),
+            os.path.join(destdir, "share/icons/hicolor/128x128/mimetypes", "x-ifc.png"),
+        )
+
+        # copy and rewrite wrapper script
+        with open(os.path.join(src_dir, "blenderbim"), "r") as wrapper_template:
+            filedata = wrapper_template.read()
+            filedata = filedata.replace("#BLENDER_EXE=/opt/blender-3.3/blender", 'BLENDER_EXE="' + binary_path + '"')
+        with open(os.path.join(destdir, "bin", "blenderbim"), "w") as wrapper:
+            wrapper.write(filedata)
+
+        os.chmod(os.path.join(destdir, "bin", "blenderbim"), 0o755)
+
+        self.refresh_system_linux(destdir=destdir)
+
+    def refresh_system_linux(self, destdir="/tmp"):
+        """Attempt to update mime and desktop databases"""
+        try:
+            subprocess.call(["update-mime-database", os.path.join(destdir, "share/mime")])
+        except:
+            pass
+        try:
+            subprocess.call(["update-desktop-database", os.path.join(destdir, "share/applications")])
+        except:
+            pass
+
+
+class FileUnassociate(bpy.types.Operator):
+    bl_idname = "bim.file_unassociate"
+    bl_label = "Remove BlenderBIM *.ifc association"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Removes Desktop launcher and unassociates it with IFC files"
+
+    @classmethod
+    def poll(cls, context):
+        if platform.system() == "Linux":
+            return True
+        return False
+
+    def execute(self, context):
+        if platform.system() == "Linux":
+            destdir = os.path.join(os.environ["HOME"], ".local")
+            self.uninstall_desktop_linux(destdir=destdir)
+        return {"FINISHED"}
+
+    def uninstall_desktop_linux(self, destdir="/tmp"):
+        """Removes linux file assocations and launcher icon"""
+        for rel_path in (
+            "share/icons/hicolor/128x128/apps/blenderbim.png",
+            "share/icons/hicolor/128x128/mimetypes/x-ifc.png",
+            "share/applications/blenderbim.desktop",
+            "share/mime/packages/blenderbim.xml",
+            "bin/blenderbim",
+        ):
+            try:
+                os.remove(os.path.join(destdir, rel_path))
+            except:
+                pass
+
+        self.refresh_system_linux(destdir=destdir)
+
+    def refresh_system_linux(self, destdir="/tmp"):
+        """Attempt to update mime and desktop databases"""
+        try:
+            subprocess.call(["update-mime-database", os.path.join(destdir, "share/mime")])
+        except:
+            pass
+        try:
+            subprocess.call(["update-desktop-database", os.path.join(destdir, "share/applications")])
+        except:
+            pass
 
 
 class OpenUpstream(bpy.types.Operator):
@@ -211,6 +336,11 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_compare_node(self):
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
+        group.inputs.new("NodeSocketFloat", "Value")
+        group.inputs["Value"].default_value = 1.0  # Mandatory multiplier for the last node group
+        group.inputs.new("NodeSocketVector", "Vector")
+        group.outputs.new("NodeSocketFloat", "Value")
+        group.outputs.new("NodeSocketFloat", "Line Decorator")
         group_input = group.nodes.new(type="NodeGroupInput")
         group_input.location = 0, 50
 
@@ -222,6 +352,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         greater.inputs[1].default_value = 0
         greater.location = 400, 0
 
+        compare = group.nodes.new(type="ShaderNodeMath")
+        compare.operation = "COMPARE"
+        compare.inputs[1].default_value = 0
+        compare.inputs[2].default_value = 0.04
+        compare.location = 400, -200
+
         multiply = group.nodes.new(type="ShaderNodeMath")
         multiply.operation = "MULTIPLY"
         multiply.inputs[0].default_value = 1
@@ -230,57 +366,68 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         group_output = group.nodes.new(type="NodeGroupOutput")
         group_output.location = 800, 0
 
-        group.links.new(group_input.outputs[""], multiply.inputs[0])
-        group.links.new(group_input.outputs[""], separate_xyz.inputs[0])
+        group.links.new(group_input.outputs["Value"], multiply.inputs[0])
+        group.links.new(group_input.outputs["Vector"], separate_xyz.inputs[0])
         group.links.new(separate_xyz.outputs[2], greater.inputs[0])
         group.links.new(greater.outputs[0], multiply.inputs[1])
-        group.links.new(multiply.outputs[0], group_output.inputs[""])
+        group.links.new(multiply.outputs[0], group_output.inputs["Value"])
+        group.links.new(separate_xyz.outputs[2], compare.inputs[0])
+        group.links.new(compare.outputs[0], group_output.inputs["Line Decorator"])
 
     def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
+        group.inputs.new("NodeSocketShader", "Shader")
+        group.outputs.new("NodeSocketShader", "Shader")
         links = group.links
         nodes = group.nodes
 
         group_input = nodes.new(type="NodeGroupInput")
         group_output = nodes.new(type="NodeGroupOutput")
-        group_output.location = 600, 250
+        group_output.location = 800, 250
 
-        backfacing_mix = nodes.new(type="ShaderNodeMixShader")
-        backfacing_mix.location = group_output.location - Vector((400, 350))
+        mix_decorator = group.nodes.new(type="ShaderNodeMixShader")
+        mix_decorator.name = "Line Decorator Mix"
+        mix_decorator.location = group_output.location - Vector((200, 0))
+
+        mix_section = group.nodes.new(type="ShaderNodeMixShader")
+        mix_section.name = "Section Mix"
+        mix_section.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
+        mix_section.location = mix_decorator.location - Vector((200, 200))
+
+        transparent = nodes.new(type="ShaderNodeBsdfTransparent")
+        transparent.location = mix_section.location - Vector((200, 100))
+
+        mix_backfacing = nodes.new(type="ShaderNodeMixShader")
+        mix_backfacing.location = mix_section.location - Vector((200, 0))
+
+        group_input.location = mix_backfacing.location - Vector((200, 50))
 
         backfacing = nodes.new(type="ShaderNodeNewGeometry")
-        backfacing.location = backfacing_mix.location + Vector((-200, 200))
-        group_input.location = backfacing_mix.location - Vector((200, 50))
+        backfacing.location = mix_backfacing.location + Vector((-200, 200))
 
         emission = nodes.new(type="ShaderNodeEmission")
         emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
-        emission.location = backfacing_mix.location - Vector((200, 150))
-
-        transparent = nodes.new(type="ShaderNodeBsdfTransparent")
-        transparent.location = group_output.location - Vector((400, 100))
-
-        section_mix = group.nodes.new(type="ShaderNodeMixShader")
-        section_mix.name = "Section Mix"
-        section_mix.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
-        section_mix.location = group_output.location - Vector((200, 0))
+        emission.location = mix_backfacing.location - Vector((200, 150))
 
         cut_obj = nodes.new(type="ShaderNodeTexCoord")
         cut_obj.object = obj
-        cut_obj.location = group_output.location - Vector((800, 150))
+        cut_obj.location = backfacing.location - Vector((200, 200))
 
         section_compare = nodes.new(type="ShaderNodeGroup")
         section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
         section_compare.name = "Last Section Compare"
-        section_compare.location = group_output.location - Vector((600, 0))
+        section_compare.location = backfacing.location + Vector((0, 200))
 
         links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
-        links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
-        links.new(group_input.outputs[""], backfacing_mix.inputs[1])
-        links.new(emission.outputs["Emission"], backfacing_mix.inputs[2])
-        links.new(section_compare.outputs[0], section_mix.inputs[0])
-        links.new(transparent.outputs["BSDF"], section_mix.inputs[1])
-        links.new(backfacing_mix.outputs["Shader"], section_mix.inputs[2])
-        links.new(section_mix.outputs["Shader"], group_output.inputs[""])
+        links.new(backfacing.outputs["Backfacing"], mix_backfacing.inputs[0])
+        links.new(group_input.outputs["Shader"], mix_backfacing.inputs[1])
+        links.new(emission.outputs["Emission"], mix_backfacing.inputs[2])
+        links.new(section_compare.outputs["Value"], mix_section.inputs[0])
+        links.new(transparent.outputs[0], mix_section.inputs[1])
+        links.new(mix_backfacing.outputs["Shader"], mix_section.inputs[2])
+        links.new(section_compare.outputs["Line Decorator"], mix_decorator.inputs[0])
+        links.new(mix_section.outputs["Shader"], mix_decorator.inputs[1])
+        links.new(mix_decorator.outputs["Shader"], group_output.inputs["Shader"])
 
     def append_obj_to_section_override_node(self, obj):
         group = bpy.data.node_groups.get("Section Override")
@@ -695,7 +842,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
 
 class EditBlenderCollection(bpy.types.Operator):
     bl_idname = "bim.edit_blender_collection"
-    bl_label = "Add or Remove blender collection item"
+    bl_label = "Add or Remove Blender Collection Item"
     bl_options = {"REGISTER", "UNDO"}
     option: bpy.props.StringProperty(description="add or remove item from collection")
     collection: bpy.props.StringProperty(description="collection to be edited")

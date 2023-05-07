@@ -334,7 +334,7 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
     .. code:: python
 
         element = ifcopenshell.by_type("IfcWall")[0]
-        material = ifcopenshell.util.element.material(element)
+        material = ifcopenshell.util.element.get_material(element)
     """
     if hasattr(element, "HasAssociations") and element.HasAssociations:
         for relationship in element.HasAssociations:
@@ -349,6 +349,37 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
         relating_type = get_type(element)
         if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
             return get_material(relating_type, should_skip_usage)
+
+
+def get_materials(element, should_inherit=True):
+    """Gets individual materials of an element
+
+    If the element has a material set, the individual materials of that set are
+    returned as a list.
+
+    :param should_inherit: If True, any inherited materials from associated
+        types will be considered.
+    :return: The associated materials of the element.
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.by_type("IfcWall")[0]
+        materials = ifcopenshell.util.element.get_materials(element)
+    """
+    material = get_material(element, should_skip_usage=True, should_inherit=should_inherit)
+    if not material:
+        return []
+    elif material.is_a("IfcMaterial"):
+        return [material]
+    elif material.is_a("IfcMaterialLayerSet"):
+        return [l.Material for l in material.MaterialLayers]
+    elif material.is_a("IfcMaterialProfileSet"):
+        return [p.Material for p in material.MaterialProfiles]
+    elif material.is_a("IfcMaterialConstituentSet"):
+        return [c.Material for c in material.MaterialConstituents]
 
 
 def get_elements_by_material(ifc_file, material):
@@ -610,6 +641,9 @@ def get_decomposition(element):
         for rel in getattr(element, "HasFillings", []):
             queue.append(rel.RelatedBuildingElement)
             results.append(rel.RelatedBuildingElement)
+        for rel in getattr(element, "IsNestedBy", []):
+            queue.extend(rel.RelatedObjects)
+            results.extend(rel.RelatedObjects)
     return results
 
 
@@ -747,6 +781,18 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
+            # See #3052. IfcOpenShell is extremely slow in removing elements if
+            # the element has an inverse, and that inverse references that
+            # element in a big list. The most common example is an
+            # IfcPolygonalFaceSet with a Faces attribute of tens of thousands
+            # of IfcIndexedPolygonalFace. In this situation, removing a
+            # IfcIndexedPolygonalFace will take very, very long. If we are
+            # going to delete an element (i.e. added to the to_delete set), we
+            # clear any large lists (10 is an arbitrary threshold) to prevent
+            # this issue.
+            for i, attribute in enumerate(subelement):
+                if isinstance(attribute, tuple) and len(attribute) > 10:
+                    subelement[i] = []
     # We delete elements from subgraph in reverse order to allow batching to work
     for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
         ifc_file.remove(subelement)
@@ -777,7 +823,7 @@ def copy(ifc_file, element):
     return new
 
 
-def copy_deep(ifc_file, element, exclude=None, exclude_callback=None):
+def copy_deep(ifc_file, element, exclude=None, exclude_callback=None, copied_entities=None):
     """
     Recursively copy an element and all of its directly related subelements.
 
@@ -794,10 +840,22 @@ def copy_deep(ifc_file, element, exclude=None, exclude_callback=None):
     :param exclude_callback: A callback to determine whether or not to exclude
         an entity or not. Returns True to exclude and False to exclude.
     :type exclude_callback: function,optional
+    :param copied_entities: A dictionary of IDs as keys and entities as values
+        to reuse when coming across the same entity twice. This can typically
+        be left as None.
+    :type copied_entities: dict[int:ifcopenshell.entity_instance.entity_instance]
     :return: The newly copied element
     :rtype: ifcopenshell.entity_instance.entity_instance
     """
+    if copied_entities is None:
+        copied_entities = {}
+    else:
+        copied_entity = copied_entities.get(element.id(), None)
+        if copied_entity:
+            return copied_entity
     new = ifc_file.create_entity(element.is_a())
+    if element.id():
+        copied_entities[element.id()] = new
     for i, attribute in enumerate(element):
         if attribute is None:
             continue
@@ -807,7 +865,7 @@ def copy_deep(ifc_file, element, exclude=None, exclude_callback=None):
             elif exclude_callback and exclude_callback(attribute):
                 pass
             else:
-                attribute = copy_deep(ifc_file, attribute, exclude=exclude)
+                attribute = copy_deep(ifc_file, attribute, exclude=exclude, copied_entities=copied_entities)
         elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
             if exclude and any([attribute[0].is_a(e) for e in exclude]):
                 pass
@@ -816,7 +874,13 @@ def copy_deep(ifc_file, element, exclude=None, exclude_callback=None):
             else:
                 attribute = list(attribute)
                 for j, item in enumerate(attribute):
-                    attribute[j] = copy_deep(ifc_file, item, exclude=exclude, exclude_callback=exclude_callback)
+                    attribute[j] = copy_deep(
+                        ifc_file,
+                        item,
+                        exclude=exclude,
+                        exclude_callback=exclude_callback,
+                        copied_entities=copied_entities,
+                    )
         if new.attribute_name(i) == "GlobalId":
             new[i] = ifcopenshell.guid.new()
         else:

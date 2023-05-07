@@ -160,20 +160,30 @@ def get_type_doc(version, ifc_type):
         return db["types"].get(ifc_type)
 
 
+# TODO: there are still some discrepancies between this method
+# and the specs website because of the asymmetry
+# More: https://github.com/buildingSMART/IFC4.3.x-development/issues/582
 def get_inverse_attributes(el):
     inverse_attrs = []
     for a in el.all_inverse_attributes():
         attribute_type = a.attribute_reference().type_of_attribute()
-        if isinstance(attribute_type, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
+        # unpacking aggregation types
+        while isinstance(attribute_type, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
             attribute_type = attribute_type.type_of_element()
         attribute_type = attribute_type.declared_type()
 
-        if not isinstance(attribute_type, ifcopenshell.ifcopenshell_wrapper.entity):
-            attr_types = [t.name() for t in attribute_type.select_list()]
-        else:
-            attr_types = [attribute_type.name()]
+        # recursively looking for entities inside the selections
+        types_to_process = [attribute_type]
+        entity_attr_types = []
+        while types_to_process:
+            for attr_type in types_to_process.copy():
+                if isinstance(attr_type, ifcopenshell.ifcopenshell_wrapper.select_type):
+                    types_to_process.extend([t for t in attr_type.select_list()])
+                else:
+                    entity_attr_types.append(attr_type.name())
+                types_to_process.remove(attr_type)
 
-        if el.name() in attr_types:
+        if el.name() in entity_attr_types:
             inverse_attrs.append(a)
     return inverse_attrs
 
@@ -197,7 +207,7 @@ class DocExtractor:
             raise Exception(
                 f'Docs for IFC 2.3.0.1 expected to be in folder "{IFC2x3_DOCS_LOCATION.resolve()}\\"\n'
                 "For doc extraction please either setup docs as described above \n"
-                "or change IFC2x3_DOCS_LOCATION in doc.py accordingly. \n"
+                "or change IFC2x3_DOCS_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingSMART/IFC/tree/Ifc2.3.0.1"
             )
@@ -506,7 +516,7 @@ class DocExtractor:
             raise Exception(
                 f'Docs for Ifc4.0.2.1 expected to be in folder "{IFC4_DOCS_LOCATION.resolve()}\\"\n'
                 "For doc extraction please either setup docs as described above \n"
-                "or change IFC4_DOCS_LOCATION in doc.py accordingly."
+                "or change IFC4_DOCS_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingSMART/IFC/tree/Ifc4.0.2.1"
             )
@@ -845,7 +855,7 @@ class DocExtractor:
             raise Exception(
                 f'Specs development repository for Ifc4.3.0.1 expected to be in folder "{IFC4x3_DEV_LOCATION.resolve()}\\"\n'
                 "For doc extraction please either setup docs as described above \n"
-                "or change IFC4x3_DEV_LOCATION in doc.py accordingly."
+                "or change IFC4x3_DEV_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingSMART/IFC4.3.x-development"
             )
@@ -853,7 +863,7 @@ class DocExtractor:
             raise Exception(
                 f'Formal release for Ifc4.3.0.1 expected to be in folder "{IFC4x3_HTML_LOCATION.resolve()}\\"\n'
                 "For doc extraction please either setup docs as described above \n"
-                "or change IFC4x3_HTML_LOCATION in doc.py accordingly."
+                "or change IFC4x3_HTML_LOCATION in the script accordingly.\n"
                 "You can download docs from the repository: \n"
                 "https://github.com/buildingsmart/ifc4.3-html"
             )
@@ -932,7 +942,7 @@ class DocExtractor:
                             description = self.clean_description(parsed_predefined_types_data[v])
                         predefined_types[v] = description
                     continue
-                
+
                 # attributes
                 if attr_name not in parsed_attributes_data:
                     print(

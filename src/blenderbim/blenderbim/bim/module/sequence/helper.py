@@ -18,7 +18,7 @@
 
 import isodate
 from dateutil import parser
-import ifcopenshell.util.date as ifcdateutils
+import ifcopenshell.util.date
 from datetime import timedelta
 
 
@@ -33,11 +33,7 @@ def parse_datetime(value):
 
 
 def parse_duration(value):
-    try:
-        return isodate.parse_duration(value)
-    except:
-        return None
-
+    return ifcopenshell.util.date.parse_duration(value)
 
 def canonicalise_time(time):
     if not time:
@@ -48,12 +44,12 @@ def canonicalise_time(time):
 def parse_duration_as_blender_props(dt, simplify=True):
     if simplify:
         if isinstance(dt, str):
-            dt = ifcdateutils.ifc2datetime(dt)
+            dt = ifcopenshell.util.date.ifc2datetime(dt)
 
         seconds = getattr(dt, "seconds", 0)
         hours, seconds = divmod(seconds, 3600)
         minutes, seconds = divmod(seconds, 60)
-        days = getattr(dt, "days",0)
+        days = getattr(dt, "days", 0)
         months = int(getattr(dt, "months", 0))
         years = int(getattr(dt, "years", 0))
         return {
@@ -66,10 +62,12 @@ def parse_duration_as_blender_props(dt, simplify=True):
         }
 
 
-def simplify_duration(durations_attributes, duration_type, prop_name):
-    for item in durations_attributes:
-        if item.name == prop_name:
-            duration_props = item
+def blender_props_to_iso_duration(durations_attributes, duration_type, prop_name):
+    duration_props = None
+    for collection in durations_attributes:
+        if collection.name == prop_name:
+            duration_props = collection
+            break
     if duration_props and not duration_type or duration_type == "ELAPSEDTIME":
         duration_string = "P{}Y{}M{}DT{}H{}M{}S".format(
             duration_props.years if duration_props.years else 0,
@@ -79,7 +77,7 @@ def simplify_duration(durations_attributes, duration_type, prop_name):
             duration_props.minutes if duration_props.minutes else 0,
             duration_props.seconds if duration_props.seconds else 0,
         )
-        duration_object = ifcdateutils.ifc2datetime(duration_string)
+        duration_object = ifcopenshell.util.date.ifc2datetime(duration_string)
     elif duration_props and duration_type == "WORKTIME":
         years = (duration_props.years * 365 * 24 * 60 * 60) if duration_props.years else 0
         months = (duration_props.months * 30 * 24 * 60 * 60) if duration_props.months else 0
@@ -96,6 +94,8 @@ def simplify_duration(durations_attributes, duration_type, prop_name):
         extra_days, seconds_left = divmod(total_seconds, calendar_seconds_per_day)
         total_days = days_subtotal + extra_days
         duration_object = timedelta(days=total_days, seconds=seconds_left)
+    else:
+        return None
     if duration_object:
         total_days = int(duration_object.days)
         seconds_left = int(duration_object.seconds)
@@ -113,12 +113,21 @@ def simplify_duration(durations_attributes, duration_type, prop_name):
 
         hours, seconds = divmod(seconds_left, 3600)
         minutes, seconds = divmod(seconds, 60)
-
-        return "P{}Y{}M{}DT{}H{}M{}S".format(
-            int(years),
-            int(months),
-            int(days),
-            int(hours),
-            int(minutes),
-            int(seconds),
-        )
+        if years > 0 or months > 0 or total_days > 0 or hours > 0 or minutes > 0 or seconds > 0:
+            duration_string = "P"
+            duration_string += "{}Y".format(int(years)) if years > 0 else ""
+            duration_string += "{}M".format(int(months)) if months > 0 else ""
+            duration_string += "{}D".format(int(total_days)) if total_days > 0 else ""
+            if hours > 0 or minutes > 0 or seconds > 0:
+                duration_string += "T"
+                if hours > 0:
+                    duration_string += "{}H".format(int(hours))
+                if minutes > 0:
+                    duration_string += "{}M".format(int(minutes))
+                if seconds > 0:
+                    duration_string += "{}S".format(int(seconds))
+            return duration_string
+        else:
+            return None
+    else:
+        return None

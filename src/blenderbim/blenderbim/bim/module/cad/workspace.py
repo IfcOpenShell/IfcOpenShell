@@ -21,7 +21,7 @@ import bpy
 import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
 
 
 class CadTool(WorkSpaceTool):
@@ -34,7 +34,7 @@ class CadTool(WorkSpaceTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cad")
     bl_widget = None
     # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
-    bl_keymap = (
+    bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         ("bim.cad_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.cad_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
@@ -46,20 +46,27 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
     )
 
-    def draw_settings(context, layout, tool):
+    def draw_settings(context, layout, workspace_tool):
         obj = context.active_object
-        if obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile:
+        if not obj or not obj.data:
+            return
+        if hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_Q")
-            if obj.BIMObjectProperties.ifc_definition_id:
-                row.operator("bim.edit_extrusion_profile", text="Save Profile")
-                row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
-                row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
-            else:
-                row.operator("bim.edit_arbitrary_profile", text="Save Profile")
-                row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
-                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                if element.is_a("IfcProfileDef"):
+                    row.operator("bim.edit_arbitrary_profile", text="Save Profile")
+                    row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
+                    row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+                elif element.is_a("IfcRelSpaceBoundary"):
+                    row.operator("bim.edit_boundary_geometry", text="Save Profile")
+                    row.operator("bim.disable_editing_boundary_geometry", text="", icon="CANCEL")
+                else:
+                    row.operator("bim.edit_extrusion_profile", text="Save Profile")
+                    row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
+                    row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -100,7 +107,62 @@ class CadTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_X")
             row.operator("bim.reset_vertex", text="Reset Vertex")
+
+        elif hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "AXIS":
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_Q")
+            row.operator("bim.edit_extrusion_axis", text="Save Axis")
+            row.operator("bim.disable_editing_extrusion_axis", text="", icon="CANCEL")
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.cad_hotkey", text="Extend").hotkey = "S_E"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_T")
+            row.operator("bim.cad_hotkey", text="Mitre").hotkey = "S_T"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.cad_hotkey", text="Fillet").hotkey = "S_F"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_O")
+            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
+
         else:
+            if (
+                (RailingData.is_loaded or not RailingData.load())
+                and RailingData.data["parameters"]
+                and context.active_object.BIMRailingProperties.is_editing_path
+            ):
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_Q")
+                row.operator("bim.cad_hotkey", text="Apply Railing Path").hotkey = "S_Q"
+                row.operator("bim.cancel_editing_railing_path", icon="CANCEL", text="")
+
+            elif (
+                (RoofData.is_loaded or not RoofData.load())
+                and RoofData.data["parameters"]
+                and context.active_object.BIMRoofProperties.is_editing_path
+            ):
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_Q")
+                row.operator("bim.cad_hotkey", text="Apply Roof Path").hotkey = "S_Q"
+                row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
+
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_R")
+                row.operator("bim.cad_hotkey", text="Set Gable Roof Angle").hotkey = "S_R"
+
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
@@ -148,20 +210,32 @@ class CadHotkey(bpy.types.Operator):
             if self.is_profile():
                 row = self.layout.row()
                 row.prop(props, "radius")
+
         elif self.hotkey == "S_F":
             if not self.is_profile():
                 row = self.layout.row()
                 row.prop(props, "resolution")
             row = self.layout.row()
             row.prop(props, "radius")
+
         elif self.hotkey == "S_O":
             row = self.layout.row()
             row.prop(props, "distance")
+
         elif self.hotkey == "S_R":
-            row = self.layout.row()
-            row.prop(props, "x")
-            row = self.layout.row()
-            row.prop(props, "y")
+            if self.is_profile():
+                row = self.layout.row()
+                row.prop(props, "x")
+                row = self.layout.row()
+                row.prop(props, "y")
+            elif (
+                (RoofData.is_loaded or not RoofData.load())
+                and RoofData.data["parameters"]
+                and bpy.context.active_object.BIMRoofProperties.is_editing_path
+            ):
+                self.layout.row().prop(props, "gable_roof_edge_angle")
+                self.layout.row().prop(props, "gable_roof_separate_verts")
+
         elif self.hotkey == "S_V":
             if not self.is_profile():
                 row = self.layout.row()
@@ -186,14 +260,42 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_offset(distance=self.props.distance)
 
     def hotkey_S_Q(self):
-        if tool.Ifc.get_entity(bpy.context.active_object):
-            bpy.ops.bim.edit_extrusion_profile()
-        else:
-            bpy.ops.bim.edit_arbitrary_profile()
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
+            if element.is_a("IfcProfileDef"):
+                bpy.ops.bim.edit_arbitrary_profile()
+            elif element.is_a("IfcRelSpaceBoundary"):
+                bpy.ops.bim.edit_boundary_geometry()
+            else:
+                bpy.ops.bim.edit_extrusion_profile()
+        elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
+            bpy.ops.bim.edit_extrusion_axis()
+
+        elif (
+            (RailingData.is_loaded or not RailingData.load())
+            and RailingData.data["parameters"]
+            and bpy.context.active_object.BIMRailingProperties.is_editing_path
+        ):
+            bpy.ops.bim.finish_editing_railing_path()
+
+        elif (
+            (RoofData.is_loaded or not RoofData.load())
+            and RoofData.data["parameters"]
+            and bpy.context.active_object.BIMRoofProperties.is_editing_path
+        ):
+            bpy.ops.bim.finish_editing_roof_path()
 
     def hotkey_S_R(self):
         if self.is_profile():
             bpy.ops.bim.add_rectangle(x=self.props.x, y=self.props.y)
+        elif (
+            (RoofData.is_loaded or not RoofData.load())
+            and RoofData.data["parameters"]
+            and bpy.context.active_object.BIMRoofProperties.is_editing_path
+        ):
+            bpy.ops.bim.set_gable_roof_edge_angle(
+                angle=self.props.gable_roof_edge_angle, separate_verts=self.props.gable_roof_separate_verts
+            )
 
     def hotkey_S_T(self):
         bpy.ops.bim.cad_mitre()
@@ -210,4 +312,9 @@ class CadHotkey(bpy.types.Operator):
 
     def is_profile(self):
         obj = bpy.context.active_object
-        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile
+        return (
+            obj
+            and obj.data
+            and hasattr(obj.data, "BIMMeshProperties")
+            and obj.data.BIMMeshProperties.subshape_type == "PROFILE"
+        )

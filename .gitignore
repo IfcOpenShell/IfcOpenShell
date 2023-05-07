@@ -84,6 +84,9 @@ src/ifcopenshell-python/test/build
 # blenderbim libs
 src/blenderbim/blenderbim/libs
 
+# blenderbim test temp files
+src/blenderbim/test/files/temp
+
 # ifcopenshell swig and compiled files
 src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper.so
 src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py

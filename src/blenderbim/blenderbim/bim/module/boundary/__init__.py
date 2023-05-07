@@ -20,25 +20,37 @@ import bpy
 from . import ui, operator, prop
 
 classes = (
+    operator.AddBoundary,
+    operator.ColourByRelatedBuildingElement,
+    operator.DisableEditingBoundary,
+    operator.DisableEditingBoundaryGeometry,
+    operator.EditBoundaryAttributes,
+    operator.EditBoundaryGeometry,
+    operator.EnableEditingBoundary,
+    operator.EnableEditingBoundaryGeometry,
+    operator.HideBoundaries,
+    operator.LoadBoundary,
     operator.LoadProjectSpaceBoundaries,
     operator.LoadSpaceBoundaries,
-    operator.LoadBoundary,
     operator.SelectProjectBoundaries,
-    operator.ColourByRelatedBuildingElement,
-    operator.EnableEditingBoundary,
-    operator.DisableEditingBoundary,
-    operator.EditBoundaryAttributes,
+    operator.SelectRelatedElementBoundaries,
+    operator.SelectRelatedElementTypeBoundaries,
+    operator.SelectSpaceBoundaries,
+    operator.ShowBoundaries,
     operator.UpdateBoundaryGeometry,
     ui.BIM_PT_Boundary,
-    ui.BIM_PT_SpaceBoundaries,
     ui.BIM_PT_SceneBoundaries,
+    ui.BIM_PT_SpaceBoundaries,
     prop.BIMBoundaryProperties,
+    prop.BIMObjectBoundaryProperties,
 )
 
 
 def register():
-    bpy.types.Object.bim_boundary_properties = bpy.props.PointerProperty(type=prop.BIMBoundaryProperties)
+    bpy.types.Scene.BIMBoundaryProperties = bpy.props.PointerProperty(type=prop.BIMBoundaryProperties)
+    bpy.types.Object.bim_boundary_properties = bpy.props.PointerProperty(type=prop.BIMObjectBoundaryProperties)
 
 
 def unregister():
+    del bpy.types.Scene.BIMBoundaryProperties
     del bpy.types.Object.bim_boundary_properties

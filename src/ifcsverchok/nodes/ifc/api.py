@@ -23,6 +23,8 @@ import ifcsverchok.helper
 from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+import logging
+logger = logging.getLogger('sverchok.ifc')
 
 
 def update_usecase(self, context):
@@ -98,8 +100,8 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
 
 
 def register():
-    bpy.utils.register_class(SvIfcTooltip)
     bpy.utils.register_class(SvIfcApi)
+    bpy.utils.register_class(SvIfcTooltip)
 
 
 def unregister():

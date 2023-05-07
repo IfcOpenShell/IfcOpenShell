@@ -61,9 +61,17 @@ class TestCreateCamera(NewFile):
 class TestCreateSvgSheet(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
-        subject.create_svg_sheet(document, "A1")
-        assert os.path.isfile(os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg"))
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        tool.Ifc.set(ifc)
+        document = ifc.createIfcDocumentInformation(
+            Identification="X",
+            Name="FOOBAR",
+            Scope="DOCUMENTATION",
+            Location=os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", "X - FOOBAR.svg"),
+        )
+        uri = subject.create_svg_sheet(document, "A1")
+        assert uri.endswith(".svg")
+        assert os.path.isfile(uri)
 
 
 class TestDeleteCollection(NewFile):
@@ -77,16 +85,20 @@ class TestDeleteDrawingElements(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        obj = bpy.data.objects.new("Object", None)
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         collection = bpy.data.collections.new("Collection")
         bpy.context.scene.collection.children.link(collection)
         collection.objects.link(obj)
-        element = ifc.createIfcAnnotation()
+        element = ifc.createIfcAnnotation(GlobalId=ifcopenshell.guid.new())
         tool.Ifc.link(element, obj)
 
         element_id = element.id()
         subject.delete_drawing_elements([element])
-        assert element_id in IfcStore.deleted_ids
+        try:
+            ifc.by_id(element_id)
+            assert False
+        except:
+            pass
         assert not bpy.data.objects.get("Object")
 
 
@@ -204,11 +216,13 @@ class TestEnsureUniqueIdentification(NewFile):
 class TestExportTextLiteralAttributes(NewFile):
     def test_run(self):
         TestImportTextAttributes().test_run()
-        assert subject.export_text_literal_attributes(bpy.data.objects.get("Object")) == {
-            "Literal": "Literal",
-            "Path": "RIGHT",
-            "BoxAlignment": "BoxAlignment",
-        }
+        assert subject.export_text_literal_attributes(bpy.data.objects.get("Object")) == [
+            {
+                "Literal": "Literal",
+                "Path": "RIGHT",
+                "BoxAlignment": "bottom-left",
+            }
+        ]
 
 
 class TestGetAnnotationContext(NewFile):
@@ -217,8 +231,12 @@ class TestGetAnnotationContext(NewFile):
         context = ifc.createIfcGeometricRepresentationSubContext(
             ContextType="Plan", ContextIdentifier="Annotation", TargetView="PLAN_VIEW"
         )
+        context2 = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model", ContextIdentifier="Annotation", TargetView="ELEVATION_VIEW"
+        )
         tool.Ifc.set(ifc)
         assert subject.get_annotation_context("PLAN_VIEW") == context
+        assert subject.get_annotation_context("ELEVATION_VIEW") == context2
 
 
 class TestGetBodyContext(NewFile):
@@ -232,23 +250,29 @@ class TestGetBodyContext(NewFile):
 
 
 class TestGetDocumentUri(NewFile):
-    def test_get_sheet_uri(self):
+    def test_run(self):
         ifc = ifcopenshell.file()
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
-        result = subject.get_document_uri(document)
-        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg")
+        document = ifc.createIfcDocumentInformation(
+            Identification="X", Name="FOOBAR", Scope="SHEET", Location="Location"
+        )
+        assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
 
-    def test_get_schedule_uri(self):
+    def test_get_indirect_locations(self):
         ifc = ifcopenshell.file()
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SCHEDULE")
-        result = subject.get_document_uri(document)
-        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "schedules", "X - FOOBAR.svg")
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SHEET")
+        reference = ifc.createIfcDocumentReference(Location="Location", ReferencedDocument=document)
+        assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
+        assert subject.get_document_uri(reference) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
 
     def test_run_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
-        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION")
-        result = subject.get_document_uri(document)
-        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg")
+        tool.Ifc.set(ifc)
+        reference = ifc.createIfcDocumentReference(Location="Location")
+        document = ifc.createIfcDocumentInformation(
+            DocumentId="X", Name="FOOBAR", Scope="SHEET", DocumentReferences=[reference]
+        )
+        assert subject.get_document_uri(document) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
+        assert subject.get_document_uri(reference) == os.path.abspath(os.path.join(tool.Ifc.get_path(), "Location"))
 
 
 class TestGetDrawingCollection(NewFile):
@@ -305,23 +329,6 @@ class TestGetName(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         assert subject.get_name(ifc.createIfcWall(Name="Foobar")) == "Foobar"
-
-
-class TestGetScheduleLocation(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        schedule = ifcopenshell.api.run("document.add_information", ifc)
-        schedule.Location = "uri"
-        reference = ifcopenshell.api.run("document.add_reference", ifc, information=schedule)
-        subject.get_schedule_location(schedule) == "uri"
-
-    def test_run_ifc2x3(self):
-        ifc = ifcopenshell.file(schema="IFC2X3")
-        tool.Ifc.set(ifc)
-        reference = ifc.createIfcDocumentReference(Location="uri")
-        schedule = ifc.createIfcDocumentInformation(DocumentReferences=[reference])
-        subject.get_schedule_location(schedule) == "uri"
 
 
 class TestGenerateDrawingMatrix(NewFile):
@@ -426,9 +433,10 @@ class TestGetTextLiteral(NewFile):
         element = ifc.createIfcAnnotation()
         element.Representation = ifc.createIfcProductDefinitionShape()
         context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
-        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="BoxAlignment")
+        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item])
         element.Representation.Representations = [representation]
+        element.ObjectType = "TEXT"  # TODO: double check if it's valid to set this
         tool.Ifc.link(element, obj)
         assert subject.get_text_literal(obj) == item
 
@@ -486,7 +494,7 @@ class TestImportSheets(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SHEET")
         subject.import_sheets()
         props = bpy.context.scene.DocProperties
         assert props.sheets[0].ifc_definition_id == document.id()
@@ -497,7 +505,7 @@ class TestImportSheets(NewFile):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
         ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
-        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="SHEET")
         subject.import_sheets()
         props = bpy.context.scene.DocProperties
         assert props.sheets[0].ifc_definition_id == document.id()
@@ -513,15 +521,16 @@ class TestImportTextAttributes(NewFile):
         element = ifc.createIfcAnnotation()
         element.Representation = ifc.createIfcProductDefinitionShape()
         context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
-        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="BoxAlignment")
+        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item])
         element.Representation.Representations = [representation]
+        element.ObjectType = "TEXT"  # TODO: double check if it's valid to set this
         tool.Ifc.link(element, obj)
         subject.import_text_attributes(obj)
-        props = obj.BIMTextProperties
-        assert props.attributes.get("Literal").string_value == "Literal"
-        assert props.attributes.get("Path").enum_value == "RIGHT"
-        assert props.attributes.get("BoxAlignment").string_value == "BoxAlignment"
+        literal_props = obj.BIMTextProperties.literals[0]
+        assert literal_props.attributes.get("Literal").string_value == "Literal"
+        assert literal_props.attributes.get("Path").enum_value == "RIGHT"
+        assert literal_props.attributes.get("BoxAlignment").string_value == "bottom-left"
 
 
 class TestImportAssignedProduct(NewFile):
@@ -592,7 +601,7 @@ class TestUpdateTextValue(NewFile):
         TestGetTextLiteral().test_run()
         obj = bpy.data.objects.get("Object")
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.value == "Literal"
+        assert obj.BIMTextProperties.literals[0].value == "Literal"
 
     def test_using_attribute_variables(self):
         TestGetTextLiteral().test_run()
@@ -606,7 +615,7 @@ class TestUpdateTextValue(NewFile):
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Name}} Bar"
 
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.value == "Foo Baz Bar"
+        assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"
 
     def test_using_property_variables(self):
         TestGetTextLiteral().test_run()
@@ -622,4 +631,4 @@ class TestUpdateTextValue(NewFile):
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Custom_Pset.Key}} Bar"
 
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.value == "Foo Baz Bar"
+        assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"

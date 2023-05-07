@@ -76,9 +76,7 @@ class Usecase:
         matrix[2][3] *= self.unit_scale
 
     def get_placement_rel_to(self):
-        if getattr(self.settings["product"], "ContainedInStructure", None):
-            return self.settings["product"].ContainedInStructure[0].RelatingStructure.ObjectPlacement
-        elif getattr(self.settings["product"], "Decomposes", None):
+        if getattr(self.settings["product"], "Decomposes", None):
             relating_object = self.settings["product"].Decomposes[0].RelatingObject
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
         elif getattr(self.settings["product"], "Nests", None):
@@ -96,6 +94,9 @@ class Usecase:
         elif getattr(self.settings["product"], "ProjectsElements", None):
             relating_object = self.settings["product"].ProjectsElements[0].RelatingElement
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        elif getattr(self.settings["product"], "ContainedInStructure", None):
+            return self.settings["product"].ContainedInStructure[0].RelatingStructure.ObjectPlacement
+
 
     def get_children_settings(self, placement):
         if not placement:

@@ -83,18 +83,34 @@ def get_connected_port(port):
 
 
 def get_connected_to(element):
-    # Note: this code is for IFC2X3. IFC4 has a different approach.
     results = []
-    for rel in element.HasPorts:
-        for rel2 in rel.RelatingPort.ConnectedTo:
-            results.extend([r.RelatedElement for r in rel2.RelatedPort.ContainedIn if r.RelatedElement != element])
-    return results
+    for port in ifcopenshell.util.system.get_ports(element):
+        for relConnectsPort in port.ConnectedTo:
+            for disPort in [relConnectsPort.RelatedPort,relConnectsPort.RelatingPort]:
+                if hasattr(disPort,"Nests"):
+                    for relNest in disPort.Nests:
+                        if relNest.RelatingObject != element:
+                            results.append(relNest.RelatingObject)
+                # IFC2X3 only, deprecated in IFC4
+                elif hasattr(disPort,"ContainedIn"):
+                    for relConPortToElement in disPort.ContainedIn:
+                        if relConPortToElement.RelatedElement != element:
+                            results.append(relConPortToElement.RelatedElement)
+    return(results)
 
 
 def get_connected_from(element):
-    # Note: this code is for IFC2X3. IFC4 has a different approach.
     results = []
-    for rel in element.HasPorts:
-        for rel2 in rel.RelatingPort.ConnectedFrom:
-            results.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn if r.RelatedElement != element])
-    return results
+    for port in ifcopenshell.util.system.get_ports(element):
+        for relConnectsPort in port.ConnectedFrom:
+            for disPort in [relConnectsPort.RelatedPort,relConnectsPort.RelatingPort]:
+                if hasattr(disPort,"Nests"):
+                    for relNest in disPort.Nests:
+                        if relNest.RelatingObject != element:
+                            results.append(relNest.RelatingObject)
+                # IFC2X3 only, deprecated in IFC4
+                elif hasattr(disPort,"ContainedIn"):
+                    for relConPortToElement in disPort.ContainedIn:
+                        if relConPortToElement.RelatedElement != element:
+                            results.append(relConPortToElement.RelatedElement)
+    return(results)

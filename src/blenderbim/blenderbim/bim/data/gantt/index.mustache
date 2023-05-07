@@ -1,67 +1,55 @@
 <link href="jsgantt.css" rel="stylesheet" type="text/css"/>
+<link href="../../module/sequence/gantt/main.css" rel="stylesheet" type="text/css"/>
 <script src="jsgantt.js" type="text/javascript"></script>
-<style>
-.gtaskcellwkend,
-.gtaskcellcurrent,
-.gminorheadingwkend {
-  background-color: #e1e1e1;
-}
+<script type="text/javascript" src="../../module/sequence/gantt/index.js"></script>
+<script>
+var json_data = `{{{json_data}}}`;
+</script>
 
-.gitemhighlight td {
-  background-color: #ffdaaa;
-}
+<div id="options" class="no-print">
+  <h4>Choose a language:
+  <select id="lang" class="sweet_button" onchange="set_language(event)">
+    <option value='cn'>Chinese (cn)</option>
+    <option value='cs'>Czech (cs)</option>
+    <option value='nl'>Dutch (Standard)</option>
+    <option value='en' selected>English (en)</option>
+    <option value='fr'>French (fr)</option>
+    <option value='de'>German (de)</option>
+    <option value='hu'>Hungarian (hu)</option>
+    <option value='id'>Indonesian (id)</option>
+    <option value='it'>Italian (it)</option>
+    <option value='ja'>Japanese (ja)</option>
+    <option value='pt'>Portuguese (pt)</option>
+    <option value='ru'>Russian (ru)</option>
+    <option value='es'>Spanish (es)</option>
+    <option value='sv'>Swedish (sv)</option>
+    <option value='tr'>Turkish (tr)</option>
+  </select>
+  </h4>
 
-.gtaskblue {
-  background: #4281A4;
-}
+  <br>
+</div>
+<div class="top-right no-print" id="print_options">
+  <select class="sweet_button" id="print_page_size">
+    <option value="210,297">A4 Portrait</option>
+    <option value="297,210">A4 Landscape</option>
+    <option value="297,420">A3 Portrait</option>
+    <option value="420,297">A3 Landscape</option>
+    <option value="420,594">A2 Portrait</option>
+    <option value="594,420">A2 Landscape</option>
+    <option value="594,841">A1 Portrait</option>
+    <option value="841,594">A1 Landscape</option>
+    <option value="841,1189">A0 Portrait</option>
+    <option value="1189,841">A0 Landscape</option>
+  </select>
+</div>
 
-.gtaskred {
-  background: #C1666B;
-}
-
-.gtaskgreen {
-  background: #48A9A6;
-}
-
-.gtaskyellow {
-  background: #D4B483;
-}
-
-.gmainleft {
-  overflow: visible;
-  flex: 0 1 auto;
-}
-
-</style>
-<a href="#print" id="print">Print Mode</a>
+<div id="schedule-data" class="no-print"></div>
+<div id="schedule-header" style=""></div>
 <div style="position:relative" class="gantt" id="GanttChartDIV"></div>
-<script type="text/javascript">
-var g = new JSGantt.GanttChart(document.getElementById('GanttChartDIV'), 'day');
-g.setOptions({
-    vCaptionType: 'Caption',  // Set to Show Caption : None,Caption,Resource,Duration,Complete,
-    vQuarterColWidth: 36,
-    vDateTaskDisplayFormat: 'day dd month yyyy', // Shown in tool tip box
-    vDayMajorDateDisplayFormat: 'mon yyyy - Week ww',// Set format to dates in the "Major" header of the "Day" view
-    vWeekMinorDateDisplayFormat: 'dd mon', // Set format to display dates in the "Minor" header of the "Week" view
-    vLang: 'en',
-    vShowTaskInfoLink: 1, // Show link in tool tip (0/1)
-    vShowEndWeekDate: 0,  // Show/Hide the date for the last day of the week in header for daily
-    vUseSingleCell: 10000, // Set the threshold cell per table row (Helps performance for large data.
-    vFormatArr: ['Day', 'Week', 'Month', 'Quarter'], // Even with setUseSingleCell using Hour format on such a large chart can cause issues in some browsers,
-    vShowRes: false, // Disable the resource column.
-    vShowComp: false, // Disable the completion column.
-    vShowDur: false, // Disable the duration column, because jsgantt doesn't calculate durations the way we want.
-    vAdditionalHeaders: {ifcduration: {title: 'Duration'}},
-    vUseToolTip: false, // Disable tooltips.
-    vTotalHeight: 900,
-});
-document.getElementById('print').addEventListener('click', function() {
-    g.setTotalHeight("");
-    g.Draw();
-});
-var json_data = `
-{{{json_data}}}
-`;
-JSGantt.parseJSONString(json_data, g);
-g.Draw();
+
+<script>
+var data = `{{{data}}}`;
+setupPage(data);
+create_gantt_chart(json_data)
 </script>

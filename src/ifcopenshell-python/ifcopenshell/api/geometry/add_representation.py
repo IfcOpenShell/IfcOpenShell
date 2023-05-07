@@ -114,7 +114,16 @@ class Usecase:
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
             return self.create_variable_representation()
-        if self.settings["context"].ContextIdentifier == "Annotation":
+        elif self.settings["ifc_representation_class"] == "IfcTextLiteral":
+            return self.create_text_representation(is_2d=False)
+        elif self.settings["ifc_representation_class"] == "IfcGeometricCurveSet/IfcTextLiteral":
+            shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
+            shape_representation.RepresentationType = "Annotation3D"
+            items = list(shape_representation.Items)
+            items.append(self.create_text())
+            shape_representation.Items = items
+            return shape_representation
+        elif self.settings["context"].ContextIdentifier == "Annotation":
             return self.create_annotation3d_representation()
         elif self.settings["context"].ContextIdentifier == "Axis":
             return self.create_curve3d_representation()
@@ -140,7 +149,7 @@ class Usecase:
 
     def create_plan_representation(self):
         if self.settings["ifc_representation_class"] == "IfcTextLiteral":
-            return self.create_text_representation()
+            return self.create_text_representation(is_2d=True)
         elif self.settings["ifc_representation_class"] == "IfcGeometricCurveSet/IfcTextLiteral":
             shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
             shape_representation.RepresentationType = "Annotation2D"
@@ -194,11 +203,11 @@ class Usecase:
             },
         )
 
-    def create_text_representation(self):
+    def create_text_representation(self, is_2d=False):
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Annotation2D",
+            "Annotation2D" if is_2d else "Annotation3D",
             [self.create_text()],
         )
 
@@ -684,12 +693,14 @@ class Usecase:
 
     def create_annotation3d_representation(self):
         items = []
-        curves = self.create_curves(should_exclude_faces=True, is_2d=False)
-        if curves:
-            items.append(self.file.createIfcGeometricCurveSet(curves))
-        surfaces = self.create_curve_bounded_planes()
-        if surfaces:
-            items.append(self.file.createIfcGeometricSet(surfaces))
+        if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
+            items = self.create_annotation_fill_areas(is_2d=False)
+        else:
+            items = [self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=False))]
+        # TODO Unsure when it is appropriate to use curve bounded planes
+        # surfaces = self.create_curve_bounded_planes()
+        # if surfaces:
+        #     items.append(self.file.createIfcGeometricSet(surfaces))
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,

@@ -75,7 +75,7 @@ def update_active_cost_item_index(self, context):
     if schedule.PredefinedType == "SCHEDULEOFRATES":
         tool.Cost.load_cost_item_types()
     else:
-        tool.Cost.load_cost_item_quantities(cost_item=tool.Cost.get_highlighted_cost_item())
+        tool.Cost.load_cost_item_quantities()
     CostClassificationsData.load()
 
 
@@ -135,6 +135,23 @@ class CostItemType(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+def update_cost_item_parent(self, context):
+    cost_item = tool.Cost.get_highlighted_cost_item()
+    tool.Cost.toggle_cost_item_parent(cost_item=cost_item)
+
+
+def update_active_cost_item_elements(self, context):
+    bpy.ops.bim.load_cost_item_element_quantities()
+
+
+def update_active_cost_item_tasks(self, context):
+    bpy.ops.bim.load_cost_item_task_quantities()
+
+
+def update_active_cost_item_resources(self, context):
+    bpy.ops.bim.load_cost_item_resource_quantities()
+
+
 class BIMCostProperties(PropertyGroup):
     cost_schedule_predefined_types: EnumProperty(
         items=get_schedule_predefined_types, name="Predefined Type", default=None
@@ -164,6 +181,7 @@ class BIMCostProperties(PropertyGroup):
         name="Cost Types",
     )
     cost_category: StringProperty(name="Cost Category")
+    fixed_cost_value: FloatProperty(name="Fixed Cost Value")
     active_cost_value_id: IntProperty(name="Active Cost Item Value Id")
     cost_value_editing_type: StringProperty(name="Cost Value Editing Type")
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
@@ -186,3 +204,12 @@ class BIMCostProperties(PropertyGroup):
     cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
     active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
     contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")
+    product_cost_items: CollectionProperty(name="Product Cost Items", type=CostItem)
+    active_product_cost_item_index: IntProperty(name="Active Product Cost Item Index")
+    enable_reorder: BoolProperty(name="Enable Reorder", default=False)
+    show_nested_elements: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_elements)
+    show_nested_tasks: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_tasks)
+    show_nested_resources: BoolProperty(
+        name="Show Nested Tasks", default=False, update=update_active_cost_item_resources
+    )
+    change_cost_item_parent: BoolProperty(name="Change Cost Item Parent", default=False, update=update_cost_item_parent)

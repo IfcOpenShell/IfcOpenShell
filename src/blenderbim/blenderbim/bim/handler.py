@@ -27,6 +27,8 @@ from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
 from blenderbim.bim.module.model.data import AuthoringData
+from mathutils import Vector
+from math import cos, degrees
 
 
 global_subscription_owner = object()
@@ -47,9 +49,9 @@ def mode_callback(obj, data):
         ):
             continue
         if obj.data.BIMMeshProperties.ifc_definition_id:
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
         elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
-            IfcStore.edited_objs.add(obj)
+            tool.Ifc.edit(obj)
 
 
 def name_callback(obj, data):
@@ -94,23 +96,74 @@ def name_callback(obj, data):
 
 def color_callback(obj, data):
     if obj.BIMMaterialProperties.ifc_style_id:
-        IfcStore.edited_objs.add(obj)
+        tool.Ifc.edit(obj)
 
 
 def active_object_callback():
     refresh_ui_data()
+    update_bim_tool_props()
 
 
-def subscribe_to(object, data_path, callback):
+def update_bim_tool_props():
+    """update BIM Tools props (such as extrusion_depth, length and x_angle) when active object changes"""
+    obj = bpy.context.active_object
+
+    # bunch of checks to see if we're in a valid state
+    if not obj:
+        return
+    mode = bpy.context.mode
+    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode).idname
+    if current_tool != "bim.bim_tool":
+        return
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return
+    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+    if not representation:
+        return
+    extrusion = tool.Model.get_extrusion(representation)
+    if not extrusion:
+        return
+
+    def get_x_angle(extrusion):
+        x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+        x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+        return x_angle
+
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    props = bpy.context.scene.BIMModelProperties
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+
+    if AuthoringData.data["active_material_usage"] == "LAYER2":
+        x_angle = get_x_angle(extrusion)
+        axis = tool.Model.get_wall_axis(obj)["reference"]
+        props.extrusion_depth = extrusion.Depth * si_conversion * cos(x_angle)
+        props.length = (axis[1] - axis[0]).length
+        props.x_angle = x_angle
+
+    elif AuthoringData.data["active_material_usage"] == "LAYER3":
+        x_angle = get_x_angle(extrusion)
+        props.x_angle = x_angle
+
+    elif AuthoringData.data["active_material_usage"] == "PROFILE":
+        props.extrusion_depth = extrusion.Depth * si_conversion
+
+
+def active_material_index_callback(obj, data):
+    refresh_ui_data()
+
+
+def subscribe_to(obj, data_path, callback):
     try:
-        subscribe_to = object.path_resolve(data_path, False)
+        subscribe_to = obj.path_resolve(data_path, False)
     except:
         return
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
-        owner=object,
+        owner=obj,
         args=(
-            object,
+            obj,
             data_path,
         ),
         notify=callback,
@@ -232,6 +285,11 @@ def setDefaultProperties(scene):
     # TODO: Move to drawing module
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style.name = "Blender Default"
+        drawing_style.render_type = "DEFAULT"
+        bpy.ops.bim.save_drawing_style(index="0")
+
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
@@ -293,8 +351,4 @@ def setDefaultProperties(scene):
                 RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
             }
         )
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Blender Default"
-        drawing_style.render_type = "DEFAULT"
-        bpy.ops.bim.save_drawing_style(index="2")
         AuthoringData.type_thumbnails = {}

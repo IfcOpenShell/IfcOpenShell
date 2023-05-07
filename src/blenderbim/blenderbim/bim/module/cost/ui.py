@@ -61,8 +61,10 @@ class BIM_PT_cost_schedules(Panel):
         row.label(text=cost_schedule["name"], icon="LINENUMBERS_ON")
 
         if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule["id"]:
-            op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
+            op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="Assigned")
             op.cost_schedule = cost_schedule["id"]
+            row.operator("bim.select_unassigned_products", icon="RESTRICT_SELECT_OFF", text="Unassigned")
+
             row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
@@ -102,7 +104,8 @@ class BIM_PT_cost_schedules(Panel):
         if self.props.cost_items and self.props.active_cost_item_index < len(self.props.cost_items):
             ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         if ifc_definition_id:
-
+            row.prop(self.props, "change_cost_item_parent", text="", icon="LINKED")
+            row.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
             if not CostSchedulesData.data["is_editing_rates"]:
                 op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
                 op.cost_item = ifc_definition_id
@@ -173,6 +176,8 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_item_values_ui(self):
         row = self.layout.row(align=True)
         row.prop(self.props, "cost_types", text="")
+        if self.props.cost_types == "FIXED":
+            row.prop(self.props, "fixed_cost_value", text="")
         if self.props.cost_types == "CATEGORY":
             row.prop(self.props, "cost_category", text="")
         op = row.operator("bim.add_cost_value", text="Add Value", icon="ADD")
@@ -341,7 +346,8 @@ class BIM_PT_cost_item_quantities(Panel):
         has_quantity_names = CostProp.get_product_quantity_names(self, context)
 
         row2 = col.row(align=True)
-        row2.label(text="Elements")
+        total_cost_item_products = len(self.props.cost_item_products)
+        row2.label(text="Elements ({})".format(total_cost_item_products))
         op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
         op.cost_item = cost_item.ifc_definition_id
 
@@ -362,6 +368,8 @@ class BIM_PT_cost_item_quantities(Panel):
             op.related_object = 0
 
         row2 = col.row()
+        row2.prop(self.props, "show_nested_elements", text="Show nested")
+        row2 = col.row()
         row2.template_list(
             "BIM_UL_cost_item_quantities",
             "",
@@ -370,6 +378,11 @@ class BIM_PT_cost_item_quantities(Panel):
             self.props,
             "active_cost_item_product_index",
         )
+
+        row2 = col.row()
+        op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
+        op.cost_item = cost_item.ifc_definition_id
+        op.related_object_type = "PRODUCT"
 
         if has_quantity_names:
             row2 = col.row()
@@ -381,7 +394,8 @@ class BIM_PT_cost_item_quantities(Panel):
         has_quantity_names = CostProp.get_process_quantity_names(self, context)
 
         row2 = col.row(align=True)
-        row2.label(text="Tasks")
+        total_cost_item_processes = len(self.props.cost_item_processes)
+        row2.label(text="Tasks ({})".format(total_cost_item_processes))
 
         tprops = context.scene.BIMTaskTreeProperties
         wprops = context.scene.BIMWorkScheduleProperties
@@ -398,6 +412,9 @@ class BIM_PT_cost_item_quantities(Panel):
             op.prop_name = ""
 
         row2 = col.row()
+        row2.prop(self.props, "show_nested_tasks", text="Show nested")
+
+        row2 = col.row()
         row2.template_list(
             "BIM_UL_cost_item_quantities",
             "",
@@ -406,6 +423,11 @@ class BIM_PT_cost_item_quantities(Panel):
             self.props,
             "active_cost_item_process_index",
         )
+
+        row2 = col.row()
+        op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
+        op.cost_item = cost_item.ifc_definition_id
+        op.related_object_type = "PROCESS"
 
         if has_quantity_names:
             row2 = col.row()
@@ -417,7 +439,8 @@ class BIM_PT_cost_item_quantities(Panel):
         has_quantity_names = CostProp.get_resource_quantity_names(self, context)
 
         row2 = col.row(align=True)
-        row2.label(text="Resources")
+        total_cost_item_resources = len(self.props.cost_item_resources)
+        row2.label(text="Resources ({})".format(total_cost_item_resources))
 
         op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
         op.cost_item = cost_item.ifc_definition_id
@@ -437,6 +460,9 @@ class BIM_PT_cost_item_quantities(Panel):
             op.prop_name = ""
 
         row2 = col.row()
+        row2.prop(self.props, "show_nested_resources", text="Show nested")
+
+        row2 = col.row()
         row2.template_list(
             "BIM_UL_cost_item_quantities",
             "",
@@ -445,6 +471,11 @@ class BIM_PT_cost_item_quantities(Panel):
             self.props,
             "active_cost_item_resource_index",
         )
+
+        row2 = col.row()
+        op = row2.operator("bim.clear_cost_item_assignments", text="Clear assignments", icon="X")
+        op.cost_item = cost_item.ifc_definition_id
+        op.related_object_type = "RESOURCE"
 
         if has_quantity_names:
             row2 = col.row()
@@ -518,7 +549,22 @@ class BIM_UL_cost_items_trait:
                 split2.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))
 
             self.draw_total_cost_column(split2, cost_item)
+            if self.props.enable_reorder:
+                self.draw_order_operator(row, item.ifc_definition_id, cost_item)
+
+            if self.props.change_cost_item_parent:
+                self.draw_parent_operator(row, item.ifc_definition_id)
+
             # TODO: reimplement "bim.copy_cost_item_values" somewhere with better UX
+
+    def draw_parent_operator(self, row, cost_item_id):
+        if self.props.active_cost_item_id:
+            if self.props.active_cost_item_id != cost_item_id:
+                op = row.operator(
+                    "bim.change_parent_cost_item", text="", icon="LINKED", emboss=False
+                ).new_parent = cost_item_id
+            else:
+                row.label(text="", icon="BLANK1")
 
     def draw_hierarchy(self, row, item):
         for i in range(0, item.level_index):
@@ -549,6 +595,17 @@ class BIM_UL_cost_items_trait:
 
     def draw_uom_column(self, layout, cost_item):
         layout.label(text=cost_item["UnitBasisUnitSymbol"] or "?" if cost_item["UnitBasisValueComponent"] else "-")
+
+    def draw_order_operator(self, row, ifc_definition_id, cost_item):
+        if cost_item["NestingIndex"] is not None:
+            if cost_item["NestingIndex"] == 0:
+                op = row.operator("bim.reorder_cost_item_nesting", icon="TRIA_DOWN", text="")
+                op.cost_item = ifc_definition_id
+                op.new_index = cost_item["NestingIndex"] + 1
+            elif cost_item["NestingIndex"] > 0:
+                op = row.operator("bim.reorder_cost_item_nesting", icon="TRIA_UP", text="")
+                op.cost_item = ifc_definition_id
+                op.new_index = cost_item["NestingIndex"] - 1
 
     def draw_total_quantity_column(self, layout, cost_item):
         layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '?'}")
@@ -604,9 +661,45 @@ class BIM_UL_cost_item_quantities(UIList):
 
         if item:
             row = layout.row(align=True)
+            op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
+            op.product = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
             row.label(text="{0:.2f}".format(item.total_quantity))
             op = row.operator("bim.unassign_cost_item_quantity", text="", icon="X")
             op.cost_item = cost_item.ifc_definition_id
             op.related_object = item.ifc_definition_id
+
+
+class BIM_UL_product_cost_items(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            op = row.operator("bim.highlight_product_cost_item", text="", icon="STYLUS_PRESSURE")
+            op.cost_item = item.ifc_definition_id
+            row.split(factor=0.8)
+            row.label(text=item.name)
+
+
+class BIM_PT_Costing_Tools(Panel):
+    bl_label = "5D Tools"
+    bl_idname = "BIM_PT_Costing_Tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "4D/5D Toolkit"
+
+    def draw(self, context):
+        self.props = context.scene.BIMCostProperties
+        row = self.layout.row()
+        row.operator(
+            "bim.load_product_cost_items", icon="FILE_REFRESH"
+        )
+        row = self.layout.row()
+        row.template_list(
+            "BIM_UL_product_cost_items",
+            "",
+            self.props,
+            "product_cost_items",
+            self.props,
+            "active_product_cost_item_index",
+        )

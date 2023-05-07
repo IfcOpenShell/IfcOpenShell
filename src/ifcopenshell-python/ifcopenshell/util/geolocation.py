@@ -166,3 +166,24 @@ def yaxis2angle(x, y):
     elif angle > 180:
         angle -= 360
     return angle
+
+
+def get_grid_north(ifc_file):
+    try:
+        conversion = ifc_file.by_type("IfcMapConversion")[0]
+    except:
+        return 0
+    if not conversion.XAxisAbscissa or not conversion.XAxisOrdinate:
+        return 0
+    return xaxis2angle(conversion.XAxisAbscissa, conversion.XAxisOrdinate)
+
+
+def get_true_north(ifc_file):
+    try:
+        for context in ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            if not context.TrueNorth:
+                continue
+            return yaxis2angle(*context.TrueNorth.DirectionRatios[0:2])
+    except:
+        return 0
+    return 0

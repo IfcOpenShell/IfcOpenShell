@@ -194,11 +194,12 @@ class TestSwitchRepresentation:
         geometry.is_edited("obj").should_be_called().will_return(False)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return(None)
-        geometry.import_representation("obj", "representation").should_be_called().will_return("new_data")
+        geometry.import_representation("obj", "representation", apply_openings=True).should_be_called().will_return("new_data")
         geometry.get_representation_name("representation").should_be_called().will_return("name")
         geometry.rename_object("new_data", "name").should_be_called()
         geometry.link("representation", "new_data").should_be_called()
         geometry.change_object_data("obj", "new_data", is_global=True).should_be_called()
+        geometry.record_object_materials("obj").should_be_called()
         geometry.clear_modifiers("obj").should_be_called()
         ifc.get_entity("obj").should_be_called().will_return("element")
         geometry.clear_cache("element").should_be_called()
@@ -210,17 +211,19 @@ class TestSwitchRepresentation:
             should_reload=True,
             is_global=True,
             should_sync_changes_first=True,
+            apply_openings=True,
         )
 
     def test_switching_to_a_reloaded_representation_and_deleting_the_existing_data(self, ifc, geometry):
         geometry.is_edited("obj").should_be_called().will_return(False)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("existing_data")
-        geometry.import_representation("obj", "representation").should_be_called().will_return("new_data")
+        geometry.import_representation("obj", "representation", apply_openings=True).should_be_called().will_return("new_data")
         geometry.get_representation_name("representation").should_be_called().will_return("name")
         geometry.rename_object("new_data", "name").should_be_called()
         geometry.link("representation", "new_data").should_be_called()
         geometry.change_object_data("obj", "new_data", is_global=True).should_be_called()
+        geometry.record_object_materials("obj").should_be_called()
         geometry.delete_data("existing_data").should_be_called()
         geometry.clear_modifiers("obj").should_be_called()
         ifc.get_entity("obj").should_be_called().will_return("element")
@@ -233,6 +236,7 @@ class TestSwitchRepresentation:
             should_reload=True,
             is_global=True,
             should_sync_changes_first=True,
+            apply_openings=True,
         )
 
     def test_switching_to_an_existing_representation(self, ifc, geometry):
@@ -240,6 +244,7 @@ class TestSwitchRepresentation:
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.change_object_data("obj", "data", is_global=True).should_be_called()
+        geometry.record_object_materials("obj").should_be_called()
         geometry.clear_modifiers("obj").should_be_called()
         ifc.get_entity("obj").should_be_called().will_return("element")
         geometry.clear_cache("element").should_be_called()
@@ -262,6 +267,7 @@ class TestSwitchRepresentation:
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.change_object_data("obj", "data", is_global=False).should_be_called()
+        geometry.record_object_materials("obj").should_be_called()
         geometry.clear_modifiers("obj").should_be_called()
         ifc.get_entity("obj").should_be_called().will_return("element")
         geometry.clear_cache("element").should_be_called()
@@ -315,6 +321,7 @@ class TestRemoveRepresentation:
         geometry.replace_object_with_empty("type_obj").should_be_called()
         ifc.run("geometry.unassign_representation", product="type", representation="representation").should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
+        geometry.delete_data("data").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="mapped_rep")
 
     def test_removing_an_unused_mapped_representation(self, ifc, geometry):
@@ -337,6 +344,7 @@ class TestRemoveRepresentation:
             "geometry.unassign_representation", product="element", representation="representation"
         ).should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
+        geometry.delete_data("data").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="representation")
 
     def test_removing_an_actively_used_representation(self, ifc, geometry):
@@ -351,6 +359,7 @@ class TestRemoveRepresentation:
             "geometry.unassign_representation", product="element", representation="representation"
         ).should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
+        geometry.delete_data("data").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="representation")
 
     def test_removing_an_unused_representation(self, ifc, geometry):

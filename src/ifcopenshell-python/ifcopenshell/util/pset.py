@@ -37,7 +37,9 @@ def get_template(schema):
 
 class PsetQto:
     templates_path = {
+        "IFC2X3": "Pset_IFC2X3.ifc",
         "IFC4": "Pset_IFC4_ADD2.ifc",
+        "IFC4X3": "Pset_IFC4X3.ifc"
     }
 
     def __init__(self, schema: str, templates=None) -> None:

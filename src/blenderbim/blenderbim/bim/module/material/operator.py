@@ -24,6 +24,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import blenderbim.bim.helper
 import blenderbim.tool as tool
+import blenderbim.core.style
 import blenderbim.core.material as core
 import blenderbim.bim.module.model.profile as model_profile
 from blenderbim.bim.module.material.prop import purge as material_prop_purge
@@ -242,7 +243,7 @@ class RemoveConstituent(bpy.types.Operator, tool.Ifc.Operator):
     constituent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(layer):
+        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.constituent)):
             if inverse.is_a("IfcMaterialConstituentSet") and len(inverse.MaterialConstituents) == 1:
                 return
         ifcopenshell.api.run(
@@ -277,7 +278,7 @@ class RemoveProfile(bpy.types.Operator, tool.Ifc.Operator):
     profile: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(layer):
+        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.profile)):
             if inverse.is_a("IfcMaterialProfileSet") and len(inverse.MaterialProfiles) == 1:
                 return
         ifcopenshell.api.run("material.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
@@ -335,7 +336,7 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
     layer: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(layer):
+        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.layer)):
             if inverse.is_a("IfcMaterialLayerSet") and len(inverse.MaterialLayers) == 1:
                 return
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=tool.Ifc.get().by_id(self.layer))
@@ -515,7 +516,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
     bl_idname = "bim.enable_editing_material_set_item_profile"
-    bl_label = "Enable Editing Material Set Item"
+    bl_label = "Enable Editing Material Set Item Profile"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     material_set_item: bpy.props.IntProperty()
@@ -531,7 +532,7 @@ class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
 
 class DisableEditingMaterialSetItemProfile(bpy.types.Operator):
     bl_idname = "bim.disable_editing_material_set_item_profile"
-    bl_label = "Disable Editing Material Set Item"
+    bl_label = "Disable Editing Material Set Item Profile"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
@@ -583,7 +584,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         blenderbim.bim.helper.import_attributes2(material_set_item, self.props.material_set_item_attributes)
 
         if material_set_item.is_a("IfcMaterialProfile"):
-            if material_set_item.Profile:
+            if material_set_item.Profile and material_set_item.Profile.ProfileName:
                 self.mprops.profiles = str(material_set_item.Profile.id())
 
         return {"FINISHED"}
@@ -664,35 +665,27 @@ class CopyMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        material = ifcopenshell.util.element.get_material(
-            self.file.by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
-        for obj in tool.Blender.get_selected_objects():
-            if obj == context.active_object:
-                continue
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "material.copy_material",
-                self.file,
-                **{
-                    "material": material,
-                    "element": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                },
-            )
-            self.set_default_material(obj, material)
+        blender_material = context.active_object.active_material
+        material = tool.Ifc.get_entity(blender_material)
 
-    def set_default_material(self, obj, material):
-        object_material_ids = [
-            om.BIMObjectProperties.ifc_definition_id
-            for om in obj.data.materials
-            if om is not None and om.BIMObjectProperties.ifc_definition_id
-        ]
+        if tool.Ifc.has_changed_shading(blender_material):
+            blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=blender_material)
 
-        if material.id() in object_material_ids:
-            return
-        obj.data.materials.append(IfcStore.get_element(material.id()))
+        copied_material = ifcopenshell.api.run("material.copy_material", tool.Ifc.get(), material=material)
+        copied_blender_material = blender_material.copy()
+        copied_style = self.get_style(copied_material)
+        tool.Ifc.link(copied_material, copied_blender_material)
+        if copied_style:
+            tool.Ifc.link(copied_style, copied_blender_material)
+        context.active_object.active_material = copied_blender_material
+
+    def get_style(self, material):
+        for material_representation in material.HasRepresentation:
+            for representation in material_representation.Representations:
+                for item in representation.Items:
+                    for style in item.Styles:
+                        if style.is_a("IfcSurfaceStyle"):
+                            return style
 
 
 class ExpandMaterialCategory(bpy.types.Operator):

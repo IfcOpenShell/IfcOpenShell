@@ -168,15 +168,14 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingWorkScheduleTasks(bpy.types.Operator):
+class EnableEditingWorkScheduleTasks(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_work_schedule_tasks"
-    bl_label = "Enable Editing Tasks"
+    bl_label = "Enable Editing Work Schedule Tasks"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         core.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
-        return {"FINISHED"}
 
 
 class LoadTaskProperties(bpy.types.Operator):
@@ -275,13 +274,13 @@ class EditTaskTime(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class EnableEditingTask(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_task"
-    bl_label = "Enable Editing Task"
+    bl_idname = "bim.enable_editing_task_attributes"
+    bl_label = "Enable Editing Task Attributes"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        core.enable_editing_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        core.enable_editing_task_attributes(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         return {"FINISHED"}
 
 
@@ -454,11 +453,8 @@ class UnassignProcess(bpy.types.Operator):
                 )
             else:
                 core.unassign_input_products(
-                    tool.Ifc,
-                    tool.Sequence,
-                    tool.Spatial,
-                    task=tool.Ifc.get().by_id(self.task)
-                    )
+                    tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task)
+                )
         elif self.related_object_type == "CONTROL":
             pass  # TODO
         return {"FINISHED"}
@@ -527,6 +523,31 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
+    bl_idname = "import_csv.bim"
+    bl_label = "Import CSV"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.csv4d2ifc import Csv2Ifc
+
+        self.file = tool.Ifc.get()
+        start = time.time()
+        csv2ifc = Csv2Ifc()
+        csv2ifc.csv = self.filepath
+        csv2ifc.file = self.file
+        csv2ifc.execute()
+        print("Imported in %s seconds" % (time.time() - start))
+        return {"FINISHED"}
+
+
 class ImportP6(bpy.types.Operator, ImportHelper):
     bl_idname = "import_p6.bim"
     bl_label = "Import P6"
@@ -581,7 +602,7 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
 
 class ImportPP(bpy.types.Operator, ImportHelper):
     bl_idname = "import_pp.bim"
-    bl_label = "Import Powerproject pp"
+    bl_label = "Import Powerproject .pp"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".pp"
     filter_glob: bpy.props.StringProperty(default="*.pp", options={"HIDDEN"})
@@ -939,7 +960,7 @@ class EditSequenceTimeLag(bpy.types.Operator, tool.Ifc.Operator):
 
 class DisableEditingSequence(bpy.types.Operator):
     bl_idname = "bim.disable_editing_sequence"
-    bl_label = "Disable Editing Sequence Attributes"
+    bl_label = "Disable Editing Sequence"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -981,6 +1002,7 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
         core.visualise_work_schedule_date(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
         return {"FINISHED"}
 
+
 class GuessDateRange(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.guess_date_range"
     bl_label = "Guess Work Schedule Date Range"
@@ -999,7 +1021,10 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        has_start, has_finish = bpy.context.scene.BIMWorkScheduleProperties.visualisation_start, bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish
+        has_start, has_finish = (
+            bpy.context.scene.BIMWorkScheduleProperties.visualisation_start,
+            bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish,
+        )
         return bool(has_start and has_finish) and not "-" in (has_start, has_finish)
 
     def execute(self, context):
@@ -1081,7 +1106,7 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
 
 
 class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
-    bl_label = "set date"
+    bl_label = "Set Date"
     bl_idname = "bim.datepicker_setdate"
     bl_options = {"REGISTER", "UNDO"}
     selected_date: bpy.props.StringProperty()
@@ -1092,7 +1117,7 @@ class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
 
 
 class BlenderBIM_RedrawDatePicker(bpy.types.Operator):
-    bl_label = "redraw datepicker window"
+    bl_label = "Redraw Datepicker Window"
     bl_idname = "bim.redraw_datepicker"
     bl_options = {"REGISTER", "UNDO"}
     action: bpy.props.StringProperty()
@@ -1205,20 +1230,9 @@ class CalculateTaskDuration(bpy.types.Operator, tool.Ifc.Operator):
         core.calculate_task_duration(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
 
 
-class HighlightProductRelatedTask(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.highlight_product_related_task"
-    bl_label = "Highlights the related task"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Finds the related Task"
-    product_type: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        core.highlight_product_related_task(tool.Sequence, tool.Spatial, product_type=self.product_type)
-
-
 class ExpandAllTasks(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.expand_all_tasks"
-    bl_label = "Expands all tasks"
+    bl_label = "Expands All Tasks"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Finds the related Task"
     product_type: bpy.props.StringProperty()
@@ -1229,7 +1243,7 @@ class ExpandAllTasks(bpy.types.Operator, tool.Ifc.Operator):
 
 class ContractAllTasks(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.contract_all_tasks"
-    bl_label = "Expands all tasks"
+    bl_label = "Expands All Tasks"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Finds the related Task"
     product_type: bpy.props.StringProperty()
@@ -1261,12 +1275,13 @@ class LoadTaskAnimationColors(bpy.types.Operator):
 
 class DisableEditingTaskAnimationColors(bpy.types.Operator):
     bl_idname = "bim.disable_editing_task_animation_colors"
-    bl_label = "Disable Editing Colors"
+    bl_label = "Disable Editing Task Animation Colors"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         core.disable_editing_task_animation_colors(tool.Sequence)
         return {"FINISHED"}
+
 
 class CopyTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_task"
@@ -1276,3 +1291,101 @@ class CopyTask(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.duplicate_task(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+
+
+class LoadProductTasks(bpy.types.Operator):
+    bl_idname = "bim.load_product_related_tasks"
+    bl_label = "Load Product Tasks"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        if not context.active_object:
+            return False
+        if not context.active_object.BIMObjectProperties.ifc_definition_id:
+            return False
+        return True
+
+    def execute(self, context):
+        core.load_product_related_tasks(
+            tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
+        )
+        return {"FINISHED"}
+
+
+class HighlightTask(bpy.types.Operator):
+    bl_idname = "bim.highlight_task"
+    bl_label = "Highlight Task"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        r = core.highlight_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+        return {"FINISHED"}
+
+
+class SelectWorkScheduleProducts(bpy.types.Operator):
+    bl_idname = "bim.select_work_schedule_products"
+    bl_label = "Select Work Schedule Products"
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        r = core.select_work_schedule_products(
+            tool.Sequence, tool.Spatial, work_schedule=tool.Ifc.get().by_id(self.work_schedule)
+        )
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+        return {"FINISHED"}
+
+
+class SelectUnassignedWorkScheduleProducts(bpy.types.Operator):
+    bl_idname = "bim.select_unassigned_work_schedule_products"
+    bl_label = "Select Unassigned Work Schedule Products"
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        r = core.select_unassigned_work_schedule_products(tool.Ifc, tool.Sequence, tool.Spatial)
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+        return {"FINISHED"}
+
+
+class ReorderTask(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reorder_task_nesting"
+    bl_label = "Reorder Nesting"
+    bl_options = {"REGISTER", "UNDO"}
+    new_index: bpy.props.IntProperty()
+    task: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        r = core.reorder_task_nesting(
+            tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task), new_index=self.new_index
+        )
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
+
+
+class CreateBaseline(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.create_baseline"
+    bl_label = "Create Schedule Baseline"
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()
+    name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.create_baseline(
+            tool.Ifc, tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule), name=self.name
+        )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "name", text="Baseline Name")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)

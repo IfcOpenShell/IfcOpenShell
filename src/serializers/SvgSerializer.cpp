@@ -334,23 +334,25 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 		first_wire = false;
 	}
 
-	path.add("\"");
-
-	if (dash_array) {
-		path.add(" stroke-dasharray=\"");
-		bool first = true;
-		for (auto& d : *dash_array) {
-			if (!first) {
-				path.add(" ");
-			}
-			first = false;
-			radii.push_back(path.add(d));
-		}
+	if (!path.empty()) {
 		path.add("\"");
-	}
 
-	path.add("/>\n");
-	p.second.push_back(path);
+		if (dash_array) {
+			path.add(" stroke-dasharray=\"");
+			bool first = true;
+			for (auto& d : *dash_array) {
+				if (!first) {
+					path.add(" ");
+				}
+				first = false;
+				radii.push_back(path.add(d));
+			}
+			path.add("\"");
+		}
+
+		path.add("/>\n");
+		p.second.push_back(path);
+	}
 }
 
 SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, IfcUtil::IfcBaseEntity* storey, const std::string& id) {
@@ -974,11 +976,11 @@ void SvgSerializer::write(const geometry_data& data) {
 						
 						const TopoDS_Face& face = TopoDS::Face(exp.Current());
 						BRepGProp_Face prop(face);
-						gp_Pnt p;
+						gp_Pnt _;
 						gp_Vec normal_direction;
 						double u0, u1, v0, v1;
 						BRepTools::UVBounds(face, u0, u1, v0, v1);
-						prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., p, normal_direction);
+						prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., _, normal_direction);
 						const double dx = std::fabs(normal_direction.X());
 						const double dy = std::fabs(normal_direction.Y());
 						const double dz = std::fabs(normal_direction.Z());
@@ -1182,7 +1184,28 @@ void SvgSerializer::write(const geometry_data& data) {
 
 		TopoDS_Face largest_closed_wire_face;
 		double largest_closed_wire_area = 0.;
-		path_object* po = nullptr;
+
+		gp_Pln pln;
+		if (variant.which() < 2) {
+			pln = gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ());
+		} else {
+			const auto& section = boost::get<vertical_section>(variant);
+			pln = section.plane;
+		}
+
+		auto svg_name = data.svg_name;
+		
+		path_object* po_ = nullptr;
+		auto po = [this, &po_, &pln, &storey, &drawing_name, &svg_name]() {
+			if (po_ == nullptr) {
+				if (storey) {
+					po_ = &start_path(pln, storey, svg_name);
+				} else {
+					po_ = &start_path(pln, drawing_name, svg_name);
+				}
+			}
+			return po_;
+		};
 
 		// Iterate over components of compound to have better chance of matching section edges to closed wires
 		for (; it.More(); it.Next(), ++dash_it) {
@@ -1211,15 +1234,6 @@ void SvgSerializer::write(const geometry_data& data) {
 				cut_z = zmin + 1.;
 			}
 
-			gp_Pln pln;
-			if (variant.which() < 2) {
-				pln = gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ());
-			}
-			else {
-				const auto& section = boost::get<vertical_section>(variant);
-				pln = section.plane;
-			}
-
 			gp_Vec bbmin(x1, y1, zmin);
 			gp_Vec bbmax(x2, y2, zmax);
 			auto bbdif = bbmax - bbmin;
@@ -1244,19 +1258,9 @@ void SvgSerializer::write(const geometry_data& data) {
 					: (projection_direction.Dot(z_global) > 0.99 && state == -1)            // For elevations only include annotations that are "facing" the view direction
 				))
 			{
-				auto svg_name = data.svg_name;
-
 				if (object_type.size()) {
 					// postfix the object_type for CSS matching
 					boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
-				}
-
-				if (po == nullptr) {
-					if (storey) {
-						po = &start_path(pln, storey, svg_name);
-					} else {
-						po = &start_path(pln, drawing_name, svg_name);
-					}
 				}
 
 				auto subshape_to_use = subshape;
@@ -1267,11 +1271,9 @@ void SvgSerializer::write(const geometry_data& data) {
 					trsf.SetTransformation(gp::XOY(), pln.Position());
 					subshape_to_use.Move(trsf);
 
-					gp_Trsf trsf_mirror;
-					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-					BRepBuilderAPI_Transform make_transform_mirror(subshape_to_use, trsf_mirror, true);
-					make_transform_mirror.Build();
-					subshape_to_use = make_transform_mirror.Shape();
+					BRepBuilderAPI_Transform make_transform_mirror_(subshape_to_use, trsf_mirror, true);
+					make_transform_mirror_.Build();
+					subshape_to_use = make_transform_mirror_.Shape();
 				}
 
 				if (object_type == "Dimension") {
@@ -1287,7 +1289,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						TopoDS_Wire W;
 						B.MakeWire(W);
 						B.Add(W, e);
-						write(*po, W);
+						write(*po(), W);
 
 						// @todo should we take the average parameter value instead?
 						gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
@@ -1344,7 +1346,7 @@ void SvgSerializer::write(const geometry_data& data) {
 							path.add("</tspan>");
 						}
 						path.add("</text>");
-						po->second.push_back(path);
+						po()->second.push_back(path);
 					}
 					
 				} else if (object_type == "Symbol") {
@@ -1352,7 +1354,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					TopExp_Explorer exp(subshape_to_use, TopAbs_WIRE, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
 						const auto& W = TopoDS::Wire(exp.Current());
-						write(*po, W, *dash_it);
+						write(*po(), W, *dash_it);
 					}
 					
 				}
@@ -1374,17 +1376,11 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			emitted = true;
 
-			auto svg_name = data.svg_name;
 			if (object_type.size()) {
 				// prefix class to indicate this is a cut element
-				boost::replace_all(svg_name, "class=\"", "class=\"cut ");
-			}
-
-			if (po == nullptr) {
-				if (storey) {
-					po = &start_path(pln, storey, svg_name);
-				} else {
-					po = &start_path(pln, drawing_name, svg_name);
+				// @todo this is getting out of control, use a proper xml/svg library.
+				if(svg_name.find("class=\"cut ") == std::string::npos) {
+					boost::replace_all(svg_name, "class=\"", "class=\"cut ");
 				}
 			}
 
@@ -1395,11 +1391,9 @@ void SvgSerializer::write(const geometry_data& data) {
 				trsf.SetTransformation(gp::XOY(), pln.Position());
 				result.Move(trsf);
 
-				gp_Trsf trsf_mirror;
-				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-				BRepBuilderAPI_Transform make_transform_mirror(result, trsf_mirror, true);
-				make_transform_mirror.Build();
-				result = make_transform_mirror.Shape();
+				BRepBuilderAPI_Transform make_transform_mirror_(result, trsf_mirror, true);
+				make_transform_mirror_.Build();
+				result = make_transform_mirror_.Shape();
 			}
 
 			Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
@@ -1520,13 +1514,15 @@ void SvgSerializer::write(const geometry_data& data) {
 						path.add("</tspan>");
 					}
 					path.add("</text>");
-					po->second.push_back(path);
+					po()->second.push_back(path);
 				}
 
 				BB.Add(wires_compound, wire);
 			}
 
-			write(*po, wires_compound);
+			if (TopoDS_Iterator(wires_compound).More()) {
+				write(*po(), wires_compound);
+			}
 		}
 
 		if (!largest_closed_wire_face.IsNull()) {
@@ -1564,8 +1560,8 @@ void SvgSerializer::write(const geometry_data& data) {
 						
 						// Sample some points on the line and assure it's inside.
 						bool all_inside = true;
-						for (int i = 5; i < 95; ++i) {
-							gp_Pnt p3d((pa.XYZ() + (pb.XYZ() - pa.XYZ()) * i / 100.));
+						for (int n = 5; n < 95; ++n) {
+							gp_Pnt p3d((pa.XYZ() + (pb.XYZ() - pa.XYZ()) * n / 100.));
 							gp_Pnt2d p2d(p3d.X(), p3d.Y());
 
 							if (fcls.Perform(p2d) != TopAbs_IN) {
@@ -1635,12 +1631,12 @@ void SvgSerializer::write(const geometry_data& data) {
 					path.add("</tspan>");
 				}
 				path.add("</text>");
-				po->second.push_back(path);
+				po()->second.push_back(path);
 			}
 		}
 
-		if (po && !annotation.IsNull()) {
-			write(*po, annotation);
+		if (!annotation.IsNull()) {
+			write(*po(), annotation);
 		}
 	}
 

@@ -266,11 +266,13 @@ class Classification(Facet):
             "Data having a {system} reference of {value}",
             "Data classified using {system}",
             "Data classified as {value}",
+            "Classified data",
         ]
         self.requirement_templates = [
             "Shall have a {system} reference of {value}",
             "Shall be classified using {system}",
             "Shall be classified as {value}",
+            "Shall be classified",
         ]
         super().__init__(value, system, uri, minOccurs, maxOccurs, instructions)
 
@@ -555,6 +557,10 @@ class Property(Facet):
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
                     elif prop_entity.is_a("IfcPropertyEnumeratedValue"):
+                        if not prop_entity.EnumerationValues:
+                            is_pass = False
+                            reason = {"type": "NOVALUE"}
+                            break
                         data_type = prop_entity.EnumerationValues[0].is_a()
                         if data_type != self.measure:
                             is_pass = False
@@ -906,7 +912,7 @@ class PartOfResult(Result):
 class PropertyResult(Result):
     def to_string(self):
         if self.reason["type"] == "NOPSET":
-            return "The entity has no property sets"
+            return "The required property set does not exist"
         elif self.reason["type"] == "NOVALUE":
             return "The property set does not contain the required property"
         elif self.reason["type"] == "MEASURE":

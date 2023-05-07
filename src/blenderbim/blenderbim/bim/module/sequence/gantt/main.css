@@ -1,0 +1,172 @@
+.gtaskcellwkend,
+.gtaskcellcurrent,
+.gminorheadingwkend {
+  background-color: #e1e1e1;
+}
+
+.gitemhighlight td {
+  background-color: #ffdaaa;
+}
+
+.gtaskblue {
+  background: #4281A4;
+}
+
+.gtaskred {
+  background: #C1666B;
+}
+
+.gtaskgreen {
+  background: #48A9A6;
+}
+
+.gtaskyellow {
+  background: #D4B483;
+}
+
+.gname.ggroupitem {
+  background-color: #4c92ec;
+  font-weight: bold;
+}
+
+.gtaskcellwkend,
+.gtaskcellcurrent,
+.gminorheadingwkend {
+  background-color: #e1e1e1;
+}
+
+.gitemhighlight td {
+  background-color: #ffdaaa;
+}
+
+.gtaskblue {
+  background: #4281A4;
+}
+
+.gtaskred {
+  background: #C1666B;
+}
+
+.gtaskgreen {
+  background: #48A9A6;
+}
+
+.gtaskyellow {
+  background: #D4B483;
+}
+
+.gmainleft {
+  resize: horizontal;
+  height:100%;
+  /* flex: 0 1 auto; */
+}
+
+.gmainright {
+  height:100%;
+  overflow: auto;
+  font-size: 1.5rem;
+}
+
+.gcaption {
+  /* github style header 3 */
+  font-size: 0.75rem;
+  font-weight: 200;
+  line-height: 1.25;
+  color: black;
+}
+
+.gchartgrid {
+  background-color: transparent;
+  height: fit-content;
+}
+
+.gchartcontainer {
+  border: 1px solid #e1e1e1;
+  height: fit-content;
+}
+
+@media print {
+  .no-print {
+    display: none;
+  }
+}
+
+button, .sweet_button {
+  border: none;
+  background-color: #ffffff;
+  color: black;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 1rem;
+  margin: 0.25rem 0.5rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  /* add shadow */
+  box-shadow: 0 0 0.7rem rgba(95, 95, 95, 0.4);
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: black;
+  margin: 0.5rem;
+}
+h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: black;
+  margin: 0.5rem;
+}
+
+h4 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: black;
+  margin: 0.5rem;
+}
+
+.table-description {
+/* create a github style table similar to a wild car */
+  margin-bottom: 1rem;
+  width : 50%;
+  background-color: transparent;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-color: grey;
+  border: 1px solid #e1e1e1;
+  border-radius: 0.25rem;
+  box-shadow: 0 0 0.7rem rgba(95, 95, 95, 0.4);
+  text-align: center;
+}
+
+.table-description tr {
+  display: table-row;
+  vertical-align: inherit;
+  border-color: inherit;
+  border-bottom: 1px solid #e1e1e1;
+}
+
+.table-description thead {
+  display: table-header-group;
+  vertical-align: middle;
+  border-color: inherit;
+  background-color: #95A5A6;
+}
+
+.top-right {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+}
+
+#schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}

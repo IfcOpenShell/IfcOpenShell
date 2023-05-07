@@ -37,17 +37,8 @@ from mathutils import Vector
 
 # TODO: move to some utils helpers/tool module
 def update_simple_openings(element, opening_width, opening_height):
-    element_type = None
     ifc_file = tool.Ifc.get()
-    if element.is_a("IfcElementType"):
-        element_type = element
-        fillings = ifcopenshell.util.element.get_types(element_type)
-    else:
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type:
-            fillings = ifcopenshell.util.element.get_types(element_type)
-        else:
-            fillings = [element]
+    fillings = tool.Ifc.get_all_element_occurences(element)
 
     voided_objs = set()
     has_replaced_opening_representation = False
@@ -78,10 +69,12 @@ def update_simple_openings(element, opening_width, opening_height):
         context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
 
         extrusion = shape_builder.extrude(
-            shape_builder.rectangle(size=Vector([opening_width, 0.0, opening_height])),
+            shape_builder.rectangle(size=Vector([opening_width, 0.0, opening_height]).xz),
             magnitude=thickness / unit_scale,
             position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-            extrusion_vector=Vector([0.0, 1.0, 0.0]),
+            position_x_axis=V(1, 0, 0),
+            position_z_axis=V(0, -1, 0),
+            extrusion_vector=V(0, 0, -1),
         )
 
         new_representation = shape_builder.get_representation(context, extrusion)
@@ -176,7 +169,14 @@ def update_window_modifier_representation(context):
             should_sync_changes_first=True,
         )
 
+    # type attributes
     element.PartitioningType = props.window_type
+
+    # occurences attributes
+    occurences = tool.Ifc.get_all_element_occurences(element)
+    for occurence in occurences:
+        occurence.OverallWidth = props.overall_width
+        occurence.OverallHeight = props.overall_height
 
     update_simple_openings(element, props.overall_width, props.overall_height)
 
@@ -302,7 +302,7 @@ def update_window_modifier_bmesh(context):
     lining_to_panel_offset_x = props.lining_to_panel_offset_x * si_conversion
     lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion
     lining_thickness = props.lining_thickness * si_conversion
-    lining_offset = props.lining_offset
+    lining_offset = props.lining_offset * si_conversion
 
     mullion_thickness = props.mullion_thickness * si_conversion / 2
     first_mullion_offset = props.first_mullion_offset * si_conversion
@@ -408,12 +408,12 @@ def update_window_modifier_bmesh(context):
     obj.data.update()
 
 
-class BIM_OT_add_window(Operator):
+class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_window"
     bl_label = "Window"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a window.")
@@ -428,7 +428,6 @@ class BIM_OT_add_window(Operator):
         mesh = bpy.data.meshes.new("IfcWindow")
         obj = bpy.data.objects.new("IfcWindow", mesh)
         obj.location = spawn_location
-        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
@@ -467,12 +466,8 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
 
         window_data["lining_properties"] = lining_props
         window_data["panel_properties"] = panel_props
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets.get("BBIM_Window", None)
-
-        if pset:
-            pset = tool.Ifc.get().by_id(pset["id"])
-        else:
+        pset = tool.Pset.get_element_pset(element, "BBIM_Window")
+        if not pset:
             pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Window")
 
         ifcopenshell.api.run(
@@ -487,14 +482,13 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
 
 class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_window"
-    bl_label = "Cancel editing Window"
+    bl_label = "Cancel Editing Window"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        psets = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(psets["BBIM_Window"]["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
         props = obj.BIMWindowProperties
         for prop_name in data:
             setattr(props, prop_name, data[prop_name])
@@ -516,7 +510,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
 class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_window"
-    bl_label = "Finish editing window"
+    bl_label = "Finish Editing Window"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -524,8 +518,6 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
 
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset = psets["BBIM_Window"]
         window_data = props.get_general_kwargs()
         lining_props = props.get_lining_kwargs()
         panel_props = props.get_panel_kwargs()
@@ -537,7 +529,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
         update_window_modifier_representation(context)
 
-        pset = tool.Ifc.get().by_id(pset["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         window_data = json.dumps(window_data, default=list)
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": window_data})
         return {"FINISHED"}
@@ -552,8 +544,7 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMWindowProperties
         element = tool.Ifc.get_entity(obj)
-        pset = ifcopenshell.util.element.get_psets(element)
-        data = json.loads(pset["BBIM_Window"]["Data"])
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
 
@@ -582,8 +573,7 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         obj.BIMWindowProperties.is_editing = -1
 
-        pset = ifcopenshell.util.element.get_psets(element)
-        pset = tool.Ifc.get().by_id(pset["BBIM_Window"]["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
         props.window_added_previously = True
 

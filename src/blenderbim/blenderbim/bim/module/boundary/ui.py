@@ -102,6 +102,11 @@ class BIM_PT_Boundary(Panel):
                 row.label(text=f"{entity.is_a()}/{entity.Name}")
                 op = row.operator("bim.select_global_id", text="", icon="OBJECT_DATA")
                 op.global_id = entity.GlobalId
+                if ifc_attribute in ("RelatingSpace", "RelatedBuildingElement"):
+                    op = row.operator("bim.select_related_element_boundaries", text="", icon="RESTRICT_SELECT_OFF")
+                    op.related_element = entity.id()
+                    op = row.operator("bim.select_related_element_type_boundaries", text="", icon="ASSET_MANAGER")
+                    op.related_element = entity.id()
             else:
                 row.label(text="")
 
@@ -118,6 +123,7 @@ class BIM_PT_SpaceBoundaries(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 1
     bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
@@ -143,6 +149,7 @@ class BIM_PT_SpaceBoundaries(Panel):
         self.ifc_file = tool.Ifc.get()
         row = self.layout.row()
         row.operator("bim.load_space_boundaries")
+        row.operator("bim.select_space_boundaries", text="", icon="RESTRICT_SELECT_OFF")
         for boundary in SpaceBoundariesData.data["boundaries"]:
             row = self.layout.row()
             row.label(text=boundary["description"], icon="GHOST_ENABLED")
