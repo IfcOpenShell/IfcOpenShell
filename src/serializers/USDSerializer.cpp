@@ -46,33 +46,40 @@ void USDSerializer::createLighting() {
   light.CreateColorAttr().Set(pxr::GfVec3f(1.0f, 1.0f, 1.0f));
 }
 
-void USDSerializer::writeMaterial(const pxr::UsdGeomMesh& mesh,const IfcGeom::Material& style) {
-  std::string path("/Looks/" + sanitize(style.original_name()));
-  auto material = pxr::UsdShadeMaterial::Define(stage_, pxr::SdfPath(path));
-  auto shader = pxr::UsdShadeShader::Define(stage_, pxr::SdfPath(path + "/Shader"));
-  shader.CreateIdAttr().Set(pxr::TfToken("UsdPreviewSurface"));
+std::vector<pxr::UsdShadeMaterial> USDSerializer::createMaterials(const pxr::UsdGeomMesh& mesh,
+                                                                  const std::vector<IfcGeom::Material>& styles) 
+{
+  std::vector<pxr::UsdShadeMaterial> materials {};
 
-  float rgba[4] { 0.18f, 0.18f, 0.18f, 1.0f };
-  if (style.hasDiffuse())
-		for (int i = 0; i < 3; ++i)
-      rgba[i] = static_cast<float>(style.diffuse()[i]);
-  shader.CreateInput(pxr::TfToken("diffuseColor"), pxr::SdfValueTypeNames->Color3f).Set(pxr::GfVec3f(rgba[0], rgba[1], rgba[2]));
+  for(auto style : styles) {
+    std::string path("/Looks/" + sanitize(style.original_name()));
+    auto material = pxr::UsdShadeMaterial::Define(stage_, pxr::SdfPath(path));
+    auto shader = pxr::UsdShadeShader::Define(stage_, pxr::SdfPath(path + "/Shader"));
+    shader.CreateIdAttr().Set(pxr::TfToken("UsdPreviewSurface"));
 
-  if(style.hasTransparency())
-    rgba[3] -= style.transparency();
-  shader.CreateInput(pxr::TfToken("opacity"), pxr::SdfValueTypeNames->Float).Set(rgba[3]);
+    float rgba[4] { 0.18f, 0.18f, 0.18f, 1.0f };
+    if (style.hasDiffuse())
+	  	for (int i = 0; i < 3; ++i)
+        rgba[i] = static_cast<float>(style.diffuse()[i]);
+    shader.CreateInput(pxr::TfToken("diffuseColor"), pxr::SdfValueTypeNames->Color3f).Set(pxr::GfVec3f(rgba[0], rgba[1], rgba[2]));
 
-  if(style.hasSpecular()) {
-    for (int i = 0; i < 3; ++i)
-      rgba[i] = static_cast<float>(style.specular()[i]);
-    shader.CreateInput(pxr::TfToken("useSpecularWorkflow"), pxr::SdfValueTypeNames->Int).Set(1);
-  } else {
-    shader.CreateInput(pxr::TfToken("useSpecularWorkflow"), pxr::SdfValueTypeNames->Int).Set(0);
+    if(style.hasTransparency())
+      rgba[3] -= style.transparency();
+    shader.CreateInput(pxr::TfToken("opacity"), pxr::SdfValueTypeNames->Float).Set(rgba[3]);
+
+    if(style.hasSpecular()) {
+      for (int i = 0; i < 3; ++i)
+        rgba[i] = static_cast<float>(style.specular()[i]);
+      shader.CreateInput(pxr::TfToken("useSpecularWorkflow"), pxr::SdfValueTypeNames->Int).Set(1);
+    } else {
+      shader.CreateInput(pxr::TfToken("useSpecularWorkflow"), pxr::SdfValueTypeNames->Int).Set(0);
+    }
+    shader.CreateInput(pxr::TfToken("specularColor"), pxr::SdfValueTypeNames->Color3f).Set(pxr::GfVec3f(rgba[0], rgba[1], rgba[2]));
+
+    material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), pxr::TfToken("surface"));
+    materials.push_back(material);
   }
-  shader.CreateInput(pxr::TfToken("specularColor"), pxr::SdfValueTypeNames->Color3f).Set(pxr::GfVec3f(rgba[0], rgba[1], rgba[2]));
-
-  material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), pxr::TfToken("surface"));
-  pxr::UsdShadeMaterialBindingAPI(mesh).Bind(material);
+  return materials;
 }
 
 bool USDSerializer::ready() {
@@ -92,12 +99,12 @@ void USDSerializer::write(const IfcGeom::TriangulationElement* o) {
 	if ( mesh.material_ids().empty() || verts.empty() || faces.empty() )
 		return;
   
-  std::string name = o->name() + std::to_string(o->id());
+  std::string name = o->name();
   if(name.empty()) {
     name = "Unnamed_" + std::to_string(unnamed_count_);
     unnamed_count_++;
   } else {
-    name = sanitize(name);
+    name = sanitize(name) + std::to_string(o->id());
   }
   pxr::UsdGeomMesh usd_mesh = pxr::UsdGeomMesh::Define(stage_, pxr::SdfPath("/World/" + name));
 
@@ -119,7 +126,21 @@ void USDSerializer::write(const IfcGeom::TriangulationElement* o) {
     normals.push_back(pxr::GfVec3f(static_cast<float>(*(it++)), static_cast<float>(*(it++)), static_cast<float>(*(it++))));
   usd_mesh.CreateNormalsAttr().Set(normals);
 
-  writeMaterial(usd_mesh, mesh.materials()[0]);
+  auto materials = createMaterials(usd_mesh, mesh.materials());
+  pxr::UsdShadeMaterialBindingAPI material_api(usd_mesh);
+  if(materials.size() > 1) {
+    auto material_ids = mesh.material_ids();
+    std::vector<pxr::VtArray<int>> subsets(materials.size());
+    for(int i = 0; i < material_ids.size(); ++i) {
+      subsets[material_ids[i]].push_back(i);
+    }
+    for(std::size_t i = 0; i < subsets.size(); ++i){
+      auto subset = material_api.CreateMaterialBindSubset(pxr::TfToken("subset_" + std::to_string(i)), subsets[i]);
+      pxr::UsdShadeMaterialBindingAPI(subset).Bind(materials[i]);
+    }
+  } else {
+    material_api.Bind(materials[0]);
+  }
 }
 
 void USDSerializer::finalize() {

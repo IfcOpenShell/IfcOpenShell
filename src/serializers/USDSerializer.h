@@ -59,17 +59,14 @@ private:
 	std::map<std::string, pxr::UsdGeomMesh> meshes_;
 	std::map<std::string, pxr::UsdShadeMaterial> materials_;
 
-	std::string sanitize(std::string s) {
+	inline std::string sanitize(std::string s) {
 		std::replace_if(s.begin(), s.end(),
-			[](char c) { return c == ' ' || c == '.' || c == ',' 
-							 || c == ';' || c == ':' || c == '/'
-							 || c == '-' || c == '+' || c == '"'
-							 || c > 127; },
+			[](char c) { return c > 122 || c < 48 || (c > 57 && c < 65) || (c > 90 && c < 97); },
 			'_');
 		return s;
 	}
 
-	void writeMaterial(const pxr::UsdGeomMesh&, const IfcGeom::Material&);
+	std::vector<pxr::UsdShadeMaterial> createMaterials(const pxr::UsdGeomMesh&, const std::vector<IfcGeom::Material>&);
     void createLighting();
 public:
 	USDSerializer(const std::string&, const SerializerSettings&);
