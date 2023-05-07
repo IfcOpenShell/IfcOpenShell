@@ -175,6 +175,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.open_upstream", text="Visit Wiki").page = "wiki"
         row.operator("bim.open_upstream", text="Visit Community").page = "community"
         row = layout.row()
+        row.operator("bim.file_associate", icon="LOCKVIEW_ON")
+        row.operator("bim.file_unassociate", icon="LOCKVIEW_OFF")
+        row = layout.row()
         row.prop(self, "svg2pdf_command")
         row = layout.row()
         row.prop(self, "svg2dxf_command")
