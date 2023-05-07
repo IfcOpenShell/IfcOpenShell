@@ -2,15 +2,11 @@
 
 #include "USDSerializer.h"
 
-#include "../ifcparse/utils.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/gf/vec3f.h"
-#include "pxr/usd/gf/rotation.h"
-#include "pxr/usd/tf/token.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/rotation.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformOp.h"
-#include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdLux/distantLight.h"
@@ -20,23 +16,16 @@
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
-
-#include <vector>
 #include <string>
 #include <sstream>
-
 
 USDSerializer::USDSerializer(const std::string& filename, const SerializerSettings& settings)
 	: WriteOnlyGeometrySerializer(settings)
 	, filename_(filename)
-	, settings_(settings)
 {
   // create a new stage
   stage_ = pxr::UsdStage::CreateNew(filename + ".usda");
-  if( !settings().get(SerializerSettings::USE_Y_UP) )
-    stage_->SetDefaultPrim(pxr::UsdGeomXform::Define(stage_, pxr::SdfPath("/"), pxr::UsdGeomTokens->z));
-  else
-    stage_->SetDefaultPrim(pxr::UsdGeomXform::Define(stage_, pxr::SdfPath("/"), pxr::UsdGeomTokens->y));
+  
   // create root xform prim 'World'
   pxr::UsdGeomXform::Define(stage_, pxr::SdfPath("/World"));
   pxr::UsdGeomScope::Define(stage_, pxr::SdfPath("/Looks"));
@@ -55,7 +44,7 @@ void USDSerializer::createLighting() {
   // set the light's orientation
   pxr::UsdGeomXform xform(stage_->GetPrimAtPath(pxr::SdfPath(light_path)));
   pxr::GfVec3f light_direction(0.0f, 0.0f, -1.0f);
-  xform.AddRotateOp(pxr::UsdGeomXformOp::PrecisionFloat, pxr::UsdGeomXformOp::TypeRotateXYZ).Set(pxr::GfRotation(pxr::GfVec3f(0.0f, 1.0f, 0.0f), light_direction).GetQuaternion());
+  //xform.AddRotateOp(pxr::UsdGeomXformOp::PrecisionFloat, pxr::UsdGeomXformOp::TypeRotateXYZ).Set(pxr::GfRotation(pxr::GfVec3f(0.0f, 1.0f, 0.0f), light_direction).GetQuaternion());
   // set the light's color
   pxr::UsdLuxDistantLight light(stage_->GetPrimAtPath(pxr::SdfPath(light_path)));
   light.CreateIntensityAttr().Set(1000.0f);
@@ -68,11 +57,11 @@ void USDSerializer::writeMaterial(const pxr::UsdGeomMesh& mesh,const IfcGeom::Ma
   pxr::UsdShadeMaterial::Define(stage_, pxr::SdfPath(ss.str()));
   pxr::UsdShadeMaterial material(stage_->GetPrimAtPath(pxr::SdfPath(ss.str())));
   pxr::UsdShadeShader shader = pxr::UsdShadeShader::Define(stage_, pxr::SdfPath(ss.str() + "/Shader"));
-  shader.CreateIdAttr().Set(TfToken("UsdPreviewSurface"));
+  shader.CreateIdAttr().Set(pxr::TfToken("UsdPreviewSurface"));
 
   float rgba[4] { 0.18f, 0.18f, 0.18f, 1.0f };
   if (style.hasDiffuse())
-		for (int i = 0; i < 3; ++i) rgba[i] = static_cast<float> style.diffuse()[i];
+		for (int i = 0; i < 3; ++i) rgba[i] = static_cast<float>(style.diffuse()[i]);
   shader.CreateInput(pxr::TfToken("diffuseColor"), pxr::SdfValueTypeNames->Color3f).Set(pxr::GfVec3f(rgba[0], rgba[1], rgba[2]));
 
   if(style.hasTransparency())
@@ -80,15 +69,15 @@ void USDSerializer::writeMaterial(const pxr::UsdGeomMesh& mesh,const IfcGeom::Ma
   shader.CreateInput(pxr::TfToken("opacity"), pxr::SdfValueTypeNames->Float).Set(rgba[3]);
 
   if(style.hasSpecular()) {
-    for (int i = 0; i < 3; ++i) rgba[i] = static_cast<float> style.specular()[i];
+    for (int i = 0; i < 3; ++i) rgba[i] = static_cast<float>(style.specular()[i]);
     shader.CreateInput(pxr::TfToken("useSpecularWorkflow"), pxr::SdfValueTypeNames->Int).Set(1);
   } else {
     shader.CreateInput(pxr::TfToken("useSpecularWorkflow"), pxr::SdfValueTypeNames->Int).Set(0);
   }
   shader.CreateInput(pxr::TfToken("specularColor"), pxr::SdfValueTypeNames->Color3f).Set(pxr::GfVec3f(rgba[0], rgba[1], rgba[2]));
 
-  material.CreateSurfaceOutput().ConnectToSource(shader, pxr::TfToken("surface"));
-  pxr::UsdShadeMaterialBindingAPI(mesh).Bind(material);
+  //material.CreateSurfaceOutput().ConnectToSource(shader, pxr::TfToken("surface"));
+  //pxr::UsdShadeMaterialBindingAPI(mesh).Bind(material);
 }
 
 bool USDSerializer::ready() {
@@ -102,23 +91,25 @@ void USDSerializer::writeHeader() {
 }
 
 void USDSerializer::write(const IfcGeom::TriangulationElement* o) {
-	if ( o->geometry().material_ids().empty() )
+  const IfcGeom::Representation::Triangulation& mesh = o->geometry();
+	if ( mesh.material_ids().empty() || mesh.verts().empty() || mesh.faces().empty() )
 		return;
   
-  std:sstringstream ss("/World/");
-  ss << o->geometry().id();
-  pxr::UsdGeomMesh::Define(stage_, pxr::SdfPath(ss.str()));
-  const IfcGeom::Representation::Triangulation& mesh = o->geometry();
+  std::stringstream ss("/World/");
+  ss << mesh.id();
+  pxr::UsdGeomMesh usd_mesh = pxr::UsdGeomMesh::Define(stage_, pxr::SdfPath(ss.str()));
   const std::vector<double>& m = o->transformation().matrix().data();
 
-  const int vcount = (int)mesh.verts().size() / 3;
+  const int vcount = (int) mesh.verts().size() / 3;
+  pxr::VtVec3dArray points;
   for ( std::vector<double>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
-    const double x = *(it++);
-    const double y = *(it++);
-    const double z = *(it++);
-		
-		
-	}
+    points.push_back(pxr::GfVec3d(*(it++), *(it++), *(it++)));
+  }
+  usd_mesh.CreatePointsAttr().Set(points);
+  usd_mesh.CreateFaceVertexIndicesAttr().Set(usd_utils::toVtArray(mesh.faces()));
+  const int fcount = (int) mesh.faces().size() / 3;
+  usd_mesh.CreateFaceVertexCountsAttr().Set(pxr::VtArray<int>(fcount, 3));
+  usd_mesh.CreateNormalsAttr().Set(usd_utils::toVtArray(mesh.normals()));
 
 }
 

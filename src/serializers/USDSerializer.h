@@ -24,10 +24,27 @@
 
 #include "../serializers/serializers_api.h"
 #include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcparse/utils.h"
+
+// undefine opencascade Handle macro, because it conflicts with USD
+#undef Handle
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/usd/usdGeom/mesh.h"
 
+#include <vector>
+
+namespace usd_utils {
+  	template<typename T>
+  	pxr::VtArray<T> toVtArray(const std::vector<T>& vec) {
+    	auto array = pxr::VtArray<T>(vec.size());
+		for (size_t i = 0; i < vec.size(); ++i)
+			array[i] = vec[i];
+		return array;
+  	}
+}
 
 class SERIALIZERS_API USDSerializer : public WriteOnlyGeometrySerializer {
 private:
@@ -35,7 +52,7 @@ private:
     bool ready_ = false;
     pxr::UsdStageRefPtr stage_;
 
-	int writeMaterial(const IfcGeom::Material&);
+	void writeMaterial(const pxr::UsdGeomMesh&, const IfcGeom::Material&);
     void createLighting();
 public:
 	USDSerializer(const std::string&, const SerializerSettings&);

@@ -711,7 +711,8 @@ int main(int argc, char** argv) {
 		CACHE = IfcUtil::path::from_utf8(".cache"),
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
-		IFC = IfcUtil::path::from_utf8(".ifc");
+		IFC = IfcUtil::path::from_utf8(".ifc"),
+		USD = IfcUtil::path::from_utf8(".usd");
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
@@ -857,7 +858,7 @@ int main(int argc, char** argv) {
 #endif
 #ifdef WITH_USD
 	} else if (output_extension == USD) {
-		serializer = boost::make_shared<UsdSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+		serializer = boost::make_shared<USDSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 #endif
 	} else if (output_extension == STP) {
 		serializer = boost::make_shared<StepSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
