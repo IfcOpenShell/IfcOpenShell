@@ -21,7 +21,7 @@ cmake_minimum_required(VERSION 3.1.3)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 
-project (IfcOpenShell VERSION 0.7.0)
+project(IfcOpenShell VERSION 0.7.0)
 
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)

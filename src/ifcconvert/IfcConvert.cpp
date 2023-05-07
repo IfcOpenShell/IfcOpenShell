@@ -712,7 +712,8 @@ int main(int argc, char** argv) {
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
 		IFC = IfcUtil::path::from_utf8(".ifc"),
-		USD = IfcUtil::path::from_utf8(".usd");
+		USD = IfcUtil::path::from_utf8(".usd"),
+		USDA = IfcUtil::path::from_utf8(".usda");
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
@@ -857,8 +858,8 @@ int main(int argc, char** argv) {
 		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 #endif
 #ifdef WITH_USD
-	} else if (output_extension == USD) {
-		serializer = boost::make_shared<USDSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+	} else if (output_extension == USD || output_extension == USDA) {
+		serializer = boost::make_shared<USDSerializer>(IfcUtil::path::to_utf8(output_filename), settings);
 #endif
 	} else if (output_extension == STP) {
 		serializer = boost::make_shared<StepSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
@@ -1182,9 +1183,11 @@ int main(int argc, char** argv) {
 
 	Logger::Message(Logger::LOG_PERF, "done file geometry conversion");
 
+
     // Renaming might fail (e.g. maybe the existing file was open in a viewer application)
     // Do not remove the temp file as user can salvage the conversion result from it.
-    bool successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
+    bool successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename))
+		|| output_extension == USD || output_extension == USDA;
     if (!successful) {
         cerr_ << "Unable to write output file '" << output_filename << "', see '" <<
             output_temp_filename << "' for the conversion result.";
