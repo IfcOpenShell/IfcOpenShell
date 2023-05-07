@@ -664,6 +664,9 @@ endif
 	cp -r dist/working/bpypolyskel-master/bpypolyskel dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Required for Desktop icon and file association
+	cp -r blenderbim/libs/desktop dist/blenderbim/libs/
+
 	# Remove dependencies also bundled with Blender
 	rm -rf dist/blenderbim/libs/site/packages/numpy
 	rm -rf dist/blenderbim/libs/site/packages/numpy.libs

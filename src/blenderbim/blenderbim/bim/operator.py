@@ -22,6 +22,9 @@ import json
 import time
 import logging
 import textwrap
+import shutil
+import platform
+import subprocess
 import tempfile
 import webbrowser
 import ifcopenshell
@@ -146,6 +149,126 @@ class SelectSchemaDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class FileAssociate(bpy.types.Operator):
+    bl_idname = "bim.file_associate"
+    bl_label = "Associate BlenderBIM with *.ifc files"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Creates a Desktop launcher and associates it with IFC files"
+
+    @classmethod
+    def poll(cls, context):
+        if platform.system() == "Linux":
+            return True
+        # TODO Windows and Darwin
+        # https://stackoverflow.com/questions/1082889/how-to-change-filetype-association-in-the-registry
+        return False
+
+    def execute(self, context):
+        src_dir = os.path.join(os.path.dirname(__file__), "../libs/desktop")
+        binary_path = bpy.app.binary_path
+        if platform.system() == "Linux":
+            destdir = os.path.join(os.environ["HOME"], ".local")
+            self.install_desktop_linux(src_dir=src_dir, destdir=destdir, binary_path=binary_path)
+        return {"FINISHED"}
+
+    def install_desktop_linux(self, src_dir=None, destdir="/tmp", binary_path="/usr/bin/blender"):
+        """Creates linux file assocations and launcher icon"""
+
+        for rel_path in (
+            "bin",
+            "share/icons/hicolor/128x128/apps",
+            "share/icons/hicolor/128x128/mimetypes",
+            "share/applications",
+            "share/mime/packages",
+        ):
+            os.makedirs(os.path.join(destdir, rel_path), exist_ok=True)
+
+        shutil.copy(
+            os.path.join(src_dir, "blenderbim.png"),
+            os.path.join(destdir, "share/icons/hicolor/128x128/apps"),
+        )
+        shutil.copy(
+            os.path.join(src_dir, "blenderbim.desktop"),
+            os.path.join(destdir, "share/applications"),
+        )
+        shutil.copy(
+            os.path.join(src_dir, "blenderbim.xml"),
+            os.path.join(destdir, "share/mime/packages"),
+        )
+        shutil.copyfile(
+            os.path.join(src_dir, "x-ifc_128x128.png"),
+            os.path.join(destdir, "share/icons/hicolor/128x128/mimetypes", "x-ifc.png"),
+        )
+
+        # copy and rewrite wrapper script
+        with open(os.path.join(src_dir, "blenderbim"), "r") as wrapper_template:
+            filedata = wrapper_template.read()
+            filedata = filedata.replace("#BLENDER_EXE=/opt/blender-3.3/blender", 'BLENDER_EXE="' + binary_path + '"')
+        with open(os.path.join(destdir, "bin", "blenderbim"), "w") as wrapper:
+            wrapper.write(filedata)
+
+        os.chmod(os.path.join(destdir, "bin", "blenderbim"), 0o755)
+
+        self.refresh_system_linux(destdir=destdir)
+
+    def refresh_system_linux(self, destdir="/tmp"):
+        """Attempt to update mime and desktop databases"""
+        try:
+            subprocess.call(["update-mime-database", os.path.join(destdir, "share/mime")])
+        except:
+            pass
+        try:
+            subprocess.call(["update-desktop-database", os.path.join(destdir, "share/applications")])
+        except:
+            pass
+
+
+class FileUnassociate(bpy.types.Operator):
+    bl_idname = "bim.file_unassociate"
+    bl_label = "Remove BlenderBIM *.ifc association"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Removes Desktop launcher and unassociates it with IFC files"
+
+    @classmethod
+    def poll(cls, context):
+        if platform.system() == "Linux":
+            return True
+        return False
+
+    def execute(self, context):
+        if platform.system() == "Linux":
+            destdir = os.path.join(os.environ["HOME"], ".local")
+            self.uninstall_desktop_linux(destdir=destdir)
+        return {"FINISHED"}
+
+    def uninstall_desktop_linux(self, destdir="/tmp"):
+        """Removes linux file assocations and launcher icon"""
+        for rel_path in (
+            "share/icons/hicolor/128x128/apps/blenderbim.png",
+            "share/icons/hicolor/128x128/mimetypes/x-ifc.png",
+            "share/applications/blenderbim.desktop",
+            "share/mime/packages/blenderbim.xml",
+            "bin/blenderbim",
+        ):
+            try:
+                os.remove(os.path.join(destdir, rel_path))
+            except:
+                pass
+
+        self.refresh_system_linux(destdir=destdir)
+
+    def refresh_system_linux(self, destdir="/tmp"):
+        """Attempt to update mime and desktop databases"""
+        try:
+            subprocess.call(["update-mime-database", os.path.join(destdir, "share/mime")])
+        except:
+            pass
+        try:
+            subprocess.call(["update-desktop-database", os.path.join(destdir, "share/applications")])
+        except:
+            pass
 
 
 class OpenUpstream(bpy.types.Operator):
