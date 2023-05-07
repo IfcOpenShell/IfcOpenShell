@@ -9,8 +9,8 @@ install :
 	${DESTDIR}/share/icons/hicolor/128x128/mimetypes \
 	${DESTDIR}/share/applications \
 	${DESTDIR}/share/mime/packages
-	cp blenderbim.sh ${DESTDIR}/bin/
-	chmod +x ${DESTDIR}/bin/blenderbim.sh
+	cp blenderbim ${DESTDIR}/bin/
+	chmod +x ${DESTDIR}/bin/blenderbim
 	cp blenderbim.png ${DESTDIR}/share/icons/hicolor/128x128/apps/
 	cp blenderbim.desktop ${DESTDIR}/share/applications/
 	cp blenderbim.xml ${DESTDIR}/share/mime/packages/
@@ -20,7 +20,7 @@ install :
 
 uninstall :
 	rm -f \
-	${DESTDIR}/bin/blenderbim.sh \
+	${DESTDIR}/bin/blenderbim \
 	${DESTDIR}/share/icons/hicolor/128x128/apps/blenderbim.png \
 	${DESTDIR}/share/applications/blenderbim.desktop \
 	${DESTDIR}/share/mime/packages/blenderbim.xml \
