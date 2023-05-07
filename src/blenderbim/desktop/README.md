@@ -15,7 +15,7 @@ configure associations and icons for a single user by running `make`:
 Test by running the wrapper script directly, this should launch BlenderBIM with
 an empty IFC project:
 
-  blenderbim.sh
+  blenderbim
 
 This `Makefile` installs files to `~/.local` by default, to install to an
 alternative location, set `DESTDIR`:
