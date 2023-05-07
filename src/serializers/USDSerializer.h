@@ -33,17 +33,21 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdShade/material.h"
 
 #include <vector>
+#include <string>
+#include <algorithm>
+#include <map>
 
 namespace usd_utils {
   	template<typename T>
   	pxr::VtArray<T> toVtArray(const std::vector<T>& vec) {
     	auto array = pxr::VtArray<T>(vec.size());
-		for (size_t i = 0; i < vec.size(); ++i)
+		for (std::size_t i = 0; i < vec.size(); ++i)
 			array[i] = vec[i];
 		return array;
-  	}
+  	}	
 }
 
 class SERIALIZERS_API USDSerializer : public WriteOnlyGeometrySerializer {
@@ -51,6 +55,19 @@ private:
 	std::string filename_;
     bool ready_ = false;
     pxr::UsdStageRefPtr stage_;
+	std::size_t unnamed_count_ = 0;
+	std::map<std::string, pxr::UsdGeomMesh> meshes_;
+	std::map<std::string, pxr::UsdShadeMaterial> materials_;
+
+	std::string sanitize(std::string s) {
+		std::replace_if(s.begin(), s.end(),
+			[](char c) { return c == ' ' || c == '.' || c == ',' 
+							 || c == ';' || c == ':' || c == '/'
+							 || c == '-' || c == '+' || c == '"'
+							 || c > 127; },
+			'_');
+		return s;
+	}
 
 	void writeMaterial(const pxr::UsdGeomMesh&, const IfcGeom::Material&);
     void createLighting();
