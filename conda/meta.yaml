@@ -32,6 +32,7 @@ requirements:
     - gmp  # [unix]
     - mpir  # [win]
     - nlohmann_json
+    - zlib
 
   run:
     - python
@@ -44,6 +45,7 @@ requirements:
     - gmp  # [unix]
     - mpir  # [win]
     - nlohmann_json
+    - zlib
 
 test:
   imports:
