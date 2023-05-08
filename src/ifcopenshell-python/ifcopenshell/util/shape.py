@@ -298,7 +298,7 @@ def get_extrusions(element):
     for item in representation.Items:
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
-                extrusion.append(item)
+                extrusions.append(item)
                 break
             elif item.is_a("IfcBooleanResult"):
                 item = item.FirstOperand
