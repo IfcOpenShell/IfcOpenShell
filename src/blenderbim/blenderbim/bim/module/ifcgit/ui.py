@@ -119,7 +119,6 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             return
 
         item = props.ifcgit_commits[props.commit_index]
-        commit = IfcGitData.data["commit"]
         if not item.relevant:
             row = layout.row()
             row.label(text="Revision unrelated to current IFC project", icon="ERROR")
@@ -127,11 +126,11 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         box = layout.box()
         column = box.column(align=True)
         row = column.row()
-        row.label(text=commit.hexsha)
+        row.label(text=item.hexsha)
         row = column.row()
-        row.label(text=commit.author.name + " <" + commit.author.email + ">")
+        row.label(text=item.author_name + " <" + item.author_email + ">")
         row = column.row()
-        row.label(text=commit.message)
+        row.label(text=item.message)
 
 
 class COMMIT_UL_List(bpy.types.UIList):

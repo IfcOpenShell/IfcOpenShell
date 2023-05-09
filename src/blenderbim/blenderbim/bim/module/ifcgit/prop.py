@@ -45,6 +45,18 @@ class IfcGitListItem(PropertyGroup):
         description="does this commit reference our ifc file",
         default=False,
     )
+    author_name: StringProperty(
+        name="Author Name",
+        default="",
+    )
+    author_email: StringProperty(
+        name="Author Email",
+        default="",
+    )
+    message: StringProperty(
+        name="Commit Message",
+        default="",
+    )
 
 
 class IfcGitProperties(PropertyGroup):
