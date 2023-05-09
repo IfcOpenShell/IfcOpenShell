@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "ifctester"
+version = "0.0.999999"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "IFC model auditing tool with support for IDS"
+readme = "README.md"
+keywords = ["IFC", "IDS", "BIM"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = [
+    "ifcopenshell",
+]
+[project.urls]
+"Homepage" = "http://ifcopenshell.org"
+"Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"
+[tool.setuptools.packages.find]
+include = ["ifctester"]
+exclude = ["test*"]
