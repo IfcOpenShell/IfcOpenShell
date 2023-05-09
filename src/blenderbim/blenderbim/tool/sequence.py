@@ -1514,11 +1514,12 @@ class Sequence(blenderbim.core.tool.Sequence):
         else:
             compare_start = schedule_start
             compare_finish = schedule_finish
-
+        task_name = task.Name or "Unnamed"
+        task_name = task_name.replace('\n', "")
         data = {
             "pID": task.id(),
-            "pName": task.Name,
-            "pCaption": task.Name,
+            "pName": task_name,
+            "pCaption": task_name,
             "pStart": schedule_start,
             "pEnd": schedule_finish ,
             "pPlanStart": compare_start,
