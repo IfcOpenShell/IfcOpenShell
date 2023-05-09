@@ -108,9 +108,13 @@ class IfcGit:
                 continue
 
             props.ifcgit_commits.add()
-            props.ifcgit_commits[-1].hexsha = commit.hexsha
+            list_item = props.ifcgit_commits[-1]
+            list_item.hexsha = commit.hexsha
+            list_item.message = commit.message
+            list_item.author_name = commit.author.name
+            list_item.author_email = commit.author.email
             if commit in commits_relevant:
-                props.ifcgit_commits[-1].relevant = True
+                list_item.relevant = True
 
     @classmethod
     def is_valid_ref_format(cls, string):
