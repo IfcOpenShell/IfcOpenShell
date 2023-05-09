@@ -1476,13 +1476,18 @@ class Sequence(blenderbim.core.tool.Sequence):
         is_baseline = False
         if work_schedule.PredefinedType == "BASELINE":
             is_baseline = True
+            relating_work_schedule = work_schedule.IsDeclaredBy[0].RelatingObject
+            work_schedule = relating_work_schedule
         tasks_json = []
         for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
-            cls.create_new_task_json(task, tasks_json, sequence_type_map, is_baseline=is_baseline)
+            if is_baseline:
+                cls.create_new_task_json(task, tasks_json, sequence_type_map, baseline_schedule=work_schedule)
+            else:
+                cls.create_new_task_json(task, tasks_json, sequence_type_map)
         return tasks_json
 
     @classmethod
-    def create_new_task_json(cls, task, json, type_map=None, is_baseline=False):
+    def create_new_task_json(cls, task, json, type_map=None, baseline_schedule=None):
         task_time = task.TaskTime
         resources = ifcopenshell.util.sequence.get_task_resources(task, is_deep=False)
 
@@ -1495,26 +1500,30 @@ class Sequence(blenderbim.core.tool.Sequence):
         schedule_start = task_time.ScheduleStart if task_time else ""
         schedule_finish = task_time.ScheduleFinish if task_time else ""
 
-        declared_by_task = task.IsDeclaredBy[0].RelatingObject if is_baseline else None
-        if declared_by_task and declared_by_task.TaskTime:
-            compare_start = declared_by_task.TaskTime.ScheduleStart
-            compare_finish = declared_by_task.TaskTime.ScheduleFinish
+        baseline_task = None
+        if baseline_schedule:
+            for rel in task.Declares:
+                for baseline_task in rel.RelatedObjects:
+                    if baseline_schedule.id() == ifcopenshell.util.sequence.get_task_work_schedule(baseline_task).id():
+                        baseline_task = task
+                        break
+
+        if baseline_task and baseline_task.TaskTime:
+            compare_start = baseline_task.TaskTime.ScheduleStart
+            compare_finish = baseline_task.TaskTime.ScheduleFinish
         else:
             compare_start = schedule_start
             compare_finish = schedule_finish
-
+        task_name = task.Name or "Unnamed"
+        task_name = task_name.replace('\n', "")
         data = {
             "pID": task.id(),
-            "pName": task.Name,
-            "pCaption": task.Name,
-            "pStart": declared_by_task.TaskTime.ScheduleStart
-            if declared_by_task and declared_by_task.TaskTime
-            else schedule_start,
-            "pEnd": declared_by_task.TaskTime.ScheduleFinish
-            if declared_by_task and declared_by_task.TaskTime
-            else schedule_finish,
-            "pPlanStart": schedule_start,
-            "pPlanEnd": schedule_finish,
+            "pName": task_name,
+            "pCaption": task_name,
+            "pStart": schedule_start,
+            "pEnd": schedule_finish ,
+            "pPlanStart": compare_start,
+            "pPlanEnd": compare_finish,
             "pMile": 1 if task.IsMilestone else 0,
             "pRes": string_resources,
             "pComp": 0,
@@ -1541,7 +1550,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         )
         json.append(data)
         for nested_task in ifcopenshell.util.sequence.get_nested_tasks(task):
-            cls.create_new_task_json(nested_task, json, type_map, is_baseline)
+            cls.create_new_task_json(nested_task, json, type_map, baseline_schedule)
 
     @classmethod
     def generate_gantt_browser_chart(cls, task_json, work_schedule):
@@ -1555,11 +1564,18 @@ class Sequence(blenderbim.core.tool.Sequence):
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
     @classmethod
-    def load_product_related_tasks(cls, product):
+    def is_filter_by_active_schedule(cls):
+        return bpy.context.scene.BIMWorkScheduleProperties.filter_by_active_schedule
+
+    @classmethod
+    def get_tasks_for_product(cls, product, work_schedule=None):
+        return ifcopenshell.util.sequence.get_tasks_for_product(product, work_schedule)
+
+    @classmethod
+    def load_product_related_tasks(cls, task_inputs, task_ouputs):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.product_input_tasks.clear()
         props.product_output_tasks.clear()
-        task_inputs, task_ouputs = ifcopenshell.util.sequence.get_tasks_for_product(product)
         for task in task_inputs or []:
             new = props.product_input_tasks.add()
             new.name = task.Name or "Unnamed"

@@ -292,6 +292,7 @@ class Drawing:
     def get_reference_description(cls, reference): pass
     def get_reference_document(cls, reference): pass
     def get_reference_location(cls, reference): pass
+    def get_references_with_location(cls, location): pass
     def get_text_literal(cls, obj): pass
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
@@ -313,6 +314,7 @@ class Drawing:
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
+    def update_embedded_svg_location(cls, uri, old_location, new_location): pass
     def update_text_size_pset(cls, obj): pass
     def update_text_value(cls, obj): pass
 
@@ -640,7 +642,6 @@ class Sequence:
     def contract_task(cls, task): pass
     def create_bars(cls, tasks): pass
     def create_new_task_json(cls, task, json, type_map=None): pass
-    def load_task_tree(cls, work_schedule): pass
     def create_tasks_json(cls, work_schedule=None): pass
     def disable_editing_rel_sequence(cls): pass
     def disable_editing_task_animation_colors(cls): pass
@@ -655,10 +656,10 @@ class Sequence:
     def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
     def enable_editing_sequence_lag_time(cls, rel_sequence): pass
     def enable_editing_task_animation_colors(cls): pass
+    def enable_editing_task_attributes(cls, task): pass
     def enable_editing_task_calendar(cls, task): pass
     def enable_editing_task_sequence(cls, task): pass
     def enable_editing_task_time(cls, task): pass
-    def enable_editing_task_attributes(cls, task): pass
     def enable_editing_work_calendar_times(cls, work_calendar): pass
     def enable_editing_work_calendar(cls, work_calendar): pass
     def enable_editing_work_plan_schedules(cls, work_plan): pass
@@ -694,6 +695,7 @@ class Sequence:
     def get_task_resources(cls, task):pass
     def get_task_time_attributes(cls): pass
     def get_task_time(cls, task): pass
+    def get_tasks_for_product(cls, product, work_schedule): pass
     def get_work_calendar_attributes(cls): pass
     def get_work_plan_attributes(cls): pass
     def get_work_schedule_attributes(cls): pass
@@ -703,6 +705,7 @@ class Sequence:
     def guess_date_range(cls, work_schedule): pass
     def has_task_assignments(cls, product, cost_schedule=None): pass
     def highlight_task(cls, task): pass
+    def is_filter_by_active_schedule(cls): pass
     def is_work_schedule_active(cls, work_schedule): pass
     def load_lag_time_attributes(cls, lag_time): pass
     def load_product_related_tasks(cls, product): pass
@@ -715,6 +718,7 @@ class Sequence:
     def load_task_properties(cls, task): pass
     def load_task_resources(cls,resources): pass
     def load_task_time_attributes(cls, task_time): pass
+    def load_task_tree(cls, work_schedule): pass
     def load_work_calendar_attributes(cls, work_calendar): pass
     def load_work_plan_attributes(cls, work_plan): pass
     def load_work_schedule_attributes(cls, work_schedule): pass
@@ -848,7 +852,7 @@ class Unit:
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
-    def get_scene_unit_si_prefix(cls): pass
+    def get_scene_unit_si_prefix(cls, unit_type): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
     def is_scene_unit_metric(cls): pass

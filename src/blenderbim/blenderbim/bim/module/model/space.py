@@ -73,8 +73,13 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         element = None
         if bpy.context.selected_objects and active_obj:
             element = tool.Ifc.get_entity(active_obj)
-            x, y, z = active_obj.matrix_world.translation.xyz
             mat = active_obj.matrix_world
+            local_bbox_center = 0.125 * sum((Vector(b) for b in active_obj.bound_box), Vector())
+            global_bbox_center = mat @ local_bbox_center
+            x = global_bbox_center.x
+            y = global_bbox_center.y
+            z = (mat @ Vector(active_obj.bound_box[0])).z
+
             h = active_obj.dimensions.z
         else:
             x, y = context.scene.cursor.location.xy
@@ -186,7 +191,8 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
-        return context.selected_objects and element.is_a("IfcWall")
+        if element:
+            return context.selected_objects and element.is_a("IfcWall")
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
@@ -202,9 +208,10 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
         element = None
         element = tool.Ifc.get_entity(active_obj)
-        if not element.is_a("IfcWall"):
-            self.report({'ERROR'}, "The active object is not a wall. Please select a wall.")
-            return
+        if element:
+            if not element.is_a("IfcWall"):
+                self.report({'ERROR'}, "The active object is not a wall. Please select a wall.")
+                return
 
         collection = active_obj.users_collection[0]
         collection_obj = bpy.data.objects.get(collection.name)
@@ -248,6 +255,9 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
             obj = bpy.data.objects.new(name, mesh)
             obj.matrix_world = mat
+
+            self.set_obj_origin_to_bboxcenter(obj)
+
             collection.objects.link(obj)
 
             bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
@@ -328,3 +338,18 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         bmesh.ops.recalc_face_normals(bm, faces = bm.faces)
 
         return bm
+
+    def set_obj_origin_to_bboxcenter(self, obj):
+        mat = obj.matrix_world
+        inverted = mat.inverted()
+        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
+        global_bbox_center = mat @ local_bbox_center
+
+        oldLoc = obj.location
+        newLoc = global_bbox_center
+        diff = newLoc - oldLoc
+        for vert in obj.data.vertices:
+            aux_vector = mat @ vert.co
+            aux_vector = aux_vector - diff
+            vert.co = inverted @ aux_vector
+        obj.location = newLoc

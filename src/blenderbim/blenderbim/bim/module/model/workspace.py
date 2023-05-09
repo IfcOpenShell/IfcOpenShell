@@ -182,6 +182,7 @@ class BimToolUI:
             row.prop(data=cls.props, property="x_angle", text="X Angle")
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
+            
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="cardinal_point", text="Axis")

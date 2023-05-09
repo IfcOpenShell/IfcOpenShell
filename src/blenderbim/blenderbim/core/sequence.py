@@ -457,7 +457,10 @@ def recalculate_schedule(ifc, work_schedule=None):
 
 def add_task_column(sequence, column_type=None, name=None, data_type=None):
     sequence.add_task_column(column_type, name, data_type)
-
+    work_schedule = sequence.get_active_work_schedule()
+    if work_schedule:
+        sequence.load_task_tree(work_schedule)
+        sequence.load_task_properties()
 
 def remove_task_column(sequence, name=None):
     sequence.remove_task_column(name)
@@ -465,7 +468,10 @@ def remove_task_column(sequence, name=None):
 
 def set_task_sort_column(sequence, column=None):
     sequence.set_task_sort_column(column)
-
+    work_schedule = sequence.get_active_work_schedule()
+    if work_schedule:
+        sequence.load_task_tree(work_schedule)
+        sequence.load_task_properties()
 
 def calculate_task_duration(ifc, sequence, task=None):
     ifc.run("sequence.calculate_task_duration", task=task)
@@ -547,7 +553,13 @@ def generate_gantt_chart(sequence, work_schedule):
 
 
 def load_product_related_tasks(sequence, product=None):
-    sequence.load_product_related_tasks(product)
+    filter_by_schedule = sequence.is_filter_by_active_schedule()
+    if filter_by_schedule:
+        work_schedule = sequence.get_active_work_schedule()
+        task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
+    else:
+        task_inputs, task_ouputs = sequence.get_tasks_for_product(product)
+    sequence.load_product_related_tasks(task_inputs, task_ouputs)
 
 
 def reorder_task_nesting(ifc, sequence, task, new_index):

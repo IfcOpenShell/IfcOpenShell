@@ -95,6 +95,8 @@ classes = [
     operator.SelectIfcFile,
     operator.ReloadSelectedIfcFile,
     operator.SelectSchemaDir,
+    operator.FileAssociate,
+    operator.FileUnassociate,
     operator.SelectURIAttribute,
     operator.EditBlenderCollection,
     operator.BIM_OT_open_webbrowser,

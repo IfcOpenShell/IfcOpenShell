@@ -17,13 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 
 tol = 1e-6
 
 
-def is_x(value, x):
-    return abs(x - value) < tol
+def is_x(value, x, tolerance=None):
+    if tolerance is None:
+        tolerance = tol
+    return abs(x - value) < tolerance
 
 
 def get_volume(geometry):
@@ -278,3 +282,28 @@ def get_footprint_perimeter(geometry):
                 all_edges.add(edge)
 
     return sum([np.linalg.norm(vertices[e[0]] - vertices[e[1]]) for e in (all_edges - shared_edges)])
+
+
+def get_profiles(element):
+    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+    if material and material.is_a("IfcMaterialProfileSet"):
+        return [mp.Profile for mp in material.MaterialProfiles]
+    return [e.SweptArea for e in get_extrusions(element)]
+
+
+def get_extrusions(element):
+    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+    if not representation:
+        return
+    representation = ifcopenshell.util.representation.resolve_representation(representation)
+    extrusions = []
+    for item in representation.Items:
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                extrusions.append(item)
+                break
+            elif item.is_a("IfcBooleanResult"):
+                item = item.FirstOperand
+            else:
+                break
+    return extrusions

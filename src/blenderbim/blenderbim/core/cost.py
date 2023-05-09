@@ -269,10 +269,6 @@ def highlight_product_cost_item(spatial, cost, cost_item):
         return "Cost schedule is not active"
 
 
-def toggle_cost_item_parent_change(cost, cost_item):
-    cost.toggle_cost_item_parent_change(cost_item)
-
-
 def change_parent_cost_item(ifc, cost, new_parent):
     cost_item = cost.get_active_cost_item()
     if cost_item and cost.is_root_cost_item(cost_item):

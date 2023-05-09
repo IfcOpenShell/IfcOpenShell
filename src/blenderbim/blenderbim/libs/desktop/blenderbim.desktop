@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Terminal=false
-Exec=blenderbim.sh %f
+Exec=blenderbim %f
 Name=BlenderBIM
 Icon=blenderbim
 X-Desktop-File-Install-Version=0.26

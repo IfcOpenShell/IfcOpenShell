@@ -135,8 +135,8 @@ class TestGetRepresentationContext(NewFile):
 class TestIsElementA(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        assert subject.is_a(ifc.createIfcWall(), "IfcSlab") is False
-        assert subject.is_a(ifc.createIfcOpeningElement(), "IfcOpeningElement") is True
+        assert subject.is_element_a(ifc.createIfcWall(), "IfcSlab") is False
+        assert subject.is_element_a(ifc.createIfcOpeningElement(), "IfcOpeningElement") is True
 
 
 class TestLinkObjectData(NewFile):
