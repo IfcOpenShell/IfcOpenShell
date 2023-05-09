@@ -24,8 +24,10 @@ import ifcopenshell.util.representation
 tol = 1e-6
 
 
-def is_x(value, x):
-    return abs(x - value) < tol
+def is_x(value, x, tolerance=None):
+    if tolerance is None:
+        tolerance = tol
+    return abs(x - value) < tolerance
 
 
 def get_volume(geometry):
@@ -286,7 +288,7 @@ def get_profiles(element):
     material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
     if material and material.is_a("IfcMaterialProfileSet"):
         return [mp.Profile for mp in material.MaterialProfiles]
-    return []
+    return [e.SweptArea for e in get_extrusions(element)]
 
 
 def get_extrusions(element):
