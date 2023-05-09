@@ -51,7 +51,7 @@ class BIM_PT_cost_schedules(Panel):
 
         row = self.layout.row()
         row.prop(self.props, "cost_schedule_predefined_types")
-        row.operator("bim.add_cost_schedule", icon="ADD", text="Add new")
+        row.operator("bim.add_cost_schedule", icon="ADD", text="Add")
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)
@@ -594,7 +594,7 @@ class BIM_UL_cost_items_trait:
         layout.label(text=text)
 
     def draw_uom_column(self, layout, cost_item):
-        layout.label(text=cost_item["UnitBasisUnitSymbol"] or "?" if cost_item["UnitBasisValueComponent"] else "-")
+        layout.label(text=cost_item["UnitBasisUnitSymbol"] or "-" if cost_item["UnitBasisValueComponent"] else "-")
 
     def draw_order_operator(self, row, ifc_definition_id, cost_item):
         if cost_item["NestingIndex"] is not None:
@@ -608,7 +608,14 @@ class BIM_UL_cost_items_trait:
                 op.new_index = cost_item["NestingIndex"] - 1
 
     def draw_total_quantity_column(self, layout, cost_item):
-        layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '?'}")
+        layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}")
+        # if cost_item["DerivedTotalCostQuantity"] not in [None, 0]:
+        #     layout.label(text="{0:.2f}".format(cost_item["DerivedTotalCostQuantity"]) + f" {cost_item['DerivedUnitSymbol'] or '-'}")
+        # else:
+        #     if cost_item["TotalCostQuantity"] == 0:
+        #         layout.label(text="-")
+        #     else:
+        #         layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}")
 
 
 class BIM_UL_cost_items(BIM_UL_cost_items_trait, UIList):

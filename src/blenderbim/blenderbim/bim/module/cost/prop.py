@@ -137,7 +137,7 @@ class CostItemType(PropertyGroup):
 
 def update_cost_item_parent(self, context):
     cost_item = tool.Cost.get_highlighted_cost_item()
-    tool.Cost.toggle_cost_item_parent(cost_item=cost_item)
+    tool.Cost.toggle_cost_item_parent_change(cost_item=cost_item)
 
 
 def update_active_cost_item_elements(self, context):
