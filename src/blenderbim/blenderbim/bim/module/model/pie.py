@@ -19,6 +19,7 @@
 import bpy
 import blenderbim.tool as tool
 import blenderbim.core.spatial
+import blenderbim.core.aggregate
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -75,6 +76,22 @@ class PieUpdateContainer(bpy.types.Operator):
                     break
         return {"FINISHED"}
 
+class PieAssignObjectAggregation(bpy.types.Operator,tool.Ifc.Operator):
+    bl_idname = "bim.pie_assign_object_aggregation"
+    bl_label = "Assign Parts to Active Object"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            if obj == context.active_object:
+                continue
+            blenderbim.core.aggregate.assign_object(
+                tool.Ifc,
+                tool.Aggregate,
+                tool.Collector,
+                relating_obj=context.active_object,
+                related_obj=obj,
+            )
 
 class VIEW3D_MT_PIE_bim(bpy.types.Menu):
     bl_label = "Geometry"
@@ -86,6 +103,7 @@ class VIEW3D_MT_PIE_bim(bpy.types.Menu):
         pie.operator("bim.pie_add_opening")
         pie.operator("bim.pie_update_container")
         pie.operator("bim.open_pie_class", text="Assign IFC Class")
+        pie.operator("bim.pie_assign_object_aggregation", text ="Assign Aggregation")
 
 
 class VIEW3D_MT_PIE_bim_class(bpy.types.Menu):
