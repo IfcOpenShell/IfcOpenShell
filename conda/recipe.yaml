@@ -23,7 +23,7 @@ requirements:
   host:
     - python
     - boost-cpp
-    - occt
+    - occt ==7.7.0
     - libxml2
     - cgal-cpp
     - hdf5
@@ -37,7 +37,7 @@ requirements:
   run:
     - python
     - boost-cpp
-    - {{ pin_compatible('occt', max_pin='x.x.x') }}
+    - occt ==7.7.0
     - libxml2
     - cgal-cpp
     - hdf5
