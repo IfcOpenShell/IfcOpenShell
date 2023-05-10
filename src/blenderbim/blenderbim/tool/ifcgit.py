@@ -325,12 +325,12 @@ class IfcGit:
                         # merge is expected to fail, run ifcmerge
                         try:
                             repo.git.mergetool(tool="ifcmerge")
-                        except:
+                        except git.exc.GitCommandError as exc:
+                            message = re.sub("(  stderr: '|')", "", exc.stderr)
                             # ifcmerge failed, rollback
                             repo.git.merge(abort=True)
-                            # FIXME need to report errors somehow
 
-                            operator.report({"ERROR"}, "IFC Merge failed")
+                            operator.report({"ERROR"}, "IFC Merge failed:" + message)
                             return False
                     except:
 
