@@ -30,7 +30,7 @@ def get_pset(element, name, prop=None, should_inherit=True):
     :param name: The name of the pset
     :type name: str
     :param prop: The name of the property
-    :type name: str,optional
+    :type prop: str,optional
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :type should_inherit: bool,optional
     :return: A dictionary of property names and values, or a single value if a
