@@ -60,6 +60,8 @@ class EnableEditingAttributes(bpy.types.Operator):
                 new.data_type = "string"
                 new.ifc_class = data["type"]
                 new.string_value = "" if new.is_null else json.dumps(data[name])
+                blenderbim.bim.helper.add_attribute_description(new)
+                new.description += " The degrees, minutes and seconds should follow this format : [12,34,56]"
 
         blenderbim.bim.helper.import_attributes2(
             tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes, callback=callback
