@@ -31,6 +31,7 @@ from blenderbim.bim.handler import purge_module_data
 class AddCsvAttribute(bpy.types.Operator):
     bl_idname = "bim.add_csv_attribute"
     bl_label = "Add CSV Attribute"
+    bl_description = "Add a new IFC Attribute to the CSV export"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -52,6 +53,7 @@ class RemoveCsvAttribute(bpy.types.Operator):
 class RemoveAllCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.remove_all_csv_attributes"
     bl_label = "Remove all CSV Attributes"
+    bl_description = "Remove all IFC Attributes from the CSV export"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -61,20 +63,25 @@ class RemoveAllCsvAttributes(bpy.types.Operator):
 
 class ImportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.import_csv_attributes"
-    bl_label = "Import CSV Attributes"
+    bl_label = "Import CSV Template"
+    bl_description = "Import a json template for CSV export"
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        csv_attributes = context.scene.CsvProperties.csv_attributes
-        csv_attributes.clear()
+        csv_props = context.scene.CsvProperties
         csv_json = json.load(open(self.filepath))
-        i = 0
-        for attribute in csv_json:
-            csv_attributes.add()
-            csv_attributes[i].name = attribute
-            i += 1
+
+        expression = csv_json.get("expression", "")
+        if expression:
+            csv_props.ifc_selector = expression
+
+        attributes = csv_json.get("attributes", [])
+        if attributes:
+            csv_props.csv_attributes.clear()
+            for attribute in attributes:
+                csv_props.csv_attributes.add().name = attribute
 
         return {"FINISHED"}
 
@@ -85,19 +92,30 @@ class ImportCsvAttributes(bpy.types.Operator):
 
 class ExportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.export_csv_attributes"
-    bl_label = "Export CSV Attributes"
+    bl_label = "Export CSV Template"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Save a json template for CSV export"
     filename_ext = ".json"
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        csv_attributes = []
-        with open(self.filepath, "w") as outfile:
-            for attribute in context.scene.CsvProperties.csv_attributes:
-                csv_attributes.append(attribute.name)
+        csv_props = context.scene.CsvProperties
 
-            json.dump(csv_attributes, outfile)
+        csv_template = {}
+        expression = csv_props.ifc_selector
+        if expression:
+            csv_template["expression"] = expression
+
+        csv_attributes = []
+        for attribute in csv_props.csv_attributes:
+            attribute_name = attribute.name
+            csv_attributes.append(attribute_name)
+        if csv_attributes:
+            csv_template["attributes"] = csv_attributes
+
+        with open(self.filepath, "w") as outfile:
+            json.dump(csv_template, outfile)
 
         return {"FINISHED"}
 
