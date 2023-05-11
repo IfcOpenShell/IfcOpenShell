@@ -878,6 +878,21 @@ class Drawing(blenderbim.core.tool.Drawing):
             return resource_path.replace("\\", "/")
 
     @classmethod
+    def get_default_shading_style(cls):
+        dprops = bpy.context.scene.DocProperties
+        return dprops.shadingstyle_default
+
+    @classmethod
+    def setup_shading_styles_path(cls, resource_path):
+        resource_path = tool.Ifc.resolve_uri(resource_path)
+        os.makedirs(os.path.dirname(resource_path), exist_ok=True)
+        if not os.path.exists(resource_path):
+            resource_basename = os.path.basename(resource_path)
+            ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
+            if os.path.exists(ootb_resource):
+                shutil.copy(ootb_resource, resource_path)
+
+    @classmethod
     def get_potential_reference_elements(cls, drawing):
         elements = []
         existing_references = cls.get_group_elements(cls.get_drawing_group(drawing))
@@ -1376,7 +1391,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
-        elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")])
+        elements = cls.get_elements_in_camera_view(
+            tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
+        )
         if include:
             elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
         exclude = pset.get("Exclude", None)
@@ -1508,12 +1525,14 @@ class Drawing(blenderbim.core.tool.Drawing):
             x = (camera.data.BIMCameraProperties.raster_x / camera.data.BIMCameraProperties.raster_y) * y
 
         camera_inverse_matrix = camera.matrix_world.inverted()
-        return set([
-            tool.Ifc.get_entity(o)
-            for o in objs
-            if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
-            and tool.Ifc.get_entity(o)
-        ])
+        return set(
+            [
+                tool.Ifc.get_entity(o)
+                for o in objs
+                if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
+                and tool.Ifc.get_entity(o)
+            ]
+        )
 
     @classmethod
     def is_in_camera_view(cls, obj, camera_inverse_matrix, x, y, clip_start, clip_end):

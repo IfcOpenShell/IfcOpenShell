@@ -237,6 +237,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.DocProperties, "symbols_path")
         row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "patterns_path")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "shadingstyles_path")
+        row = self.layout.row(align=True)
+        row.prop(context.scene.DocProperties, "shadingstyle_default")
 
         row = layout.row()
         row.operator("bim.configure_visibility")

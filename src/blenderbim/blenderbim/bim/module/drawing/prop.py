@@ -156,6 +156,21 @@ def update_drawing_name(self, context):
     core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
+def get_drawing_style_name(self):
+    """needed to make `set_drawing_style_name` work"""
+    return self.get("name", "")
+
+
+def set_drawing_style_name(self, new_value):
+    """ensure the name is unique"""
+    scene = bpy.context.scene
+    drawing_styles = [s.name for s in scene.DocProperties.drawing_styles if s.name != self.name]
+    new_value = tool.Blender.ensure_unique_name(new_value, drawing_styles)
+    old_value = self.name
+    self["name"] = new_value
+    bpy.ops.bim.save_drawing_styles_data(rename_style=True, rename_style_from=old_value, rename_style_to=new_value)
+
+
 def update_schedule_name(self, context):
     schedule = tool.Ifc.get().by_id(self.ifc_definition_id)
     core.update_schedule_name(tool.Ifc, tool.Drawing, schedule=schedule, name=self.name)
@@ -236,8 +251,8 @@ class Sheet(PropertyGroup):
 
 
 class DrawingStyle(PropertyGroup):
-    name: StringProperty(name="Name")
-    raster_style: StringProperty(name="Raster Style")
+    name: StringProperty(name="Name", get=get_drawing_style_name, set=set_drawing_style_name)
+    raster_style: StringProperty(name="Raster Style", default="{}")
     render_type: EnumProperty(
         items=[
             ("NONE", "None", ""),
@@ -324,6 +339,10 @@ class DocProperties(PropertyGroup):
     markers_path: StringProperty(default=os.path.join("drawings", "assets", "markers.svg"), name="Default Markers")
     symbols_path: StringProperty(default=os.path.join("drawings", "assets", "symbols.svg"), name="Default Symbols")
     patterns_path: StringProperty(default=os.path.join("drawings", "assets", "patterns.svg"), name="Default Patterns")
+    shadingstyles_path: StringProperty(
+        default=os.path.join("drawings", "assets", "shading_styles.json"), name="Default Shading Styles"
+    )
+    shadingstyle_default: StringProperty(default="Blender Default", name="Default Shading Style")
 
 
 class BIMCameraProperties(PropertyGroup):
