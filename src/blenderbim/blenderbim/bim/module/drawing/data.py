@@ -286,11 +286,15 @@ class DecoratorData:
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension") or {}
         show_description_only = pset_data.get("ShowDescriptionOnly", False)
         suppress_zero_inches = pset_data.get("SuppressZeroInches", False)
+        text_prefix = pset_data.get("TextPrefix", "")
+        text_suffix = pset_data.get("TextSuffix", "")
 
         dimension_data = {
             "dimension_style": dimension_style,
             "show_description_only": show_description_only,
             "suppress_zero_inches": suppress_zero_inches,
+            "text_prefix": text_prefix,
+            "text_suffix": text_suffix,
         }
         cls.data[obj.name] = dimension_data
         return dimension_data

@@ -1079,6 +1079,8 @@ class SvgWriter:
                     text_format=lambda x: "D" + x,
                     show_description_only=dimension_data["show_description_only"],
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
+                    text_prefix=dimension_data["text_prefix"],
+                    text_suffix=dimension_data["text_suffix"],
                 )
 
     def draw_dimension_annotations(self, obj):
@@ -1100,6 +1102,8 @@ class SvgWriter:
                     dimension_text=dimension_text,
                     show_description_only=dimension_data["show_description_only"],
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
+                    text_prefix=dimension_data["text_prefix"],
+                    text_suffix=dimension_data["text_suffix"],
                 )
 
     def draw_measureit_arch_dimension_annotations(self):
@@ -1123,6 +1127,8 @@ class SvgWriter:
         text_format=lambda x: x,
         show_description_only=False,
         suppress_zero_inches=False,
+        text_prefix="",
+        text_suffix="",
     ):
         offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
@@ -1158,7 +1164,8 @@ class SvgWriter:
             )
 
         if not show_description_only:
-            self.svg.add(create_text_tag(str(dimension), text_position + perpendicular, "bottom-middle"))
+            text = f"{text_prefix}{str(dimension)}{text_suffix}"
+            self.svg.add(create_text_tag(text, text_position + perpendicular, "bottom-middle"))
             if dimension_text:
                 self.svg.add(create_text_tag(dimension_text, text_position - perpendicular, "top-middle"))
 
