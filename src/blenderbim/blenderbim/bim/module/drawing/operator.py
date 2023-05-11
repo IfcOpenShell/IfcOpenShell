@@ -41,7 +41,7 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
 from blenderbim.bim.module.drawing.decoration import CutDecorator
-from blenderbim.bim.module.drawing.data import DecoratorData
+from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
 import blenderbim.bim.export_ifc
 from lxml import etree
 from mathutils import Vector
@@ -628,7 +628,6 @@ class CreateDrawing(bpy.types.Operator):
 
                     # Loop over the cell paths
                     for pi, p in enumerate(g2.getElementsByTagName("path")):
-
                         d = p.getAttribute("d")
                         coords = [co[1:].split(",") for co in d.split() if co[1:]]
                         polygon = shapely.Polygon(coords)
@@ -943,11 +942,17 @@ class CreateDrawing(bpy.types.Operator):
         camera_props = self.camera.data.BIMCameraProperties
         if camera_props.diagram_scale == "CUSTOM":
             if context.scene.unit_settings.system == "IMPERIAL":
-                if camera_props.custom_diagram_scale_input1[-1] == "'" or camera_props.custom_diagram_scale_input1[-1] == "\"":
+                if (
+                    camera_props.custom_diagram_scale_input1[-1] == "'"
+                    or camera_props.custom_diagram_scale_input1[-1] == '"'
+                ):
                     camera_props.custom_diagram_scale_input1 = camera_props.custom_diagram_scale_input1[:-1]
                 if camera_props.custom_diagram_scale_input2[-1] == "'":
                     camera_props.custom_diagram_scale_input2 = camera_props.custom_diagram_scale_input2[:-1]
-                if camera_props.custom_diagram_scale_input2[1:] == "'-0\"" or camera_props.custom_diagram_scale_input2[1:] == "' 0\"":
+                if (
+                    camera_props.custom_diagram_scale_input2[1:] == "'-0\""
+                    or camera_props.custom_diagram_scale_input2[1:] == "' 0\""
+                ):
                     camera_props.custom_diagram_scale_input2 = camera_props.custom_diagram_scale_input2[0]
                 if "/" in camera_props.custom_diagram_scale_input1:
                     if " " in camera_props.custom_diagram_scale_input1:
@@ -1333,9 +1338,12 @@ class ActivateDrawing(bpy.types.Operator):
 
     def execute(self, context):
         drawing = tool.Ifc.get().by_id(self.drawing)
+        dprops = bpy.context.scene.DocProperties
         core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=drawing)
-        bpy.context.scene.DocProperties.active_drawing_id = self.drawing
+        dprops.active_drawing_id = self.drawing
+        dprops.drawing_styles.clear()
         if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
+            bpy.ops.bim.reload_drawing_styles()
             bpy.ops.bim.activate_drawing_style()
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         CutDecorator.install(context)
@@ -1405,18 +1413,81 @@ class RemoveDrawing(bpy.types.Operator, Operator):
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
 
 
-class AddDrawingStyle(bpy.types.Operator):
+class ReloadDrawingStyles(bpy.types.Operator):
+    bl_idname = "bim.reload_drawing_styles"
+    bl_label = "Reload Drawing Styles"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+        camera_props = context.active_object.data.BIMCameraProperties
+
+        # added this part as a temporary fallback
+        # TODO: should remove it a bit later when projects get more accommodated
+        # with saving shadingstyles to ifc and separate json file
+        if "ShadingStyles" not in drawing_pset_data:
+            ifc_file = tool.Ifc.get()
+            pset = ifc_file.by_id(drawing_pset_data["id"])
+            edit_properties = {
+                "ShadingStyles": (
+                    shading_styles_path := tool.Drawing.get_default_drawing_resource_path("ShadingStyles")
+                ),
+                "CurrentShadingStyle": tool.Drawing.get_default_shading_style(),
+            }
+            ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties=edit_properties)
+            tool.Drawing.setup_shading_styles_path(shading_styles_path)
+
+            DrawingsData.load()
+            drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+
+        if "ShadingStyles" not in drawing_pset_data:
+            self.report({"ERROR"}, "Could not find shading styles path in EPset_Drawing.ShadingStyles.")
+            return {"CANCELLED"}
+
+        rel_path = drawing_pset_data["ShadingStyles"]
+        current_style = drawing_pset_data.get("CurrentShadingStyle", None)
+
+        json_path = Path(tool.Ifc.resolve_uri(rel_path))
+        if not json_path.exists():
+            self.report({"ERROR"}, "Shading styles file not found: {}".format(json_path))
+            return {"CANCELLED"}
+
+        with open(json_path, "r") as fi:
+            shading_styles_json = json.load(fi)
+
+        drawing_styles = context.scene.DocProperties.drawing_styles
+        drawing_styles.clear()
+        styles = [style for style in shading_styles_json]
+        for style_name in styles:
+            style_data = shading_styles_json[style_name]
+            drawing_style = drawing_styles.add()
+            drawing_style["name"] = style_name  # setting as attribute to avoid triggering setter
+            drawing_style.render_type = style_data["render_type"]
+            drawing_style.raster_style = json.dumps(style_data["raster_style"])
+
+        if current_style is not None:
+            camera_props.active_drawing_style_index = styles.index(current_style)
+
+        return {"FINISHED"}
+
+
+class AddDrawingStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.add_drawing_style"
     bl_label = "Add Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        new = context.scene.DocProperties.drawing_styles.add()
-        new.name = "New Drawing Style"
+        drawing_styles = context.scene.DocProperties.drawing_styles
+        new = drawing_styles.add()
+        # drawing style is saved to ifc on rename
+        new.name = tool.Blender.ensure_unique_name("New Drawing Style", drawing_styles)
+        context.scene.camera.data.BIMCameraProperties.active_drawing_style_index = len(drawing_styles) - 1
         return {"FINISHED"}
 
 
-class RemoveDrawingStyle(bpy.types.Operator):
+class RemoveDrawingStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_drawing_style"
     bl_label = "Remove Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1424,13 +1495,17 @@ class RemoveDrawingStyle(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.DocProperties.drawing_styles.remove(self.index)
+        context.scene.camera.data.BIMCameraProperties.active_drawing_style_index = max(self.index - 1, 0)
+        bpy.ops.bim.save_drawing_styles_data()
         return {"FINISHED"}
 
 
-class SaveDrawingStyle(bpy.types.Operator):
+class SaveDrawingStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.save_drawing_style"
     bl_label = "Save Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Save current render setting to currently selected drawing style. Also resaves styles data to IFC"
+
     index: bpy.props.StringProperty()
     # TODO: check undo redo
 
@@ -1446,11 +1521,14 @@ class SaveDrawingStyle(bpy.types.Operator):
                 except TypeError:
                     pass
             style[prop.value] = value
+
         if self.index:
             index = int(self.index)
         else:
             index = context.active_object.data.BIMCameraProperties.active_drawing_style_index
         scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
+
+        bpy.ops.bim.save_drawing_styles_data()
         return {"FINISHED"}
 
     def get_view_3d(self, context):
@@ -1463,19 +1541,83 @@ class SaveDrawingStyle(bpy.types.Operator):
                 return space
 
 
-class ActivateDrawingStyle(bpy.types.Operator):
+class SaveDrawingStylesData(bpy.types.Operator, Operator):
+    bl_idname = "bim.save_drawing_styles_data"
+    bl_label = "Save Drawing Styles Data"
+    bl_options = {"REGISTER", "UNDO"}
+
+    skip_updating_current_style: bpy.props.BoolProperty(default=False)
+    rename_style: bpy.props.BoolProperty(default=False)
+    rename_style_from: bpy.props.StringProperty(default="")
+    rename_style_to: bpy.props.StringProperty(default="")
+
+    def execute(self, context):
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+        drawing_styles = context.scene.DocProperties.drawing_styles
+
+        rel_path = drawing_pset_data["ShadingStyles"]
+        current_style = drawing_pset_data.get("CurrentShadingStyle", None)
+        json_path = Path(tool.Ifc.resolve_uri(rel_path))
+        if not json_path.exists():
+            self.report({"ERROR"}, "Shading styles file not found: {}".format(json_path))
+            return {"CANCELLED"}
+
+        styles_data = {}
+        for style in drawing_styles:
+            style_data = {"render_type": style.render_type, "raster_style": json.loads(style.raster_style)}
+            styles_data[style.name] = style_data
+
+        with open(json_path, "w") as fo:
+            json.dump(styles_data, fo, indent=4)
+
+        # TODO: currently it doesn't update current style for the other drawings
+        # handling case when current style is not present in styles saved in ifc
+        if not self.skip_updating_current_style and current_style not in styles_data and current_style is not None:
+            # style was renamed
+            if self.rename_style and current_style == self.rename_style_from:
+                new_style_name = self.rename_style_to
+
+            # style was removed
+            else:
+                new_style_name = None
+
+            ifc_file = tool.Ifc.get()
+            drawing = ifc_file.by_id(context.scene.DocProperties.active_drawing_id)
+            pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+            ifcopenshell.api.run(
+                "pset.edit_pset", ifc_file, pset=pset, properties={"CurrentShadingStyle": new_style_name}
+            )
+            blenderbim.bim.handler.refresh_ui_data()
+
+        return {"FINISHED"}
+
+
+class ActivateDrawingStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.activate_drawing_style"
     bl_label = "Activate Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         scene = context.scene
-        if scene.camera.data.BIMCameraProperties.active_drawing_style_index < len(scene.DocProperties.drawing_styles):
-            self.drawing_style = scene.DocProperties.drawing_styles[
-                scene.camera.data.BIMCameraProperties.active_drawing_style_index
-            ]
-            self.set_raster_style(context)
-            self.set_query(context)
+        ifc_file = tool.Ifc.get()
+        active_drawing_style_index = scene.camera.data.BIMCameraProperties.active_drawing_style_index
+
+        if active_drawing_style_index >= len(scene.DocProperties.drawing_styles):
+            return
+
+        self.drawing_style = scene.DocProperties.drawing_styles[active_drawing_style_index]
+
+        self.set_raster_style(context)
+        self.set_query(context)
+
+        drawing = ifc_file.by_id(scene.DocProperties.active_drawing_id)
+        pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+        ifcopenshell.api.run(
+            "pset.edit_pset", ifc_file, pset=pset, properties={"CurrentShadingStyle": self.drawing_style.name}
+        )
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def set_raster_style(self, context):
@@ -1658,6 +1800,7 @@ class AddScheduleToSheet(bpy.types.Operator, Operator):
         tool.Drawing.import_sheets()
 
 
+# TODO: dead code - drawing style attributes are never used?
 class AddDrawingStyleAttribute(bpy.types.Operator):
     bl_idname = "bim.add_drawing_style_attribute"
     bl_label = "Add Drawing Style Attribute"
@@ -1669,6 +1812,7 @@ class AddDrawingStyleAttribute(bpy.types.Operator):
         return {"FINISHED"}
 
 
+# TODO: dead code - drawing style attributes are never used?
 class RemoveDrawingStyleAttribute(bpy.types.Operator):
     bl_idname = "bim.remove_drawing_style_attribute"
     bl_label = "Remove Drawing Style Attribute"
