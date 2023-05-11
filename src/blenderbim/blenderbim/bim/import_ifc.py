@@ -36,7 +36,7 @@ import ifcopenshell.util.geolocation
 import blenderbim.tool as tool
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.drawing.prop import get_diagram_scales
+from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class FileCopy(threading.Thread):
@@ -1711,14 +1711,8 @@ class IfcImporter:
             bpy.context.scene.collection.objects.link(obj)
 
     def is_curve_annotation(self, element):
-        return element.ObjectType in [
-            "DIMENSION",
-            "EQUAL_DIMENSION",
-            "PLAN_LEVEL",
-            "SECTION_LEVEL",
-            "STAIR_ARROW",
-            "TEXT_LEADER",
-        ]
+        object_type = element.ObjectType
+        return object_type in ANNOTATION_TYPES_DATA and ANNOTATION_TYPES_DATA[object_type][3] == "curve"
 
     def get_drawing_group(self, element):
         for rel in element.HasAssignments or []:
