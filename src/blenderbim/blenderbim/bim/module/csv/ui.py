@@ -49,26 +49,17 @@ class BIM_PT_ifccsv(Panel):
         row.operator("bim.eyedrop_ifccsv", icon="EYEDROPPER", text="")
         layout.separator()
 
-        row = layout.row()
-        split = row.split(factor=0.7)
-        c = split.column()
-        c.operator("bim.add_csv_attribute")
-        c = split.column()
-        c.operator("bim.import_csv_attributes", icon="IMPORT", text="Load Template")
+        row = layout.row(align=True)
+        row.operator("bim.add_csv_attribute", icon="ADD")
+        row.operator("bim.remove_all_csv_attributes", icon="CANCEL")
+        row = layout.row(align=True)
+        row.operator("bim.import_csv_attributes", icon="IMPORT")
+        row.operator("bim.export_csv_attributes", icon="EXPORT")
 
         for index, attribute in enumerate(props.csv_attributes):
             row = layout.row(align=True)
             row.prop(attribute, "name", text="")
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
-
-        if props.csv_attributes:
-            row = layout.row()
-            row.label()
-            row.operator("bim.remove_all_csv_attributes", icon="CANCEL", text="")
-            row = layout.row()
-            row.operator("bim.export_csv_attributes", icon="EXPORT", text="Create Template")
-
-        layout.separator()
 
         row = layout.row(align=True)
         row.prop(props, "csv_delimiter")
@@ -78,7 +69,7 @@ class BIM_PT_ifccsv(Panel):
             row.prop(props, "csv_custom_delimiter")
 
         row = layout.row()
-        split = row.split(factor=0.7)
+        split = row.split(factor=0.5)
         c = split.column()
         c.operator("bim.export_ifccsv", icon="EXPORT")
         c = split.column()
