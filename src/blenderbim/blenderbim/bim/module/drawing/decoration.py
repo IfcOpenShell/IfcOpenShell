@@ -622,6 +622,8 @@ class DimensionDecorator(BaseDecorator):
         description = element.Description
         dimension_data = DecoratorData.get_dimension_data(obj)
         show_description_only = dimension_data["show_description_only"]
+        text_prefix = dimension_data["text_prefix"]
+        text_suffix = dimension_data["text_suffix"]
 
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
@@ -637,6 +639,7 @@ class DimensionDecorator(BaseDecorator):
                 # TODO: same distance format function as in svg?
                 # requires storing drawing precision and decimal_places from pset to data.py
                 text = self.format_value(context, length)
+                text = text_prefix + text + text_suffix
 
                 self.draw_label(context, text, p0 + text_dir * 0.5, text_dir, box_alignment="bottom-middle")
                 if description:
