@@ -116,6 +116,16 @@ class Blender:
         tool.Blender.get_viewport_context()["area"].tag_redraw()
 
     @classmethod
+    def ensure_unique_name(cls, name, objects, iteration=0):
+        """returns a unique name for the given name and dictionary of objects
+        blender style name with .001, .002, etc. suffix
+        """
+        current_iteration = name if not iteration else f"{name}.{iteration:03d}"
+        if current_iteration not in objects:
+            return current_iteration
+        return cls.ensure_unique_name(name, objects, iteration + 1)
+
+    @classmethod
     def get_default_selection_keypmap(cls):
         """keymap to replicate default blender selection behaviour with click and box selection"""
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2

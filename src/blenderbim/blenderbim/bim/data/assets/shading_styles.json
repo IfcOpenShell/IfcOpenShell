@@ -1,0 +1,125 @@
+{
+    "Technical": {
+        "raster_style": {
+            "bpy.data.worlds[0].color": [
+                1,
+                1,
+                1
+            ],
+            "scene.render.engine": "BLENDER_WORKBENCH",
+            "scene.render.film_transparent": false,
+            "scene.display.shading.show_object_outline": true,
+            "scene.display.shading.show_cavity": false,
+            "scene.display.shading.cavity_type": "BOTH",
+            "scene.display.shading.curvature_ridge_factor": 1,
+            "scene.display.shading.curvature_valley_factor": 1,
+            "scene.view_settings.view_transform": "Standard",
+            "scene.display.shading.light": "FLAT",
+            "scene.display.shading.color_type": "SINGLE",
+            "scene.display.shading.single_color": [
+                1,
+                1,
+                1
+            ],
+            "scene.display.shading.show_shadows": false,
+            "scene.display.shading.shadow_intensity": 0.5,
+            "scene.display.light_direction": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "scene.view_settings.use_curve_mapping": false,
+            "space.overlay.show_wireframes": true,
+            "space.overlay.wireframe_threshold": 0,
+            "space.overlay.show_floor": false,
+            "space.overlay.show_axis_x": false,
+            "space.overlay.show_axis_y": false,
+            "space.overlay.show_axis_z": false,
+            "space.overlay.show_object_origins": false,
+            "space.overlay.show_relationship_lines": false
+        },
+        "render_type": "VIEWPORT"
+    },
+    "Shaded": {
+        "raster_style": {
+            "bpy.data.worlds[0].color": [
+                1,
+                1,
+                1
+            ],
+            "scene.render.engine": "BLENDER_WORKBENCH",
+            "scene.render.film_transparent": false,
+            "scene.display.shading.show_object_outline": true,
+            "scene.display.shading.show_cavity": true,
+            "scene.display.shading.cavity_type": "BOTH",
+            "scene.display.shading.curvature_ridge_factor": 1,
+            "scene.display.shading.curvature_valley_factor": 1,
+            "scene.view_settings.view_transform": "Standard",
+            "scene.display.shading.light": "STUDIO",
+            "scene.display.shading.color_type": "MATERIAL",
+            "scene.display.shading.single_color": [
+                1,
+                1,
+                1
+            ],
+            "scene.display.shading.show_shadows": true,
+            "scene.display.shading.shadow_intensity": 0.5,
+            "scene.display.light_direction": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "scene.view_settings.use_curve_mapping": false,
+            "space.overlay.show_wireframes": false,
+            "space.overlay.wireframe_threshold": 0,
+            "space.overlay.show_floor": false,
+            "space.overlay.show_axis_x": false,
+            "space.overlay.show_axis_y": false,
+            "space.overlay.show_axis_z": false,
+            "space.overlay.show_object_origins": false,
+            "space.overlay.show_relationship_lines": false
+        },
+        "render_type": "VIEWPORT"
+    },
+    "Blender Default": {
+        "raster_style": {
+            "bpy.data.worlds[0].color": [
+                0.05087608844041824,
+                0.05087608844041824,
+                0.05087608844041824
+            ],
+            "scene.render.engine": "BLENDER_EEVEE",
+            "scene.render.film_transparent": false,
+            "scene.view_settings.view_transform": "Filmic",
+            "scene.display.shading.show_object_outline": false,
+            "scene.display.shading.show_cavity": false,
+            "scene.display.shading.cavity_type": "WORLD",
+            "scene.display.shading.curvature_ridge_factor": 0.0,
+            "scene.display.shading.curvature_valley_factor": 0.0,
+            "scene.display.shading.light": "STUDIO",
+            "scene.display.shading.color_type": "MATERIAL",
+            "scene.display.shading.single_color": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "scene.display.shading.show_shadows": false,
+            "scene.display.shading.shadow_intensity": 0.5,
+            "scene.display.light_direction": [
+                0.5773502588272095,
+                0.5773502588272095,
+                0.5773502588272095
+            ],
+            "scene.view_settings.use_curve_mapping": false,
+            "space.overlay.show_wireframes": false,
+            "space.overlay.wireframe_threshold": 1.0,
+            "space.overlay.show_floor": true,
+            "space.overlay.show_axis_x": true,
+            "space.overlay.show_axis_y": true,
+            "space.overlay.show_axis_z": false,
+            "space.overlay.show_object_origins": true,
+            "space.overlay.show_relationship_lines": true
+        },
+        "render_type": "VIEWPORT"
+    }
+}

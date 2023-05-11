@@ -117,38 +117,53 @@ class BIM_PT_drawing_underlay(Panel):
         layout.use_property_split = True
         dprops = context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
+        drawing_index_is_valid = props.active_drawing_style_index < len(dprops.drawing_styles)
+
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
 
         row = layout.row(align=True)
-        row.operator("bim.add_drawing_style")
+        current_shading_style = drawing_pset_data.get("CurrentShadingStyle", None)
+        if current_shading_style is None:
+            row.label(text="Current style is not set.")
+        else:
+            row.label(text="Current Shading Style:")
+            row.label(text=current_shading_style)
+        row.operator("bim.add_drawing_style", icon="ADD", text="")
+        if drawing_index_is_valid:
+            row.operator("bim.remove_drawing_style", icon="X", text="").index = props.active_drawing_style_index
+        row.operator("bim.reload_drawing_styles", icon="FILE_REFRESH", text="")
 
-        if dprops.drawing_styles:
-            layout.template_list("BIM_UL_generic", "", dprops, "drawing_styles", props, "active_drawing_style_index")
+        if not dprops.drawing_styles:
+            return
+        layout.template_list("BIM_UL_generic", "", dprops, "drawing_styles", props, "active_drawing_style_index")
 
-            if props.active_drawing_style_index < len(dprops.drawing_styles):
-                drawing_style = dprops.drawing_styles[props.active_drawing_style_index]
+        if not drawing_index_is_valid:
+            return
+        drawing_style = dprops.drawing_styles[props.active_drawing_style_index]
 
-                row = layout.row(align=True)
-                row.prop(drawing_style, "name")
-                row.operator("bim.remove_drawing_style", icon="X", text="").index = props.active_drawing_style_index
+        row = layout.row(align=True)
+        row.prop(drawing_style, "name")
 
-                row = layout.row()
-                row.prop(drawing_style, "render_type")
-                row = layout.row(align=True)
-                row.prop(drawing_style, "include_query")
-                row = layout.row(align=True)
-                row.prop(drawing_style, "exclude_query")
+        row = layout.row()
+        row.prop(drawing_style, "render_type")
+        row = layout.row(align=True)
+        row.prop(drawing_style, "include_query")
+        row = layout.row(align=True)
+        row.prop(drawing_style, "exclude_query")
 
-                row = layout.row()
-                row.operator("bim.add_drawing_style_attribute")
+        row = layout.row()
+        row.operator("bim.add_drawing_style_attribute")
 
-                for index, attribute in enumerate(drawing_style.attributes):
-                    row = layout.row(align=True)
-                    row.prop(attribute, "name", text="")
-                    row.operator("bim.remove_drawing_style_attribute", icon="X", text="").index = index
+        for index, attribute in enumerate(drawing_style.attributes):
+            row = layout.row(align=True)
+            row.prop(attribute, "name", text="")
+            row.operator("bim.remove_drawing_style_attribute", icon="X", text="").index = index
 
-                row = layout.row(align=True)
-                row.operator("bim.save_drawing_style")
-                row.operator("bim.activate_drawing_style")
+        row = layout.row(align=True)
+        row.operator("bim.save_drawing_style")
+        row.operator("bim.activate_drawing_style")
 
 
 class BIM_PT_drawings(Panel):

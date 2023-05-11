@@ -264,6 +264,9 @@ class TestAddDrawing:
         drawing.get_default_drawing_resource_path("Markers").should_be_called().will_return("markers.svg")
         drawing.get_default_drawing_resource_path("Symbols").should_be_called().will_return("symbols.svg")
         drawing.get_default_drawing_resource_path("Patterns").should_be_called().will_return("patterns.svg")
+        drawing.get_default_drawing_resource_path("ShadingStyles").should_be_called().will_return("shading_styles.json")
+        drawing.get_default_shading_style().should_be_called().will_return("Blender Default")
+        drawing.setup_shading_styles_path("shading_styles.json").should_be_called()
         drawing.get_unit_system().should_be_called().will_return("METRIC")
         ifc.run(
             "pset.edit_pset",
@@ -280,6 +283,8 @@ class TestAddDrawing:
                 "Markers": "markers.svg",
                 "Symbols": "symbols.svg",
                 "Patterns": "patterns.svg",
+                "ShadingStyles": "shading_styles.json",
+                "CurrentShadingStyle": "Blender Default",
             },
         ).should_be_called()
         drawing.get_default_drawing_path("name").should_be_called().will_return("uri")
