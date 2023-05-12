@@ -377,17 +377,42 @@ class BaseDecorator:
         font_size_mm=2.5,
         line_no=0,
         box_alignment=None,
+        multiline=False,
+        multiline_to_bottom=True,
     ):
         """Draw text label
 
         Args:
           pos: bottom-center
+          multiline: \n characters will be interpreted as line breaks
 
         aligned and centered at segment middle
 
         NOTE: `blf.draw` seems to ignore the \n character, so we have to split the text ourselves
         and use the `line_no` argument of `draw_label`
+
         """
+
+        if multiline:
+            line_no = 0
+            lines = text.split("\\n")
+            lines = lines if multiline_to_bottom else lines[::-1]
+            for line in lines:
+                self.draw_label(
+                    context,
+                    line,
+                    pos,
+                    text_dir,
+                    gap=gap,
+                    center=center,
+                    vcenter=vcenter,
+                    font_size_mm=font_size_mm,
+                    line_no=line_no,
+                    box_alignment=box_alignment,
+                )
+                line_no += 1 if multiline_to_bottom else -1
+            return
+
         # 0 is the default font, but we're fancier than that
         font_id = self.font_id
 
@@ -492,7 +517,7 @@ class BaseDecorator:
             start_i = add_verts_sequence(add_offsets(v0, segment), start_i, **out_kwargs)
         self.draw_lines(context, obj, output_verts, output_edges)
 
-    def draw_text(self, context, obj, text_world_position=None):
+    def draw_text(self, context, obj, text_world_position=None, reverse_lines_order=False):
         """if `text_world_position` is not provided, the object's location will be used"""
         if not text_world_position:
             text_world_position = obj.location
@@ -522,6 +547,7 @@ class BaseDecorator:
             text_scale = obj.scale.x
 
         line_i = 0
+        font_size_mm = text_data["FontSize"] * text_scale
         for literal_data in literals_data:
             box_alignment = literal_data["BoxAlignment"]
 
@@ -534,11 +560,11 @@ class BaseDecorator:
                     gap=0,
                     center=False,
                     vcenter=False,
-                    font_size_mm=text_data["FontSize"] * text_scale,
+                    font_size_mm=font_size_mm,
                     line_no=line_i,
                     box_alignment=box_alignment,
                 )
-                line_i += 1
+                line_i += 1 if not reverse_lines_order else -1
 
 
 class DimensionDecorator(BaseDecorator):
@@ -624,6 +650,8 @@ class DimensionDecorator(BaseDecorator):
         show_description_only = dimension_data["show_description_only"]
         text_prefix = dimension_data["text_prefix"]
         text_suffix = dimension_data["text_suffix"]
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        text_offset_value = viewportDrawingScale * 3
 
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
@@ -633,6 +661,8 @@ class DimensionDecorator(BaseDecorator):
             text_dir = p1 - p0
             if text_dir.length < 1:
                 continue
+            perpendicular = Vector((-text_dir.y, text_dir.x)).normalized()
+            text_offset = perpendicular * text_offset_value
 
             if not show_description_only:
                 length = (v1 - v0).length
@@ -641,12 +671,35 @@ class DimensionDecorator(BaseDecorator):
                 text = self.format_value(context, length)
                 text = text_prefix + text + text_suffix
 
-                self.draw_label(context, text, p0 + text_dir * 0.5, text_dir, box_alignment="bottom-middle")
+                self.draw_label(
+                    context,
+                    text,
+                    p0 + text_dir * 0.5 + text_offset,
+                    text_dir,
+                    box_alignment="bottom-middle",
+                    multiline=True,
+                    multiline_to_bottom=False,
+                )
                 if description:
-                    self.draw_label(context, description, p0 + text_dir * 0.5, text_dir, box_alignment="top-middle")
+                    self.draw_label(
+                        context,
+                        description,
+                        p0 + text_dir * 0.5 - text_offset,
+                        text_dir,
+                        box_alignment="top-middle",
+                        multiline=True,
+                    )
 
             elif show_description_only and description:
-                self.draw_label(context, description, p0 + text_dir * 0.5, text_dir, box_alignment="bottom-middle")
+                self.draw_label(
+                    context,
+                    description,
+                    p0 + text_dir * 0.5 + text_offset,
+                    text_dir,
+                    box_alignment="bottom-middle",
+                    multiline=True,
+                    multiline_to_bottom=False,
+                )
 
 
 class AngleDecorator(BaseDecorator):
