@@ -260,7 +260,7 @@ static void process_characters(void* user, const xmlChar* ch, int len) {
 		auto pt = state->stack.back().inst()->declaration().as_type_declaration()->declared_type();
 		Argument* val = nullptr;
 		try {
-			parse_attribute_value(pt, txt);
+			val = parse_attribute_value(pt, txt);
 		} catch (const std::exception& e) {
 			Logger::Error(e, state->stack.back().inst());
 		}
