@@ -865,9 +865,8 @@ class OverrideModeSetObject(bpy.types.Operator):
                 continue
 
             if tool.Profile.is_editing_profile():
-                if obj.data.BIMMeshProperties.mesh_checksum == tool.Geometry.get_mesh_checksum(obj.data):
-                    continue
-                bpy.ops.bim.edit_extrusion_profile()
+                if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    bpy.ops.bim.edit_extrusion_profile()
                 return {"FINISHED"}
             elif obj.data.BIMMeshProperties.ifc_definition_id:
                 if not tool.Geometry.has_geometric_data(obj):
