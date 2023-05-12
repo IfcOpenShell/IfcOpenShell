@@ -1149,28 +1149,86 @@ class SvgWriter:
 
         # if annotation can't fit offset text to the right of marker
         text_position = mid if sheet_dimension > 5 else (end + (3 * vector.normalized()))
-        rotation = math.degrees(vector.angle_signed(Vector((1, 0))))
+        angle = math.degrees(vector.angle_signed(Vector((1, 0))))
 
         line = self.svg.line(start=start, end=end, class_=" ".join(classes))
         self.svg.add(line)
 
-        def create_text_tag(text, text_position, box_alignment):
-            text_kwargs = {"transform": "rotate({} {} {})".format(rotation, text_position.x, text_position.y)}
+        if not show_description_only:
+            text = f"{text_prefix}{str(dimension)}{text_suffix}"
+            text_tag = self.create_text_tag(
+                text,
+                text_position + perpendicular,
+                angle,
+                "bottom-middle",
+                "DIMENSION",
+                text_format=text_format,
+                multiline=True,
+                multiline_to_bottom=False,
+            )
+            self.svg.add(text_tag)
+            if dimension_text:
+                text_tag = self.create_text_tag(
+                    dimension_text,
+                    text_position - perpendicular,
+                    angle,
+                    "top-middle",
+                    "DIMENSION",
+                    text_format=text_format,
+                    multiline=True,
+                    multiline_to_bottom=True,
+                )
+                self.svg.add(text_tag)
+
+        elif show_description_only and dimension_text:
+            text_tag = self.create_text_tag(
+                dimension_text,
+                text_position + perpendicular,
+                angle,
+                "bottom-middle",
+                "DIMENSION",
+                text_format=text_format,
+                multiline=True,
+                multiline_to_bottom=False,
+            )
+            self.svg.add(text_tag)
+
+    def create_text_tag(
+        self,
+        text,
+        text_position,
+        angle,
+        box_alignment,
+        class_str,
+        text_format=lambda x: x,
+        multiline=False,
+        multiline_to_bottom=False,
+    ):
+        if not multiline:
+            text_kwargs = {"transform": "rotate({} {} {})".format(angle, text_position.x, text_position.y)}
             return self.svg.text(
                 text_format(text),
                 insert=text_position,
-                class_="DIMENSION",
+                class_=class_str,
                 **(text_kwargs | SvgWriter.get_box_alignment_parameters(box_alignment)),
             )
 
-        if not show_description_only:
-            text = f"{text_prefix}{str(dimension)}{text_suffix}"
-            self.svg.add(create_text_tag(text, text_position + perpendicular, "bottom-middle"))
-            if dimension_text:
-                self.svg.add(create_text_tag(dimension_text, text_position - perpendicular, "top-middle"))
+        text_position_svg_str = ", ".join(map(str, text_position))
+        text_transform = f"translate({text_position_svg_str}) rotate({angle})"
+        text_kwargs = {
+            "transform": text_transform,
+            "style": "font-size: 0;",
+        }
 
-        elif show_description_only and dimension_text:
-            self.svg.add(create_text_tag(dimension_text, text_position + perpendicular, "bottom-middle"))
+        text_tag = self.svg.text("", **text_kwargs, **SvgWriter.get_box_alignment_parameters(box_alignment))
+        text_lines = text.replace("\\n", "\n").split("\n")
+        text_lines = text_lines if multiline_to_bottom else text_lines[::-1]
+
+        for line_number, text_line in enumerate(text_lines):
+            tspan = self.svg.tspan(text_format(text_line), class_=class_str, insert=(0, 0))
+            tspan.update({"dy": f"{line_number if multiline_to_bottom else -line_number}em"})
+            text_tag.add(tspan)
+        return text_tag
 
     def project_point_onto_camera(self, point):
         # TODO is this needlessly complex?
