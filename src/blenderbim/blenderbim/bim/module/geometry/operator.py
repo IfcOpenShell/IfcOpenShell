@@ -748,6 +748,18 @@ class OverrideModeSetEdit(bpy.types.Operator):
             if not representation:
                 continue
 
+            if len(context.selected_objects) == 1:
+                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                    # Needs to run BEFORE is_meshlike check
+                    bpy.ops.bim.enable_editing_railing_path()
+                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
+                    return {"FINISHED"}
+                elif len(context.selected_objects) == 1 and tool.Geometry.is_profile_based(representation):
+                    # Only one profile can be edited at a time
+                    bpy.ops.bim.enable_editing_extrusion_profile()
+                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
+                    return {"FINISHED"}
+
             if tool.Geometry.is_meshlike(representation):
                 if getattr(element, "HasOpenings", None):
                     # Mesh elements with openings must disable openings
@@ -763,11 +775,6 @@ class OverrideModeSetEdit(bpy.types.Operator):
                         apply_openings=False,
                     )
                 obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
-            elif len(context.selected_objects) == 1 and tool.Geometry.is_profile_based(representation):
-                # Only one profile can be edited at a time
-                bpy.ops.bim.enable_editing_extrusion_profile()
-                obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
-                return {"FINISHED"}
             else:
                 obj.select_set(False)
                 continue
@@ -866,7 +873,10 @@ class OverrideModeSetObject(bpy.types.Operator):
 
             if tool.Profile.is_editing_profile():
                 if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
-                    bpy.ops.bim.edit_extrusion_profile()
+                    if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                        bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                    else:
+                        bpy.ops.bim.edit_extrusion_profile()
                 return self.execute(context)
             elif obj.data.BIMMeshProperties.ifc_definition_id:
                 if not tool.Geometry.has_geometric_data(obj):
