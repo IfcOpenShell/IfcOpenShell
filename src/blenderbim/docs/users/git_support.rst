@@ -136,8 +136,25 @@ combined changes before discarding or committing them.
 
 .. Note::
 
-    Mergubg requires the *ifcmerge* tool installed in your `PATH`, if it is
+    Merging requires the *ifcmerge* tool installed in your `PATH`, if it is
     not installed the merge operator will not be enabled.
+
+Tags
+----
+
+Git tags are useful to label important revisions (think of *TENDER*,
+*CONSTRUCTION*, *RevA* etc..). Tags appear as a prefix in the revision list,
+which can be filtered to only show revisions with tags. Tags for the selected
+revision are also listed in full below the revision list along with their
+optional message text.
+
+.. Note::
+
+    Tag names have the same limitations as branch names, names should be short
+    and without spaces, but can contain unicode characters, emojis etc...
+    BlenderBIM will not allow you to create invalid or duplicate tag names.
+    Similar to commit messages, tag messages should be 50 characters or less,
+    though there is no practical limit.
 
 Using other Git tools
 ---------------------
