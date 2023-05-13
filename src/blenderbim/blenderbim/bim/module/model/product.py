@@ -37,12 +37,6 @@ from . import prop
 import json
 
 
-def select_and_activate_single_object(context, obj):
-    bpy.ops.object.select_all(action="DESELECT")
-    context.view_layer.objects.active = obj
-    obj.select_set(True)
-
-
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
     bl_idname = "bim.add_empty_type"
     bl_label = "Add Empty Type"
@@ -52,7 +46,7 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
         obj = bpy.data.objects.new("TYPEX", None)
         context.scene.collection.objects.link(obj)
         context.scene.BIMRootProperties.ifc_product = "IfcElementType"
-        select_and_activate_single_object(context, obj)
+        tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
 
@@ -97,7 +91,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):
-                select_and_activate_single_object(context, context.selected_objects[-1])
+                tool.Blender.select_and_activate_single_object(context, context.selected_objects[-1])
                 return {"FINISHED"}
         if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
             if mep.MepGenerator(relating_type).generate():
@@ -179,7 +173,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:
             pass
         else:
-            select_and_activate_single_object(context, obj)
+            tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
     @staticmethod
