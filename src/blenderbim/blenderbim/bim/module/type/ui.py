@@ -59,7 +59,9 @@ class BIM_PT_type(Panel):
         oprops = context.active_object.BIMObjectProperties
         row = self.layout.row(align=True)
         row.label(text=f"{TypeData.data['total_instances']} Typed Objects")
-        row.operator("bim.select_type_objects", icon="RESTRICT_SELECT_OFF", text="")
+        select_type_objects_row = row.row(align=True)
+        select_type_objects_row.operator("bim.select_type_objects", icon="RESTRICT_SELECT_OFF", text="")
+        select_type_objects_row.enabled = int(TypeData.data["total_instances"]) > 0
 
     def draw_product_ui(self, context):
         props = context.active_object.BIMTypeProperties
