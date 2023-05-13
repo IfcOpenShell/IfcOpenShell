@@ -32,6 +32,19 @@ def update_revlist(self, context):
     props.commit_index = 0
 
 
+class IfcGitTag(PropertyGroup):
+    """Properties of a Git tag"""
+
+    name: StringProperty(
+        name="Tag name",
+        default="",
+    )
+    message: StringProperty(
+        name="Tag message",
+        default="",
+    )
+
+
 class IfcGitListItem(PropertyGroup):
     """Group of properties representing an item in the list."""
 
@@ -57,6 +70,7 @@ class IfcGitListItem(PropertyGroup):
         name="Commit Message",
         default="",
     )
+    tags: CollectionProperty(type=IfcGitTag, name="List of revision tags")
 
 
 class IfcGitProperties(PropertyGroup):
@@ -71,6 +85,16 @@ class IfcGitProperties(PropertyGroup):
     new_branch_name: StringProperty(
         name="New branch name",
         description="A short name used to refer to this branch",
+        default="",
+    )
+    new_tag_name: StringProperty(
+        name="New tag name",
+        description="A short name used to refer to this tag",
+        default="",
+    )
+    new_tag_message: StringProperty(
+        name="Tag message (optional)",
+        description="An optional human readable description of this tag",
         default="",
     )
     display_branch: EnumProperty(items=git_branches, update=update_revlist)

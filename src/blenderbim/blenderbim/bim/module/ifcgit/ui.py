@@ -132,6 +132,25 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         row = column.row()
         row.label(text=item.message)
 
+        for tag in item.tags:
+            box = layout.box()
+            item = box.row()
+            column = item.column(align=True)
+            row = column.row()
+            row.label(text=tag.name)
+            if tag.message:
+                row = column.row()
+                row.label(text=tag.message)
+            # TODO
+            # item.operator("ifcgit.delete_tag", icon="PANEL_CLOSE")
+
+        row = layout.row()
+        row.prop(props, "new_tag_name")
+        row = layout.row()
+        row.prop(props, "new_tag_message")
+        row = layout.row()
+        row.operator("ifcgit.add_tag", icon="GREASEPENCIL")
+
 
 class COMMIT_UL_List(bpy.types.UIList):
     """List of Git commits"""

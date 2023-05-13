@@ -25,6 +25,10 @@ def commit_changes(ifcgit, ifc, repo, context):
         ifcgit.create_new_branch()
 
 
+def add_tag(ifcgit, repo):
+    ifcgit.add_tag(repo)
+
+
 def refresh_revision_list(ifcgit, repo, ifc):
     ifcgit.clear_commits_list()
     path_ifc = ifc.get_path()

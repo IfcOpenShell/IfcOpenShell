@@ -107,6 +107,33 @@ class CommitChanges(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddTag(bpy.types.Operator):
+    """Tag selected revision"""
+
+    bl_label = "Add tag"
+    bl_idname = "ifcgit.add_tag"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.IfcGitProperties
+        repo = IfcGitData.data["repo"]
+        if repo and (
+            not tool.IfcGit.is_valid_ref_format(props.new_tag_name)
+            or props.new_tag_name in [tag.name for tag in repo.tags]
+        ):
+            return False
+        return True
+
+    def execute(self, context):
+
+        repo = IfcGitData.data["repo"]
+        core.add_tag(tool.IfcGit, repo)
+        bpy.ops.ifcgit.refresh()
+        refresh()
+        return {"FINISHED"}
+
+
 class RefreshGit(bpy.types.Operator):
     """Refresh revision list"""
 
