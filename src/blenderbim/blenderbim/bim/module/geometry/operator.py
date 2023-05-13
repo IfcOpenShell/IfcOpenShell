@@ -751,7 +751,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
             if len(context.selected_objects) == 1:
                 if tool.Pset.get_element_pset(element, "BBIM_Railing"):
                     # Needs to run BEFORE is_meshlike check
-                    bpy.ops.bim.enable_editing_railing_path()
+                    bpy.ops.bim.hotkey(hotkey="S_E", description="")
                     obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
                     return {"FINISHED"}
                 elif len(context.selected_objects) == 1 and tool.Geometry.is_profile_based(representation):
