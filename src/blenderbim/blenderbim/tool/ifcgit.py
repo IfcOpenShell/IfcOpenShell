@@ -63,6 +63,14 @@ class IfcGit:
         props.commit_message = ""
 
     @classmethod
+    def add_tag(cls, repo):
+        props = bpy.context.scene.IfcGitProperties
+        item = props.ifcgit_commits[props.commit_index]
+        repo.create_tag(props.new_tag_name, ref=item.hexsha, message=props.new_tag_message)
+        props.new_tag_name = ""
+        props.new_tag_message = ""
+
+    @classmethod
     def create_new_branch(cls):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
@@ -115,6 +123,13 @@ class IfcGit:
             list_item.author_email = commit.author.email
             if commit in commits_relevant:
                 list_item.relevant = True
+            if commit.hexsha in lookup:
+                for tag in lookup[commit.hexsha]:
+                    list_item.tags.add()
+                    list_item.tags[-1].name = tag.name
+                    if tag.tag:
+                        # a lightweight tag has no message
+                        list_item.tags[-1].message = tag.tag.message
 
     @classmethod
     def is_valid_ref_format(cls, string):

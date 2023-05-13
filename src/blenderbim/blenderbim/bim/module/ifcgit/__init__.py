@@ -21,6 +21,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddFileToRepo,
+    operator.AddTag,
     operator.CommitChanges,
     operator.CreateRepo,
     operator.DiscardUncommitted,
@@ -29,6 +30,7 @@ classes = (
     operator.Merge,
     operator.RefreshGit,
     operator.SwitchRevision,
+    prop.IfcGitTag,
     prop.IfcGitListItem,
     prop.IfcGitProperties,
     ui.IFCGIT_PT_panel,
