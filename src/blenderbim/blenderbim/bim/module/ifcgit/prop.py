@@ -97,6 +97,17 @@ class IfcGitProperties(PropertyGroup):
         description="An optional human readable description of this tag",
         default="",
     )
+    remote_url: StringProperty(
+        name="Git URL",
+        description="A URL pointing to a Git repository",
+        default="",
+    )
+    local_folder: StringProperty(
+        name="Local folder",
+        description="A local Git repository path",
+        default="",
+        subtype="DIR_PATH",
+    )
     display_branch: EnumProperty(items=git_branches, update=update_revlist)
     ifcgit_filter: EnumProperty(
         items=[

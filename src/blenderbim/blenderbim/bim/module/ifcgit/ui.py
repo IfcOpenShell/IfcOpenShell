@@ -54,6 +54,16 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         else:
             row.label(text="No Git repository found", icon="SYSTEM")
             row.label(text="No IFC project saved", icon="FILE")
+
+            box = layout.box()
+            row = box.row()
+            row.label(text="Clone a remote Git repository")
+            row = box.row()
+            row.prop(props, "remote_url")
+            row = box.row()
+            row.prop(props, "local_folder")
+            row = box.row()
+            row.operator("ifcgit.clone_repo", icon="IMPORT")
             return
 
         is_dirty = IfcGitData.data["is_dirty"]
