@@ -57,7 +57,7 @@ def get_type_predefined_type(self, context):
 
 def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
-    AuthoringData.data["relating_type_id"] = AuthoringData.relating_types()
+    AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
 
 
@@ -82,7 +82,7 @@ def update_type_page(self, context):
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     relating_type_id: bpy.props.EnumProperty(
-        items=get_relating_type_id, name="Construction Type", update=update_relating_type_id
+        items=get_relating_type_id, name="Relating Type", update=update_relating_type_id
     )
     icon_id: bpy.props.IntProperty()
     updating: bpy.props.BoolProperty(default=False)
