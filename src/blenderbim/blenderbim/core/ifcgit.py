@@ -10,6 +10,15 @@ def add_file(ifcgit, ifc):
     ifcgit.add_file_to_repo(repo, path_ifc)
 
 
+def clone_repo(ifcgit, remote_url, local_folder, operator):
+    repo = ifcgit.clone_repo(remote_url, local_folder)
+    if not repo:
+        operator.report({"ERROR"}, "Clone failed")
+        return
+    operator.report({"INFO"}, "Repository cloned")
+    ifcgit.load_anyifc(repo)
+
+
 def discard_uncomitted(ifcgit, ifc):
     path_ifc = ifc.get_path()
     # NOTE this is calling the git binary in a subprocess
@@ -30,10 +39,7 @@ def add_tag(ifcgit, repo):
 
 
 def refresh_revision_list(ifcgit, repo, ifc):
-    ifcgit.clear_commits_list()
-    path_ifc = ifc.get_path()
-    lookup = ifcgit.tags_by_hexsha(repo)
-    ifcgit.get_commits_list(path_ifc, lookup)
+    ifcgit.refresh_revision_list(ifc.get_path())
 
 
 def colourise_revision(ifcgit, context):
@@ -58,6 +64,7 @@ def switch_revision(ifcgit, ifc):
     path_ifc = ifc.get_path()
     ifcgit.switch_to_revision_item()
     ifcgit.load_project(path_ifc)
+    ifcgit.refresh_revision_list(path_ifc)
 
 
 def merge_branch(ifcgit, ifc, operator):

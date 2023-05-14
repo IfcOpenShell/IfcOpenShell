@@ -57,6 +57,33 @@ class AddFileToRepo(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CloneRepo(bpy.types.Operator):
+    """Clone a remote Git repository"""
+
+    bl_label = "Clone repository"
+    bl_idname = "ifcgit.clone_repo"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.IfcGitProperties
+        if (
+            props.remote_url
+            and props.local_folder
+            and os.path.isdir(props.local_folder)
+            and not os.listdir(props.local_folder)
+        ):
+            return True
+        return False
+
+    def execute(self, context):
+
+        props = context.scene.IfcGitProperties
+        core.clone_repo(tool.IfcGit, props.remote_url, props.local_folder, self)
+        refresh()
+        return {"FINISHED"}
+
+
 class DiscardUncommitted(bpy.types.Operator):
     """Discard saved changes and update to HEAD"""
 
