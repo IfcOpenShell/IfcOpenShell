@@ -41,6 +41,13 @@
 #include <map>
 
 namespace usd_utils {
+	inline std::string toPath(std::string& s) {
+		std::replace_if(s.begin(), s.end(),
+			[](char c) { return c < 48 || (c < 65 && c > 57) || (c < 97 && c > 90) || c > 122; },
+			'_');
+		return s;
+	}
+
   	template<typename T>
   	pxr::VtArray<T> toVtArray(const std::vector<T>& vec) {
     	auto array = pxr::VtArray<T>(vec.size());
@@ -52,26 +59,17 @@ namespace usd_utils {
 
 class SERIALIZERS_API USDSerializer : public WriteOnlyGeometrySerializer {
 private:
-	std::string filename_;
     bool ready_ = false;
+	const std::string filename_;
     pxr::UsdStageRefPtr stage_;
-	std::size_t unnamed_count_ = 0;
-	std::map<std::string, pxr::UsdGeomMesh> meshes_;
 	std::map<std::string, pxr::UsdShadeMaterial> materials_;
 
-	inline std::string sanitize(std::string s) {
-		std::replace_if(s.begin(), s.end(),
-			[](char c) { return c > 122 || c < 48 || (c > 57 && c < 65) || (c > 90 && c < 97); },
-			'_');
-		return s;
-	}
-
-	std::vector<pxr::UsdShadeMaterial> createMaterials(const pxr::UsdGeomMesh&, const std::vector<IfcGeom::Material>&);
+	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<IfcGeom::Material>&);
     void createLighting();
 public:
 	USDSerializer(const std::string&, const SerializerSettings&);
 	virtual ~USDSerializer();
-	bool ready();
+	bool ready() { return ready_; }
 	void writeHeader();
 	void write(const IfcGeom::TriangulationElement*);
 	void write(const IfcGeom::BRepElement*) {}
