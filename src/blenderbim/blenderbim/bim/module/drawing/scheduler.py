@@ -19,14 +19,36 @@
 from blenderbim.bim.module.drawing.svgwriter import SvgWriter
 import svgwrite
 
-from odf.opendocument import load
+from odf.opendocument import load as load_ods
 from odf.table import Table, TableRow, TableColumn, TableCell
 from odf.text import P
 from odf.style import Style
 from textwrap import wrap
+from pathlib import Path
+import string
 
 FONT_SIZE = 4.13
 FONT_WIDTH = FONT_SIZE * 0.45
+DEBUG = False
+
+
+def col2num(col):
+    """convert letter column index to number:
+    `"A" -> 1`, `"AA" -> 27``
+    """
+    num = 0
+    for c in col:
+        if c in string.ascii_letters:
+            num = num * 26 + (ord(c.upper()) - ord("A")) + 1
+    return num
+
+
+def a1_to_rc(cell):
+    """convert cell index from A1 format to RC: `"A1" -> (0,0)`"""
+    column_letter = cell.strip(string.digits)
+    col_number = col2num(column_letter) - 1
+    row_number = int(cell[len(column_letter) :]) - 1
+    return row_number, col_number
 
 
 class Scheduler:
@@ -38,21 +60,33 @@ class Scheduler:
         )
         self.padding = 1
         self.margin = 1
-        doc = load(infile)
+        doc = load_ods(infile)
+
+        # useful for debugging ods
+        if DEBUG:
+            import xml.dom.minidom
+
+            path = Path(infile)
+            dom = xml.dom.minidom.parseString(doc.xml())
+            pretty_xml = dom.toprettyxml()
+
+            with open(path.with_suffix(".xml"), "w") as fo:
+                fo.write(pretty_xml)
+
         styles = {}
-        for style in doc.getElementsByType(Style):
-            name = style.getAttribute("name")
+        for cell_style in doc.getElementsByType(Style):
+            name = cell_style.getAttribute("name")
             styles[name] = {}
 
             # NOTE: there are also styles that inherit from parent styles that we do not process atm
-            if not style.firstChild:
+            if not cell_style.firstChild:
                 continue
 
-            if style.firstChild.tagName in ["style:table-column-properties", "style:table-row-properties"]:
-                style_children = [style.firstChild]
+            if cell_style.firstChild.tagName in ["style:table-column-properties", "style:table-row-properties"]:
+                style_children = [cell_style.firstChild]
             else:
                 # for style:table-cell-properties we need to collect also text and paragraph properties
-                style_children = style.childNodes
+                style_children = cell_style.childNodes
 
             for child in style_children:
                 child_params = {key[1]: value for key, value in child.attributes.items()}
@@ -60,115 +94,209 @@ class Scheduler:
 
         table = doc.getElementsByType(Table)[0]
 
+        # related styles stored as a list of tuples:
+        # [(child, parent), ...]
+        related_styles = []
+
         # collect columns width
         column_widths = []
+        column_styles = []
         for col in table.getElementsByType(TableColumn):
             style_name = col.getAttribute("stylename")
-            repeat = col.getAttribute("numbercolumnsrepeated")
-            repeat = int(repeat) if repeat else 1
-            for i in range(repeat):
+            col_repeat = col.getAttribute("numbercolumnsrepeated")
+            col_repeat = int(col_repeat) if col_repeat else 1
+            for i in range(col_repeat):
                 if not style_name or "column-width" not in styles[style_name]:
                     column_width = 50
                 else:
                     column_width = self.convert_to_mm(styles[style_name]["column-width"])
+                column_styles.append(style_name)
                 column_widths.append(column_width)
+            cell_style = col.getAttribute("defaultcellstylename")
+            if cell_style:
+                related_styles.append((style_name, cell_style))
 
         # collect rows height
         row_heights = []
+        # TODO: never used yet because unsure about priority for row styles
+        # over column styles or vice versa
+        row_styles = []
+
         for col in table.getElementsByType(TableRow):
             style_name = col.getAttribute("stylename")
-            repeat = col.getAttribute("numberrowsrepeated")
-            repeat = int(repeat) if repeat else 1
-            for i in range(repeat):
+            row_repeat = col.getAttribute("numberrowsrepeated")
+            row_repeat = int(row_repeat) if row_repeat else 1
+            for i in range(row_repeat):
                 if not style_name or "row-height" not in styles[style_name]:
                     row_height = 6
                 else:
                     row_height = self.convert_to_mm(styles[style_name]["row-height"])
+                row_styles.append(style_name)
                 row_heights.append(row_height)
+            cell_style = col.getAttribute("defaultcellstylename")
+            if cell_style:
+                related_styles.append((style_name, cell_style))
+
+        while len(related_styles) > 0:
+            # unzip related styles to children and parents
+            children, parents = zip(*related_styles)
+            independent_styles = set(parents) - set(children)
+            for relation in related_styles[:]:
+                child, parent = relation
+                if parent in independent_styles:
+                    child_style = styles[child]
+                    styles[child] = styles[parent] | child_style
+                    related_styles.remove(relation)
+
+        # TODO: multiple print ranges? 😔
+        print_range = table.getAttribute("printranges")
+        if print_range:
+            min_rc, max_rc = [a1_to_rc(cell.rsplit(".", 1)[1]) for cell in print_range.split(":")]
+        else:
+            # fallback if print range is not defined
+            min_rc, max_rc = (0,0), (1048576, 16384)
+        min_row, min_col = min_rc
+        max_row, max_col = max_rc
 
         # draw table
         y = self.margin
-        for tri, tr in enumerate(table.getElementsByType(TableRow)):
-            x = self.margin
-            height = row_heights[tri]
-            tdi = 0
+        tri = 0
+        stop_iterating_over_rows = False
+        # TODO: row spans support?
+        for tr in table.getElementsByType(TableRow):
+            if stop_iterating_over_rows:
+                break
 
-            for td in tr.getElementsByType(TableCell):
-                column_span = td.getAttribute("numbercolumnsspanned")
-                column_span = int(column_span) if column_span else 1
+            row_repeat = tr.getAttribute("numberrowsrepeated")
+            row_repeat = int(row_repeat) if row_repeat else 1
 
-                repeat = td.getAttribute("numbercolumnsrepeated")
-                repeat = int(repeat) if repeat else 1
+            for i_row_repeat in range(row_repeat):
+                if tri < min_row:
+                    tri += 1
+                    continue
+                elif tri > max_row:
+                    stop_iterating_over_rows = True
+                    break
 
-                # figuring text alignment
-                style_name = td.getAttribute("stylename")
-                style = styles[style_name] if style_name else {}
-                if style_name and "vertical-align" in style and style["vertical-align"] != "automatic":
-                    vertical_align = style["vertical-align"]
-                else:
-                    vertical_align = "bottom"
+                x = self.margin
+                height = row_heights[tri]
+                tdi = 0
+                stop_iterating_over_columns = False
 
-                alignment_translation = {
-                    "center": "middle",
-                    "end": "right",
-                    "start": "left",
-                }
+                for td in tr.getElementsByType(TableCell):
+                    if stop_iterating_over_columns:
+                        break
 
-                if style_name and "text-align" in style and style["text-align"] != "automatic":
-                    horizontal_align = style["text-align"]
-                    horizontal_align = alignment_translation.get(horizontal_align, horizontal_align)
-                else:
-                    horizontal_align = "left"
+                    column_span = td.getAttribute("numbercolumnsspanned")
+                    column_span = int(column_span) if column_span else 1
 
-                if vertical_align == "middle" and horizontal_align == "middle":
-                    box_alignment = "center"
-                else:
-                    box_alignment = f"{vertical_align}-{horizontal_align}"
+                    col_repeat = td.getAttribute("numbercolumnsrepeated")
+                    col_repeat = int(col_repeat) if col_repeat else 1
 
-                # for future use
-                wrap_text = style.get("wrap-option", None) == "wrap"
+                    # figuring text alignment
+                    cell_style = self.get_style(td.getAttribute("stylename"), styles)
 
-                # drawing cells and text
-                for i in range(0, repeat):
-                    width = sum(column_widths[tdi : tdi + int(column_span)])
-                    self.svg.add(
-                        self.svg.rect(
-                            insert=(x, y),
-                            size=(width, height),
-                            style="fill: #ffffff; stroke-width:.125; stroke: #000000;",
+                    # drawing cells and text
+                    for i_col_repeat in range(col_repeat):
+                        start_tdi = tdi
+                        end_tdi = tdi + int(column_span) - 1
+                        # if the entire span is beyond print range => continue
+                        # if only part then keeping that part
+                        if start_tdi < min_col:
+                            if end_tdi < min_col:
+                                tdi += column_span
+                                continue
+                            else:
+                                start_tdi = min_col
+
+                        # stop if start column is beyond print range
+                        if start_tdi > max_col:
+                            stop_iterating_over_columns = True
+                            break
+
+                        # making sure last column won't go beyond the print range
+                        if end_tdi > max_col:
+                            end_tdi = max_col
+
+                        width = sum(column_widths[start_tdi : end_tdi + 1])
+
+                        self.svg.add(
+                            self.svg.rect(
+                                insert=(x, y),
+                                size=(width, height),
+                                style="fill: #ffffff; stroke-width:.125; stroke: #000000;",
+                            )
                         )
-                    )
-                    p_tags = td.getElementsByType(P)
+                        p_tags = td.getElementsByType(P)
 
-                    if p_tags:
-                        # figuring text position based on alignment
-                        text_position = [0.0, 0.0]
-                        if box_alignment.endswith("left"):
-                            text_position[0] = x + self.padding
-                        elif box_alignment.endswith("middle") or box_alignment == "center":
-                            text_position[0] = x + width / 2
-                        elif box_alignment.endswith("right"):
-                            text_position[0] = x + width - self.padding
+                        col_style = self.get_style(column_styles[tdi], styles)
+                        final_cell_style = col_style | cell_style
+                        box_alignment = self.get_box_alignment(final_cell_style)
+                        wrap_text = final_cell_style.get("wrap-option", None) == "wrap"
+                        if p_tags:
+                            # figuring text position based on alignment
+                            text_position = [0.0, 0.0]
+                            if box_alignment.endswith("left"):
+                                text_position[0] = x + self.padding
+                            elif box_alignment.endswith("middle") or box_alignment == "center":
+                                text_position[0] = x + width / 2
+                            elif box_alignment.endswith("right"):
+                                text_position[0] = x + width - self.padding
 
-                        if box_alignment.startswith("top"):
-                            text_position[1] = y + self.padding
-                        elif box_alignment.startswith("middle") or box_alignment == "center":
-                            text_position[1] = y + height / 2
-                        elif box_alignment.startswith("bottom"):
-                            text_position[1] = y + height - self.padding
+                            if box_alignment.startswith("top"):
+                                text_position[1] = y + self.padding
+                            elif box_alignment.startswith("middle") or box_alignment == "center":
+                                text_position[1] = y + height / 2
+                            elif box_alignment.startswith("bottom"):
+                                text_position[1] = y + height - self.padding
 
-                        self.add_text(
-                            p_tags, *text_position, box_alignment=box_alignment, wrap_text=wrap_text, cell_width=width
-                        )
-                    x += width
-                    tdi += column_span
+                            self.add_text(
+                                p_tags,
+                                *text_position,
+                                box_alignment=box_alignment,
+                                wrap_text=wrap_text,
+                                cell_width=width,
+                            )
+                        x += width
+                        tdi += column_span
 
-            y += height
+                tri += 1
+                y += height
+
         total_width = sum(column_widths) + (self.margin * 2)
         self.svg["width"] = "{}mm".format(total_width)
         self.svg["height"] = "{}mm".format(y)
         self.svg["viewBox"] = "0 0 {} {}".format(total_width, y)
         self.svg.save(pretty=True)
+
+    def get_style(self, style_name, styles):
+        style = styles[style_name] if style_name else {}
+        return style
+
+    def get_box_alignment(self, style):
+        if style and "vertical-align" in style and style["vertical-align"] != "automatic":
+            vertical_align = style["vertical-align"]
+        else:
+            vertical_align = "bottom"
+
+        alignment_translation = {
+            "center": "middle",
+            "end": "right",
+            "start": "left",
+        }
+
+        if style and "text-align" in style and style["text-align"] != "automatic":
+            horizontal_align = style["text-align"]
+            horizontal_align = alignment_translation.get(horizontal_align, horizontal_align)
+        else:
+            horizontal_align = "left"
+
+        if vertical_align == "middle" and horizontal_align == "middle":
+            box_alignment = "center"
+        else:
+            box_alignment = f"{vertical_align}-{horizontal_align}"
+
+        return box_alignment
 
     def add_text(self, p_tags, x, y, box_alignment="bottom-left", wrap_text=False, cell_width=100):
         """
