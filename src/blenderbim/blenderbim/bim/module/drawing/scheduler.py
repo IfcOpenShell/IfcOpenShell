@@ -28,7 +28,9 @@ from pathlib import Path
 import string
 
 FONT_SIZE = 4.13
-FONT_WIDTH = FONT_SIZE * 0.45
+FONT_WIDTH = lambda size: size * 0.45
+FONT_SIZE_PT = 12
+FONT_FAMILY = "OpenGost Type B TT"
 DEBUG = False
 
 
@@ -248,6 +250,12 @@ class Scheduler:
                         wrap_text = final_cell_style.get("wrap-option", None) == "wrap"
                         bold_text = final_cell_style.get("font-weight", None) == "bold"
                         italic_text = final_cell_style.get("font-style", None) == "italic"
+                        # NOTE: very naive since we're scaling text proportionally
+                        font_size = (
+                            float(final_cell_style.get("font-size", f"{FONT_SIZE_PT}pt")[:-2])
+                            / FONT_SIZE_PT
+                            * FONT_SIZE
+                        )
 
                         if p_tags:
                             # figuring text position based on alignment
@@ -269,6 +277,7 @@ class Scheduler:
                             self.add_text(
                                 p_tags,
                                 *text_position,
+                                font_size=font_size,
                                 box_alignment=box_alignment,
                                 wrap_text=wrap_text,
                                 cell_width=width,
@@ -317,7 +326,18 @@ class Scheduler:
 
         return box_alignment
 
-    def add_text(self, p_tags, x, y, box_alignment="bottom-left", wrap_text=False, cell_width=100, bold=False, italic=False):
+    def add_text(
+        self,
+        p_tags,
+        x,
+        y,
+        font_size,
+        box_alignment="bottom-left",
+        wrap_text=False,
+        cell_width=100,
+        bold=False,
+        italic=False,
+    ):
         """
         Adds text to svg.
 
@@ -330,13 +350,13 @@ class Scheduler:
         text_lines = [str(p).upper() for p in p_tags]
         box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)
         text_params = {
-            "font-size": FONT_SIZE,
-            "font-family": "OpenGost Type B TT",
+            "font-size": font_size,
+            "font-family": FONT_FAMILY,
         }
         if bold:
-            text_params['font-weight'] = "bold"
+            text_params["font-weight"] = "bold"
         if italic:
-            text_params['font-style'] = "italic"
+            text_params["font-style"] = "italic"
 
         if len(text_lines) == 1 and not wrap_text:
             text_params.update(box_alignment_params)
@@ -352,7 +372,7 @@ class Scheduler:
         if wrap_text:
             wrapped_lines = []
             for line in text_lines:
-                wrapped_line = wrap(line, width=int(cell_width // FONT_WIDTH), break_long_words=False)
+                wrapped_line = wrap(line, width=int(cell_width // FONT_WIDTH(font_size)), break_long_words=False)
                 wrapped_lines.extend(wrapped_line)
         else:
             wrapped_lines = text_lines
