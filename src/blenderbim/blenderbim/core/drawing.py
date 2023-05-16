@@ -28,8 +28,8 @@ def disable_editing_text(drawing, obj=None):
 
 def edit_text(drawing, obj=None):
     drawing.synchronise_ifc_and_text_attributes(obj)
-    drawing.update_text_value(obj)
     drawing.update_text_size_pset(obj)
+    drawing.update_text_value(obj)
     drawing.disable_editing_text(obj)
 
 
