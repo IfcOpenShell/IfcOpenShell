@@ -246,6 +246,9 @@ class Scheduler:
                         final_cell_style = cell_style or col_style
                         box_alignment = self.get_box_alignment(final_cell_style)
                         wrap_text = final_cell_style.get("wrap-option", None) == "wrap"
+                        bold_text = final_cell_style.get("font-weight", None) == "bold"
+                        italic_text = final_cell_style.get("font-style", None) == "italic"
+
                         if p_tags:
                             # figuring text position based on alignment
                             text_position = [0.0, 0.0]
@@ -269,6 +272,8 @@ class Scheduler:
                                 box_alignment=box_alignment,
                                 wrap_text=wrap_text,
                                 cell_width=width,
+                                bold=bold_text,
+                                italic=italic_text,
                             )
                         x += width
                         tdi += column_span
@@ -312,7 +317,7 @@ class Scheduler:
 
         return box_alignment
 
-    def add_text(self, p_tags, x, y, box_alignment="bottom-left", wrap_text=False, cell_width=100):
+    def add_text(self, p_tags, x, y, box_alignment="bottom-left", wrap_text=False, cell_width=100, bold=False, italic=False):
         """
         Adds text to svg.
 
@@ -328,13 +333,18 @@ class Scheduler:
             "font-size": FONT_SIZE,
             "font-family": "OpenGost Type B TT",
         }
+        if bold:
+            text_params['font-weight'] = "bold"
+        if italic:
+            text_params['font-style'] = "italic"
+
         if len(text_lines) == 1 and not wrap_text:
             text_params.update(box_alignment_params)
-            text_tag = self.svg.text(text_lines[0], insert=(x, y), **text_params)
+            text_tag = self.svg.text(text_lines[0], insert=(x, y), **(text_params))
             self.svg.add(text_tag)
             return
 
-        text_tag = self.svg.text("", **({"style": "font-size: 0;"} | box_alignment_params))
+        text_tag = self.svg.text("", **(text_params | {"font-size": "0"} | box_alignment_params))
 
         # TODO: should be done in less naive way
         # without using magic number for FONT_WIDTH
