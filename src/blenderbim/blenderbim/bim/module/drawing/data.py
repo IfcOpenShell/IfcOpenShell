@@ -242,14 +242,12 @@ class DecoratorData:
         # use `regular` as default
 
         # get font size
-        if classes := pset_data.get("Classes", None):
-            classes_split = classes.split()
-            # prioritize smaller font sizes just like in svg
-            font_size_type = next(
-                (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
-            )
-        else:
-            font_size_type = "regular"
+        classes = pset_data.get("Classes", None) or "regular"
+        classes_split = classes.split()
+        # prioritize smaller font sizes just like in svg
+        font_size_type = next(
+            (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
+        )
         font_size = FONT_SIZES[font_size_type]
 
         # get symbol
