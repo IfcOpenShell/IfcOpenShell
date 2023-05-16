@@ -36,8 +36,8 @@ class TestDisableEditingText:
 class TestEditText:
     def test_run(self, ifc, drawing):
         drawing.synchronise_ifc_and_text_attributes("obj").should_be_called()
-        drawing.update_text_value("obj").should_be_called()
         drawing.update_text_size_pset("obj").should_be_called()
+        drawing.update_text_value("obj").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
         subject.edit_text(drawing, obj="obj")
 

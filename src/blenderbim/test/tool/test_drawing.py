@@ -599,9 +599,16 @@ class TestShowDecorations(NewFile):
 class TestUpdateTextValue(NewFile):
     def test_updating_arbitrary_strings(self):
         TestGetTextLiteral().test_run()
+        ifc = tool.Ifc.get()
+
         obj = bpy.data.objects.get("Object")
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.literals[0].value == "Literal"
+        literal = obj.BIMTextProperties.literals[0]
+
+        assert obj.BIMTextProperties.font_size == "2.5"
+        assert literal.value == "Literal"
+        assert literal.box_alignment[:] == tuple([False] * 6 + [True] + [False] * 2)
+        assert literal.ifc_definition_id == ifc.by_type("IfcTextLiteralWithExtent")[0].id()
 
     def test_using_attribute_variables(self):
         TestGetTextLiteral().test_run()
@@ -632,3 +639,7 @@ class TestUpdateTextValue(NewFile):
 
         subject.update_text_value(obj)
         assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"
+
+    # TODO: implement
+    def test_update_text_font_size(self):
+        pass
