@@ -154,7 +154,20 @@ class Scheduler:
             min_rc, max_rc = [a1_to_rc(cell.rsplit(".", 1)[1]) for cell in print_range.split(":")]
         else:
             # fallback if print range is not defined
-            min_rc, max_rc = (0,0), (1048576, 16384)
+            n_rows = len(row_heights)
+            n_cols = len(column_widths)
+            n_cells = len(row_heights) * len(column_widths)
+            cells_limit = 10000
+            if n_cells >= cells_limit:
+                raise Exception(
+                    f"You were about to build a very big table with number of cells more than {cells_limit}.\n"
+                    f"In fact it is {n_rows} rows x {n_cols} cols = {n_cells} cells \n"
+                    "and the operation was stopped to prevent system freeze.\n"
+                    "Please define print range in .ods file to proceede\n"
+                    "(needed to make sure printed table will have reasonable size)."
+                )
+
+            min_rc, max_rc = (0, 0), (1048576, 16384)
         min_row, min_col = min_rc
         max_row, max_col = max_rc
 
@@ -263,10 +276,11 @@ class Scheduler:
                 tri += 1
                 y += height
 
-        total_width = sum(column_widths) + (self.margin * 2)
+        total_width = x + self.margin
+        total_height = y + self.margin
         self.svg["width"] = "{}mm".format(total_width)
-        self.svg["height"] = "{}mm".format(y)
-        self.svg["viewBox"] = "0 0 {} {}".format(total_width, y)
+        self.svg["height"] = "{}mm".format(total_height)
+        self.svg["viewBox"] = "0 0 {} {}".format(total_width, total_height)
         self.svg.save(pretty=True)
 
     def get_style(self, style_name, styles):
