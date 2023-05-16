@@ -535,7 +535,9 @@ class BaseDecorator:
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
         props = obj.BIMTextProperties
-        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
+        text_data = DecoratorData.get_ifc_text_data(obj)
+        if props.is_editing:
+            text_data = text_data | props.get_text_edited_data()
         literals_data = text_data["Literals"]
         symbol = text_data["Symbol"]
         text_scale = 1.0
