@@ -243,7 +243,7 @@ class Scheduler:
                         p_tags = td.getElementsByType(P)
 
                         col_style = self.get_style(column_styles[tdi], styles)
-                        final_cell_style = col_style | cell_style
+                        final_cell_style = cell_style or col_style
                         box_alignment = self.get_box_alignment(final_cell_style)
                         wrap_text = final_cell_style.get("wrap-option", None) == "wrap"
                         if p_tags:
