@@ -766,7 +766,10 @@ class AngleDecorator(BaseDecorator):
         region = context.region
         region3d = context.region_data
 
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        ANGLE_LABEL_OFFSET = 25 * viewportDrawingScale
         last_segment_i = len(indices) - 1
+
         for edge_i, edge_vertices in enumerate(indices):
             if edge_i == last_segment_i:
                 continue
@@ -786,18 +789,14 @@ class AngleDecorator(BaseDecorator):
                 cos_a = edge0.dot(edge1) / (edge0.length * edge1.length)
             except ZeroDivisionError:
                 continue
-            circle_angle = acos(cos_a) / pi * 180
+            circle_angle_rad = acos(cos_a)
+            circle_angle = circle_angle_rad / pi * 180
+
+            base_edge = edge0 if ccw(p0, p1, p2) else edge1
+            text_offset = (Matrix.Rotation(-circle_angle_rad / 2, 2) @ base_edge).normalized() * ANGLE_LABEL_OFFSET
+            label_position = p1 + text_offset
 
             text = f"{int(circle_angle)}d"
-
-            # TODO: set label position pased on p1
-            # + y relative to p0p1 if p0p1p2 is clockwise
-            # - y relative to p0p1 if p0p1p2 is counter-clockwise
-            # counter_clockwise = ccw(p0, p1, p2)
-            # label_position = (p1 + Vector( (0, 10) ) * (1 if counter_clockwise else -1)) + edge1 * 0.1
-            label_position = p1 + edge1 * 0.1
-
-            # TODO: set label direction based on the first edge (p0, p1)
             label_dir = Vector((1, 0))
             self.draw_label(context, text, label_position, label_dir)
 
