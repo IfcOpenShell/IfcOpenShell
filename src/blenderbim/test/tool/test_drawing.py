@@ -25,6 +25,7 @@ import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.drawing import Drawing as subject
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.drawing.data import DecoratorData
 
 
 class TestImplementsTool(NewFile):
@@ -640,6 +641,57 @@ class TestUpdateTextValue(NewFile):
         subject.update_text_value(obj)
         assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"
 
-    # TODO: implement
     def test_update_text_font_size(self):
-        pass
+        TestGetTextLiteral().test_run()
+        obj = bpy.data.objects.get("Object")
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            obj.BIMTextProperties.font_size = "7.0"
+            bpy.ops.bim.edit_text()
+        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
+        assert "title" in annotation_classes
+        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+
+    def test_add_second_literal(self, setup=True):
+        if setup:
+            TestGetTextLiteral().test_run()
+        obj = bpy.data.objects.get("Object")
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            bpy.ops.bim.add_text_literal()
+            literal = obj.BIMTextProperties.literals[1]
+            literal.attributes["Literal"].string_value = "test_value"
+            bpy.ops.bim.edit_text()
+
+        ifc = tool.Ifc.get()
+        assert ifc.by_type("IfcTextLiteralWithExtent")[1].Literal == "test_value"
+
+    def test_disable_text_editing(self):
+        # add second literal and change font size to test changing them
+        self.test_update_text_font_size()  # sets font size to "7.0"
+        self.test_add_second_literal(setup=False)
+
+        obj = bpy.data.objects.get("Object")
+        props = obj.BIMTextProperties
+        assert obj is not None, obj
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            bpy.ops.bim.remove_text_literal(1)
+            props.literals[0].attributes["Literal"].string_value = "changed_value"
+            props.font_size = "2.5"
+            bpy.ops.bim.disable_editing_text()
+
+        ifc = tool.Ifc.get()
+        # test font size
+        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
+        assert props.font_size == "7.0"
+        assert "title" in annotation_classes
+        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+
+        # test second literal is present
+        assert props.literals[1].attributes["Literal"].string_value == "test_value"
+        assert ifc.by_type("IfcTextLiteralWithExtent")[1].Literal == "test_value"
+
+        # test first literal value is unchanged
+        assert props.literals[0].attributes["Literal"].string_value == "Literal"
+        assert ifc.by_type("IfcTextLiteralWithExtent")[0].Literal == "Literal"
