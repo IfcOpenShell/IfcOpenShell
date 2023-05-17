@@ -24,6 +24,8 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdLux/distantLight.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
@@ -36,6 +38,8 @@ USDSerializer::USDSerializer(const std::string& out_filename, const SerializerSe
 
 	if(!stage_)
 		throw std::runtime_error("Could not create USD stage");
+
+	pxr::UsdGeomSetStageUpAxis(stage_, pxr::UsdGeomTokens->z);
 
   	auto world = pxr::UsdGeomXform::Define(stage_, pxr::SdfPath("/World"));
   	stage_->SetDefaultPrim(world.GetPrim());
