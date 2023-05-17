@@ -1089,7 +1089,7 @@ class PlanLevelDecorator(BaseDecorator):
                 box_alignment = "bottom-right"
                 dir *= -1
 
-            z = verts[-1].z / unit_scale
+            z = verts[0].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
             text = "RL " + self.format_value(context, z)
@@ -1147,7 +1147,7 @@ class SectionLevelDecorator(BaseDecorator):
         tag = storey.Name if storey else element.Description
 
         for verts in splines:
-            z = verts[-1].z / unit_scale
+            z = verts[0].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
 
