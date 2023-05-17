@@ -157,6 +157,8 @@ class Usecase:
             items.append(self.create_text())
             shape_representation.Items = items
             return shape_representation
+        elif self.settings["ifc_representation_class"] == "IfcGeometricCurveSet/IfcAnnotation":
+            return self.create_annotation3d_representation()
         elif self.settings["context"].ContextIdentifier == "Annotation":
             return self.create_annotation2d_representation()
         elif self.settings["context"].ContextIdentifier == "Axis":

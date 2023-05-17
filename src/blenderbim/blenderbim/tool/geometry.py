@@ -153,6 +153,8 @@ class Geometry(blenderbim.core.tool.Geometry):
                 return "IfcTextLiteral"
             elif element.ObjectType == "TEXT_LEADER":
                 return "IfcGeometricCurveSet/IfcTextLiteral"
+            elif element.ObjectType in ("FALL", "SECTION_LEVEL", "PLAN_LEVEL"):
+                return "IfcGeometricCurveSet/IfcAnnotation"
 
         material = ifcopenshell.util.element.get_material(element)
         if material and material.is_a("IfcMaterialProfileSetUsage"):
