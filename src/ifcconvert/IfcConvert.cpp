@@ -613,7 +613,7 @@ int main(int argc, char** argv) {
 	
 	std::vector<path_t> tokens;
 	split(tokens, output_filename, boost::is_any_of("."));
-	std::vector<path_t>::iterator tok_iter;
+	std::vector<path_t>::iterator tok_itxer;
 	path_t ext = *(tokens.end() - 1);
 	path_t dot;
 	dot = '.';	
@@ -638,7 +638,8 @@ int main(int argc, char** argv) {
 		CITY_JSON = IfcUtil::path::from_utf8(".cityjson"),
 		IFC = IfcUtil::path::from_utf8(".ifc"),
 		USD = IfcUtil::path::from_utf8(".usd"),
-		USDA = IfcUtil::path::from_utf8(".usda");
+		USDA = IfcUtil::path::from_utf8(".usda"),
+		USDC = IfcUtil::path::from_utf8(".usdc");
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
@@ -831,7 +832,7 @@ int main(int argc, char** argv) {
 		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #ifdef WITH_USD
-	} else if (output_extension == USD || output_extension == USDA) {
+	} else if (output_extension == USD || output_extension == USDA || output_extension == USDC) {
 		serializer = boost::make_shared<USDSerializer>(IfcUtil::path::to_utf8(output_filename), settings);
 #endif
 #ifdef IFOPSH_WITH_OPENCASCADE
@@ -1172,11 +1173,17 @@ int main(int argc, char** argv) {
 
 	Logger::Message(Logger::LOG_PERF, "done file geometry conversion");
 
+	bool successful;
+	if(output_extension == USD || output_extension == USDC || output_extension == USDA) {
+		// No need to rename the file
+		successful = true;
+	}
+	else {
+		// Renaming might fail (e.g. maybe the existing file was open in a viewer application)
+    	// Do not remove the temp file as user can salvage the conversion result from it.
+		successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
+	}
 
-    // Renaming might fail (e.g. maybe the existing file was open in a viewer application)
-    // Do not remove the temp file as user can salvage the conversion result from it.
-    bool successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename))
-		|| output_extension == USD || output_extension == USDA;
     if (!successful) {
         cerr_ << "Unable to write output file '" << output_filename << "', see '" <<
             output_temp_filename << "' for the conversion result.";

@@ -32,8 +32,7 @@ USDSerializer::USDSerializer(const std::string& out_filename, const SerializerSe
 	WriteOnlyGeometrySerializer(settings),
 	filename_(out_filename)
 {
-	// why does this not work with just the filename ???
-	stage_ = pxr::UsdStage::CreateNew(filename_ + ".usda");
+	stage_ = pxr::UsdStage::CreateNew(filename_);
 
 	if(!stage_)
 		throw std::runtime_error("Could not create USD stage");
@@ -51,10 +50,7 @@ USDSerializer::~USDSerializer() {
 
 void USDSerializer::createLighting() {
   	const std::string& light_path = "/World/defaultLight";
-  	pxr::UsdLuxDistantLight::Define(stage_, pxr::SdfPath(light_path));
-  	pxr::UsdGeomXform xform(stage_->GetPrimAtPath(pxr::SdfPath(light_path)));
-  	pxr::GfVec3f light_direction(0.0f, 0.0f, -1.0f);
-  	pxr::UsdLuxDistantLight light(stage_->GetPrimAtPath(pxr::SdfPath(light_path)));
+  	auto light = pxr::UsdLuxDistantLight::Define(stage_, pxr::SdfPath(light_path));
   	light.CreateIntensityAttr().Set(1000.0f);
   	light.CreateColorAttr().Set(pxr::GfVec3f(1.0f, 1.0f, 1.0f));
 }
