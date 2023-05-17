@@ -1347,6 +1347,7 @@ class ActivateDrawing(bpy.types.Operator):
             bpy.ops.bim.activate_drawing_style()
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         CutDecorator.install(context)
+        tool.Drawing.show_decorations()
         return {"FINISHED"}
 
 
