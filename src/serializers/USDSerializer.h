@@ -41,6 +41,7 @@
 #include <map>
 
 namespace usd_utils {
+	// creates a valid USD path from a string
 	inline std::string toPath(std::string& s) {
 		std::replace_if(s.begin(), s.end(),
 			[](char c) { return c < 48 || (c < 65 && c > 57) || (c < 97 && c > 90) || c > 122; },
@@ -65,7 +66,6 @@ private:
 	std::map<std::string, pxr::UsdShadeMaterial> materials_;
 
 	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<IfcGeom::Material>&);
-    void createLighting();
 public:
 	USDSerializer(const std::string&, const SerializerSettings&);
 	virtual ~USDSerializer();

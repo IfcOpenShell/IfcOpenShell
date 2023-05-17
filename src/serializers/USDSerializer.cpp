@@ -44,19 +44,14 @@ USDSerializer::USDSerializer(const std::string& out_filename, const SerializerSe
   	auto world = pxr::UsdGeomXform::Define(stage_, pxr::SdfPath("/World"));
   	stage_->SetDefaultPrim(world.GetPrim());
   	pxr::UsdGeomScope::Define(stage_, pxr::SdfPath("/Looks"));
-  	createLighting();
+  	auto light = pxr::UsdLuxDistantLight::Define(stage_, pxr::SdfPath("/defaultLight"));
+  	light.CreateIntensityAttr().Set(1000.0f);
+  	light.CreateColorAttr().Set(pxr::GfVec3f(1.0f, 1.0f, 1.0f));
   	ready_ = true;
 }
 
 USDSerializer::~USDSerializer() {
-	
-}
 
-void USDSerializer::createLighting() {
-  	const std::string& light_path = "/World/defaultLight";
-  	auto light = pxr::UsdLuxDistantLight::Define(stage_, pxr::SdfPath(light_path));
-  	light.CreateIntensityAttr().Set(1000.0f);
-  	light.CreateColorAttr().Set(pxr::GfVec3f(1.0f, 1.0f, 1.0f));
 }
 
 std::vector<pxr::UsdShadeMaterial> USDSerializer::createMaterials(const std::vector<IfcGeom::Material>& styles) 
