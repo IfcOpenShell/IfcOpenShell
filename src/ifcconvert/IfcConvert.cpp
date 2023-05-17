@@ -613,7 +613,7 @@ int main(int argc, char** argv) {
 	
 	std::vector<path_t> tokens;
 	split(tokens, output_filename, boost::is_any_of("."));
-	std::vector<path_t>::iterator tok_itxer;
+	std::vector<path_t>::iterator tok_iter;
 	path_t ext = *(tokens.end() - 1);
 	path_t dot;
 	dot = '.';	
