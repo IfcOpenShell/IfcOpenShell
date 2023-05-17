@@ -36,6 +36,9 @@ from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.module.drawing.shaders import BASE_LIB_GLSL, BASE_DEF_GLSL, add_verts_sequence, add_offsets
 
 
+UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY # TODO: move back to 0.2
+
+
 def ccw(A, B, C):
     """whether a-b-c located in counter-clockwise order in 2d space"""
     return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
@@ -719,21 +722,24 @@ class AngleDecorator(BaseDecorator):
         winspace_verts = worldspace_to_winspace(verts, context)
 
         # setup geometry parameters
-        output_verts = []
-        output_edges = []
-        out_kwargs = {
-            "output_verts": output_verts,
-            "output_edges": output_edges,
+        out_kwargs_edges = {
+            "output_verts": [],
+            "output_edges": [],
+        }
+        out_kwargs_arcs = {
+            "output_verts": [],
+            "output_edges": [],
         }
         last_vert = len(winspace_verts) - 1
 
         # process edges
         for edge in edges_original:
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
-            start_i = len(output_verts)
+            start_i_edges = len(out_kwargs_edges["output_verts"])
+            start_i_arcs = len(out_kwargs_arcs["output_verts"])
 
             # draw edge
-            add_verts_sequence([v0, v1], start_i, **out_kwargs)
+            add_verts_sequence([v0, v1], start_i_edges, **out_kwargs_edges)
 
             # draw angle only on interal verts
             if edge[1] != last_vert:
@@ -756,9 +762,28 @@ class AngleDecorator(BaseDecorator):
                 circle_angle = acos(cos_a)
                 counter_clockwise = ccw(v2, v1, v0)
                 angle_circle = get_angle_circle(circle_start, circle_angle, counter_clockwise)
-                add_verts_sequence([v1 + v for v in angle_circle], start_i + 2, **out_kwargs)
+                add_verts_sequence([v1 + v for v in angle_circle], start_i_arcs, **out_kwargs_arcs)
 
-        self.draw_lines(context, obj, output_verts, output_edges)
+        arcs_color = None
+        edges_color = UNSPECIAL_ELEMENT_COLOR
+        if context.object == obj and obj.data.is_editmode:
+            arcs_color = context.preferences.addons["blenderbim"].preferences.decorator_color_special
+            edges_color = None
+
+        self.draw_lines(
+            context,
+            obj,
+            vertices=out_kwargs_arcs["output_verts"],
+            indices=out_kwargs_arcs["output_edges"],
+            color=arcs_color,
+        )
+        self.draw_lines(
+            context,
+            obj,
+            vertices=out_kwargs_edges["output_verts"],
+            indices=out_kwargs_edges["output_edges"],
+            color=edges_color,
+        )
         self.draw_labels(context, obj, verts, edges_original)
 
     def draw_labels(self, context, obj, vertices, indices):
