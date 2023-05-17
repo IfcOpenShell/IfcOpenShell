@@ -93,7 +93,7 @@ def get_callout_head(edge_dir, edge_side, callout_size, callout_gap):
     return head
 
 
-def get_circle_head(size, segments=12):
+def get_circle_head(size, segments=20):
     angle_d = 2 * pi / segments
     head = []
     for i in range(segments):
@@ -108,14 +108,12 @@ def get_circle_head_asterisk(size, segments=6):
     return zip(circle_head[:middle], circle_head[middle:])
 
 
-def get_angle_circle(circle_start, circle_angle, counterclockwise, segments=12):
-    angle_d = 2 * pi / segments
-    angle_segs = max(1, ceil(circle_angle / angle_d))
-    angle_d = circle_angle / angle_segs
+def get_angle_circle(circle_start, circle_angle, counterclockwise, segments=20):
+    angle_d = circle_angle / segments
     head = []
     circle_start = circle_start.xy
 
-    for i in range(angle_segs + 1):
+    for i in range(segments + 1):
         angle = angle_d * i
         if counterclockwise:
             rot_matrix_ccw = Matrix.Rotation(angle, 2)
