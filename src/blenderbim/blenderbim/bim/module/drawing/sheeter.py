@@ -27,6 +27,10 @@ import xml.etree.ElementTree as ET
 import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
 from xml.dom import minidom
+from mathutils import Vector
+
+VIEW_TITLE_OFFSET_Y = 5
+DEFAULT_POSITION = Vector((30, 30))
 
 
 class SheetBuilder:
@@ -104,8 +108,8 @@ class SheetBuilder:
             background = ET.SubElement(view, "image")
             background.attrib["data-type"] = "background"
             background.attrib["xlink:href"] = os.path.relpath(underlay_path, layout_dir)
-            background.attrib["x"] = "30"
-            background.attrib["y"] = "30"
+            background.attrib["x"] = str(DEFAULT_POSITION.x)
+            background.attrib["y"] = str(DEFAULT_POSITION.y)
             background.attrib["width"] = str(view_width)
             background.attrib["height"] = str(view_height)
 
@@ -114,12 +118,14 @@ class SheetBuilder:
             foreground = ET.SubElement(view, "image")
             foreground.attrib["data-type"] = "foreground"
             foreground.attrib["xlink:href"] = os.path.relpath(drawing_path, layout_dir)
-            foreground.attrib["x"] = "30"
-            foreground.attrib["y"] = "30"
+            foreground.attrib["x"] = str(DEFAULT_POSITION.x)
+            foreground.attrib["y"] = str(DEFAULT_POSITION.y)
             foreground.attrib["width"] = str(view_width)
             foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(30, view_height + 35, view, layout_dir)
+        self.add_view_title(
+            DEFAULT_POSITION.x, view_height + DEFAULT_POSITION.y + VIEW_TITLE_OFFSET_Y, view, layout_dir
+        )
         layout_tree.write(layout_path)
 
     def update_sheet_drawing_sizes(self, sheet):
@@ -143,10 +149,20 @@ class SheetBuilder:
             view_width = self.convert_to_mm(drawing_root.attrib.get("width"))
             view_height = self.convert_to_mm(drawing_root.attrib.get("height"))
 
+            foreground = drawing_view.find(f'.//{SVG}image[@data-type="foreground"]')
+            height = float(foreground.attrib["height"])
+            width = float(foreground.attrib["width"])
+            readjust = Vector((width - view_width, height - view_height)) / 2
+
             for image in drawing_view.findall(f"{SVG}image"):
+                x = float(image.attrib["x"])
+                y = float(image.attrib["y"])
                 if image.attrib["data-type"] == "view-title":
-                    image.attrib["y"] = str(view_height + 35)
+                    image.attrib["x"] = str(x - readjust.x)
+                    image.attrib["y"] = str(y - readjust.y)
                 else:
+                    image.attrib["x"] = str(x + readjust.x)
+                    image.attrib["y"] = str(y + readjust.y)
                     image.attrib["width"] = str(view_width)
                     image.attrib["height"] = str(view_height)
 
@@ -193,12 +209,14 @@ class SheetBuilder:
         foreground = ET.SubElement(view, "image")
         foreground.attrib["data-type"] = "table"
         foreground.attrib["xlink:href"] = os.path.relpath(view_path, layout_dir)
-        foreground.attrib["x"] = "30"
-        foreground.attrib["y"] = "30"
+        foreground.attrib["x"] = str(DEFAULT_POSITION.x)
+        foreground.attrib["y"] = str(DEFAULT_POSITION.y)
         foreground.attrib["width"] = str(view_width)
         foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(30, view_height + 35, view, layout_dir)
+        self.add_view_title(
+            DEFAULT_POSITION.x, view_height + DEFAULT_POSITION.y + VIEW_TITLE_OFFSET_Y, view, layout_dir
+        )
         layout_tree.write(layout_path)
 
     def add_view_title(self, x, y, parent, layout_dir):
