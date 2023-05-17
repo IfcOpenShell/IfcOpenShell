@@ -216,6 +216,9 @@ def toggleDecorations(self, context):
         # TODO: design a proper text variable templating renderer
         collection = context.scene.camera.users_collection[0]
         for obj in collection.objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
+                continue
             tool.Drawing.update_text_value(obj)
         refresh_drawing_data()
         decoration.DecorationsHandler.install(context)
