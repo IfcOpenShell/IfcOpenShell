@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from pathlib import Path
 import bpy
 import mathutils
 import ifcopenshell
@@ -26,6 +27,8 @@ from test.bim.bootstrap import NewFile
 from blenderbim.tool.drawing import Drawing as subject
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.data import DecoratorData
+
+import xml.etree.ElementTree as ET
 
 
 class TestImplementsTool(NewFile):
@@ -599,6 +602,57 @@ class TestShowDecorations(NewFile):
         bpy.context.scene.DocProperties.should_draw_decorations = False
         subject.show_decorations()
         assert bpy.context.scene.DocProperties.should_draw_decorations is True
+
+
+class TestDrawingMaintainingSheetPosition(NewFile):
+    def get_sheet_drawing_data(self, layout_path):
+        SVG = "{http://www.w3.org/2000/svg}"
+        ET.register_namespace("", SVG)
+        layout_tree = ET.parse(layout_path)
+        layout_root = layout_tree.getroot()
+
+        drawing_view = layout_root.findall(f'{SVG}g[@data-type="drawing"]')[0]
+
+        drawing_data = {}
+        for image in drawing_view.findall(f"{SVG}image"):
+            attribs = ["x", "y", "width", "height"]
+            image_type = image.attrib["data-type"]
+            drawing_data[image_type] = tuple([round(float(image.attrib[attr]), 2) for attr in attribs])
+
+        return drawing_data
+
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        sheet_path = Path.cwd() / "layouts" / "A00 - UNTITLED.svg"
+
+        bpy.ops.bim.load_sheets()
+        bpy.ops.bim.add_sheet()
+
+        bpy.ops.bim.load_drawings()
+        bpy.ops.bim.add_drawing()
+
+        drawing = ifc.by_type("IfcAnnotation")[0]
+        bpy.ops.bim.activate_drawing(drawing=drawing.id())
+        bpy.ops.bim.create_drawing()
+        bpy.ops.bim.add_drawing_to_sheet()
+        bpy.ops.bim.open_sheet()
+
+        # check drawing default position
+        drawing_data = self.get_sheet_drawing_data(sheet_path)
+        assert drawing_data["foreground"] == (30.0, 30.0, 500.0, 500.0)
+        assert drawing_data["view-title"] == (30.0, 535.0, 50.22, 10.0)
+
+        bpy.context.scene.camera.data.BIMCameraProperties.raster_x = 1200
+        bpy.ops.bim.create_drawing()
+        bpy.ops.bim.open_sheet()
+
+        assert sheet_path.is_file(), f"Sheet path {sheet_path} doesn't exist"
+
+        # check drawing position on the sheet
+        drawing_data = self.get_sheet_drawing_data(sheet_path)
+        assert drawing_data["foreground"] == (30.0, 71.67, 500.0, 416.67)
+        assert drawing_data["view-title"] == (30.0, 493.33, 50.22, 10.0)
 
 
 class TestUpdateTextValue(NewFile):
