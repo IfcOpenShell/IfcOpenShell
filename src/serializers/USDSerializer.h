@@ -66,6 +66,7 @@ private:
 	std::map<std::string, pxr::UsdShadeMaterial> materials_;
 
 	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<IfcGeom::Material>&);
+	pxr::GfVec3f rotation_degrees_from_matrix(const std::vector<double>&) const;
 public:
 	USDSerializer(const std::string&, const SerializerSettings&);
 	virtual ~USDSerializer();
