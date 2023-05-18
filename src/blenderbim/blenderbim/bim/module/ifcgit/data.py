@@ -19,7 +19,10 @@ class IfcGitData:
     def load(cls):
         cls.data = {
             "repo": cls.repo(),
+            "remotes": cls.remotes(),
             "branch_names": cls.branch_names(),
+            "remote_names": cls.remote_names(),
+            "remote_urls": cls.remote_urls(),
             "path_ifc": cls.path_ifc(),
             "branches_by_hexsha": cls.branches_by_hexsha(),
             "tags_by_hexsha": cls.tags_by_hexsha(),
@@ -43,8 +46,26 @@ class IfcGitData:
         return None
 
     @classmethod
+    def remotes(cls):
+        if cls.repo():
+            return cls.repo().remotes
+        return None
+
+    @classmethod
     def branch_names(cls):
         return []
+
+    @classmethod
+    def remote_names(cls):
+        return []
+
+    @classmethod
+    def remote_urls(cls):
+        result = {}
+        if cls.repo():
+            for remote in cls.repo().remotes:
+                result[remote.name] = remote.url
+        return result
 
     @classmethod
     def path_ifc(cls):
