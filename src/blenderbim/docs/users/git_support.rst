@@ -156,6 +156,39 @@ optional message text.
     Similar to commit messages, tag messages should be 50 characters or less,
     though there is no practical limit.
 
+Remote operations
+-----------------
+
+Git is a *distributed revision control system*, your local repository can be a
+version of a remote repository and vice-versa. This is conceptually similar to
+local branching except this remote repository could belong to someone else or
+could be hosted by an online Git-forge service.
+
+Your repository can have multiple remote repositories registered, each
+can have potentially multiple branches.
+
+BlenderBIM allows you to make a local *clone* of a remote repository.  You will
+need to provide a URL *origin* to fetch, and an empty local folder to become
+the local repository.
+
+The *Fetch* operator retrieves new data from the remote repository. This isn't
+automatically merged, each branch fetched from the remote repository appears as
+a branch that can be browsed, switched-to or merged just like a local branch.
+These remote branches have prefixed names, eg. `origin/main`.
+
+Once you have committed changes to your local repository, the *Push* operator
+tries to update the remote branch using changes from the selected local branch.
+
+.. Warning::
+
+    Remote repositories can be accessed in multiple ways; ssh, ftp or https
+    protocols, for example, can require authentication. This authentication may
+    expect you to generate and upload ssh keys, store API tokens, save
+    username/password pairs, or use some other form of credential.
+    BlenderBIM can't configure these credentials for you, follow the
+    configuration instructions provided by your online service before trying
+    actions that require authentication.
+
 Using other Git tools
 ---------------------
 
