@@ -429,7 +429,7 @@ class TestAddAnnotation:
     def test_run(self, ifc, collector, drawing):
         drawing.show_decorations().should_be_called()
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
-        drawing.get_annotation_context("target_view").should_be_called().will_return("context")
+        drawing.get_annotation_context("target_view", "object_type").should_be_called().will_return("context")
         drawing.create_annotation_object("drawing", "object_type").should_be_called().will_return("obj")
         ifc.get_entity("obj").should_be_called().will_return(None)
         drawing.get_ifc_representation_class("object_type").should_be_called().will_return("ifc_representation_class")
@@ -449,5 +449,5 @@ class TestAddAnnotation:
 
     def test_do_not_add_without_an_annotation_context(self, ifc, collector, drawing):
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
-        drawing.get_annotation_context("target_view").should_be_called().will_return(None)
+        drawing.get_annotation_context("target_view", "object_type").should_be_called().will_return(None)
         subject.add_annotation(ifc, collector, drawing, drawing="drawing", object_type="object_type")

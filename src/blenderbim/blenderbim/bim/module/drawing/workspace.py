@@ -108,7 +108,7 @@ def create_annotation_type(context):
     tool.Drawing.ensure_annotation_in_drawing_plane(obj)
 
     drawing = tool.Ifc.get_entity(context.scene.camera)
-    ifc_context = tool.Drawing.get_annotation_context(tool.Drawing.get_drawing_target_view(drawing))
+    ifc_context = tool.Drawing.get_annotation_context(tool.Drawing.get_drawing_target_view(drawing), object_type)
 
     element = tool.Drawing.run_root_assign_class(
         obj=obj,
@@ -133,7 +133,7 @@ def create_annotation_occurence(context):
     drawing = tool.Ifc.get_entity(context.scene.camera)
     obj = tool.Drawing.create_annotation_object(drawing, object_type)
     obj.name = relating_type.Name
-    ifc_context = tool.Drawing.get_annotation_context(tool.Drawing.get_drawing_target_view(drawing))
+    ifc_context = tool.Drawing.get_annotation_context(tool.Drawing.get_drawing_target_view(drawing), object_type)
     relating_type_repr = tool.Drawing.get_annotation_representation(relating_type)
     element = tool.Drawing.run_root_assign_class(
         obj=obj,
