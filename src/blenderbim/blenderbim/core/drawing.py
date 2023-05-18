@@ -325,7 +325,9 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
 
 
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
-    context = drawing_tool.get_annotation_context(target_view := drawing_tool.get_drawing_target_view(drawing))
+    context = drawing_tool.get_annotation_context(
+        target_view := drawing_tool.get_drawing_target_view(drawing), object_type
+    )
     if not context:
         return f"No annotation context Annotation/{target_view} for drawing"
 

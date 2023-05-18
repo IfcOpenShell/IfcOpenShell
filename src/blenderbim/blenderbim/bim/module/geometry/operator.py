@@ -199,6 +199,13 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
 
+        # TODO: remove this code a bit later
+        # added this as a fallback for easier transition some annotation types to 3d
+        # if they were create before as 2d
+        element = tool.Ifc.get_entity(obj)
+        if tool.Drawing.is_annotation_object_type(element, ("FALL", "SECTION_LEVEL", "PLAN_LEVEL")):
+            context_of_items = tool.Drawing.get_annotation_context("MODEL_VIEW")
+
         gprop = context.scene.BIMGeoreferenceProperties
         coordinate_offset = None
         if gprop.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":

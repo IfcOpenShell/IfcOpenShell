@@ -269,7 +269,7 @@ class Drawing:
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
-    def get_annotation_context(cls, target_view): pass
+    def get_annotation_context(cls, target_view, object_type=None): pass
     def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
