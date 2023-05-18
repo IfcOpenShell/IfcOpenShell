@@ -42,6 +42,7 @@ USDSerializer::USDSerializer(const std::string& out_filename, const SerializerSe
 		throw std::runtime_error("Could not create USD stage");
 
 	pxr::UsdGeomSetStageUpAxis(stage_, pxr::UsdGeomTokens->z);
+	pxr::UsdGeomSetStageMetersPerUnit(stage_, 1.0f);
 
   	auto world = pxr::UsdGeomXform::Define(stage_, pxr::SdfPath("/World"));
   	stage_->SetDefaultPrim(world.GetPrim());
