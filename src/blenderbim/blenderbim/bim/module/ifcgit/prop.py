@@ -21,7 +21,23 @@ def git_branches(self, context):
         IfcGitData.data["branch_names"].remove("main")
         IfcGitData.data["branch_names"] = ["main"] + IfcGitData.data["branch_names"]
 
+    if IfcGitData.data["remotes"]:
+        props = context.scene.IfcGitProperties
+        IfcGitData.data["branch_names"] += [r.name for r in IfcGitData.data["remotes"][props.select_remote].refs]
+
     return [(myname, myname, myname) for myname in IfcGitData.data["branch_names"]]
+
+
+def git_remotes(self, context):
+    """remotes enum"""
+
+    IfcGitData.data["remote_names"] = sorted([remote.name for remote in IfcGitData.data["remotes"]])
+
+    if "origin" in IfcGitData.data["remote_names"]:
+        IfcGitData.data["remote_names"].remove("origin")
+        IfcGitData.data["remote_names"] = ["origin"] + IfcGitData.data["remote_names"]
+
+    return [(myname, myname, myname) for myname in IfcGitData.data["remote_names"]]
 
 
 def update_revlist(self, context):
@@ -109,6 +125,7 @@ class IfcGitProperties(PropertyGroup):
         subtype="DIR_PATH",
     )
     display_branch: EnumProperty(items=git_branches, update=update_revlist)
+    select_remote: EnumProperty(items=git_remotes)
     ifcgit_filter: EnumProperty(
         items=[
             ("all", "All", "All revisions"),
