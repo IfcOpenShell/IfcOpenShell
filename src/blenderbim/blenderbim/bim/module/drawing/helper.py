@@ -154,13 +154,14 @@ def format_distance(
         # Separate ft and inches
         # Unless Inches are the specified Length Unit
         if unit_length != "INCHES":
-            feet = math.floor(decInches / inPerFoot)
+            feet = int(decInches / inPerFoot)  # remove decimal
             decInches -= feet * inPerFoot
         else:
             feet = 0
 
         # Separate Fractional Inches
-        inches = math.floor(decInches)
+        decInches = abs(decInches)  # ignore the sign for inches
+        inches = math.floor(decInches)  # remove decimal
         if inches != 0:
             frac = round(base * (decInches - inches))
         else:

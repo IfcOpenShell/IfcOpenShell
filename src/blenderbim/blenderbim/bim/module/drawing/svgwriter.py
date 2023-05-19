@@ -225,17 +225,24 @@ class SvgWriter:
                 )
             )
             # TODO: allow metric to be configurable
-            rl = (matrix_world @ points[0].co.xyz).z
+            rl_value = (matrix_world @ points[0].co.xyz).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl, precision=self.precision, decimal_places=self.decimal_places)
+                rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
             else:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                rl /= unit_scale
+                rl = rl_value / unit_scale
                 rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
             text_style = SvgWriter.get_box_alignment_parameters("bottom-left")
-            self.svg.add(self.svg.text(f"RL +{rl}", insert=tuple(text_position), class_="SECTIONLEVEL", **text_style))
+            self.svg.add(
+                self.svg.text(
+                    "RL {}{}".format("" if rl_value < 0 else "+", rl),
+                    insert=tuple(text_position),
+                    class_="SECTIONLEVEL",
+                    **text_style,
+                )
+            )
             if tag:
                 self.svg.add(self.svg.text(tag, insert=(text_position[0], text_position[1] - 5), **text_style))
 
@@ -787,12 +794,12 @@ class SvgWriter:
                 )
             )
             # TODO: allow metric to be configurable
-            rl = (matrix_world @ points[0].co).z
+            rl_value = (matrix_world @ points[0].co).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl, precision=self.precision, decimal_places=self.decimal_places)
+                rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
             else:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                rl /= unit_scale
+                rl = rl_value / unit_scale
                 rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
@@ -801,7 +808,7 @@ class SvgWriter:
             text_style = SvgWriter.get_box_alignment_parameters(box_alignment)
             self.svg.add(
                 self.svg.text(
-                    "RL +{}".format(rl),
+                    "RL {}{}".format("" if rl_value < 0 else "+", rl),
                     insert=tuple(text_position),
                     class_="PLANLEVEL",
                     **text_style,
