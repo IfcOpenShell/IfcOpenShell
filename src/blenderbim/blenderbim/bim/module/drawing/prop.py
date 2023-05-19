@@ -178,6 +178,9 @@ def update_schedule_name(self, context):
 
 def update_has_underlay(self, context):
     update_layer(self, context, "HasUnderlay", self.has_underlay)
+    if self.has_underlay:
+        bpy.ops.bim.reload_drawing_styles()
+        bpy.ops.bim.activate_drawing_style()
 
 
 def update_has_linework(self, context):
