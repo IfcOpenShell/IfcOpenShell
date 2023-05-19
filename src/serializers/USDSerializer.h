@@ -62,8 +62,10 @@ class SERIALIZERS_API USDSerializer : public WriteOnlyGeometrySerializer {
 private:
     bool ready_ = false;
 	const std::string filename_;
+	std::string parent_path_;
     pxr::UsdStageRefPtr stage_;
 	std::map<std::string, pxr::UsdShadeMaterial> materials_;
+	std::map<std::string, std::string> meshes_;
 
 	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<IfcGeom::Material>&);
 	pxr::GfVec3f rotation_degrees_from_matrix(const std::vector<double>&) const;
