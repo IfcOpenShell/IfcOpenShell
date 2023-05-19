@@ -1410,10 +1410,14 @@ class RemoveDrawing(bpy.types.Operator, Operator):
             drawings = [tool.Ifc.get().by_id(self.drawing)]
 
         print("Removing drawings: {}".format([d for d in drawings]))
+        removed_drawings = [drawing.id() for drawing in drawings]
 
         for drawing in drawings:
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
 
+        active_drawing_id = context.scene.DocProperties.active_drawing_id
+        if active_drawing_id in removed_drawings:
+            context.scene.DocProperties.active_drawing_id = 0
 
 class ReloadDrawingStyles(bpy.types.Operator):
     bl_idname = "bim.reload_drawing_styles"
