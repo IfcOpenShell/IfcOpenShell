@@ -1055,7 +1055,7 @@ class AddSheet(bpy.types.Operator, Operator):
 
 class OpenSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.open_sheet"
-    bl_label = "Open Sheet"
+    bl_label = "Open Sheet Layout"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -1138,6 +1138,7 @@ class RemoveDrawingFromSheet(bpy.types.Operator, Operator):
 class CreateSheets(bpy.types.Operator, Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
+    bl_description = "Build a sheet from the sheet layout"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1174,7 +1175,7 @@ class CreateSheets(bpy.types.Operator, Operator):
                 has_sheet_reference = True
             elif reference.Description == "RASTER":
                 if reference.Location in raster_references:
-                    del raster_references[reference.Location]
+                    raster_references.remove(reference.Location)
                 else:
                     tool.Ifc.run("document.remove_reference", reference=reference)
 
