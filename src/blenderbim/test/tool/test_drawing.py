@@ -753,3 +753,30 @@ class TestUpdateTextValue(NewFile):
         # test first literal value is unchanged
         assert props.literals[0].attributes["Literal"].string_value == "Literal"
         assert ifc.by_type("IfcTextLiteralWithExtent")[0].Literal == "Literal"
+
+
+class TestDrawingStyles(NewFile):
+    def setup_project_with_drawing(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.bim.load_drawings()
+        bpy.ops.bim.add_drawing()
+        ifc = tool.Ifc.get()
+        drawing = ifc.by_type("IfcAnnotation")[0]
+        bpy.ops.bim.activate_drawing(drawing=drawing.id())
+        self.drawing_styles = bpy.context.scene.DocProperties.drawing_styles
+
+    def test_drawing_styles_not_loaded_if_underlay_is_inactive(self):
+        self.setup_project_with_drawing()
+        assert len(self.drawing_styles) == 0
+
+    def test_drawing_styles_loaded_on_underlay_enabled(self):
+        self.setup_project_with_drawing()
+        bpy.context.scene.camera.data.BIMCameraProperties.has_underlay = True
+        assert len(self.drawing_styles) == 3
+
+    def test_drawing_styles_reload(self):
+        self.setup_project_with_drawing()
+        bpy.ops.bim.reload_drawing_styles()
+        assert len(self.drawing_styles) == 3
+
+    
