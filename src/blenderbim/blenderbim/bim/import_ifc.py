@@ -381,7 +381,7 @@ class IfcImporter:
         representations = self.get_transformed_body_representations(element.Representation.Representations)
 
         # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
-        if self.is_native_swept_disk_solid(representations):
+        if self.is_native_swept_disk_solid(element, representations):
             self.native_data[element.GlobalId] = {
                 "representations": representations,
                 "representation": self.get_body_representation(element.Representation.Representations),
@@ -409,7 +409,11 @@ class IfcImporter:
             }
             return True
 
-    def is_native_swept_disk_solid(self, representations):
+    def is_native_swept_disk_solid(self, element, representations):
+        # detect BBIM Railings to represent them with meshes and not curves
+        if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+            return False
+
         for representation in representations:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
