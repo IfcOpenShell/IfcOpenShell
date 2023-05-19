@@ -1606,7 +1606,8 @@ class ActivateDrawingStyle(bpy.types.Operator, Operator):
         active_drawing_style_index = scene.camera.data.BIMCameraProperties.active_drawing_style_index
 
         if active_drawing_style_index >= len(scene.DocProperties.drawing_styles):
-            return
+            self.report({"ERROR"}, "Could not find active drawing style")
+            return {"CANCELLED"}
 
         self.drawing_style = scene.DocProperties.drawing_styles[active_drawing_style_index]
 
