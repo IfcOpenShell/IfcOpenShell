@@ -26,18 +26,7 @@ class TestCreateProject:
         ifc.get().should_be_called().will_return("ifc")
         subject.create_project(ifc, project, schema="IFC4", template=None)
 
-    def test_create_an_ifc4_project(self, ifc, project):
-        ifc.get().should_be_called().will_return(None)
-        ifc.run("project.create_file", version="IFC4").should_be_called().will_return("ifc")
-        ifc.set("ifc").should_be_called()
-
-        project.create_empty("My Project").should_be_called().will_return("project")
-        project.create_empty("My Site").should_be_called().will_return("site")
-        project.create_empty("My Building").should_be_called().will_return("building")
-        project.create_empty("My Storey").should_be_called().will_return("storey")
-        project.run_root_assign_class(obj="project", ifc_class="IfcProject").should_be_called()
-        project.run_unit_assign_scene_units().should_be_called()
-
+    def check_contexts(self, project):
         project.run_context_add_context(
             context_type="Model", context_identifier="", target_view="", parent=0
         ).should_be_called().will_return("model")
@@ -60,6 +49,9 @@ class TestCreateProject:
             context_type="Model", context_identifier="Annotation", target_view="MODEL_VIEW", parent="model"
         ).should_be_called()
         project.run_context_add_context(
+            context_type="Model", context_identifier="Annotation", target_view="PLAN_VIEW", parent="model"
+        ).should_be_called()
+        project.run_context_add_context(
             context_type="Model", context_identifier="Profile", target_view="ELEVATION_VIEW", parent="model"
         ).should_be_called()
         project.run_context_add_context(
@@ -74,6 +66,20 @@ class TestCreateProject:
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
+
+    def test_create_an_ifc4_project(self, ifc, project):
+        ifc.get().should_be_called().will_return(None)
+        ifc.run("project.create_file", version="IFC4").should_be_called().will_return("ifc")
+        ifc.set("ifc").should_be_called()
+
+        project.create_empty("My Project").should_be_called().will_return("project")
+        project.create_empty("My Site").should_be_called().will_return("site")
+        project.create_empty("My Building").should_be_called().will_return("building")
+        project.create_empty("My Storey").should_be_called().will_return("storey")
+        project.run_root_assign_class(obj="project", ifc_class="IfcProject").should_be_called()
+        project.run_unit_assign_scene_units().should_be_called()
+
+        self.check_contexts(project)
 
         project.run_root_assign_class(obj="site", ifc_class="IfcSite", context="body").should_be_called()
         project.run_root_assign_class(obj="building", ifc_class="IfcBuilding", context="body").should_be_called()
@@ -104,42 +110,7 @@ class TestCreateProject:
         project.run_root_assign_class(obj="project", ifc_class="IfcProject").should_be_called()
         project.run_unit_assign_scene_units().should_be_called()
 
-        project.run_context_add_context(
-            context_type="Model", context_identifier="", target_view="", parent=0
-        ).should_be_called().will_return("model")
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent="model"
-        ).should_be_called().will_return("body")
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Annotation", target_view="SECTION_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Annotation", target_view="MODEL_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Profile", target_view="ELEVATION_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Plan", context_identifier="", target_view="", parent=0
-        ).should_be_called().will_return("plan")
-        project.run_context_add_context(
-            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent="plan"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Plan", context_identifier="Body", target_view="PLAN_VIEW", parent="plan"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
-        ).should_be_called()
+        self.check_contexts(project)
 
         project.run_root_assign_class(obj="site", ifc_class="IfcSite", context="body").should_be_called()
         project.run_root_assign_class(obj="building", ifc_class="IfcBuilding", context="body").should_be_called()
@@ -179,42 +150,7 @@ class TestCreateProject:
         project.run_root_assign_class(obj="project", ifc_class="IfcProject").should_be_called()
         project.run_unit_assign_scene_units().should_be_called()
 
-        project.run_context_add_context(
-            context_type="Model", context_identifier="", target_view="", parent=0
-        ).should_be_called().will_return("model")
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent="model"
-        ).should_be_called().will_return("body")
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Annotation", target_view="SECTION_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Annotation", target_view="MODEL_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Model", context_identifier="Profile", target_view="ELEVATION_VIEW", parent="model"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Plan", context_identifier="", target_view="", parent=0
-        ).should_be_called().will_return("plan")
-        project.run_context_add_context(
-            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent="plan"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Plan", context_identifier="Body", target_view="PLAN_VIEW", parent="plan"
-        ).should_be_called()
-        project.run_context_add_context(
-            context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
-        ).should_be_called()
+        self.check_contexts(project)
 
         project.run_root_assign_class(obj="site", ifc_class="IfcSite", context="body").should_be_called()
         project.run_root_assign_class(obj="building", ifc_class="IfcBuilding", context="body").should_be_called()
