@@ -36,12 +36,16 @@ USDSerializer::USDSerializer(const std::string& out_filename, const SerializerSe
 	WriteOnlyGeometrySerializer(settings),
 	filename_(out_filename)
 {
+	std::size_t found = filename_.find_last_of("/\\");
+	parent_path_ = filename_.substr(0, found != std::string::npos ? found + 1 : 0);
 	stage_ = pxr::UsdStage::CreateNew(filename_);
 
 	if(!stage_)
 		throw std::runtime_error("Could not create USD stage");
 
-	pxr::UsdGeomSetStageUpAxis(stage_, pxr::UsdGeomTokens->z);
+	if(!settings.get(SerializerSettings::USE_Y_UP))
+		pxr::UsdGeomSetStageUpAxis(stage_, pxr::UsdGeomTokens->z);
+
 	pxr::UsdGeomSetStageMetersPerUnit(stage_, 1.0f);
 
   	auto world = pxr::UsdGeomXform::Define(stage_, pxr::SdfPath("/World"));
@@ -128,6 +132,7 @@ void USDSerializer::writeHeader() {
 }
 
 void USDSerializer::write(const IfcGeom::TriangulationElement* o) {
+	pxr::UsdGeomMesh usd_mesh;
   	const IfcGeom::Representation::Triangulation& mesh = o->geometry();
   	const auto verts = mesh.verts();
   	const auto faces = mesh.faces();
@@ -138,17 +143,14 @@ void USDSerializer::write(const IfcGeom::TriangulationElement* o) {
 		return;
 
 	std::string name = o->name();
+	const std::string type = o->type();
+	const std::string id = std::to_string(o->id());
   	if(name.empty()) {
-  	  	name = "UnNamed";
+  	  	name = type + "_UnNamed_" + id;
   	} else {
-  	  	name = usd_utils::toPath(name);
+  	  	name = type + "_" + usd_utils::toPath(name) + "_" + id;
   	}
-  	name += "_" + std::to_string(o->id());
-  	auto usd_mesh = pxr::UsdGeomMesh::Define(stage_, pxr::SdfPath("/World/" + name));
-
-  	usd_mesh.AddTranslateOp().Set(pxr::GfVec3d(m[9], m[10], m[11]));
-	usd_mesh.AddRotateXYZOp().Set(rotation_degrees_from_matrix(m));
-
+	usd_mesh = pxr::UsdGeomMesh::Define(stage_, pxr::SdfPath("/World/" + name));
   	pxr::VtVec3fArray points;
   	for(std::size_t i = 0; i < verts.size(); i+=3) {
 		points.push_back(pxr::GfVec3f(static_cast<float>(verts[i]),
@@ -156,9 +158,11 @@ void USDSerializer::write(const IfcGeom::TriangulationElement* o) {
 									  static_cast<float>(verts[i+2])));
   	}
   	usd_mesh.CreatePointsAttr().Set(points);
-
   	usd_mesh.CreateFaceVertexIndicesAttr().Set(usd_utils::toVtArray(faces));
   	usd_mesh.CreateFaceVertexCountsAttr().Set(pxr::VtArray<int>((int) faces.size() / 3, 3));
+
+	usd_mesh.AddTranslateOp().Set(pxr::GfVec3d(m[9], m[10], m[11]));
+	usd_mesh.AddRotateXYZOp().Set(rotation_degrees_from_matrix(m));
 
   	pxr::VtVec3fArray normals;
   	for (std::vector<double>::const_iterator it = mesh.normals().begin(); it != mesh.normals().end();)
