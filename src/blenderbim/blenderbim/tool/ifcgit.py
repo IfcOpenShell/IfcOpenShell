@@ -191,6 +191,13 @@ class IfcGit:
                 result[branch.commit.hexsha].append(branch)
             else:
                 result[branch.commit.hexsha] = [branch]
+        if repo.remotes:
+            for remote in repo.remotes:
+                for ref in remote.refs:
+                    if ref.commit.hexsha in result:
+                        result[ref.commit.hexsha].append(ref)
+                    else:
+                        result[ref.commit.hexsha] = [ref]
         return result
 
     @classmethod
