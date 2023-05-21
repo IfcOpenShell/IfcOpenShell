@@ -249,7 +249,7 @@ def clear_cost_item_assignments(ifc, cost, cost_item, related_object_type):
 
 
 def select_unassigned_products(ifc, cost, spatial):
-    spatial.deselect_all()
+    spatial.deselect_objects()
     products = ifc.get().by_type("IfcElement")
     cost_schedule = cost.get_active_cost_schedule()
     selection = [product for product in products if not cost.has_cost_assignments(product, cost_schedule)]
