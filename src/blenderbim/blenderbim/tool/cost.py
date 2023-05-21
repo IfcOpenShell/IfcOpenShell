@@ -498,24 +498,23 @@ class Cost(blenderbim.core.tool.Cost):
         props.is_cost_update_enabled = True
 
     @classmethod
-    def export_cost_schedules(cls, format=None):
+    def export_cost_schedules(cls, format=None, cost_schedule=None):
         path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
         if format == "CSV":
             from ifc5d.ifc5Dspreadsheet import Ifc5DCsvWriter
-
             if not os.path.exists(path):
                 os.makedirs(path)
-            writer = Ifc5DCsvWriter(file=tool.Ifc.get(), output=path)
+            writer = Ifc5DCsvWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
         elif format == "ODS":
             from ifc5d.ifc5Dspreadsheet import Ifc5DOdsWriter
 
-            writer = Ifc5DOdsWriter(file=tool.Ifc.get(), output=path)
+            writer = Ifc5DOdsWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
         elif format == "XLSX":
             from ifc5d.ifc5Dspreadsheet import Ifc5DXlsxWriter
 
-            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path)
+            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule )
             writer.write()
 
     @classmethod

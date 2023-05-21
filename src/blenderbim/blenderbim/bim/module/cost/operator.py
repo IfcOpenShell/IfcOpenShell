@@ -97,10 +97,9 @@ class AddSummaryCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add a summary cost item"
-    cost_schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.add_summary_cost_item(tool.Ifc, tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+        core.add_summary_cost_item(tool.Ifc, tool.Cost, cost_schedule=tool.Cost.get_active_cost_schedule())
 
 
 class AddCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -112,6 +111,16 @@ class AddCostItem(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_cost_item(tool.Ifc, tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+
+
+class CopyCostItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_cost_item"
+    bl_label = "Copy Cost Item"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Copy a cost item"
+
+    def _execute(self, context):
+        core.copy_cost_item(tool.Ifc, tool.Cost)
 
 
 class ExpandCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -214,8 +223,9 @@ class UnassignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
         core.unassign_cost_item_type(
             tool.Ifc,
             tool.Cost,
-            self.cost_item,
-            products=[tool.Ifc.get().by_id(self.related_object)] if self.related_object else [],
+            tool.Spatial,
+            cost_item=tool.Ifc.get().by_id(self.cost_item),
+            product_types=[tool.Ifc.get().by_id(self.related_object)] if self.related_object else [],
         )
         return {"FINISHED"}
 
@@ -491,7 +501,7 @@ class AddCostColumn(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.add_cost_column(tool.Cost, self.name)
         return {"FINISHED"}
 
@@ -619,10 +629,12 @@ class ExportCostSchedules(bpy.types.Operator):
     bl_label = "Export Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
+    cost_schedule: bpy.props.IntProperty()
     format: bpy.props.EnumProperty("Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
 
     def execute(self, context):
-        core.export_cost_schedules(tool.Cost, format=self.format)
+        cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
+        core.export_cost_schedules(tool.Cost, format=self.format, cost_schedule=cost_schedule)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -667,7 +679,9 @@ class LoadProductCostItems(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id))
+        core.load_product_cost_items(
+            tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
+        )
         return {"FINISHED"}
 
 
