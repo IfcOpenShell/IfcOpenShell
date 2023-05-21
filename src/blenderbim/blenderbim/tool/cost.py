@@ -452,7 +452,7 @@ class Cost(blenderbim.core.tool.Cost):
         contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
         contracted_cost_item_rates.remove(cost_item)
         props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
 
     @classmethod
     def contract_cost_item_rate(cls, cost_item):
@@ -460,7 +460,7 @@ class Cost(blenderbim.core.tool.Cost):
         contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
         contracted_cost_item_rates.append(cost_item)
         props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
 
     @classmethod
     def create_new_cost_item_li(cls, props_collection, cost_item, level_index, type="cost_rate"):
