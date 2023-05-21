@@ -432,14 +432,19 @@ class Loader:
 class Material:
     def add_default_material_object(cls): pass
     def delete_object(cls, obj): pass
+    def disable_editing_material(cls): pass
     def disable_editing_materials(cls): pass
+    def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
     def get_active_material_type(cls): pass
+    def get_active_material_type(cls): pass
     def get_elements_by_material(cls, material): pass
+    def get_material_attributes(cls): pass
     def get_name(cls, obj): pass
     def import_material_definitions(cls, material_type): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
+    def load_material_attributes(cls, material): pass
     def select_elements(cls, elements): pass
 
 

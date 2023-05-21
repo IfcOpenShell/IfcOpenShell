@@ -107,3 +107,29 @@ class Material(blenderbim.core.tool.Material):
             obj = tool.Ifc.get_object(element)
             if obj:
                 obj.select_set(True)
+
+    @classmethod
+    def get_active_material_type(cls):
+        return bpy.context.scene.BIMMaterialProperties.material_type
+
+    @classmethod
+    def load_material_attributes(cls, material):
+        props = bpy.context.scene.BIMMaterialProperties
+        props.material_attributes.clear()
+        blenderbim.bim.helper.import_attributes2(material, props.material_attributes)
+
+    @classmethod
+    def enable_editing_material(cls, material):
+        props = bpy.context.scene.BIMMaterialProperties
+        props.active_material_id = material.id()
+        props.editing_material_type = "ATTRIBUTES" 
+
+    @classmethod
+    def get_material_attributes(cls):
+        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMMaterialProperties.material_attributes)
+
+    @classmethod
+    def disable_editing_material(cls):
+        props = bpy.context.scene.BIMMaterialProperties
+        props.active_material_id = 0
+        props.editing_material_type = ""

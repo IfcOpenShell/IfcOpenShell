@@ -131,6 +131,9 @@ class BIMMaterialProperties(PropertyGroup):
     materials: CollectionProperty(name="Materials", type=Material)
     active_material_index: IntProperty(name="Active Material Index")
     profiles: EnumProperty(items=get_profiles, name="Profiles")
+    active_material_id: IntProperty(name="Active Material ID")
+    material_attributes: CollectionProperty(name="Material Attributes", type=Attribute)
+    editing_material_type = StringProperty(name="Editing Material Type")
 
 
 class BIMObjectMaterialProperties(PropertyGroup):
