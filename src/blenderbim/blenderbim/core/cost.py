@@ -130,7 +130,7 @@ def assign_cost_value(ifc, cost_item, cost_rate):
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
 
 def load_schedule_of_rates(cost, schedule_of_rates):
-    cost.load_schedule_of_rates(schedule_of_rates)
+    cost.load_schedule_of_rates_tree(schedule_of_rates)
 
 def unassign_cost_item_quantity(ifc, cost, cost_item, products):
     ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)
