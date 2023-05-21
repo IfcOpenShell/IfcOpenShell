@@ -443,7 +443,7 @@ def select_work_schedule_products(sequence, spatial, work_schedule=None):
 
 
 def select_unassigned_work_schedule_products(ifc, sequence, spatial):
-    spatial.deselect_all()
+    spatial.deselect_objects()
     products = ifc.get().by_type("IfcElement")
     work_schedule = sequence.get_active_work_schedule()
     schedule_products = sequence.get_work_schedule_products(work_schedule)
