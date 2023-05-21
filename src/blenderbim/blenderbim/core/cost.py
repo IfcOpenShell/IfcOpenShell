@@ -236,8 +236,8 @@ def calculate_cost_item_resource_value(ifc, cost_item):
     ifc.run("cost.calculate_cost_item_resource_value", cost_item=cost_item)
 
 
-def export_cost_schedules(cost, format):
-    cost.export_cost_schedules(format)
+def export_cost_schedules(cost, format, cost_schedule=None):
+    cost.export_cost_schedules(format, cost_schedule)
 
 
 def clear_cost_item_assignments(ifc, cost, cost_item, related_object_type):
@@ -275,5 +275,12 @@ def change_parent_cost_item(ifc, cost, new_parent):
         return "Cannot change root cost item"
     if cost_item :
         ifc.run("nest.change_nest", item=cost_item, new_parent=new_parent)
+        cost.disable_editing_cost_item_parent()
+        cost.load_cost_schedule_tree()
+
+def copy_cost_item(ifc, cost):
+    cost_item = cost.get_highlighted_cost_item()
+    if cost_item:
+        cost_item = ifc.run("cost.copy_cost_item", cost_item=cost_item)
         cost.disable_editing_cost_item_parent()
         cost.load_cost_schedule_tree()
