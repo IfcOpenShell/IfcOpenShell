@@ -165,8 +165,7 @@ class Cost:
     def expand_cost_item_rate(cls, cost_item): pass
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
-    def export_cost_schedules(cls, format): pass
-    def export_cost_schedules(cls, format): pass
+    def export_cost_schedules(cls, format, cost_schedule): pass
     def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
     def get_active_cost_schedule(cls): pass
