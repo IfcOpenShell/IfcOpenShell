@@ -76,6 +76,13 @@ class Usecase:
                         )
                 elif not inverse.RelatedObjects:
                     self.file.remove(inverse)
+                elif self.settings["task"] in inverse.RelatedObjects:
+                    related_objects = list(inverse.RelatedObjects)
+                    related_objects.remove(self.settings["task"])
+                    if not related_objects:
+                        self.file.remove(inverse)
+                    else:
+                        inverse.RelatedObjects = related_objects
             elif inverse.is_a("IfcRelAssignsToControl"):
                 if (
                     inverse.RelatingControl == self.settings["task"]
