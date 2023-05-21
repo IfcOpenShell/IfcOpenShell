@@ -3,7 +3,10 @@ import re
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
-import git
+try:
+    import git
+except:
+    print("Warning: GitPython not available.")
 import bpy
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
