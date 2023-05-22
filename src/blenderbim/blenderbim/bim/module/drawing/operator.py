@@ -1342,6 +1342,8 @@ class ActivateDrawing(bpy.types.Operator):
         dprops = bpy.context.scene.DocProperties
         core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=drawing)
         dprops.active_drawing_id = self.drawing
+        # reset DrawingsData to reload_drawing_styles work correctly
+        DrawingsData.is_loaded = False
         dprops.drawing_styles.clear()
         if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
             bpy.ops.bim.reload_drawing_styles()
@@ -1423,6 +1425,7 @@ class ReloadDrawingStyles(bpy.types.Operator):
     bl_idname = "bim.reload_drawing_styles"
     bl_label = "Reload Drawing Styles"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload drawing styles for the active camera"
 
     def execute(self, context):
         if not DrawingsData.is_loaded:
