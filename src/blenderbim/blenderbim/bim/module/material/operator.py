@@ -368,7 +368,8 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.layer)):
             if inverse.is_a("IfcMaterialLayerSet") and len(inverse.MaterialLayers) == 1:
-                return
+                self.report({"ERROR"}, "Cannot remove material layer - IfcMaterialLayerSet should alawys have atleast 1 layer")
+                return {"ERROR"}
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=tool.Ifc.get().by_id(self.layer))
 
 
