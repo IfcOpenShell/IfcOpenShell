@@ -52,6 +52,7 @@ class AssignType(bpy.types.Operator, Operator):
         for obj in related_objects:
             core.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=type)
             oprops = obj.BIMObjectProperties
+            obj.BIMTypeProperties.relating_type_object = None
 
 
 class UnassignType(bpy.types.Operator):
@@ -130,6 +131,7 @@ class DisableEditingType(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         obj.BIMTypeProperties.is_editing_type = False
+        obj.BIMTypeProperties.relating_type_object = None
         return {"FINISHED"}
 
 

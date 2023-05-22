@@ -66,21 +66,24 @@ class BIM_PT_type(Panel):
         op.element = context.active_object.BIMObjectProperties.ifc_definition_id
 
     def draw_product_ui(self, context):
+        layout = self.layout
         props = context.active_object.BIMTypeProperties
         oprops = context.active_object.BIMObjectProperties
 
         if props.is_editing_type:
-            row = self.layout.row(align=True)
+            row = layout.row(align=True)
+            row_object = layout.row(align=True)
 
             row.prop(props, "relating_type_class", text="")
             if type_prop.get_relating_type(None, context):
                 prop_with_search(row, props, "relating_type", text="")
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
+                row_object.prop(props, "relating_type_object", icon="COPYDOWN")
             else:
                 row.label(text="No Types Found")
             row.operator("bim.disable_editing_type", icon="CANCEL", text="")
         else:
-            row = self.layout.row(align=True)
+            row = layout.row(align=True)
             if TypeData.data["relating_type"]:
                 row.label(text=TypeData.data["relating_type"]["name"])
                 op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
