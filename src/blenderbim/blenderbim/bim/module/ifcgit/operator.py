@@ -57,6 +57,33 @@ class AddFileToRepo(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CloneRepo(bpy.types.Operator):
+    """Clone a remote Git repository"""
+
+    bl_label = "Clone repository"
+    bl_idname = "ifcgit.clone_repo"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.IfcGitProperties
+        if (
+            props.remote_url
+            and props.local_folder
+            and os.path.isdir(props.local_folder)
+            and not os.listdir(props.local_folder)
+        ):
+            return True
+        return False
+
+    def execute(self, context):
+
+        props = context.scene.IfcGitProperties
+        core.clone_repo(tool.IfcGit, props.remote_url, props.local_folder, self)
+        refresh()
+        return {"FINISHED"}
+
+
 class DiscardUncommitted(bpy.types.Operator):
     """Discard saved changes and update to HEAD"""
 
@@ -219,3 +246,35 @@ class Merge(bpy.types.Operator):
             return {"FINISHED"}
         else:
             return {"CANCELLED"}
+
+
+class Push(bpy.types.Operator):
+    """Pushes the working branch to selected remote"""
+
+    bl_label = "Push working branch"
+    bl_idname = "ifcgit.push"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+
+        props = context.scene.IfcGitProperties
+        repo = IfcGitData.data["repo"]
+        remote = repo.remotes[props.select_remote]
+        remote.push()
+        return {"FINISHED"}
+
+
+class Fetch(bpy.types.Operator):
+    """Fetches from the selected remote"""
+
+    bl_label = "Fetch from remote"
+    bl_idname = "ifcgit.fetch"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+
+        props = context.scene.IfcGitProperties
+        repo = IfcGitData.data["repo"]
+        remote = repo.remotes[props.select_remote]
+        remote.fetch()
+        return {"FINISHED"}

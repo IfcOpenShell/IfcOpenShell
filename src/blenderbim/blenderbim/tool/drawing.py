@@ -315,8 +315,13 @@ class Drawing(blenderbim.core.tool.Drawing):
         return literals
 
     @classmethod
-    def get_annotation_context(cls, target_view):
-        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+    def get_annotation_context(cls, target_view, object_type=None):
+        # checking PLAN target view and annotation type that doesn't require 3d
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
+            "FALL",
+            "SECTION_LEVEL",
+            "PLAN_LEVEL",
+        ):
             return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Annotation", target_view)
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", target_view)
 
@@ -759,12 +764,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         props = obj.BIMTextProperties
 
         literals = cls.get_text_literal(obj, return_list=True)
-        if not literals:
-            props.literals.clear()
-            return
-
         cls.import_text_attributes(obj)
-
         for i, literal in enumerate(literals):
             product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
             props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
@@ -876,6 +876,21 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
         if resource_path:
             return resource_path.replace("\\", "/")
+
+    @classmethod
+    def get_default_shading_style(cls):
+        dprops = bpy.context.scene.DocProperties
+        return dprops.shadingstyle_default
+
+    @classmethod
+    def setup_shading_styles_path(cls, resource_path):
+        resource_path = tool.Ifc.resolve_uri(resource_path)
+        os.makedirs(os.path.dirname(resource_path), exist_ok=True)
+        if not os.path.exists(resource_path):
+            resource_basename = os.path.basename(resource_path)
+            ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
+            if os.path.exists(ootb_resource):
+                shutil.copy(ootb_resource, resource_path)
 
     @classmethod
     def get_potential_reference_elements(cls, drawing):
@@ -1376,7 +1391,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
-        elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")])
+        elements = cls.get_elements_in_camera_view(
+            tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
+        )
         if include:
             elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
         exclude = pset.get("Exclude", None)
@@ -1508,12 +1525,14 @@ class Drawing(blenderbim.core.tool.Drawing):
             x = (camera.data.BIMCameraProperties.raster_x / camera.data.BIMCameraProperties.raster_y) * y
 
         camera_inverse_matrix = camera.matrix_world.inverted()
-        return set([
-            tool.Ifc.get_entity(o)
-            for o in objs
-            if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
-            and tool.Ifc.get_entity(o)
-        ])
+        return set(
+            [
+                tool.Ifc.get_entity(o)
+                for o in objs
+                if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
+                and tool.Ifc.get_entity(o)
+            ]
+        )
 
     @classmethod
     def is_in_camera_view(cls, obj, camera_inverse_matrix, x, y, clip_start, clip_end):

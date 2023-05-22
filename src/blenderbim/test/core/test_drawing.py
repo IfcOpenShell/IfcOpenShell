@@ -36,8 +36,8 @@ class TestDisableEditingText:
 class TestEditText:
     def test_run(self, ifc, drawing):
         drawing.synchronise_ifc_and_text_attributes("obj").should_be_called()
-        drawing.update_text_value("obj").should_be_called()
         drawing.update_text_size_pset("obj").should_be_called()
+        drawing.update_text_value("obj").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
         subject.edit_text(drawing, obj="obj")
 
@@ -264,6 +264,9 @@ class TestAddDrawing:
         drawing.get_default_drawing_resource_path("Markers").should_be_called().will_return("markers.svg")
         drawing.get_default_drawing_resource_path("Symbols").should_be_called().will_return("symbols.svg")
         drawing.get_default_drawing_resource_path("Patterns").should_be_called().will_return("patterns.svg")
+        drawing.get_default_drawing_resource_path("ShadingStyles").should_be_called().will_return("shading_styles.json")
+        drawing.get_default_shading_style().should_be_called().will_return("Blender Default")
+        drawing.setup_shading_styles_path("shading_styles.json").should_be_called()
         drawing.get_unit_system().should_be_called().will_return("METRIC")
         ifc.run(
             "pset.edit_pset",
@@ -280,6 +283,8 @@ class TestAddDrawing:
                 "Markers": "markers.svg",
                 "Symbols": "symbols.svg",
                 "Patterns": "patterns.svg",
+                "ShadingStyles": "shading_styles.json",
+                "CurrentShadingStyle": "Blender Default",
             },
         ).should_be_called()
         drawing.get_default_drawing_path("name").should_be_called().will_return("uri")
@@ -424,7 +429,7 @@ class TestAddAnnotation:
     def test_run(self, ifc, collector, drawing):
         drawing.show_decorations().should_be_called()
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
-        drawing.get_annotation_context("target_view").should_be_called().will_return("context")
+        drawing.get_annotation_context("target_view", "object_type").should_be_called().will_return("context")
         drawing.create_annotation_object("drawing", "object_type").should_be_called().will_return("obj")
         ifc.get_entity("obj").should_be_called().will_return(None)
         drawing.get_ifc_representation_class("object_type").should_be_called().will_return("ifc_representation_class")
@@ -444,5 +449,5 @@ class TestAddAnnotation:
 
     def test_do_not_add_without_an_annotation_context(self, ifc, collector, drawing):
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
-        drawing.get_annotation_context("target_view").should_be_called().will_return(None)
+        drawing.get_annotation_context("target_view", "object_type").should_be_called().will_return(None)
         subject.add_annotation(ifc, collector, drawing, drawing="drawing", object_type="object_type")

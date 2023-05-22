@@ -54,6 +54,16 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         else:
             row.label(text="No Git repository found", icon="SYSTEM")
             row.label(text="No IFC project saved", icon="FILE")
+
+            box = layout.box()
+            row = box.row()
+            row.label(text="Clone a remote Git repository")
+            row = box.row()
+            row.prop(props, "remote_url")
+            row = box.row()
+            row.prop(props, "local_folder")
+            row = box.row()
+            row.operator("ifcgit.clone_repo", icon="IMPORT")
             return
 
         is_dirty = IfcGitData.data["is_dirty"]
@@ -144,12 +154,22 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             # TODO
             # item.operator("ifcgit.delete_tag", icon="PANEL_CLOSE")
 
-        row = layout.row()
+        box = layout.box()
+        row = box.row()
         row.prop(props, "new_tag_name")
-        row = layout.row()
+        row = box.row()
         row.prop(props, "new_tag_message")
-        row = layout.row()
+        row = box.row()
         row.operator("ifcgit.add_tag", icon="GREASEPENCIL")
+
+        if IfcGitData.data["remotes"]:
+            row = layout.row()
+            row.prop(props, "select_remote", text="Select remote")
+            urls = IfcGitData.data["remote_urls"]
+            row.label(text=urls[props.select_remote])
+            row = layout.row()
+            row.operator("ifcgit.push", icon="EXPERIMENTAL")
+            row.operator("ifcgit.fetch", icon="IMPORT")
 
 
 class COMMIT_UL_List(bpy.types.UIList):

@@ -165,8 +165,7 @@ class Cost:
     def expand_cost_item_rate(cls, cost_item): pass
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
-    def export_cost_schedules(cls, format): pass
-    def export_cost_schedules(cls, format): pass
+    def export_cost_schedules(cls, format, cost_schedule): pass
     def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
     def get_active_cost_schedule(cls): pass
@@ -269,11 +268,13 @@ class Drawing:
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
-    def get_annotation_context(cls, target_view): pass
+    def get_annotation_context(cls, target_view, object_type=None): pass
     def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
+    def get_default_shading_style(cls): pass
+    def setup_shading_styles_path(cls, resource_path): pass
     def get_default_layout_path(cls, identification, name): pass
     def get_default_sheet_path(cls, identification, name): pass
     def get_default_sheet_path(cls, identification, name): pass
@@ -430,14 +431,19 @@ class Loader:
 class Material:
     def add_default_material_object(cls): pass
     def delete_object(cls, obj): pass
+    def disable_editing_material(cls): pass
     def disable_editing_materials(cls): pass
+    def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
     def get_active_material_type(cls): pass
+    def get_active_material_type(cls): pass
     def get_elements_by_material(cls, material): pass
+    def get_material_attributes(cls): pass
     def get_name(cls, obj): pass
     def import_material_definitions(cls, material_type): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
+    def load_material_attributes(cls, material): pass
     def select_elements(cls, elements): pass
 
 

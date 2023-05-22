@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from pathlib import Path
 import bpy
 import mathutils
 import ifcopenshell
@@ -25,6 +26,9 @@ import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.drawing import Drawing as subject
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.drawing.data import DecoratorData
+
+import xml.etree.ElementTree as ET
 
 
 class TestImplementsTool(NewFile):
@@ -234,9 +238,13 @@ class TestGetAnnotationContext(NewFile):
         context2 = ifc.createIfcGeometricRepresentationSubContext(
             ContextType="Model", ContextIdentifier="Annotation", TargetView="ELEVATION_VIEW"
         )
+        context3 = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model", ContextIdentifier="Annotation", TargetView="PLAN_VIEW"
+        )
         tool.Ifc.set(ifc)
         assert subject.get_annotation_context("PLAN_VIEW") == context
         assert subject.get_annotation_context("ELEVATION_VIEW") == context2
+        assert subject.get_annotation_context("PLAN_VIEW", "FALL") == context3
 
 
 class TestGetBodyContext(NewFile):
@@ -596,12 +604,70 @@ class TestShowDecorations(NewFile):
         assert bpy.context.scene.DocProperties.should_draw_decorations is True
 
 
+class TestDrawingMaintainingSheetPosition(NewFile):
+    def get_sheet_drawing_data(self, layout_path):
+        SVG = "{http://www.w3.org/2000/svg}"
+        ET.register_namespace("", SVG)
+        layout_tree = ET.parse(layout_path)
+        layout_root = layout_tree.getroot()
+
+        drawing_view = layout_root.findall(f'{SVG}g[@data-type="drawing"]')[0]
+
+        drawing_data = {}
+        for image in drawing_view.findall(f"{SVG}image"):
+            attribs = ["x", "y", "width", "height"]
+            image_type = image.attrib["data-type"]
+            drawing_data[image_type] = tuple([round(float(image.attrib[attr]), 2) for attr in attribs])
+
+        return drawing_data
+
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        sheet_path = Path.cwd() / "layouts" / "A00 - UNTITLED.svg"
+
+        bpy.ops.bim.load_sheets()
+        bpy.ops.bim.add_sheet()
+
+        bpy.ops.bim.load_drawings()
+        bpy.ops.bim.add_drawing()
+
+        drawing = ifc.by_type("IfcAnnotation")[0]
+        bpy.ops.bim.activate_drawing(drawing=drawing.id())
+        bpy.ops.bim.create_drawing()
+        bpy.ops.bim.add_drawing_to_sheet()
+        bpy.ops.bim.open_sheet()
+
+        # check drawing default position
+        drawing_data = self.get_sheet_drawing_data(sheet_path)
+        assert drawing_data["foreground"] == (30.0, 30.0, 500.0, 500.0)
+        assert drawing_data["view-title"] == (30.0, 535.0, 50.22, 10.0)
+
+        bpy.context.scene.camera.data.BIMCameraProperties.raster_x = 1200
+        bpy.ops.bim.create_drawing()
+        bpy.ops.bim.open_sheet()
+
+        assert sheet_path.is_file(), f"Sheet path {sheet_path} doesn't exist"
+
+        # check drawing position on the sheet
+        drawing_data = self.get_sheet_drawing_data(sheet_path)
+        assert drawing_data["foreground"] == (30.0, 71.67, 500.0, 416.67)
+        assert drawing_data["view-title"] == (30.0, 493.33, 50.22, 10.0)
+
+
 class TestUpdateTextValue(NewFile):
     def test_updating_arbitrary_strings(self):
         TestGetTextLiteral().test_run()
+        ifc = tool.Ifc.get()
+
         obj = bpy.data.objects.get("Object")
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.literals[0].value == "Literal"
+        literal = obj.BIMTextProperties.literals[0]
+
+        assert obj.BIMTextProperties.font_size == "2.5"
+        assert literal.value == "Literal"
+        assert literal.box_alignment[:] == tuple([False] * 6 + [True] + [False] * 2)
+        assert literal.ifc_definition_id == ifc.by_type("IfcTextLiteralWithExtent")[0].id()
 
     def test_using_attribute_variables(self):
         TestGetTextLiteral().test_run()
@@ -632,3 +698,85 @@ class TestUpdateTextValue(NewFile):
 
         subject.update_text_value(obj)
         assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"
+
+    def test_update_text_font_size(self):
+        TestGetTextLiteral().test_run()
+        obj = bpy.data.objects.get("Object")
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            obj.BIMTextProperties.font_size = "7.0"
+            bpy.ops.bim.edit_text()
+        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
+        assert "title" in annotation_classes
+        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+
+    def test_add_second_literal(self, setup=True):
+        if setup:
+            TestGetTextLiteral().test_run()
+        obj = bpy.data.objects.get("Object")
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            bpy.ops.bim.add_text_literal()
+            literal = obj.BIMTextProperties.literals[1]
+            literal.attributes["Literal"].string_value = "test_value"
+            bpy.ops.bim.edit_text()
+
+        ifc = tool.Ifc.get()
+        assert ifc.by_type("IfcTextLiteralWithExtent")[1].Literal == "test_value"
+
+    def test_disable_text_editing(self):
+        # add second literal and change font size to test changing them
+        self.test_update_text_font_size()  # sets font size to "7.0"
+        self.test_add_second_literal(setup=False)
+
+        obj = bpy.data.objects.get("Object")
+        props = obj.BIMTextProperties
+        assert obj is not None, obj
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            bpy.ops.bim.remove_text_literal(1)
+            props.literals[0].attributes["Literal"].string_value = "changed_value"
+            props.font_size = "2.5"
+            bpy.ops.bim.disable_editing_text()
+
+        ifc = tool.Ifc.get()
+        # test font size
+        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
+        assert props.font_size == "7.0"
+        assert "title" in annotation_classes
+        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+
+        # test second literal is present
+        assert props.literals[1].attributes["Literal"].string_value == "test_value"
+        assert ifc.by_type("IfcTextLiteralWithExtent")[1].Literal == "test_value"
+
+        # test first literal value is unchanged
+        assert props.literals[0].attributes["Literal"].string_value == "Literal"
+        assert ifc.by_type("IfcTextLiteralWithExtent")[0].Literal == "Literal"
+
+
+class TestDrawingStyles(NewFile):
+    def setup_project_with_drawing(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.bim.load_drawings()
+        bpy.ops.bim.add_drawing()
+        ifc = tool.Ifc.get()
+        drawing = ifc.by_type("IfcAnnotation")[0]
+        bpy.ops.bim.activate_drawing(drawing=drawing.id())
+        self.drawing_styles = bpy.context.scene.DocProperties.drawing_styles
+
+    def test_drawing_styles_not_loaded_if_underlay_is_inactive(self):
+        self.setup_project_with_drawing()
+        assert len(self.drawing_styles) == 0
+
+    def test_drawing_styles_loaded_on_underlay_enabled(self):
+        self.setup_project_with_drawing()
+        bpy.context.scene.camera.data.BIMCameraProperties.has_underlay = True
+        assert len(self.drawing_styles) == 3
+
+    def test_drawing_styles_reload(self):
+        self.setup_project_with_drawing()
+        bpy.ops.bim.reload_drawing_styles()
+        assert len(self.drawing_styles) == 3
+
+    

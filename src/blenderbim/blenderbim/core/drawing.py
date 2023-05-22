@@ -28,8 +28,8 @@ def disable_editing_text(drawing, obj=None):
 
 def edit_text(drawing, obj=None):
     drawing.synchronise_ifc_and_text_attributes(obj)
-    drawing.update_text_value(obj)
     drawing.update_text_size_pset(obj)
+    drawing.update_text_value(obj)
     drawing.disable_editing_text(obj)
 
 
@@ -104,9 +104,7 @@ def remove_sheet(ifc, drawing, sheet=None):
 
 
 def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
-    ifc.run(
-        "document.edit_information", information=sheet, attributes={"Identification": identification, "Name": name}
-    )
+    ifc.run("document.edit_information", information=sheet, attributes={"Identification": identification, "Name": name})
     for reference in drawing.get_document_references(sheet):
         description = drawing.get_reference_description(reference)
         if description == "SHEET":
@@ -198,7 +196,9 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
         human_scale = "1:100"
     else:
         scale = "1/96"
-        human_scale = "1/8\"=1'-0\""
+        human_scale = '1/8"=1\'-0"'
+
+    shading_styles_path = drawing.get_default_drawing_resource_path("ShadingStyles")
     ifc.run(
         "pset.edit_pset",
         pset=pset,
@@ -214,8 +214,11 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
             "Markers": drawing.get_default_drawing_resource_path("Markers"),
             "Symbols": drawing.get_default_drawing_resource_path("Symbols"),
             "Patterns": drawing.get_default_drawing_resource_path("Patterns"),
+            "ShadingStyles": (shading_styles_path := drawing.get_default_drawing_resource_path("ShadingStyles")),
+            "CurrentShadingStyle": drawing.get_default_shading_style(),
         },
     )
+    drawing.setup_shading_styles_path(shading_styles_path)
     information = ifc.run("document.add_information")
     uri = drawing.get_default_drawing_path(drawing_name)
     reference = ifc.run("document.add_reference", information=information)
@@ -322,7 +325,9 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
 
 
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
-    context = drawing_tool.get_annotation_context(target_view := drawing_tool.get_drawing_target_view(drawing))
+    context = drawing_tool.get_annotation_context(
+        target_view := drawing_tool.get_drawing_target_view(drawing), object_type
+    )
     if not context:
         return f"No annotation context Annotation/{target_view} for drawing"
 

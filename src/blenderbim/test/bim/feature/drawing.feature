@@ -73,3 +73,19 @@ Scenario: Remove drawing - via object deletion
     And the object "IfcAnnotation/PLAN_VIEW" is selected
     When I press "bim.override_object_delete"
     Then the collection "IfcGroup/PLAN_VIEW" does not exist
+
+Scenario: Reproducing freeze on generating drawing - Issue 3169
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I set "object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSetUsage"
+    And I press "bim.assign_material"
+    And I press "bim.load_drawings"
+    And I press "bim.add_drawing"
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    And I press "bim.activate_drawing(drawing={drawing})"
+    # And I save sample test files and open in blender
+    # When I press "bim.create_drawing"
+    Then nothing happens

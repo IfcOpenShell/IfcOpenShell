@@ -36,6 +36,9 @@ from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.module.drawing.shaders import BASE_LIB_GLSL, BASE_DEF_GLSL, add_verts_sequence, add_offsets
 
 
+UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY # TODO: move back to 0.2
+
+
 def ccw(A, B, C):
     """whether a-b-c located in counter-clockwise order in 2d space"""
     return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
@@ -93,7 +96,7 @@ def get_callout_head(edge_dir, edge_side, callout_size, callout_gap):
     return head
 
 
-def get_circle_head(size, segments=12):
+def get_circle_head(size, segments=20):
     angle_d = 2 * pi / segments
     head = []
     for i in range(segments):
@@ -108,14 +111,12 @@ def get_circle_head_asterisk(size, segments=6):
     return zip(circle_head[:middle], circle_head[middle:])
 
 
-def get_angle_circle(circle_start, circle_angle, counterclockwise, segments=12):
-    angle_d = 2 * pi / segments
-    angle_segs = max(1, ceil(circle_angle / angle_d))
-    angle_d = circle_angle / angle_segs
+def get_angle_circle(circle_start, circle_angle, counterclockwise, segments=20):
+    angle_d = circle_angle / segments
     head = []
     circle_start = circle_start.xy
 
-    for i in range(angle_segs + 1):
+    for i in range(segments + 1):
         angle = angle_d * i
         if counterclockwise:
             rot_matrix_ccw = Matrix.Rotation(angle, 2)
@@ -535,7 +536,9 @@ class BaseDecorator:
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
         props = obj.BIMTextProperties
-        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
+        text_data = DecoratorData.get_ifc_text_data(obj)
+        if props.is_editing:
+            text_data = text_data | props.get_text_edited_data()
         literals_data = text_data["Literals"]
         symbol = text_data["Symbol"]
         text_scale = 1.0
@@ -719,21 +722,24 @@ class AngleDecorator(BaseDecorator):
         winspace_verts = worldspace_to_winspace(verts, context)
 
         # setup geometry parameters
-        output_verts = []
-        output_edges = []
-        out_kwargs = {
-            "output_verts": output_verts,
-            "output_edges": output_edges,
+        out_kwargs_edges = {
+            "output_verts": [],
+            "output_edges": [],
+        }
+        out_kwargs_arcs = {
+            "output_verts": [],
+            "output_edges": [],
         }
         last_vert = len(winspace_verts) - 1
 
         # process edges
         for edge in edges_original:
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
-            start_i = len(output_verts)
+            start_i_edges = len(out_kwargs_edges["output_verts"])
+            start_i_arcs = len(out_kwargs_arcs["output_verts"])
 
             # draw edge
-            add_verts_sequence([v0, v1], start_i, **out_kwargs)
+            add_verts_sequence([v0, v1], start_i_edges, **out_kwargs_edges)
 
             # draw angle only on interal verts
             if edge[1] != last_vert:
@@ -756,9 +762,28 @@ class AngleDecorator(BaseDecorator):
                 circle_angle = acos(cos_a)
                 counter_clockwise = ccw(v2, v1, v0)
                 angle_circle = get_angle_circle(circle_start, circle_angle, counter_clockwise)
-                add_verts_sequence([v1 + v for v in angle_circle], start_i + 2, **out_kwargs)
+                add_verts_sequence([v1 + v for v in angle_circle], start_i_arcs, **out_kwargs_arcs)
 
-        self.draw_lines(context, obj, output_verts, output_edges)
+        arcs_color = None
+        edges_color = UNSPECIAL_ELEMENT_COLOR
+        if context.object == obj and obj.data.is_editmode:
+            arcs_color = context.preferences.addons["blenderbim"].preferences.decorator_color_special
+            edges_color = None
+
+        self.draw_lines(
+            context,
+            obj,
+            vertices=out_kwargs_arcs["output_verts"],
+            indices=out_kwargs_arcs["output_edges"],
+            color=arcs_color,
+        )
+        self.draw_lines(
+            context,
+            obj,
+            vertices=out_kwargs_edges["output_verts"],
+            indices=out_kwargs_edges["output_edges"],
+            color=edges_color,
+        )
         self.draw_labels(context, obj, verts, edges_original)
 
     def draw_labels(self, context, obj, vertices, indices):
@@ -766,7 +791,10 @@ class AngleDecorator(BaseDecorator):
         region = context.region
         region3d = context.region_data
 
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        ANGLE_LABEL_OFFSET = 25 * viewportDrawingScale
         last_segment_i = len(indices) - 1
+
         for edge_i, edge_vertices in enumerate(indices):
             if edge_i == last_segment_i:
                 continue
@@ -786,18 +814,14 @@ class AngleDecorator(BaseDecorator):
                 cos_a = edge0.dot(edge1) / (edge0.length * edge1.length)
             except ZeroDivisionError:
                 continue
-            circle_angle = acos(cos_a) / pi * 180
+            circle_angle_rad = acos(cos_a)
+            circle_angle = circle_angle_rad / pi * 180
+
+            base_edge = edge0 if ccw(p0, p1, p2) else edge1
+            text_offset = (Matrix.Rotation(-circle_angle_rad / 2, 2) @ base_edge).normalized() * ANGLE_LABEL_OFFSET
+            label_position = p1 + text_offset
 
             text = f"{int(circle_angle)}d"
-
-            # TODO: set label position pased on p1
-            # + y relative to p0p1 if p0p1p2 is clockwise
-            # - y relative to p0p1 if p0p1p2 is counter-clockwise
-            # counter_clockwise = ccw(p0, p1, p2)
-            # label_position = (p1 + Vector( (0, 10) ) * (1 if counter_clockwise else -1)) + edge1 * 0.1
-            label_position = p1 + edge1 * 0.1
-
-            # TODO: set label direction based on the first edge (p0, p1)
             label_dir = Vector((1, 0))
             self.draw_label(context, text, label_position, label_dir)
 
@@ -1065,7 +1089,7 @@ class PlanLevelDecorator(BaseDecorator):
                 box_alignment = "bottom-right"
                 dir *= -1
 
-            z = verts[-1].z / unit_scale
+            z = verts[0].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
             text = "RL " + self.format_value(context, z)
@@ -1123,7 +1147,7 @@ class SectionLevelDecorator(BaseDecorator):
         tag = storey.Name if storey else element.Description
 
         for verts in splines:
-            z = verts[-1].z / unit_scale
+            z = verts[0].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
 

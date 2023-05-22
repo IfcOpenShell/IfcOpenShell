@@ -103,6 +103,7 @@ class DrawingsData:
             "has_saved_ifc": cls.has_saved_ifc(),
             "total_drawings": cls.total_drawings(),
             "location_hint": cls.location_hint(),
+            "active_drawing_pset_data": cls.active_drawing_pset_data(),
         }
         cls.is_loaded = True
 
@@ -123,6 +124,15 @@ class DrawingsData:
             )
             return results
         return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]
+
+    @classmethod
+    def active_drawing_pset_data(cls):
+        ifc_file = tool.Ifc.get()
+        drawing_id = bpy.context.scene.DocProperties.active_drawing_id
+        if drawing_id == 0:
+            return {}
+        drawing = ifc_file.by_id(bpy.context.scene.DocProperties.active_drawing_id)
+        return ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
 
 
 class SchedulesData:
@@ -232,14 +242,12 @@ class DecoratorData:
         # use `regular` as default
 
         # get font size
-        if classes := pset_data.get("Classes", None):
-            classes_split = classes.split()
-            # prioritize smaller font sizes just like in svg
-            font_size_type = next(
-                (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
-            )
-        else:
-            font_size_type = "regular"
+        classes = pset_data.get("Classes", None) or "regular"
+        classes_split = classes.split()
+        # prioritize smaller font sizes just like in svg
+        font_size_type = next(
+            (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
+        )
         font_size = FONT_SIZES[font_size_type]
 
         # get symbol

@@ -195,12 +195,13 @@ class IfcDataGetter:
 
 
 class Ifc5Dwriter:
-    def __init__(self, file=None, output=None):
+    def __init__(self, file=None, output=None, cost_schedule=None):
         self.output = output
         if isinstance(file, str):
             self.file = ifcopenshell.open(file)
         else:
             self.file = file
+        self.cost_schedule = cost_schedule
         self.cost_schedules = []
         self.sheet_data = {}
         self.column_indexes = []
@@ -220,6 +221,10 @@ class Ifc5Dwriter:
         self.used_names = []
         for i in range(26):
             self.column_indexes.append("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i % 26])
+        if self.cost_schedule:
+            for cost_schedule in self.cost_schedules:
+                if cost_schedule.id() != self.cost_schedule.id():
+                    self.cost_schedules.remove(cost_schedule)
         for cost_schedule in self.cost_schedules:
             sheet_id = cost_schedule.id()
             self.sheet_data[sheet_id] = {}

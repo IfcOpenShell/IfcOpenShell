@@ -59,6 +59,36 @@ class SelectByMaterial(bpy.types.Operator, tool.Ifc.Operator):
         core.select_by_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
 
 
+class EnableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_material"
+    bl_label = "Enable Editing Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.enable_editing_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
+
+
+class EditMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_material"
+    bl_label = "Edit Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.edit_material(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
+
+
+class DisableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_material"
+    bl_label = "Disable Editing Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.disable_editing_material(tool.Material)
+
+
 class AssignParameterizedProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_parameterized_profile"
     bl_label = "Assign Parameterized Profile"
@@ -338,7 +368,8 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.layer)):
             if inverse.is_a("IfcMaterialLayerSet") and len(inverse.MaterialLayers) == 1:
-                return
+                self.report({"ERROR"}, "Cannot remove material layer - IfcMaterialLayerSet should alawys have atleast 1 layer")
+                return {"ERROR"}
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=tool.Ifc.get().by_id(self.layer))
 
 

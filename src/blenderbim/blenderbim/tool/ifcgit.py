@@ -3,7 +3,10 @@ import re
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
-import git
+try:
+    import git
+except:
+    print("Warning: GitPython not available.")
 import bpy
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
@@ -13,6 +16,21 @@ class IfcGit:
     @classmethod
     def init_repo(cls, path_dir):
         IfcGitRepo.repo = git.Repo.init(path_dir)
+
+    @classmethod
+    def clone_repo(cls, remote_url, local_folder):
+        IfcGitRepo.repo = git.Repo.clone_from(remote_url, local_folder)
+        return IfcGitRepo.repo
+
+    @classmethod
+    def load_anyifc(cls, repo):
+        working_dir = repo.working_dir
+        for item in os.listdir(working_dir):
+            path = os.path.join(working_dir, item)
+            if os.path.isfile(path) and re.match(".*\.ifc$", path, re.IGNORECASE):
+                cls.load_project(path)
+                return True
+        return False
 
     @classmethod
     def get_path_dir(cls, path_ifc):
@@ -39,7 +57,7 @@ class IfcGit:
             if parentdir_path == path_dir:
                 # root folder
                 return None
-            return IfcGit.repo_from_path(parentdir_path)
+            return cls.repo_from_path(parentdir_path)
         if repo:
             IfcGitRepo.repo = repo
         return repo
@@ -94,15 +112,16 @@ class IfcGit:
     def get_commits_list(cls, path_ifc, lookup):
 
         props = bpy.context.scene.IfcGitProperties
+        repo = cls.repo_from_path(path_ifc)
         commits = list(
             git.objects.commit.Commit.iter_items(
-                repo=IfcGitRepo.repo,
+                repo=repo,
                 rev=[props.display_branch],
             )
         )
         commits_relevant = list(
             git.objects.commit.Commit.iter_items(
-                repo=IfcGitRepo.repo,
+                repo=repo,
                 rev=[props.display_branch],
                 paths=[path_ifc],
             )
@@ -132,6 +151,13 @@ class IfcGit:
                         list_item.tags[-1].message = tag.tag.message
 
     @classmethod
+    def refresh_revision_list(cls, path_ifc):
+        repo = cls.repo_from_path(path_ifc)
+        cls.clear_commits_list()
+        lookup = cls.tags_by_hexsha(repo)
+        cls.get_commits_list(path_ifc, lookup)
+
+    @classmethod
     def is_valid_ref_format(cls, string):
         """Check a bare branch or tag name is valid"""
 
@@ -148,7 +174,7 @@ class IfcGit:
         # delete any IfcProject/* collections
         for collection in bpy.data.collections:
             if re.match("^IfcProject/", collection.name):
-                IfcGit.delete_collection(collection)
+                cls.delete_collection(collection)
         # delete any Ifc* objects not in IfcProject/ heirarchy
         for obj in bpy.data.objects:
             if re.match("^Ifc", obj.name):
@@ -157,7 +183,6 @@ class IfcGit:
         bpy.data.orphans_purge(do_recursive=True)
 
         bpy.ops.bim.load_project(filepath=path_ifc)
-        bpy.ops.ifcgit.refresh()
 
     @classmethod
     def branches_by_hexsha(cls, repo):
@@ -169,6 +194,13 @@ class IfcGit:
                 result[branch.commit.hexsha].append(branch)
             else:
                 result[branch.commit.hexsha] = [branch]
+        if repo.remotes:
+            for remote in repo.remotes:
+                for ref in remote.refs:
+                    if ref.commit.hexsha in result:
+                        result[ref.commit.hexsha].append(ref)
+                    else:
+                        result[ref.commit.hexsha] = [ref]
         return result
 
     @classmethod
@@ -230,14 +262,14 @@ class IfcGit:
             return
 
         if current_revision.committed_date > selected_revision.committed_date:
-            step_ids = IfcGit.ifc_diff_ids(
+            step_ids = cls.ifc_diff_ids(
                 repo,
                 selected_revision.hexsha,
                 current_revision.hexsha,
                 path_ifc,
             )
         else:
-            step_ids = IfcGit.ifc_diff_ids(
+            step_ids = cls.ifc_diff_ids(
                 repo,
                 current_revision.hexsha,
                 selected_revision.hexsha,
@@ -290,7 +322,7 @@ class IfcGit:
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
 
-        lookup = IfcGit.branches_by_hexsha(repo)
+        lookup = cls.branches_by_hexsha(repo)
         if item.hexsha in lookup:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
@@ -308,7 +340,7 @@ class IfcGit:
     @classmethod
     def is_valid_branch_name(cls, new_branch_name):
         """Check if a branch name is valid and doesn't conflict with existing branches"""
-        if not IfcGit.is_valid_ref_format(new_branch_name):
+        if not cls.is_valid_ref_format(new_branch_name):
             return False
         if new_branch_name in [branch.name for branch in IfcGitRepo.repo.branches]:
             return False
@@ -328,7 +360,7 @@ class IfcGit:
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
-        lookup = IfcGit.branches_by_hexsha(repo)
+        lookup = cls.branches_by_hexsha(repo)
         if item.hexsha in lookup:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
@@ -356,7 +388,8 @@ class IfcGit:
             props.commit_message = "Merged branch: " + props.display_branch
             props.display_branch = repo.active_branch.name
 
-            IfcGit.load_project(path_ifc)
+            cls.load_project(path_ifc)
+            cls.refresh_revision_list(path_ifc)
 
 
 class IfcGitRepo:
