@@ -178,7 +178,8 @@ def update_schedule_name(self, context):
 
 def update_has_underlay(self, context):
     update_layer(self, context, "HasUnderlay", self.has_underlay)
-    if self.has_underlay:
+    # making sure that camera is active
+    if self.has_underlay and (context.active_object and context.active_object.data == self.id_data):
         bpy.ops.bim.reload_drawing_styles()
         bpy.ops.bim.activate_drawing_style()
 
