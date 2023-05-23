@@ -87,9 +87,27 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+        op_status, error_message = is_valid_roof_footprint(bm)
+        if error_message:
+            self.report(op_status, error_message)
+            return {"CANCELLED"}
+
         generate_hiped_roof_bmesh(bm, self.mode, self.height, self.angle)
         tool.Blender.apply_bmesh(obj.data, bm)
         return {"FINISHED"}
+
+
+def is_valid_roof_footprint(bm):
+    # should be bmesh to support edit mode
+    bm.verts.ensure_lookup_table()
+    base_z = bm.verts[0].co.z
+    all_verts_same_level = all([float_is_zero(v.co.z - base_z) for v in bm.verts[1:]])
+    if not all_verts_same_level:
+        return (
+            {"ERROR"},
+            "\nAll roof footprint vertices should have same Z-level.\nCurrently Z-level doesn't completely match",
+        )
+    return ({"FINISHED"}, "")
 
 
 def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutate_current_bmesh=True):
@@ -584,6 +602,11 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
             # copying to make sure not to mutate the edit mode bmesh
             bm = tool.Blender.get_bmesh_for_mesh(obj.data)
             main_bm = bm.copy()
+            op_status, error_message = is_valid_roof_footprint(main_bm)
+            if error_message:
+                print("Error: %s" % error_message)
+                return main_bm
+
             main_bm.edges.layers.int.new("BBIM_preview")
 
             si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -637,6 +660,12 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMRoofProperties
 
+        bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+        op_status, error_message = is_valid_roof_footprint(bm)
+        if error_message:
+            self.report(op_status, error_message)
+            return {"CANCELLED"}
+
         roof_data = props.get_general_kwargs()
         path_data = get_path_data(obj)
         roof_data["path_data"] = path_data
@@ -646,6 +675,7 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         update_bbim_roof_pset(element, roof_data)
         refresh()  # RoofData has to be updated before run update_roof_modifier_bmesh
         update_roof_modifier_bmesh(context)
+
         update_roof_modifier_ifc_data(context)
         if bpy.context.object.mode == "EDIT":
             bpy.ops.object.mode_set(mode="OBJECT")
