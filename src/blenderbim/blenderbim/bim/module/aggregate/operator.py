@@ -43,13 +43,17 @@ class BIM_OT_assign_object(bpy.types.Operator, Operator):
     related_object: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.assign_object(
-            tool.Ifc,
-            tool.Aggregate,
-            tool.Collector,
-            relating_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object)),
-            related_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.related_object)),
-        )
+        for obj in bpy.context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            core.assign_object(
+                tool.Ifc,
+                tool.Aggregate,
+                tool.Collector,
+                relating_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object)),
+                related_obj=obj,
+            )
 
 
 class BIM_OT_unassign_object(bpy.types.Operator, Operator):
