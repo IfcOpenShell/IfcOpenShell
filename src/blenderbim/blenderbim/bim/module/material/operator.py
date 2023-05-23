@@ -189,17 +189,23 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
                 material=material,
             )
             assigned_material = ifcopenshell.util.element.get_material(element)
-            if assigned_material.is_a("IfcMaterialLayerSet"):
-                if not assigned_material.MaterialLayers:
+            if assigned_material.is_a() in ("IfcMaterialLayerSet", "IfcMaterialLayerSetUsage"):
+                if assigned_material.is_a("IfcMaterialLayerSet"):
+                    layer_set = assigned_material
+                else:
+                    layer_set = assigned_material.ForLayerSet
+
+                if not layer_set.MaterialLayers:
                     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
                     layer = ifcopenshell.api.run(
                         "material.add_layer",
                         tool.Ifc.get(),
-                        layer_set=assigned_material,
-                        material=tool.Ifc.get().by_type("IfcMaterial")[0],
+                        layer_set=layer_set,
+                        material=material,
                     )
                     thickness = 0.1  # Arbitrary metric thickness for now
                     layer.LayerThickness = thickness / unit_scale
+
             elif assigned_material.is_a("IfcMaterialProfileSet"):
                 if not assigned_material.MaterialProfiles:
                     named_profiles = [p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName]
@@ -368,7 +374,9 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.layer)):
             if inverse.is_a("IfcMaterialLayerSet") and len(inverse.MaterialLayers) == 1:
-                self.report({"ERROR"}, "Cannot remove material layer - IfcMaterialLayerSet should alawys have atleast 1 layer")
+                self.report(
+                    {"ERROR"}, "Cannot remove material layer - IfcMaterialLayerSet should alawys have atleast 1 layer"
+                )
                 return {"ERROR"}
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=tool.Ifc.get().by_id(self.layer))
 
