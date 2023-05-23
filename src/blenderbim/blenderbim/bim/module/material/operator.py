@@ -330,7 +330,7 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
+        layer = ifcopenshell.api.run(
             "material.add_layer",
             self.file,
             **{
@@ -338,6 +338,10 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
                 "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
             },
         )
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        thickness = 0.1 # Arbitrary metric thickness for now
+        layer.LayerThickness = thickness / unit_scale
 
 
 class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
