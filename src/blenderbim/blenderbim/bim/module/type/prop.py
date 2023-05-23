@@ -52,15 +52,17 @@ def update_relating_type_class(self, context):
 
 
 def update_relating_type_from_object(self, context):
-    if self.relating_type_object is None:
+    obj = self.relating_type_object
+    if obj is None:
         return
-    element = tool.Ifc.get_entity(self.relating_type_object)
+    element = tool.Ifc.get_entity(obj)
     if not element:
         return
     element_type = ifcopenshell.util.element.get_type(element)
     if not element_type:
         return
     self.relating_type = str(element_type.id())
+    bpy.ops.bim.assign_type()
 
 
 def is_object_class_applicable(self, obj):
