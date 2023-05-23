@@ -137,7 +137,7 @@ class CommitChanges(bpy.types.Operator):
 class AddTag(bpy.types.Operator):
     """Tag selected revision"""
 
-    bl_label = "Add tag"
+    bl_label = "Tag selected revision"
     bl_idname = "ifcgit.add_tag"
     bl_options = {"REGISTER"}
 
@@ -260,7 +260,7 @@ class Push(bpy.types.Operator):
         props = context.scene.IfcGitProperties
         repo = IfcGitData.data["repo"]
         remote = repo.remotes[props.select_remote]
-        remote.push()
+        remote.push(refspec=IfcGitData.data["repo"].active_branch.name)
         return {"FINISHED"}
 
 
