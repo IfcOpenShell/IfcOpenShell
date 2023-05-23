@@ -16,10 +16,24 @@ class IfcGit:
     @classmethod
     def init_repo(cls, path_dir):
         IfcGitRepo.repo = git.Repo.init(path_dir)
+        autocrlf = "input"
+        if os.name == "nt":
+            autocrlf = "true"
+        IfcGitRepo.repo.config_writer().set_value("core", "autocrlf", autocrlf)
+        cls.config_info_attributes(IfcGitRepo.repo)
 
     @classmethod
     def clone_repo(cls, remote_url, local_folder):
-        IfcGitRepo.repo = git.Repo.clone_from(remote_url, local_folder)
+        autocrlf = "input"
+        if os.name == "nt":
+            autocrlf = "true"
+        IfcGitRepo.repo = git.Repo.clone_from(
+            url=remote_url,
+            to_path=local_folder,
+            allow_unsafe_options=True,
+            multi_options=["--config core.autocrlf=" + autocrlf],
+        )
+        cls.config_info_attributes(IfcGitRepo.repo)
         return IfcGitRepo.repo
 
     @classmethod
@@ -354,6 +368,15 @@ class IfcGit:
             config_writer = IfcGitRepo.repo.config_writer()
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
+
+    @classmethod
+    def config_info_attributes(cls, repo):
+        """Set IFC files as text in .git/info/attributes"""
+        path_attributes = os.path.join(repo.git_dir, "info", "attributes")
+        if not os.path.exists(path_attributes):
+            with open(path_attributes, "w") as f:
+                f.write("*.ifc text\n")
+                f.write("*.IFC text")
 
     @classmethod
     def execute_merge(cls, path_ifc, operator):
