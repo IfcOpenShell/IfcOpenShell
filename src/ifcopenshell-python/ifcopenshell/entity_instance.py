@@ -132,6 +132,13 @@ class entity_instance(object):
         """
         self.wrapped_data.file = None
 
+    @property
+    def file(self):
+        # ugh circular imports, name collisions
+        from . import file
+
+        return file.file.from_pointer(self.wrapped_data.file_pointer())
+
     def __getattr__(self, name):
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)

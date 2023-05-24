@@ -175,6 +175,9 @@ class Transaction:
                 pass
 
 
+file_dict = {}
+
+
 class file(object):
     """Base class for containing IFC files.
 
@@ -203,6 +206,8 @@ class file(object):
         self.history = []
         self.future = []
         self.transaction = None
+
+        file_dict[self.file_pointer()] = self
 
     def set_history_size(self, size):
         self.history_size = size
@@ -487,10 +492,18 @@ class file(object):
             unzipped_path = path.with_suffix(format)
             path.rename(unzipped_path)
             with zipfile.ZipFile(path, "w") as zip_file:
-                zip_file.write(unzipped_path, unzipped_path.name, compress_type=zipfile.ZIP_DEFLATED)
+                zip_file.write(
+                    unzipped_path,
+                    unzipped_path.name,
+                    compress_type=zipfile.ZIP_DEFLATED,
+                )
                 unzipped_path.unlink()
         return
 
     @staticmethod
     def from_string(s):
         return file(ifcopenshell_wrapper.read(s))
+
+    @staticmethod
+    def from_pointer(v):
+        return file_dict.get(v)
