@@ -176,6 +176,7 @@ class BIMArrayProperties(PropertyGroup):
 
 
 class BIMStairProperties(PropertyGroup):
+    non_si_units_props = ("is_editing", "number_of_treads", "has_top_nib", "stair_type")
     stair_types = (
         ("CONCRETE", "Concrete", ""),
         ("WOOD/STEEL", "Wood / Steel", ""),
@@ -184,17 +185,17 @@ class BIMStairProperties(PropertyGroup):
 
     stair_added_previously: bpy.props.BoolProperty(default=False)
     is_editing: bpy.props.IntProperty(default=-1)
-    width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01)
-    height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01)
+    width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
+    height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01, subtype="DISTANCE")
     number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
-    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01)
-    tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01)
-    base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0)
-    top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0)
+    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01, subtype="DISTANCE")
+    tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01, subtype="DISTANCE")
+    base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0, subtype="DISTANCE")
+    top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0, subtype="DISTANCE")
     has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
     stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
 
-    def get_props_kwargs(self):
+    def get_props_kwargs(self, convert_to_project_units=False):
         stair_kwargs = {
             "stair_type": self.stair_type,
             "width": self.width,
@@ -204,26 +205,41 @@ class BIMStairProperties(PropertyGroup):
         }
 
         if self.stair_type == "CONCRETE":
-            stair_kwargs.update(
-                {
-                    "base_slab_depth": self.base_slab_depth,
-                    "top_slab_depth": self.top_slab_depth,
-                    "has_top_nib": self.has_top_nib,
-                    "tread_depth": self.tread_depth,
-                }
-            )
-            return stair_kwargs
+            concrete_props = {
+                "base_slab_depth": self.base_slab_depth,
+                "top_slab_depth": self.top_slab_depth,
+                "has_top_nib": self.has_top_nib,
+                "tread_depth": self.tread_depth,
+            }
+            stair_kwargs.update(concrete_props)
 
         elif self.stair_type == "WOOD/STEEL":
-            stair_kwargs.update(
-                {
-                    "tread_depth": self.tread_depth,
-                }
-            )
-            return stair_kwargs
+            wood_steel_props = {
+                "tread_depth": self.tread_depth,
+            }
+            stair_kwargs.update(wood_steel_props)
 
         elif self.stair_type == "GENERIC":
+            pass
+
+        if not convert_to_project_units:
             return stair_kwargs
+
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for prop_name in stair_kwargs:
+            if prop_name in self.non_si_units_props:
+                continue
+            prop_value = stair_kwargs[prop_name]
+            stair_kwargs[prop_name] = prop_value / si_conversion
+        return stair_kwargs
+
+    def set_props_kwargs_from_ifc_data(self, kwargs):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for prop_name in kwargs:
+            prop_value = kwargs[prop_name]
+            if prop_name not in self.non_si_units_props:
+                prop_value = prop_value * si_conversion
+            setattr(self, prop_name, prop_value)
 
 
 class BIMSverchokProperties(PropertyGroup):
