@@ -248,7 +248,6 @@ class EditPset(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        objects = tool.Blender.get_selected_objects()
         props = get_pset_props(context, self.obj, self.obj_type)
         ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
         element = tool.Ifc.get().by_id(ifc_definition_id)
@@ -276,40 +275,28 @@ class EditPset(bpy.types.Operator, Operator):
                         e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected
                     ]
 
-
-        for obj in objects:
-            element = blenderbim.tool.Ifc.get_entity(obj)
-            pset_list = element.IsDefinedBy
-            copy_of_properties = properties.copy()
-
-            for rel in pset_list:
-                rel_name = rel.RelatingPropertyDefinition.Name
-                if rel.is_a("IfcRelDefinesByProperties") and rel_name == props.active_pset_name:
-                    rel_ID = rel.RelatingPropertyDefinition.id()
-                    rel_pset = rel.RelatingPropertyDefinition
-                    if rel_pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
-                        ifcopenshell.api.run(
-                            "pset.edit_pset",
-                            self.file,
-                            pset=rel_pset,
-                            name=props.active_pset_name,
-                            properties=copy_of_properties,
-                            pset_template=blenderbim.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
-                        )
-                    else:
-                        for key, value in copy_of_properties.items():
-                            if isinstance(value, float):
-                                copy_of_properties[key] = round(value, 4)
-                        ifcopenshell.api.run(
-                            "pset.edit_qto",
-                            self.file,
-                            qto=rel_pset,
-                            name=props.active_pset_name,
-                            properties=copy_of_properties,
-                        )
-                        if tool.Cost.has_schedules():
-                            tool.Cost.update_cost_items(pset=rel_pset)
-
+        if pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                self.file,
+                pset=pset,
+                name=props.active_pset_name,
+                properties=properties,
+                pset_template=blenderbim.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
+            )
+        else:
+            for key, value in properties.items():
+                if isinstance(value, float):
+                    properties[key] = round(value, 4)
+            ifcopenshell.api.run(
+                "pset.edit_qto",
+                self.file,
+                qto=pset,
+                name=props.active_pset_name,
+                properties=properties,
+            )
+            if tool.Cost.has_schedules():
+                tool.Cost.update_cost_items(pset=pset)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
         tool.Blender.update_viewport()
 
