@@ -45,7 +45,7 @@ except:
 class IfcAttributeSetter:
     @staticmethod
     def set_element_key(ifc_file, element, key, value):
-        if key == "type" and element.is_a() != value:
+        if key == "class" and element.is_a() != value:
             return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
         if hasattr(element, key):
             setattr(element, key, value)
