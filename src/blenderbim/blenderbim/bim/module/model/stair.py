@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty, BoolProperty
+from bpy.props import FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 import bmesh
@@ -28,7 +28,6 @@ import ifcopenshell
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
 import blenderbim
 import blenderbim.tool as tool
-from blenderbim.bim.helper import convert_property_group_from_si
 
 from mathutils import Vector
 from pprint import pprint
