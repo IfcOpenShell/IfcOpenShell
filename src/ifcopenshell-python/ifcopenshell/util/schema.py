@@ -68,7 +68,7 @@ def reassign_class(ifc_file, element, new_class):
     try:
         declaration = schema.declaration_by_name(new_class)
     except:
-        print(f"Class of {element} could not be changed to {new_class} as the class does not exist")
+        raise Exception(f"Class of {element} could not be changed to {new_class} as the class does not exist")
 
     info = element.get_info()
 
