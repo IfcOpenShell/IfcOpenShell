@@ -473,47 +473,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-:tbb
-set DEPENDENCY_NAME=tbb
-set DEPENDENCY_DIR=%DEPS_DIR%\tbb
-call :GitCloneAndCheckoutRevision https://github.com/oneapi-src/oneTBB.git "%DEPENDENCY_DIR%" v2021.9.0
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-:: git reset --hard
-:: git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\tbb"    ^
-               -DTBB_TEST=OFF
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\oneTBB.sln" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-:usd
-set DEPENDENCY_NAME=usd
-set DEPENDENCY_DIR=%DEPS_DIR%\usd
-call :GitCloneAndCheckoutRevision https://github.com/PixarAnimationStudios/USD.git "%DEPENDENCY_DIR%" v23.05
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-:: git reset --hard
-:: git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\usd"    ^
-               -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
-               -DTBB_ROOT_DIR="%INSTALL_DIR%\tbb"                ^
-               -DPXR_ENABLE_PYTHON_SUPPORT=FALSE              ^
-               -DPXR_ENABLE_GL_SUPPORT=FALSE                  ^
-               -DPXR_BUILD_IMAGING=FALSE                  ^
-               -DPXR_BUILD_TUTORIALS=FALSE                  ^
-               -DPXR_BUILD_EXAMPLES=FALSE                  ^
-               -DPXR_BUILD_USD_TOOLS=FALSE                  ^
-               -DPXR_BUILD_TESTS=FALSE                  ^
-               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\USD.sln" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
 :Successful
 echo.
 call "%~dp0\utils\cecho.cmd" 0 10 "%PROJECT_NAME% dependencies built."

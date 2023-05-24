@@ -90,8 +90,6 @@ HDF5_VERSION = "1.12.1"
 GMP_VERSION = "6.2.1"
 MPFR_VERSION = "3.1.6" # latest is 4.1.0
 CGAL_VERSION = "5.3"
-USD_VERSION = "23.05"
-TBB_VERSION = "2021.9.0"
 
 # binaries
 cp = "cp"
@@ -203,7 +201,6 @@ dependency_tree = {
     'hdf5': (),
     'cgal': (),
     'freetype': (),
-    'usd': ('boost', 'oneTBB')
 }
 
 def v(dep):
@@ -744,42 +741,7 @@ if "cgal" in targets:
         download_tool=download_tool_git,
         revision=f"v{CGAL_VERSION}"
     )
-
-if "usd" in targets:
-    build_dependency(
-        name=f"oneTBB-{TBB_VERSION}",
-        mode="cmake",
-        build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/tbb-{TBB_VERSION}",
-            f"-DTBB_TEST=OFF"
-        ],
-        download_url="https://github.com/oneapi-src/oneTBB",
-        download_name="oneTBB",
-        download_tool=download_tool_git,
-        revision=f"v{TBB_VERSION}"
-    )
-
-    build_dependency(
-        name=f"usd-{USD_VERSION}",
-        mode="cmake",
-        build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/usd-{USD_VERSION}",
-            f"-DBOOST_ROOT={DEPS_DIR}/install/boost-{BOOST_VERSION}",
-            f"-DTBB_ROOT_DIR={DEPS_DIR}/install/tbb-{TBB_VERSION}",
-            f"-DPXR_ENABLE_PYTHON_SUPPORT=FALSE",
-            f"-DPXR_ENABLE_GL_SUPPORT=FALSE",
-            f"-DPXR_BUILD_IMAGING=FALSE",
-            f"-DPXR_BUILD_TUTORIALS=FALSE",
-            f"-DPXR_BUILD_EXAMPLES=FALSE",
-            f"-DPXR_BUILD_USD_TOOLS=FALSE",
-            f"-DPXR_BUILD_TESTS=FALSE"
-        ],
-        download_url="https://github.com/PixarAnimationStudios/USD",
-        download_name="USD",
-        download_tool=download_tool_git,
-        revision=f"v{USD_VERSION}"
-    )
-
+    
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -861,13 +823,6 @@ if "hdf5" in targets:
     ])
 else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
-
-if "usd" in targets:
-    cmake_args.extend([
-        "-DUSD_SUPPORT="               "On",
-        "-DUSD_INCLUDE_DIR="           f"{DEPS_DIR}/install/usd-{USD_VERSION}/include",
-        "-DUSD_LIBRARY_DIR="           f"{DEPS_DIR}/install/usd-{USD_VERSION}/lib"
-    ])
 
 if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets):
     logger.info("\rConfiguring executables...")
