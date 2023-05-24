@@ -155,9 +155,9 @@ class BIMArrayProperties(PropertyGroup):
         default=-1, description="Currently edited array index. -1 if not in array editing mode."
     )
     count: bpy.props.IntProperty(name="Count", default=0, min=0)
-    x: bpy.props.FloatProperty(name="X", default=0)
-    y: bpy.props.FloatProperty(name="Y", default=0)
-    z: bpy.props.FloatProperty(name="Z", default=0)
+    x: bpy.props.FloatProperty(name="X", default=0, subtype="DISTANCE")
+    y: bpy.props.FloatProperty(name="Y", default=0, subtype="DISTANCE")
+    z: bpy.props.FloatProperty(name="Z", default=0, subtype="DISTANCE")
     use_local_space: bpy.props.BoolProperty(
         name="Use Local Space",
         description="Use local space for array items offset instead of world space",
