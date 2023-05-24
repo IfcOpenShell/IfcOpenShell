@@ -28,6 +28,7 @@ import blenderbim.core.geometry as geometry
 from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
+import collections
 
 
 class Model(blenderbim.core.tool.Model):
@@ -42,6 +43,33 @@ class Model(blenderbim.core.tool.Model):
         if isinstance(value, (tuple, list)):
             return [v * cls.unit_scale for v in value]
         return value * cls.unit_scale
+
+    @classmethod
+    def convert_data_to_project_units(cls, data, non_si_props=[]):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for prop_name in data:
+            if prop_name in non_si_props:
+                continue
+            prop_value = data[prop_name]
+            if isinstance(prop_value, collections.abc.Iterable):
+                data[prop_name] = [v / si_conversion for v in prop_value]
+            else:
+                data[prop_name] = prop_value / si_conversion
+        return data
+
+    @classmethod
+    def convert_data_to_si_units(cls, data, non_si_props=[]):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for prop_name in data:
+            if prop_name in non_si_props:
+                continue
+            prop_value = data[prop_name]
+            print(prop_name, prop_value)
+            if isinstance(prop_value, collections.abc.Iterable):
+                data[prop_name] = [v * si_conversion for v in prop_value]
+            else:
+                data[prop_name] = prop_value * si_conversion
+        return data
 
     @classmethod
     def export_curve(cls, position, edge_indices, points=None):
@@ -147,11 +175,13 @@ class Model(blenderbim.core.tool.Model):
         cls.bm.edges.ensure_lookup_table()
 
         surface = tool.Ifc.get().createIfcCurveBoundedPlane()
-        surface.BasisSurface = tool.Ifc.get().createIfcPlane(tool.Ifc.get().createIfcAxis2Placement3D(
-            tool.Ifc.get().createIfcCartesianPoint([o / cls.unit_scale for o in p1]),
-            tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
-            tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
-        ))
+        surface.BasisSurface = tool.Ifc.get().createIfcPlane(
+            tool.Ifc.get().createIfcAxis2Placement3D(
+                tool.Ifc.get().createIfcCartesianPoint([o / cls.unit_scale for o in p1]),
+                tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
+                tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
+            )
+        )
 
         if tool.Ifc.get().schema != "IFC2X3":
             cls.points = cls.export_points(position, indices["points"])
