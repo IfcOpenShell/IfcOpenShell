@@ -52,10 +52,9 @@ def update_relating_type_class(self, context):
 
 
 def update_relating_type_from_object(self, context):
-    obj = self.relating_type_object
-    if obj is None:
+    if self.relating_type_object is None:
         return
-    element = tool.Ifc.get_entity(obj)
+    element = tool.Ifc.get_entity(self.relating_type_object)
     if not element:
         return
     element_type = ifcopenshell.util.element.get_type(element)
@@ -74,7 +73,7 @@ def is_object_class_applicable(self, obj):
     element_type = ifcopenshell.util.element.get_type(element)
     if element_type is None:
         return False
-    return str(element_type.is_a()) in [r_t_c[0] for r_t_c in TypeData.data["relating_type_classes"]]
+    return str(element_type.is_a()) in (r_t_c[0] for r_t_c in TypeData.data["relating_type_classes"])
 
 
 class BIMTypeProperties(PropertyGroup):
