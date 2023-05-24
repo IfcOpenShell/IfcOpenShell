@@ -47,13 +47,18 @@ class BIM_OT_assign_object(bpy.types.Operator, Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            core.assign_object(
+            relating_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object))
+            result = core.assign_object(
                 tool.Ifc,
                 tool.Aggregate,
                 tool.Collector,
-                relating_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object)),
+                relating_obj=relating_obj,
                 related_obj=obj,
             )
+            if not result:
+                self.report({"ERROR"}, f"Objects {relating_obj} and {obj} cannot be aggregated")
+
+        return {"FINISHED"}
 
 
 class BIM_OT_unassign_object(bpy.types.Operator, Operator):
