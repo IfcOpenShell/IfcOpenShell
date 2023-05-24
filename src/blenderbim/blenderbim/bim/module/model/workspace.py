@@ -323,15 +323,15 @@ class BimToolUI:
     def draw_basic_bim_tool_interface(cls):
         cls.draw_type_selection_interface()
 
-        if cls.props.ifc_class:
-            box = cls.layout.box()
-            if AuthoringData.data["type_thumbnail"]:
-                box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
-            else:
-                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                op.ifc_class = cls.props.ifc_class
-
         if AuthoringData.data["ifc_classes"]:
+            if cls.props.ifc_class:
+                box = cls.layout.box()
+                if AuthoringData.data["type_thumbnail"]:
+                    box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
+                else:
+                    op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
+                    op.ifc_class = cls.props.ifc_class
+
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
