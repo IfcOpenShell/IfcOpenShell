@@ -44,9 +44,9 @@ from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
 import blenderbim.bim.export_ifc
 from lxml import etree
-from mathutils import Vector
+from mathutils import Vector, Color
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal, RASTER_STYLE_PROPERTIES_EXCLUDE
 from blenderbim.bim.ifc import IfcStore
 from pathlib import Path
 
@@ -1522,14 +1522,38 @@ class SaveDrawingStyle(bpy.types.Operator, Operator):
         space = self.get_view_3d(context)  # Do not remove. It is used later in eval
         scene = context.scene
         style = {}
-        for prop in RasterStyleProperty:
-            value = eval(prop.value)
+        eval_namespace = {
+            'context': context,
+            'scene': scene,
+            'space': space
+        }
+
+        def add_prop_to_style(prop_path, context, scene, space):
+            value = eval(prop_path)
             if not isinstance(value, str):
                 try:
                     value = tuple(value)
                 except TypeError:
                     pass
-            style[prop.value] = value
+            style[prop_path] = value
+
+        for prop in RasterStyleProperty:
+            if prop.name.startswith("EVAL_PROP"):
+                prop_path = prop.value
+                add_prop_to_style(prop_path, **eval_namespace)
+            else:
+                props_source_path = prop.value
+                props_source = eval(props_source_path)
+                for prop_name in dir(props_source):
+                    if prop_name.startswith("__"): 
+                        continue 
+
+                    prop_path = f"{props_source_path}.{prop_name}"
+                    prop_value = eval(prop_path)
+                    if not isinstance(prop_value, (int, float, bool, str, Color, Vector)) or props_source.is_property_readonly(prop_name) or prop_path in RASTER_STYLE_PROPERTIES_EXCLUDE:
+                        continue
+
+                    add_prop_to_style(prop_path, **eval_namespace)
 
         if self.index:
             index = int(self.index)
