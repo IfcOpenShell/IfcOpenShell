@@ -16,22 +16,13 @@ class IfcGit:
     @classmethod
     def init_repo(cls, path_dir):
         IfcGitRepo.repo = git.Repo.init(path_dir)
-        autocrlf = "input"
-        if os.name == "nt":
-            autocrlf = "true"
-        IfcGitRepo.repo.config_writer().set_value("core", "autocrlf", autocrlf)
         cls.config_info_attributes(IfcGitRepo.repo)
 
     @classmethod
     def clone_repo(cls, remote_url, local_folder):
-        autocrlf = "input"
-        if os.name == "nt":
-            autocrlf = "true"
         IfcGitRepo.repo = git.Repo.clone_from(
             url=remote_url,
             to_path=local_folder,
-            allow_unsafe_options=True,
-            multi_options=["--config core.autocrlf=" + autocrlf],
         )
         cls.config_info_attributes(IfcGitRepo.repo)
         return IfcGitRepo.repo
@@ -78,6 +69,8 @@ class IfcGit:
 
     @classmethod
     def add_file_to_repo(cls, repo, path_file):
+        if os.name == "nt":
+            cls.dos2unix(path_file)
         repo.index.add(path_file)
         repo.index.commit(message="Added " + os.path.relpath(path_file, repo.working_dir))
         bpy.ops.ifcgit.refresh()
@@ -90,6 +83,8 @@ class IfcGit:
     def git_commit(cls, path_file):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
+        if os.name == "nt":
+            cls.dos2unix(path_file)
         repo.index.add(path_file)
         repo.index.commit(message=props.commit_message)
         props.commit_message = ""
@@ -375,8 +370,16 @@ class IfcGit:
         path_attributes = os.path.join(repo.git_dir, "info", "attributes")
         if not os.path.exists(path_attributes):
             with open(path_attributes, "w") as f:
-                f.write("*.ifc text\n")
-                f.write("*.IFC text")
+                # attributes patterns are case-insensitive
+                f.write("*.ifc text")
+
+    @classmethod
+    def dos2unix(cls, path_file):
+        with open(path_file, "rb") as infile:
+            content = infile.read()
+        with open(path_file, "wb") as output:
+            for line in content.splitlines():
+                output.write(line + b"\n")
 
     @classmethod
     def execute_merge(cls, path_ifc, operator):
