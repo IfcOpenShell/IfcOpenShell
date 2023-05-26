@@ -74,6 +74,21 @@ Scenario: Remove drawing - via object deletion
     When I press "bim.override_object_delete"
     Then the collection "IfcGroup/PLAN_VIEW" does not exist
 
+Scenario: Remove drawing - deleting active drawing
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the variable "wall1" is "IfcStore.get_file().by_type('IfcWall')[-1].id()"
+    And I press "bim.add_drawing"
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    And I set "scene.DocProperties.active_drawing_index" to "0"
+    And I press "bim.activate_drawing(drawing={drawing})"
+    And the object "IfcAnnotation/PLAN_VIEW" is selected
+    When I press "bim.override_object_delete"
+    Then the collection "IfcGroup/PLAN_VIEW" does not exist
+
 Scenario: Reproducing freeze on generating drawing - Issue 3169
     Given an empty IFC project
     And I add a cube

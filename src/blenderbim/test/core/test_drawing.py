@@ -345,6 +345,8 @@ class TestDuplicateDrawing:
 
 class TestRemoveDrawing:
     def test_run(self, ifc, drawing):
+        drawing.is_active_drawing("drawing").should_be_called().will_return(True)
+        drawing.run_drawing_activate_model().should_be_called()
         drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
         drawing.get_group_elements("group").should_be_called().will_return("elements")

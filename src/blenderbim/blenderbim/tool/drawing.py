@@ -1443,6 +1443,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         return True if (camera and camera.data.type == "ORTHO") else False
 
     @classmethod
+    def is_active_drawing(cls, drawing):
+        return drawing.id() == bpy.context.scene.DocProperties.active_drawing_id
+
+    @classmethod
+    def run_drawing_activate_model(cls):
+        bpy.ops.bim.activate_model()
+
+    @classmethod
     def activate_drawing(cls, camera):
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         is_local_view = area.spaces[0].local_view is not None
