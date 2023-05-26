@@ -273,9 +273,8 @@ class Drawing:
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
-    def get_default_shading_style(cls): pass
-    def setup_shading_styles_path(cls, resource_path): pass
     def get_default_layout_path(cls, identification, name): pass
+    def get_default_shading_style(cls): pass
     def get_default_sheet_path(cls, identification, name): pass
     def get_default_sheet_path(cls, identification, name): pass
     def get_default_titleblock_path(cls, name): pass
@@ -301,17 +300,20 @@ class Drawing:
     def import_schedules(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
+    def is_active_drawing(cls, drawing): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
     def move_file(cls, src, dest): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def remove_literal_from_annotation(cls, obj, literal): pass
+    def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, group, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
+    def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
