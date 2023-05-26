@@ -58,6 +58,8 @@ class Facet:
         return results
 
     def parse(self, xml):
+        setattr(self, "minOccurs", 1)
+        setattr(self, "maxOccurs", 1)
         for name, value in xml.items():
             name = name.replace("@", "")
             if isinstance(value, dict) and "simpleValue" in value.keys():
@@ -893,7 +895,7 @@ class ClassificationResult(Result):
             return "The entity has no classification"
         elif self.reason["type"] == "VALUE":
             return f"The references \"{str(self.reason['actual'])}\" do not match the requirements"
-        elif self.reason["type"] == "system":
+        elif self.reason["type"] == "SYSTEM":
             return f"The systems \"{str(self.reason['actual'])}\" do not match the requirements"
         elif self.reason["type"] == "PROHIBITED":
             return f"The classification should not have met the requirement"
