@@ -66,6 +66,11 @@ def get_z(geometry):
     return max(z_values) - min(z_values)
 
 
+def get_shape_matrix(shape):
+    m = shape.transformation.matrix.data
+    return np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+
+
 def get_bbox_centroid(geometry):
     x_values = [geometry.verts[i] for i in range(0, len(geometry.verts), 3)]
     y_values = [geometry.verts[i + 1] for i in range(0, len(geometry.verts), 3)]
@@ -89,9 +94,7 @@ def get_element_bbox_centroid(element, geometry):
 
 def get_shape_bbox_centroid(shape, geometry):
     centroid = get_bbox_centroid(geometry)
-    m = shape.transformation.matrix.data
-    mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
-    return (mat @ np.array([*centroid, 1.0]))[0:3]
+    return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
 
 
 def get_vertices(geometry):
@@ -110,14 +113,15 @@ def get_faces(geometry):
 
 
 def get_shape_vertices(shape, geometry):
-    m = shape.transformation.matrix.data
-    mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+    verts = get_vertices(geometry)
+    mat = get_shape_matrix(shape)
     return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
 
 
 def get_element_vertices(element, geometry):
+    verts = get_vertices(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
-        return get_shape_vertices(geometry)
+        return verts
     mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
     return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
 
