@@ -155,13 +155,7 @@ class BIM_PT_object_material(Panel):
 
         row = self.layout.row(align=True)
         prop_with_search(row, self.props, "material_type", text="")
-        if self.props.material_type in (
-            "IfcMaterial",
-            "IfcMaterialList",
-            "IfcMaterialLayerSet",
-            "IfcMaterialLayerSetUsage",
-        ):
-            prop_with_search(row, self.props, "material", text="")
+        prop_with_search(row, self.props, "material", text="")
         row.operator("bim.assign_material", icon="ADD", text="")
 
     def draw_material_ui(self):
