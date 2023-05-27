@@ -343,7 +343,7 @@ class BaseDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_lines(self, context, obj, vertices, indices, color=None):
+    def draw_lines(self, context, obj, vertices, indices, color=None, line_width=1.0):
         """`verts` should be in winspace with `(0,0,0)` in the screen left bottom corner, not in the center"""
         region = context.region
         if not color:
@@ -352,7 +352,7 @@ class BaseDecorator:
         self.line_shader.bind()
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (region.width, region.height))
-        self.line_shader.uniform_float("lineWidth", 1.0)
+        self.line_shader.uniform_float("lineWidth", line_width)
         gpu.state.blend_set("ALPHA")
         self.draw_batch("LINES", vertices, color, indices)
 
@@ -1008,6 +1008,19 @@ class MiscDecorator(BaseDecorator):
             verts, idxs = self.get_mesh_geom(obj)
         winspace_verts = worldspace_to_winspace(verts, context)
         self.draw_lines(context, obj, winspace_verts, idxs)
+
+
+class RevisionCloudDecorator(BaseDecorator):
+    objecttype = "REVISION_CLOUD"
+
+    def decorate(self, context, obj):
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
+        winspace_verts = worldspace_to_winspace(verts, context)
+        # TODO: draw revision clouds inside viewport?
+        self.draw_lines(context, obj, winspace_verts, idxs, color=(1, 0, 0, 1), line_width=2)
 
 
 # TODO: custom frag shader to support dashed lines?
@@ -1883,6 +1896,7 @@ class DecorationsHandler:
         PlanLevelDecorator,
         SectionLevelDecorator,
         StairDecorator,
+        RevisionCloudDecorator,
         BreakDecorator,
         SectionDecorator,
         ElevationDecorator,

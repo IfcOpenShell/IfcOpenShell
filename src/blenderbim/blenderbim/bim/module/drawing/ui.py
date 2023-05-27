@@ -27,6 +27,7 @@ from blenderbim.bim.module.drawing.data import (
     DrawingsData,
     DecoratorData,
 )
+from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class BIM_PT_camera(Panel):
@@ -471,55 +472,55 @@ class BIM_PT_annotation_utilities(Panel):
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Dimension", icon="FIXED_SIZE")
         op.object_type = "DIMENSION"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
         op = row.operator("bim.add_annotation", text="Angle", icon="DRIVER_ROTATIONAL_DIFFERENCE")
         op.object_type = "ANGLE"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Radius", icon="FORWARD")
         op.object_type = "RADIUS"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
         op = row.operator("bim.add_annotation", text="Diameter", icon="ARROW_LEFTRIGHT")
         op.object_type = "DIAMETER"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Text", icon="SMALL_CAPS")
         op.object_type = "TEXT"
-        op.data_type = "empty"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
         op = row.operator("bim.add_annotation", text="Leader", icon="TRACKING_BACKWARDS")
         op.object_type = "TEXT_LEADER"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Stair Arrow", icon="SCREEN_BACK")
         op.object_type = "STAIR_ARROW"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
         op = row.operator("bim.add_annotation", text="Hidden", icon="CON_TRACKTO")
         op.object_type = "HIDDEN_LINE"
-        op.data_type = "mesh"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Level (Plan)", icon="SORTBYEXT")
         op.object_type = "PLAN_LEVEL"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
         op = row.operator("bim.add_annotation", text="Level (Section)", icon="TRIA_DOWN")
         op.object_type = "SECTION_LEVEL"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Breakline", icon="FCURVE")
         op.object_type = "BREAKLINE"
-        op.data_type = "mesh"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
         op = row.operator("bim.add_annotation", text="Line", icon="MESH_MONKEY")
         op.object_type = "LINEWORK"
-        op.data_type = "mesh"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Batting", icon="FORCE_FORCE")
         op.object_type = "BATTING"
-        op.data_type = "mesh"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
         op.description = "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set"
         op = row.operator("bim.add_annotation", text="Fill Area", icon="NODE_TEXTURE")
         op.object_type = "FILL_AREA"
@@ -527,7 +528,10 @@ class BIM_PT_annotation_utilities(Panel):
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Fall", icon="SORT_ASC")
         op.object_type = "FALL"
-        op.data_type = "curve"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
+        op = row.operator("bim.add_annotation", text="Revision", icon="VOLUME_DATA")
+        op.object_type = "REVISION_CLOUD"
+        op.data_type = tool.Drawing.get_annotation_data_type(op.object_type)
 
         row = layout.row(align=True)
         row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")

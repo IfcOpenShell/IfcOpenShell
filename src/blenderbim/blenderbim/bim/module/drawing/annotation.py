@@ -20,6 +20,7 @@ import bpy
 import os
 import blenderbim.tool as tool
 from mathutils import Vector
+import bmesh
 
 
 class Annotator:
@@ -94,7 +95,7 @@ class Annotator:
         return obj
 
     @staticmethod
-    def add_plane_to_annotation(obj):
+    def add_plane_to_annotation(obj, remove_face=False):
         # default order = bot left, top left, bot right, top right
         # therefore we redefine the order
         face_verts = [0, 2, 3, 1]
@@ -104,7 +105,9 @@ class Annotator:
         bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
         new_verts = [bm.verts.new(v) for v in verts_local]
 
-        bm.faces.new([new_verts[i] for i in face_verts])
+        face = bm.faces.new([new_verts[i] for i in face_verts])
+        if remove_face:
+            bmesh.ops.delete(bm, geom=[face], context="FACES_ONLY")
         tool.Blender.apply_bmesh(obj.data, bm, obj)
         return obj
 

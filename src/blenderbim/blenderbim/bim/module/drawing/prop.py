@@ -274,11 +274,10 @@ class DrawingStyle(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=StrProperty)
 
 
-
 class RasterStyleProperty(enum.Enum):
     # EVAL_PROP_ props will be evaluated explicitly
     EVAL_PROP_WORLD_COLOR = "bpy.data.worlds[0].color"
-    
+
     # those props attributes used as a source for shading style properties
     RENDER = "scene.render"
     VIEW_SETTINGS = "scene.view_settings"
@@ -487,6 +486,7 @@ ANNOTATION_TYPES_DATA = {
     "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
     "LINEWORK":      ("Line",             "", "MESH_MONKEY", "mesh"),
     "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
+    "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
     "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
     "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
 }
