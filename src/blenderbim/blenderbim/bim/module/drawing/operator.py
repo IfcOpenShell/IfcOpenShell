@@ -836,14 +836,14 @@ class CreateDrawing(bpy.types.Operator):
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
-            # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
-            if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
-                continue
 
             classes = self.get_svg_classes(element)
             classes.append("cut")
-
             el.set("class", " ".join(classes))
+
+            # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
+            if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
+                continue
 
             keys = []
             for query in join_criteria:
