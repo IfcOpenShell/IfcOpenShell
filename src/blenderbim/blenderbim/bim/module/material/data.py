@@ -96,6 +96,7 @@ class ObjectMaterialData:
         cls.data["total_thickness"] = cls.total_thickness()
         cls.data["materials"] = cls.materials()
         cls.data["type_material"] = cls.type_material()
+        cls.data["material_type"] = cls.material_type()
         cls.is_loaded = True
 
     @classmethod
@@ -244,3 +245,17 @@ class ObjectMaterialData:
             else:
                 name_attr = "Name"
             return getattr(material, name_attr, "Unnamed") or "Unnamed"
+
+    @classmethod
+    def material_type(cls):
+        material_types = [
+            "IfcMaterial",
+            "IfcMaterialConstituentSet",
+            "IfcMaterialLayerSet",
+            "IfcMaterialProfileSet",
+            "IfcMaterialList",
+        ]
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
+            material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialList"]
+        return [(m, m, ifcopenshell.util.doc.get_entity_doc(version, m).get("description", "")) for m in material_types]

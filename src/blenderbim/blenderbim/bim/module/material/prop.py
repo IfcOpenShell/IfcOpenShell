@@ -85,24 +85,10 @@ def get_materials(self, context):
     return ObjectMaterialData.data["materials"]
 
 
-def get_object_material_types(self, context):
-    global materialtypes_enum
-    if len(materialtypes_enum) == 0 and IfcStore.get_file():
-        material_types = [
-            "IfcMaterial",
-            "IfcMaterialConstituentSet",
-            "IfcMaterialLayerSet",
-            "IfcMaterialLayerSetUsage",
-            "IfcMaterialProfileSet",
-            "IfcMaterialProfileSetUsage",
-            "IfcMaterialList",
-        ]
-        version = tool.Ifc.get_schema()
-        if version == "IFC2X3":
-            material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialLayerSetUsage", "IfcMaterialList"]
-        materialtypes_enum.clear()
-        materialtypes_enum = [(m, m, get_entity_doc(version, m).get("description", "")) for m in material_types]
-    return materialtypes_enum
+def get_object_material_type(self, context):
+    if not ObjectMaterialData.is_loaded:
+        ObjectMaterialData.load()
+    return ObjectMaterialData.data["material_type"]
 
 
 def get_material_types(self, context):
@@ -137,7 +123,7 @@ class BIMMaterialProperties(PropertyGroup):
 
 
 class BIMObjectMaterialProperties(PropertyGroup):
-    material_type: EnumProperty(items=get_object_material_types, name="Material Type")
+    material_type: EnumProperty(items=get_object_material_type, name="Material Type")
     material: EnumProperty(items=get_materials, name="Material")
     is_editing: BoolProperty(name="Is Editing", default=False)
     material_set_usage_attributes: CollectionProperty(name="Material Set Usage Attributes", type=Attribute)
