@@ -96,7 +96,7 @@ class Usecase:
                 break
 
         if decomposes and decomposes == is_decomposed_by:
-            return
+            return decomposes
 
         container = ifcopenshell.util.element.get_container(self.settings["product"], should_get_direct=True)
         if container:

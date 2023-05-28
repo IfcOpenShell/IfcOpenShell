@@ -40,11 +40,16 @@ def assign_object(ifc, aggregator, collector, relating_obj=None, related_obj=Non
 def unassign_object(ifc, aggregate, collector, relating_obj=None, related_obj=None):
     related_element = ifc.get_entity(related_obj)
     container = aggregate.get_container(related_element)
-    ifc.run("aggregate.unassign_object", product=related_element)
-    if container:
-        ifc.run("spatial.assign_container", product=related_element, relating_structure=container)
-    collector.assign(relating_obj)
-    collector.assign(related_obj)
+    if not relating_obj:
+        relating_element = aggregate.get_relating_object(related_element)
+        if related_element:
+            relating_obj = ifc.get_object(relating_element)
+    if relating_obj:
+        ifc.run("aggregate.unassign_object", product=related_element)
+        if container:
+            ifc.run("spatial.assign_container", product=related_element, relating_structure=container)
+        collector.assign(relating_obj)
+        collector.assign(related_obj)
 
 
 def add_part_to_object(ifc, aggregator, collector, blender, obj, part_class, part_name=None):
