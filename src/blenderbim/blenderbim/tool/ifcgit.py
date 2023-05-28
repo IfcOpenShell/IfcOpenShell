@@ -192,6 +192,7 @@ class IfcGit:
         bpy.data.orphans_purge(do_recursive=True)
 
         bpy.ops.bim.load_project(filepath=path_ifc)
+        bpy.ops.object.select_all(action='DESELECT')
 
     @classmethod
     def branches_by_hexsha(cls, repo):
@@ -311,6 +312,7 @@ class IfcGit:
     def colourise(cls, step_ids):
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
+        bpy.ops.object.select_all(action='DESELECT')
 
         for obj in bpy.context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -318,10 +320,13 @@ class IfcGit:
             step_id = obj.BIMObjectProperties.ifc_definition_id
             if step_id in step_ids["modified"]:
                 obj.color = (0.3, 0.3, 1.0, 1)
+                obj.select_set(True)
             elif step_id in step_ids["added"]:
                 obj.color = (0.2, 0.8, 0.2, 1)
+                obj.select_set(True)
             elif step_id in step_ids["removed"]:
                 obj.color = (1.0, 0.2, 0.2, 1)
+                obj.select_set(True)
             else:
                 obj.color = (1.0, 1.0, 1.0, 0.5)
 
