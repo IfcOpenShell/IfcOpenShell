@@ -336,9 +336,9 @@ class IfcGit:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
                     branch.checkout()
-        else:
-            # NOTE this is calling the git binary in a subprocess
-            repo.git.checkout(item.hexsha)
+                    return
+        # NOTE this is calling the git binary in a subprocess
+        repo.git.checkout(item.hexsha)
 
     @classmethod
     def delete_collection(cls, blender_collection):
