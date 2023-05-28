@@ -509,6 +509,8 @@ def update_annotation_object_type(self, context):
     # changing enum doesn't trigger refresh by itself
     AnnotationData.is_loaded = False
 
+def update_sheet_data(self, context):
+    SheetsData.is_loaded = False
 
 class BIMAnnotationProperties(PropertyGroup):
     object_type: bpy.props.EnumProperty(
