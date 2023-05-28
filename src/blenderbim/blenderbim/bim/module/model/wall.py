@@ -699,8 +699,16 @@ class DumbWallPlaner:
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
+        parametric = ifcopenshell.util.element.get_psets(settings["relating_type"]).get("EPset_Parametric")
+        layer_set_direction = None
+        if parametric:
+            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
         material = ifcopenshell.util.element.get_material(settings["related_object"])
-        if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS2":
+        if not material or not material.is_a("IfcMaterialLayerSetUsage"):
+            return
+        if layer_set_direction:
+            material.LayerSetDirection = layer_set_direction
+        if material.LayerSetDirection == "AXIS2":
             DumbWallRecalculator().recalculate([obj])
 
 
