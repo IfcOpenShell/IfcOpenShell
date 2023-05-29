@@ -1528,7 +1528,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 tool.Ifc.get_entity(o)
                 for o in objs
                 if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
-                and tool.Ifc.get_entity(o) and not o.hide_render
+                and tool.Ifc.get_entity(o)
             ]
         )
 
