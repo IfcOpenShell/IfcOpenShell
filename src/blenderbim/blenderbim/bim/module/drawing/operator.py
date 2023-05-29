@@ -481,6 +481,14 @@ class CreateDrawing(bpy.types.Operator):
                             tree.add_element(elem)
                         elements -= processed
 
+            if self.camera_element not in drawing_elements:
+                with profile("Camera element"):
+                    # The camera must always be included, regardless of any include/exclude filters.
+                    geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
+                    it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
+                    for elem in self.yield_from_iterator(it):
+                        self.serialiser.write(elem)
+
         with profile("Finalizing"):
             self.serialiser.finalize()
         results = self.svg_buffer.get_value()
@@ -1522,11 +1530,7 @@ class SaveDrawingStyle(bpy.types.Operator, Operator):
         space = self.get_view_3d(context)  # Do not remove. It is used later in eval
         scene = context.scene
         style = {}
-        eval_namespace = {
-            'context': context,
-            'scene': scene,
-            'space': space
-        }
+        eval_namespace = {"context": context, "scene": scene, "space": space}
 
         def add_prop_to_style(prop_path, context, scene, space):
             value = eval(prop_path)
@@ -1545,12 +1549,16 @@ class SaveDrawingStyle(bpy.types.Operator, Operator):
                 props_source_path = prop.value
                 props_source = eval(props_source_path)
                 for prop_name in dir(props_source):
-                    if prop_name.startswith("__"): 
-                        continue 
+                    if prop_name.startswith("__"):
+                        continue
 
                     prop_path = f"{props_source_path}.{prop_name}"
                     prop_value = eval(prop_path)
-                    if not isinstance(prop_value, (int, float, bool, str, Color, Vector)) or props_source.is_property_readonly(prop_name) or prop_path in RASTER_STYLE_PROPERTIES_EXCLUDE:
+                    if (
+                        not isinstance(prop_value, (int, float, bool, str, Color, Vector))
+                        or props_source.is_property_readonly(prop_name)
+                        or prop_path in RASTER_STYLE_PROPERTIES_EXCLUDE
+                    ):
                         continue
 
                     add_prop_to_style(prop_path, **eval_namespace)
