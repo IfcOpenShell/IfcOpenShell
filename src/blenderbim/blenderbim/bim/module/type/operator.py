@@ -51,7 +51,6 @@ class AssignType(bpy.types.Operator, Operator):
         )
         for obj in related_objects:
             core.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=type)
-            oprops = obj.BIMObjectProperties
 
 
 class UnassignType(bpy.types.Operator):
@@ -118,6 +117,7 @@ class EnableEditingType(bpy.types.Operator):
 
     def execute(self, context):
         context.active_object.BIMTypeProperties.is_editing_type = True
+        context.active_object.BIMTypeProperties.relating_type_object = None
         return {"FINISHED"}
 
 
@@ -143,8 +143,12 @@ class SelectType(bpy.types.Operator):
         element = tool.Ifc.get().by_id(self.relating_type)
         obj = tool.Ifc.get_object(element)
         if obj:
-            context.view_layer.objects.active = obj
-            obj.select_set(True)
+            if obj in context.selectable_objects:
+                tool.Blender.select_and_activate_single_object(context, obj)
+            else:
+                self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
+        context.scene.BIMModelProperties.ifc_class = element.is_a()
+        context.scene.BIMModelProperties.relating_type_id = str(self.relating_type)
         return {"FINISHED"}
 
 
@@ -177,10 +181,17 @@ class SelectTypeObjects(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else context.active_object
+        at_least_one_selectable_typed_object = False
         for element in ifcopenshell.util.element.get_types(tool.Ifc.get_entity(relating_type)):
             obj = tool.Ifc.get_object(element)
-            if obj:
+            if obj and obj in context.selectable_objects:
                 obj.select_set(True)
+                at_least_one_selectable_typed_object = True
+        if at_least_one_selectable_typed_object:
+            context.active_object.select_set(False)
+            context.view_layer.objects.active = context.selected_objects[0]
+        else:
+            self.report({"INFO"}, "Typed objects can't be selected : They may be hidden or in an excluded collection.")
         return {"FINISHED"}
 
 
@@ -451,6 +462,12 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
         new.Name += " Copy"
         bpy.ops.bim.load_type_thumbnails(ifc_class=new.is_a())
+        if obj in context.selectable_objects:
+            tool.Blender.select_and_activate_single_object(context, new_obj)
+        else:
+            self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
+        context.scene.BIMModelProperties.ifc_class = new.is_a()
+        context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 

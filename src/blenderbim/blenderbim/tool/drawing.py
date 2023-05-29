@@ -37,7 +37,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
 
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
-from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS
+from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
 
 from mathutils import Vector
 import collections
@@ -56,27 +56,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             )
 
     @classmethod
+    def get_annotation_data_type(cls, object_type):
+        return ANNOTATION_TYPES_DATA[object_type][3]
+
+    @classmethod
     def create_annotation_object(cls, drawing, object_type):
-        data_type = {
-            "ANGLE": "curve",
-            "BATTING": "mesh",
-            "BREAKLINE": "mesh",
-            "DIAMETER": "curve",
-            "DIMENSION": "curve",
-            "FALL": "curve",
-            "FILL_AREA": "mesh",
-            "HIDDEN_LINE": "mesh",
-            "LINEWORK": "mesh",
-            "PLAN_LEVEL": "curve",
-            "RADIUS": "curve",
-            "SECTION_LEVEL": "curve",
-            "STAIR_ARROW": "curve",
-            "TEXT": "empty",
-            "TEXT_LEADER": "curve",
-        }[object_type]
+        data_type = cls.get_annotation_data_type(object_type)
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
             obj = annotation.Annotator.add_plane_to_annotation(obj)
+        elif object_type == "REVISION_CLOUD":
+            obj = annotation.Annotator.add_plane_to_annotation(obj, remove_face=True)
         elif object_type == "TEXT_LEADER":
             co1, _, co2, _ = annotation.Annotator.get_placeholder_coords()
             obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
@@ -217,8 +207,8 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def delete_drawing_elements(cls, elements):
         for element in elements:
-            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
             obj = tool.Ifc.get_object(element)
+            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
             if obj:
                 obj_data = obj.data
                 bpy.data.objects.remove(obj)
@@ -1441,6 +1431,14 @@ class Drawing(blenderbim.core.tool.Drawing):
     def is_camera_orthographic(cls):
         camera = bpy.context.scene.camera
         return True if (camera and camera.data.type == "ORTHO") else False
+
+    @classmethod
+    def is_active_drawing(cls, drawing):
+        return drawing.id() == bpy.context.scene.DocProperties.active_drawing_id
+
+    @classmethod
+    def run_drawing_activate_model(cls):
+        bpy.ops.bim.activate_model()
 
     @classmethod
     def activate_drawing(cls, camera):

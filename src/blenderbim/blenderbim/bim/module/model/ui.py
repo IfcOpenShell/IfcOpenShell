@@ -117,7 +117,7 @@ class LaunchTypeManager(bpy.types.Operator):
 
             op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
             op.relating_type = relating_type["id"]
-            op = row.operator("bim.duplicate_type", icon="COPYDOWN", text="")
+            op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
             op.element = relating_type["id"]
             op = row.operator("bim.remove_type", icon="X", text="")
             op.element = relating_type["id"]

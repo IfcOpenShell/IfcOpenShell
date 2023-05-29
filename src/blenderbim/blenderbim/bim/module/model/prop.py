@@ -57,7 +57,7 @@ def get_type_predefined_type(self, context):
 
 def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
-    AuthoringData.data["relating_type_id"] = AuthoringData.relating_types()
+    AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
 
 
@@ -82,7 +82,7 @@ def update_type_page(self, context):
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     relating_type_id: bpy.props.EnumProperty(
-        items=get_relating_type_id, name="Construction Type", update=update_relating_type_id
+        items=get_relating_type_id, name="Relating Type", update=update_relating_type_id
     )
     icon_id: bpy.props.IntProperty()
     updating: bpy.props.BoolProperty(default=False)
@@ -155,9 +155,9 @@ class BIMArrayProperties(PropertyGroup):
         default=-1, description="Currently edited array index. -1 if not in array editing mode."
     )
     count: bpy.props.IntProperty(name="Count", default=0, min=0)
-    x: bpy.props.FloatProperty(name="X", default=0)
-    y: bpy.props.FloatProperty(name="Y", default=0)
-    z: bpy.props.FloatProperty(name="Z", default=0)
+    x: bpy.props.FloatProperty(name="X", default=0, subtype="DISTANCE")
+    y: bpy.props.FloatProperty(name="Y", default=0, subtype="DISTANCE")
+    z: bpy.props.FloatProperty(name="Z", default=0, subtype="DISTANCE")
     use_local_space: bpy.props.BoolProperty(
         name="Use Local Space",
         description="Use local space for array items offset instead of world space",
@@ -176,6 +176,7 @@ class BIMArrayProperties(PropertyGroup):
 
 
 class BIMStairProperties(PropertyGroup):
+    non_si_units_props = ("is_editing", "number_of_treads", "has_top_nib", "stair_type")
     stair_types = (
         ("CONCRETE", "Concrete", ""),
         ("WOOD/STEEL", "Wood / Steel", ""),
@@ -184,17 +185,17 @@ class BIMStairProperties(PropertyGroup):
 
     stair_added_previously: bpy.props.BoolProperty(default=False)
     is_editing: bpy.props.IntProperty(default=-1)
-    width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01)
-    height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01)
+    width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
+    height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01, subtype="DISTANCE")
     number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
-    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01)
-    tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01)
-    base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0)
-    top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0)
+    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01, subtype="DISTANCE")
+    tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01, subtype="DISTANCE")
+    base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0, subtype="DISTANCE")
+    top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0, subtype="DISTANCE")
     has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
     stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
 
-    def get_props_kwargs(self):
+    def get_props_kwargs(self, convert_to_project_units=False):
         stair_kwargs = {
             "stair_type": self.stair_type,
             "width": self.width,
@@ -204,26 +205,33 @@ class BIMStairProperties(PropertyGroup):
         }
 
         if self.stair_type == "CONCRETE":
-            stair_kwargs.update(
-                {
-                    "base_slab_depth": self.base_slab_depth,
-                    "top_slab_depth": self.top_slab_depth,
-                    "has_top_nib": self.has_top_nib,
-                    "tread_depth": self.tread_depth,
-                }
-            )
-            return stair_kwargs
+            concrete_props = {
+                "base_slab_depth": self.base_slab_depth,
+                "top_slab_depth": self.top_slab_depth,
+                "has_top_nib": self.has_top_nib,
+                "tread_depth": self.tread_depth,
+            }
+            stair_kwargs.update(concrete_props)
 
         elif self.stair_type == "WOOD/STEEL":
-            stair_kwargs.update(
-                {
-                    "tread_depth": self.tread_depth,
-                }
-            )
-            return stair_kwargs
+            wood_steel_props = {
+                "tread_depth": self.tread_depth,
+            }
+            stair_kwargs.update(wood_steel_props)
 
         elif self.stair_type == "GENERIC":
+            pass
+
+        if not convert_to_project_units:
             return stair_kwargs
+
+        stair_kwargs = tool.Model.convert_data_to_project_units(stair_kwargs, self.non_si_units_props)
+        return stair_kwargs
+
+    def set_props_kwargs_from_ifc_data(self, kwargs):
+        kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
+        for prop_name in kwargs:
+            setattr(self, prop_name, kwargs[prop_name])
 
 
 class BIMSverchokProperties(PropertyGroup):
@@ -232,15 +240,13 @@ class BIMSverchokProperties(PropertyGroup):
 
 def window_type_prop_update(self, context):
     number_of_panels, panels_data = self.window_types_panels[self.window_type]
-
-    si_coversion = 1.0 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    panels_data = [[v * si_coversion for v in data] for data in panels_data]
     self.first_mullion_offset, self.second_mullion_offset = panels_data[0]
     self.first_transom_offset, self.second_transom_offset = panels_data[1]
 
 
 # default prop values are in mm and converted later
 class BIMWindowProperties(PropertyGroup):
+    non_si_units_props = ("is_editing", "window_type", "window_added_previously")
     window_types = (
         ("SINGLE_PANEL", "SINGLE_PANEL", ""),
         ("DOUBLE_PANEL_HORIZONTAL", "DOUBLE_PANEL_HORIZONTAL", ""),
@@ -273,50 +279,63 @@ class BIMWindowProperties(PropertyGroup):
     window_type: bpy.props.EnumProperty(
         name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update
     )
-    overall_height: bpy.props.FloatProperty(name="Overall Height", default=0.9)
-    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6)
+    overall_height: bpy.props.FloatProperty(name="Overall Height", default=0.9, subtype="DISTANCE")
+    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6, subtype="DISTANCE")
 
     # lining properties
-    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050)
-    lining_thickness: bpy.props.FloatProperty(name="Lining Thickness", default=0.050)
-    lining_offset: bpy.props.FloatProperty(name="Lining Offset", default=0.050)
-    lining_to_panel_offset_x: bpy.props.FloatProperty(name="Lining to Panel Offset X", default=0.025)
-    lining_to_panel_offset_y: bpy.props.FloatProperty(name="Lining to Panel Offset Y", default=0.025)
-    mullion_thickness: bpy.props.FloatProperty(name="Mullion Thickness", default=0.050)
+    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050, subtype="DISTANCE")
+    lining_thickness: bpy.props.FloatProperty(name="Lining Thickness", default=0.050, subtype="DISTANCE")
+    lining_offset: bpy.props.FloatProperty(name="Lining Offset", default=0.050, subtype="DISTANCE")
+    lining_to_panel_offset_x: bpy.props.FloatProperty(
+        name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE"
+    )
+    lining_to_panel_offset_y: bpy.props.FloatProperty(
+        name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE"
+    )
+    mullion_thickness: bpy.props.FloatProperty(name="Mullion Thickness", default=0.050, subtype="DISTANCE")
     first_mullion_offset: bpy.props.FloatProperty(
         name="First Mullion Offset",
         description="Distance from the first lining to the first mullion center",
         default=0.3,
+        subtype="DISTANCE",
     )
     second_mullion_offset: bpy.props.FloatProperty(
         name="Second Mullion Offset",
         description="Distance from the first lining to the second mullion center",
         default=0.45,
+        subtype="DISTANCE",
     )
-    transom_thickness: bpy.props.FloatProperty(name="Transom Thickness", default=0.050)
+    transom_thickness: bpy.props.FloatProperty(name="Transom Thickness", default=0.050, subtype="DISTANCE")
     first_transom_offset: bpy.props.FloatProperty(
         name="First Transom Offset",
         description="Distance from the first lining to the first transom center",
         default=0.3,
+        subtype="DISTANCE",
     )
     second_transom_offset: bpy.props.FloatProperty(
         name="Second Transom Offset",
         description="Distance from the first lining to the second transom center",
         default=0.6,
+        subtype="DISTANCE",
     )
 
     # panel properties
-    frame_depth: bpy.props.FloatVectorProperty(name="Frame Depth", size=3, default=[0.035] * 3)
-    frame_thickness: bpy.props.FloatVectorProperty(name="Frame Thickness", size=3, default=[0.035] * 3)
+    frame_depth: bpy.props.FloatVectorProperty(name="Frame Depth", size=3, default=[0.035] * 3, subtype="TRANSLATION")
+    frame_thickness: bpy.props.FloatVectorProperty(
+        name="Frame Thickness", size=3, default=[0.035] * 3, subtype="TRANSLATION"
+    )
 
-    def get_general_kwargs(self):
-        return {
+    def get_general_kwargs(self, convert_to_project_units=False):
+        kwargs = {
             "window_type": self.window_type,
             "overall_height": self.overall_height,
             "overall_width": self.overall_width,
         }
+        if not convert_to_project_units:
+            return kwargs
+        return tool.Model.convert_data_to_project_units(kwargs, ["window_type"])
 
-    def get_lining_kwargs(self):
+    def get_lining_kwargs(self, convert_to_project_units=False):
         kwargs = {
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
@@ -353,13 +372,23 @@ class BIMWindowProperties(PropertyGroup):
         if self.window_type in ("TRIPLE_PANEL_HORIZONTAL",):
             kwargs["second_transom_offset"] = self.second_transom_offset
 
-        return kwargs
+        if not convert_to_project_units:
+            return kwargs
+        return tool.Model.convert_data_to_project_units(kwargs)
 
-    def get_panel_kwargs(self):
-        return {
+    def get_panel_kwargs(self, convert_to_project_units=False):
+        kwargs = {
             "frame_depth": self.frame_depth,
             "frame_thickness": self.frame_thickness,
         }
+        if not convert_to_project_units:
+            return kwargs
+        return tool.Model.convert_data_to_project_units(kwargs)
+
+    def set_props_kwargs_from_ifc_data(self, kwargs):
+        kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
+        for prop_name in kwargs:
+            setattr(self, prop_name, kwargs[prop_name])
 
 
 class BIMDoorProperties(PropertyGroup):

@@ -86,9 +86,10 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
         props = obj.BIMArrayProperties
         props.count = data["count"]
-        props.x = data["x"]
-        props.y = data["y"]
-        props.z = data["z"]
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        props.x = data["x"] * si_conversion
+        props.y = data["y"] * si_conversion
+        props.z = data["z"] * si_conversion
         props.use_local_space = data.get("use_local_space", False)
         props.sync_children = data.get("sync_children", False)
         props.method = data.get("method", "OFFSET")
@@ -106,15 +107,16 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item] = {
             "children": data[self.item]["children"],
             "count": props.count,
-            "x": props.x,
-            "y": props.y,
-            "z": props.z,
+            "x": props.x / si_conversion,
+            "y": props.y / si_conversion,
+            "z": props.z / si_conversion,
             "use_local_space": props.use_local_space,
             "sync_children": props.sync_children,
             "method": props.method,
@@ -187,6 +189,7 @@ class SelectArrayParent(bpy.types.Operator):
             obj.select_set(True)
         return {"FINISHED"}
 
+
 class Input3DCursorXArray(bpy.types.Operator):
     bl_idname = "bim.input_cursor_x_array"
     bl_label = "Get 3d Cursor X Input for Array"
@@ -202,6 +205,7 @@ class Input3DCursorXArray(bpy.types.Operator):
             props.x = cursor.location.x - obj.location.x
         return {"FINISHED"}
 
+
 class Input3DCursorYArray(bpy.types.Operator):
     bl_idname = "bim.input_cursor_y_array"
     bl_label = "Get 3d Cursor Y Input for Array"
@@ -216,6 +220,7 @@ class Input3DCursorYArray(bpy.types.Operator):
         else:
             props.y = cursor.location.y - obj.location.y
         return {"FINISHED"}
+
 
 class Input3DCursorZArray(bpy.types.Operator):
     bl_idname = "bim.input_cursor_z_array"

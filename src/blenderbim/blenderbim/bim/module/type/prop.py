@@ -21,6 +21,7 @@ import ifcopenshell.util.type
 from blenderbim.bim.module.type.data import TypeData
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -50,9 +51,42 @@ def update_relating_type_class(self, context):
     TypeData.is_loaded = False
 
 
+def update_relating_type_from_object(self, context):
+    if self.relating_type_object is None:
+        return
+    element = tool.Ifc.get_entity(self.relating_type_object)
+    if not element:
+        return
+    element_type = ifcopenshell.util.element.get_type(element)
+    if not element_type:
+        return
+    self.relating_type = str(element_type.id())
+    bpy.ops.bim.assign_type()
+
+
+def is_object_class_applicable(self, obj):
+    if not TypeData.is_loaded:
+        TypeData.load()
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return
+    element_type = ifcopenshell.util.element.get_type(element)
+    if element_type is None:
+        return False
+    return str(element_type.is_a()) in (r_t_c[0] for r_t_c in TypeData.data["relating_type_classes"])
+
+
 class BIMTypeProperties(PropertyGroup):
     is_editing_type: BoolProperty(name="Is Editing Type")
     relating_type_class: EnumProperty(
-        items=get_relating_type_class, name="Relating Type Class", update=update_relating_type_class
+        items=get_relating_type_class,
+        name="Relating Type Class",
+        update=update_relating_type_class,
     )
     relating_type: EnumProperty(items=get_relating_type, name="Relating Type")
+    relating_type_object: PointerProperty(
+        type=bpy.types.Object,
+        name="Copy Class",
+        update=update_relating_type_from_object,
+        poll=is_object_class_applicable,
+    )

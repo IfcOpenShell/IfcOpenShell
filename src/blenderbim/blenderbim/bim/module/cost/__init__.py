@@ -76,6 +76,7 @@ classes = (
     operator.LoadCostItemTaskQuantities,
     operator.LoadCostItemResourceQuantities,
     operator.ChangeParentCostItem,
+    operator.CopyCostItem,
     prop.CostItem,
     prop.CostItemQuantity,
     prop.CostItemType,

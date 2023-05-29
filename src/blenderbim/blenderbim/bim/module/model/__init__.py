@@ -126,7 +126,6 @@ classes = (
     pie.OpenPieClass,
     pie.PieUpdateContainer,
     pie.PieAddOpening,
-    pie.PieAssignObjectAggregation,
     pie.VIEW3D_MT_PIE_bim,
     pie.VIEW3D_MT_PIE_bim_class,
     sverchok_modifier.CreateNewSverchokGraph,

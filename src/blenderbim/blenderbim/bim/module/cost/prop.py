@@ -213,3 +213,4 @@ class BIMCostProperties(PropertyGroup):
         name="Show Nested Tasks", default=False, update=update_active_cost_item_resources
     )
     change_cost_item_parent: BoolProperty(name="Change Cost Item Parent", default=False, update=update_cost_item_parent)
+    show_cost_item_operators: BoolProperty(name="Show Cost Item Operators", default=False)

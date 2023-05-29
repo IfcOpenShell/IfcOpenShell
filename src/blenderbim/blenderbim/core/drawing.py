@@ -270,6 +270,9 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
 
 
 def remove_drawing(ifc, drawing_tool, drawing=None):
+    if drawing_tool.is_active_drawing(drawing):
+        drawing_tool.run_drawing_activate_model()
+
     collection = drawing_tool.get_drawing_collection(drawing)
     if collection:
         drawing_tool.delete_collection(collection)

@@ -186,7 +186,6 @@ def string_to_duration(duration_string):
 
 
 def parse_duration(value):
-    print("parsing duration", value)
     if not value:
         return None
     if isinstance(value, str):

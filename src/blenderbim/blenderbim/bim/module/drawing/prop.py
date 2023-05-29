@@ -178,6 +178,10 @@ def update_schedule_name(self, context):
 
 def update_has_underlay(self, context):
     update_layer(self, context, "HasUnderlay", self.has_underlay)
+    # making sure that camera is active
+    if self.has_underlay and (context.active_object and context.active_object.data == self.id_data):
+        bpy.ops.bim.reload_drawing_styles()
+        bpy.ops.bim.activate_drawing_style()
 
 
 def update_has_linework(self, context):
@@ -271,30 +275,20 @@ class DrawingStyle(PropertyGroup):
 
 
 class RasterStyleProperty(enum.Enum):
-    WORLD_COLOR = "bpy.data.worlds[0].color"
-    RENDER_ENGINE = "scene.render.engine"
-    RENDER_TRANSPARENT = "scene.render.film_transparent"
-    VIEW_TRANSFORM = "scene.view_settings.view_transform"
-    SHADING_SHOW_OBJECT_OUTLINE = "scene.display.shading.show_object_outline"
-    SHADING_SHOW_CAVITY = "scene.display.shading.show_cavity"
-    SHADING_CAVITY_TYPE = "scene.display.shading.cavity_type"
-    SHADING_CURVATURE_RIDGE_FACTOR = "scene.display.shading.curvature_ridge_factor"
-    SHADING_CURVATURE_VALLEY_FACTOR = "scene.display.shading.curvature_valley_factor"
-    SHADING_LIGHT = "scene.display.shading.light"
-    SHADING_COLOR_TYPE = "scene.display.shading.color_type"
-    SHADING_SINGLE_COLOR = "scene.display.shading.single_color"
-    SHADING_SHOW_SHADOWS = "scene.display.shading.show_shadows"
-    SHADING_SHADOW_INTENSITY = "scene.display.shading.shadow_intensity"
-    DISPLAY_LIGHT_DIRECTION = "scene.display.light_direction"
-    VIEW_USE_CURVE_MAPPING = "scene.view_settings.use_curve_mapping"
-    OVERLAY_SHOW_WIREFRAMES = "space.overlay.show_wireframes"
-    OVERLAY_WIREFRAME_THRESHOLD = "space.overlay.wireframe_threshold"
-    OVERLAY_SHOW_FLOOR = "space.overlay.show_floor"
-    OVERLAY_SHOW_AXIS_X = "space.overlay.show_axis_x"
-    OVERLAY_SHOW_AXIS_Y = "space.overlay.show_axis_y"
-    OVERLAY_SHOW_AXIS_Z = "space.overlay.show_axis_z"
-    OVERLAY_SHOW_OBJECT_ORIGINS = "space.overlay.show_object_origins"
-    OVERLAY_SHOW_RELATIONSHIP_LINES = "space.overlay.show_relationship_lines"
+    # EVAL_PROP_ props will be evaluated explicitly
+    EVAL_PROP_WORLD_COLOR = "bpy.data.worlds[0].color"
+
+    # those props attributes used as a source for shading style properties
+    RENDER = "scene.render"
+    VIEW_SETTINGS = "scene.view_settings"
+    SHADING = "scene.display.shading"
+    DISPLAY = "scene.display"
+    OVERLAY = "space.overlay"
+
+
+RASTER_STYLE_PROPERTIES_EXCLUDE = (
+    "scene.render.filepath",
+)
 
 
 class DocProperties(PropertyGroup):
@@ -492,6 +486,7 @@ ANNOTATION_TYPES_DATA = {
     "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
     "LINEWORK":      ("Line",             "", "MESH_MONKEY", "mesh"),
     "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
+    "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
     "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
     "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
 }
@@ -514,6 +509,8 @@ def update_annotation_object_type(self, context):
     # changing enum doesn't trigger refresh by itself
     AnnotationData.is_loaded = False
 
+def update_sheet_data(self, context):
+    SheetsData.is_loaded = False
 
 class BIMAnnotationProperties(PropertyGroup):
     object_type: bpy.props.EnumProperty(

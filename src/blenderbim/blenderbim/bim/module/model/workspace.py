@@ -62,6 +62,8 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_E")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
+        ("bim.hotkey", {"type": "P", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_P")]}),
+        ("bim.hotkey", {"type": "P", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_P")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -323,15 +325,15 @@ class BimToolUI:
     def draw_basic_bim_tool_interface(cls):
         cls.draw_type_selection_interface()
 
-        if cls.props.ifc_class:
-            box = cls.layout.box()
-            if AuthoringData.data["type_thumbnail"]:
-                box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
-            else:
-                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                op.ifc_class = cls.props.ifc_class
-
         if AuthoringData.data["ifc_classes"]:
+            if cls.props.ifc_class:
+                box = cls.layout.box()
+                if AuthoringData.data["type_thumbnail"]:
+                    box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
+                else:
+                    op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
+                    op.ifc_class = cls.props.ifc_class
+
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
@@ -403,6 +405,16 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         bpy.ops.bim.calculate_all_quantities()
+
+    def hotkey_C_P(self):
+        if not bpy.context.selected_objects:
+            return
+        bpy.ops.bim.assign_object()
+
+    def hotkey_A_P(self):
+        if not bpy.context.selected_objects:
+            return
+        bpy.ops.bim.unassign_object()
 
     def hotkey_S_C(self):
         if not bpy.context.selected_objects:
