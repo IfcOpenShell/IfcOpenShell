@@ -882,7 +882,7 @@ class SvgWriter:
             text_position = Vector(
                 (
                     (x_offset + projected_points[0].x) * self.svg_scale,
-                    ((y_offset - projected_points[0].y) * self.svg_scale) - 2.5,
+                    ((y_offset - projected_points[0].y) * self.svg_scale) - 1.0,
                 )
             )
             # TODO: allow metric to be configurable
@@ -900,7 +900,7 @@ class SvgWriter:
             text_style = SvgWriter.get_box_alignment_parameters(box_alignment)
             self.svg.add(
                 self.svg.text(
-                    "RL {}{}".format("" if rl_value < 0 else "+", rl),
+                    "{}{}".format("" if rl_value < 0 else "+", rl),
                     insert=tuple(text_position),
                     class_="PLANLEVEL",
                     **text_style,
