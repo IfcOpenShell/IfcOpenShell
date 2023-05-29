@@ -62,9 +62,8 @@ class BIM_PT_class(Panel):
                 row.label(text=IfcClassData.data["name"])
                 op = row.operator("bim.select_ifc_class", text="", icon="RESTRICT_SELECT_OFF")
                 op.ifc_class = IfcClassData.data["ifc_class"]
-                row.operator("bim.copy_class", icon="DUPLICATE", text="")
                 row.operator("bim.unlink_object", icon="UNLINKED", text="")
-                if IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcRoot"):
+                if IfcClassData.data["can_reassign_class"]:
                     row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
         else:
             ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
