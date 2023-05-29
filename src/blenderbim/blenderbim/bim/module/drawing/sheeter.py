@@ -28,6 +28,7 @@ import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
 from xml.dom import minidom
 from mathutils import Vector
+from sys import platform
 
 VIEW_TITLE_OFFSET_Y = 5
 DEFAULT_POSITION = Vector((30, 30))
@@ -351,7 +352,12 @@ class SheetBuilder:
                 view.remove(image)
 
     def get_href(self, element):
-        return urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href"))
+        path = urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href"))
+        if platform == 'linux' or platform == 'linux2' or platform == 'darwin':
+            path = path.replace('\\', os.path.sep)
+        if platform == 'win32':
+            path = path.replace('/', os.path.sep)
+        return path
 
     def parse_embedded_svg(self, image, data):
         group = ET.Element("g")
