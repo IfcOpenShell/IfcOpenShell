@@ -32,9 +32,10 @@ from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
-from blenderbim.bim.module.drawing.data import DecoratorData
-from blenderbim.bim.module.drawing.shaders import BASE_LIB_GLSL, BASE_DEF_GLSL, add_verts_sequence, add_offsets
-
+from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
+from blenderbim.bim.module.drawing.shaders import add_verts_sequence, add_offsets
+from blenderbim.bim.module.drawing.helper import format_distance
+from functools import lru_cache
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY # TODO: move back to 0.2
 
@@ -486,14 +487,15 @@ class BaseDecorator:
         blf.draw(font_id, text)
         blf.disable(font_id, blf.ROTATION)
 
+    @lru_cache(maxsize=None)
     def format_value(self, context, value):
-        return bpy.utils.units.to_string(
-            context.scene.unit_settings.system,
-            "LENGTH",
-            value,
-            precision=4,
-            split_unit=context.scene.unit_settings.system == "IMPERIAL",
-        )
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+        precision = drawing_pset_data.get("MetricPrecision", None)
+        if not precision:
+            precision = drawing_pset_data.get("ImperialPrecision", None)
+
+        decimal_places = drawing_pset_data.get("DecimalPlaces", None)
+        return format_distance(value, precision=precision, decimal_places=decimal_places)
 
     def draw_asterisk(self, context, obj):
         # gather geometry data and convert to winspace
@@ -1931,6 +1933,9 @@ class DecorationsHandler:
         collection, _ = helper.get_active_drawing(context.scene)
         if collection is None:
             return
+
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
 
         for decorator in self.decorators:
             for obj in decorator.get_objects(collection):
