@@ -55,3 +55,9 @@ class Aggregate(blenderbim.core.tool.Aggregate):
     @classmethod
     def get_container(cls, element):
         return ifcopenshell.util.element.get_container(element)
+
+    @classmethod
+    def get_relating_object(cls, related_element):
+        for rel in related_element.Decomposes:
+            if rel.is_a("IfcRelAggregates"):
+                return rel.RelatingObject

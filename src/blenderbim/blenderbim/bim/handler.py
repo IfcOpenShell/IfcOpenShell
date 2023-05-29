@@ -22,7 +22,6 @@ import addon_utils
 import ifcopenshell.api.owner.settings
 import blenderbim.tool as tool
 import blenderbim.core.owner as core_owner
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation

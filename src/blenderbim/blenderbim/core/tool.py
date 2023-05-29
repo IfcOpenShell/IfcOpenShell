@@ -165,8 +165,7 @@ class Cost:
     def expand_cost_item_rate(cls, cost_item): pass
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
-    def export_cost_schedules(cls, format): pass
-    def export_cost_schedules(cls, format): pass
+    def export_cost_schedules(cls, format, cost_schedule): pass
     def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
     def get_active_cost_schedule(cls): pass
@@ -274,9 +273,8 @@ class Drawing:
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
-    def get_default_shading_style(cls): pass
-    def setup_shading_styles_path(cls, resource_path): pass
     def get_default_layout_path(cls, identification, name): pass
+    def get_default_shading_style(cls): pass
     def get_default_sheet_path(cls, identification, name): pass
     def get_default_sheet_path(cls, identification, name): pass
     def get_default_titleblock_path(cls, name): pass
@@ -302,17 +300,20 @@ class Drawing:
     def import_schedules(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
+    def is_active_drawing(cls, drawing): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
     def move_file(cls, src, dest): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def remove_literal_from_annotation(cls, obj, literal): pass
+    def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, group, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
+    def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
@@ -432,14 +433,19 @@ class Loader:
 class Material:
     def add_default_material_object(cls): pass
     def delete_object(cls, obj): pass
+    def disable_editing_material(cls): pass
     def disable_editing_materials(cls): pass
+    def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
     def get_active_material_type(cls): pass
+    def get_active_material_type(cls): pass
     def get_elements_by_material(cls, material): pass
+    def get_material_attributes(cls): pass
     def get_name(cls, obj): pass
     def import_material_definitions(cls, material_type): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
+    def load_material_attributes(cls, material): pass
     def select_elements(cls, elements): pass
 
 

@@ -64,7 +64,7 @@ class Usecase:
             become IfcLabel, float values will become IfcReal, booleans will
             become IfcBoolean, and integers will become IfcInteger. If more
             control is desired, you may explicitly specify IFC data objects
-            directly.
+            directly. Note that provided `properties` might be mutated in the process.
         :type properties: dict
         :param pset_template: If a property set template is provided, this will
             be used to determine data types. If no user-defined template is

@@ -44,9 +44,9 @@ from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
 import blenderbim.bim.export_ifc
 from lxml import etree
-from mathutils import Vector
+from mathutils import Vector, Color
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal, RASTER_STYLE_PROPERTIES_EXCLUDE
 from blenderbim.bim.ifc import IfcStore
 from pathlib import Path
 
@@ -481,6 +481,14 @@ class CreateDrawing(bpy.types.Operator):
                             tree.add_element(elem)
                         elements -= processed
 
+            if self.camera_element not in drawing_elements:
+                with profile("Camera element"):
+                    # The camera must always be included, regardless of any include/exclude filters.
+                    geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
+                    it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
+                    for elem in self.yield_from_iterator(it):
+                        self.serialiser.write(elem)
+
         with profile("Finalizing"):
             self.serialiser.finalize()
         results = self.svg_buffer.get_value()
@@ -836,14 +844,14 @@ class CreateDrawing(bpy.types.Operator):
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
-            # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
-            if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
-                continue
 
             classes = self.get_svg_classes(element)
             classes.append("cut")
-
             el.set("class", " ".join(classes))
+
+            # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
+            if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
+                continue
 
             keys = []
             for query in join_criteria:
@@ -1055,7 +1063,7 @@ class AddSheet(bpy.types.Operator, Operator):
 
 class OpenSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.open_sheet"
-    bl_label = "Open Sheet"
+    bl_label = "Open Sheet Layout"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -1138,6 +1146,7 @@ class RemoveDrawingFromSheet(bpy.types.Operator, Operator):
 class CreateSheets(bpy.types.Operator, Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
+    bl_description = "Build a sheet from the sheet layout"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1174,7 +1183,7 @@ class CreateSheets(bpy.types.Operator, Operator):
                 has_sheet_reference = True
             elif reference.Description == "RASTER":
                 if reference.Location in raster_references:
-                    del raster_references[reference.Location]
+                    raster_references.remove(reference.Location)
                 else:
                     tool.Ifc.run("document.remove_reference", reference=reference)
 
@@ -1298,9 +1307,13 @@ class ActivateModel(bpy.types.Operator):
     bl_description = "Activates the model view"
 
     def execute(self, context):
+        dprops = bpy.context.scene.DocProperties
+        dprops.active_drawing_id = 0
+
         CutDecorator.uninstall()
 
-        bpy.ops.object.hide_view_clear()
+        if not bpy.app.background:
+            bpy.ops.object.hide_view_clear()
 
         subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
@@ -1341,6 +1354,8 @@ class ActivateDrawing(bpy.types.Operator):
         dprops = bpy.context.scene.DocProperties
         core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=drawing)
         dprops.active_drawing_id = self.drawing
+        # reset DrawingsData to reload_drawing_styles work correctly
+        DrawingsData.is_loaded = False
         dprops.drawing_styles.clear()
         if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
             bpy.ops.bim.reload_drawing_styles()
@@ -1408,7 +1423,7 @@ class RemoveDrawing(bpy.types.Operator, Operator):
         else:
             drawings = [tool.Ifc.get().by_id(self.drawing)]
 
-        print("Removing drawings: {}".format([d for d in drawings]))
+        removed_drawings = [drawing.id() for drawing in drawings]
 
         for drawing in drawings:
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
@@ -1418,6 +1433,7 @@ class ReloadDrawingStyles(bpy.types.Operator):
     bl_idname = "bim.reload_drawing_styles"
     bl_label = "Reload Drawing Styles"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload drawing styles for the active camera"
 
     def execute(self, context):
         if not DrawingsData.is_loaded:
@@ -1514,14 +1530,38 @@ class SaveDrawingStyle(bpy.types.Operator, Operator):
         space = self.get_view_3d(context)  # Do not remove. It is used later in eval
         scene = context.scene
         style = {}
-        for prop in RasterStyleProperty:
-            value = eval(prop.value)
+        eval_namespace = {"context": context, "scene": scene, "space": space}
+
+        def add_prop_to_style(prop_path, context, scene, space):
+            value = eval(prop_path)
             if not isinstance(value, str):
                 try:
                     value = tuple(value)
                 except TypeError:
                     pass
-            style[prop.value] = value
+            style[prop_path] = value
+
+        for prop in RasterStyleProperty:
+            if prop.name.startswith("EVAL_PROP"):
+                prop_path = prop.value
+                add_prop_to_style(prop_path, **eval_namespace)
+            else:
+                props_source_path = prop.value
+                props_source = eval(props_source_path)
+                for prop_name in dir(props_source):
+                    if prop_name.startswith("__"):
+                        continue
+
+                    prop_path = f"{props_source_path}.{prop_name}"
+                    prop_value = eval(prop_path)
+                    if (
+                        not isinstance(prop_value, (int, float, bool, str, Color, Vector))
+                        or props_source.is_property_readonly(prop_name)
+                        or prop_path in RASTER_STYLE_PROPERTIES_EXCLUDE
+                    ):
+                        continue
+
+                    add_prop_to_style(prop_path, **eval_namespace)
 
         if self.index:
             index = int(self.index)
@@ -1606,7 +1646,8 @@ class ActivateDrawingStyle(bpy.types.Operator, Operator):
         active_drawing_style_index = scene.camera.data.BIMCameraProperties.active_drawing_style_index
 
         if active_drawing_style_index >= len(scene.DocProperties.drawing_styles):
-            return
+            self.report({"ERROR"}, "Could not find active drawing style")
+            return {"CANCELLED"}
 
         self.drawing_style = scene.DocProperties.drawing_styles[active_drawing_style_index]
 

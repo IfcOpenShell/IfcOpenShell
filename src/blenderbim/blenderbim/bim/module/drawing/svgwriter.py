@@ -225,17 +225,24 @@ class SvgWriter:
                 )
             )
             # TODO: allow metric to be configurable
-            rl = (matrix_world @ points[0].co.xyz).z
+            rl_value = (matrix_world @ points[0].co.xyz).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl, precision=self.precision, decimal_places=self.decimal_places)
+                rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
             else:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                rl /= unit_scale
+                rl = rl_value / unit_scale
                 rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
             text_style = SvgWriter.get_box_alignment_parameters("bottom-left")
-            self.svg.add(self.svg.text(f"RL +{rl}", insert=tuple(text_position), class_="SECTIONLEVEL", **text_style))
+            self.svg.add(
+                self.svg.text(
+                    "RL {}{}".format("" if rl_value < 0 else "+", rl),
+                    insert=tuple(text_position),
+                    class_="SECTIONLEVEL",
+                    **text_style,
+                )
+            )
             if tag:
                 self.svg.add(self.svg.text(tag, insert=(text_position[0], text_position[1] - 5), **text_style))
 
@@ -396,8 +403,7 @@ class SvgWriter:
                 self.svg.line(start=start * self.svg_scale, end=end * self.svg_scale, class_=" ".join(classes))
             )
 
-        # BATTING ANNOTATIONS
-        if predefined_type == "BATTING":
+        def draw_batting_annotation():
             v0_global = matrix_world @ obj.data.vertices[0].co.xyz
             v1_global = matrix_world @ obj.data.vertices[1].co.xyz
             v0 = self.project_point_onto_camera(v0_global)
@@ -463,7 +469,94 @@ class SvgWriter:
             )
             self.svg.add(self.svg.polyline(points=points, class_=" ".join(classes), style=polyline_style))
 
-        elif predefined_type == "SECTION":
+        def draw_revision_cloud_annotation():
+            segment_width = 15.0
+            base_height = 1
+            width = 5
+
+            def get_svg_half_circle(height, width):
+                cp0 = f"0,-{height}"
+                cp1 = f"{width},-{height}"
+                end_point = f"{width},0"
+                circle = f"c{cp0} {cp1} {end_point}"
+                return circle
+
+            def get_revision_pattern(base_offset):
+                pattern = f"m{base_offset.x},{base_offset.y}"
+                pattern += " " + get_svg_half_circle(2 * base_height, width)
+                pattern += " " + get_svg_half_circle(2.5 * base_height, width)
+                pattern += " " + get_svg_half_circle(1.5 * base_height, width)
+                return pattern
+
+            def get_scale(size, direction):
+                vector = direction * size
+                shrinked_vector = size // segment_width * segment_width * direction
+                scale = [1 if vector[i] == 0 else vector[i] / shrinked_vector[i] for i in range(2)]
+                return "scale(%f, %f)" % (scale[0], scale[1])
+
+            def poly_to_edges(poly):
+                edges = []
+                n_verts = len(poly)
+                lats_index = n_verts - 1
+                for i in range(len(poly)):
+                    edge = [poly[i], (poly[i + 1]) if i != lats_index else poly[0]]
+                    edges.append(edge)
+                return edges
+
+            element = tool.Ifc.get_entity(obj)
+            safe_offset_x = 2.0
+            marker_width = segment_width + safe_offset_x * 2
+            market_height = 15.0
+            ref_y = 5.0
+            revision_pattern = get_revision_pattern(Vector([safe_offset_x, ref_y]))
+
+            bm = tool.Blender.get_bmesh_for_mesh(obj.data).copy()
+            bmesh.ops.contextual_create(bm, geom=bm.edges[:])
+            faces = bm.faces[:]
+            assert len(faces) == 1, "Revision cloud edges must form just 1 polygon"
+
+            # ensure clockwise order of polygon verts
+            # given default blender counter-clockwise order
+            polygon = faces[0]
+            if polygon.normal.z > 0:
+                polygon.normal_flip()
+
+            marker_id = f"revision-cloud-{element.GlobalId}"
+            svg_path = self.svg.path(style="fill: none; stroke:red; stroke-width:0.20", d=revision_pattern)
+            marker = self.svg.marker(
+                markerUnits="userSpaceOnUse",
+                insert=(safe_offset_x, ref_y),
+                size=(marker_width, market_height),
+                orient="auto",
+                id=marker_id,
+            )
+            marker.add(svg_path)
+            self.svg.add(marker)
+
+            for v0, v1 in poly_to_edges(polygon.verts):
+                v0_global = matrix_world @ v0.co.xyz
+                v1_global = matrix_world @ v1.co.xyz
+                v0 = self.project_point_onto_camera(v0_global)
+                v1 = self.project_point_onto_camera(v1_global)
+                start_svg = Vector(((x_offset + v0.x), (y_offset - v0.y))) * self.svg_scale
+                end_svg = Vector(((x_offset + v1.x), (y_offset - v1.y))) * self.svg_scale
+
+                pattern_edge = end_svg - start_svg
+                pattern_dir = pattern_edge.normalized()
+                pattern_length = pattern_edge.length
+
+                segments = int(pattern_length // segment_width)
+                pattern_dir_step = pattern_dir * segment_width
+                points = [pattern_dir_step * i for i in range(segments)]
+
+                polyline_style = f"marker: url(#{marker_id}); stroke: none;"
+                polyline_transform = f"translate({start_svg.x}, {start_svg.y}) {get_scale(pattern_length, pattern_dir)}"
+                polyline = self.svg.polyline(
+                    points=points, class_=" ".join(classes), style=polyline_style, transform=polyline_transform
+                )
+                self.svg.add(polyline)
+
+        def draw_section_annotation():
             display_data = DecoratorData.get_section_markers_display_data(obj)
             connect_markers = display_data["connect_markers"]
 
@@ -504,6 +597,12 @@ class SvgWriter:
                             )
                         )
 
+        if predefined_type == "BATTING":
+            draw_batting_annotation()
+        elif predefined_type == "REVISIONCLOUD":
+            draw_revision_cloud_annotation()
+        elif predefined_type == "SECTION":
+            draw_section_annotation()
         else:
             for edge in obj.data.edges:
                 draw_simple_edge_annotation(*edge.vertices[:])
@@ -787,12 +886,12 @@ class SvgWriter:
                 )
             )
             # TODO: allow metric to be configurable
-            rl = (matrix_world @ points[0].co).z
+            rl_value = (matrix_world @ points[0].co).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl, precision=self.precision, decimal_places=self.decimal_places)
+                rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
             else:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                rl /= unit_scale
+                rl = rl_value / unit_scale
                 rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
@@ -801,7 +900,7 @@ class SvgWriter:
             text_style = SvgWriter.get_box_alignment_parameters(box_alignment)
             self.svg.add(
                 self.svg.text(
-                    "{}".format(rl),
+                    "{}{}".format("" if rl_value < 0 else "+", rl),
                     insert=tuple(text_position),
                     class_="PLANLEVEL",
                     **text_style,

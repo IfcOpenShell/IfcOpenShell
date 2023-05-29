@@ -137,7 +137,7 @@ class CommitChanges(bpy.types.Operator):
 class AddTag(bpy.types.Operator):
     """Tag selected revision"""
 
-    bl_label = "Add tag"
+    bl_label = "Tag selected revision"
     bl_idname = "ifcgit.add_tag"
     bl_options = {"REGISTER"}
 
@@ -246,3 +246,35 @@ class Merge(bpy.types.Operator):
             return {"FINISHED"}
         else:
             return {"CANCELLED"}
+
+
+class Push(bpy.types.Operator):
+    """Pushes the working branch to selected remote"""
+
+    bl_label = "Push working branch"
+    bl_idname = "ifcgit.push"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+
+        props = context.scene.IfcGitProperties
+        repo = IfcGitData.data["repo"]
+        remote = repo.remotes[props.select_remote]
+        remote.push(refspec=IfcGitData.data["repo"].active_branch.name)
+        return {"FINISHED"}
+
+
+class Fetch(bpy.types.Operator):
+    """Fetches from the selected remote"""
+
+    bl_label = "Fetch from remote"
+    bl_idname = "ifcgit.fetch"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+
+        props = context.scene.IfcGitProperties
+        repo = IfcGitData.data["repo"]
+        remote = repo.remotes[props.select_remote]
+        remote.fetch()
+        return {"FINISHED"}

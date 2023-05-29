@@ -154,7 +154,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             if column_type == "IfcTask":
                 return task.get_info(task)[name] or ""
             elif column_type == "IfcTaskTime" and task.TaskTime:
-                return task.TaskTime.get_info(task)[name]
+                return task.TaskTime.get_info(task)[name] if task.TaskTime.get_info(task)[name] else ""
             return task.Identification or ""
 
         def natural_sort_key(i, _nsre=re.compile("([0-9]+)")):
@@ -212,7 +212,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 item.calendar = ""
                 item.derived_calendar = calendar.Name or "Unnamed" if calendar else ""
 
-            if task.TaskTime:
+            if task.TaskTime and (task.TaskTime.ScheduleStart or task.TaskTime.ScheduleFinish or task.TaskTime.ScheduleDuration):
                 task_time = task.TaskTime
                 item.start = (
                     canonicalise_time(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleStart))

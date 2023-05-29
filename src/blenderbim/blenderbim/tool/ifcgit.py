@@ -3,7 +3,10 @@ import re
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
-import git
+try:
+    import git
+except:
+    print("Warning: GitPython not available.")
 import bpy
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
@@ -13,10 +16,15 @@ class IfcGit:
     @classmethod
     def init_repo(cls, path_dir):
         IfcGitRepo.repo = git.Repo.init(path_dir)
+        cls.config_info_attributes(IfcGitRepo.repo)
 
     @classmethod
     def clone_repo(cls, remote_url, local_folder):
-        IfcGitRepo.repo = git.Repo.clone_from(remote_url, local_folder)
+        IfcGitRepo.repo = git.Repo.clone_from(
+            url=remote_url,
+            to_path=local_folder,
+        )
+        cls.config_info_attributes(IfcGitRepo.repo)
         return IfcGitRepo.repo
 
     @classmethod
@@ -61,6 +69,8 @@ class IfcGit:
 
     @classmethod
     def add_file_to_repo(cls, repo, path_file):
+        if os.name == "nt":
+            cls.dos2unix(path_file)
         repo.index.add(path_file)
         repo.index.commit(message="Added " + os.path.relpath(path_file, repo.working_dir))
         bpy.ops.ifcgit.refresh()
@@ -73,6 +83,8 @@ class IfcGit:
     def git_commit(cls, path_file):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
+        if os.name == "nt":
+            cls.dos2unix(path_file)
         repo.index.add(path_file)
         repo.index.commit(message=props.commit_message)
         props.commit_message = ""
@@ -180,6 +192,7 @@ class IfcGit:
         bpy.data.orphans_purge(do_recursive=True)
 
         bpy.ops.bim.load_project(filepath=path_ifc)
+        bpy.ops.object.select_all(action='DESELECT')
 
     @classmethod
     def branches_by_hexsha(cls, repo):
@@ -191,6 +204,13 @@ class IfcGit:
                 result[branch.commit.hexsha].append(branch)
             else:
                 result[branch.commit.hexsha] = [branch]
+        if repo.remotes:
+            for remote in repo.remotes:
+                for ref in remote.refs:
+                    if ref.commit.hexsha in result:
+                        result[ref.commit.hexsha].append(ref)
+                    else:
+                        result[ref.commit.hexsha] = [ref]
         return result
 
     @classmethod
@@ -292,6 +312,7 @@ class IfcGit:
     def colourise(cls, step_ids):
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
+        bpy.ops.object.select_all(action='DESELECT')
 
         for obj in bpy.context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -299,10 +320,13 @@ class IfcGit:
             step_id = obj.BIMObjectProperties.ifc_definition_id
             if step_id in step_ids["modified"]:
                 obj.color = (0.3, 0.3, 1.0, 1)
+                obj.select_set(True)
             elif step_id in step_ids["added"]:
                 obj.color = (0.2, 0.8, 0.2, 1)
+                obj.select_set(True)
             elif step_id in step_ids["removed"]:
                 obj.color = (1.0, 0.2, 0.2, 1)
+                obj.select_set(True)
             else:
                 obj.color = (1.0, 1.0, 1.0, 0.5)
 
@@ -317,9 +341,9 @@ class IfcGit:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
                     branch.checkout()
-        else:
-            # NOTE this is calling the git binary in a subprocess
-            repo.git.checkout(item.hexsha)
+                    return
+        # NOTE this is calling the git binary in a subprocess
+        repo.git.checkout(item.hexsha)
 
     @classmethod
     def delete_collection(cls, blender_collection):
@@ -344,6 +368,23 @@ class IfcGit:
             config_writer = IfcGitRepo.repo.config_writer()
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
+
+    @classmethod
+    def config_info_attributes(cls, repo):
+        """Set IFC files as text in .git/info/attributes"""
+        path_attributes = os.path.join(repo.git_dir, "info", "attributes")
+        if not os.path.exists(path_attributes):
+            with open(path_attributes, "w") as f:
+                # attributes patterns are case-insensitive
+                f.write("*.ifc text")
+
+    @classmethod
+    def dos2unix(cls, path_file):
+        with open(path_file, "rb") as infile:
+            content = infile.read()
+        with open(path_file, "wb") as output:
+            for line in content.splitlines():
+                output.write(line + b"\n")
 
     @classmethod
     def execute_merge(cls, path_ifc, operator):
