@@ -29,8 +29,13 @@ import ifcopenshell.geom
 import ifcopenshell.express
 from ifcopenshell.transition_curve import point_on_LINE
 from ifcopenshell.transition_curve import point_on_CIRCULARARC
+from ifcopenshell.transition_curve import point_on_BLOSSCURVE
 from ifcopenshell.transition_curve import point_on_CLOTHOID
+from ifcopenshell.transition_curve import point_on_COSINECURVE
 
+"""
+Test cases are loaded from https://github.com/bSI-RailwayRoom/IFC-Rail-Sample-Files
+"""
 
 def print_structure(alignment, indent=0):
     """
@@ -41,6 +46,11 @@ def print_structure(alignment, indent=0):
         for child in rel.RelatedObjects:
             print_structure(child, indent + 2)
 
+class TransitionCode(Enum):
+    CONTINUOUS = "CONTINUOUS"
+    CONTSAMEGRADIENT = "CONTSAMEGRADIENT"
+    CONTSAMEGRADIENTSAMECURVATURE = "CONTSAMEGRADIENTSAMECURVATURE"
+    DISCONTINUOUS = "DISCONTINUOUS"
 
 class Root:
     """
@@ -259,6 +269,16 @@ class LinearElement(Product):
 
 
 @dataclass
+class Segment():
+    """
+    IfcSegment
+
+    Ref: 8.9.3.62
+    https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSegment.htm
+    """
+    Transition: TransitionCode
+
+@dataclass
 class AlignmentHorizontalSegmentTypeEnum(Enum):
     """
     IfcAlignmentHorizontalSegmentTypeEnum
@@ -373,15 +393,20 @@ class AlignmentPoint:
     """
     Not sure if this will be useful.
     Might serve as syntatic sugar over the numpy array
+
+    Reference: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSegmentedReferenceCurve.htm#Figure-8.9.3.63.A-use-of-a-segmented-reference-curve-on-a-cant-segment-based-on-a-gradient-curve
     """
 
-    index: int
     x: float
     y: float
-    z: float
-    station: float
-    direction: float
-    radius: float
+    z: float # elevation of base curve (IfcGradientCurve)
+    station: float # distance along alignment
+    bearing: float # horizontal bearing as angle CCW from positive x-axis in radians
+    grade: float # vertical slope as unitless rise over run
+    radius: float # radius at this point (inverse of curvature)
+    cant: float # height distance between rails
+    z_reference: float # elevation of reference curve (IfcSegmentedReferenceCurve) calculated as z + cant
+
 
 
 class AlignmentHorizontal(LinearElement):
@@ -585,11 +610,59 @@ class Alignment(PositioningElement):
         print(f"{self.PredefinedType=}")
 
 
-if __name__ == "__main__":
-    from matplotlib import pyplot as plt
-    import ifcopenshell
-    import pandas as pd
+@dataclass
+class BoundedCurve():
+    """
+    IfcBoundedCurve
 
+    Ref: 8.9.3.10
+    https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBoundedCurve.htm
+    """
+    Dim: int=None
+
+@dataclass
+class CompositeCurve():
+    """
+    IfcCompositeCurve
+
+    Ref: 8.9.3.20
+    https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCompositeCurve.htm
+    """
+    Segments: List[Segment]
+    SelfIntersect: bool
+
+    def create_shape(self) -> np.ndarray:
+        raise NotImplementedError
+
+@dataclass
+class GradientCurve(CompositeCurve):
+    """
+    IfcGradientCurve
+
+    Ref: 8.9.3.35
+    https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcGradientCurve.htm
+    """
+    BaseCurve: BoundedCurve
+    EndPoint: np.ndarray=None 
+
+    def create_shape(self) -> np.ndarray:
+        raise NotImplementedError
+
+@dataclass
+class SegmentedReferenceCurve(CompositeCurve):
+    """
+    IfcSegmentedReferenceCurve
+
+    Ref: 8.9.3.63
+    https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSegmentedReferenceCurve.htm
+    """
+    BaseCurve: BoundedCurve
+    EndPoint: np.ndarray=None 
+
+    def create_shape(self) -> np.ndarray:
+        raise NotImplementedError
+
+def generic_test() -> None:
     test_file = "UT_AWC_1.ifc"
     # test_file = "UT_AWC_1_no_geometry.ifc"
     # test_file = "C3D-UT01.ifc"
@@ -598,6 +671,28 @@ if __name__ == "__main__":
     in_file = os.path.join(
         pathlib.Path(__file__).parent.absolute(), "..", "test", "fixtures", test_file
     )
+    model = ifcopenshell.open(in_file)
+
+    align_entity = model.by_type("IfcAlignment")[0]
+    align = Alignment().from_entity(align_entity)
+
+    s = ifcopenshell.geom.settings()
+    s.set(s.INCLUDE_CURVES, True)
+    xy = align.create_shape(settings=s, use_representation=False, point_interval=2)
+
+    fg, ax = plt.subplots()
+    ax.plot(xy.T[0], xy.T[1], marker=".", label="IfcOpenShell")
+    ax.legend()
+    ax.set_title(test_file)
+    ax.grid(True, linestyle="-.")
+
+    out_file = f"{test_file}.png"
+    print(f"[INFO] writing output to {out_file}...")
+    plt.savefig(out_file)
+    print(f"[INFO] done.")
+
+
+def synthetic_test(transition_type: str, case: int=1) -> None:
     synthetic_path = os.path.join(
         pathlib.Path.home(),
         "src",
@@ -607,24 +702,24 @@ if __name__ == "__main__":
         "Horizontal",
         "SyntheticTestcases",
     )
-    type_path = os.path.join(synthetic_path, "Clothoid")
-    test_index = 1
+    type_path = os.path.join(synthetic_path, transition_type)
+    test_index = 2
     test_data = {
-        1: "Clothoid_100.0_inf_300_1_Meter",
-        2: "Clothoid_100.0_-inf_-300_1_Meter",
-        3: "Clothoid_100.0_300_inf_1_Meter",
-        4: "Clothoid_100.0_-300_-inf_1_Meter",
-        5: "Clothoid_100.0_1000_300_1_Meter",
-        6: "Clothoid_100.0_-1000_-300_1_Meter",
-        7: "Clothoid_100.0_300_1000_1_Meter",
-        8: "Clothoid_100.0_-300_-1000_1_Meter",
+        1: f"{transition_type}_100.0_inf_300_1_Meter",
+        2: f"{transition_type}_100.0_-inf_-300_1_Meter",
+        3: f"{transition_type}_100.0_300_inf_1_Meter",
+        4: f"{transition_type}_100.0_-300_-inf_1_Meter",
+        5: f"{transition_type}_100.0_1000_300_1_Meter",
+        6: f"{transition_type}_100.0_-1000_-300_1_Meter",
+        7: f"{transition_type}_100.0_300_1000_1_Meter",
+        8: f"{transition_type}_100.0_-300_-1000_1_Meter",
     }
     test_case = test_data[test_index]
     test_title = f"TS{test_index}_{test_data[test_index]}"
     test_path = os.path.join(type_path, test_title)
-    test_file2 = f"{test_case}.ifc"
+    test_file = f"{test_case}.ifc"
     test_xlsx = f"TS{test_index}_{test_case}.xlsx"
-    in_file2 = os.path.join(test_path, test_file2)
+    in_file = os.path.join(test_path, test_file)
     in_xlsx = os.path.join(test_path, test_xlsx)
 
     df1 = pd.read_excel(in_xlsx, sheet_name="horizontal 2D x,y", skiprows=2)
@@ -636,8 +731,7 @@ if __name__ == "__main__":
         },
         inplace=True,
     )
-    # model = ifcopenshell.open(in_file)
-    model = ifcopenshell.open(in_file2)
+    model = ifcopenshell.open(in_file)
 
     align_entity = model.by_type("IfcAlignment")[0]
     align = Alignment().from_entity(align_entity)
@@ -647,20 +741,73 @@ if __name__ == "__main__":
     xy = align.create_shape(settings=s, use_representation=False, point_interval=2)
 
     fg, ax = plt.subplots()
+    ax.plot(xy.T[0], xy.T[1], marker=".", label="IfcOpenShell")
     ax.plot(df1["X"], df1["Y"], label="bSI-RailwayRoom")
-    ax.plot(
-        xy.T[0],
-        xy.T[1],
-        marker=".",
-        label="IfcOpenShell",
-    )
     ax.legend()
-    # ax.set_title(test_file)
+    ax.set_title(test_file)
     ax.set_title(test_title)
     ax.grid(True, linestyle="-.")
 
-    # out_file = f"{test_file}.png"
     out_file = f"{test_title}.ifc.png"
-    # out_file = "current_test.ifc.png"
     print(f"[INFO] writing output to {out_file}...")
     plt.savefig(out_file)
+    print(f"[INFO] done.")
+
+
+def awc_test(index: int=1, geometry: bool=True) -> None:
+    """
+    Run one of the Alignment With Cant (AWC) test cases
+
+    @param index: Index of the AWC test case
+    @param geometry: Sets whether the test data should include the
+    geometry representation as well as the business logic parameters
+    for the alignment data.
+    """
+    test_name = f"UT_AWC_{index}"
+    awc_path = os.path.join(
+        pathlib.Path.home(),
+        "src",
+        "IFC-Rail-Sample-Files",
+        "1_Alignment with Cant (AWC)",
+        test_name,
+        "IFC reference files",
+        "RC4",
+    )
+
+    if geometry:
+        test_file = f"{test_name}.ifc"
+    else:
+        test_file = f"{test_name}_no_geometry.ifc"
+    in_file = os.path.join(awc_path, test_file)
+
+    model = ifcopenshell.open(in_file)
+
+    align_entity = model.by_type("IfcAlignment")[0]
+    align = Alignment().from_entity(align_entity)
+
+    s = ifcopenshell.geom.settings()
+    s.set(s.INCLUDE_CURVES, True)
+    xy = align.create_shape(settings=s, use_representation=False, point_interval=2)
+
+    fg, ax = plt.subplots()
+    ax.plot(xy.T[0], xy.T[1], label="IfcOpenShell")
+    ax.set_title(test_file)
+    ax.grid(True, linestyle="-.")
+
+    out_file = f"{test_name}.ifc.png"
+    print(f"[INFO] writing output to {out_file}...")
+    plt.savefig(out_file)
+    print(f"[INFO] done.")
+
+if __name__ == "__main__":
+    from matplotlib import pyplot as plt
+    import ifcopenshell
+    import pandas as pd
+
+    # synthetic test
+    transition_types = ["Bloss", "Clothoid", "Cosine", "Helmert", "Sine", "Viennese Bend"]
+    transition_type = transition_types[2]
+    # synthetic_test(transition_type, 1)
+
+    # AWC test
+    awc_test(index=1, geometry=True)
