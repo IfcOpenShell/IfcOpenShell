@@ -35,9 +35,33 @@ from gpu_extras.batch import batch_for_shader
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
 from blenderbim.bim.module.drawing.shaders import add_verts_sequence, add_offsets
 from blenderbim.bim.module.drawing.helper import format_distance
+from timeit import default_timer as timer
 from functools import lru_cache
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY # TODO: move back to 0.2
+
+
+class profile_consequential:
+    start_time = None
+    lines = []
+
+    @classmethod
+    def __init__(cls, test_name):
+        cls.log()
+        cls.start_time = timer()
+        cls.test_name = test_name
+
+    @classmethod
+    def log(cls):
+        if cls.start_time is not None:
+            cls.lines.append(f"{cls.test_name}\t{timer() - cls.start_time:.10f}")
+
+    @classmethod
+    def stop(cls):
+        cls.log()
+        cls.start_time = None
+        print('\n'.join(cls.lines))
+        cls.lines = []
 
 
 def ccw(A, B, C):
@@ -167,56 +191,6 @@ class BaseDecorator:
 
     def camera_zoom_to_factor(self, zoom):
         return math.pow(((zoom / 50) + math.sqrt(2)) / 2, 2)
-
-    def get_objects(self, collection):
-        """find relevant objects
-        using class.objecttype
-
-        returns: iterable of blender objects
-        """
-        results = []
-        # NOTE: if the ObjectType is not on the list
-        # it will be also drawn with MiscDecorator
-        decoration_presets = (
-            "DIMENSION",
-            "TEXT_LEADER",
-            "STAIR_ARROW",
-            "HIDDEN_LINE",
-            "PLAN_LEVEL",
-            "SECTION_LEVEL",
-            "BREAKLINE",
-            "GRID",
-            "ELEVATION",
-            "SECTION",
-            "TEXT",
-            "BATTING",
-        )
-        for obj in collection.all_objects:
-            if obj.hide_get():
-                continue
-
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-
-            if element.is_a("IfcAnnotation"):
-                if element.ObjectType == self.objecttype:
-                    results.append(obj)
-
-                elif (
-                    self.objecttype == "MISC"
-                    and element.ObjectType not in decoration_presets
-                    and isinstance(obj.data, bpy.types.Mesh)
-                ):
-                    results.append(obj)
-
-                elif self.objecttype == "FALL" and element.ObjectType in (
-                    "SLOPE_ANGLE",
-                    "SLOPE_FRACTION",
-                    "SLOPE_PERCENT",
-                ):
-                    results.append(obj)
-        return results
 
     def get_splines(self, obj):
         """Iterates through splines
@@ -522,6 +496,7 @@ class BaseDecorator:
 
     def draw_text(self, context, obj, text_world_position=None, reverse_lines_order=False):
         """if `text_world_position` is not provided, the object's location will be used"""
+
         if not text_world_position:
             text_world_position = obj.location
 
@@ -570,6 +545,7 @@ class BaseDecorator:
                     box_alignment=box_alignment,
                 )
                 line_i += 1 if not reverse_lines_order else -1
+
 
 
 class DimensionDecorator(BaseDecorator):
@@ -659,6 +635,7 @@ class DimensionDecorator(BaseDecorator):
         text_offset_value = viewportDrawingScale * 3
 
         for i0, i1 in indices:
+
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
             p0 = location_3d_to_region_2d(region, region3d, v0)
@@ -671,8 +648,6 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
-                # TODO: same distance format function as in svg?
-                # requires storing drawing precision and decimal_places from pset to data.py
                 text = self.format_value(context, length)
                 text = text_prefix + text + text_suffix
 
@@ -1914,7 +1889,7 @@ class DecorationsHandler:
         if cls.installed:
             cls.uninstall()
         handler = cls()
-        # NOTE: that we USE POST_PIXEL here so that we can draw use both 3D_POLYLINE_UNIFORM_COLOR
+        # NOTE: we USE POST_PIXEL here so that we can draw use both 3D_POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
 
@@ -1927,7 +1902,35 @@ class DecorationsHandler:
         cls.installed = None
 
     def __init__(self):
-        self.decorators = [cls() for cls in self.decorators_classes]
+        self.decorators = {cls.objecttype: cls() for cls in self.decorators_classes}
+        for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
+            self.decorators[object_type] = self.decorators["FALL"]
+
+    def get_objects_and_decorators(self, collection):
+        results = []
+
+        for obj in collection.all_objects:
+            if obj.hide_get():
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if not element.is_a("IfcAnnotation"):
+                continue
+            
+            object_type = element.ObjectType
+            if object_type == "DRAWING":
+                continue
+
+            if (dec := self.decorators.get(object_type, None)):
+                results.append((obj, dec))
+
+            elif isinstance(obj.data, bpy.types.Mesh):
+                results.append((obj, self.decorators["MISC"]))
+            
+        return results
 
     def __call__(self, context):
         collection, _ = helper.get_active_drawing(context.scene)
@@ -1937,6 +1940,6 @@ class DecorationsHandler:
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
-        for decorator in self.decorators:
-            for obj in decorator.get_objects(collection):
-                decorator.decorate(context, obj)
+        object_decorators = self.get_objects_and_decorators(collection)
+        for obj, decorator in object_decorators:
+            decorator.decorate(context, obj)
