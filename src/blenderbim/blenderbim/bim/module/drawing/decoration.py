@@ -959,15 +959,13 @@ class StairDecorator(BaseDecorator):
             # circle head on first vert
             if edge[0] == 0:
                 circle_head = get_circle_head(circle_size)
-                add_verts_sequence([v + v0 for v in circle_head], start_i, **out_kwargs, closed=True)
-                start_i += 12
+                start_i = add_verts_sequence([v + v0 for v in circle_head], start_i, **out_kwargs, closed=True)
 
             # arrow head on last vert
             if edge[1] == last_vert:
                 edge_dir = (v1 - v0).normalized()
                 arrow_head = get_arrow_head(edge_dir, arrow_size, rot_matrix_cw, rot_matrix_ccw)
-                add_verts_sequence([v1 - arrow_head[1], v1, v1 - arrow_head[2]], start_i, **out_kwargs)
-                start_i += 3
+                start_i = add_verts_sequence([v1 - arrow_head[1], v1, v1 - arrow_head[2]], start_i, **out_kwargs)
 
             # stem with gaps for arrows
             add_verts_sequence([v0, v1], start_i, **out_kwargs)
