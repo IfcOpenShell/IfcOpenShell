@@ -25,6 +25,8 @@ import math
 
 import numpy as np
 
+from ifcopenshell.alignment import AlignmentHorizontalSegmentTypeEnum
+
 
 def rotate_points(coords: tuple, angle: float) -> np.ndarray:
     """
@@ -130,7 +132,7 @@ def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
     else:
         R = abs(segment.StartRadiusOfCurvature)
     L = abs(segment.SegmentLength)
-    
+
     def theta(u, L, R):
         term1 = u**3 / (R * L**2)
         term2 = u**4 / (2 * R * L**3)
@@ -167,7 +169,16 @@ def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
         y_term7 = u**16 / ((1800 * R**5) * (L**10))
         y_term8 = u**17 / ((816 * R**5) * (L**11))
 
-        y = y_term1 - y_term2 + y_term3 - y_term4 + y_term5 - y_term6 + y_term7 - y_term8
+        y = (
+            y_term1
+            - y_term2
+            + y_term3
+            - y_term4
+            + y_term5
+            - y_term6
+            + y_term7
+            - y_term8
+        )
     except ZeroDivisionError as e:
         y = 0
 
