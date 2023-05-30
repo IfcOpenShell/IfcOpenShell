@@ -234,18 +234,20 @@ class Scheduler:
                             end_tdi = max_col
 
                         width = sum(column_widths[start_tdi : end_tdi + 1])
+                        col_style = self.get_style(column_styles[tdi], styles)
+                        final_cell_style = cell_style or col_style
+                        background_color = final_cell_style.get("background-color", "#ffffff")
 
                         self.svg.add(
                             self.svg.rect(
                                 insert=(x, y),
                                 size=(width, height),
-                                style="fill: #ffffff; stroke-width:.125; stroke: #000000;",
+                                style=f"fill: {background_color}; stroke-width:.125; stroke: #000000;",
                             )
                         )
-                        p_tags = td.getElementsByType(P)
 
-                        col_style = self.get_style(column_styles[tdi], styles)
-                        final_cell_style = cell_style or col_style
+                        p_tags = td.getElementsByType(P)
+                        text_color = final_cell_style.get("color", None)
                         box_alignment = self.get_box_alignment(final_cell_style)
                         wrap_text = final_cell_style.get("wrap-option", None) == "wrap"
                         bold_text = final_cell_style.get("font-weight", None) == "bold"
@@ -283,6 +285,7 @@ class Scheduler:
                                 cell_width=width,
                                 bold=bold_text,
                                 italic=italic_text,
+                                text_color=text_color,
                             )
                         x += width
                         tdi += column_span
@@ -337,6 +340,7 @@ class Scheduler:
         cell_width=100,
         bold=False,
         italic=False,
+        text_color=None,
     ):
         """
         Adds text to svg.
@@ -357,6 +361,8 @@ class Scheduler:
             text_params["font-weight"] = "bold"
         if italic:
             text_params["font-style"] = "italic"
+        if text_color:
+            text_params["fill"] = text_color
 
         if len(text_lines) == 1 and not wrap_text:
             text_params.update(box_alignment_params)
