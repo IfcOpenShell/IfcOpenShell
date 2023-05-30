@@ -20,6 +20,7 @@ import os
 import re
 import bpy
 import math
+import lark
 import bmesh
 import shutil
 import logging
@@ -35,11 +36,10 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
-
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
-
 from mathutils import Vector
+from fractions import Fraction
 import collections
 
 
@@ -580,13 +580,20 @@ class Drawing(blenderbim.core.tool.Drawing):
                     camera.BIMCameraProperties.diagram_scale = valid_scales[0]
                 else:
                     camera.BIMCameraProperties.diagram_scale = "CUSTOM"
-                    camera.BIMCameraProperties.custom_diagram_scale = pset["HumanScale"] + "|" + pset["Scale"]
+                    if ":" in pset["HumanScale"]:
+                        numerator, denominator = pset["HumanScale"].split(":")
+                    else:
+                        numerator, denominator = pset["HumanScale"].split("=")
+                    camera.BIMCameraProperties.custom_scale_numerator = numerator
+                    camera.BIMCameraProperties.custom_scale_denominator = denominator
             if "HasUnderlay" in pset:
                 camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
             if "HasLinework" in pset:
                 camera.BIMCameraProperties.has_linework = pset["HasLinework"]
             if "HasAnnotation" in pset:
                 camera.BIMCameraProperties.has_annotation = pset["HasAnnotation"]
+            if "IsNTS" in pset:
+                camera.BIMCameraProperties.is_nts = pset["IsNTS"]
 
         tool.Loader.link_mesh(shape, camera)
 
@@ -1330,7 +1337,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_human_scale(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("HumanScale", "NTS")
+        pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing") or {}
+        return "NTS" if pset.get("IsNTS", False) else pset.get("HumanScale", "NTS")
 
     @classmethod
     def get_drawing_metadata(cls, drawing):
@@ -1610,3 +1618,65 @@ class Drawing(blenderbim.core.tool.Drawing):
         bm.free()
 
         return verts, edges
+
+    @classmethod
+    def get_scale_ratio(cls, scale):
+        numerator, denominator = scale.split("/")
+        return float(numerator) / float(denominator)
+
+    @classmethod
+    def get_diagram_scale(cls, obj):
+        props = obj.data.BIMCameraProperties
+        scale = props.diagram_scale
+        if scale != "CUSTOM":
+            human_scale, scale = scale.split("|")
+            return {"HumanScale": human_scale, "Scale": scale}
+        numerator_string = props.custom_scale_numerator
+        denominator_string = props.custom_scale_denominator
+        numerator = tool.Drawing.convert_scale_string(numerator_string)
+        denominator = tool.Drawing.convert_scale_string(denominator_string)
+        if not numerator or not denominator:
+            return
+        scale = str(Fraction(numerator / denominator).limit_denominator(1000))  # Any ratio >1000 is stupid.
+        if "'" in scale or '"' in scale:
+            human_separator = "="  # Imperial scales use "=", like 1" = 1' - 0"
+            # If for some crazy reason we mix metric and imperial, assume metric is SI units, like 1m = 1'
+            if "'" not in numerator_string and '"' not in numerator_string:
+                numerator_string += "m"
+            if "'" not in denominator_string and '"' not in denominator_string:
+                denominator_string += "m"
+        else:
+            human_separator = ":"  # Metric scales use ":", like 1:100
+        human_scale = f"{numerator_string}{human_separator}{denominator_string}"
+        return {"HumanScale": human_scale, "Scale": scale}
+
+    @classmethod
+    def convert_scale_string(cls, value):
+        try:
+            return float(value)
+        except:
+            pass  # Perhaps it's imperial?
+        l = lark.Lark(
+            """start: feet? "-"? inches?
+                    feet: NUMBER? "-"? fraction? "'"
+                    inches: NUMBER? "-"? fraction? "\\""
+                    fraction: NUMBER "/" NUMBER
+                    %import common.NUMBER
+                    %import common.WS
+                    %ignore WS // Disregard spaces in text
+                 """
+        )
+
+        try:
+            start = l.parse(value)
+        except:
+            return 0
+        result = 0
+        for dimension in start.children:
+            factor = 12 if dimension.data == "feet" else 1
+            for child in dimension.children:
+                if getattr(child, "data", None) == "fraction":
+                    result += (float(child.children[0]) / float(child.children[1])) * factor
+                else:
+                    result += float(child) * factor
+        return result * 0.0254
