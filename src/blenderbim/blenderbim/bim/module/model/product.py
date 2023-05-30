@@ -127,7 +127,19 @@ class AddConstrTypeInstance(bpy.types.Operator):
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
 
         obj.location = context.scene.cursor.location
-        collection = context.view_layer.active_layer_collection.collection
+
+        collection = None
+        if (
+            building_obj
+            and building_element
+            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering"]
+            and instance_class in ["IfcWindow", "IfcDoor"]
+        ):
+            # Fills should be a sibling to the building element
+            collection = building_obj.users_collection[0]
+        if not collection:
+            collection = context.view_layer.active_layer_collection.collection
+
         collection.objects.link(obj)
         collection_obj = bpy.data.objects.get(collection.name)
 
