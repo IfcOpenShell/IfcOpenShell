@@ -247,27 +247,29 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
     # iterate over edges from original geometry
     # if their angle was redefined by user - apply the changes to the related vertices
     # to match the requested angle
+
+    process_later = []
     for old_edge_verts, defined_angle, separate_verts in original_geometry_data["edges"]:
         if not defined_angle:
             continue
 
         edge_verts_remaped = set(old_verts_remap[old_vert] for old_vert in old_edge_verts)
 
+        identical_edge = None
         for edge in footprint_edges:
             if set(edge.verts) == edge_verts_remaped:
                 identical_edge = edge
                 break
+        assert identical_edge
 
-        verts_to_move = find_other_polygon_verts(identical_edge)
-        for v in verts_to_move:
-            if not separate_verts:
-                vert_co = verts_to_change.get(v, v.co)
-                new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
-                verts_to_change[v] = new_vert_co
-            else:
+        if separate_verts:
+            verts_to_move = find_other_polygon_verts(identical_edge)
+            for v in verts_to_move:
                 vert_co = v.co
                 new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
                 verts_to_rip.append([v, new_vert_co, identical_edge])
+        else:
+            process_later.append([identical_edge, edge_verts_remaped, defined_angle])
 
         if defined_angle >= pi / 2:
             bottom_chords_to_remove.append(identical_edge)
@@ -282,13 +284,31 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
             if cur_edge == edge:
                 continue
             bmesh.ops.contextual_create(bm, geom=[new_edge, cur_edge])
+        return new_v
+
+    # correct angle for verts that require verts separation
+    # store separated verts for angle correction later
+    related_verts = {}
+    for v, new_co, edge in verts_to_rip:
+        new_v = separate_vert(bm, v, edge, new_co)
+        related_verts.setdefault(v, []).append(new_v)
+
+    # verts angle correction.
+    # we're taking into account new verts created after verts separation
+    # required for asymmetrical gable roof
+    for identical_edge, edge_verts_remaped, defined_angle in process_later:
+        verts_to_move = find_other_polygon_verts(identical_edge)
+        for v in verts_to_move[:]:
+            verts_to_move.extend(related_verts[v])
+
+        for v in verts_to_move:
+            vert_co = verts_to_change.get(v, v.co)
+            new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
+            verts_to_change[v] = new_vert_co
 
     # apply all changes once at the end
     for v in verts_to_change:
         v.co = verts_to_change[v]
-
-    for v, new_co, edge in verts_to_rip:
-        separate_vert(bm, v, edge, new_co)
 
     bmesh.ops.delete(bm, geom=bottom_chords_to_remove, context="EDGES")
 
