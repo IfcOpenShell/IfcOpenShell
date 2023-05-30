@@ -38,7 +38,7 @@ from blenderbim.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
 from functools import lru_cache
 
-UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY # TODO: move back to 0.2
+UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 
 
 class profile_consequential:
