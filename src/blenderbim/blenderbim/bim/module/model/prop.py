@@ -564,6 +564,7 @@ class BIMRailingProperties(PropertyGroup):
 
 
 class BIMRoofProperties(PropertyGroup):
+    non_si_units_props = ("is_editing", "path_data", "roof_type", "roof_added_previously", "generation_method", "angle", "rafter_edge_angle")
     roof_types = (("HIP/GABLE ROOF", "HIP/GABLE ROOF", ""),)
     roof_generation_methods = (
         ("HEIGHT", "HEIGHT", ""),
@@ -582,14 +583,26 @@ class BIMRoofProperties(PropertyGroup):
         name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
     )
     angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE")
+    roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
+    rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, default=pi / 2, subtype="ANGLE")
 
-    def get_general_kwargs(self):
+    def get_general_kwargs(self, convert_to_project_units=False):
         kwargs = {
             "roof_type": self.roof_type,
             "generation_method": self.generation_method,
+            "roof_thickness": self.roof_thickness,
+            "rafter_edge_angle": self.rafter_edge_angle,
         }
         if self.generation_method == "HEIGHT":
             kwargs["height"] = self.height
         else:
             kwargs["angle"] = self.angle
-        return kwargs
+
+        if not convert_to_project_units:
+            return kwargs
+        return tool.Model.convert_data_to_project_units(kwargs, self.non_si_units_props)
+
+    def set_props_kwargs_from_ifc_data(self, kwargs):
+        kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
+        for prop_name in kwargs:
+            setattr(self, prop_name, kwargs[prop_name])

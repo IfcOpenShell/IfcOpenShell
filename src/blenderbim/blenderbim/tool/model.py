@@ -64,7 +64,6 @@ class Model(blenderbim.core.tool.Model):
             if prop_name in non_si_props:
                 continue
             prop_value = data[prop_name]
-            print(prop_name, prop_value)
             if isinstance(prop_value, collections.abc.Iterable):
                 data[prop_name] = [v * si_conversion for v in prop_value]
             else:

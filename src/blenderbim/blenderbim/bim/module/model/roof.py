@@ -28,7 +28,7 @@ from blenderbim.bim.module.model.data import RoofData, refresh
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 import json
-from math import tan, pi
+from math import tan, pi, radians
 from mathutils import Vector, Matrix
 from bpypolyskel import bpypolyskel
 import shapely
@@ -37,9 +37,6 @@ from pprint import pprint
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoof.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoofType.htm
-
-
-NON_SI_ROOF_PROPS = ("is_editing", "roof_type", "roof_added_previously", "generation_method", "angle")
 
 
 def float_is_zero(f):
@@ -110,7 +107,7 @@ def is_valid_roof_footprint(bm):
     return ({"FINISHED"}, "")
 
 
-def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutate_current_bmesh=True):
+def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, roof_thickness = 0.1, angle=pi / 18, rafter_edge_angle = pi / 2, mutate_current_bmesh=True):
     """return bmesh with gable roof geometry
 
     `mutate_current_bmesh` is a flag to indicate whether the input bmesh
@@ -232,10 +229,13 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
     verts_to_change = {}
     verts_to_rip = []
     bottom_chords_to_remove = []
+    
+    def is_footprint_edge(edge):
+        return all(float_is_zero(v.co.z - footprint_z) for v in edge.verts)
 
     # find footprint edges
     for edge in bm.edges:
-        if all(float_is_zero(v.co.z - footprint_z) for v in edge.verts):
+        if is_footprint_edge(edge):
             footprint_edges.append(edge)
             footprint_verts.update(edge.verts)
 
@@ -299,7 +299,7 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
     for identical_edge, edge_verts_remaped, defined_angle in process_later:
         verts_to_move = find_other_polygon_verts(identical_edge)
         for v in verts_to_move[:]:
-            verts_to_move.extend(related_verts[v])
+            verts_to_move.extend(related_verts.get(v, []))
 
         for v in verts_to_move:
             vert_co = verts_to_change.get(v, v.co)
@@ -312,10 +312,33 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, angle=pi / 18, mutat
 
     bmesh.ops.delete(bm, geom=bottom_chords_to_remove, context="EDGES")
 
-    extrusion_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
-    extruded_verts = bm_sort_out_geom(extrusion_geom)["verts"]
-    bmesh.ops.translate(bm, vec=[0.0, 0.0, 0.1], verts=extruded_verts)
+    # add roof thickness
+    extrusion_geom = bm_sort_out_geom(bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"])
+    extruded_edges = extrusion_geom["edges"]
+    extruded_verts = extrusion_geom["verts"]
+    rafter_edge_angle = pi/2 - rafter_edge_angle
+    default_offset_dir = Vector([0, 0, 1]) * roof_thickness
+    footprint_verts = set()
 
+    footprint_edges = []
+    for edge in extruded_edges:
+        if is_footprint_edge(edge):
+            footprint_edges.append(edge)
+
+    # TODO: rafter_edge_angle might differ 
+    # if footprint edges are not connected by 90 degrees
+    shifted_verts = set()
+    for edge in footprint_edges:
+        footprint_verts.update(edge.verts)
+        v0, v1 = edge.verts
+        edge_dir = (v0.co - v1.co).normalized()
+        offset_dir = Matrix.Rotation(rafter_edge_angle, 4, edge_dir) @ default_offset_dir
+        for v in edge.verts:
+            v.co += offset_dir * (Vector([1, 1, 0]) if v in shifted_verts else 1)
+        shifted_verts.update(footprint_verts)
+
+    verts = [v for v in extruded_verts if v not in footprint_verts]
+    bmesh.ops.translate(bm, vec=default_offset_dir, verts=verts)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     return bm
 
@@ -395,8 +418,9 @@ def update_roof_modifier_bmesh(context):
         tool.Blender.apply_bmesh(obj.data, bm)
         return
 
-    height = props.height * si_conversion
-    generate_hiped_roof_bmesh(bm, props.generation_method, height, props.angle, mutate_current_bmesh=True)
+    generate_hiped_roof_bmesh(
+        bm, props.generation_method, props.height, props.roof_thickness, 
+        props.angle, props.rafter_edge_angle, mutate_current_bmesh=True)
     tool.Blender.apply_bmesh(obj.data, bm)
 
 
@@ -482,10 +506,6 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Object has to be IfcRoof/IfcRoofType type to add a roof.")
             return {"CANCELLED"}
 
-        # need to make sure all default props will have correct units
-        if not props.roof_added_previously:
-            convert_property_group_from_si(props, skip_props=NON_SI_ROOF_PROPS)
-
         # rejecting original roof shape to be safe
         # taking into account only it's bounding box dimensions
         if obj.dimensions.x == 0 or obj.dimensions.y == 0:
@@ -500,7 +520,7 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
             max_y = bbox["max_y"]
             min_z = bbox["min_z"]
 
-        roof_data = props.get_general_kwargs()
+        roof_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = {
             "edges": [[0, 1], [1, 2], [2, 3], [3, 0]],
             "verts": [
@@ -529,17 +549,8 @@ class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMRoofProperties
         element = tool.Ifc.get_entity(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Roof", "Data"))
-        data["path_data"] = json.dumps(data["path_data"])
-
         # required since we could load pset from .ifc and BIMRoofProperties won't be set
-        for prop_name in data:
-            setattr(props, prop_name, data[prop_name])
-
-        # need to make sure all props that weren't used before
-        # will have correct units
-        skip_props = NON_SI_ROOF_PROPS + tuple(data.keys())
-        convert_property_group_from_si(props, skip_props=skip_props)
-
+        props.set_props_kwargs_from_ifc_data(data)
         props.is_editing = 1
         return {"FINISHED"}
 
@@ -555,8 +566,7 @@ class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Roof", "Data"))
         props = obj.BIMRoofProperties
         # restore previous settings since editing was canceled
-        for prop_name in data:
-            setattr(props, prop_name, data[prop_name])
+        props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.geometry.switch_representation(
@@ -587,7 +597,7 @@ class FinishEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
             RoofData.load()
         path_data = RoofData.data["parameters"]["data_dict"]["path_data"]
 
-        roof_data = props.get_general_kwargs()
+        roof_data = props.get_general_kwargs(convert_to_project_units=True)
         roof_data["path_data"] = path_data
         props.is_editing = -1
 
@@ -629,10 +639,9 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
             main_bm.edges.layers.int.new("BBIM_preview")
 
-            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            height = props.height * si_conversion
             second_bm = generate_hiped_roof_bmesh(
-                bm, props.generation_method, height, props.angle, mutate_current_bmesh=False
+                bm,props.generation_method, props.height, props.roof_thickness, 
+                props.angle, props.rafter_edge_angle, mutate_current_bmesh=False
             )
             bmesh.ops.translate(second_bm, verts=second_bm.verts, vec=Vector((0, 0, 1)))
 
@@ -686,7 +695,7 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
             self.report(op_status, error_message)
             return {"CANCELLED"}
 
-        roof_data = props.get_general_kwargs()
+        roof_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)
         roof_data["path_data"] = path_data
         ProfileDecorator.uninstall()
