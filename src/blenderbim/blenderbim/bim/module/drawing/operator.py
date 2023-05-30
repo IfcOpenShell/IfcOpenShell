@@ -947,52 +947,12 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def get_scale(self, context):
-        camera_props = self.camera.data.BIMCameraProperties
-        if camera_props.diagram_scale == "CUSTOM":
-            if context.scene.unit_settings.system == "IMPERIAL":
-                if (
-                    camera_props.custom_diagram_scale_input1[-1] == "'"
-                    or camera_props.custom_diagram_scale_input1[-1] == '"'
-                ):
-                    camera_props.custom_diagram_scale_input1 = camera_props.custom_diagram_scale_input1[:-1]
-                if camera_props.custom_diagram_scale_input2[-1] == "'":
-                    camera_props.custom_diagram_scale_input2 = camera_props.custom_diagram_scale_input2[:-1]
-                if (
-                    camera_props.custom_diagram_scale_input2[1:] == "'-0\""
-                    or camera_props.custom_diagram_scale_input2[1:] == "' 0\""
-                ):
-                    camera_props.custom_diagram_scale_input2 = camera_props.custom_diagram_scale_input2[0]
-                if "/" in camera_props.custom_diagram_scale_input1:
-                    if " " in camera_props.custom_diagram_scale_input1:
-                        n1, n2 = camera_props.custom_diagram_scale_input1.split(" ")
-                        n2_1, n2_2 = n2.split("/")
-                        numerator = int(n1) + (int(n2_1) / int(n2_2))
-                    elif "-" in camera_props.custom_diagram_scale_input1:
-                        n1, n2 = camera_props.custom_diagram_scale_input1.split("-")
-                        n2_1, n2_2 = n2.split("/")
-                        numerator = int(n1) + (int(n2_1) / int(n2_2))
-                    else:
-                        n1, n2 = camera_props.custom_diagram_scale_input1.split("/")
-                        numerator = int(n1) / int(n2)
-                else:
-                    numerator = 1
-                denominator = (int(camera_props.custom_diagram_scale_input2) / numerator) * 12
-                scale = "1" + "/" + str(denominator)
-                human_scale = camera_props.custom_diagram_scale_input1 + "=" + camera_props.custom_diagram_scale_input2
-            else:
-                scale = camera_props.custom_diagram_scale_input1 + "/" + camera_props.custom_diagram_scale_input2
-                human_scale = camera_props.custom_diagram_scale_input1 + ":" + camera_props.custom_diagram_scale_input2
+        diagram_scale = tool.Drawing.get_diagram_scale(self.camera)
+        self.human_scale = diagram_scale["HumanScale"]
+        self.scale = tool.Drawing.get_scale_ratio(diagram_scale["Scale"])
 
-            camera_props.custom_diagram_scale = human_scale + "|" + scale
-            self.human_scale, fraction = camera_props.custom_diagram_scale.split("|")
-        else:
-            self.human_scale, fraction = camera_props.diagram_scale.split("|")
-
-        if camera_props.is_nts:
+        if ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "IsNTS"):
             self.human_scale = "NTS"
-
-        numerator, denominator = fraction.split("/")
-        self.scale = float(numerator) / float(denominator)
 
     def is_landscape(self, render):
         return render.resolution_x > render.resolution_y

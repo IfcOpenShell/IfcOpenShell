@@ -72,27 +72,18 @@ class BIM_PT_camera(Panel):
         row.prop(dprops, "should_extract")
 
         row = layout.row()
-        row.prop(props, "is_nts")
-
-        row = layout.row()
-        row.operator("bim.resize_text")
-
-        row = layout.row()
         row.prop(props, "raster_x")
         row = layout.row()
         row.prop(props, "raster_y")
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.prop(props, "diagram_scale")
+        row.prop(props, "is_nts", text="", icon="MOD_EDGESPLIT")
+
         if props.diagram_scale == "CUSTOM":
             row = layout.row(align=True)
-            row.prop(props, "custom_diagram_scale_input1", text="Custom Scale")
-            if context.scene.unit_settings.system == "IMPERIAL":
-                separator = "         ="
-            else:
-                separator = "         :"
-            row.label(text=separator)
-            row.prop(props, "custom_diagram_scale_input2", text="")
+            row.prop(props, "custom_scale_numerator", text="Custom Scale")
+            row.prop(props, "custom_scale_denominator", text="")
 
         row = layout.row(align=True)
         row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")

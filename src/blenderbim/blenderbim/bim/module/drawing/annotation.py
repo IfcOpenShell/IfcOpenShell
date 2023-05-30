@@ -63,12 +63,7 @@ class Annotator:
         font_size = 1.6 / 1000
         font_size *= float(text_obj.data.BIMTextProperties.font_size)
 
-        if camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
-            human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
-        else:
-            human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split("|")
-        numerator, denominator = fraction.split("/")
-        font_size /= float(numerator) / float(denominator)
+        font_size /= tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
 
         text_obj.data.size = font_size
 
