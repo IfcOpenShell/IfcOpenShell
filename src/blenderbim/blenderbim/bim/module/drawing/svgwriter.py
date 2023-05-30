@@ -805,6 +805,7 @@ class SvgWriter:
             if not symbol_svg or not template_text_fields:
                 self.svg.add(self.svg.use(f"#{symbol}", transform=symbol_transform))
 
+        line_number = 0
         for text_literal in text_literals:
             # after pretty indentation some redundant spaces can occur in svg tags
             # this is why we apply "font-size: 0;" to the text tag to remove those spaces
@@ -818,6 +819,7 @@ class SvgWriter:
             }
 
             def add_text_tag(add_fill_bg):
+                nonlocal line_number
                 text_tag = self.svg.text(
                     "",
                     **(attribs | {"filter": "url(#fill-background)"}) if add_fill_bg else attribs,
@@ -827,7 +829,7 @@ class SvgWriter:
 
                 text_lines = text.replace("\\n", "\n").split("\n")
 
-                for line_number, text_line in enumerate(text_lines):
+                for text_line in text_lines:
                     # position has to be inserted at tspan to avoid x offset between tspans
                     # note that tspan doesn't support using `transform` attribute
                     # so we use (0,0) position because tspan is already offseted by text transform
@@ -835,6 +837,7 @@ class SvgWriter:
                     # doing it here and not in tspan constructor because constructor adds unnecessary spaces
                     tspan.update({"dy": f"{line_number}em"})
                     text_tag.add(tspan)
+                    line_number += 1
 
             if "fill-bg" in classes:
                 add_text_tag(True)
