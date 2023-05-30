@@ -65,12 +65,27 @@ def get_location_hint(self, context):
 
 
 def update_diagram_scale(self, context):
-    scale = self.diagram_scale
-    if scale == "CUSTOM":
-        scale = self.custom_diagram_scale
-    if "|" not in scale:
+    try:
+        element = (
+            tool.Ifc.get()
+            .by_id(self.id_data.BIMMeshProperties.ifc_definition_id)
+            .OfProductRepresentation[0]
+            .ShapeOfProduct[0]
+        )
+    except:
         return
-    human_scale, scale = scale.split("|")
+    diagram_scale = tool.Drawing.get_diagram_scale(tool.Ifc.get_object(element))
+    if not diagram_scale:
+        return
+    pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
+    if pset:
+        pset = tool.Ifc.get().by_id(pset["id"])
+    else:
+        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=diagram_scale)
+
+
+def update_is_nts(self, context):
     try:
         element = (
             tool.Ifc.get()
@@ -85,9 +100,7 @@ def update_diagram_scale(self, context):
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run(
-        "pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Scale": scale, "HumanScale": human_scale}
-    )
+    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"IsNTS": self.is_nts})
 
 
 def get_diagram_scales(self, context):
@@ -351,12 +364,11 @@ class BIMCameraProperties(PropertyGroup):
     representation: StringProperty(name="Representation")
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)
-    custom_diagram_scale: StringProperty(name="Custom Scale", update=update_diagram_scale)
-    custom_diagram_scale_input1: StringProperty(name="Custom Scale Input 1", update=update_diagram_scale)
-    custom_diagram_scale_input2: StringProperty(name="Custom Scale Input 2", update=update_diagram_scale)
+    custom_scale_numerator: bpy.props.StringProperty(default="1", update=update_diagram_scale)
+    custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
-    is_nts: BoolProperty(name="Is NTS")
+    is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"

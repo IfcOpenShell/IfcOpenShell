@@ -9,6 +9,7 @@ DATA;
 #2=IFCSIMPLEPROPERTYTEMPLATE('23JavTMk98ZxXhrUEnjAcf',$,'TargetView','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #3=IFCSIMPLEPROPERTYTEMPLATE('1yVWUt5H9DAOuu0OaMMLpe',$,'Scale','The scale of this drawing represented as a numerator and denominator, such as 1/100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #4=IFCSIMPLEPROPERTYTEMPLATE('3gsuPBtU93b8f0gg1pjkq6',$,'HumanScale','The scale of this drawing in human readable format, such as 1:100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
+#4=IFCSIMPLEPROPERTYTEMPLATE('2T$a4OFsv2LeD5JeBKEV4f',$,'IsNTS','Whether or not the scale is intended to be significant',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #5=IFCSIMPLEPROPERTYTEMPLATE('0AK5C2UpL4$eaac2LszAx$',$,'HasUnderlay','',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #6=IFCSIMPLEPROPERTYTEMPLATE('2j2ZEZR8X5tONm7kli5hM6',$,'HasLinework','',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #7=IFCSIMPLEPROPERTYTEMPLATE('1ttChRysH9UuEX2FeMj5Hu',$,'HasAnnotation','',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);

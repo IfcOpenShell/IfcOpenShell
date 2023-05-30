@@ -171,14 +171,6 @@ class BaseDecorator:
         def is_landscape(render):
             return render.resolution_x > render.resolution_y
 
-        def get_scale(camera):
-            if camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
-                human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
-            else:
-                human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split("|")
-            numerator, denominator = fraction.split("/")
-            return float(numerator) / float(denominator)
-
         camera = bpy.context.scene.camera
         render = bpy.context.scene.render
         if is_landscape(render):
@@ -186,7 +178,8 @@ class BaseDecorator:
         else:
             camera_width_model = camera.data.ortho_scale / render.resolution_y * render.resolution_x
 
-        camera_width_mm = get_scale(camera) * camera_width_model
+        scale = tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
+        camera_width_mm = scale * camera_width_model
         return camera_width_mm
 
     def camera_zoom_to_factor(self, zoom):
