@@ -1593,7 +1593,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         plane_co = camera_matrix.translation
         plane_no = camera_matrix.col[2].xyz
 
-        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
+        # Bisect verts are offset by the clip (with 5mm tolerance) to ensure it is visible in the viewport.
+        global_offset = camera.matrix_world.col[2].xyz * (-camera.data.clip_start - 0.005)
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)

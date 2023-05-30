@@ -60,7 +60,7 @@ class profile_consequential:
     def stop(cls):
         cls.log()
         cls.start_time = None
-        print('\n'.join(cls.lines))
+        print("\n".join(cls.lines))
         cls.lines = []
 
 
@@ -540,7 +540,6 @@ class BaseDecorator:
                 line_i += 1 if not reverse_lines_order else -1
 
 
-
 class DimensionDecorator(BaseDecorator):
     """Decorator for dimension objects
     - each edge of a segment with arrow
@@ -628,7 +627,6 @@ class DimensionDecorator(BaseDecorator):
         text_offset_value = viewportDrawingScale * 3
 
         for i0, i1 in indices:
-
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
             p0 = location_3d_to_region_2d(region, region3d, v0)
@@ -1910,17 +1908,17 @@ class DecorationsHandler:
 
             if not element.is_a("IfcAnnotation"):
                 continue
-            
+
             object_type = element.ObjectType
             if object_type == "DRAWING":
                 continue
 
-            if (dec := self.decorators.get(object_type, None)):
+            if dec := self.decorators.get(object_type, None):
                 results.append((obj, dec))
 
             elif isinstance(obj.data, bpy.types.Mesh):
                 results.append((obj, self.decorators["MISC"]))
-            
+
         return results
 
     def __call__(self, context):
