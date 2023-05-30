@@ -614,7 +614,7 @@ class BIM_PT_roof(bpy.types.Panel):
                     prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
                     row = box.row(align=True)
                     row.label(text=f"{props.bl_rna.properties[prop].name}")
-                    if prop == "angle":
+                    if prop in ("angle", "rafter_edge_angle"):
                         prop_value = round(degrees(prop_value), 2)
                     row.label(text=str(prop_value))
         else:
