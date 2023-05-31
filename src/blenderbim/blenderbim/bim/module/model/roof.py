@@ -772,7 +772,6 @@ class RemoveRoof(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
-        props.roof_added_previously = True
         return {"FINISHED"}
 
 

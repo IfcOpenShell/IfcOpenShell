@@ -18,7 +18,6 @@
 
 
 import bpy
-from bpy.types import Operator
 import bmesh
 from bmesh.types import BMVert, BMFace
 
@@ -27,8 +26,6 @@ from ifcopenshell.util.shape_builder import V
 import blenderbim
 import blenderbim.tool as tool
 import blenderbim.core.geometry as core
-from blenderbim.bim.helper import convert_property_group_from_si
-from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.window import create_bm_window, create_bm_box, update_simple_openings
 
 from mathutils import Vector, Matrix
@@ -44,32 +41,31 @@ def update_door_modifier_representation(context):
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
     sliding_door = "SLIDING" in props.door_type
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     representation_data = {
         "operation_type": props.door_type,
-        "overall_height": props.overall_height,
-        "overall_width": props.overall_width,
+        "overall_height": props.overall_height / si_conversion,
+        "overall_width": props.overall_width / si_conversion,
         "lining_properties": {
-            "LiningDepth": props.lining_depth,
-            "LiningThickness": props.lining_thickness,
-            "LiningOffset": props.lining_offset,
-            "LiningToPanelOffsetX": props.lining_to_panel_offset_x,
-            "LiningToPanelOffsetY": props.lining_to_panel_offset_y,
-            "TransomThickness": props.transom_thickness,
-            "TransomOffset": props.transom_offset,
-            "transomThickness": props.transom_thickness,
-            "TransomOffset": props.transom_offset,
-            "CasingThickness": props.casing_thickness,
-            "CasingDepth": props.casing_depth,
-            "ThresholdThickness": props.threshold_thickness,
-            "ThresholdDepth": props.threshold_depth,
-            "ThresholdOffset": props.threshold_offset,
+            "LiningDepth": props.lining_depth / si_conversion,
+            "LiningThickness": props.lining_thickness / si_conversion,
+            "LiningOffset": props.lining_offset / si_conversion,
+            "LiningToPanelOffsetX": props.lining_to_panel_offset_x / si_conversion,
+            "LiningToPanelOffsetY": props.lining_to_panel_offset_y / si_conversion,
+            "TransomThickness": props.transom_thickness / si_conversion,
+            "TransomOffset": props.transom_offset / si_conversion,
+            "CasingThickness": props.casing_thickness / si_conversion,
+            "CasingDepth": props.casing_depth / si_conversion,
+            "ThresholdThickness": props.threshold_thickness / si_conversion,
+            "ThresholdDepth": props.threshold_depth / si_conversion,
+            "ThresholdOffset": props.threshold_offset / si_conversion,
         },
         "panel_properties": {
-            "PanelDepth": props.panel_depth,
+            "PanelDepth": props.panel_depth / si_conversion,
             "PanelWidth": props.panel_width_ratio,
-            "FrameDepth": props.frame_depth,
-            "FrameThickness": props.frame_thickness,
+            "FrameDepth": props.frame_depth / si_conversion,
+            "FrameThickness": props.frame_thickness / si_conversion,
         },
     }
 
@@ -281,27 +277,26 @@ def create_bm_door_lining(bm, size: Vector, thickness: list, position: Vector = 
 def update_door_modifier_bmesh(context):
     obj = context.object
     props = obj.BIMDoorProperties
-    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    overall_width = props.overall_width * si_conversion
-    overall_height = props.overall_height * si_conversion
+    overall_width = props.overall_width
+    overall_height = props.overall_height
     door_type = props.door_type
     double_swing_door = "DOUBLE_SWING" in door_type
     double_door = "DOUBLE_DOOR" in door_type
     sliding_door = "SLIDING" in door_type
 
     # lining params
-    lining_depth = props.lining_depth * si_conversion
-    lining_thickness_default = props.lining_thickness * si_conversion
-    lining_offset = props.lining_offset * si_conversion
+    lining_depth = props.lining_depth
+    lining_thickness_default = props.lining_thickness
+    lining_offset = props.lining_offset
     lining_to_panel_offset_x = (
-        props.lining_to_panel_offset_x * si_conversion if not sliding_door else lining_thickness_default
+        props.lining_to_panel_offset_x if not sliding_door else lining_thickness_default
     )
-    panel_depth = props.panel_depth * si_conversion
-    lining_to_panel_offset_y = props.lining_to_panel_offset_y * si_conversion if not sliding_door else -panel_depth
+    panel_depth = props.panel_depth
+    lining_to_panel_offset_y = props.lining_to_panel_offset_y if not sliding_door else -panel_depth
 
-    transom_thickness = props.transom_thickness * si_conversion / 2
-    transfom_offset = props.transom_offset * si_conversion
+    transom_thickness = props.transom_thickness / 2
+    transfom_offset = props.transom_offset
     if transom_thickness == 0:
         transfom_offset = 0
     window_lining_height = overall_height - transfom_offset - transom_thickness
@@ -316,24 +311,24 @@ def update_door_modifier_bmesh(context):
         side_lining_thickness = side_lining_thickness - panel_lining_overlap_x
         top_lining_thickness = top_lining_thickness - panel_top_lining_overlap_x
 
-    threshold_thickness = props.threshold_thickness * si_conversion
-    threshold_depth = props.threshold_depth * si_conversion
-    threshold_offset = props.threshold_offset * si_conversion
+    threshold_thickness = props.threshold_thickness
+    threshold_depth = props.threshold_depth
+    threshold_offset = props.threshold_offset
     threshold_width = overall_width - side_lining_thickness * 2
 
-    casing_thickness = props.casing_thickness * si_conversion
-    casing_depth = props.casing_depth * si_conversion
+    casing_thickness = props.casing_thickness
+    casing_depth = props.casing_depth
 
     # panel params
     panel_width = door_opening_width * props.panel_width_ratio
-    frame_depth = props.frame_depth * si_conversion
-    frame_thickness = props.frame_thickness * si_conversion
+    frame_depth = props.frame_depth
+    frame_thickness = props.frame_thickness
     frame_height = window_lining_height - lining_to_panel_offset_x * 2
-    glass_thickness = 0.01 * si_conversion
+    glass_thickness = 0.01
 
     # handle dimensions (hardcoded)
-    handle_size = V(120, 40, 20) * 0.001 * si_conversion
-    handle_offset = V(60, 0, 1000) * 0.001 * si_conversion  # to the handle center
+    handle_size = V(120, 40, 20) * 0.001
+    handle_offset = V(60, 0, 1000) * 0.001  # to the handle center
     handle_center_offset = V(handle_size.y / 2, 0, handle_size.z) / 2
 
     if transfom_offset:
@@ -418,7 +413,7 @@ def update_door_modifier_bmesh(context):
 
     if double_door:
         # keeping a little space between doors for readibility
-        double_door_offset = 0.001 * si_conversion
+        double_door_offset = 0.001
         panel_size.x = panel_size.x / 2 - double_door_offset
         door_verts.extend(create_bm_door_panel(panel_size, panel_position, "LEFT"))
 
@@ -516,14 +511,9 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Object has to be IfcDoor/IfcDoorType type to add a door.")
             return {"CANCELLED"}
 
-        # need to make sure all default props will have correct units
-        if not props.door_added_previously:
-            skip_props = ("is_editing", "door_type", "door_added_previously", "panel_width_ratio")
-            convert_property_group_from_si(props, skip_props=skip_props)
-
-        door_data = props.get_general_kwargs()
-        lining_props = props.get_lining_kwargs()
-        panel_props = props.get_panel_kwargs()
+        door_data = props.get_general_kwargs(convert_to_project_units=True)
+        lining_props = props.get_lining_kwargs(convert_to_project_units=True)
+        panel_props = props.get_panel_kwargs(convert_to_project_units=True)
 
         door_data["lining_properties"] = lining_props
         door_data["panel_properties"] = panel_props
@@ -550,11 +540,13 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         props = obj.BIMDoorProperties
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
+        data.update(data.pop("lining_properties"))
+        data.update(data.pop("panel_properties"))
+
         # restore previous settings since editing was canceled
-        for prop_name in data:
-            setattr(props, prop_name, data[prop_name])
+        props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.geometry.switch_representation(
@@ -581,9 +573,9 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
 
-        door_data = props.get_general_kwargs()
-        lining_props = props.get_lining_kwargs()
-        panel_props = props.get_panel_kwargs()
+        door_data = props.get_general_kwargs(convert_to_project_units=True)
+        lining_props = props.get_lining_kwargs(convert_to_project_units=True)
+        panel_props = props.get_panel_kwargs(convert_to_project_units=True)
 
         door_data["lining_properties"] = lining_props
         door_data["panel_properties"] = panel_props
@@ -612,15 +604,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         data.update(data.pop("panel_properties"))
 
         # required since we could load pset from .ifc and BIMDoorProperties won't be set
-        for prop_name in data:
-            setattr(props, prop_name, data[prop_name])
-
-        # need to make sure all props that weren't used before
-        # will have correct units
-        skip_props = ("is_editing", "door_type", "door_added_previously", "panel_width_ratio")
-        skip_props += tuple(data.keys())
-        convert_property_group_from_si(props, skip_props=skip_props)
-
+        props.set_props_kwargs_from_ifc_data(data)
         props.is_editing = 1
         return {"FINISHED"}
 
@@ -638,7 +622,6 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
-        props.door_added_previously = True
 
         return {"FINISHED"}
 
