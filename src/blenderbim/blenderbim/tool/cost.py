@@ -499,11 +499,14 @@ class Cost(blenderbim.core.tool.Cost):
 
     @classmethod
     def export_cost_schedules(cls, format=None, cost_schedule=None):
-        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
+        import subprocess
+        import os
+        import sys
+        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cost_schedules")
+        if not os.path.exists(path):
+            os.makedirs(path)
         if format == "CSV":
             from ifc5d.ifc5Dspreadsheet import Ifc5DCsvWriter
-            if not os.path.exists(path):
-                os.makedirs(path)
             writer = Ifc5DCsvWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
         elif format == "ODS":
@@ -516,6 +519,16 @@ class Cost(blenderbim.core.tool.Cost):
 
             writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule )
             writer.write()
+        try:
+            if path:
+                if sys.platform == "win32":
+                    os.startfile(path)
+                elif sys.platform == "darwin":
+                    subprocess.call(["open", path])
+                elif sys.platform == "linux":
+                    subprocess.call(["xdg-open", path])
+        except:
+            return 'Could not open file location'
 
     @classmethod
     def get_units(cls):
