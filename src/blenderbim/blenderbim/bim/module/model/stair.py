@@ -437,7 +437,6 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
-        props.stair_added_previously = True
 
         return {"FINISHED"}
 

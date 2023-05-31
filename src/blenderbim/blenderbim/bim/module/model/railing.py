@@ -38,14 +38,6 @@ import json
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailingType.htm
 
 
-NON_SI_RAILING_PROPS = (
-    "is_editing",
-    "railing_type",
-    "railing_added_previously",
-    "use_manual_supports",
-    "terminal_type",
-)
-
 
 def bm_split_edge_at_offset(edge, offset):
     v0, v1 = edge.verts
@@ -92,16 +84,18 @@ def update_railing_modifier_ifc_data(context):
     if props.railing_type == "WALL_MOUNTED_HANDRAIL":
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         railing_path = [Vector(v) for v in RailingData.data["parameters"]["data_dict"]["path_data"]["verts"]]
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         representation_data = {
             "railing_type": props.railing_type,
             "context": body,
             "railing_path": railing_path,
             "use_manual_supports": props.use_manual_supports,
-            "support_spacing": props.support_spacing,
-            "railing_diameter": props.railing_diameter,
-            "clear_width": props.clear_width,
+            "support_spacing": props.support_spacing / si_conversion,
+            "railing_diameter": props.railing_diameter / si_conversion,
+            "clear_width": props.clear_width / si_conversion,
             "terminal_type": props.terminal_type,
-            "height": props.height,
+            "height": props.height / si_conversion,
         }
         model_representation = ifcopenshell.api.run(
             "geometry.add_railing_representation", ifc_file, **representation_data
@@ -153,9 +147,9 @@ def update_railing_modifier_bmesh(context):
 
     def generate_frameless_panel_railing():
         # generating FRAMELESS_PANEL railing
-        height = props.height * si_conversion
-        thickness = props.thickness * si_conversion
-        spacing = props.spacing * si_conversion
+        height = props.height
+        thickness = props.thickness
+        spacing = props.spacing
 
         # spacing
         # split each edge in 3 segments by 0.5 * spacing by x-y plane
@@ -313,11 +307,8 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Object has to be IfcRailing/IfcRailingType type to add a railing.")
             return {"CANCELLED"}
 
-        # need to make sure all default props will have correct units
-        if not props.railing_added_previously:
-            convert_property_group_from_si(props, skip_props=NON_SI_RAILING_PROPS)
 
-        railing_data = props.get_general_kwargs()
+        railing_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)
         if not path_data:
             path_data = {
@@ -350,13 +341,7 @@ class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
         data["path_data"] = json.dumps(data["path_data"])
 
         # required since we could load pset from .ifc and BIMRailingProperties won't be set
-        for prop_name in data:
-            setattr(props, prop_name, data[prop_name])
-
-        # need to make sure all props that weren't used before
-        # will have correct units
-        skip_props = NON_SI_RAILING_PROPS + tuple(data.keys())
-        convert_property_group_from_si(props, skip_props=skip_props)
+        props.set_props_kwargs_from_ifc_data(data)
 
         props.is_editing = 1
         return {"FINISHED"}
@@ -373,8 +358,7 @@ class CancelEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Railing", "Data"))
         props = obj.BIMRailingProperties
         # restore previous settings since editing was canceled
-        for prop_name in data:
-            setattr(props, prop_name, data[prop_name])
+        props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.geometry.switch_representation(
@@ -405,7 +389,7 @@ class FinishEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
             RailingData.load()
         path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
 
-        railing_data = props.get_general_kwargs()
+        railing_data = props.get_general_kwargs(convert_to_project_units=True)
         railing_data["path_data"] = path_data
         props.is_editing = -1
 
@@ -437,7 +421,7 @@ class FlipRailingPathOrder(bpy.types.Operator, tool.Ifc.Operator):
             edge = [abs(vi - last_vert_i) for vi in edge[::-1]]
             edges.append(edge)
 
-        railing_data = props.get_general_kwargs()
+        railing_data = props.get_general_kwargs(convert_to_project_units=True)
         railing_data["path_data"] = path_data
 
         update_bbim_railing_pset(element, railing_data)
@@ -496,7 +480,7 @@ class FinishEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMRailingProperties
 
-        railing_data = props.get_general_kwargs()
+        railing_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)
         railing_data["path_data"] = path_data
         ProfileDecorator.uninstall()
@@ -524,7 +508,6 @@ class RemoveRailing(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
-        props.railing_added_previously = True
         return {"FINISHED"}
 
 
