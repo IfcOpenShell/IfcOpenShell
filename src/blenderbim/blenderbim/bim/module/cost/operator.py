@@ -634,7 +634,9 @@ class ExportCostSchedules(bpy.types.Operator):
 
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
-        core.export_cost_schedules(tool.Cost, format=self.format, cost_schedule=cost_schedule)
+        r = core.export_cost_schedules(tool.Cost, format=self.format, cost_schedule=cost_schedule)
+        if isinstance(r, str):
+            self.report({"ERROR"}, r)
         return {"FINISHED"}
 
     def invoke(self, context, event):
