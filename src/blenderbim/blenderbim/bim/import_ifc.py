@@ -1276,7 +1276,6 @@ class IfcImporter:
         bpy.context.view_layer.objects.active = last_obj
         context_override = {}
         bpy.ops.object.editmode_toggle(context_override)
-        bpy.ops.mesh.remove_doubles(context_override)
         bpy.ops.mesh.tris_convert_to_quads(context_override)
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
