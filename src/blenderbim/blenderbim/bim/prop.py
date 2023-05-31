@@ -223,6 +223,16 @@ def set_numerical_value(self, value_name, new_value):
     self[value_name] = new_value
 
 
+def get_length_value(self):
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    return self.float_value * si_conversion
+
+
+def set_lenght_value(self, value):
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    self.float_value = value / si_conversion
+
+
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
@@ -245,6 +255,9 @@ class Attribute(PropertyGroup):
         get=lambda self: float(self.get("float_value", 0.0)),
         set=set_float_value,
     )
+    length_value: FloatProperty(
+        name="Value", description=tooltip, get=get_length_value, set=set_lenght_value, unit="LENGTH"
+    )
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
@@ -257,6 +270,7 @@ class Attribute(PropertyGroup):
     value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
+    special_type: StringProperty(name="Special Value Type", default="")
 
     def get_value(self):
         if self.is_optional and self.is_null:
@@ -275,7 +289,7 @@ class Attribute(PropertyGroup):
         elif self.data_type == "enum":
             return "0"
 
-    def get_value_name(self):
+    def get_value_name(self, display_only=False):
         if self.data_type == "string":
             return "string_value"
         elif self.data_type == "boolean":
@@ -283,6 +297,8 @@ class Attribute(PropertyGroup):
         elif self.data_type == "integer":
             return "int_value"
         elif self.data_type == "float":
+            if display_only and self.special_type == "LENGTH":
+                return "length_value"
             return "float_value"
         elif self.data_type == "enum":
             return "enum_value"
