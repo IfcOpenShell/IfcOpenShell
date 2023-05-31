@@ -133,6 +133,14 @@ class EnablePsetEditing(bpy.types.Operator):
         metadata.has_calculator = bool(mapper.get(pset_template.Name, {}).get(prop_template.Name, None))
         metadata.data_type = self.get_data_type(prop_template)
 
+        special_type = ""
+        if prop_template.PrimaryMeasureType in (
+            "IfcPositiveLengthMeasure",
+            "IfcLengthMeasure",
+        ) or prop_template.TemplateType in ("Q_LENGTH",):
+            special_type = "LENGTH"
+        metadata.special_type = special_type
+
         if metadata.data_type == "string":
             metadata.string_value = "" if metadata.is_null else str(data[prop_template.Name])
         elif metadata.data_type == "integer":
@@ -196,7 +204,7 @@ class EnablePsetEditing(bpy.types.Operator):
 
                 enum_items = [v.wrappedValue for v in prop.EnumerationReference.EnumerationValues]
                 selected_enum_items = [v.wrappedValue for v in prop.EnumerationValues]
-                data_type = metadata.get_value_name()
+                data_type = metadata.get_value_name(display_only=True)
 
                 for enum in enum_items:
                     new = simple_prop.enumerated_value.enumerated_values.add()
@@ -352,7 +360,9 @@ class AddPset(bpy.types.Operator, Operator):
                 continue
             element = tool.Ifc.get().by_id(ifc_definition_id)
             if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
-                bpy.ops.bim.enable_pset_editing(pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj, obj_type=self.obj_type)
+                bpy.ops.bim.enable_pset_editing(
+                    pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj, obj_type=self.obj_type
+                )
 
 
 class AddQto(bpy.types.Operator, Operator):
@@ -368,7 +378,9 @@ class AddQto(bpy.types.Operator, Operator):
         props = get_pset_props(context, self.obj, self.obj_type)
         ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
         element = tool.Ifc.get().by_id(ifc_definition_id)
-        bpy.ops.bim.enable_pset_editing(pset_id=0, pset_name=props.qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type)
+        bpy.ops.bim.enable_pset_editing(
+            pset_id=0, pset_name=props.qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type
+        )
 
 
 class CalculateQuantity(bpy.types.Operator):
