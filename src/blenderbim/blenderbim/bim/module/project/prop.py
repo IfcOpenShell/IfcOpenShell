@@ -98,7 +98,6 @@ class Link(PropertyGroup):
 
 
 class BIMProjectProperties(PropertyGroup):
-    is_authoring: BoolProperty(name="Enable Authoring Mode", default=True)
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_loading: BoolProperty(name="Is Loading", default=False)
     mvd: StringProperty(name="MVD")

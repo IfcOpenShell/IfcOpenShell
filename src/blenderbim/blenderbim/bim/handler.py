@@ -34,8 +34,6 @@ global_subscription_owner = object()
 
 
 def mode_callback(obj, data):
-    if not bpy.context.scene.BIMProjectProperties.is_authoring:
-        return
     objects = bpy.context.selected_objects
     if bpy.context.active_object:
         objects += [bpy.context.active_object]
