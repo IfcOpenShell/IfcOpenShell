@@ -62,6 +62,7 @@ class CostSchedulesData:
                 {
                     "id": schedule.id(),
                     "name": schedule.Name or "Unnamed",
+                    "predefined_type": schedule.PredefinedType or "",
                 }
             )
         else:
@@ -70,6 +71,7 @@ class CostSchedulesData:
                     {
                         "id": schedule.id(),
                         "name": schedule.Name or "Unnamed",
+                        "predefined_type": schedule.PredefinedType or "",
                     }
                 )
         return results
