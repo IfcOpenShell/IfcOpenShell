@@ -108,7 +108,9 @@ def is_valid_roof_footprint(bm):
     return ({"FINISHED"}, "")
 
 
-def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, roof_thickness = 0.1, angle=pi / 18, rafter_edge_angle = pi / 2, mutate_current_bmesh=True):
+def generate_hiped_roof_bmesh(
+    bm, mode="ANGLE", height=1.0, roof_thickness=0.1, angle=pi / 18, rafter_edge_angle=pi / 2, mutate_current_bmesh=True
+):
     """return bmesh with gable roof geometry
 
     `mutate_current_bmesh` is a flag to indicate whether the input bmesh
@@ -230,7 +232,7 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, roof_thickness = 0.1
     verts_to_change = {}
     verts_to_rip = []
     bottom_chords_to_remove = []
-    
+
     def is_footprint_vert(v):
         return float_is_zero(v.co.z - footprint_z)
 
@@ -320,7 +322,7 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, roof_thickness = 0.1
     extrusion_geom = bm_sort_out_geom(bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"])
     extruded_edges = extrusion_geom["edges"]
     extruded_verts = extrusion_geom["verts"]
-    rafter_edge_angle = pi/2 - rafter_edge_angle
+    rafter_edge_angle = pi / 2 - rafter_edge_angle
     default_offset_dir = Vector([0, 0, 1]) * roof_thickness
     footprint_verts = set()
 
@@ -340,14 +342,14 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, roof_thickness = 0.1
 
             if len(non_footprint_verts) == 1:
                 return non_footprint_verts[0]
-            
-            return min(non_footprint_verts, key=lambda v1: (v1.co-v.co).length)
+
+            return min(non_footprint_verts, key=lambda v1: (v1.co - v.co).length)
 
         top_verts = dict()
         for v in footprint_verts:
             top_verts[v] = get_top_vert(v)
 
-        # TODO: rafter_edge_angle might differ 
+        # TODO: rafter_edge_angle might differ
         # if footprint edges are not connected by 90 degrees
         verts_offsets = dict()
         for edge in footprint_edges:
@@ -370,7 +372,6 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, roof_thickness = 0.1
             # all this math is needed to maintain the same roof thickness
             # for different rafter edge angles
             v.co = mathutils.geometry.intersect_line_line(bot, top, base, offsetted)[0]
-
 
     verts = [v for v in extruded_verts if v not in footprint_verts]
     bmesh.ops.translate(bm, vec=default_offset_dir, verts=verts)
@@ -454,8 +455,14 @@ def update_roof_modifier_bmesh(context):
         return
 
     generate_hiped_roof_bmesh(
-        bm, props.generation_method, props.height, props.roof_thickness, 
-        props.angle, props.rafter_edge_angle, mutate_current_bmesh=True)
+        bm,
+        props.generation_method,
+        props.height,
+        props.roof_thickness,
+        props.angle,
+        props.rafter_edge_angle,
+        mutate_current_bmesh=True,
+    )
     tool.Blender.apply_bmesh(obj.data, bm)
 
 
@@ -675,8 +682,13 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
             main_bm.edges.layers.int.new("BBIM_preview")
 
             second_bm = generate_hiped_roof_bmesh(
-                bm,props.generation_method, props.height, props.roof_thickness, 
-                props.angle, props.rafter_edge_angle, mutate_current_bmesh=False
+                bm,
+                props.generation_method,
+                props.height,
+                props.roof_thickness,
+                props.angle,
+                props.rafter_edge_angle,
+                mutate_current_bmesh=False,
             )
             bmesh.ops.translate(second_bm, verts=second_bm.verts, vec=Vector((0, 0, 1)))
 
