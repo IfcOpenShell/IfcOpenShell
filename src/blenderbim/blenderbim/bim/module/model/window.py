@@ -559,7 +559,6 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
-        props.window_added_previously = True
 
         return {"FINISHED"}
 
