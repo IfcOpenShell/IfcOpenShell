@@ -7,6 +7,46 @@ using namespace IfcGeom;
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
 
+// @todo should we reapply the technique to apply openings in batches?
+namespace {
+	struct opening_sorter {
+		bool operator()(const std::pair<double, TopoDS_Shape>& a, const std::pair<double, TopoDS_Shape>& b) const {
+			return a.first > b.first;
+		}
+	};
+ 
+	bool apply_in_batches(IfcGeom::util::boolean_settings bst, const TopoDS_Shape& first_operand, std::vector< std::pair<double, TopoDS_Shape> >& opening_vector, BOPAlgo_Operation occ_op, TopoDS_Shape& result) {
+		auto it = opening_vector.begin();
+		auto jt = it;
+ 
+		result = first_operand;
+		for (;; ++it) {
+			if (it == opening_vector.end() || jt->first / it->first > 10.) {
+ 
+				TopTools_ListOfShape opening_list;
+				for (auto kt = jt; kt < it; ++kt) {
+					opening_list.Append(kt->second);
+				}
+ 
+				TopoDS_Shape intermediate_result;
+				if (IfcGeom::util::boolean_operation(bst, result, opening_list, BOPAlgo_CUT, intermediate_result)) {
+					result = intermediate_result;
+				} else {
+					return false;
+				}
+ 
+				jt = it;
+			}
+ 
+			if (it == opening_vector.end()) {
+				break;
+			}
+		}
+ 
+		return true;
+	}
+} 
+
 namespace {
 	BOPAlgo_Operation op_to_occt(taxonomy::boolean_result::operation_t t) {
 		switch (t) {
