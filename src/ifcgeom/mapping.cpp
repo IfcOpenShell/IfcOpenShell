@@ -22,6 +22,7 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomShapeType.h"
 #include "../ifcgeom_schema_agnostic/wire_utils.h"
 
+#include <BRepCheck.hxx>
 #include <BRepCheck_Analyzer.hxx>
 
 #define Kernel POSTFIX_SCHEMA(Kernel)
@@ -99,8 +100,41 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseInterface* l, TopoDS_Shape& r) 
 #endif
 
 		if (Logger::LOG_DEBUG >= Logger::Verbosity()) {
+			std::stringstream ss;
+
 			BRepCheck_Analyzer ana(r);
-			Logger::Notice("Valid: " + std::to_string((bool) ana.IsValid()), l);
+
+			std::function<void(const TopoDS_Shape&)> traverse_subshapes;
+
+			traverse_subshapes = [&traverse_subshapes, &ana, &ss](const TopoDS_Shape& shape) {
+				if (shape.IsNull())
+					return;
+
+				TopoDS_Iterator it(shape);
+				for (; it.More(); it.Next()) {
+					const TopoDS_Shape& subs = it.Value();
+
+					auto rs = ana.Result(subs);
+					if (rs) {
+						for (auto& msg : rs->Status()) {
+							if (msg != BRepCheck_NoError) {
+								ss << " ";
+								std::stringstream sst;
+								BRepCheck::Print(msg, sst);
+								auto sss = sst.str();
+								// remove trailing newline added by Print()
+								ss << sss.substr(0, sss.size() - 1);
+							}
+						}
+					}
+
+					traverse_subshapes(subs);
+				}
+			};
+
+			traverse_subshapes(r);
+
+			Logger::Notice((ana.IsValid() ? "Valid shape" : "Invalid shape with:") + ss.str(), l);
 		}
 	} else if (!ignored) {
 		const char* const msg = processed
