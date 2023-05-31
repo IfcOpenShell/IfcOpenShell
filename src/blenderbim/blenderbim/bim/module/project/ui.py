@@ -110,7 +110,6 @@ class BIM_PT_project(Panel):
         row.label(text=os.path.basename(props.ifc_file) or "No File Found", icon="FILE")
 
         if IfcStore.get_file():
-            row.prop(pprops, "is_authoring", icon="MODIFIER", text="")
             if pprops.is_editing:
                 row.operator("bim.edit_header", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_header", icon="CANCEL", text="")

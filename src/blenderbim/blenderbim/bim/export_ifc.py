@@ -44,9 +44,8 @@ class IfcExporter:
         self.file = IfcStore.get_file()
         self.set_header()
         IfcStore.update_cache()
-        if bpy.context.scene.BIMProjectProperties.is_authoring:
-            self.sync_all_objects()
-            self.sync_edited_objects()
+        self.sync_all_objects()
+        self.sync_edited_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
