@@ -42,7 +42,7 @@ def draw_property(prop, layout, copy_operator=None):
 
 
 def draw_single_property(prop, layout, copy_operator=None):
-    value_name = prop.metadata.get_value_name()
+    value_name = prop.metadata.get_value_name(display_only=True)
     if not value_name:
         layout.label(text=prop["Name"])
         return
