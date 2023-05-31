@@ -59,7 +59,7 @@ class BIM_PT_cost_schedules(Panel):
     def draw_cost_schedule_ui(self, cost_schedule):
         row = self.layout.row(align=True)
         if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule["id"]:
-            row.label(text="Currently editing: {}".format(cost_schedule["name"]), icon="LINENUMBERS_ON")
+            row.label(text="Currently editing: {}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON")
             grid = self.layout.grid_flow(columns=2, even_columns=True)
             col = grid.column()
             row1 = col.row(align=True)
@@ -85,7 +85,7 @@ class BIM_PT_cost_schedules(Panel):
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_cost_schedule", text="Disable Editing", icon="CANCEL")
         else:
-            row.label(text=cost_schedule["name"], icon="LINENUMBERS_ON")
+            row.label(text="{}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON")
             row.operator("bim.enable_editing_cost_items", text="", icon="OUTLINER").cost_schedule = cost_schedule["id"]
             row.operator(
                 "bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL"
