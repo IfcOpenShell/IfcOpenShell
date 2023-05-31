@@ -99,6 +99,12 @@ class TestSelector(test.bootstrap.IFC4):
         assert subject.Selector.parse(self.file, '.IfcElement[Name="Foobar"]') == [element]
         assert subject.Selector.parse(self.file, '.IfcElement[Name="Foobaz"]') == []
 
+    def test_selecting_by_regex(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.Name = "Foobar"
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        assert subject.Selector.parse(self.file, '.IfcElement[Name=r"Foo.*"]') == [element]
+
     def test_selecting_by_property_existence(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
