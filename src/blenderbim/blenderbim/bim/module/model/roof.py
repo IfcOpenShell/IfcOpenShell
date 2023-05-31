@@ -30,6 +30,7 @@ from blenderbim.bim.module.model.decorator import ProfileDecorator
 import json
 from math import tan, pi, radians
 from mathutils import Vector, Matrix
+import mathutils.geometry
 from bpypolyskel import bpypolyskel
 import shapely
 from pprint import pprint
@@ -230,8 +231,11 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, roof_thickness = 0.1
     verts_to_rip = []
     bottom_chords_to_remove = []
     
+    def is_footprint_vert(v):
+        return float_is_zero(v.co.z - footprint_z)
+
     def is_footprint_edge(edge):
-        return all(float_is_zero(v.co.z - footprint_z) for v in edge.verts)
+        return all(is_footprint_vert(v) for v in edge.verts)
 
     # find footprint edges
     for edge in bm.edges:
@@ -320,22 +324,53 @@ def generate_hiped_roof_bmesh(bm, mode="ANGLE", height=1.0, roof_thickness = 0.1
     default_offset_dir = Vector([0, 0, 1]) * roof_thickness
     footprint_verts = set()
 
-    footprint_edges = []
-    for edge in extruded_edges:
-        if is_footprint_edge(edge):
-            footprint_edges.append(edge)
+    if not float_is_zero(rafter_edge_angle):
+        footprint_edges = []
+        for edge in extruded_edges:
+            if is_footprint_edge(edge):
+                footprint_edges.append(edge)
+                footprint_verts.update(edge.verts)
 
-    # TODO: rafter_edge_angle might differ 
-    # if footprint edges are not connected by 90 degrees
-    shifted_verts = set()
-    for edge in footprint_edges:
-        footprint_verts.update(edge.verts)
-        v0, v1 = edge.verts
-        edge_dir = (v0.co - v1.co).normalized()
-        offset_dir = Matrix.Rotation(rafter_edge_angle, 4, edge_dir) @ default_offset_dir
-        for v in edge.verts:
-            v.co += offset_dir * (Vector([1, 1, 0]) if v in shifted_verts else 1)
-        shifted_verts.update(footprint_verts)
+        def get_top_vert(v):
+            non_footprint_verts = []
+            for edge in v.link_edges:
+                v1 = edge.other_vert(v)
+                if not is_footprint_vert(v1):
+                    non_footprint_verts.append(v1)
+
+            if len(non_footprint_verts) == 1:
+                return non_footprint_verts[0]
+            
+            return min(non_footprint_verts, key=lambda v1: (v1.co-v.co).length)
+
+        top_verts = dict()
+        for v in footprint_verts:
+            top_verts[v] = get_top_vert(v)
+
+        # TODO: rafter_edge_angle might differ 
+        # if footprint edges are not connected by 90 degrees
+        verts_offsets = dict()
+        for edge in footprint_edges:
+            v0, v1 = edge.verts
+            edge_dir = (v0.co - v1.co).normalized()
+            offset_dir = Matrix.Rotation(rafter_edge_angle, 4, edge_dir) @ default_offset_dir
+            for v in edge.verts:
+                previous_offset = verts_offsets.get(v, None)
+                if previous_offset:
+                    previous_offset.xy += offset_dir.xy
+                else:
+                    verts_offsets[v] = offset_dir
+
+        for v in verts_offsets:
+            vert_offset = verts_offsets[v]
+            top = top_verts[v].co
+            bot = v.co + default_offset_dir
+            base = v.co
+            offsetted = v.co + vert_offset
+            # all this math is needed to maintain the same roof thickness
+            # for different rafter edge angles
+            v.co = mathutils.geometry.intersect_line_line(bot, top, base, offsetted)[0]
+
 
     verts = [v for v in extruded_verts if v not in footprint_verts]
     bmesh.ops.translate(bm, vec=default_offset_dir, verts=verts)
