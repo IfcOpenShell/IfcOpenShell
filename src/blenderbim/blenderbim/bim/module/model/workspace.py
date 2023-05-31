@@ -64,6 +64,8 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
         ("bim.hotkey", {"type": "P", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_P")]}),
         ("bim.hotkey", {"type": "P", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_P")]}),
+        ("bim.hotkey", {"type": "G", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_G")]}),
+        ("bim.hotkey", {"type": "S", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_S")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -75,6 +77,7 @@ def add_layout_hotkey_operator(layout, text, hotkey, description):
     modifiers = {
         "A": "EVENT_ALT",
         "S": "EVENT_SHIFT",
+        "C": "EVENT_CTRL",
     }
     modifier, key = hotkey.split("_")
 
@@ -148,6 +151,9 @@ class BimToolUI:
         elif cls.props.ifc_class in ("IfcSpaceType"):
             add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__)
 
+        cls.layout.row(align=True).label(text="Spaces")
+        add_layout_hotkey_operator(cls.layout, "Generate space", "C_G", bpy.ops.bim.generate_space.__doc__)
+
     @classmethod
     def draw_edit_object_interface(cls, context):
         if AuthoringData.data["active_material_usage"] == "LAYER2":
@@ -184,7 +190,7 @@ class BimToolUI:
             row.prop(data=cls.props, property="x_angle", text="X Angle")
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
-            
+
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
@@ -288,6 +294,10 @@ class BimToolUI:
         add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings")
         add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition")
         add_layout_hotkey_operator(cls.layout, "Boundaries", "A_B", "Toggle boundaries")
+
+        if AuthoringData.data["active_class"] == "IfcWall":
+            cls.layout.row(align=True).label(text="Spaces")
+            add_layout_hotkey_operator(cls.layout, "Create spaces", "C_S", bpy.ops.bim.generate_spaces_from_walls.__doc__)
 
     @classmethod
     def draw_header_interface(cls):
@@ -629,3 +639,16 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.edit_openings()
         else:
             bpy.ops.bim.show_openings()
+
+    def hotkey_C_G(self):
+        collection = bpy.context.view_layer.active_layer_collection.collection
+        collection_obj = bpy.data.objects.get(collection.name)
+        if not tool.Ifc.get_entity(collection_obj):
+            return
+        bpy.ops.bim.generate_space()
+
+    def hotkey_C_S(self):
+        if not bpy.context.selected_objects:
+            return
+        bpy.ops.bim.generate_spaces_from_walls()
+
