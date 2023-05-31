@@ -14,6 +14,11 @@
 #include <TColStd_Array1OfInteger.hxx>
 #include <Geom_BSplineCurve.hxx>
 
+#include <TopExp.hxx>
+#include <BRep_Tool.hxx>
+#include <TopTools_ListOfShape.hxx>
+#include <BRepTools_WireExplorer.hxx>
+
 #include <Standard_Version.hxx>
 #if OCC_VERSION_HEX < 0x70600
 #include <BRepAdaptor_HCompCurve.hxx>
@@ -238,6 +243,75 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	wire_builder bld(precision_, loop->instance ? loop->instance->as<IfcUtil::IfcBaseEntity>() : nullptr);
 	shape_pair_enumerate(it, bld, force_close);
 	wire = bld.wire();
+
+	TopTools_IndexedDataMapOfShapeListOfShape map;
+	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
+
+	TopTools_IndexedMapOfShape edges_to_tesselate;
+
+	for (int i = 1; i <= map.Extent(); ++i) {
+		auto& edges = map.FindFromIndex(i);
+		auto& vertex = TopoDS::Vertex(map.FindKey(i));
+
+		if (edges.Extent() == 2) {
+			double u0, v0, u1, v1;
+
+			auto crv1 = BRep_Tool::Curve(TopoDS::Edge(edges.First()), u0, v0);
+			auto crv2 = BRep_Tool::Curve(TopoDS::Edge(edges.Last()), u1, v1);
+
+			auto has_circle = crv1->DynamicType() == STANDARD_TYPE(Geom_Circle) || crv2->DynamicType() == STANDARD_TYPE(Geom_Circle);
+			auto has_line = crv1->DynamicType() == STANDARD_TYPE(Geom_Line) || crv2->DynamicType() == STANDARD_TYPE(Geom_Line);
+
+			if (has_circle && has_line) {
+				auto param1 = BRep_Tool::Parameter(vertex, TopoDS::Edge(edges.First()));
+				auto param2 = BRep_Tool::Parameter(vertex, TopoDS::Edge(edges.Last()));
+
+				gp_Pnt P1, P2;
+				gp_Vec V1, V2;
+
+				crv1->D1(param1, P1, V1);
+				crv2->D1(param2, P2, V2);
+
+				V1.Normalize();
+				V2.Normalize();
+
+				auto ang = std::acos(V1.Dot(V2));
+
+				Logger::Notice(std::to_string(ang));
+
+				if (ang < 0.0314) {
+					edges_to_tesselate.Add(crv1->DynamicType() == STANDARD_TYPE(Geom_Circle) ? edges.First() : edges.Last());
+					Logger::Notice("Sharp circular corner detecting, substituting with linear approximation");
+				}
+			}
+		}
+	}
+
+	if (edges_to_tesselate.Extent()) {
+		BRepBuilderAPI_MakeWire mw;
+
+		BRepTools_WireExplorer exp(wire);
+		for (; exp.More(); exp.Next()) {
+			if (edges_to_tesselate.Contains(exp.Current())) {
+				BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
+				GCPnts_QuasiUniformDeflection tessellater(crv, 0.01);
+				int n = tessellater.NbPoints();
+				if (exp.Current().Orientation() == TopAbs_REVERSED) {
+					for (int i = n-1; i >= 1; --i) {
+						mw.Add(BRepBuilderAPI_MakeEdge(tessellater.Value(i + 1), tessellater.Value(i)).Edge());
+					}
+				} else {
+					for (int i = 2; i <= n; ++i) {
+						mw.Add(BRepBuilderAPI_MakeEdge(tessellater.Value(i - 1), tessellater.Value(i)).Edge());
+					}
+				}
+			} else {
+				mw.Add(exp.Current());
+			}
+		}
+
+		wire = mw.Wire();
+	}
 
 	return true;
 }
