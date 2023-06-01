@@ -128,6 +128,8 @@ class CostItemQuantity(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     total_quantity: FloatProperty(name="Total Quantity")
+    unit_symbol: StringProperty(name="Unit Symbol")
+    total_cost_quantity: FloatProperty(name="Total Quantity")
 
 
 class CostItemType(PropertyGroup):
@@ -204,7 +206,7 @@ class BIMCostProperties(PropertyGroup):
     cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
     active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
     contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")
-    product_cost_items: CollectionProperty(name="Product Cost Items", type=CostItem)
+    product_cost_items: CollectionProperty(name="Product Cost Items", type=CostItemQuantity)
     active_product_cost_item_index: IntProperty(name="Active Product Cost Item Index")
     enable_reorder: BoolProperty(name="Enable Reorder", default=False)
     show_nested_elements: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_elements)
