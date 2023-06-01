@@ -62,7 +62,11 @@ class Collector(blenderbim.core.tool.Collector):
         if not parent_collection:
             return
 
-        parent = tool.Ifc.get_entity(parent_collection.BIMCollectionProperties.obj)
+        parent_obj = parent_collection.BIMCollectionProperties.obj
+        if not parent_obj:
+            return
+
+        parent = tool.Ifc.get_entity(parent_obj)
         if parent:
             # This is lazy, but works. One of these will succeed, the other will fail silently.
             blenderbim.core.spatial.assign_container(
