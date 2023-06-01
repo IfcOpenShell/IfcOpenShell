@@ -81,6 +81,8 @@ namespace IfcGeom {
 
 		int eliminate_touching_operands(double prec, const TopoDS_Shape& a, const TopTools_ListOfShape& bs, TopTools_ListOfShape& c);
 
+		int eliminate_narrow_operands(double prec, const TopTools_ListOfShape& bs, TopTools_ListOfShape & c);
+
 		TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance);
 
 		bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, TopoDS_Shape& result, double eps);

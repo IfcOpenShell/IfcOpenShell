@@ -209,8 +209,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	TopoDS_Compound compound;
 	builder.MakeCompound(compound);
 	builder.Add(compound, s1);
-	for (const auto& s2 : second_operand_shapes) {
-		builder.Add(compound, s2);
+	for (auto& p : opening_vector) {
+		builder.Add(compound, p.second);
 	}
 	shape = compound;
 	return true;
