@@ -130,34 +130,47 @@ def rename_reference(ifc, reference=None, identification=None):
 
 
 def load_schedules(drawing):
-    drawing.import_schedules()
+    drawing.import_documents("SCHEDULE")
     drawing.enable_editing_schedules()
+
+
+def load_references(drawing):
+    drawing.import_documents("REFERENCE")
+    drawing.enable_editing_references()
 
 
 def disable_editing_schedules(drawing):
     drawing.disable_editing_schedules()
 
 
-def add_schedule(ifc, drawing, uri=None):
-    schedule = ifc.run("document.add_information")
-    reference = ifc.run("document.add_reference", information=schedule)
+def disable_editing_references(drawing):
+    drawing.disable_editing_references()
+
+
+def add_document(ifc, drawing, document_type, uri=None):
+    document = ifc.run("document.add_information")
+    reference = ifc.run("document.add_reference", information=document)
     name = drawing.get_path_filename(uri)
     if ifc.get_schema() == "IFC2X3":
-        attributes = {"DocumentId": "X", "Name": name, "Scope": "SCHEDULE"}
+        attributes = {"DocumentId": "X", "Name": name, "Scope": document_type}
     else:
-        attributes = {"Identification": "X", "Name": name, "Scope": "SCHEDULE"}
-    ifc.run("document.edit_information", information=schedule, attributes=attributes)
+        attributes = {"Identification": "X", "Name": name, "Scope": document_type}
+    ifc.run("document.edit_information", information=document, attributes=attributes)
     ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
-    drawing.import_schedules()
+    drawing.import_documents(document_type)
 
 
-def remove_schedule(ifc, drawing, schedule=None):
-    ifc.run("document.remove_information", information=schedule)
-    drawing.import_schedules()
+def remove_document(ifc, drawing, document_type, document=None):
+    ifc.run("document.remove_information", information=document)
+    drawing.import_documents(document_type)
 
 
 def open_schedule(drawing, schedule=None):
     drawing.open_spreadsheet(drawing.get_document_uri(schedule))
+
+
+def open_reference(drawing, reference=None):
+    drawing.open_svg(drawing.get_document_uri(reference))
 
 
 def update_schedule_name(ifc, drawing, schedule=None, name=None):

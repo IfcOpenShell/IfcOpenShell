@@ -479,7 +479,7 @@ class TestImportSchedules(NewFile):
         tool.Ifc.set(ifc)
         ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
         document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SCHEDULE")
-        subject.import_schedules()
+        subject.import_documents("SCHEDULE")
         props = bpy.context.scene.DocProperties
         assert props.schedules[0].ifc_definition_id == document.id()
         assert props.schedules[0].identification == "X"
@@ -490,7 +490,7 @@ class TestImportSchedules(NewFile):
         tool.Ifc.set(ifc)
         ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
         document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="SCHEDULE")
-        subject.import_schedules()
+        subject.import_documents("SCHEDULE")
         props = bpy.context.scene.DocProperties
         assert props.schedules[0].ifc_definition_id == document.id()
         assert props.schedules[0].identification == "X"
@@ -778,5 +778,3 @@ class TestDrawingStyles(NewFile):
         self.setup_project_with_drawing()
         bpy.ops.bim.reload_drawing_styles()
         assert len(self.drawing_styles) == 3
-
-    

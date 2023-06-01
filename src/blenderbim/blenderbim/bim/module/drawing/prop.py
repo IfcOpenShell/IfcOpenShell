@@ -255,7 +255,7 @@ class Drawing(PropertyGroup):
     is_selected: BoolProperty(name="Is Selected", default=True)
 
 
-class Schedule(PropertyGroup):
+class Document(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     name: StringProperty(name="Name", update=update_schedule_name)
     identification: StringProperty(name="Identification")
@@ -311,6 +311,7 @@ class DocProperties(PropertyGroup):
     should_extract: BoolProperty(name="Should Extract", default=True)
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
+    is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
         items=[
             ("PLAN_VIEW", "Plan", ""),
@@ -328,8 +329,10 @@ class DocProperties(PropertyGroup):
     active_drawing_id: IntProperty(name="Active Drawing Id")
     active_drawing_index: IntProperty(name="Active Drawing Index")
     current_drawing_index: IntProperty(name="Current Drawing Index")
-    schedules: CollectionProperty(name="Schedules", type=Schedule)
+    schedules: CollectionProperty(name="Schedules", type=Document)
     active_schedule_index: IntProperty(name="Active Schedule Index")
+    references: CollectionProperty(name="References", type=Document)
+    active_reference_index: IntProperty(name="Active Reference Index")
     titleblock: EnumProperty(items=get_titleblocks, name="Titleblock", update=update_titleblocks)
     is_editing_sheets: BoolProperty(name="Is Editing Sheets", default=False)
     sheets: CollectionProperty(name="Sheets", type=Sheet)
@@ -521,8 +524,10 @@ def update_annotation_object_type(self, context):
     # changing enum doesn't trigger refresh by itself
     AnnotationData.is_loaded = False
 
+
 def update_sheet_data(self, context):
     SheetsData.is_loaded = False
+
 
 class BIMAnnotationProperties(PropertyGroup):
     object_type: bpy.props.EnumProperty(

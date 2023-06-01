@@ -23,7 +23,7 @@ from bpy.types import Panel
 from blenderbim.bim.module.drawing.data import (
     ProductAssignmentsData,
     SheetsData,
-    SchedulesData,
+    DocumentsData,
     DrawingsData,
     DecoratorData,
 )
@@ -174,11 +174,7 @@ class BIM_PT_drawings(Panel):
             DrawingsData.load()
 
         if not DrawingsData.data["has_saved_ifc"]:
-            row = self.layout.row()
-            row.label(text="Project Not Yet Saved", icon="ERROR")
-            row = self.layout.row()
-            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
-            op.should_save_as = False
+            draw_project_not_saved_ui()
             return
 
         self.props = context.scene.DocProperties
@@ -242,22 +238,18 @@ class BIM_PT_schedules(Panel):
         return tool.Ifc.get()
 
     def draw(self, context):
-        if not SchedulesData.is_loaded:
-            SchedulesData.load()
+        if not DocumentsData.is_loaded:
+            DocumentsData.load()
 
-        if not SchedulesData.data["has_saved_ifc"]:
-            row = self.layout.row()
-            row.label(text="Project Not Yet Saved", icon="ERROR")
-            row = self.layout.row()
-            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
-            op.should_save_as = False
+        if not DocumentsData.data["has_saved_ifc"]:
+            draw_project_not_saved_ui()
             return
 
         self.props = context.scene.DocProperties
 
         if not self.props.is_editing_schedules:
             row = self.layout.row(align=True)
-            row.label(text=f"{SchedulesData.data['total_schedules']} Schedules Found", icon="LONGDISPLAY")
+            row.label(text=f"{DocumentsData.data['total_schedules']} Schedules Found", icon="LONGDISPLAY")
             row.operator("bim.load_schedules", text="", icon="IMPORT")
             return
 
@@ -281,6 +273,58 @@ class BIM_PT_schedules(Panel):
             )
 
 
+def draw_project_not_saved_ui(self):
+    row = self.layout.row()
+    row.label(text="Project Not Yet Saved", icon="ERROR")
+    row = self.layout.row()
+    op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+    op.should_save_as = False
+
+
+class BIM_PT_references(Panel):
+    bl_label = "References"
+    bl_idname = "BIM_PT_references"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "BIM Documentation"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        if not DocumentsData.is_loaded:
+            DocumentsData.load()
+
+        if not DocumentsData.data["has_saved_ifc"]:
+            draw_project_not_saved_ui(self)
+            return
+
+        self.props = context.scene.DocProperties
+
+        if not self.props.is_editing_references:
+            row = self.layout.row(align=True)
+            row.label(text=f"{DocumentsData.data['total_references']} References Found", icon="LONGDISPLAY")
+            row.operator("bim.load_references", text="", icon="IMPORT")
+            return
+
+        row = self.layout.row(align=True)
+        row.operator("bim.add_reference", icon="ADD")
+        row.operator("bim.disable_editing_references", text="", icon="CANCEL")
+
+        if self.props.references:
+            if self.props.active_reference_index < len(self.props.references):
+                active_reference = self.props.references[self.props.active_reference_index]
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                row.operator("bim.open_reference", icon="URL", text="").reference = active_reference.ifc_definition_id
+                row.operator("bim.remove_reference", icon="X", text="").reference = active_reference.ifc_definition_id
+
+            self.layout.template_list(
+                "BIM_UL_generic", "", self.props, "references", self.props, "active_reference_index"
+            )
+
+
 class BIM_PT_sheets(Panel):
     bl_label = "Sheets"
     bl_idname = "BIM_PT_sheets"
@@ -297,11 +341,7 @@ class BIM_PT_sheets(Panel):
             SheetsData.load()
 
         if not SheetsData.data["has_saved_ifc"]:
-            row = self.layout.row()
-            row.label(text="Project Not Yet Saved", icon="ERROR")
-            row = self.layout.row()
-            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
-            op.should_save_as = False
+            draw_project_not_saved_ui()
             return
 
         self.props = context.scene.DocProperties
@@ -325,6 +365,7 @@ class BIM_PT_sheets(Panel):
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
+            row.operator("bim.add_reference_to_sheet", icon="IMAGE_REFERENCE", text="")
             row.operator("bim.create_sheets", icon="FILE_REFRESH", text="")
             if active_sheet.is_sheet:
                 row.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
@@ -577,6 +618,8 @@ class BIM_UL_sheets(bpy.types.UIList):
                 row.label(text="", icon="MENU_PANEL")
             elif item.reference_type == "REVISION":
                 row.label(text="", icon="RECOVER_LAST")
+            elif item.reference_type == "REFERENCE":
+                row.label(text="", icon="IMAGE_REFERENCE")
 
             if item.identification:
                 name = f"{item.identification} - {item.name or 'Unnamed'}"
