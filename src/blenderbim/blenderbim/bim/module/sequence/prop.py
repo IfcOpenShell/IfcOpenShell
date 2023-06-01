@@ -286,6 +286,11 @@ def update_sort_reversed(self, context):
             work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id),
         )
 
+def update_filter_by_active_schedule(self, context):
+    if context.active_object:
+        core.load_product_related_tasks(
+            tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
+        )
 
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
@@ -420,7 +425,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     enable_reorder: BoolProperty(name="Enable Reorder", default=False)
     show_task_operators: BoolProperty(name="Show Task Options", default=True)
     should_show_schedule_baseline_ui: BoolProperty(name="Baselines", default=False)
-    filter_by_active_schedule: BoolProperty(name="Filter By Active Schedule", default=False)
+    filter_by_active_schedule: BoolProperty(name="Filter By Active Schedule", default=False, update = update_filter_by_active_schedule)
 
 
 class BIMTaskTreeProperties(PropertyGroup):
