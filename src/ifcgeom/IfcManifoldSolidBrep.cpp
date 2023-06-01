@@ -17,8 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include <BRepAlgoAPI_Cut.hxx>
 #include "../ifcgeom/IfcGeom.h"
+
+#include <BRepAlgoAPI_Cut.hxx>
+
 #include <memory>
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
@@ -47,6 +49,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepre
 				s = BRepAlgoAPI_Cut(s, s2).Shape();
 			}
 		}
+
+		// #3141 this is no longer activated because narrow obb operands are filtered in boolean_operation()
+		//
+		// int attribute_index = -1;
+		// auto attrs = IfcSchema::IfcBooleanResult::Class().all_attributes();
+		// for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+		// 	if ((*it)->name() == "SecondOperand") {
+		// 		attribute_index = (int) std::distance(attrs.begin(), it);
+		// 		break;
+		// 	}
+		// }
+		//
+		// auto used_as_boolean_2nd_operand = l->data().file->getInverse(l->data().id(), &IfcSchema::IfcBooleanResult::Class(), attribute_index);
+		// const bool is_used_as_boolean_2nd_operand = used_as_boolean_2nd_operand && used_as_boolean_2nd_operand->size();
+		//
+		// if (l->Outer()->as<IfcSchema::IfcClosedShell>() && is_used_as_boolean_2nd_operand && util::count(s, TopAbs_FACE) < 2) {
+		// 	Logger::Error("No enough faces retained for boolean second operand, ignoring:", l->Outer());
+		// 	return false;
+		// }
 
 		shape.push_back(IfcRepresentationShapeItem(l->data().id(), s, indiv_style ? indiv_style : collective_style));
 		return true;
