@@ -74,17 +74,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         if element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
             return bpy.data.objects.remove(obj)
-        if obj.users_collection and obj.users_collection[0].name == obj.name:
+        collection = obj.BIMObjectProperties.collection
+        if collection:
             parent = ifcopenshell.util.element.get_aggregate(element)
             if not parent:
                 parent = ifcopenshell.util.element.get_container(element)
             if parent:
                 parent_obj = tool.Ifc.get_object(parent)
                 if parent_obj:
-                    parent_collection = bpy.data.collections.get(parent_obj.name)
-                    for child in obj.users_collection[0].children:
+                    parent_collection = parent_obj.BIMObjectProperties.collection
+                    for child in collection.children:
                         parent_collection.children.link(child)
-            bpy.data.collections.remove(obj.users_collection[0])
+            bpy.data.collections.remove(collection)
         if getattr(element, "FillsVoids", None):
             bpy.ops.bim.remove_filling(filling=element.id())
 
