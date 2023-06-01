@@ -257,6 +257,11 @@ class IFC_PARSE_API IfcFile {
     /// returned by getInverse().
     std::vector<int> get_inverse_indices(int instance_id);
 
+    template <class T>
+    typename T::list::ptr getInverse(int instance_id, int attribute_index) {
+        return getInverse(instance_id, &T::Class(), attribute_index)->as<T>();
+    }
+
     aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
     int getTotalInverses(int instance_id);
