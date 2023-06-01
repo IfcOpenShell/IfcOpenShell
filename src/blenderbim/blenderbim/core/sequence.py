@@ -556,7 +556,10 @@ def load_product_related_tasks(sequence, product=None):
     filter_by_schedule = sequence.is_filter_by_active_schedule()
     if filter_by_schedule:
         work_schedule = sequence.get_active_work_schedule()
-        task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
+        if work_schedule:
+            task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
+        else:
+            return "No active work schedule"
     else:
         task_inputs, task_ouputs = sequence.get_tasks_for_product(product)
     sequence.load_product_related_tasks(task_inputs, task_ouputs)
