@@ -74,19 +74,8 @@ def name_callback(obj, data):
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
     if not element.is_a("IfcRoot"):
         return
-    if element.is_a("IfcSpatialStructureElement") or (hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy):
-        collection = obj.users_collection[0]
-        collection.name = obj.name
-    if element.is_a("IfcGrid"):
-        axis_obj = IfcStore.get_element(element.UAxes[0].id())
-        axis_collection = axis_obj.users_collection[0]
-        grid_collection = None
-        for collection in bpy.data.collections:
-            if axis_collection.name in collection.children.keys():
-                grid_collection = collection
-                break
-        if grid_collection:
-            grid_collection.name = obj.name
+    if obj.BIMObjectProperties.collection:
+        obj.BIMObjectProperties.collection.name = obj.name
     element.Name = "/".join(obj.name.split("/")[1:])
     refresh_ui_data()
 

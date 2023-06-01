@@ -152,10 +152,18 @@ class DerivedPlacementsData:
 
     @classmethod
     def load_collection(cls):
-        cls.collection = bpy.data.objects.get(bpy.context.active_object.users_collection[0].name)
+        cls.collection = None
         cls.collection_z = 0
-        if cls.collection:
-            cls.collection_z = cls.collection.matrix_world.translation.z
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element:
+            return
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        if not parent:
+            parent = ifcopenshell.util.element.get_container(element)
+        if parent:
+            cls.collection = tool.Ifc.get_object(parent)
+            if cls.collection:
+                cls.collection_z = cls.collection.matrix_world.translation.z
 
     @classmethod
     def has_collection(cls):

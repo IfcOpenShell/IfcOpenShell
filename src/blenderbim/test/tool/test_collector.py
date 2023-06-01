@@ -331,6 +331,8 @@ class TestSync(NewFile):
         bpy.ops.bim.create_project()
         obj = bpy.data.objects.new("IfcBuildingStorey/Name", None)
         col = bpy.data.collections.new("IfcBuildingStorey/Name")
+        obj.BIMObjectProperties.collection = col
+        col.BIMCollectionProperties.obj = obj
         element = tool.Ifc.get().createIfcBuildingStorey(Name="Name")
         tool.Ifc.link(element, obj)
         bpy.data.collections.get("IfcBuilding/My Building").children.link(col)

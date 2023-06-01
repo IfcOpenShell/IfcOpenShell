@@ -1330,7 +1330,7 @@ class IfcImporter:
         self.project = {"ifc": project}
         obj = tool.Ifc.get_object(project)
         if obj:
-            self.project["blender"] = obj.users_collection[0]
+            self.project["blender"] = obj.BIMObjectProperties.collection
             self.has_existing_project = True
             return
         self.project["blender"] = bpy.data.collections.new(
@@ -1392,7 +1392,7 @@ class IfcImporter:
                 obj = tool.Ifc.get_object(element)
                 if obj:
                     is_existing = True
-                    collection = obj.users_collection[0]
+                    collection = obj.BIMObjectProperties.collection
                     self.collections[element.GlobalId] = collection
             if not is_existing:
                 collection = bpy.data.collections.new(tool.Loader.get_name(element))

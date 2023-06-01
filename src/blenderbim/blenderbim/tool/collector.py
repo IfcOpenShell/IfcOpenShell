@@ -51,13 +51,17 @@ class Collector(blenderbim.core.tool.Collector):
 
         parent_collection = None
 
-        if obj.users_collection != (object_collection,) and obj.users_collection[0].name != obj.name:
-            parent_collection = obj.users_collection[0]
-        elif collection_collection and collection_collection.children.find(object_collection.name) == -1:
-            for collection in bpy.data.collections:
-                if collection.children.find(obj.users_collection[0].name) != -1:
-                    parent_collection = collection
-                    break
+        for collection in obj.users_collection:
+            if parent_collection:
+                break
+            if not collection.BIMCollectionProperties.obj:
+                continue
+            if collection.BIMCollectionProperties.obj == obj:
+                for bpy_collection in bpy.data.collections:
+                    if bpy_collection.children.find(collection.name) != -1:
+                        parent_collection = bpy_collection
+            else:
+                parent_collection = collection
 
         if not parent_collection:
             return
@@ -214,7 +218,7 @@ class Collector(blenderbim.core.tool.Collector):
         if not collection:
             collection = bpy.data.collections.new(name)
             project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-            project_obj.users_collection[0].children.link(collection)
+            project_obj.BIMObjectProperties.collection.children.link(collection)
         return collection
 
     @classmethod
