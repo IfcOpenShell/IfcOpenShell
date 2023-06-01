@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import traceback
 import webbrowser
 import ifcopenshell
 import blenderbim.tool as tool
@@ -167,10 +168,14 @@ def i_add_a_plane_of_size_size_at_location(size, location):
 @when(parsers.parse('I press "{operator}"'))
 def i_press_operator(operator):
     operator = replace_variables(operator)
-    if "(" in operator:
-        exec(f"bpy.ops.{operator}")
-    else:
-        exec(f"bpy.ops.{operator}()")
+    try:
+        if "(" in operator:
+            exec(f"bpy.ops.{operator}")
+        else:
+            exec(f"bpy.ops.{operator}()")
+    except:
+        traceback.print_exc()
+        assert False, f"Failed to run operator bpy.ops.{operator}"
 
 
 @given(parsers.parse('I evaluate expression "{expression}"'))
