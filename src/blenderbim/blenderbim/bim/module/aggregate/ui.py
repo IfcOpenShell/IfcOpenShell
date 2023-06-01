@@ -56,7 +56,6 @@ class BIM_PT_aggregate(Panel):
             if props.relating_object:
                 op = row.operator("bim.assign_object", icon="CHECKMARK", text="")
                 op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
-                op.related_object = context.active_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
             row = layout.row(align=True)
