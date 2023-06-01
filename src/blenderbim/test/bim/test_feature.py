@@ -539,6 +539,26 @@ def prop_is_value(prop, value):
         assert False, f"Value is {actual_value}"
 
 
+@then(parsers.parse('"{prop}" is roughly "{value}"'))
+def prop_is_value(prop, value):
+    prop = replace_variables(prop)
+    value = replace_variables(value)
+    is_value = False
+    try:
+        exec(f'assert round(bpy.context.{prop}, 5) == "{value}"')
+        is_value = True
+    except:
+        try:
+            exec(f"assert round(bpy.context.{prop}, 5) == {value}")
+            is_value = True
+        except:
+            pass
+    if not is_value:
+        print(f"bpy.context.{prop}")
+        actual_value = round(eval(f"bpy.context.{prop}"), 5)
+        assert False, f"Value is {actual_value}"
+
+
 @then(parsers.parse('the object "{name}" has the material "{material}"'))
 def the_object_name_has_the_material_material(name, material):
     assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
