@@ -182,7 +182,7 @@ class SheetBuilder:
 
         layout_tree.write(layout_path)
 
-    def add_schedule(self, reference, schedule, sheet):
+    def add_document(self, reference, schedule, sheet):
         view_path = tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(schedule), "svg")
         if not os.path.exists(view_path):
             tool.Drawing.create_svg_schedule(schedule)
