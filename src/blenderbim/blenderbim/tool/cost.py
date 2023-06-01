@@ -3,6 +3,7 @@ import bpy
 import blenderbim.tool as tool
 import ifcopenshell.util.date
 import ifcopenshell.util.cost
+import ifcopenshell.util.unit
 import blenderbim.bim.helper
 import json
 
@@ -188,8 +189,9 @@ class Cost(blenderbim.core.tool.Cost):
                 new = collection.add()
                 new.ifc_definition_id = product.id()
                 new.name = product.Name or "Unnamed"
-                total_quantity = cls.calculate_parametric_quantity(cost_item, product)
-                new.total_quantity = total_quantity if total_quantity else 1
+                total_quantity, unit = cls.calculate_parametric_quantity(cost_item, product)
+                new.total_quantity = total_quantity or 0
+                new.unit_symbol = unit or ""
             if is_deep:
                 for cost_item in ifcopenshell.util.cost.get_nested_cost_items(cost_item, is_deep):
                     create_list_items(collection, cost_item, is_deep=False)
@@ -210,16 +212,21 @@ class Cost(blenderbim.core.tool.Cost):
 
     @classmethod
     def calculate_parametric_quantity(cls, cost_item=None, product=None):
-        if not cost_item.CostQuantities:
-            return
-        total_quantity = sum(
-            quantity[3]
-            for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values()
-            for qto in (tool.Ifc.get().by_id(quantities["id"]).Quantities or [])
-            for quantity in cost_item.CostQuantities
-            if quantity == qto
-        )
-        return total_quantity
+        quantities, unit = cls.get_assigned_quantities(cost_item, product)
+        return sum(quantity[3] for quantity in quantities), unit
+
+    @classmethod
+    def get_assigned_quantities(cls, cost_item, product):
+        selected_quantitites = []
+        unit = ""
+        for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
+            for qto in (tool.Ifc.get().by_id(quantities["id"]).Quantities or []):
+                for quantity in cost_item.CostQuantities:
+                    if quantity == qto:
+                        selected_quantitites.append(quantity)
+                        if not unit:
+                            unit = cls.get_quantity_unit_symbol(quantity)
+        return selected_quantitites, unit
 
     @classmethod
     def get_products(cls, related_object_type=None):
@@ -616,6 +623,18 @@ class Cost(blenderbim.core.tool.Cost):
                 new = props.product_cost_items.add()
                 new.name = cost_item.Name or "Unnamed"
                 new.ifc_definition_id = cost_item.id()
+                quantity, unit = cls.calculate_parametric_quantity(cost_item, product)
+                new.total_quantity = quantity or 1
+                new.unit_symbol = unit or ""
+                new.total_cost_quantity = ifcopenshell.util.cost.get_total_quantity(cost_item)
+
+    @classmethod
+    def get_quantity_unit_symbol(cls, quantity):
+        unit = ifcopenshell.util.unit.get_property_unit(quantity, tool.Ifc.get())
+        if unit:
+            return ifcopenshell.util.unit.get_unit_symbol(unit)
+        else:
+            return None
 
     @classmethod
     def is_root_cost_item(cls, cost_item):

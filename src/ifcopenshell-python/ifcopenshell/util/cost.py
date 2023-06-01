@@ -37,7 +37,7 @@ def get_primitive_applied_value(applied_value):
 
 def get_total_quantity(root_element):
     if root_element.is_a("IfcCostItem"):
-        return sum([q[3] for q in root_element.CostQuantities or []]) or 1.0
+        return sum([q[3] for q in root_element.CostQuantities or []]) or None
     elif root_element.is_a("IfcConstructionResource"):
         return root_element.BaseQuantity[3] if root_element.BaseQuantity else 1.0
 
@@ -90,7 +90,7 @@ def sum_child_root_elements(root_element, category_filter=None):
                 if category_filter and child_cost_value.Category != category_filter:
                     continue
                 child_applied_value = calculate_applied_value(child_root_element, child_cost_value)
-                child_quantity = get_total_quantity(child_root_element)
+                child_quantity = get_total_quantity(child_root_element) or 1.0
                 if child_cost_value.UnitBasis:
                     value_component = child_cost_value.UnitBasis.ValueComponent.wrappedValue
                     result += child_quantity / value_component * child_applied_value

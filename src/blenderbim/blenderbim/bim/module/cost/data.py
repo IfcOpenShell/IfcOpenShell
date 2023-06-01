@@ -71,7 +71,7 @@ class CostSchedulesData:
                     {
                         "id": schedule.id(),
                         "name": schedule.Name or "Unnamed",
-                        "predefined_type":ifcopenshell.util.element.get_predefined_type(schedule),
+                        "predefined_type": ifcopenshell.util.element.get_predefined_type(schedule),
                     }
                 )
         return results
@@ -109,6 +109,7 @@ class CostSchedulesData:
         data["UnitBasisUnitSymbol"] = None
         data["TotalAppliedValue"] = 0.0
         data["TotalCost"] = 0.0
+        has_unit_basis = False
         if root_element.is_a("IfcCostItem"):
             values = root_element.CostValues
         elif root_element.is_a("IfcConstructionResource"):
@@ -121,10 +122,15 @@ class CostSchedulesData:
                 cost_value_data = cls._cost_values[cost_value.id()]
                 data["UnitBasisValueComponent"] = cost_value_data["UnitBasis"]["ValueComponent"]
                 data["UnitBasisUnitSymbol"] = cost_value_data["UnitBasis"]["UnitSymbol"]
-        if data["UnitBasisValueComponent"]:
-            data["TotalCost"] = data["TotalCostQuantity"] / data["UnitBasisValueComponent"] * data["TotalAppliedValue"]
+                has_unit_basis = True
+        if has_unit_basis:
+            data["TotalCost"] = data["TotalAppliedValue"] / data["UnitBasisValueComponent"]
         else:
-            data["TotalCost"] = data["TotalCostQuantity"] * data["TotalAppliedValue"]
+            if data["TotalCostQuantity"] is not None:
+                data["TotalCost"] = data["TotalAppliedValue"] * data["TotalCostQuantity"]
+            else:
+                data["TotalCost"] = data["TotalAppliedValue"]
+                data["TotalAppliedValue"] = None
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item, data):

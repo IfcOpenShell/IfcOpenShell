@@ -59,7 +59,10 @@ class BIM_PT_cost_schedules(Panel):
     def draw_cost_schedule_ui(self, cost_schedule):
         row = self.layout.row(align=True)
         if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule["id"]:
-            row.label(text="Currently editing: {}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON")
+            row.label(
+                text="Currently editing: {}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]),
+                icon="LINENUMBERS_ON",
+            )
             grid = self.layout.grid_flow(columns=2, even_columns=True)
             col = grid.column()
             row1 = col.row(align=True)
@@ -85,7 +88,9 @@ class BIM_PT_cost_schedules(Panel):
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_cost_schedule", text="Disable Editing", icon="CANCEL")
         else:
-            row.label(text="{}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON")
+            row.label(
+                text="{}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON"
+            )
             row.operator("bim.enable_editing_cost_items", text="", icon="OUTLINER").cost_schedule = cost_schedule["id"]
             row.operator(
                 "bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL"
@@ -214,6 +219,7 @@ class BIM_PT_cost_schedules(Panel):
             blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
     def draw_readonly_cost_value_ui(self, layout, cost_value):
+        print(cost_value)
         if self.props.active_cost_value_id == cost_value["id"] and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
         else:
@@ -599,7 +605,7 @@ class BIM_UL_cost_items_trait:
             row.label(text="", icon="DOT")
 
     def draw_total_cost_column(self, layout, cost_item):
-        layout.label(text="{0:.2f}".format(cost_item["TotalCost"]))
+        layout.label(text="{0:,.2f}".format(cost_item["TotalCost"]).replace(",", " "))
 
     def draw_quantity_column(self, layout, cost_item):
         if CostSchedulesData.data["is_editing_rates"]:
@@ -608,7 +614,11 @@ class BIM_UL_cost_items_trait:
             self.draw_total_quantity_column(layout, cost_item)
 
     def draw_value_column(self, layout, cost_item):
-        text = "{0:.2f}".format(cost_item["TotalAppliedValue"])
+        text = (
+            "{0:,.2f}".format(cost_item["TotalAppliedValue"]).replace(",", " ")
+            if cost_item["TotalAppliedValue"]
+            else "-"
+        )
         if cost_item["UnitBasisValueComponent"] not in [None, 1]:
             text += " / {}".format(round(cost_item["UnitBasisValueComponent"], 2))
         layout.label(text=text)
@@ -628,7 +638,12 @@ class BIM_UL_cost_items_trait:
                 op.new_index = cost_item["NestingIndex"] - 1
 
     def draw_total_quantity_column(self, layout, cost_item):
-        layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}")
+        label = (
+            "{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}"
+            if cost_item["TotalCostQuantity"]
+            else "-"
+        )
+        layout.label(text=label)
         # if cost_item["DerivedTotalCostQuantity"] not in [None, 0]:
         #     layout.label(text="{0:.2f}".format(cost_item["DerivedTotalCostQuantity"]) + f" {cost_item['DerivedUnitSymbol'] or '-'}")
         # else:
@@ -685,14 +700,14 @@ class BIM_UL_cost_item_quantities(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         props = context.scene.BIMCostProperties
         cost_item = props.cost_items[props.active_cost_item_index]
-
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
             op.product = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
-            row.label(text="{0:.2f}".format(item.total_quantity))
+            formatted_quantity = "{0:.2f}".format(item.total_quantity)
+            row.label(text="{}{}".format(formatted_quantity, item.unit_symbol))
             op = row.operator("bim.unassign_cost_item_quantity", text="", icon="X")
             op.cost_item = cost_item.ifc_definition_id
             op.related_object = item.ifc_definition_id
@@ -704,8 +719,11 @@ class BIM_UL_product_cost_items(UIList):
             row = layout.row(align=True)
             op = row.operator("bim.highlight_product_cost_item", text="", icon="STYLUS_PRESSURE")
             op.cost_item = item.ifc_definition_id
-            row.split(factor=0.8)
+            row.split(factor=0.5)
             row.label(text=item.name)
+            qty = "{0:.2f}".format(item.total_quantity)
+            formatted_total_quantity = "{0:.2f}".format(item.total_cost_quantity)
+            row.label(text="{}/{} {}".format(qty, formatted_total_quantity, item.unit_symbol))
 
 
 class BIM_PT_Costing_Tools(Panel):
