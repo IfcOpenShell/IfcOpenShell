@@ -238,6 +238,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.context.scene.DocProperties.is_editing_schedules = False
 
     @classmethod
+    def disable_editing_references(cls):
+        bpy.context.scene.DocProperties.is_editing_references = False
+
+    @classmethod
     def disable_editing_sheets(cls):
         bpy.context.scene.DocProperties.is_editing_sheets = False
 
@@ -264,6 +268,10 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def enable_editing_schedules(cls):
         bpy.context.scene.DocProperties.is_editing_schedules = True
+
+    @classmethod
+    def enable_editing_references(cls):
+        bpy.context.scene.DocProperties.is_editing_references = True
 
     @classmethod
     def enable_editing_sheets(cls):
@@ -625,11 +633,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             new.is_selected = current_drawings_selection.get(drawing.id(), True)
 
     @classmethod
-    def import_schedules(cls):
-        bpy.context.scene.DocProperties.schedules.clear()
-        schedules = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"]
+    def import_documents(cls, document_type):
+        dprops = bpy.context.scene.DocProperties
+        if document_type == "SCHEDULE":
+            documents_collection = dprops.schedules
+        elif document_type == "REFERENCE":
+            documents_collection = dprops.references
+
+        documents_collection.clear()
+        schedules = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == document_type]
         for schedule in schedules:
-            new = bpy.context.scene.DocProperties.schedules.add()
+            new = documents_collection.add()
             new.ifc_definition_id = schedule.id()
             new.name = schedule.Name or "Unnamed"
             if tool.Ifc.get_schema() == "IFC2X3":

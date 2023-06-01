@@ -1708,9 +1708,10 @@ class AddSchedule(bpy.types.Operator, Operator):
             # taking into account different drives on windows
             if Path(filepath).drive == Path(ifc_path).drive:
                 filepath = os.path.relpath(filepath, ifc_path)
-        core.add_schedule(
+        core.add_document(
             tool.Ifc,
             tool.Drawing,
+            "SCHEDULE",
             uri=filepath,
         )
 
@@ -1726,7 +1727,7 @@ class RemoveSchedule(bpy.types.Operator, Operator):
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_schedule(tool.Ifc, tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
+        core.remove_document(tool.Ifc, tool.Drawing, "SCHEDULE", schedule=tool.Ifc.get().by_id(self.schedule))
 
 
 class OpenSchedule(bpy.types.Operator, Operator):
@@ -1797,9 +1798,113 @@ class AddScheduleToSheet(bpy.types.Operator, Operator):
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_schedule(reference, schedule, sheet)
+        sheet_builder.add_document(reference, schedule, sheet)
 
         tool.Drawing.import_sheets()
+
+
+class AddReferenceToSheet(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_reference_to_sheet"
+    bl_label = "Add Reference To Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        return props.references and props.sheets and context.scene.BIMProperties.data_dir
+
+    def _execute(self, context):
+        props = context.scene.DocProperties
+        active_reference = props.references[props.active_reference_index]
+        active_sheet = tool.Drawing.get_active_sheet(context)
+        reference = tool.Ifc.get().by_id(active_reference.ifc_definition_id)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            reference_location = tool.Drawing.get_path_with_ext(reference.DocumentReferences[0].Location, "svg")
+        else:
+            reference_location = tool.Drawing.get_path_with_ext(reference.HasDocumentReferences[0].Location, "svg")
+
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        if not sheet.is_a("IfcDocumentInformation"):
+            return
+
+        references = tool.Drawing.get_document_references(sheet)
+
+        has_reference = False
+        for reference in references:
+            if reference.Location == reference_location:
+                has_reference = True
+                break
+        if has_reference:
+            return
+
+        if not tool.Drawing.does_file_exist(tool.Ifc.resolve_uri(reference_location)):
+            self.report({"ERROR"}, f"Cannot find reference svg by path {reference_location}.")
+            return
+
+        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        id_attr = "ItemReference" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
+        attributes = {
+            id_attr: str(len([r for r in references if r.Description in ("DRAWING", "REFERENCE")]) + 1),
+            "Location": reference_location,
+            "Description": "REFERENCE",
+        }
+        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
+        sheet_builder.add_document(reference, reference, sheet)
+
+        tool.Drawing.import_sheets()
+
+
+class AddReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_reference"
+    bl_label = "Add Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
+
+    def _execute(self, context):
+        filepath = self.filepath
+        if self.use_relative_path:
+            ifc_path = tool.Ifc.get_path()
+            if os.path.isfile(ifc_path):
+                ifc_path = os.path.dirname(ifc_path)
+
+            # taking into account different drives on windows
+            if Path(filepath).drive == Path(ifc_path).drive:
+                filepath = os.path.relpath(filepath, ifc_path)
+        core.add_document(
+            tool.Ifc,
+            tool.Drawing,
+            "REFERENCE",
+            uri=filepath,
+        )
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class RemoveReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_reference"
+    bl_label = "Remove Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    reference: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_document(tool.Ifc, tool.Drawing, "REFERENCE", document=tool.Ifc.get().by_id(self.reference))
+
+
+class OpenReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.open_reference"
+    bl_label = "Open Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    reference: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.open_reference(tool.Drawing, reference=tool.Ifc.get().by_id(self.reference))
 
 
 # TODO: dead code - drawing style attributes are never used?
@@ -2125,6 +2230,24 @@ class DisableEditingSchedules(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_schedules(tool.Drawing)
+
+
+class LoadReferences(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_references"
+    bl_label = "Load References"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.load_references(tool.Drawing)
+
+
+class DisableEditingReferences(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_references"
+    bl_label = "Disable Editing References"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_references(tool.Drawing)
 
 
 class LoadDrawings(bpy.types.Operator, Operator):
