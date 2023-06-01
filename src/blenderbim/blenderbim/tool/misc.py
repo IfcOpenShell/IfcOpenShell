@@ -113,7 +113,8 @@ class Misc(blenderbim.core.tool.Misc):
             new_obj = obj.copy()
             new_obj.data = obj.data.copy()
 
-            obj.users_collection[0].objects.link(new_obj)
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
 
             mod = new_obj.modifiers.new(type="BOOLEAN", name="Boolean")
             mod.object = cutter

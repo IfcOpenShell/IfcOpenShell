@@ -104,7 +104,7 @@ class Project(blenderbim.core.tool.Project):
 
     @classmethod
     def set_active_spatial_element(cls, obj):
-        collection = obj.users_collection[0]
+        collection = obj.BIMObjectProperties.collection
         queue = [bpy.context.view_layer.layer_collection]
         layer_collection = None
 
