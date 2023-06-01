@@ -265,7 +265,7 @@ public:
 
 	template <class T>
 	typename T::list::ptr getInverse(int instance_id, int attribute_index) {
-		return getInverse(instance_id, &T::Class(), attribute_index)->as<T>();
+		return getInverse(instance_id, &T::Class(), attribute_index)->as<typename T>();
 	}
 
 	unsigned int FreshId() { return ++MaxId; }
