@@ -265,14 +265,7 @@ public:
 
 	template <class T>
 	typename T::list::ptr getInverse(int instance_id, int attribute_index) {
-		aggregate_of_instance::ptr return_value(new aggregate_of_instance);
-		auto it = byref.find({ instance_id, T::Class().index_in_schema(), attribute_index });
-		if (it != byref.end()) {
-			for (auto& i : it->second) {
-				return_value->push((T*)instance_by_id(i));
-			}
-		}
-		return return_value;
+		return getInverse(instance_id, &T::Class(), attribute_index)->as<T>();
 	}
 
 	unsigned int FreshId() { return ++MaxId; }
