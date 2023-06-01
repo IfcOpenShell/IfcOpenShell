@@ -27,7 +27,7 @@ from pathlib import Path
 def refresh():
     ProductAssignmentsData.is_loaded = False
     SheetsData.is_loaded = False
-    SchedulesData.is_loaded = False
+    DocumentsData.is_loaded = False
     DrawingsData.is_loaded = False
     AnnotationData.is_loaded = False
     DecoratorData.data = {}
@@ -135,13 +135,18 @@ class DrawingsData:
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
 
 
-class SchedulesData:
+class DocumentsData:
     data = {}
     is_loaded = False
 
     @classmethod
     def load(cls):
-        cls.data = {"has_saved_ifc": cls.has_saved_ifc(), "total_schedules": cls.total_schedules()}
+        documents = cls.count_documents()
+        cls.data = {
+            "has_saved_ifc": cls.has_saved_ifc(),
+            "total_schedules": documents["SCHEDULE"],
+            "total_references": documents["REFERENCE"],
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -149,8 +154,16 @@ class SchedulesData:
         return os.path.isfile(tool.Ifc.get_path())
 
     @classmethod
-    def total_schedules(cls):
-        return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"])
+    def count_documents(cls):
+        documents = {
+            "SCHEDULE": 0,
+            "REFERENCE": 0,
+        }
+        for d in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            scope = d.Scope
+            documents[scope] = documents.get(scope, 0) + 1
+
+        return documents
 
 
 FONT_SIZES = {

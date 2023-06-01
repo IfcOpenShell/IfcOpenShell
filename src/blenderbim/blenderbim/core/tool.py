@@ -276,7 +276,6 @@ class Drawing:
     def get_default_layout_path(cls, identification, name): pass
     def get_default_shading_style(cls): pass
     def get_default_sheet_path(cls, identification, name): pass
-    def get_default_sheet_path(cls, identification, name): pass
     def get_default_titleblock_path(cls, name): pass
     def get_document_references(cls, document): pass
     def get_document_uri(cls, document, description=None): pass
@@ -297,7 +296,7 @@ class Drawing:
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
-    def import_schedules(cls): pass
+    def import_documents(cls, document_type): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def is_active_drawing(cls, drawing): pass

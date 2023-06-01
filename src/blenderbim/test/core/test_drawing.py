@@ -159,7 +159,7 @@ class TestRemoveSheet:
 
 class TestLoadSchedules:
     def test_run(self, drawing):
-        drawing.import_schedules().should_be_called()
+        drawing.import_documents("SCHEDULE").should_be_called()
         drawing.enable_editing_schedules().should_be_called()
         subject.load_schedules(drawing)
 
@@ -182,8 +182,8 @@ class TestAddSchedule:
             attributes={"Identification": "X", "Name": "UNTITLED", "Scope": "SCHEDULE"},
         ).should_be_called()
         ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
-        drawing.import_schedules().should_be_called()
-        subject.add_schedule(ifc, drawing, uri="uri")
+        drawing.import_documents("SCHEDULE").should_be_called()
+        subject.add_document(ifc, drawing, "SCHEDULE", uri="uri")
 
     def test_using_a_document_id_in_ifc2x3(self, ifc, drawing):
         ifc.run("document.add_information").should_be_called().will_return("schedule")
@@ -196,15 +196,15 @@ class TestAddSchedule:
             attributes={"DocumentId": "X", "Name": "UNTITLED", "Scope": "SCHEDULE"},
         ).should_be_called()
         ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
-        drawing.import_schedules().should_be_called()
-        subject.add_schedule(ifc, drawing, uri="uri")
+        drawing.import_documents("SCHEDULE").should_be_called()
+        subject.add_document(ifc, drawing, "SCHEDULE", uri="uri")
 
 
 class TestRemoveSchedule:
     def test_run(self, ifc, drawing):
         ifc.run("document.remove_information", information="schedule").should_be_called()
-        drawing.import_schedules().should_be_called()
-        subject.remove_schedule(ifc, drawing, schedule="schedule")
+        drawing.import_documents("SCHEDULE").should_be_called()
+        subject.remove_document(ifc, drawing, "SCHEDULE", document="schedule")
 
 
 class TestOpenSchedule:
