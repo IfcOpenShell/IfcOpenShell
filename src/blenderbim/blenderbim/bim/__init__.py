@@ -111,6 +111,7 @@ classes = [
     prop.PsetQto,
     prop.GlobalId,
     prop.BIMObjectProperties,
+    prop.BIMCollectionProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
     ui.BIM_PT_section_plane,
@@ -158,6 +159,7 @@ def register():
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.app.handlers.save_post.append(handler.ensureIfcExported)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+    bpy.types.Collection.BIMCollectionProperties = bpy.props.PointerProperty(type=prop.BIMCollectionProperties)
     bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
     bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
     bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
@@ -184,6 +186,7 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
     bpy.app.handlers.save_post.remove(handler.ensureIfcExported)
     del bpy.types.Scene.BIMProperties
+    del bpy.types.Collection.BIMCollectionProperties
     del bpy.types.Object.BIMObjectProperties
     del bpy.types.Material.BIMObjectProperties
     del bpy.types.Material.BIMMaterialProperties
