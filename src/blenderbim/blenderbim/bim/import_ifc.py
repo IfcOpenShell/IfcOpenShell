@@ -1337,8 +1337,9 @@ class IfcImporter:
             "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
         )
         obj = self.create_product(self.project["ifc"])
-        if obj:
-            self.project["blender"].objects.link(obj)
+        self.project["blender"].objects.link(obj)
+        self.project["blender"].BIMCollectionProperties.obj = obj
+        obj.BIMObjectProperties.collection = self.project["blender"]
 
     def create_collections(self):
         if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
@@ -1673,6 +1674,8 @@ class IfcImporter:
             return
         elif element.GlobalId in self.collections:
             collection = self.collections[element.GlobalId]
+            collection.BIMCollectionProperties.obj = obj
+            obj.BIMObjectProperties.collection = collection
             collection.name = obj.name
             return collection.objects.link(obj)
         elif getattr(element, "Decomposes", None):
@@ -1687,7 +1690,10 @@ class IfcImporter:
         elif element.is_a("IfcGridAxis"):
             return
         elif element.GlobalId in self.collections:
-            return self.collections[element.GlobalId].objects.link(obj)
+            collection = self.collections[element.GlobalId]
+            collection.BIMCollectionProperties.obj = obj
+            obj.BIMObjectProperties.collection = collection
+            return collection.objects.link(obj)
         elif element.is_a("IfcTypeObject"):
             return self.type_collection.objects.link(obj)
         elif element.is_a("IfcStructuralMember"):

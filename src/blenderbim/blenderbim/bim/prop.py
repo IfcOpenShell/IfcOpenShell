@@ -409,7 +409,12 @@ class GlobalId(PropertyGroup):
     name: StringProperty(name="Name")
 
 
+class BIMCollectionProperties(PropertyGroup):
+    obj: PointerProperty(type=bpy.types.Object)
+
+
 class BIMObjectProperties(PropertyGroup):
+    collection: PointerProperty(type=bpy.types.Collection)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     blender_offset_type: EnumProperty(
         items=[(o, o, "") for o in ["NONE", "OBJECT_PLACEMENT", "CARTESIAN_POINT"]],

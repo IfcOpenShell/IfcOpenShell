@@ -153,6 +153,7 @@ class TestAssign(NewFile):
         tool.Ifc.link(space_element, space_obj)
         space_collection = bpy.data.collections.new("IfcSpace/Name")
         bpy.context.scene.collection.children.link(space_collection)
+        space_obj.BIMObjectProperties.collection = space_collection
         space_collection.objects.link(space_obj)
         ifcopenshell.api.run(
             "aggregate.assign_object",
