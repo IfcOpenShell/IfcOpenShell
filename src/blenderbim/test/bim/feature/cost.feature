@@ -56,7 +56,7 @@ Scenario: Add summary cost item
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    When I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    When I press "bim.add_summary_cost_item()"
     Then nothing happens
 
 Scenario: Remove cost item
@@ -64,7 +64,7 @@ Scenario: Remove cost item
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     When I press "bim.remove_cost_item(cost_item={cost_item})"
     Then nothing happens
@@ -74,7 +74,7 @@ Scenario: Enable editing cost item
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     When I press "bim.enable_editing_cost_item_attributes(cost_item={cost_item})"
     Then nothing happens
@@ -84,7 +84,7 @@ Scenario: Disable editing cost item
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_attributes(cost_item={cost_item})"
     When I press "bim.disable_editing_cost_item"
@@ -95,7 +95,7 @@ Scenario: Edit cost item
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_attributes(cost_item={cost_item})"
     When I press "bim.edit_cost_item"
@@ -106,7 +106,7 @@ Scenario: Add cost item
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     When I press "bim.add_cost_item(cost_item={cost_item})"
     Then nothing happens
@@ -116,7 +116,7 @@ Scenario: Enable editing cost item quantities
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     When I press "bim.enable_editing_cost_item_quantities(cost_item={cost_item})"
     Then nothing happens
@@ -126,7 +126,7 @@ Scenario: Add cost item quantity
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_quantities(cost_item={cost_item})"
     When I press "bim.add_cost_item_quantity(cost_item={cost_item}, ifc_class='IfcQuantityArea')"
@@ -137,7 +137,7 @@ Scenario: Remove cost item quantity
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_quantities(cost_item={cost_item})"
     And I press "bim.add_cost_item_quantity(cost_item={cost_item}, ifc_class='IfcQuantityArea')"
@@ -150,7 +150,7 @@ Scenario: Enable editing cost item quantity
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_quantities(cost_item={cost_item})"
     And I press "bim.add_cost_item_quantity(cost_item={cost_item}, ifc_class='IfcQuantityArea')"
@@ -163,7 +163,7 @@ Scenario: Disable editing cost item quantity
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_quantities(cost_item={cost_item})"
     And I press "bim.add_cost_item_quantity(cost_item={cost_item}, ifc_class='IfcQuantityArea')"
@@ -177,7 +177,7 @@ Scenario: Edit cost item quantity
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_quantities(cost_item={cost_item})"
     And I press "bim.add_cost_item_quantity(cost_item={cost_item}, ifc_class='IfcQuantityArea')"
@@ -192,7 +192,7 @@ Scenario: Enable editing cost item quantity
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     When I press "bim.enable_editing_cost_item_values(cost_item={cost_item})"
     Then nothing happens
@@ -202,7 +202,7 @@ Scenario: Add cost value - fixed
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_values(cost_item={cost_item})"
     And I set "scene.BIMCostProperties.cost_types" to "FIXED"
@@ -214,7 +214,7 @@ Scenario: Enable editing cost item value
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_values(cost_item={cost_item})"
     And I set "scene.BIMCostProperties.cost_types" to "FIXED"
@@ -228,7 +228,7 @@ Scenario: Disable editing cost item value
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_values(cost_item={cost_item})"
     And I set "scene.BIMCostProperties.cost_types" to "FIXED"
@@ -243,7 +243,7 @@ Scenario: Edit cost item value
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_values(cost_item={cost_item})"
     And I set "scene.BIMCostProperties.cost_types" to "FIXED"
@@ -258,7 +258,7 @@ Scenario: Enable editing cost item value formula
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_values(cost_item={cost_item})"
     And I set "scene.BIMCostProperties.cost_types" to "FIXED"
@@ -272,7 +272,7 @@ Scenario: Edit cost item value formula
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I press "bim.enable_editing_cost_item_values(cost_item={cost_item})"
     And I set "scene.BIMCostProperties.cost_types" to "FIXED"
@@ -305,7 +305,7 @@ Scenario: Assign cost item quantity - count based
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
@@ -319,7 +319,7 @@ Scenario: Assign cost item quantity - quantity based
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
@@ -336,7 +336,7 @@ Scenario: Unassign cost item quantity - selection based
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
@@ -352,7 +352,7 @@ Scenario: Unassign cost item quantity - explicit object
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
@@ -369,7 +369,7 @@ Scenario: Select cost item products
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
@@ -385,7 +385,7 @@ Scenario: Select Cost Schedule Products
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
@@ -400,7 +400,7 @@ Scenario: Load Cost Item Types
     And I press "bim.add_cost_schedule"
     And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
     And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
-    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     When I press "bim.add_cost_item(cost_item={cost_item})"
     And I press "bim.load_cost_item_types"
