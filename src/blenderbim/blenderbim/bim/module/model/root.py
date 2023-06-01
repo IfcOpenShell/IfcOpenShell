@@ -43,7 +43,7 @@ def sync_name(usecase_path, ifc_file, settings):
         style = tool.Style.get_style(obj)
         if style and style != element:
             style.Name = new_name
-    collection = bpy.data.collections.get(obj.name)
+    collection = obj.BIMObjectProperties.collection
     if collection:
         collection.name = new_name
     obj.name = new_name

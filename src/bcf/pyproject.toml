@@ -11,7 +11,7 @@ name = "bcf-client"
 description = "BCF-XML file handler."
 readme = "README.md"
 requires-python = ">=3.8"
-keywords = ["IFC", "BCF", "BIM", "eingineering"]
+keywords = ["IFC", "BCF", "BIM"]
 dependencies = [
     "xsdata",
     "numpy",
