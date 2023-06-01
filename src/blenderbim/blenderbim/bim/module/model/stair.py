@@ -254,11 +254,16 @@ def update_ifc_stair_props(obj):
     number_of_risers = props.number_of_treads + 1
     # update IfcStairFlight properties (seems already deprecated but keep it for now)
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStairFlight.htm
+
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+    riser_height = props.height / number_of_risers / si_conversion
+    tread_length = props.tread_depth / si_conversion
+
     if element.is_a("IfcStairFlight"):
         element.NumberOfRisers = number_of_risers
         element.NumberOfTreads = props.number_of_treads
-        element.RiserHeight = props.height / number_of_risers
-        element.TreadLength = props.tread_depth
+        element.RiserHeight = riser_height
+        element.TreadLength = tread_length
 
     # update pset with ifc properties
     pset_common = tool.Pset.get_element_pset(element, "Pset_StairFlightCommon")
@@ -272,8 +277,8 @@ def update_ifc_stair_props(obj):
         properties={
             "NumberOfRiser": number_of_risers,
             "NumberOfTreads": props.number_of_treads,
-            "RiserHeight": props.height / number_of_risers,
-            "TreadLength": props.tread_depth,
+            "RiserHeight": riser_height,
+            "TreadLength": tread_length,
         },
     )
     tool.Ifc.edit(obj)
