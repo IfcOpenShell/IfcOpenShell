@@ -67,7 +67,7 @@ class Usecase:
         if self.settings["cost_item"].CostValues:
             [
                 ifcopenshell.api.run(
-                    "cost.remove_cost_item_value",
+                    "cost.remove_cost_value",
                     self.file,
                     parent=self.settings["cost_item"],
                     cost_value=cost_value,
