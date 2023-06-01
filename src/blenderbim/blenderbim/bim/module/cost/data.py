@@ -62,7 +62,7 @@ class CostSchedulesData:
                 {
                     "id": schedule.id(),
                     "name": schedule.Name or "Unnamed",
-                    "predefined_type": schedule.PredefinedType or "",
+                    "predefined_type": ifcopenshell.util.element.get_predefined_type(schedule),
                 }
             )
         else:
@@ -71,7 +71,7 @@ class CostSchedulesData:
                     {
                         "id": schedule.id(),
                         "name": schedule.Name or "Unnamed",
-                        "predefined_type": schedule.PredefinedType or "",
+                        "predefined_type":ifcopenshell.util.element.get_predefined_type(schedule),
                     }
                 )
         return results
