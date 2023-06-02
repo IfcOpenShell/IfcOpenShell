@@ -143,6 +143,7 @@ class Blender:
         # box_keymap = def_keymap.km_3d_view_tool_select_box(def_keymap.Params(), fallback=None)[2]["items"]
         # click_keymap = def_keymap.km_3d_view_tool_select(def_keymap.Params(select_mouse="LEFTMOUSE"), fallback=None)[2]["items"]
         # ```
+        # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
         keymap = (
             # box selection keymap
             ("view3d.select_box", {"type": "LEFTMOUSE", "value": "CLICK_DRAG"}, None),
@@ -170,6 +171,23 @@ class Blender:
             ),
         )
         return keymap
+
+    @classmethod
+    def add_layout_hotkey_operator(cls, tool_name, layout, text, hotkey, description):
+        modifiers = {
+            "A": "EVENT_ALT",
+            "S": "EVENT_SHIFT",
+        }
+        modifier, key = hotkey.split("_")
+
+        row = layout.row(align=True)
+        row.label(text="", icon=modifiers[modifier])
+        row.label(text="", icon=f"EVENT_{key}")
+
+        op = row.operator(f"bim.{tool_name}_hotkey", text=text)
+        op.hotkey = hotkey
+        op.description = description
+        return op, row
 
     @classmethod
     def get_object_bounding_box(cls, obj):

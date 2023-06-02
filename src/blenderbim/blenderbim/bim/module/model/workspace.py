@@ -38,7 +38,6 @@ class BimTool(WorkSpaceTool):
     bl_description = "Gives you BIM authoring related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.bim")
     bl_widget = None
-    # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
@@ -184,7 +183,7 @@ class BimToolUI:
             row.prop(data=cls.props, property="x_angle", text="X Angle")
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
-            
+
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="cardinal_point", text="Axis")

@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+from . import ui, prop, operator, workspace
 
 classes = (
     operator.AssignContainer,
@@ -36,10 +36,13 @@ classes = (
     prop.BIMObjectSpatialProperties,
     ui.BIM_PT_spatial,
     ui.BIM_UL_containers,
+    workspace.Hotkey,
 )
 
 
 def register():
+    if not bpy.app.background:
+        bpy.utils.register_tool(workspace.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=True)
     bpy.types.Scene.BIMSpatialProperties = bpy.props.PointerProperty(type=prop.BIMSpatialProperties)
     bpy.types.Object.BIMObjectSpatialProperties = bpy.props.PointerProperty(type=prop.BIMObjectSpatialProperties)
 

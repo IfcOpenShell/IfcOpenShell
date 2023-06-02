@@ -47,7 +47,6 @@ class AnnotationTool(WorkSpaceTool):
     bl_description = "Gives you Annotation related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.annotation")
     bl_widget = None
-    # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         ("bim.annotation_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.annotation_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
@@ -192,14 +191,6 @@ class AnnotationToolUI:
     def draw_edit_object_interface(cls, context):
         if DecoratorData.get_ifc_text_data(bpy.context.object):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
-
-    @classmethod
-    def draw_header_interface(cls):
-        cls.draw_type_selection_interface()
-
-    @classmethod
-    def draw_basic_annotation_tool_interface(cls):
-        cls.draw_type_selection_interface()
 
     @classmethod
     def draw_type_selection_interface(cls):

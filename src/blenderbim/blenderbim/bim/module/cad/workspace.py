@@ -33,7 +33,6 @@ class CadTool(WorkSpaceTool):
     bl_description = "Gives you CAD authoring related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cad")
     bl_widget = None
-    # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         ("bim.cad_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
