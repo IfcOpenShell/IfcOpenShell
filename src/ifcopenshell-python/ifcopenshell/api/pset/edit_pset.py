@@ -244,22 +244,47 @@ class Usecase:
                 continue
             unit, value = self.unpack_unit_value(value)
             if isinstance(value, ifcopenshell.entity_instance):
-                if value.is_a(True) == "IFC4.IfcPropertyEnumeratedValue":
+                if value.is_a("IfcProperty"):
                     properties.append(value)
-                    continue
-                else:
+
+                elif not value.is_entity():
                     args = {"Name": name, "NominalValue": value}
                     if unit:
                         args["Unit"] = unit
                     properties.append(
                         self.file.create_entity("IfcPropertySingleValue", **args)
                     )
+
+                else:
+                    raise TypeError(f"'{value}' is not a valid property value for '{name}'")
+
             # TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
-            elif isinstance(value, list):
+            elif isinstance(value, (tuple, list)):
                 if not value:
                     continue
                 for pset_template in self.pset_template.HasPropertyTemplates:
-                    if pset_template.Name == name:
+                    if pset_template.Name != name:
+                        continue
+
+                    if pset_template.TemplateType == "P_LISTVALUE":
+                        # TODO: What class to pick if none was provided? We get an error otherwise:
+                        # ValueError: invalid null reference in method 'new_IfcBaseClass', argument 2 of type 'std::string const &'
+                        ifc_class = getattr(pset_template, "PrimaryMeasureType", None)
+                        if ifc_class is None:
+                            ifc_class = "IfcLabel"
+                        properties.append(
+                                self.file.create_entity(
+                                "IfcPropertyListValue",
+                                Name=name,
+                                ListValues=[
+                                    self.file.create_entity(ifc_class, v)
+                                    for v in value
+                                ]
+                            )
+                        )
+                        break
+
+                    elif pset_template.TemplateType == "P_ENUMERATEDVALUE":
                         prop_enum = self.file.create_entity(
                             "IFCPROPERTYENUMERATION",
                             Name=name,
@@ -275,7 +300,12 @@ class Usecase:
                             EnumerationReference=prop_enum,
                         )
                         properties.append(prop_enum_value)
-                        continue
+                        break
+
+                    raise NotImplementedError(f"Template type '{pset_template.TemplateType}' is not supported yet")
+
+                # TODO: what if no template was found/matched?
+
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
                 value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
