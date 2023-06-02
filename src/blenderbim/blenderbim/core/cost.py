@@ -285,3 +285,10 @@ def copy_cost_item(ifc, cost):
         cost_item = ifc.run("cost.copy_cost_item", cost_item=cost_item)
         cost.disable_editing_cost_item_parent()
         cost.load_cost_schedule_tree()
+
+def add_currency(ifc, cost):
+    unit = ifc.run("unit.add_monetary_unit")
+    attributes = cost.get_currency_attributes()
+    ifc.run("unit.edit_monetary_unit", unit=unit, attributes=attributes)
+    ifc.run("unit.assign_unit", units=[unit])
+    return unit

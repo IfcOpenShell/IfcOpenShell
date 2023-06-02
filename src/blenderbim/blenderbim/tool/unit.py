@@ -149,3 +149,17 @@ class Unit(blenderbim.core.tool.Unit):
     @classmethod
     def set_active_unit(cls, unit):
         bpy.context.scene.BIMUnitProperties.active_unit_id = unit.id()
+
+    @classmethod
+    def get_project_currency_unit(cls):
+        unit_assignments = tool.Ifc.get().by_type("IfcUnitAssignment")
+        for assignment in unit_assignments:
+            for unit in assignment.Units:
+                if unit.is_a("IfcMonetaryUnit"):
+                    return unit
+
+    @classmethod
+    def get_currency_name(cls):
+        unit = cls.get_project_currency_unit()
+        if unit:
+            return unit.Currency
