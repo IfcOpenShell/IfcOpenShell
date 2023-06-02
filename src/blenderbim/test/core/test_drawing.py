@@ -217,12 +217,80 @@ class TestOpenSchedule:
 class TestUpdateScheduleName:
     def test_do_not_update_if_name_unchanged(self, ifc, drawing):
         drawing.get_name("schedule").should_be_called().will_return("name")
-        subject.update_schedule_name(ifc, drawing, schedule="schedule", name="name")
+        subject.update_document_name(ifc, drawing, document="schedule", name="name")
 
     def test_run(self, ifc, drawing):
         drawing.get_name("schedule").should_be_called().will_return("oldname")
         ifc.run("document.edit_information", information="schedule", attributes={"Name": "name"}).should_be_called()
-        subject.update_schedule_name(ifc, drawing, schedule="schedule", name="name")
+        subject.update_document_name(ifc, drawing, document="schedule", name="name")
+
+
+class TestLoadReferences:
+    def test_run(self, drawing):
+        drawing.import_documents("REFERENCE").should_be_called()
+        drawing.enable_editing_references().should_be_called()
+        subject.load_references(drawing)
+
+
+class TestDisableEditingReferences:
+    def test_run(self, drawing):
+        drawing.disable_editing_references().should_be_called()
+        subject.disable_editing_references(drawing)
+
+
+class TestAddReference:
+    def test_run(self, ifc, drawing):
+        ifc.run("document.add_information").should_be_called().will_return("reference")
+        drawing.get_path_filename("uri").should_be_called().will_return("UNTITLED")
+        ifc.run("document.add_reference", information="reference").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC4")
+        ifc.run(
+            "document.edit_information",
+            information="reference",
+            attributes={"Identification": "X", "Name": "UNTITLED", "Scope": "REFERENCE"},
+        ).should_be_called()
+        ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
+        drawing.import_documents("REFERENCE").should_be_called()
+        subject.add_document(ifc, drawing, "REFERENCE", uri="uri")
+
+    def test_using_a_document_id_in_ifc2x3(self, ifc, drawing):
+        ifc.run("document.add_information").should_be_called().will_return("reference")
+        drawing.get_path_filename("uri").should_be_called().will_return("UNTITLED")
+        ifc.run("document.add_reference", information="reference").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC2X3")
+        ifc.run(
+            "document.edit_information",
+            information="reference",
+            attributes={"DocumentId": "X", "Name": "UNTITLED", "Scope": "REFERENCE"},
+        ).should_be_called()
+        ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
+        drawing.import_documents("REFERENCE").should_be_called()
+        subject.add_document(ifc, drawing, "REFERENCE", uri="uri")
+
+
+class TestRemoveReference:
+    def test_run(self, ifc, drawing):
+        ifc.run("document.remove_information", information="reference").should_be_called()
+        drawing.import_documents("REFERENCE").should_be_called()
+        subject.remove_document(ifc, drawing, "REFERENCE", document="reference")
+
+
+class TestOpenReference:
+    def test_run(self, drawing):
+        drawing.get_document_uri("reference").should_be_called().will_return("uri")
+        drawing.open_svg("uri").should_be_called()
+        subject.open_reference(drawing, reference="reference")
+
+
+class TestUpdateReferenceName:
+    def test_do_not_update_if_name_unchanged(self, ifc, drawing):
+        drawing.get_name("reference").should_be_called().will_return("name")
+        subject.update_document_name(ifc, drawing, document="reference", name="name")
+
+    def test_run(self, ifc, drawing):
+        drawing.get_name("reference").should_be_called().will_return("oldname")
+        ifc.run("document.edit_information", information="reference", attributes={"Name": "name"}).should_be_called()
+        subject.update_document_name(ifc, drawing, document="reference", name="name")
 
 
 class TestLoadDrawings:

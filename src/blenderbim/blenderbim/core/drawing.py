@@ -173,9 +173,9 @@ def open_reference(drawing, reference=None):
     drawing.open_svg(drawing.get_document_uri(reference))
 
 
-def update_schedule_name(ifc, drawing, schedule=None, name=None):
-    if drawing.get_name(schedule) != name:
-        ifc.run("document.edit_information", information=schedule, attributes={"Name": name})
+def update_document_name(ifc, drawing, document=None, name=None):
+    if drawing.get_name(document) != name:
+        ifc.run("document.edit_information", information=document, attributes={"Name": name})
 
 
 def load_drawings(drawing):
