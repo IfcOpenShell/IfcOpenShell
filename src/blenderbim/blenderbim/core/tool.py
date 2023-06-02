@@ -867,6 +867,8 @@ class Unit:
     def is_scene_unit_metric(cls): pass
     def is_unit_class(cls, unit, ifc_class): pass
     def set_active_unit(cls, unit): pass
+    def get_project_currency_unit(cls): pass
+    def get_currency_name(cls): pass
 
 
 @interface

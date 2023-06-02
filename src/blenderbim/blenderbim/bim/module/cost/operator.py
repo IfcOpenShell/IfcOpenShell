@@ -740,3 +740,12 @@ class ChangeParentCostItem(bpy.types.Operator, tool.Ifc.Operator):
         if isinstance(r, str):
             self.report({"WARNING"}, r)
         return {"FINISHED"}
+
+
+class AddCurrency(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_currency"
+    bl_label = "Add Currency"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.add_currency(tool.Ifc, tool.Cost)
