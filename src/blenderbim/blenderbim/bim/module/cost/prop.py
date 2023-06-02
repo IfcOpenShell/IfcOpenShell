@@ -115,6 +115,27 @@ def get_schedule_predefined_types(self, context):
     return CostSchedulesData.data["predefined_types"]
 
 
+def get_currencies(self, context):
+    return [
+        ("USD", "USD", "Dollar"),
+        ("EUR", "EUR", "Euro"),
+        ("GBP", "GBP", "Pound"),
+        ("AUD", "AUD", "Australian Dollar"),
+        ("CAD", "CAD", "Canadian Dollar"),
+        ("CHF", "CHF", "Swiss Franc"),
+        ("CNY", "CNY", "Chinese Yuan"),
+        ("HKD", "HKD", "Hong Kong Dollar"),
+        ("JPY", "JPY", "Japanese Yen"),
+        ("NZD", "NZD", "New Zealand Dollar"),
+        ("SEK", "SEK", "Swedish Krona"),
+        ("KRW", "KRW", "South Korean Won"),
+        ("SGD", "SGD", "Singapore Dollar"),
+        ("NOK", "NOK", "Norwegian Krone"),
+        ("MAD", "MAD", "Moroccan Dirham"),
+        ("CUSTOM", "Custom currency", "Custom"),
+    ]
+
+
 class CostItem(PropertyGroup):
     name: StringProperty(name="Name", update=update_cost_item_name)
     identification: StringProperty(name="Identification", update=update_cost_item_identification)
@@ -190,6 +211,7 @@ class BIMCostProperties(PropertyGroup):
     cost_value_formula: StringProperty(name="Cost Value Formula")
     cost_column: StringProperty(name="Cost Column")
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
+    should_show_currency_ui: BoolProperty(name="Should Show Currency UI", default=False)
     columns: CollectionProperty(name="Columns", type=StrProperty)
     active_column_index: IntProperty(name="Active Column Index")
     cost_item_products: CollectionProperty(name="Cost Item Products", type=CostItemQuantity)
@@ -216,3 +238,7 @@ class BIMCostProperties(PropertyGroup):
     )
     change_cost_item_parent: BoolProperty(name="Change Cost Item Parent", default=False, update=update_cost_item_parent)
     show_cost_item_operators: BoolProperty(name="Show Cost Item Operators", default=False)
+    currency: EnumProperty(items=get_currencies, name="Currencies")
+    custom_currency: StringProperty(
+        name="Custom Currency", default="USD", description="Custom Currency in ISO 4217 format"
+    )

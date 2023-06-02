@@ -692,3 +692,13 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def has_schedules(cls):
         return bool(tool.Ifc.get().by_type("IfcCostSchedule"))
+
+    @classmethod
+    def get_currency_attributes(cls):
+        props = bpy.context.scene.BIMCostProperties
+        currency = props.currency
+        if currency == "CUSTOM":
+            currency = props.custom_currency
+        return {
+            "Currency": currency,
+        }
