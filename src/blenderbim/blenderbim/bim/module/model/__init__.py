@@ -106,7 +106,6 @@ classes = (
     prop.BIMDoorProperties,
     prop.BIMRailingProperties,
     prop.BIMRoofProperties,
-    ui.BIM_PT_authoring,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_sverchok,
