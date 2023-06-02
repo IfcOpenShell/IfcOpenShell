@@ -253,6 +253,7 @@ class Drawing:
     def disable_editing_assigned_product(cls, obj): pass
     def disable_editing_drawings(cls): pass
     def disable_editing_schedules(cls): pass
+    def disable_editing_references(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def does_file_exist(cls, uri): pass
@@ -260,6 +261,7 @@ class Drawing:
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
     def enable_editing_schedules(cls): pass
+    def enable_editing_references(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass

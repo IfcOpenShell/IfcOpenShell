@@ -184,9 +184,9 @@ def set_drawing_style_name(self, new_value):
     bpy.ops.bim.save_drawing_styles_data(rename_style=True, rename_style_from=old_value, rename_style_to=new_value)
 
 
-def update_schedule_name(self, context):
-    schedule = tool.Ifc.get().by_id(self.ifc_definition_id)
-    core.update_schedule_name(tool.Ifc, tool.Drawing, schedule=schedule, name=self.name)
+def update_document_name(self, context):
+    document = tool.Ifc.get().by_id(self.ifc_definition_id)
+    core.update_document_name(tool.Ifc, tool.Drawing, document=document, name=self.name)
 
 
 def update_has_underlay(self, context):
@@ -257,7 +257,7 @@ class Drawing(PropertyGroup):
 
 class Document(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    name: StringProperty(name="Name", update=update_schedule_name)
+    name: StringProperty(name="Name", update=update_document_name)
     identification: StringProperty(name="Identification")
 
 

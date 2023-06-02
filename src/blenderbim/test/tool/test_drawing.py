@@ -120,6 +120,13 @@ class TestDisableEditingSchedules(NewFile):
         assert bpy.context.scene.DocProperties.is_editing_schedules == False
 
 
+class TestDisableEditingReferences(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.is_editing_references = True
+        subject.disable_editing_references()
+        assert bpy.context.scene.DocProperties.is_editing_references == False
+
+
 class TestDisableEditingSheets(NewFile):
     def test_run(self):
         bpy.context.scene.DocProperties.is_editing_sheets = True
@@ -163,6 +170,13 @@ class TestEnableEditingSchedules(NewFile):
         bpy.context.scene.DocProperties.is_editing_schedules = False
         subject.enable_editing_schedules()
         assert bpy.context.scene.DocProperties.is_editing_schedules == True
+
+
+class TestEnableEditingReferences(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.is_editing_references = False
+        subject.enable_editing_references()
+        assert bpy.context.scene.DocProperties.is_editing_references == True
 
 
 class TestEnableEditingSheets(NewFile):
@@ -497,6 +511,30 @@ class TestImportSchedules(NewFile):
         assert props.schedules[0].name == "FOOBAR"
 
 
+class TestImportReferences(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="REFERENCE")
+        subject.import_documents("REFERENCE")
+        props = bpy.context.scene.DocProperties
+        assert props.references[0].ifc_definition_id == document.id()
+        assert props.references[0].identification == "X"
+        assert props.references[0].name == "FOOBAR"
+
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
+        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="REFERENCE")
+        subject.import_documents("REFERENCE")
+        props = bpy.context.scene.DocProperties
+        assert props.references[0].ifc_definition_id == document.id()
+        assert props.references[0].identification == "X"
+        assert props.references[0].name == "FOOBAR"
+
+
 class TestImportSheets(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -567,6 +605,11 @@ class TestImportAssignedProduct(NewFile):
 
 class TestOpenSchedule(NewFile):
     def open_spreadsheet(self):
+        pass
+
+
+class TestOpenReference(NewFile):
+    def open_svg(self):
         pass
 
 
