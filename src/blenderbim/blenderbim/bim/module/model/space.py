@@ -185,7 +185,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.generate_spaces_from_walls"
     bl_label = "Generate Spaces From Walls"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Generate spaces from selected walls. The active object must be a wall."
+    bl_description = "Generate spaces from selected walls. The active object must be a wall"
 
     @classmethod
     def poll(cls, context):
