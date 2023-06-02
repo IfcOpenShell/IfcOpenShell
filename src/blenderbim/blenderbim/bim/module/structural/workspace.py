@@ -41,7 +41,7 @@ class StructuralTool(WorkSpaceTool):
     bl_label = "Structural Tool"
     bl_description = "Gives you Structure related superpowers"
     # TODO: replace with structural icon
-    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.annotation")
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.structural")
     bl_widget = None
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         ("bim.structural_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
