@@ -219,7 +219,6 @@ class BIM_PT_cost_schedules(Panel):
             blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
     def draw_readonly_cost_value_ui(self, layout, cost_value):
-        print(cost_value)
         if self.props.active_cost_value_id == cost_value["id"] and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
         else:
@@ -605,7 +604,10 @@ class BIM_UL_cost_items_trait:
             row.label(text="", icon="DOT")
 
     def draw_total_cost_column(self, layout, cost_item):
-        layout.label(text="{0:,.2f}".format(cost_item["TotalCost"]).replace(",", " "))
+        format_numbers = "{0:,.2f}".format(cost_item["TotalCost"]).replace(",", " ")
+        currency = CostSchedulesData.data["currency"]
+        text = "{} {}".format(format_numbers, currency["name"]) if currency else format_numbers
+        layout.label(text=text)
 
     def draw_quantity_column(self, layout, cost_item):
         if CostSchedulesData.data["is_editing_rates"]:
@@ -614,14 +616,15 @@ class BIM_UL_cost_items_trait:
             self.draw_total_quantity_column(layout, cost_item)
 
     def draw_value_column(self, layout, cost_item):
-        text = (
-            "{0:,.2f}".format(cost_item["TotalAppliedValue"]).replace(",", " ")
-            if cost_item["TotalAppliedValue"]
-            else "-"
-        )
-        if cost_item["UnitBasisValueComponent"] not in [None, 1]:
-            text += " / {}".format(round(cost_item["UnitBasisValueComponent"], 2))
-        layout.label(text=text)
+        if cost_item["TotalAppliedValue"]:
+            text = "{0:,.2f}".format(cost_item["TotalAppliedValue"]).replace(",", " ")
+            if cost_item["UnitBasisValueComponent"] not in [None, 1]:
+                text = "{} / {}".format(text, round(cost_item["UnitBasisValueComponent"], 2))
+            text = "{} {}".format(text, cost_item["Currency"]) if cost_item["Currency"] else text
+            currency = CostSchedulesData.data["currency"]
+            layout.label(text="{} {}".format(text, currency["name"]) if currency else text)
+        else:
+            layout.label(text="-")
 
     def draw_uom_column(self, layout, cost_item):
         layout.label(text=cost_item["UnitBasisUnitSymbol"] or "-" if cost_item["UnitBasisValueComponent"] else "-")
@@ -638,12 +641,10 @@ class BIM_UL_cost_items_trait:
                 op.new_index = cost_item["NestingIndex"] - 1
 
     def draw_total_quantity_column(self, layout, cost_item):
-        label = (
-            "{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}"
-            if cost_item["TotalCostQuantity"]
-            else "-"
-        )
-        layout.label(text=label)
+        if cost_item["TotalCostQuantity"]:
+            label = "{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}"
+            layout.label(text=label)
+        else:
         # if cost_item["DerivedTotalCostQuantity"] not in [None, 0]:
         #     layout.label(text="{0:.2f}".format(cost_item["DerivedTotalCostQuantity"]) + f" {cost_item['DerivedUnitSymbol'] or '-'}")
         # else:

@@ -46,8 +46,15 @@ class CostSchedulesData:
             "cost_quantities": cls.cost_quantities(),
             "cost_values": cls.cost_values(),
             "quantity_types": cls.quantity_types(),
+            "currency": cls.currency(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def currency(cls):
+        unit = tool.Unit.get_project_currency_unit()
+        if unit:
+            return {"id": unit.id(), "name": unit.Currency}
 
     @classmethod
     def total_cost_schedules(cls):
