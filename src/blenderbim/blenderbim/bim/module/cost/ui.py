@@ -83,6 +83,7 @@ class BIM_PT_cost_schedules(Panel):
             row1.label(text="Settings")
             row1 = col.row(align=True)
             row1.alignment = "RIGHT"
+            row1.prop(self.props, "should_show_currency_ui", text="Project Currency", icon="COPY_ID")
             row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
@@ -102,6 +103,8 @@ class BIM_PT_cost_schedules(Panel):
             elif self.props.is_editing == "COST_ITEMS":
                 if self.props.should_show_column_ui:
                     self.draw_column_ui()
+                if self.props.should_show_currency_ui:
+                    self.draw_currency_ui()
                 self.draw_editable_cost_item_ui()
 
     def draw_column_ui(self):
@@ -109,6 +112,20 @@ class BIM_PT_cost_schedules(Panel):
         row.prop(self.props, "cost_column", text="")
         row.operator("bim.add_cost_column", text="", icon="ADD").name = self.props.cost_column
         self.layout.template_list("BIM_UL_cost_columns", "", self.props, "columns", self.props, "active_column_index")
+
+    def draw_currency_ui(self):
+        row = self.layout.row(align=True)
+        if CostSchedulesData.data["currency"]:
+            text = "Currency used: {}".format(CostSchedulesData.data["currency"]["name"])
+            row.label(text=text)
+            row.operator("bim.remove_unit", text="", icon="X").unit = CostSchedulesData.data["currency"]["id"]
+        else:
+            row.label(text="No currency set")
+            row.prop(self.props, "currency", text="")
+            if self.props.currency == "CUSTOM":
+                row.alignment = "RIGHT"
+                row.prop(self.props, "custom_currency", text="")
+            row.operator("bim.add_currency", text="", icon="ADD")
 
     def draw_editable_cost_schedule_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
@@ -620,9 +637,9 @@ class BIM_UL_cost_items_trait:
             text = "{0:,.2f}".format(cost_item["TotalAppliedValue"]).replace(",", " ")
             if cost_item["UnitBasisValueComponent"] not in [None, 1]:
                 text = "{} / {}".format(text, round(cost_item["UnitBasisValueComponent"], 2))
-            text = "{} {}".format(text, cost_item["Currency"]) if cost_item["Currency"] else text
             currency = CostSchedulesData.data["currency"]
-            layout.label(text="{} {}".format(text, currency["name"]) if currency else text)
+            text = "{} {}".format(text, currency["name"]) if currency else text
+            layout.label(text=text)
         else:
             layout.label(text="-")
 
@@ -645,6 +662,7 @@ class BIM_UL_cost_items_trait:
             label = "{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}"
             layout.label(text=label)
         else:
+            layout.label(text="-")
         # if cost_item["DerivedTotalCostQuantity"] not in [None, 0]:
         #     layout.label(text="{0:.2f}".format(cost_item["DerivedTotalCostQuantity"]) + f" {cost_item['DerivedUnitSymbol'] or '-'}")
         # else:
