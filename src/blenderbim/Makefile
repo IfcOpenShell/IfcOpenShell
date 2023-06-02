@@ -408,6 +408,8 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install cjio --target=./site-packages
 	# Provides express rule validation for ifcopenshell.validate
 	cd dist/working && . env/bin/activate && $(PIP) install pytest --target=./site-packages
+	# Provides Brickschema functionality
+	cd dist/working && . env/bin/activate && $(PIP) install brickschema --target=./site-packages
 	cd dist/working/site-packages/ && rm -r *dist-info*
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
@@ -618,35 +620,9 @@ endif
 
 	# Provides Brickschema functionality
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/ca/37/8309da9a72407d2f5eb5489c197ac3cfe96ee3ccba1902d2a0ecc7843f92/brickschema-0.5.1.tar.gz
-	cd dist/working && tar -xzvf brickschema*
-	# This is an evil hack because we don't want to bundle flask
-	echo "" > dist/working/brickschema-0.5.1/brickschema/web.py
-	cd dist/working/brickschema-0.5.1/ && cp -r brickschema ../../blenderbim/libs/site/packages/
 	# For now lets bundle the latest nightly schema
 	cd dist/working && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 	cd dist/working && cp Brick.ttl ../blenderbim/bim/schema/Brick.ttl
-	rm -rf dist/working
-
-	# Required by brickschema
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/c7/22/37bb938be8e5c20d443b0c9ba0a243573b671b01739efb0a19f81bc5b470/pyshacl-0.17.2.tar.gz
-	cd dist/working && tar -xzvf pyshacl*
-	cd dist/working/pyshacl-0.17.2/ && cp -r pyshacl ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by brickschema
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/d2/a7/be8244688bfcee37c23733ab4fe8e6afa6d4403bd2674a3ae7bd2cecc77b/rdflib-6.0.2.tar.gz
-	cd dist/working && tar -xzvf rdflib*
-	cd dist/working/rdflib-6.0.2/ && cp -r rdflib ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by brickschema
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/7d/c7/208aece36279e4f1236e437119358786e39530ecc1719d4e1afeddba5288/owlrl-6.0.2.tar.gz
-	cd dist/working && tar -xzvf owlrl*
-	cd dist/working/owlrl-6.0.2/ && cp -r owlrl ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by brickschema
