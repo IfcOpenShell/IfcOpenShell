@@ -16,17 +16,31 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+RUN_FROM_DEV_REPO = False
+
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 from pathlib import Path
 from lxml import etree
-import zipfile
-import shutil
 import glob
+import sys
+
+if not RUN_FROM_DEV_REPO:
+    import zipfile
+    import shutil
 
 BASE_MODULE_PATH = Path(__file__).parent
 IFC4x3_HTML_LOCATION = BASE_MODULE_PATH / "IFC4.3-html-iso-release"
-IFC4x3_OUTPUT_PATH = BASE_MODULE_PATH / "schema/Pset_IFC4X3.ifc"
+
+if not RUN_FROM_DEV_REPO:
+    IFC4x3_OUTPUT_PATH = BASE_MODULE_PATH / "schema/Pset_IFC4X3.ifc"
+else:
+    IFC4x3_PSD_LOCATION = BASE_MODULE_PATH / "../output/psd"
+    try:
+        IFC4x3_OUTPUT_PATH = sys.argv[1]
+    except:
+        IFC4x3_OUTPUT_PATH = BASE_MODULE_PATH / "../output/Pset_IFC4X3.ifc"
+
 IFC2x3_HTML_ZIP_LOCATION = BASE_MODULE_PATH / "IFC2x3_TC1_HTML_distribution-pset_errata.zip"
 IFC2x3_OUTPUT_PATH = BASE_MODULE_PATH / "schema/Pset_IFC2X3.ifc"
 
@@ -47,23 +61,36 @@ PROPERTY_TYPES_DICT = {
 class PsetTemplatesGenerator:
     def parse_ifc4x3_data(self):
         print("Starting parsing data for IFC4X3...")
-        if not IFC4x3_HTML_LOCATION.is_dir():
-            raise Exception(
-                f'ISO release for Ifc4.3.0.1 expected to be in folder "{IFC4x3_HTML_LOCATION.resolve()}\\"\n'
-                "For generating ifc pset library please either setup docs as described above \n"
-                "or change IFC4x3_HTML_LOCATION in the script accordingly.\n"
-                "You can download docs from the repository: \n"
-                "https://github.com/buildingSMART/IFC4.3-html/releases/tag/sep-13-release"
-            )
-        # unzip the data
-        pset_data_zip = IFC4x3_HTML_LOCATION / "IFC/RELEASE/IFC4x3/HTML/annex-a-psd.zip"
-        pset_data_location = BASE_MODULE_PATH / "temp/annex-a-psd"
-        with zipfile.ZipFile(pset_data_zip, "r") as fi_zip:
-            fi_zip.extractall(pset_data_location)
+
+        if not RUN_FROM_DEV_REPO:
+            if not IFC4x3_HTML_LOCATION.is_dir():
+                raise Exception(
+                    f'ISO release for Ifc4.3.0.1 expected to be in folder "{IFC4x3_HTML_LOCATION.resolve()}\\"\n'
+                    "For generating ifc pset library please either setup docs as described above \n"
+                    "or change IFC4x3_HTML_LOCATION in the script accordingly.\n"
+                    "You can download docs from the repository: \n"
+                    "https://github.com/buildingSMART/IFC4.3-html/releases/tag/sep-13-release"
+                )
+            # unzip the data
+            if not RUN_FROM_DEV_REPO:
+                pset_data_zip = IFC4x3_HTML_LOCATION / "IFC/RELEASE/IFC4x3/HTML/annex-a-psd.zip"
+                pset_data_location = BASE_MODULE_PATH / "temp/annex-a-psd"
+                with zipfile.ZipFile(pset_data_zip, "r") as fi_zip:
+                    fi_zip.extractall(pset_data_location)
+        else:
+            if not IFC4x3_PSD_LOCATION.is_dir():
+                raise Exception(
+                    f'Psets xmls files expected to be in folder "{IFC4x3_PSD_LOCATION.resolve()}\\"\n'
+                    "For generating ifc pset library please either setup docs as described above \n"
+                    "or change IFC4x3_PSD_LOCATION in the script accordingly."
+                )
+            pset_data_location = IFC4x3_PSD_LOCATION
 
         pset_data_glob = f"{pset_data_location}/*.xml"
         self.parse_psets_data("IFC4X3", pset_data_glob, "IFC4X3 Property Set Templates", str(IFC4x3_OUTPUT_PATH))
-        shutil.rmtree(pset_data_location)
+
+        if not RUN_FROM_DEV_REPO:
+            shutil.rmtree(pset_data_location)
 
     def parse_ifc2x3_data(self):
         print("Starting parsing data for IFC2X3...")
@@ -296,4 +323,5 @@ class PsetTemplatesGenerator:
 if __name__ == "__main__":
     templates_generator = PsetTemplatesGenerator()
     templates_generator.parse_ifc4x3_data()
-    templates_generator.parse_ifc2x3_data()
+    if not RUN_FROM_DEV_REPO:
+        templates_generator.parse_ifc2x3_data()
