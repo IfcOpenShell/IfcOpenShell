@@ -275,7 +275,14 @@ class PsetTemplatesGenerator:
                                 print("WARNING. Wasn't able to find units {unit_type} in schema.")
                         pset_property.PrimaryUnit = unit_entity
 
-                pset_property.PrimaryMeasureType = property_type_xml.find(property_type_node).get(property_type_parse)
+                type_xml = property_type_xml.find(property_type_node)
+                if property_type_node == "ListValue":
+                    # for ListValue data type is contained in a single <DataType>
+                    primary_measure_type = type_xml.find('DataType').get(property_type_parse)
+                else:
+                    primary_measure_type = type_xml.get(property_type_parse)
+
+                pset_property.PrimaryMeasureType = primary_measure_type
 
 
 if __name__ == "__main__":
