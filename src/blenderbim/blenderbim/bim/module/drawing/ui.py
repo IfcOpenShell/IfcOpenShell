@@ -174,7 +174,7 @@ class BIM_PT_drawings(Panel):
             DrawingsData.load()
 
         if not DrawingsData.data["has_saved_ifc"]:
-            draw_project_not_saved_ui()
+            draw_project_not_saved_ui(self)
             return
 
         self.props = context.scene.DocProperties
@@ -242,7 +242,7 @@ class BIM_PT_schedules(Panel):
             DocumentsData.load()
 
         if not DocumentsData.data["has_saved_ifc"]:
-            draw_project_not_saved_ui()
+            draw_project_not_saved_ui(self)
             return
 
         self.props = context.scene.DocProperties
@@ -341,7 +341,7 @@ class BIM_PT_sheets(Panel):
             SheetsData.load()
 
         if not SheetsData.data["has_saved_ifc"]:
-            draw_project_not_saved_ui()
+            draw_project_not_saved_ui(self)
             return
 
         self.props = context.scene.DocProperties
