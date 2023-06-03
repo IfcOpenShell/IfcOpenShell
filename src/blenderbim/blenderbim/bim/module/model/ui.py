@@ -135,6 +135,8 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.generate_space")
         row = self.layout.row(align=True)
         row.operator("bim.generate_spaces_from_walls")
+        row = self.layout.row(align=True)
+        row.operator("bim.toggle_space_visibility")
 
 
 class BIM_PT_array(bpy.types.Panel):

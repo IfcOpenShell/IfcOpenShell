@@ -353,3 +353,35 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
             aux_vector = aux_vector - diff
             vert.co = inverted @ aux_vector
         obj.location = newLoc
+
+class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.toggle_space_visibility"
+    bl_label = "Toggle Space Visibility"
+    bl_options = {"REGISTER"}
+    bl_description = "Change the space visibility"
+
+    def execute(cls, context):
+        model = tool.Ifc.get()
+
+        spaces = model.by_type('IfcSpace')
+
+        if not spaces:
+            print(spaces)
+            return {"FINISHED"}
+
+        first_obj = tool.Ifc.get_object(spaces[0])
+
+        if bpy.data.objects[first_obj.name].display_type == 'TEXTURED':
+            for space in spaces:
+                obj = tool.Ifc.get_object(space)
+                bpy.data.objects[obj.name].show_wire = True
+                bpy.data.objects[obj.name].display_type = 'WIRE'
+            return {"FINISHED"}
+
+        elif bpy.data.objects[first_obj.name].display_type == 'WIRE':
+            for space in spaces:
+                obj = tool.Ifc.get_object(space)
+                bpy.data.objects[obj.name].show_wire = False
+                bpy.data.objects[obj.name].display_type = 'TEXTURED'
+            return {"FINISHED"}
+
