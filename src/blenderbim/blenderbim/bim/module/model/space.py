@@ -258,6 +258,9 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
             self.set_obj_origin_to_bboxcenter(obj)
 
+            if z is not 0:
+                obj.location = obj.location + Vector((0,0,z))
+
             collection.objects.link(obj)
 
             bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
