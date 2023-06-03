@@ -19,6 +19,7 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.spatial.data import SpatialData
+import blenderbim.tool as tool
 
 
 class BIM_PT_spatial(Panel):
@@ -93,3 +94,70 @@ class BIM_UL_containers(UIList):
                 text="",
                 emboss=False,
             )
+
+
+class BIM_PT_Storeys(Panel):
+    bl_label = "Spatial Manager"
+    bl_idname = "BIM_PT_Storeys"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_GridsSpatialManager"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        if not SpatialData.is_loaded:
+            SpatialData.load()
+        self.props = context.scene.BIMSpatialManagerProperties
+        row = self.layout.row()
+        row.operator("bim.load_container_manager", icon="FILE_REFRESH", text="Load Spatial Structure")
+        if self.props.active_container_index < len(self.props.containers):
+            ifc_definition_id = self.props.containers[self.props.active_container_index].ifc_definition_id
+            row = self.layout.row()
+            row.alignment = "RIGHT"
+            if SpatialData.data["containers"][ifc_definition_id]["type"] in ["IfcBuildingStorey", "IfcBuilding"]:
+                row.operator("bim.add_building_storey", icon="ADD", text="Add storey").part_class = "IfcBuildingStorey"
+            row.operator("bim.delete_container", icon="X", text="Delete").container = ifc_definition_id
+        self.layout.template_list(
+            "BIM_UL_containers_manager",
+            "",
+            self.props,
+            "containers",
+            self.props,
+            "active_container_index",
+        )
+        row = self.layout.row()
+        if self.props.active_container_index < len(self.props.containers):
+            row.prop(self.props, "container_name", text="")
+            row.prop(self.props, "elevation", text="")
+            op = row.operator("bim.edit_container_attributes", icon="CHECKMARK", text="Apply")
+            op.container = self.props.containers[self.props.active_container_index].ifc_definition_id
+
+
+class BIM_UL_containers_manager(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            self.draw_hierarchy(row, item)
+            split1 = row.split(factor=0.7)
+            split1.prop(item, "name", emboss=False, text="")
+            split2 = row.split(factor=1)
+            split2.label(text=str(item.elevation), icon="BLANK1")
+
+    def draw_hierarchy(self, row, item):
+        for i in range(0, item.level_index):
+            row.label(text="", icon="BLANK1")
+        if item.has_children:
+            if item.is_expanded:
+                row.operator(
+                    "bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                ).container = item.ifc_definition_id
+            else:
+                row.operator(
+                    "bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                ).container = item.ifc_definition_id
+        else:
+            row.label(text="", icon="DOT")

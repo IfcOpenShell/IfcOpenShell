@@ -36,8 +36,19 @@ class SpatialData:
             "is_directly_contained": cls.is_directly_contained(),
             "label": cls.label(),
             "references": cls.references(),
+            "containers": cls.containers(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def containers(cls):
+        results = {}
+        for container in tool.Ifc.get().by_type("IfcSpatialElement"):
+            results[container.id()] = {
+                "type": container.is_a(),
+                "id": container.id(),
+            }
+        return results
 
     @classmethod
     def get_parent_container_id(cls):
