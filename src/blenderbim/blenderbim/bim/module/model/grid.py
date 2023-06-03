@@ -96,7 +96,7 @@ def add_object(self, context):
         obj.BIMObjectProperties.ifc_definition_id = result.id()
 
 
-class BIM_OT_add_object(Operator):
+class BIM_OT_add_object(Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_grid"
     bl_label = "IFC Grid"
     bl_options = {"REGISTER", "UNDO"}
@@ -108,10 +108,7 @@ class BIM_OT_add_object(Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+        return tool.Ifc.get()
 
     def _execute(self, context):
         add_object(self, context)

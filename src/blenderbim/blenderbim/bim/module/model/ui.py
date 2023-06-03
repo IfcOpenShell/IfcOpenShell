@@ -137,6 +137,30 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.generate_spaces_from_walls")
 
 
+class BIM_PT_GridsSpatialManager(Panel):
+    bl_label = "Grids and Containers"
+    bl_idname = "BIM_PT_GridsSpatialManager"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_category = "BlenderBIM"
+
+    def draw(self, context):
+        pass
+
+class BIM_PT_Grids(Panel):
+    bl_label = "Grid Creator"
+    bl_idname = "BIM_PT_Grids"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_GridsSpatialManager"
+
+    def draw(self, context):
+        self.animation_props = context.scene.BIMAnimationProperties
+        row = self.layout.row()
+        row.operator("mesh.add_grid", icon="ADD", text="Add Grids")
+
 class BIM_PT_array(bpy.types.Panel):
     bl_label = "IFC Array"
     bl_idname = "BIM_PT_array"

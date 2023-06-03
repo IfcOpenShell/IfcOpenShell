@@ -30,6 +30,30 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+import blenderbim.tool as tool
+import blenderbim.core.geometry
+
+
+def update_elevation(self, context):
+    entity = tool.Ifc.get().by_id(self.active_container_id)
+    obj = tool.Ifc.get_object(entity)
+    if not obj:
+        return
+    obj.location.z = self.elevation
+
+
+def update_active_container_index(self, context):
+    self.active_container_id = self.containers[self.active_container_index].ifc_definition_id
+    self.container_name = self.containers[self.active_container_index].name
+    self.elevation = self.containers[self.active_container_index].elevation
+
+
+def updateContainerName(self, context):
+    props = context.scene.BIMSpatialManagerProperties
+    if not props.is_container_update_enabled or self.name == "Unnamed":
+        return
+    tool.Spatial.edit_container_name(tool.Ifc.get().by_id(props.active_container_id), self.name)
+    props.container_name = self.name
 
 
 class SpatialElement(PropertyGroup):
@@ -48,3 +72,23 @@ class BIMSpatialProperties(PropertyGroup):
 
 class BIMObjectSpatialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
+
+
+class BIMContainer(PropertyGroup):
+    name: StringProperty(name="Name", update=updateContainerName)
+    elevation: FloatProperty(name="Elevation")
+    level_index: IntProperty(name="Level Index")
+    has_children: BoolProperty(name="Has Children")
+    is_expanded: BoolProperty(name="Is Expanded")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
+class BIMSpatialManagerProperties(PropertyGroup):
+    containers: CollectionProperty(name="Containers", type=BIMContainer)
+    contracted_containers: StringProperty(name="Contracted containers", default="[]")
+    expanded_containers: StringProperty(name="Expanded containers", default="[]")
+    active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
+    active_container_id: IntProperty(name="Active Container Id")
+    container_name: StringProperty(name="Container Name")
+    elevation: FloatProperty(name="Elevation", update=update_elevation)
+    is_container_update_enabled: BoolProperty(name="Is Container Update Enabled", default=True)  # TODO:review

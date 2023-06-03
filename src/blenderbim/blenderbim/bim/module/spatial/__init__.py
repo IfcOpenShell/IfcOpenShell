@@ -31,11 +31,21 @@ classes = (
     operator.SelectContainer,
     operator.SelectSimilarContainer,
     operator.SelectProduct,
+    operator.LoadContainerManager,
+    operator.EditContainerAttributes,
+    operator.AddBuildingStorey,
+    operator.ContractContainer,
+    operator.ExpandContainer,
+    operator.DeleteContainer,
     prop.SpatialElement,
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,
+    prop.BIMContainer,
+    prop.BIMSpatialManagerProperties,
     ui.BIM_PT_spatial,
     ui.BIM_UL_containers,
+    ui.BIM_UL_containers_manager,
+    ui.BIM_PT_Storeys,
     workspace.Hotkey,
 )
 
@@ -45,8 +55,10 @@ def register():
         bpy.utils.register_tool(workspace.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=True)
     bpy.types.Scene.BIMSpatialProperties = bpy.props.PointerProperty(type=prop.BIMSpatialProperties)
     bpy.types.Object.BIMObjectSpatialProperties = bpy.props.PointerProperty(type=prop.BIMObjectSpatialProperties)
+    bpy.types.Scene.BIMSpatialManagerProperties = bpy.props.PointerProperty(type=prop.BIMSpatialManagerProperties)
 
 
 def unregister():
     del bpy.types.Scene.BIMSpatialProperties
     del bpy.types.Object.BIMObjectSpatialProperties
+    del bpy.types.Scene.BIMSpatialManagerProperties

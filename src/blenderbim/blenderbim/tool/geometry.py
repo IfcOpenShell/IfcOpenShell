@@ -24,6 +24,7 @@ import numpy as np
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.style
+import blenderbim.core.spatial
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
 from mathutils import Vector
@@ -97,12 +98,15 @@ class Geometry(blenderbim.core.tool.Geometry):
                 if element.VoidsElements:
                     bpy.ops.bim.remove_opening(opening_id=element.id())
         else:
+            is_spatial = element.is_a("IfcSpatialElement")
             if getattr(element, "HasOpenings", None):
                 for rel in element.HasOpenings:
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
             for port in ifcopenshell.util.system.get_ports(element):
                 blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
             ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+            if is_spatial:
+                blenderbim.core.spatial.load_container_manager(tool.Spatial)
         try:
             obj.name
             bpy.data.objects.remove(obj)
