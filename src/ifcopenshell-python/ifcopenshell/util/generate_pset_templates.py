@@ -101,9 +101,17 @@ class PsetTemplatesGenerator:
         )
         self.ifc_unit_enum = schema.declaration_by_name("IfcUnitEnum").as_enumeration_type().enumeration_items()
 
-        self.ifc_entity("IfcProject", Name=project_name)
+        project = self.ifc_entity("IfcProject", Name=project_name, GlobalId=ifcopenshell.guid.new())
         psets_list = []
-        rel = self.ifc_entity("IfcRelDeclares", RelatedDefinitions=psets_list) if schema_name != "IFC2X3" else None
+        if schema_name == "IFC2X3":
+            rel = None
+        else:
+            rel = self.ifc_entity(
+                "IfcRelDeclares",
+                RelatedDefinitions=psets_list,
+                RelatingContext=project,
+                GlobalId=ifcopenshell.guid.new(),
+            )
 
         # in IFC4 there is also
         # IFCLIBRARYREFERENCE after each (sometimes multiple of them if there are several languages involved)
@@ -278,7 +286,7 @@ class PsetTemplatesGenerator:
                 type_xml = property_type_xml.find(property_type_node)
                 if property_type_node == "ListValue":
                     # for ListValue data type is contained in a single <DataType>
-                    primary_measure_type = type_xml.find('DataType').get(property_type_parse)
+                    primary_measure_type = type_xml.find("DataType").get(property_type_parse)
                 else:
                     primary_measure_type = type_xml.get(property_type_parse)
 
