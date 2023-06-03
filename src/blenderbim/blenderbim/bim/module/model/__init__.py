@@ -97,6 +97,7 @@ classes = (
     slab.SetArcIndex,
     space.GenerateSpace,
     space.GenerateSpacesFromWalls,
+    space.ToggleSpaceVisibility,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
