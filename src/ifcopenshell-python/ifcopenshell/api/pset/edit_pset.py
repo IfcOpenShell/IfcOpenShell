@@ -256,7 +256,7 @@ class Usecase:
                     )
 
                 else:
-                    raise TypeError(f"'{value}' is not a valid property value for '{name}'")
+                    raise ValueError(f"'{value}' is not a valid property value for '{name}'")
 
             # TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
             elif isinstance(value, (tuple, list)):
@@ -267,19 +267,18 @@ class Usecase:
                         continue
 
                     if pset_template.TemplateType == "P_LISTVALUE":
-                        # TODO: What class to pick if none was provided? We get an error otherwise:
-                        # ValueError: invalid null reference in method 'new_IfcBaseClass', argument 2 of type 'std::string const &'
                         ifc_class = getattr(pset_template, "PrimaryMeasureType", None)
                         if ifc_class is None:
-                            ifc_class = "IfcLabel"
+                            raise ValueError(f"pset template '{pset_template.Name}' is missing PrimaryMeasureType")
+
                         properties.append(
                                 self.file.create_entity(
-                                "IfcPropertyListValue",
-                                Name=name,
-                                ListValues=[
-                                    self.file.create_entity(ifc_class, v)
-                                    for v in value
-                                ]
+                                    "IfcPropertyListValue",
+                                    Name=name,
+                                    ListValues=[
+                                        self.file.create_entity(ifc_class, v)
+                                        for v in value
+                                    ]
                             )
                         )
                         break
