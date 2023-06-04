@@ -139,8 +139,9 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         row.label(text=item.hexsha)
         row = column.row()
         row.label(text=item.author_name + " <" + item.author_email + ">")
-        row = column.row()
-        row.label(text=item.message)
+        for message_line in item.message.split("\n"):
+            row = column.row()
+            row.label(text=message_line)
 
         for tag in item.tags:
             box = layout.box()
@@ -150,8 +151,9 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.label(text=tag.name)
             row.operator("ifcgit.delete_tag", icon="PANEL_CLOSE").tag_name = tag.name
             if tag.message:
-                row = column.row()
-                row.label(text=tag.message)
+                for message_line in tag.message.split("\n"):
+                    row = column.row()
+                    row.label(text=message_line)
 
         box = layout.box()
         row = box.row()
