@@ -359,10 +359,16 @@ class Usecase:
             self.settings["pset"].Properties = props
 
     def get_properties(self):
+        """
+        Returns list of existing properties
+        """
         if hasattr(self.settings["pset"], "HasProperties"):
             return self.settings["pset"].HasProperties or []
+
         elif hasattr(self.settings["pset"], "Properties"):  # For IfcMaterialProperties
             return self.settings["pset"].Properties or []
+
+        raise TypeError(f"'{self.settings['pset']}' is not a valid pset")
 
     def get_primary_measure_type(self, name, old_value=None, new_value=None):
         if self.pset_template:
