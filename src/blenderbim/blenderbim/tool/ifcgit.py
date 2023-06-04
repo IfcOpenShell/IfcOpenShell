@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -421,7 +422,17 @@ class IfcGit:
                         return False
 
             repo.index.add(path_ifc)
-            props.commit_message = "Merge branch '" + props.display_branch + "' into " + repo.active_branch.name
+
+            message_summary = ""
+            branch_commits = repo.iter_commits(rev=repo.active_branch.name + ".." + props.display_branch)
+            for commit in branch_commits:
+                message_summary += "\n\n" + commit.author.name + " <" + commit.author.email + ">\n"
+                message_summary += time.strftime("%c", time.localtime(commit.committed_date)) + "\n"
+                message_summary += commit.message
+
+            props.commit_message = (
+                "Merge branch '" + props.display_branch + "' into " + repo.active_branch.name + message_summary
+            )
             props.display_branch = repo.active_branch.name
 
             cls.load_project(path_ifc)
