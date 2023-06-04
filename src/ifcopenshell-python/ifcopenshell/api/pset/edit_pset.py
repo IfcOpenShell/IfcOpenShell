@@ -180,6 +180,19 @@ class Usecase:
         """
         return prop.Name in self.settings["properties"]
 
+    def _try_purge(self, prop) -> bool:
+        """
+        Tried to remove the property
+        if successful, returns True, otherwise False
+        NOTE: Assumes the prop exists
+        """
+        if not self.settings["should_purge"]:
+            return False
+
+        del self.settings["properties"][prop.Name]
+        self.file.remove(prop)
+        return True
+
     # TODO - Add support for changing property types?
     #   For example - IfcPropertyEnumeratedValue to
     # IfcPropertySingleValue.  Or maybe the user should
@@ -197,7 +210,7 @@ class Usecase:
 
     def update_existing_enum(self, prop):
         """
-        NOTE: assumes the prop exists
+        NOTE: Assumes the prop exists
         """
         value = self.settings["properties"][prop.Name]
         unit, value = self.unpack_unit_value(value)
@@ -217,9 +230,7 @@ class Usecase:
             and value.is_a("IfcPropertyEnumeratedValue")
         ):
             if not value.EnumerationReference.EnumerationValues:
-                if self.settings["should_purge"]:
-                    del self.settings["properties"][prop.Name]
-                    self.file.remove(prop)
+                if self._try_purge(prop):
                     return
                 prop.EnumerationReference.EnumerationValues = None
                 prop.EnumerationValues = None
@@ -234,14 +245,12 @@ class Usecase:
 
     def update_existing_property(self, prop):
         """
-        NOTE: assumes the prop exists
+        NOTE: Assumes the prop exists
         """
         value = self.settings["properties"][prop.Name]
         unit, value = self.unpack_unit_value(value)
         if value is None:
-            if self.settings["should_purge"]:
-                del self.settings["properties"][prop.Name]
-                self.file.remove(prop)
+            if self._try_purge(prop):
                 return
             prop.NominalValue = None
         elif isinstance(value, ifcopenshell.entity_instance):
