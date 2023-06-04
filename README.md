@@ -1,6 +1,9 @@
 
 IfcOpenShell 
 ============
+<p align="center">
+  <img src="https://github.com/IfcOpenShell/IfcOpenShell/assets/79010126/9e540403-c79f-446a-88c6-7c1ebc6ba864">
+</p>
 
 IfcOpenShell is an open source ([LGPL]) software library for working with Industry Foundation Classes ([IFC]). Complete
 parsing support is provided for [IFC2x3 TC1], [IFC4 Add2 TC1], IFC4x1, IFC4x3, and IFC4x3. Extensive geometric support
