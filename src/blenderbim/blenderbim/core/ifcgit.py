@@ -38,6 +38,10 @@ def add_tag(ifcgit, repo):
     ifcgit.add_tag(repo)
 
 
+def delete_tag(ifcgit, repo, tag_name):
+    ifcgit.delete_tag(repo, tag_name)
+
+
 def refresh_revision_list(ifcgit, repo, ifc):
     ifcgit.refresh_revision_list(ifc.get_path())
 

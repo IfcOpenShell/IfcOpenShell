@@ -148,11 +148,10 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             column = item.column(align=True)
             row = column.row()
             row.label(text=tag.name)
+            row.operator("ifcgit.delete_tag", icon="PANEL_CLOSE").tag_name = tag.name
             if tag.message:
                 row = column.row()
                 row.label(text=tag.message)
-            # TODO
-            # item.operator("ifcgit.delete_tag", icon="PANEL_CLOSE")
 
         box = layout.box()
         row = box.row()
