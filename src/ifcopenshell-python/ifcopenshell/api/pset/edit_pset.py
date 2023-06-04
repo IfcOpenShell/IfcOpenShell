@@ -243,10 +243,12 @@ class Usecase:
             if value is None:
                 continue
             unit, value = self.unpack_unit_value(value)
+
             if isinstance(value, ifcopenshell.entity_instance):
                 if value.is_a("IfcProperty"):
                     properties.append(value)
 
+                # If it's not an entity, then it's a primitive data type
                 elif not value.is_entity():
                     args = {"Name": name, "NominalValue": value}
                     if unit:
@@ -256,9 +258,8 @@ class Usecase:
                     )
 
                 else:
-                    raise ValueError(f"'{value}' is not a valid property value for '{name}'")
+                    raise ValueError(f"{value.is_a()} cannot be assigned to the property set '{name}'")
 
-            # TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
             elif isinstance(value, (tuple, list)):
                 if not value:
                     continue
@@ -278,7 +279,8 @@ class Usecase:
                                     ListValues=[
                                         self.file.create_entity(ifc_class, v)
                                         for v in value
-                                    ]
+                                    ],
+                                    Unit=unit
                             )
                         )
                         break
@@ -303,7 +305,7 @@ class Usecase:
 
                     raise NotImplementedError(f"Template type '{pset_template.TemplateType}' is not supported yet")
 
-                # TODO: what if no template was found/matched?
+                raise NotImplementedError(f"No template found for property '{name}'")
 
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
