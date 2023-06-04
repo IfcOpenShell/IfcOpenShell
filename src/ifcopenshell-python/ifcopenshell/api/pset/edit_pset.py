@@ -182,7 +182,7 @@ class Usecase:
 
     def _try_purge(self, prop) -> bool:
         """
-        Tried to remove the property
+        Tries to remove the property
         if successful, returns True, otherwise False
         NOTE: Assumes the prop exists
         """
@@ -280,11 +280,11 @@ class Usecase:
 
                 # If it's not an entity, then it's a primitive data type
                 elif not value.is_entity():
-                    args = {"Name": name, "NominalValue": value}
+                    kwargs = {"Name": name, "NominalValue": value}
                     if unit:
-                        args["Unit"] = unit
+                        kwargs["Unit"] = unit
                     properties.append(
-                        self.file.create_entity("IfcPropertySingleValue", **args)
+                        self.file.create_entity("IfcPropertySingleValue", **kwargs)
                     )
 
                 else:
@@ -303,14 +303,14 @@ class Usecase:
                             raise ValueError(f"pset template '{pset_template.Name}' is missing PrimaryMeasureType")
 
                         properties.append(
-                                self.file.create_entity(
-                                    "IfcPropertyListValue",
-                                    Name=name,
-                                    ListValues=[
-                                        self.file.create_entity(ifc_class, v)
-                                        for v in value
-                                    ],
-                                    Unit=unit
+                            self.file.create_entity(
+                                "IfcPropertyListValue",
+                                Name=name,
+                                ListValues=[
+                                    self.file.create_entity(ifc_class, v)
+                                    for v in value
+                                ],
+                                Unit=unit
                             )
                         )
                         break
