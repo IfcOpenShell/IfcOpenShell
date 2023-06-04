@@ -201,7 +201,7 @@ class Usecase:
         """
         value = self.settings["properties"][prop.Name]
         unit, value = self.unpack_unit_value(value)
-        if isinstance(value, list):
+        if isinstance(value, (tuple, list)):
             sel_vals = []
             for val in value:
                 primary_measure_type = prop.EnumerationReference.EnumerationValues[
