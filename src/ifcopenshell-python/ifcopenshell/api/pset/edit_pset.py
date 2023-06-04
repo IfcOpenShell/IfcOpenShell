@@ -203,12 +203,14 @@ class Usecase:
                 continue
 
             if prop.is_a("IfcPropertyEnumeratedValue"):
-                self.update_existing_enum(prop)
+                self.update_existing_prop_enum(prop)
 
-            else:
-                self.update_existing_property(prop)
+            elif prop.is_a("IfcPropertySingleValue"):
+                self.update_existing_prop_single_value(prop)
 
-    def update_existing_enum(self, prop):
+            raise NotImplementedError(f"Updating '{prop.is_a()}' properties is not supported yet")
+
+    def update_existing_prop_enum(self, prop):
         """
         NOTE: Assumes the prop exists
         """
@@ -243,7 +245,7 @@ class Usecase:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
 
-    def update_existing_property(self, prop):
+    def update_existing_prop_single_value(self, prop):
         """
         NOTE: Assumes the prop exists
         """
