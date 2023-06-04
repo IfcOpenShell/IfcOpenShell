@@ -421,7 +421,7 @@ class IfcGit:
                         return False
 
             repo.index.add(path_ifc)
-            props.commit_message = "Merged branch: " + props.display_branch
+            props.commit_message = "Merge branch '" + props.display_branch + "' into " + repo.active_branch.name
             props.display_branch = repo.active_branch.name
 
             cls.load_project(path_ifc)

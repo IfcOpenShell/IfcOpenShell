@@ -73,6 +73,12 @@ are the same as above: green objects are new to the current model, blue
 objects have changed in some way, and (if you have an older revision loaded)
 red objects have been deleted.
 
+Viewing object history
+----------------------
+
+The history of *everything* in the project is tracked in Git, the revision log
+for the currently selected object can be viewed with the BlenderBIM side-bar.
+
 Retrieving Revisions
 --------------------
 
@@ -155,6 +161,12 @@ optional message text.
     BlenderBIM will not allow you to create invalid or duplicate tag names.
     Similar to commit messages, tag messages should be 50 characters or less,
     though there is no practical limit.
+
+.. Warning::
+
+    Tags can be deleted locally, but Git is distributed, so if the tag has
+    migrated to a remote repository it will reappear when you fetch changes
+    from that repository.
 
 Remote operations
 -----------------
