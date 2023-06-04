@@ -335,7 +335,8 @@ class Usecase:
 
                     raise NotImplementedError(f"Template type '{pset_template.TemplateType}' is not supported yet")
 
-                raise NotImplementedError(f"No template found for property '{name}'")
+                else:
+                    raise NotImplementedError(f"No template found for property '{name}'")
 
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
