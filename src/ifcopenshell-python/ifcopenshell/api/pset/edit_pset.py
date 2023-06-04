@@ -405,10 +405,14 @@ class Usecase:
 
     @staticmethod
     def unpack_unit_value(value_candidate):
-        unit = None
+        """
+        Returns tuple of the format: (Unit, NominalValue)
+        NOTE: Unit fallbacks to None
+        """
+        if value_candidate is None:
+            return (None, None)
+
         if isinstance(value_candidate, dict):  # Custom IfcUnits can be passed in a dict along with the pset value
-            unit = value_candidate["Unit"]
-            value = value_candidate["NominalValue"]
-        else:
-            value = value_candidate
-        return unit, value
+            return (value_candidate["Unit"], value_candidate["NominalValue"])
+
+        return (None, value_candidate)
