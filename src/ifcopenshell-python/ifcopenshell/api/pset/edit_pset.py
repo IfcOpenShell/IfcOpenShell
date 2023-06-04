@@ -174,20 +174,31 @@ class Usecase:
             self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema)
             self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
+    def _has_property(self, prop) -> bool:
+        """
+        Checks if the property already exists
+        """
+        return prop.Name in self.settings["properties"]
+
     # TODO - Add support for changing property types?
     #   For example - IfcPropertyEnumeratedValue to
     # IfcPropertySingleValue.  Or maybe the user should
     # just delete the property first? - vulevukusej
     def update_existing_properties(self):
         for prop in self.get_properties():
+            if not self._has_property(prop):
+                continue
+
             if prop.is_a("IfcPropertyEnumeratedValue"):
                 self.update_existing_enum(prop)
+
             else:
                 self.update_existing_property(prop)
 
     def update_existing_enum(self, prop):
-        if prop.Name not in self.settings["properties"]:
-            return
+        """
+        NOTE: assumes the prop exists
+        """
         value = self.settings["properties"][prop.Name]
         unit, value = self.unpack_unit_value(value)
         if isinstance(value, list):
@@ -215,8 +226,9 @@ class Usecase:
         del self.settings["properties"][prop.Name]
 
     def update_existing_property(self, prop):
-        if prop.Name not in self.settings["properties"]:
-            return
+        """
+        NOTE: assumes the prop exists
+        """
         value = self.settings["properties"][prop.Name]
         unit, value = self.unpack_unit_value(value)
         if value is None:
