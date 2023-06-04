@@ -201,6 +201,7 @@ class Usecase:
         """
         value = self.settings["properties"][prop.Name]
         unit, value = self.unpack_unit_value(value)
+
         if isinstance(value, (tuple, list)):
             sel_vals = []
             for val in value:
@@ -210,17 +211,23 @@ class Usecase:
                 ifc_val = self.file.create_entity(primary_measure_type, val)
                 sel_vals.append(ifc_val)
             prop.EnumerationValues = tuple(sel_vals) or None
-        else:
-            if value.EnumerationReference.EnumerationValues == ():
+
+        elif (
+            isinstance(value, ifcopenshell.entity_instance)
+            and value.is_a("IfcPropertyEnumeratedValue")
+        ):
+            if not value.EnumerationReference.EnumerationValues:
                 if self.settings["should_purge"]:
                     del self.settings["properties"][prop.Name]
                     self.file.remove(prop)
                     return
                 prop.EnumerationReference.EnumerationValues = None
                 prop.EnumerationValues = None
-            elif isinstance(value, ifcopenshell.entity_instance):
+
+            else:
                 prop.EnumerationReference.EnumerationValues = value.EnumerationReference.EnumerationValues
                 prop.EnumerationValues = value.EnumerationValues
+
         if unit:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
