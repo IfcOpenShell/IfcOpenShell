@@ -161,6 +161,23 @@ class AddTag(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class DeleteTag(bpy.types.Operator):
+    """Delete a tag"""
+
+    bl_label = "Delete tag"
+    bl_idname = "ifcgit.delete_tag"
+    bl_options = {"REGISTER"}
+    tag_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+
+        repo = IfcGitData.data["repo"]
+        core.delete_tag(tool.IfcGit, repo, self.tag_name)
+        bpy.ops.ifcgit.refresh()
+        refresh()
+        return {"FINISHED"}
+
+
 class RefreshGit(bpy.types.Operator):
     """Refresh revision list"""
 
