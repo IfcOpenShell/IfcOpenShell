@@ -98,6 +98,11 @@ class IfcGit:
         props.new_tag_message = ""
 
     @classmethod
+    def delete_tag(cls, repo, tag_name):
+        if tag_name in repo.tags:
+            repo.delete_tag(tag_name)
+
+    @classmethod
     def create_new_branch(cls):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
