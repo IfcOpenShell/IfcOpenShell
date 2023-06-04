@@ -174,9 +174,9 @@ class Usecase:
             self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema)
             self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
-    def _has_property(self, prop) -> bool:
+    def _should_update_prop(self, prop) -> bool:
         """
-        Checks if the property already exists
+        Checks if the given property should be changed
         """
         return prop.Name in self.settings["properties"]
 
@@ -199,7 +199,7 @@ class Usecase:
     # just delete the property first? - vulevukusej
     def update_existing_properties(self):
         for prop in self.get_properties():
-            if not self._has_property(prop):
+            if not self._should_update_prop(prop):
                 continue
 
             if prop.is_a("IfcPropertyEnumeratedValue"):
